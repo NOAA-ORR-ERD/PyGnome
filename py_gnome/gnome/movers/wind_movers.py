@@ -24,6 +24,7 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
 
 from gnome.persist.base_schema import ObjType
+from gnome.exceptions import ReferencedObjectNotSet
 
 
 class WindMoversBaseSchema(ObjType, ProcessSchema):
@@ -191,10 +192,10 @@ class WindMover(WindMoversBase, serializable.Serializable):
     """
     _state = copy.deepcopy(WindMoversBase._state)
     _state.add_field(serializable.Field('wind', save=True, update=True,
-                                         save_reference=True))
+                                        save_reference=True))
     _schema = WindMoverSchema
 
-    def __init__(self, wind, **kwargs):
+    def __init__(self, wind=None, **kwargs):
         """
         Uses super to call CyMover base class __init__
 
@@ -202,10 +203,21 @@ class WindMover(WindMoversBase, serializable.Serializable):
 
         Remaining kwargs are passed onto WindMoversBase __init__ using super.
         See Mover documentation for remaining valid kwargs.
+
+        .. note:: Can be initialized with wind=None; however, wind must be
+            set before running. If wind is not None, toggle make_default_refs
+            to False since user provided a valid Wind and does not wish to
+            use the default from the Model.
         """
         self.mover = CyWindMover()
-        self.wind = wind
-        self.name = wind.name
+
+        self._wind = None
+        if wind is not None:
+            self.wind = wind
+            kwargs['make_default_refs'] = \
+                kwargs.pop('make_default_refs', False)
+            kwargs['name'] = \
+                kwargs.pop('name', wind.name)
 
         # set optional attributes
         super(WindMover, self).__init__(**kwargs)
@@ -237,6 +249,16 @@ class WindMover(WindMoversBase, serializable.Serializable):
             # update reference to underlying cython object
             self._wind = value
             self.mover.set_ossm(self.wind.ossm)
+
+    def prepare_for_model_run(self):
+        '''
+        if wind attribute is not set, raise ReferencedObjectNotSet excpetion
+        '''
+        super(WindMover, self).prepare_for_model_run()
+
+        if self.on and self.wind is None:
+            msg = "wind object not defined for WindMover"
+            raise ReferencedObjectNotSet(msg)
 
     def serialize(self, json_='webapi'):
         """

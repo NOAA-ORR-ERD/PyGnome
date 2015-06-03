@@ -10,16 +10,13 @@ import copy
 import numpy
 np = numpy
 
-from colander import (SchemaNode, drop, OneOf,
-                      Float, String, Range)
-import unit_conversion as uc
+from colander import (SchemaNode, drop, Float)
 
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime, CyTimeseries
+from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome import basic_types
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.convert import (to_time_value_pair,
-                                     tsformat,
                                      to_datetime_value_2d)
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
@@ -28,7 +25,7 @@ from gnome.persist import validators, base_schema
 
 from .environment import Environment
 from gnome.environment import Wind, WindSchema
-from .. import _valid_units
+from gnome.exceptions import ReferencedObjectNotSet
 
 
 class UVTuple(DefaultTupleSchema):
@@ -113,7 +110,7 @@ class RunningAverage(Environment, Serializable):
         self._past_hours_to_average = past_hours_to_average
         self.wind = wind
 
-        if (wind is None and timeseries is None):	
+        if (wind is None and timeseries is None):
             mvg_timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
             moving_timeseries = self._convert_to_time_value_pair(mvg_timeseries)
 
@@ -214,14 +211,13 @@ class RunningAverage(Environment, Serializable):
 
         return datetimeval
 
-
-
     def prepare_for_model_run(self, model_time):
         """
         Make sure we are up to date with the referenced time series
         """
         if self.wind is None:
-            err = -1 # raise error here?
+            msg = "wind object not defined for WindMover"
+            raise ReferencedObjectNotSet(msg)
             
         model_time = date_to_sec(model_time)
 	    

@@ -10,7 +10,7 @@ from gnome.persist.base_schema import ObjType
 
 from gnome.array_types import mass_components
 from gnome.utilities.serializable import Serializable, Field
-
+from gnome.exceptions import ReferencedObjectNotSet
 from gnome.movers.movers import Process, ProcessSchema
 
 
@@ -57,7 +57,14 @@ class Weatherer(Process):
         Override for weatherers so they can initialize correct 'mass_balance'
         key and set initial value to 0.0
         """
-        pass
+        if self.on:
+            # almost all weatherers require wind, water, waves so raise
+            # exception here if none is found
+            for attr in ('wind', 'water', 'waves'):
+                if hasattr(self, attr) and getattr(self, attr) is None:
+                    msg = (attr + " object not defined for " +
+                           self.__class__.__name__)
+                    raise ReferencedObjectNotSet(msg)
 
     def weather_elements(self, sc, time_step, model_time):
         '''

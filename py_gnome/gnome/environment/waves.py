@@ -22,7 +22,7 @@ from gnome.persist import base_schema
 from .environment import Environment
 from wind import WindSchema
 from .environment import WaterSchema
-
+from gnome.exceptions import ReferencedObjectNotSet
 
 g = constants.gravity  # the gravitational constant.
 
@@ -67,6 +67,13 @@ class Waves(Environment, serializable.Serializable):
 
         self.wind = wind
         self.water = water
+
+        # turn off make_default_refs if references are defined and
+        # make_default_refs is False
+        if self.water is not None and self.wind is not None:
+            kwargs['make_default_refs'] = \
+                kwargs.pop('make_default_refs', False)
+
         super(Waves, self).__init__(**kwargs)
 
     # def update_water(self):
@@ -288,3 +295,12 @@ class Waves(Environment, serializable.Serializable):
         return _to_dict
 
 # wind.get_timeseries(self, datetime=None, units=None, format='r-theta')
+
+    def prepare_for_model_run(self, model_time):
+        if self.wind is None:
+            msg = "wind object not defined for " + self.__class__.__name__
+            raise ReferencedObjectNotSet(msg)
+
+        if self.water is None:
+            msg = "water object not defined for " + self.__class__.__name__
+            raise ReferencedObjectNotSet(msg)

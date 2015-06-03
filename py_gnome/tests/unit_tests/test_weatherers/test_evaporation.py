@@ -225,8 +225,8 @@ def test_full_run(oil, temp):
     '''
     model = sample_model_weathering(sample_model(), oil, temp, 1)
     model.environment += [Water(temp), constant_wind(1., 0)]
-    model.weatherers += [Evaporation(model.environment[0],
-                                     model.environment[1])]
+    model.weatherers += [Evaporation(model.environment[-2],
+                                     model.environment[-1])]
     released = 0
     init_rho = model.spills[0].get('substance').get_density(temp)
     init_vis = model.spills[0].get('substance').get_viscosity(temp)

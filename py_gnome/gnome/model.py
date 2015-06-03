@@ -11,7 +11,7 @@ np = numpy
 from colander import (SchemaNode,
                       Float, Int, Bool, drop)
 
-from gnome.environment import Environment, Water
+from gnome.environment import Environment
 
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
@@ -26,10 +26,10 @@ from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.persist import (extend_colander,
                            validators,
                            References,
-                           load,
                            class_from_objtype)
 from gnome.persist.base_schema import (ObjType,
-                                       OrderedCollectionItemsList)
+                                       CollectionItemsList)
+from gnome.exceptions import ReferencedObjectNotSet
 
 
 class ModelSchema(ObjType):
@@ -55,15 +55,15 @@ class ModelSchema(ObjType):
         schema for 'webapi'
         '''
         if json_ == 'save':
-            self.add(OrderedCollectionItemsList(missing=drop, name='spills'))
-            self.add(OrderedCollectionItemsList(missing=drop,
+            self.add(CollectionItemsList(missing=drop, name='spills'))
+            self.add(CollectionItemsList(missing=drop,
                      name='uncertain_spills'))
-            self.add(OrderedCollectionItemsList(missing=drop, name='movers'))
-            self.add(OrderedCollectionItemsList(missing=drop,
+            self.add(CollectionItemsList(missing=drop, name='movers'))
+            self.add(CollectionItemsList(missing=drop,
                      name='weatherers'))
-            self.add(OrderedCollectionItemsList(missing=drop,
+            self.add(CollectionItemsList(missing=drop,
                      name='environment'))
-            self.add(OrderedCollectionItemsList(missing=drop,
+            self.add(CollectionItemsList(missing=drop,
                      name='outputters'))
         super(ModelSchema, self).__init__(*args, **kwargs)
 
@@ -473,7 +473,7 @@ class Model(Serializable):
 
         return all_objs
 
-    def find_by_attr(self, attr, value, collection):
+    def find_by_attr(self, attr, value, collection, allitems=False):
         '''
         find first object in collection where the 'attr' attribute matches
         'value'. This is primarily used to find 'wind', 'water', 'waves'
@@ -488,12 +488,19 @@ class Model(Serializable):
         :param OrderedCollection collection: the ordered collection in which
             to search
         '''
+        items = []
         for item in collection:
             try:
                 if getattr(item, attr) == value:
-                    return item
+                    if allitems:
+                        items.append(item)
+                    else:
+                        return item
             except AttributeError:
                 pass
+        items = None if items == [] else items
+
+        return items
 
     def _order_weatherers(self):
         'use weatherer_sort to sort the weatherers'
@@ -546,10 +553,11 @@ class Model(Serializable):
         # that will be added
         array_types = set()
 
-        if self.make_default_refs:
-            self._attach_references()
-            if self._weathering_data is not None:
-                array_types.update(self._weathering_data.array_types)
+        # attach references so objects don't raise ReferencedObjectNotSet error
+        # in prepare_for_model_run()
+        self._attach_references()
+        if self._weathering_data is not None:
+            array_types.update(self._weathering_data.array_types)
 
         self.spills.rewind()  # why is rewind for spills here?
 
@@ -776,18 +784,19 @@ class Model(Serializable):
             # that's all we need to do for the zeroth time step
             self.setup_model_run()
 
+            # let each object raise appropriate error if obj is incomplete
             # validate and send validation flag if model is invalid
-            (msgs, isvalid) = self.validate()
-            if not isvalid:
-                return {'valid': isvalid,
-                        'messages': msgs}
+            #(msgs, isvalid) = self.validate()
+            #if not isvalid:
+            #    raise StopIteration("Setup model run complete but model "
+            #                        "is invalid", msgs)
 
         elif self.current_time_step >= self._num_time_steps - 1:
             # _num_time_steps is set when self.time_step is set. If user does
             # not specify time_step, then setup_model_run() automatically
             # initializes it. Thus, do StopIteration check after
             # setup_model_run() is invoked
-            raise StopIteration
+            raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
             self.setup_time_step()
@@ -1035,43 +1044,6 @@ class Model(Serializable):
 
         return references
 
-    def _save_collection(self, saveloc, coll_, refs, coll_json):
-        """
-        Reference objects inside OrderedCollections. Since the OC itself
-        isn't a reference but the objects in the list are a reference, do
-        something a little differently here
-
-        :param OrderedCollection coll_: ordered collection to be saved
-        """
-        for count, obj in enumerate(coll_):
-            json_ = obj.serialize('save')
-            for field in obj._state:
-                if field.save_reference:
-                    '''
-                    if attribute is stored as a reference to environment list,
-                    then update the json_ here
-                    '''
-                    if getattr(obj, field.name) is not None:
-                        ref_obj = getattr(obj, field.name)
-                        try:
-                            index = self.environment.index(ref_obj)
-                            json_[field.name] = index
-                        except ValueError:
-                            '''
-                            reference is not part of environment list, it must
-                            be handled elsewhere
-                            '''
-                            pass
-            obj_ref = refs.get_reference(obj)
-            if obj_ref is None:
-                # try following name - if 'fname' already exists in references,
-                # then obj.save() assigns a different name to file
-                fname = '{0.__class__.__name__}_{1}.json'.format(obj, count)
-                obj.save(saveloc, refs, fname)
-                coll_json[count]['id'] = refs.reference(obj)
-            else:
-                coll_json[count]['id'] = obj_ref
-
     def _save_spill_data(self, saveloc, nc_file):
         """
         save the data arrays for current timestep to NetCDF
@@ -1185,9 +1157,11 @@ class Model(Serializable):
         o_json_['map'] = self.map.serialize(json_)
 
         if json_ == 'webapi':
+            # for webapi, we serialize forecast spills just like all other
+            # collections - ignore spills in uncertain spill container
             for attr in ('environment', 'outputters', 'weatherers', 'movers',
                          'spills'):
-                o_json_[attr] = self.serialize_oc(attr, json_)
+                o_json_[attr] = self.serialize_oc(getattr(self, attr), json_)
 
             # validate and send validation flag
             (msgs, isvalid) = self.validate()
@@ -1197,17 +1171,6 @@ class Model(Serializable):
 
         return o_json_
 
-    def serialize_oc(self, attr, json_='webapi'):
-        '''
-        Serialize Model attributes of type ordered collection
-        '''
-        json_out = []
-        attr = getattr(self, attr)
-        if isinstance(attr, (OrderedCollection, SpillContainerPair)):
-            for item in attr:
-                json_out.append(item.serialize(json_))
-        return json_out
-
     @classmethod
     def deserialize(cls, json_):
         '''
@@ -1216,8 +1179,11 @@ class Model(Serializable):
         schema = cls._schema(json_['json_'])
         deserial = schema.deserialize(json_)
         if 'map' in json_:
-            d_item = cls._deserialize_nested_obj(json_['map'])
-            deserial['map'] = d_item
+            #d_item = cls._deserialize_nested_obj(json_['map'])
+            #deserial['map'] = d_item
+            # map will be deserialized later - no need to do it twice
+            # todo: clean this up
+            deserial['map'] = json_['map']
 
         if json_['json_'] == 'webapi':
             for attr in ('environment', 'outputters', 'weatherers', 'movers',
@@ -1230,34 +1196,6 @@ class Model(Serializable):
                     deserial[attr] = cls.deserialize_oc(json_[attr])
 
         return deserial
-
-    @classmethod
-    def deserialize_oc(cls, json_):
-        '''
-        check contents of orderered collections to figure out what schema to
-        use.
-        Basically, the json serialized ordered collection looks like a regular
-        list.
-        '''
-        deserial = []
-        for item in json_:
-            d_item = cls._deserialize_nested_obj(item)
-            deserial.append(d_item)
-
-        return deserial
-
-    @classmethod
-    def _deserialize_nested_obj(cls, json_):
-        if json_ is not None:
-            fqn = json_['obj_type']
-            name, scope = (list(reversed(fqn.rsplit('.', 1)))
-                           if fqn.find('.') >= 0
-                           else [fqn, ''])
-            my_module = __import__(scope, globals(), locals(), [str(name)], -1)
-            py_class = getattr(my_module, name)
-            return py_class.deserialize(json_)
-        else:
-            return None
 
     @classmethod
     def loads(cls, json_data, saveloc, references=None):
@@ -1316,22 +1254,6 @@ class Model(Serializable):
 
         return model
 
-    @classmethod
-    def _load_collection(cls, saveloc, l_coll_dict, refs):
-        '''
-        doesn't need to be classmethod of the Model, but its only used by
-        Model at present
-        '''
-        l_coll = []
-        for item in l_coll_dict:
-            i_ref = item['id']
-            if refs.retrieve(i_ref):
-                l_coll.append(refs.retrieve(i_ref))
-            else:
-                obj = load(saveloc, item['id'], refs)
-                l_coll.append(obj)
-        return (l_coll)
-
     def merge(self, model):
         '''
         merge 'model' into self
@@ -1367,35 +1289,38 @@ class Model(Serializable):
         # since model does not contain wind, waves, water attributes, no need
         # to call base class method - model requires following only if an
         # object in collection requires it
-        model_rq = {'wind': False, 'water': False, 'waves': False}
+        env_req = set()
         msgs = []
         isvalid = True
         for oc in self._oc_list:
             for item in getattr(self, oc):
-                (msg, isvalid) = item.validate()
+                # if item is not on, no need to validate it
+                if hasattr(item, 'on') and not item.on:
+                    continue
+
+                # validate item
+                (msg, i_isvalid) = item.validate()
+                if not i_isvalid:
+                    isvalid = i_isvalid
+
                 msgs.extend(msg)
 
-                for at, val in model_rq.iteritems():
-                    if not val:
-                        # if model_rq are False, then we need to check if item
-                        # requires any of these objects because its own
-                        # make_default_refs is set
-                        if hasattr(item, at) and item.make_default_refs:
-                            model_rq[at] = True
+                # add to set of required env objects if item's
+                # make_default_refs is True
+                if item.make_default_refs:
+                    for attr in ('wind', 'water', 'waves'):
+                        if hasattr(item, attr):
+                            env_req.update({attr})
 
         # ensure that required objects are present in environment collection
-        # if Model's make_default_refs is True
-        if self.make_default_refs:
-            for at, val in model_rq.iteritems():
-                if val:
-                    obj = self.find_by_attr('_ref_as', at, self.environment)
-                    if obj is None:
-                        msg = ("{0} not found in environment collection".
-                               format(at))
-                        self.logger.error(msg)
-                        msgs.append(self._err_pre + msg)
-                        isvalid = False
+        if len(env_req) > 0:
+            (ref_msgs, ref_isvalid) = \
+                self._validate_env_coll(env_req)
+            if not ref_isvalid:
+                isvalid = ref_isvalid
+            msgs.extend(ref_msgs)
 
+        # Spill warnings
         if len(self.spills) == 0:
             msg = '{0} contains no spills'.format(self.name)
             self.logger.warning(msg)
@@ -1416,3 +1341,41 @@ class Model(Serializable):
                 msgs.append(self._warn_pre + msg)
 
         return (msgs, isvalid)
+
+    def _validate_env_coll(self, refs, raise_exc=False):
+        '''
+        validate refs + log warnings or raise error if required refs not found.
+        If refs is None, model must query its weatherers/movers/environment
+        collections to figure out what objects it needs to have in environment.
+        '''
+        msgs = []
+        isvalid = True
+
+        if refs is None:
+            # need to go through orderedcollections to see if water, waves
+            # and wind refs are required
+            raise NotImplementedError("validate_refs() incomplete")
+
+        for ref in refs:
+            obj = self.find_by_attr('_ref_as', ref, self.environment)
+            if obj is None:
+                msg = ("{0} not found in environment collection".
+                       format(ref))
+                if raise_exc:
+                    raise ReferencedObjectNotSet(msg)
+                else:
+                    self.logger.warning(msg)
+                    msgs.append(self._warn_pre + msg)
+                    isvalid = False
+
+        return (msgs, isvalid)
+
+    def set_make_default_refs(self, value):
+        '''
+        make default refs for all items in ('weatherers', 'movers',
+        'environment') collections
+        '''
+        for attr in ('weatherers', 'movers', 'environment'):
+            oc = getattr(self, attr)
+            for item in oc:
+                item.make_default_refs = value

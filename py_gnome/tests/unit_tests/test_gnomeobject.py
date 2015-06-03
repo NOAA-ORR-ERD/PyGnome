@@ -15,6 +15,7 @@ from gnome import (environment,
 from gnome.model import Model
 from gnome.environment import Waves, Wind, Water
 from gnome.weatherers import Evaporation, NaturalDispersion
+from gnome.exceptions import ReferencedObjectNotSet
 
 
 def test_exceptions():
@@ -64,17 +65,19 @@ def test_set_name(b_class):
 t = datetime(2015, 1, 1, 12, 0)
 
 
-@pytest.mark.parametrize(("obj", "objvalid"),
+@pytest.mark.parametrize(("obj", "make_default_refs", "objvalid"),
                          [(Wind(timeseries=[(t, (0, 1)),
                                             (t + timedelta(10), (0, 2))],
-                                units='m/s'), True),
-                          (Evaporation(), False),
-                          (NaturalDispersion(), False)])
-def test_base_validate(obj, objvalid):
+                                units='m/s'), False, True),
+                          (Evaporation(), False, False),
+                          (NaturalDispersion(), False, False),
+                          (Evaporation(), True, True)])
+def test_base_validate(obj, make_default_refs, objvalid):
     '''
     base validate checks wind/water/waves objects are not None. Check these
     primarily for weatherers.
     '''
+    obj.make_default_refs = make_default_refs
     (out, isvalid) = obj.validate()
     print out
     print isvalid
@@ -89,20 +92,20 @@ def test_make_default_refs():
     instance
     '''
     model = Model()
+    model1 = Model()
     wind = Wind(timeseries=[(t, (0, 1))], units='m/s')
     water = Water()
 
     waves = Waves(name='waves')
-    waves.make_default_refs = False
-    waves1 = Waves(name='waves1')
+    waves1 = Waves(name='waves1', make_default_refs=False)
     model.environment += [wind,
                           water,
-                          waves,
-                          waves1]
+                          waves]
+    model1.environment += waves1
 
-    # waves1 should get auto hooked up/waves2 should not
+    # waves should get auto hooked up/waves1 should not
     model.step()
-    assert waves.wind is None
-    assert waves.water is None
-    assert waves1.wind is wind
-    assert waves1.water is water
+    assert waves.wind is wind
+    assert waves.water is water
+    with pytest.raises(ReferencedObjectNotSet):
+        model1.step()

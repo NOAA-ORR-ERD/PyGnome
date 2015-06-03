@@ -21,8 +21,9 @@ from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
 from gnome.persist import load
 from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
+from gnome.movers import RandomMover, WindMover, CatsMover, IceMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
+from gnome.outputters import CurrentGeoJsonOutput, IceGeoJsonOutput
 
 from conftest import dump, testdata, test_oil
 
@@ -133,7 +134,6 @@ def make_model(uncertain=False):
     print 'adding a Weatherer'
     model.environment += Water(311.15)
     skim_start = start_time + timedelta(hours=3)
-    model.make_default_refs = True
     model.weatherers += [Evaporation(),
                          Skimmer(spill_amount * .5,
                                  spill_units,
@@ -142,6 +142,10 @@ def make_model(uncertain=False):
                                  active_stop=skim_start + timedelta(hours=2)),
                          Burn(0.2 * spill_volume, 1.0, skim_start,
                               efficiency=0.9)]
+
+    model.outputters += \
+        CurrentGeoJsonOutput(model.find_by_attr('_ref_as', 'current_movers',
+                                                model.movers, allitems=True))
 
     return model
 
@@ -170,6 +174,11 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
     original model
     '''
     model = make_model(uncertain)
+    ice_mover = IceMover(testdata['IceMover']['ice_curr_curv'],
+                         testdata['IceMover']['ice_top_curv'])
+    model.movers += ice_mover
+    model.outputters += IceGeoJsonOutput([ice_mover])
+
     model.zipsave = zipsave
 
     print 'saving scenario ..'
@@ -317,7 +326,8 @@ class TestWebApi:
     @pytest.mark.parametrize('uncertain', [False, True])
     def test_model_rt(self, uncertain):
         model = make_model(uncertain)
-        deserial = Model.deserialize(model.serialize('webapi'))
+        serial = model.serialize('webapi')
+        deserial = Model.deserialize(serial)
 
         # update the dict so it gives a valid model to load
         deserial['map'] = model.map

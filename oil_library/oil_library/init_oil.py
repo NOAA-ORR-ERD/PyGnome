@@ -871,6 +871,8 @@ def add_component_densities(imported_rec, oil):
 def add_k0y(imported_rec, oil):
     if imported_rec.k0y is not None:
         oil.k0y = imported_rec.k0y
+    else:
+        oil.k0y = 2.02e-06
 
 
 def reject_oil_if_bad(imported_rec, oil):

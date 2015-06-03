@@ -218,14 +218,14 @@ cdef class CyCatsMover(CyCurrentMover):
                              'OSErr: {0}'.format(err))
         return True
 
-    def init_mover(self):
+    def compute_velocity_scale(self):
         """
         compute velocity scale
         """
         cdef OSErr err
         err = self.cats.InitMover()
         if err != False:
-            raise ValueError('CATSMover.init_mover(..) returned an error. '
+            raise ValueError('CATSMover.compute_velocity_scale(..) returned an error. '
                              'OSErr: {0}'.format(err))
         return True
 

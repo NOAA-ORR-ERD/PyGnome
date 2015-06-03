@@ -75,8 +75,8 @@ def test_ice_geojson_output(model):
 
     begin = time.time()
     for step in model:
-        print 'got step at: ', time.time() - begin
-        print '\n\n\n', step.keys()
+        print '\n\ngot step at: ', time.time() - begin
+
         assert 'IceGeoJsonOutput' in step
         assert 'step_num' in step['IceGeoJsonOutput']
         assert 'time_stamp' in step['IceGeoJsonOutput']
@@ -91,7 +91,33 @@ def test_ice_geojson_output(model):
             assert model.movers.index(k) > 0
 
         # Check that our structure is correct.
-        for fc in fcs.values():
+        for fc_list in fcs.values():
+
+            # our first feature collection should be for coverage
+            fc = fc_list[0]
+            assert 'type' in fc
+            assert fc['type'] == 'FeatureCollection'
+            assert 'features' in fc
+            assert len(fc['features']) > 0
+
+            for feature in fc['features']:
+                assert 'type' in feature
+                assert feature['type'] == 'Feature'
+
+                assert 'properties' in feature
+                assert 'coverage' in feature['properties']
+
+                assert 'geometry' in feature
+                geometry = feature['geometry']
+
+                assert 'type' in geometry
+                assert geometry['type'] == 'MultiPolygon'
+
+                assert 'coordinates' in geometry
+                assert len(geometry['coordinates']) > 0
+
+            # our second feature collection should be for thickness
+            fc = fc_list[1]
             assert 'type' in fc
             assert fc['type'] == 'FeatureCollection'
             assert 'features' in fc
@@ -103,9 +129,16 @@ def test_ice_geojson_output(model):
 
                 assert 'properties' in feature
                 assert 'thickness' in feature['properties']
-                assert 'coverage' in feature['properties']
 
                 assert 'geometry' in feature
+                geometry = feature['geometry']
+
+                assert 'type' in geometry
+                assert geometry['type'] == 'MultiPolygon'
+
+                assert 'coordinates' in geometry
+                assert len(geometry['coordinates']) > 0
+
         print 'checked step at: ', time.time() - begin
 
 

@@ -32,14 +32,16 @@ class Environment(object):
     # reference environment objects
     _ref_as = 'environment'
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, make_default_refs=True):
         '''
         base class for environment objects
 
         :param name=None:
         '''
-        if name:
+        if name is not None:
             self.name = name
+
+        self.make_default_refs = make_default_refs
 
     def prepare_for_model_run(self, model_time):
         """

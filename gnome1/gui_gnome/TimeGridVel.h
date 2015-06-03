@@ -74,6 +74,29 @@ public:
 					  double arrowScale,double arrowDepth, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
 };
 
+class TimeGridVelIce : virtual public TimeGridVelIce_c, public TimeGridVelCurv
+{
+public:
+						TimeGridVelIce();
+	virtual				~TimeGridVelIce () { Dispose (); }
+	//virtual void		Dispose ();
+
+	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELICE; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELICE) return TRUE; return TimeGridVelCurv::IAm(id); }
+
+	// I/O methods
+	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
+	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
+	
+	Boolean			VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth);
+	
+	//virtual	OSErr 	ReadTopology(char* path);
+	//virtual	OSErr 	ExportTopology(char* path);
+
+	virtual void Draw(Rect r, WorldRect view,double refScale,
+					  double arrowScale,double arrowDepth, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
+};
+
 class TimeGridVelTri : virtual public TimeGridVelTri_c, public TimeGridVelCurv
 {
 public:
