@@ -457,7 +457,8 @@ class IceGeoJsonOutput(Outputter, Serializable):
         points = self.get_points(mover)
 
         dtype = triangle_data[0].dtype.descr
-        unstructured = (triangle_data.view(dtype='<i8')
+        unstructured_type = dtype[0][1]
+        unstructured = (triangle_data.view(dtype=unstructured_type)
                         .reshape(-1, len(dtype))[:, :3])
 
         triangles = points[unstructured]
