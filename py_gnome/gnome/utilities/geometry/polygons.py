@@ -10,28 +10,29 @@ import numpy as np
 
 import BBox
 
+
 class Polygon(np.ndarray):
     """
     A Polygon class
-    
+
     This is a subclass of np.ndarray, so that it can be used in place of a
     simple array of points, but also can hold extra meta-data in a "metadata"
     dict.
-    
+
     """
     def __new__(Polygon, points, metadata=None, copy=True, dtype=np.float):
-        ## fixme: this needs a better way to index and loop to get a point
+        # fixme: this needs a better way to index and loop to get a point
         """
-        Takes Points as an array. Data is any python sequence that can be turned into a 
-        Nx2 numpy array of floats. The data will be copied unless the copy argument is set
-        to False.
-        
+        Takes Points as an array. Data is any python sequence that can be
+        turned into a Nx2 numpy array of floats. The data will be copied unless
+        the copy argument is set to False.
+
         metadata is a dict of meta-data. This can hold anything.
-        
+
         """
         # convert to array, copying data unless not requested.
         arr = np.array(points, dtype, copy=copy)
-        arr.shape = (-1,2) # assure it's the right shape
+        arr.shape = (-1, 2)     # assure it's the right shape
         # Transform to a Polygon
         arr = arr.view(Polygon)
         # add the attribute
@@ -45,40 +46,43 @@ class Polygon(np.ndarray):
         return arr
 
     def __array_finalize__(self, obj):
-        ## I'm not entirely sure why this is required, but I copied it from:
-        ##   http://www.scipy.org/Subclasses
-       
-        # We use the getattr method to set a defaults if 'obj' doesn't have the attributes
+        # I'm not entirely sure why this is required, but I copied it from:
+        #   http://www.scipy.org/Subclasses
+
+        # We use the getattr method to set a defaults if 'obj' doesn't have
+        # the attributes
         self.metadata = getattr(obj, 'metadata', {})
- 
-    def  __getitem__(self, index):
+
+    def __getitem__(self, index):
         """
-        Override __getitem__ to return a simple (2, ) ndarray, rather than a Polygon object
+        Override __getitem__ to return a simple (2, ) ndarray, rather than a
+        Polygon object
         """
-        return np.asarray( np.ndarray.__getitem__(self, index) )
+        return np.asarray(np.ndarray.__getitem__(self, index))
 
     def __eq__(self, other):
         if not isinstance(other, Polygon):
             # a Polygon is never equal to anything else
             return False
         else:
-            return np.array_equal(self, other) and (self.metadata == other.metadata)
+            return (np.array_equal(self, other) and
+                    (self.metadata == other.metadata))
 
     def __str__(self):
-        return "Polygon with %i points.\nmetadata: %s"%(self.shape[0], self.metadata)
+        return ("Polygon with %i points.\nmetadata: %s" %
+                (self.shape[0], self.metadata))
 
     def __repr__(self):
-        msg = ["Polygon( [",]
+        msg = ["Polygon( [", ]
         pstr = []
         for point in self:
             try:
-                pstr.append("[%s, %s]"%(point[0], point[1]) )
+                pstr.append("[%s, %s]" % (point[0], point[1]))
             except IndexError:
                 pass
-        msg.append( ",\n          ".join(pstr) )
-        msg.append("],\n         metadata=%s\n       )"%repr(self.metadata) )
+        msg.append(",\n          ".join(pstr))
+        msg.append("],\n         metadata=%s\n       )" % repr(self.metadata))
         return "".join(msg)
-
 
     @property
     def points(self):
@@ -118,11 +122,11 @@ class Polygon(np.ndarray):
 
         If the polygon has teh first and last point the same, that property
         is preserved
-        
+
         NOTE: in a sequence of close points, the first point is retained.
               Perhaps it would be better for the mean location of the
               sequence to be used instead? It should make no difference
-              for rendering, but could make a difference for other purposes 
+              for rendering, but could make a difference for other purposes
         """
         scale = np.asarray(scale, dtype=np.float64)
 
@@ -145,48 +149,48 @@ class Polygon(np.ndarray):
             return Polygon((), metadata=orig_poly.metadata)
 
 
-   
 class PolygonSet:
     """
     A set of polygons (or polylines) stored as a single array of vertex data,
     and indexes into that array.
     """
-     
-    def __init__(self, data = None, dtype=np.float64):
+
+    def __init__(self, data=None, dtype=np.float64):
         """
         create a new PolygonSet object
-        
+
         if no data is passed in, and empty set is created.
-        
+
         if data is passed in, it must a a tuple:
         (PointsArray, IndexArray, DataList)
 
         """
         self.dtype = dtype
-        if data is  None:
-            self._PointsArray = np.zeros((0,2), self.dtype)
-            self._IndexArray = np.array( (0,), dtype=np.int)
+        if data is None:
+            self._PointsArray = np.zeros((0, 2), self.dtype)
+            self._IndexArray = np.array((0,), dtype=np.int)
             self._MetaDataList = []
         else:
             self._PointsArray = np.array(data[0])
-            self._IndexArray  = np.array(data[1])
-            self._MetaDataList  = np.array(data[2])
-        
+            self._IndexArray = np.array(data[1])
+            self._MetaDataList = np.array(data[2])
+
     def append(self, polygon, metadata=None):
 
         """
         polygon should be a Polygon object or a  NX2 array (or something that
            can be turned into one)
 
-        So that polygon[n,0] is the x coordinate of the nth point and 
-                polygon[n,1] is the y coordinate of the nth point 
+        So that polygon[n,0] is the x coordinate of the nth point and
+                polygon[n,1] is the y coordinate of the nth point
 
         """
         if metadata is None:
             metadata = getattr(polygon, 'metadata', {})
         polygon = np.asarray(polygon, dtype=self.dtype).reshape((-1, 2))
         self._PointsArray = np.r_[self._PointsArray, polygon]
-        self._IndexArray  = np.r_[self._IndexArray, (self._PointsArray.shape[0],) ]
+        self._IndexArray = np.r_[self._IndexArray,
+                                 (self._PointsArray.shape[0],)]
         self._MetaDataList.append(metadata)
 
     def _get_bounding_box(self):
@@ -209,48 +213,50 @@ class PolygonSet:
         """
         return copy.copy(self._MetaDataList)
 
-    def SetPointsData(self, PointData, MetaData = None):
+    def SetPointsData(self, PointData, MetaData=None):
         """
 
         SetPointsData(PointData)
 
-        where PointData is a tuple of two NX2 arrays, or objects that can be converted to arrays:
+        where PointData is a tuple of two NX2 arrays, or objects that can be
+        converted to arrays:
         PointData = (PointsArray, IndexArray)
 
         Sets the data for a polygon set. Be careful with this one, it
         destroys all the current data, and doesn't check for a match
         between your PointsArray and IndexArray.
-        
-        The data type is preserved for the points, but it should probably be a float type.
 
-        It can be useful for setting the data in one PolygonSet to the same as another set:
+        The data type is preserved for the points, but it should probably be a
+        float type.
+
+        It can be useful for setting the data in one PolygonSet to the same as
+        another set:
             set1.SetPointsData(set2.GetPointsData)
 
         A copy is made, so the two sets will be distinct
 
         """
-        
         self._PointsArray = np.array(PointData[0], self.dtype)
         self._IndexArray = np.array(PointData[1], dtype=np.int)
         if MetaData is not None:
             self._DataArray = MetaData
         else:
             self._DataArray = [None] * len(self.PointsArray)
-    
+
     def Copy(self):
         """
-        returns a "deep copy" of the PolygonSet Object -- 
+        returns a "deep copy" of the PolygonSet Object --
           i.e. it does not share any data with the original
         """
-        cp =  PolygonSet()
+        cp = PolygonSet()
         cp._PointsArray = self._PointsArray.copy()
         cp._IndexArray = self._IndexArray.copy()
-        cp._MetaDataList = copy.deepcopy(self._MetaDataList)  
-        
-        return cp      
-        
+        cp._MetaDataList = copy.deepcopy(self._MetaDataList)
+
+        return cp
+
     def TransformData(self, TransformFunction, args=(), kwargs={}):
-        ## fixme: if this was a ndarray subclass, it would "just work"
+        # fixme: if this was a ndarray subclass, it would "just work"
         """
 
         TransformData(Transform Function, args=(), kwargs={})
@@ -266,28 +272,31 @@ class PolygonSet:
         NewPoints = TransformFunction(OldPoints, *args, **kwargs)
 
         """
-        self._PointsArray = TransformFunction(self._PointsArray, *args, **kwargs)
-    
+        self._PointsArray = TransformFunction(self._PointsArray, *args,
+                                              **kwargs)
+
     def __len__(self):
-        return len(self._IndexArray) - 1 # there is an extra index at the end, so that IndexArray[i+1] works
-        
-    def __getitem__(self,index):
+        # there is an extra index at the end, so that IndexArray[i+1] works
+        return len(self._IndexArray) - 1
+
+    def __getitem__(self, index):
         """
         returns a Polygon object
         """
         if index > (len(self._IndexArray) - 1):
             raise IndexError
-        if  index < 0:
-             if index < - (len(self._IndexArray) -1 ):
-                 raise IndexError
-             index = len(self._IndexArray) -1 + index
+        if index < 0:
+            if index < -(len(self._IndexArray) - 1):
+                raise IndexError
+            index = len(self._IndexArray) - 1 + index
         poly = Polygon(self._PointsArray[self._IndexArray[index]:self._IndexArray[index+1]],
-                       metadata = self._MetaDataList[index],
-                       dtype = self.dtype)
+                       metadata=self._MetaDataList[index],
+                       dtype=self.dtype)
         return poly
 
     def __str__(self):
-        return "PolygonSet instance with %i polygons, %i total points"%(len(self), len(self._PointsArray))
+        return ("PolygonSet instance with %i polygons, %i total points"
+                % (len(self), len(self._PointsArray)))
 
     def __repr__(self):
         """ same as __str__ -- not good but more informative than nothing"""
@@ -295,10 +304,11 @@ class PolygonSet:
 
     def __eq__(self, other):
         if not isinstance(other, PolygonSet):
-            #a PolygonSet is never equal to anything else
+            # a PolygonSet is never equal to anything else
             return False
         else:
-            return np.array_equal(self._PointsArray, other._PointsArray) and self._MetaDataList == other._MetaDataList
+            return (np.array_equal(self._PointsArray, other._PointsArray) and
+                    self._MetaDataList == other._MetaDataList)
 
     def thin(self, scale):
         """
@@ -319,7 +329,7 @@ class PolygonSet:
         NOTE: in a sequence of close points, the first point is retained.
               Perhaps it would be better for the mean location of the
               sequence to be used instead? It should make no difference
-              for rendering, but could make a difference for other purposes 
+              for rendering, but could make a difference for other purposes
         """
         new_polys = PolygonSet()
         for poly in self:
@@ -332,23 +342,20 @@ class PolygonSet:
 def test():
     #  a test function
 
-    p1 = np.array([[1,2],[3,4],[5,6],[7,8]])
+    p1 = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
     p2 = p1 * 5
 
-    set = PolygonSet()
-    set.append(p1)
-    set.append(p2)
+    set_ = PolygonSet()
+    set_.append(p1)
+    set_.append(p2)
 
-    print set[0]
-    print set[1]
+    print set_[0]
+    print set_[1]
 
-    
-    print "minimum is: ",set.GetBoundingBox()[0]
-    print "maximum is: ",set.GetBoundingBox()[1]
-
+    print "minimum is: ", set_.GetBoundingBox()[0]
+    print "maximum is: ", set_.GetBoundingBox()[1]
 
 
 if __name__ == "__main__":
     # run a test function
     test()
-
