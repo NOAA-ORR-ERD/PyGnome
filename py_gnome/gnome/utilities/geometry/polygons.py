@@ -68,6 +68,9 @@ class Polygon(np.ndarray):
             return (np.array_equal(self, other) and
                     (self.metadata == other.metadata))
 
+    def __ne__(self, other):
+        return False if self == other else True
+
     def __str__(self):
         return ("Polygon with %i points.\nmetadata: %s" %
                 (self.shape[0], self.metadata))
@@ -309,6 +312,9 @@ class PolygonSet:
         else:
             return (np.array_equal(self._PointsArray, other._PointsArray) and
                     self._MetaDataList == other._MetaDataList)
+
+    def __ne__(self, other):
+        return False if self == other else True
 
     def thin(self, scale):
         """

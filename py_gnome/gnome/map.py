@@ -52,7 +52,7 @@ from gnome.utilities.geometry.polygons import PolygonSet
 
 class GnomeMapSchema(base_schema.ObjType):
     map_bounds = base_schema.LongLatBounds(missing=drop)
-    spillable_area = base_schema.LongLatBounds(missing=drop)
+    spillable_area = base_schema.PolygonSet(missing=drop)
 
 
 class MapFromBNASchema(GnomeMapSchema):
@@ -85,7 +85,10 @@ class GnomeMap(Serializable):
         :param map_bounds: The polygon bounding the map -- could be larger
                            or smaller than the land raster
 
-        :param spillable_area: The polygon bounding the spillable_area
+        :param spillable_area: The PolygonSet bounding the spillable_area.
+        :type spillable_area: Either a PolygonSet object or a list of lists
+            from which a polygon set can be created. Each element in the list
+            is a list of points defining a polygon.
 
         Note on 'map_bounds':
             ( (x1,y1), (x2,y2),(x3,y3),..)
@@ -104,10 +107,25 @@ class GnomeMap(Serializable):
                                        dtype=np.float64)
 
         if spillable_area is None:
-            self.spillable_area = self.map_bounds
+            #self.spillable_area = self.map_bounds
+            self.spillable_area = PolygonSet()
+            self.spillable_area.append(self.map_bounds)
         else:
-            self.spillable_area = np.asarray(spillable_area,
-                                             dtype=np.float64).reshape(-1, 2)
+            if not isinstance(spillable_area, PolygonSet):
+                spillable_area = self._polygon_set_from_points(spillable_area)
+
+            self.spillable_area = spillable_area
+
+    def _polygon_set_from_points(self, poly):
+        '''
+        create PolygonSet() object from list of polygons which in turn is a
+        list of points
+        :returns: PolygonSet() object
+        '''
+        x = PolygonSet()
+        for p in poly:
+            x.append(p)
+        return x
 
     def _attr_array_to_dict(self, np_array):
         '''convert np_array to list of tuples, used for map_bounds,
@@ -136,13 +154,23 @@ class GnomeMap(Serializable):
 
     def spillable_area_to_dict(self):
         'convert numpy array to a list for serializing'
-        return self._attr_array_to_dict(self.spillable_area)
+        #return self._attr_array_to_dict(self.spillable_area)
+        x = []
+        for poly in self.spillable_area:
+            x.append(poly.points.tolist())
+        return x
 
-    def spillable_area_update_from_dict(self, val):
+    def spillable_area_update_from_dict(self, poly_set):
         'convert list of tuples back to numpy array'
-        new_arr = self._attr_from_list_to_array(val)
-        if np.any(self.spillable_area != new_arr):
-            self.spillable_area = new_arr
+        # since metadata will not match, let's create a new PolygonSet,
+        # check equality on _PointsArray and update if not equal
+        ps = PolygonSet()
+        for poly in poly_set:
+            ps.append(poly)
+
+        if not np.array_equal(self.spillable_area._PointsArray,
+                              ps._PointsArray):
+            self.spillable_area = ps
             return True
 
         return False
@@ -200,7 +228,11 @@ class GnomeMap(Serializable):
         .. note:: it could be either off the map, or in a location that
                   spills aren't allowed
         """
-        return points_in_poly(self.spillable_area, coord)
+        for poly in self.spillable_area:
+            if points_in_poly(poly.points, coord):
+                return True
+
+        return False
 
     def _set_off_map_status(self, spill):
         """
@@ -555,7 +587,7 @@ class RasterMap(GnomeMap):
                 if self.spillable_area is None:
                     return True
                 else:
-                    return points_in_poly(self.spillable_area, coord)
+                    return super(RasterMap, self).allowable_spill_position(coord)
             else:
                 return False
         else:
@@ -611,7 +643,6 @@ class MapFromBNA(RasterMap):
         self.filename = filename
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
-        spillable_area = None
         self.name = kwargs.pop('name', os.path.split(filename)[1])
 
         # find the spillable area and map bounds:
@@ -620,10 +651,25 @@ class MapFromBNA(RasterMap):
         #      or a gnome_map_data object...
 
         just_land = PolygonSet()  # and lakes....
-
+        spillable_area = PolygonSet()
+        #p_bb_area = 0   # area of bounding box of spillable_area
         for p in polygons:
             if p.metadata[1].lower() == 'spillablearea':
-                spillable_area = p
+                spillable_area.append(p)
+                #==============================================================
+                # # todo: do we need to support multiple spillable areas?
+                # # will only contain one spillable area - the one with
+                # # largest area covered by bounding box
+                # if spillable_area is None:
+                #     spillable_area = p
+                #     p_bb_area = np.prod(np.diff(p.bounding_box, axis=0))
+                # else:
+                #     n_p_bb_area = np.prod(np.diff(p.bounding_box, axis=0))
+                #     if n_p_bb_area > p_bb_area:
+                #         spillable_area = p
+                #         p_bb_area = n_p_bb_area
+                #==============================================================
+
             elif p.metadata[1].lower() == 'map bounds':
                 map_bounds = p
             else:
@@ -638,13 +684,17 @@ class MapFromBNA(RasterMap):
         if map_bounds is None:
             map_bounds = BB.AsPoly()
 
-        if spillable_area is None:
-            spillable_area = map_bounds
+        if len(spillable_area) == 0:
+            spillable_area.append(map_bounds)
 
         # user defined spillable_area, map_bounds overrides data obtained
         # from polygons
 
-        spillable_area = kwargs.pop('spillable_area', spillable_area)
+        # todo: should there be a check between spillable_area read from BNA
+        # versus what the user entered. if this is within spillable_area for
+        # BNA, then include it? else ignore
+        #spillable_area = kwargs.pop('spillable_area', spillable_area)
+        user_spillable_area = kwargs.pop('spillable_area', spillable_area)
         map_bounds = kwargs.pop('map_bounds', map_bounds)
 
         # stretch the bounding box, to get approximate aspect ratio in
@@ -674,6 +724,8 @@ class MapFromBNA(RasterMap):
                            **kwargs)
 
         return None
+
+
 def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
 
     """
