@@ -63,76 +63,76 @@ cdef class CyIceMover(CyGridCurrentMover):
             """
             raise OSError("IceMover_c.TextRead returned an error.")
 
-    def _get_points(self):
-        """
-            Invokes the GetPointsHdl method of TriGridVel_c object
-            to get the points for the grid
-        """
-        cdef short tmp_size = sizeof(LongPoint)
-        cdef LongPointHdl pts_hdl
-        cdef cnp.ndarray[LongPoint, ndim = 1] pts
-
-        # allocate memory and copy it over
-        pts_hdl = self.grid_ice.GetPointsHdl()
-        sz = _GetHandleSize(<Handle>pts_hdl)
-
-        # will this always work?
-        pts = np.empty((sz / tmp_size,), dtype=basic_types.long_point)
-
-        memcpy(&pts[0], pts_hdl[0], sz)
-
-        return pts
-
-    def _get_center_points(self):
-        """
-            Invokes the GetTriangleCenters method of TriGridVel_c object
-            to get the velocities for the grid
-        """
-        cdef short tmp_size = sizeof(WorldPoint)
-        cdef WORLDPOINTH pts_hdl
-        cdef cnp.ndarray[WorldPoint, ndim = 1] pts
-
-        # allocate memory and copy it over
-        pts_hdl = self.grid_ice.GetTriangleCenters()
-        sz = _GetHandleSize(<Handle>pts_hdl)
-
-        # will this always work?
-        pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
-
-        memcpy(&pts[0], pts_hdl[0], sz)
-
-        return pts
-
-    def _get_triangle_data(self):
-        """
-            Invokes the GetToplogyHdl method of TriGridVel_c object
-            to get the velocities for the grid
-        """
-        cdef short tmp_size = sizeof(Topology)
-        cdef TopologyHdl top_hdl
-        cdef cnp.ndarray[Topology, ndim = 1] top
-
-        # allocate memory and copy it over
-        # should check that topology exists
-        top_hdl = self.grid_ice.GetTopologyHdl()
-        sz = _GetHandleSize(<Handle>top_hdl)
-
-        # will this always work?
-        top = np.empty((sz / tmp_size,), dtype=basic_types.triangle_data)
-
-        memcpy(&top[0], top_hdl[0], sz)
-
-        return top
-
-    def get_num_triangles(self):
-        """
-            Invokes the GetNumTriangles method of TriGridVel_c object
-            to get the number of triangles
-        """
-        num_tri = self.grid_ice.GetNumTriangles()
-
-        return num_tri
-
+#     def _get_points(self):
+#         """
+#             Invokes the GetPointsHdl method of TriGridVel_c object
+#             to get the points for the grid
+#         """
+#         cdef short tmp_size = sizeof(LongPoint)
+#         cdef LongPointHdl pts_hdl
+#         cdef cnp.ndarray[LongPoint, ndim = 1] pts
+# 
+#         # allocate memory and copy it over
+#         pts_hdl = self.grid_ice.GetPointsHdl()
+#         sz = _GetHandleSize(<Handle>pts_hdl)
+# 
+#         # will this always work?
+#         pts = np.empty((sz / tmp_size,), dtype=basic_types.long_point)
+# 
+#         memcpy(&pts[0], pts_hdl[0], sz)
+# 
+#         return pts
+# 
+#     def _get_center_points(self):
+#         """
+#             Invokes the GetTriangleCenters method of TriGridVel_c object
+#             to get the velocities for the grid
+#         """
+#         cdef short tmp_size = sizeof(WorldPoint)
+#         cdef WORLDPOINTH pts_hdl
+#         cdef cnp.ndarray[WorldPoint, ndim = 1] pts
+# 
+#         # allocate memory and copy it over
+#         pts_hdl = self.grid_ice.GetTriangleCenters()
+#         sz = _GetHandleSize(<Handle>pts_hdl)
+# 
+#         # will this always work?
+#         pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+# 
+#         memcpy(&pts[0], pts_hdl[0], sz)
+# 
+#         return pts
+# 
+#     def _get_triangle_data(self):
+#         """
+#             Invokes the GetToplogyHdl method of TriGridVel_c object
+#             to get the velocities for the grid
+#         """
+#         cdef short tmp_size = sizeof(Topology)
+#         cdef TopologyHdl top_hdl
+#         cdef cnp.ndarray[Topology, ndim = 1] top
+# 
+#         # allocate memory and copy it over
+#         # should check that topology exists
+#         top_hdl = self.grid_ice.GetTopologyHdl()
+#         sz = _GetHandleSize(<Handle>top_hdl)
+# 
+#         # will this always work?
+#         top = np.empty((sz / tmp_size,), dtype=basic_types.triangle_data)
+# 
+#         memcpy(&top[0], top_hdl[0], sz)
+# 
+#         return top
+# 
+#     def get_num_triangles(self):
+#         """
+#             Invokes the GetNumTriangles method of TriGridVel_c object
+#             to get the number of triangles
+#         """
+#         num_tri = self.grid_ice.GetNumTriangles()
+# 
+#         return num_tri
+# 
     def get_ice_fields(self, Seconds model_time,
                  cnp.ndarray[cnp.npy_double] fraction,
                  cnp.ndarray[cnp.npy_double] thickness):
@@ -165,4 +165,20 @@ cdef class CyIceMover(CyGridCurrentMover):
             are defined and enumerated
             """
             raise OSError("IceMover_c.GetIceVelocities returned an error.")
+
+    def get_movement_velocities(self, Seconds model_time,
+                 cnp.ndarray[VelocityFRec] vels):
+        """
+            Invokes the GetMovementVelocities method of TimeGridVelIce_c object
+            to get the velocities on the triangles
+        """
+        cdef OSErr err
+        err = self.grid_ice.GetMovementVelocities(model_time,&vels[0])
+
+        if err != 0:
+            """
+            For now just raise an OSError - until the types of possible errors
+            are defined and enumerated
+            """
+            raise OSError("IceMover_c.GetMovementVelocities returned an error.")
 

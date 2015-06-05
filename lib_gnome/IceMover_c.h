@@ -67,13 +67,14 @@ public:
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	virtual void 		ModelStepIsDone();
-	
-			TopologyHdl GetTopologyHdl(void);
-			LongPointHdl GetPointsHdl(void);
-			WORLDPOINTH	GetTriangleCenters();
-			long 		GetNumTriangles(void);
+			// may need these functions eventually if add a separate ice grid
+			//TopologyHdl GetTopologyHdl(void);
+			//LongPointHdl GetPointsHdl(void);
+			//WORLDPOINTH	GetTriangleCenters();
+			//long 		GetNumTriangles(void);
 			OSErr 		GetIceFields(Seconds model_time, double *ice_fraction, double *ice_thickness);
 			OSErr 		GetIceVelocities(Seconds model_time, VelocityFRec *ice_velocity);
+			OSErr 		GetMovementVelocities(Seconds model_time, VelocityFRec *ice_velocity);
 			OSErr		TextRead(char *path,char *topFilePath);
 			OSErr 		ExportTopology(char* path){return timeGrid->ExportTopology(path);}
 

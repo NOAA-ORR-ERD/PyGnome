@@ -444,4 +444,27 @@ OSErr GridCurrentMover_c::GetScaledVelocities(Seconds model_time, VelocityFRec *
 	return timeGrid->GetScaledVelocities(model_time, velocities);
 }
 
+LongPointHdl GridCurrentMover_c::GetPointsHdl(void)
+{
+	return timeGrid->fGrid->GetPointsHdl();
+}
+
+TopologyHdl GridCurrentMover_c::GetTopologyHdl(void)
+{
+	return timeGrid->fGrid->GetTopologyHdl();
+}
+
+WORLDPOINTH	GridCurrentMover_c::GetTriangleCenters()
+{
+	return timeGrid->fGrid->GetCenterPointsHdl();
+}
+
+long GridCurrentMover_c::GetNumTriangles(void)
+{
+	long numTriangles = 0;
+	TopologyHdl topoH = GetTopologyHdl();
+	if (topoH) numTriangles = _GetHandleSize((Handle)topoH)/sizeof(**topoH);
+	
+	return numTriangles;
+}
 

@@ -423,8 +423,8 @@ OSErr IceMover_c::TextRead(char *path, char *topFilePath)
 
 }
 
-
-LongPointHdl IceMover_c::GetPointsHdl(void)
+// for now just use gridcurrentmovers functions, eventually may add a separate ice grid
+/*LongPointHdl IceMover_c::GetPointsHdl(void)
 {
 	return timeGrid->fGrid->GetPointsHdl();
 }
@@ -447,30 +447,27 @@ long IceMover_c::GetNumTriangles(void)
 	
 	return numTriangles;
 }
-
+*/
 OSErr IceMover_c::GetIceFields(Seconds model_time, double *ice_fraction, double *ice_thickness)
 {
 	return dynamic_cast<TimeGridVelIce_c *>(timeGrid)->GetIceFields(model_time, ice_thickness, ice_fraction);
 }
+
+// for now just use gridcurrentmovers function, eventually may add a separate ice grid
+/*OSErr IceMover_c::GetScaledVelocities(Seconds model_time, VelocityFRec *velocities)
+{
+	return timeGrid->GetScaledVelocities(model_time, velocities);
+}*/
 
 OSErr IceMover_c::GetIceVelocities(Seconds model_time, VelocityFRec *ice_velocities)
 {
 	return dynamic_cast<TimeGridVelIce_c *>(timeGrid)->GetIceVelocities(model_time, ice_velocities);
 }
 
-/*VelocityRec IceMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
-{
-	VelocityRec v = {0,0};
-	printError("IceMover_c::GetScaledPatValue is unimplemented");
-	return v;
+OSErr IceMover_c::GetMovementVelocities(Seconds model_time, VelocityFRec *velocities)
+{	// this function gets velocities based on ice coverage 
+	// high coverage use ice_velocity, low coverage use current_velocity, in between interpolate
+	return dynamic_cast<TimeGridVelIce_c *>(timeGrid)->GetMovementVelocities(model_time, velocities);
 }
-
-
-VelocityRec IceMover_c::GetPatValue(WorldPoint p)
-{
-	VelocityRec v = {0,0};
-	printError("IceMover_c::GetPatValue is unimplemented");
-	return v;
-}*/
 
 

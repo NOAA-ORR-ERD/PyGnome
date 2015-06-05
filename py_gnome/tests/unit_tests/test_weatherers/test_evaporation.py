@@ -17,6 +17,7 @@ from gnome.basic_types import oil_status
 
 from ..conftest import (sample_sc_release,
                         sample_model,
+                        sample_model_fcn,
                         sample_model_weathering,
                         test_oil)
 
