@@ -17,7 +17,6 @@ from gnome.basic_types import oil_status
 from conftest import weathering_data_arrays
 from ..conftest import (test_oil,
                         sample_model,
-                        sample_model_fcn,
                         sample_model_weathering)
 
 
