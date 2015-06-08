@@ -75,9 +75,6 @@ class Weatherer(Process):
         in model_step_is_done()
         '''
         pass
-        #raise NotImplementedError("All weatherers need to implement this "
-        #    "method. It returns mass remaining for each component at end of "
-        #    "time_step in 'kg' (SI units)")
 
     def _halflife(self, M_0, factors, time):
         'Assumes our factors are half-life values'
