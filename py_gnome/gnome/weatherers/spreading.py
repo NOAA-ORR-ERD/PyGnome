@@ -11,8 +11,9 @@ from colander import SchemaNode, Float, drop
 from gnome.utilities.serializable import Serializable, Field
 from gnome.environment import constant_wind, WindSchema, WaterSchema
 from gnome.constants import gravity
-from gnome import AddLogger, constants
+from gnome import constants
 from .core import Weatherer
+from gnome.exceptions import GnomeRuntimeError
 
 from .core import WeathererSchema
 
@@ -34,7 +35,8 @@ class FayGravityViscous(Weatherer, Serializable):
     _state += Field('water', save=True, update=True, save_reference=True)
     _schema = FayGravityViscousSchema
 
-    thickness_limit = None
+    # object used to model spreading of oil and area computation
+    _ref_as = 'spreading'
 
     def __init__(self, water=None, **kwargs):
         '''
@@ -46,12 +48,13 @@ class FayGravityViscous(Weatherer, Serializable):
         # need water temp to get initial viscosity of oil so thickness_limit
         # can be set
         self.water = water
-        self.array_types.update({'fay_area', 'spill_num',
+        self.array_types.update({'fay_area', 'area', 'spill_num',
                                  'bulk_init_volume'})
         # relative_bouyancy - use density at release time. For now
         # temperature is fixed so just compute once and store. When temperature
         # varies over time, may want to do something different
         self._init_relative_buoyancy = None
+        self.thickness_limit = None
 
     @lru_cache(4)
     def _gravity_spreading_t0(self,
@@ -105,7 +108,6 @@ class FayGravityViscous(Weatherer, Serializable):
         ::
             A0 = np.pi*(k2**4/k1**2)*((V0**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
         '''
-        self._check_relative_bouyancy(relative_bouyancy)
         a0 = (np.pi*(self.spreading_const[1]**4/self.spreading_const[0]**2)
               * (((blob_init_vol)**5*constants.gravity*relative_bouyancy) /
                  (water_viscosity**2))**(1./6.))
@@ -177,8 +179,6 @@ class FayGravityViscous(Weatherer, Serializable):
             msg = "use init_area for age == 0"
             raise ValueError(msg)
 
-        self._check_relative_bouyancy(relative_bouyancy)
-
         # update area for each blob of LEs
         for b_age in np.unique(age):
             # within each age blob_init_volume should also be the same
@@ -238,15 +238,37 @@ class FayGravityViscous(Weatherer, Serializable):
         if len(subs) > 0:
             vo = subs[0].get_viscosity(self.water.get('temperature'))
             # set thickness_limit
-            self.spreading.set_thickness_limit(vo)
+            self._set_thickness_limit(vo)
 
         # reset _init_relative_buoyancy for every run
         # make it None so no stale data
         self._init_relative_buoyancy = None
 
-    def initialize_data(self, sc):
+    def _set_init_relative_buoyancy(self, substance):
         '''
-        initialize  'bulk_init_volume', 'area', 'fay_area'
+        set the initial relative buoyancy of oil wrt water
+        use temperature of water to get oil density
+        if relative_buoyancy < 0 raises a GnomeRuntimeError - particles will
+        sink.
+        '''
+        rho_h2o = self.water.get('density')
+        rho_oil = substance.get_density(self.water.get('temperature'))
+
+        # maybe weathering_data should catch error below?
+        # todo: write and raise appropriate exception
+        if np.any(rho_h2o < rho_oil):
+            msg = ("Found particles with relative_bouyancy < 0. "
+                   "Oil is a sinker")
+            raise GnomeRuntimeError(msg)
+
+        self._init_relative_buoyancy = (rho_h2o - rho_oil)/rho_h2o
+
+    def initialize_data(self, sc, num_released):
+        '''
+        initialize  'bulk_init_volume', 'area', 'fay_area' and 'area'
+        Currently, carrying both 'fay_area' and 'area', but should drop
+        'fay_area' eventually. 'area' gets initialized and updated the same
+        as 'fay_area'; however, Langmuir updates 'area'.
         '''
         # do this once incase there are any unit conversions, it only needs to
         # happen once - for efficiency
@@ -254,22 +276,13 @@ class FayGravityViscous(Weatherer, Serializable):
                                     'square meter per second')
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['fay_area']) == 0:
+                # no particles released yet
                 continue
 
-            mask = data['fay_area'] == 0
-
             if self._init_relative_buoyancy is None:
-                rho_h2o = self.water.get('density')
-                rho_oil = substance.get_density(self.water.get('temperature'))
+                self._set_init_relative_buoyancy(substance)
 
-                # maybe weathering_data should catch error below?
-                # todo: write and raise appropriate exception
-                if np.any(rho_h2o < rho_oil):
-                    msg = ("Found particles with relative_bouyancy < 0. "
-                           "Oil is a sinker")
-                    self.logger.error(msg)
-
-                self._init_relative_buoyancy = (rho_h2o - rho_oil)/rho_h2o
+            mask = data['fay_area'] == 0
 
             for s_num in np.unique(data['spill_num'][mask]):
                 s_mask = np.logical_and(mask,
@@ -279,32 +292,35 @@ class FayGravityViscous(Weatherer, Serializable):
                 data['bulk_init_volume'][s_mask] = \
                     (data['mass'][s_mask][0]/data['density'][s_mask][0]) * num
                 init_blob_area = \
-                    self.spreading.init_area(water_kvis,
-                                             self._init_relative_buoyancy,
-                                             data['bulk_init_volume'][s_mask][0])
+                    self.init_area(water_kvis,
+                                   self._init_relative_buoyancy,
+                                   data['bulk_init_volume'][s_mask][0])
 
                 data['fay_area'][s_mask] = init_blob_area/num
+                data['area'][s_mask] = init_blob_area/num
 
         sc.update_from_fatedataview()
 
-    def weather_elements(self, sc, time_step, model_time):
+    def model_step_is_done(self, sc):
         '''
         update 'area', 'fay_area' for previously released particles
         '''
         water_kvis = self.water.get('kinematic_viscosity',
                                     'square meter per second')
-        for substance, data in sc.itersubstancedata(self.array_types):
+        for _, data in sc.itersubstancedata(self.array_types):
             if len(data['fay_area']) == 0:
                 continue
 
             for s_num in np.unique(data['spill_num']):
                 s_mask = data['spill_num'] == s_num
                 data['fay_area'][s_mask] = \
-                    self.spreading.update_area(water_kvis,
-                                               self._init_relative_buoyancy,
-                                               data['bulk_init_volume'][s_mask],
-                                               data['fay_area'][s_mask],
-                                               data['age'][s_mask])
+                    self.update_area(water_kvis,
+                                     self._init_relative_buoyancy,
+                                     data['bulk_init_volume'][s_mask],
+                                     data['fay_area'][s_mask],
+                                     data['age'][s_mask])
+                data['area'][s_mask] = data['fay_area'][s_mask]
+
         sc.update_from_fatedataview()
 
 
@@ -313,6 +329,8 @@ class ConstantArea(Weatherer, Serializable):
     Used for testing and diagnostics
     - must be manually hooked up
     '''
+    _ref_as = 'spreading'
+
     def __init__(self, area, **kwargs):
         self.area = area
         super(ConstantArea, self).__init__(**kwargs)
@@ -330,13 +348,13 @@ class ConstantArea(Weatherer, Serializable):
 
         sc.update_from_fatedataview()
 
-    def weather_elements(self, sc, time_step, model_time):
+    def model_step_is_done(self, sc):
         '''
         return the area array as it was entered since that contains area per
         LE if there is more than one LE. Kept the interface the same as
         FayGravityViscous since WeatheringData will call it the same way.
         '''
-        for substance, data in sc.itersubstancedata(self.array_types):
+        for _, data in sc.itersubstancedata(self.array_types):
             if len(data['fay_area']) == 0:
                 continue
 
@@ -423,8 +441,11 @@ class Langmuir(Weatherer, Serializable):
             return
 
         rho_h2o = self.water.get('density', 'kg/m^3')
-        for substance, data in sc.itersubstancedata(self.array_types,
+        for _, data in sc.itersubstancedata(self.array_types,
                                                     fate='all'):
+            # need thickness for blob of oil released together - need to
+            # compute per spill
+            thickness = 1.0
 
             # assume only one type of oil is modeled so thickness_limit is
             # already set and constant for all

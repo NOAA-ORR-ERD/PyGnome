@@ -71,10 +71,13 @@ class Weatherer(Process):
         run the equivalent of get_move for weathering processes. It weathers
         each component and returns the mass remaining at end of time_step. It
         returns the mass in units of 'kg'
+        some objects do not implement this since they update arrays like 'area'
+        in model_step_is_done()
         '''
-        raise NotImplementedError("All weatherers need to implement this "
-            "method. It returns mass remaining for each component at end of "
-            "time_step in 'kg' (SI units)")
+        pass
+        #raise NotImplementedError("All weatherers need to implement this "
+        #    "method. It returns mass remaining for each component at end of "
+        #    "time_step in 'kg' (SI units)")
 
     def _halflife(self, M_0, factors, time):
         'Assumes our factors are half-life values'

@@ -15,8 +15,7 @@ import numpy as np
 from repoze.lru import lru_cache
 
 from gnome.basic_types import oil_status, fate
-from gnome.utilities import Serializable
-from .spreading import FayGravityViscous
+from gnome.utilities.serializable import Serializable, Field
 from .core import Weatherer, WeathererSchema
 
 
@@ -33,13 +32,17 @@ class WeatheringData(Weatherer, Serializable):
     every single array, let WeatheringData set/initialize/update these arrays.
     '''
     _state = copy.deepcopy(Weatherer._state)
+    # UI does not need to manipulate - if make_default_refs is True as is the
+    # default, it'll automatically get the default Water object
+    _state += Field('water', save=True, update=False, save_reference=True)
+
     _schema = WeathererSchema
 
-    def __init__(self,
-                 water):
+    def __init__(self, water, **kwargs):
         '''
         XXX
         '''
+        super(WeatheringData, self).__init__(**kwargs)
         self.water = water
         self.array_types = {'fate_status', 'positions', 'status_codes',
                             'density', 'viscosity', 'mass_components', 'mass',
@@ -62,9 +65,10 @@ class WeatheringData(Weatherer, Serializable):
                     'avg_viscosity', 'beached'):
             sc.weathering_data[key] = 0.0
 
-    def initialize_data(self, sc, num_elements):
+    def initialize_data(self, sc, num_released):
         '''
-        initialize all weathering data arrays
+        1. initialize all weathering data arrays
+        2. update aggregated data in sc.weathering_data dict
         '''
         for substance, data in sc.itersubstancedata(self.array_types,
                                                     fate='all'):
@@ -76,39 +80,81 @@ class WeatheringData(Weatherer, Serializable):
             # we might end up changing 'age' to something other than 0
             # model should only call initialize_data if new particles were
             # released
-            if num_elements > 0:
+            if num_released > 0:
                 new_LEs_mask = data['density'] == 0
                 self._init_new_particles(new_LEs_mask, data, substance)
 
         sc.update_from_fatedataview(fate='all')
 
         # also initialize/update aggregated data
-        self._aggregated_data(sc, num_elements)
+        self._aggregated_data(sc, num_released)
 
     def weather_elements(self, sc, time_step, model_time):
         '''
-        
+        update intrinsic property data arrays: density, viscosity.
         '''
-        #self._aggregated_data(sc, 0)
+        water_rho = self.water.get('density')
 
-    def update(self, num_new_released, sc):
-        '''
-        Uses 'substance' properties together with 'water' properties to update
-        'density', 'bulk_init_volume', etc
-        The 'bulk_init_volume' is not updated at each step; however, it depends on
-        the 'density' which must be set/updated first and this depends on
-        water object. So it was easiest to initialize the 'bulk_init_volume' for
-        newly released particles here.
-        '''
-        if len(sc) > 0:
-            self._update_weathering_dataarrays(sc)
-            self._aggregated_data(sc, num_new_released)
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate='all'):
+            'update properties only if elements are released'
+            if len(data['density']) == 0:
+                continue
+
+            k_rho = self._get_k_rho_weathering_dens_update(substance)
+
+            # sub-select mass_components array by substance.num_components.
+            # Currently, the physics for modeling multiple spills with different
+            # substances is not being correctly done in the same model. However,
+            # let's put some basic code in place so the data arrays can infact
+            # contain two substances and the code does not raise exceptions. The
+            # mass_components are zero padded for substance which has fewer
+            # psuedocomponents. Subselecting mass_components array by
+            # [mask, :substance.num_components] ensures numpy operations work
+            mass_frac = \
+                (data['mass_components'][:, :substance.num_components] /
+                 data['mass'].reshape(len(data['mass']), -1))
+            # check if density becomes > water, set it equal to water in this
+            # case - 'density' is for the oil-water emulsion
+            oil_rho = k_rho*(substance.component_density * mass_frac).sum(1)
+
+            # oil/water emulsion density
+            new_rho = (data['frac_water'] * water_rho +
+                       (1 - data['frac_water']) * oil_rho)
+            if np.any(new_rho > self.water.density):
+                new_rho[new_rho > self.water.density] = self.water.density
+                self.logger.info(self._pid + "during update, density is larger"
+                                 " than water density - set to water density")
+
+            data['density'] = new_rho
+
+            # following implementation results in an extra array called
+            # fw_d_fref but is easy to read
+            v0 = substance.get_viscosity(self.water.get('temperature', 'K'))
+            if v0 is not None:
+                kv1 = self._get_kv1_weathering_visc_update(v0)
+                fw_d_fref = data['frac_water']/self.visc_f_ref
+                data['viscosity'] = \
+                    (v0 * np.exp(kv1 * data['frac_lost']) *
+                     (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
+
+        sc.update_from_fatedataview(fate='all')
+
+        # also initialize/update aggregated data
+        self._aggregated_data(sc, 0)
 
     def _aggregated_data(self, sc, new_LEs):
         '''
-        intrinsic LE properties not set by any weatherer so let SpillContainer
-        set these - will user be able to use select weatherers? Currently,
-        evaporation defines 'density' data array
+        aggregated properties that are not set by any other weatherer are
+        set here. The following keys in sc.weathering_data are set here:
+            'avg_density',
+            'avg_viscosity',
+            'floating',
+            'amount_released',
+            'beached'
+        todo: amount_released and beached can probably get set by
+            SpillContainer. The trajectory only case will probably also care
+            about amount 'beached'.
         '''
         # update avg_density from density array
         # wasted cycles at present since all values in density for given
@@ -162,59 +208,6 @@ class WeatheringData(Weatherer, Serializable):
             else:
                 sc.weathering_data['amount_released'] = amount_released
 
-    def _update_weathering_dataarrays(self, sc):
-        '''
-        - initialize 'density', 'viscosity', and other optional arrays for
-        newly released particles.
-        - update intrinsic properties like 'density', 'viscosity' and optional
-        arrays for previously released particles
-        '''
-
-        for substance, data in sc.itersubstancedata(self.array_types,
-                                                    fate='all'):
-            'update properties only if elements are released'
-            if len(data['density']) == 0:
-                continue
-
-            # could also use 'age' but better to use an uninitialized var since
-            # we might end up changing 'age' to something other than 0
-            new_LEs_mask = data['density'] == 0
-            if sum(new_LEs_mask) > 0:
-                self._init_new_particles(new_LEs_mask, data, substance)
-            if sum(~new_LEs_mask) > 0:
-                self._update_old_particles(~new_LEs_mask,
-                                           data,
-                                           substance,
-                                           sc.current_time_stamp)
-
-        sc.update_from_fatedataview(fate='all')
-
-    def update_fate_status(self, sc):
-        '''
-        Update fate status after model invokes move_elements()
-        - elements will beach or refloat
-        - then Model will update fate_status of elements that beached/refloated
-
-        Model calls this and input is spill container, not a view of the data
-        '''
-        # for old particles, update fate_status
-        # particles in_water or off_maps continue to weather
-        # only particles on_land stop weathering
-        non_w_mask = sc['status_codes'] == oil_status.on_land
-        sc['fate_status'][non_w_mask] = fate.non_weather
-
-        # update old particles that may now have refloated
-        # only want to do this for particles with a valid substance - if
-        # substance is None, they do not weather
-        # also get all data for a substance since we are modifying the
-        # fate_status - lets not use it to filter data
-        for substance, data in sc.itersubstancedata(self.array_types,
-                                                    fate='all'):
-            mask = data['fate_status'] & fate.non_weather == fate.non_weather
-            self._init_fate_status(mask, data)
-
-        sc.update_from_fatedataview(fate='all')
-
     def _init_new_particles(self, mask, data, substance):
         '''
         initialize new particles released together in a given timestep
@@ -237,10 +230,6 @@ class WeatheringData(Weatherer, Serializable):
             data['density'][mask] = self.water.get('density')
         else:
             data['density'][mask] = density
-
-        if self._init_relative_buoyancy is None:
-            self._init_relative_buoyancy = \
-                self._get_relative_buoyancy(data['density'][mask][0])
 
         # initialize mass_components -
         # sub-select mass_components array by substance.num_components.
@@ -335,51 +324,25 @@ class WeatheringData(Weatherer, Serializable):
 
         return k_rho
 
-    def _update_old_particles(self, mask, data, substance, model_time):
+    def serialize(self, json_='webapi'):
         '''
-        update density, area
+        No need to return serialized version of this for WebAPI
+        User does not manipuate it. It automatically uses default Water object
+        if make_default_refs is True
         '''
-        k_rho = self._get_k_rho_weathering_dens_update(substance)
+        if json_ == 'webapi':
+            return
 
-        water_rho = self.water.get('density')
+        # for save files - call super
+        return super(WeatheringData, self).serialize(json_)
 
-        # must update intrinsic properties per spill. Same substance but
-        # multiple spills - update intrinsic for each spill.
-        for s_num in np.unique(data['spill_num'][mask]):
-            s_mask = np.logical_and(mask,
-                                    data['spill_num'] == s_num)
-            # sub-select mass_components array by substance.num_components.
-            # Currently, the physics for modeling multiple spills with different
-            # substances is not being correctly done in the same model. However,
-            # let's put some basic code in place so the data arrays can infact
-            # contain two substances and the code does not raise exceptions. The
-            # mass_components are zero padded for substance which has fewer
-            # psuedocomponents. Subselecting mass_components array by
-            # [mask, :substance.num_components] ensures numpy operations work
-            mass_frac = \
-                (data['mass_components'][s_mask, :substance.num_components] /
-                 data['mass'][s_mask].reshape(np.sum(s_mask), -1))
-            # check if density becomes > water, set it equal to water in this
-            # case - 'density' is for the oil-water emulsion
-            oil_rho = k_rho*(substance.component_density * mass_frac).sum(1)
-
-            # oil/water emulsion density
-            new_rho = (data['frac_water'][s_mask] * water_rho +
-                       (1 - data['frac_water'][s_mask]) * oil_rho)
-            if np.any(new_rho > self.water.density):
-                new_rho[new_rho > self.water.density] = self.water.density
-                self.logger.info(self._pid + "during update, density is larger"
-                                 " than water density - set to water density")
-
-            data['density'][s_mask] = new_rho
-
-            # following implementation results in an extra array called
-            # fw_d_fref but is easy to read
-            v0 = substance.get_viscosity(self.water.get('temperature', 'K'))
-            if v0 is not None:
-                kv1 = self._get_kv1_weathering_visc_update(v0)
-                fw_d_fref = data['frac_water'][s_mask]/self.visc_f_ref
-                data['viscosity'][s_mask] = \
-                    (v0 * np.exp(kv1 *
-                                 data['frac_lost'][s_mask]) *
-                     (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
+    @classmethod
+    def deserialize(cls, json_):
+        '''
+        do not expect to get this object from 'webapi' since it isn't being
+        serialized for 'webapi'. User does not manipulate it.
+        If we wish to display to user, this can be updated - just need to add
+        a serialized 'wind' object.
+        '''
+        if json_['json_'] == 'save':
+            return super(cls, WeatheringData).deserialize(json_)

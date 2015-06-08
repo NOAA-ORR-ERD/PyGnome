@@ -18,10 +18,14 @@ from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.utilities.serializable import Serializable, Field
 
+from gnome.basic_types import oil_status, fate
 from gnome.spill_container import SpillContainerPair
 from gnome.environment import Wind
 from gnome.movers import Mover
-from gnome.weatherers import weatherer_sort, Weatherer, WeatheringData
+from gnome.weatherers import (weatherer_sort,
+                              Weatherer,
+                              WeatheringData,
+                              FayGravityViscous)
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.persist import (extend_colander,
                            validators,
@@ -156,12 +160,6 @@ class Model(Serializable):
         else:
             cls._restore_attr_from_save(model, dict_)
 
-        # todo: get Water from environment collection
-        model._weathering_data = None
-        if any([w.on for w in model.weatherers]):
-            water = model.find_by_attr('_ref_as', 'water', model.environment)
-            model._weathering_data = WeatheringData(water)
-
         # restore the spill data outside this method - let's not try to find
         # the saveloc here
         msg = ("{0._pid}'new_from_dict' created new model: "
@@ -199,9 +197,6 @@ class Model(Serializable):
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
                          uncertain, cache_enabled, map, name)
-
-        # set in setup_model_run if weatherers are added
-        self._weathering_data = None
 
         # register callback with OrderedCollection
         self.movers.register_callback(self._callback_add_mover,
@@ -461,7 +456,7 @@ class Model(Serializable):
         To get all obects of this type, set ret_all to True
         '''
         all_objs = []
-        for item in getattr(self, collection):
+        for item in collection:
             if isinstance(item, obj):
                 if not ret_all:
                     return obj
@@ -515,35 +510,36 @@ class Model(Serializable):
         '''
         attr = {'wind': None, 'water': None, 'waves': None}
         attr['wind'] = self.find_by_attr('_ref_as', 'wind', self.environment)
-        attr['water'] = self.find_by_attr('_ref_as', 'water',
-                                           self.environment)
-        attr['waves'] = self.find_by_attr('_ref_as', 'waves',
-                                           self.environment)
+        attr['water'] = self.find_by_attr('_ref_as', 'water', self.environment)
+        attr['waves'] = self.find_by_attr('_ref_as', 'waves', self.environment)
 
-        weathering = False
+        weather_data = set()
         for coll in ('environment', 'weatherers', 'movers'):
             for item in getattr(self, coll):
 
                 if coll == 'weatherers' and item.on:
-                    weathering = True
+                    weather_data.update(item.array_types)
 
                 for name, val in attr.iteritems():
                     if hasattr(item, name) and item.make_default_refs:
                         setattr(item, name, val)
 
-        if weathering:
-            if attr['water'] is None:
-                msg = ("model has weathering but no water object - expect "
-                       "failure at runtime")
-                self.logger.error(msg)
-            if self._weathering_data is None:
-                self._weathering_data = WeatheringData(attr['water'])
-            else:
-                setattr(self._weathering_data, 'water', attr['water'])
-        else:
-            # reset to None if no weatherers found - don't want to carry around
-            # all the extra data arrays
-            self._weathering_data = None
+        if 'mass_components' in weather_data:
+            # if WeatheringData object and FayGravityViscous (spreading object)
+            # are not defined by user, add them automatically becuase most
+            # weatherers will need these
+            # check to see if we have a WeatheringData object in weatherers
+            wd = self.find_by_class(WeatheringData, self.weatherers)
+
+            if wd is None:
+                self.weatherers += WeatheringData(attr['water'])
+
+        if 'area' in weather_data:
+            # if a weatherer is using 'area' array, make sure it is being set
+            # correctly. Objects that set 'area' are referenced as 'spreading'
+            spread = self.find_by_attr('_ref_as', 'spreading', self.weatherers)
+            if spread is None:
+                self.weatherers += FayGravityViscous(attr['water'])
 
     def setup_model_run(self):
         '''
@@ -556,9 +552,6 @@ class Model(Serializable):
         # attach references so objects don't raise ReferencedObjectNotSet error
         # in prepare_for_model_run()
         self._attach_references()
-        if self._weathering_data is not None:
-            array_types.update(self._weathering_data.array_types)
-
         self.spills.rewind()  # why is rewind for spills here?
 
         # remake orderedcollections defined by model
@@ -604,9 +597,6 @@ class Model(Serializable):
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
-            if self._weathering_data is not None:
-                # do this only if we have user has added spills!
-                self._weathering_data.prepare_for_model_run(sc)
 
         # outputters need array_types, so this needs to come after those
         # have been updated.
@@ -661,9 +651,22 @@ class Model(Serializable):
                     sc['next_positions'] += delta
 
                 self.map.beach_elements(sc)
+                self._update_fate_status(sc)
 
                 # the final move to the new positions
                 (sc['positions'])[:] = sc['next_positions']
+
+    def _update_fate_status(self, sc):
+        '''
+        WeatheringData used to perform this operation in weather_elements;
+        however, WeatheringData is one of the objects in weatherers collection
+        so just let model do this for now. Eventually, we want to get rid
+        of 'fate_status' array and only manipulate 'status_codes'. Until then,
+        update fate_status in move_elements
+        '''
+        if 'fate_status' in sc:
+            non_w_mask = sc['status_codes'] == oil_status.on_land
+            sc['fate_status'][non_w_mask] = fate.non_weather
 
     def weather_elements(self):
         '''
@@ -686,8 +689,7 @@ class Model(Serializable):
             return
 
         for sc in self.spills.items():
-            if self._weathering_data is not None:
-                self._weathering_data.update_fate_status(sc)
+            # elements may have beached to update fate_status
 
             sc.reset_fate_dataview()
 
@@ -733,9 +735,6 @@ class Model(Serializable):
             for sc in self.spills.items():
                 mover.model_step_is_done(sc)
 
-        for w in self.weatherers:
-            w.model_step_is_done()
-
         for sc in self.spills.items():
             '''
             removes elements with oil_status.to_be_removed
@@ -744,6 +743,11 @@ class Model(Serializable):
 
             # age remaining particles
             sc['age'][:] = sc['age'][:] + self.time_step
+
+        # update 'area' from spreading + langmuir after incrementing age
+        for w in self.weatherers:
+            for sc in self.spills.items():
+                w.model_step_is_done(sc)
 
         for outputter in self.outputters:
             outputter.model_step_is_done()
@@ -820,8 +824,13 @@ class Model(Serializable):
             # release particles for next step - these particles will be aged
             # in the next step
             num_released = sc.release_elements(self.time_step, self.model_time)
-            if self._weathering_data:
-                self._weathering_data.update(num_released, sc)
+
+            # initialize data - currently only weatherers do this so cycle
+            # over weatherers collection - in future, maybe movers can also do
+            # this
+            if num_released > 0:
+                for item in self.weatherers:
+                    item.initialize_data(sc, num_released)
 
             self.logger.debug("{1._pid} released {0} new elements for step:"
                               " {1.current_time_step} for {1.name}".
@@ -1103,9 +1112,6 @@ class Model(Serializable):
 
         for w in self.weatherers:
             array_types.update(w.array_types)
-
-        if self._weathering_data:
-            array_types.update(self._weathering_data.array_types)
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)

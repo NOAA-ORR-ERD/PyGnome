@@ -37,7 +37,7 @@ class ObjForTests:
         create SpillContainer and test WeatheringData object test objects so
         we can run Skimmer, Burn like a model without using a full on Model
         '''
-        intrinsic = WeatheringData(Water())
+        wd = WeatheringData(Water())
         sc = SpillContainer()
         sc.spills += point_line_release_spill(10,
                                               (0, 0, 0),
@@ -45,7 +45,7 @@ class ObjForTests:
                                               substance=test_oil,
                                               amount=amount,
                                               units='kg')
-        return (sc, intrinsic)
+        return (sc, wd)
 
     def reset_test_objs(self):
         '''
@@ -97,7 +97,7 @@ class TestSkimmer(ObjForTests):
                       active_start=active_start,
                       active_stop=active_stop)
 
-    (sc, intrinsic) = ObjForTests.mk_test_objs()
+    (sc, wd) = ObjForTests.mk_test_objs()
 
     def test_prepare_for_model_run(self):
         self.reset_and_release()
@@ -192,7 +192,7 @@ class TestBurn(ObjForTests):
     Define a default object
     default units are SI
     '''
-    (sc, intrinsic) = ObjForTests.mk_test_objs()
+    (sc, wd) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
     op = spill.get('substance')
     volume = spill.get_mass()/op.get_density()
@@ -469,7 +469,7 @@ class TestBurn(ObjForTests):
 
 
 class TestChemicalDispersion(ObjForTests):
-    (sc, intrinsic) = ObjForTests.mk_test_objs()
+    (sc, wd) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
     op = spill.get('substance')
     spill_pct = 0.2  # 20%

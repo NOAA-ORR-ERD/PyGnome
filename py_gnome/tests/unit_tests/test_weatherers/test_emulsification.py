@@ -26,8 +26,8 @@ wind = constant_wind(15., 0)	#also test with lower wind no emulsification
 waves = Waves(wind, water)
 
 arrays = Emulsification().array_types
-intrinsic = WeatheringData(water)
-arrays.update(intrinsic.array_types)
+wd = WeatheringData(water)
+arrays.update(wd.array_types)
 
 # need an oil that emulsifies and one that does not
 #s_oils = [test_oil, 'FUEL OIL NO.6']
@@ -47,8 +47,8 @@ def test_emulsification(oil, temp, num_elems, on):
                            element_type=et,
                            arr_types=arrays,
                            time_step=time_step)
-    intrinsic.prepare_for_model_run(sc)
-    intrinsic.update(sc.num_released, sc)
+    wd.prepare_for_model_run(sc)
+    wd.update(sc.num_released, sc)
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 

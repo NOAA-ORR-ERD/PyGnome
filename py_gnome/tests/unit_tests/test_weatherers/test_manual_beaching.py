@@ -38,7 +38,7 @@ def test_init(timeseries, units):
 
 
 class TestBeaching(ObjForTests):
-    (sc, intrinsic) = ObjForTests.mk_test_objs()
+    (sc, wd) = ObjForTests.mk_test_objs()
     sc.spills[0].set('release_time', active_start)
     b = Beaching(active_start, 'l', timeseries, name='test_beaching')
     substance = sc.spills[0].get('substance')

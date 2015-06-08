@@ -1,5 +1,5 @@
 '''
-test objects defined in intrinsic module
+test objects defined in wd module
 '''
 from datetime import datetime, timedelta
 
@@ -28,7 +28,7 @@ class TestWeatheringData:
         '''
         initialize Sample SC and WeatheringData object
         '''
-        intrinsic = WeatheringData(Water())
+        wd = WeatheringData(Water())
         end_time = rel_time + timedelta(hours=1)
         spills = [point_line_release_spill(num_elements,
                                            (0, 0, 0),
@@ -39,22 +39,22 @@ class TestWeatheringData:
                                            substance=test_oil)]
         sc = SpillContainer()
         sc.spills += spills
-        sc.prepare_for_model_run(intrinsic.array_types)
+        sc.prepare_for_model_run(wd.array_types)
 
         # test initialization as well
-        intrinsic.prepare_for_model_run(sc)
+        wd.prepare_for_model_run(sc)
         for val in sc.weathering_data.values():
             assert val == 0.0
 
         # test initialization as well
-        return (sc, intrinsic)
+        return (sc, wd)
 
-    def mock_weather_data(self, sc, intrinsic, zero_elems=5):
+    def mock_weather_data(self, sc, wd, zero_elems=5):
         '''
         helper function that mocks a weatherer - like evaporation. It simply
         changes the mass_fraction and updates frac_lost accordingly
         '''
-        for substance, data in sc.itersubstancedata(intrinsic.array_types):
+        for substance, data in sc.itersubstancedata(wd.array_types):
             # following simulates weathered/evaporated oil
             data['mass_components'][:, :zero_elems] = 0
             data['mass'][:] = sc['mass_components'].sum(1)
@@ -69,15 +69,15 @@ class TestWeatheringData:
         fraction is not changing. Viscosity is also unchanged if no weathering
         '''
         rel_time = datetime.now().replace(microsecond=0)
-        (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
+        (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         spill = sc.spills[0]
         init_dens = \
-            spill.get('substance').get_density(intrinsic.water.temperature)
+            spill.get('substance').get_density(wd.water.temperature)
         init_visc = \
-            spill.get('substance').get_viscosity(intrinsic.water.temperature)
+            spill.get('substance').get_viscosity(wd.water.temperature)
 
         num = sc.release_elements(default_ts, rel_time)
-        intrinsic.update(num, sc)
+        wd.update(num, sc)
         assert np.allclose(sc['density'], init_dens)
         assert np.allclose(sc['viscosity'], init_visc)
 
@@ -85,11 +85,11 @@ class TestWeatheringData:
         # todo: this shouldn't be required, revisit this!
         sc['age'] += default_ts
         if vary_mf:
-            self.mock_weather_data(sc, intrinsic)
+            self.mock_weather_data(sc, wd)
 
             # say we are now in 2nd step - no new particles are released
             # just updating the previously released particles
-            intrinsic.update(0, sc)
+            wd.update(0, sc)
 
             # viscosity/density
             # should weathered density/viscosity always increase?
@@ -98,22 +98,22 @@ class TestWeatheringData:
         else:
             # nothing weathered and no emulsion so equations should have
             # produced no change
-            intrinsic.update(0, sc)
+            wd.update(0, sc)
             assert np.allclose(sc['density'], init_dens)
             assert np.allclose(sc['viscosity'], init_visc)
 
     @pytest.mark.parametrize("vary_frac_water", (False, True))
     def test_density_update_frac_water(self, vary_frac_water):
         rel_time = datetime.now().replace(microsecond=0)
-        (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
+        (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         spill = sc.spills[0]
         init_dens = \
-            spill.get('substance').get_density(intrinsic.water.temperature)
+            spill.get('substance').get_density(wd.water.temperature)
         init_visc = \
-            spill.get('substance').get_viscosity(intrinsic.water.temperature)
+            spill.get('substance').get_viscosity(wd.water.temperature)
 
         num = sc.release_elements(default_ts, rel_time)
-        intrinsic.update(num, sc)
+        wd.update(num, sc)
         assert np.allclose(sc['density'], init_dens)
         assert np.allclose(sc['viscosity'], init_visc)
 
@@ -122,15 +122,15 @@ class TestWeatheringData:
         sc['age'] += default_ts
         if vary_frac_water:
             sc['frac_water'][:] = 0.3
-            intrinsic.update(0, sc)
+            wd.update(0, sc)
 
-            exp_res = (intrinsic.water.get('density') * sc['frac_water'] +
+            exp_res = (wd.water.get('density') * sc['frac_water'] +
                        (1 - sc['frac_water']) * init_dens)
             assert np.all(sc['density'] == exp_res)
             assert np.all(sc['density'] > init_dens)
             assert np.all(sc['viscosity'] > init_visc)
         else:
-            intrinsic.update(0, sc)
+            wd.update(0, sc)
             assert np.allclose(sc['density'], init_dens)
             assert np.allclose(sc['viscosity'], init_visc)
 
@@ -139,10 +139,10 @@ class TestWeatheringData:
         check that density does not fall below water density
         '''
         rel_time = datetime.now().replace(microsecond=0)
-        (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
+        (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         num = sc.release_elements(default_ts, rel_time)
-        intrinsic.update(num, sc)
-        self.mock_weather_data(sc, intrinsic, 3)
+        wd.update(num, sc)
+        self.mock_weather_data(sc, wd, 3)
         sc['age'] += default_ts
 
         # create a mock_water type on which we can set the density - only for
@@ -153,9 +153,9 @@ class TestWeatheringData:
 
         # say we are now in 2nd step - no new particles are released
         # so just updating the previously released particles
-        intrinsic.water = mock_water()
-        intrinsic.update(0, sc)
-        assert np.all(sc['density'] >= intrinsic.water.density)
+        wd.water = mock_water()
+        wd.update(0, sc)
+        assert np.all(sc['density'] >= wd.water.density)
 
     def test_intrinsic_props_vary_num_LEs(self):
         '''
@@ -210,7 +210,7 @@ class TestWeatheringData:
             print 'Completed step: ', i
 
     def test_update_intrinsic_props(self):
-        intrinsic = WeatheringData(water)
+        wd = WeatheringData(water)
 
         rel_time = datetime.now().replace(microsecond=0)
         end_time = rel_time + timedelta(hours=1)
@@ -230,10 +230,10 @@ class TestWeatheringData:
                   ]
         sc = SpillContainer()
         sc.spills += spills
-        sc.prepare_for_model_run(intrinsic.array_types)
+        sc.prepare_for_model_run(wd.array_types)
 
         # test initialization as well
-        intrinsic.prepare_for_model_run(sc)
+        wd.prepare_for_model_run(sc)
         for val in sc.weathering_data.values():
             assert val == 0.0
 
@@ -243,7 +243,7 @@ class TestWeatheringData:
         for i in range(-1, 5):
             curr_time = rel_time + timedelta(seconds=i * ts)
             num_released = sc.release_elements(ts, curr_time)
-            intrinsic.update(num_released, sc)
+            wd.update(num_released, sc)
             for key, val in sc.weathering_data.iteritems():
                 if len(sc) > 0 and key not in ('beached', 'non_weathering'):
                     assert val > 0
@@ -264,7 +264,7 @@ class TestWeatheringData:
                 assert all(sc['fay_area'] > 0)
                 assert all(sc['init_mass'] > 0)
 
-                # intrinsic props arrays initialized correctly
+                # wd props arrays initialized correctly
                 assert all(sc['density'] > 0)
                 assert all(sc['viscosity'] > 0)
 
@@ -277,21 +277,21 @@ class TestWeatheringData:
         beach
         '''
         rel_time = datetime.now().replace(microsecond=0)
-        (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
+        (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         num = sc.release_elements(default_ts, rel_time)
-        intrinsic.update(num, sc)
+        wd.update(num, sc)
 
         # in next step and set some particles as beached
         beach_mask = np.arange(2, 20, 2)
         sc['status_codes'][beach_mask] = oil_status.on_land
 
-        # during weathering, intrinsic updates fate_status
-        intrinsic.update_fate_status(sc)
+        # during weathering, wd updates fate_status
+        wd.update_fate_status(sc)
         assert np.all(sc['fate_status'][beach_mask] == bt_fate.non_weather)
         sc['age'] += default_ts    # model updates age
 
         # next step, assume no particles released
-        intrinsic.update(0, sc)     # no new particles released
+        wd.update(0, sc)     # no new particles released
 
         # in the step a subset of particles are reflaoted
         refloat = beach_mask[:-5]
@@ -299,8 +299,8 @@ class TestWeatheringData:
         sc['status_codes'][refloat] = oil_status.in_water
         sc['positions'][refloat, 2] = 4     # just check for surface
 
-        # during weathering, intrinsic updates fate_status
-        intrinsic.update_fate_status(sc)
+        # during weathering, wd updates fate_status
+        wd.update_fate_status(sc)
         assert np.all(sc['status_codes'][still_beached] == oil_status.on_land)
         assert np.all(sc['fate_status'][still_beached] == bt_fate.non_weather)
         assert np.all(sc['fate_status'][refloat] == bt_fate.subsurf_weather)
@@ -314,7 +314,7 @@ class TestWeatheringData:
         it should be based on water temperature at release time.
         '''
         rel_time = datetime.now().replace(microsecond=0)
-        (sc, intrinsic) = self.sample_sc_intrinsic(1, rel_time)
+        (sc, wd) = self.sample_sc_intrinsic(1, rel_time)
         sc.spills[0].set('end_release_time', None)
         sc.spills += point_line_release_spill(1, (0, 0, 0),
                                               rel_time,
@@ -322,16 +322,16 @@ class TestWeatheringData:
                                               units='kg',
                                               substance=test_oil)
         op = sc.spills[0].get('substance')
-        rho = op.get_density(intrinsic.water.temperature)
+        rho = op.get_density(wd.water.temperature)
         b_init_vol = [spill.get_mass()/rho for spill in sc.spills]
         print b_init_vol
 
-        sc.prepare_for_model_run(intrinsic.array_types)
-        intrinsic.prepare_for_model_run(sc)
+        sc.prepare_for_model_run(wd.array_types)
+        wd.prepare_for_model_run(sc)
 
         # release elements
         num = sc.release_elements(default_ts, rel_time)
-        intrinsic.update(num, sc)
+        wd.update(num, sc)
 
         # bulk_init_volume is set in same order as b_init_vol
         print sc['bulk_init_volume']
@@ -342,7 +342,7 @@ class TestWeatheringData:
 
         # update age and test fay_area update remains unequal
         sc['age'][:] = default_ts
-        intrinsic.update(0, sc)
+        wd.update(0, sc)
         assert sc['fay_area'][0] != sc['fay_area'][1]
         assert np.all(sc['fay_area'] > i_area)
 
@@ -353,40 +353,40 @@ class TestWeatheringData:
         '''
         l.uninstall()
         rel_time = datetime.now().replace(microsecond=0)
-        (sc, intrinsic) = self.sample_sc_intrinsic(1, rel_time)
-        intrinsic.water.set('temperature', 288, 'K')
-        intrinsic.water.set('salinity', 0, 'psu')
+        (sc, wd) = self.sample_sc_intrinsic(1, rel_time)
+        wd.water.set('temperature', 288, 'K')
+        wd.water.set('salinity', 0, 'psu')
         new_subs = 'TEXTRACT, STAR ENTERPRISE'
         sc.spills[0].set('substance', new_subs)
 
         # substance changed - do a rewind
         sc.rewind()
-        sc.prepare_for_model_run(intrinsic.array_types)
+        sc.prepare_for_model_run(wd.array_types)
 
         num = sc.release_elements(default_ts, rel_time)
 
         # only capture and test density error
         l.install()
-        intrinsic.update(num, sc)
+        wd.update(num, sc)
         assert all(sc['fay_area'] == 0.)
 
         msg = ("{0} will sink at given water temperature: {1} {2}. "
                "Set density to water density".format(new_subs,
                                                      288.0,
                                                      'K'))
-        l.check(('gnome.weatherers.intrinsic.WeatheringData',
+        l.check(('gnome.weatherers.wd.WeatheringData',
                  'ERROR',
                  msg))
 
     def test_no_substance(self):
         rel_time = datetime.now().replace(microsecond=0)
-        (sc, intrinsic) = self.sample_sc_intrinsic(1, rel_time)
+        (sc, wd) = self.sample_sc_intrinsic(1, rel_time)
         sc.spills[0].set('substance', None)
         # substance changed - do a rewind
         sc.rewind()
-        sc.prepare_for_model_run(intrinsic.array_types)
-        intrinsic.prepare_for_model_run(sc)
+        sc.prepare_for_model_run(wd.array_types)
+        wd.prepare_for_model_run(sc)
 
         num = sc.release_elements(default_ts, rel_time)
-        intrinsic.update(num, sc)
-        intrinsic.update(0, sc)
+        wd.update(num, sc)
+        wd.update(0, sc)

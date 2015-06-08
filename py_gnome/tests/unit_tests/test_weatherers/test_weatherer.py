@@ -23,8 +23,8 @@ from ..conftest import test_oil as oil
 
 rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
 arr_types = {'mass', 'rise_vel', 'mass_components'}
-intrinsic = WeatheringData(Water())
-arr_types.update(intrinsic.array_types)
+wd = WeatheringData(Water())
+arr_types.update(wd.array_types)
 
 
 sc = sample_sc_release(5, (3., 6., 0.),
@@ -60,8 +60,8 @@ class TestWeatherer:
         rate. Needs more tests with varying half_lives
         '''
         time_step = 15 * secs_in_minute
-        intrinsic.prepare_for_model_run(test_sc)
-        intrinsic.update(sc.num_released, test_sc)
+        wd.prepare_for_model_run(test_sc)
+        wd.update(sc.num_released, test_sc)
 
         print '\nsc["mass"]:\n', test_sc['mass']
 

@@ -234,8 +234,8 @@ class TestLangmuir:
         # create WeatheringData object, initialize instantaneously released
         # elements
         arrays = l.array_types
-        intrinsic = WeatheringData(self.water)
-        arrays.update(intrinsic.array_types)
+        wd = WeatheringData(self.water)
+        arrays.update(wd.array_types)
         et = floating(substance=test_oil)
         time_step = 15. * 60
         sc = sample_sc_release(num_elements=1,
@@ -246,13 +246,13 @@ class TestLangmuir:
         # prepare_for_model_run will happen before release; however, this is
         # convenient and it doesn't break anything so call
         # prepare_for_model_run after the release
-        intrinsic.prepare_for_model_run(sc)
-        intrinsic.update(sc.num_released, sc)
+        wd.prepare_for_model_run(sc)
+        wd.update(sc.num_released, sc)
         water_kvis = self.water.get('kinematic_viscosity')
         # update the age of one of the LEs by n_age
-        n_age = (intrinsic.spreading.
+        n_age = (wd.spreading.
                  _time_to_reach_max_area(water_kvis,
-                                         intrinsic._init_relative_buoyancy,
+                                         wd._init_relative_buoyancy,
                                          sc['bulk_init_volume'][0]))
 
         model_time = sc.spills[0].get('release_time')
@@ -271,7 +271,7 @@ class TestLangmuir:
         sc['age'][:] += np.ceil(n_age)
         model_time += timedelta(seconds=time_step)
         num = sc.release_elements(default_ts, model_time)
-        intrinsic.update(num, sc)
+        wd.update(num, sc)
 
         step()
         assert np.all(sc['area'] < sc['fay_area'])

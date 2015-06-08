@@ -9,38 +9,24 @@ import numpy as np
 from gnome.model import Model
 from gnome.spill import point_line_release_spill
 from gnome.environment import constant_wind, Water, Wind
-from gnome.weatherers import (Evaporation,
-                              WeatheringData)
+from gnome.weatherers import Evaporation
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 from gnome.basic_types import oil_status
 
-from ..conftest import (sample_sc_release,
+from conftest import weathering_data_arrays
+from ..conftest import (test_oil,
                         sample_model,
-                        sample_model_weathering,
-                        test_oil)
-
-
-water = Water()
-
-arrays = Evaporation().array_types
-intrinsic = WeatheringData(water)
-arrays.update(intrinsic.array_types)
+                        sample_model_fcn,
+                        sample_model_weathering)
 
 
 def test_evaporation_no_wind():
-    et = floating(substance=test_oil)
-    time_step = 15. * 60
-    sc = sample_sc_release(num_elements=2,
-                           element_type=et,
-                           arr_types=arrays,
-                           time_step=time_step)
-    intrinsic.prepare_for_model_run(sc)
-    intrinsic.update(sc.num_released, sc)
+    evap = Evaporation(Water(), wind=constant_wind(0., 0))
+    (sc, time_step) = weathering_data_arrays(evap.array_types, evap.water)[:2]
+
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
-
-    evap = Evaporation(water, wind=constant_wind(0., 0))
 
     evap.prepare_for_model_run(sc)
     evap.prepare_for_model_step(sc, time_step, model_time)
@@ -60,17 +46,14 @@ def test_evaporation(oil, temp, num_elems, on):
     '''
     et = floating(substance=oil)
     time_step = 15. * 60
-    sc = sample_sc_release(num_elements=num_elems,
-                           element_type=et,
-                           arr_types=arrays,
-                           time_step=time_step)
-    intrinsic.prepare_for_model_run(sc)
-    intrinsic.update(sc.num_released, sc)
+
+    evap = Evaporation(Water(), wind=constant_wind(1., 0))
+    evap.on = on
+
+    sc = weathering_data_arrays(evap.array_types, evap.water, time_step, et)[0]
+
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
-
-    evap = Evaporation(water, wind=constant_wind(1., 0))
-    evap.on = on
 
     evap.prepare_for_model_run(sc)
     evap.prepare_for_model_step(sc, time_step, model_time)
@@ -113,9 +96,8 @@ class TestDecayConst:
         oil = test_oil
 
         m1 = Model(start_time=stime, time_step=ts)
-        m1.environment += constant_wind(0, 0)
-        m1.water = Water()
-        m1.weatherers += [Evaporation(m1.water, m1.environment[0])]
+        m1.environment += [constant_wind(0, 0), Water()]
+        m1.weatherers += [Evaporation()]
         m1.spills += point_line_release_spill(num_les[0], st_pos, stime,
                                               end_release_time=etime,
                                               substance=oil,
@@ -123,9 +105,8 @@ class TestDecayConst:
         m1.outputters += WeatheringOutput()
 
         m2 = Model(start_time=stime, time_step=ts)
-        m2.environment += constant_wind(0, 0)
-        m2.water = Water()
-        m2.weatherers += [Evaporation(m2.water, m2.environment[0])]
+        m2.environment += [constant_wind(0, 0), Water()]
+        m2.weatherers += [Evaporation()]
         m2.spills += point_line_release_spill(num_les[1], st_pos, stime,
                                               end_release_time=etime,
                                               substance=oil,
@@ -149,7 +130,7 @@ class TestDecayConst:
                 w2 = m2.step()['WeatheringOutput']
 
             if ix > 0:
-                for iy in xrange(4):
+                for _ in xrange(4):
                     w2 = m2.step()['WeatheringOutput']
 
                 val1 = w1.values()
@@ -164,12 +145,12 @@ class TestDecayConst:
                                                 timedelta(hours=4)])
     def test_evap_decay_const_vary_numLE(self, end_time_delay):
         '''
-        test checks the evaporation decay constant does not depend on the number
-        of elements.
+        test checks the evaporation decay constant does not depend on the
+        number of elements.
         '''
         # for a 15min timestep, make sure at least one LE per timestep is
         # released for test to work.
-        if end_time_delay == 0:
+        if end_time_delay.total_seconds() == 0:
             num_les_one_per_ts = 1
         else:
             num_les_one_per_ts = end_time_delay.total_seconds()/900.
@@ -184,6 +165,7 @@ class TestDecayConst:
             d_time1 = w1.pop('time_stamp')
             d_time2 = w2.pop('time_stamp')
 
+            print "Completed step ", ix
             assert d_time1 == d_time2
             assert np.allclose(w1.values(), w2.values())
 
