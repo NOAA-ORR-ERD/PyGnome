@@ -102,6 +102,10 @@ cdef extern from "GridCurrentMover_c.h":
         void             SetTimeShift(long timeShift)
         long             GetTimeShift()
         OSErr  			GetScaledVelocities(Seconds time, VelocityFRec *velocity)
+        LongPointHdl  GetPointsHdl()
+        TopologyHdl  GetTopologyHdl()
+        WORLDPOINTH  GetTriangleCenters()
+        long  GetNumTriangles()
 
 cdef extern from "IceMover_c.h":
 
@@ -109,12 +113,13 @@ cdef extern from "IceMover_c.h":
 
         IceMover_c ()
         WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
-        LongPointHdl  GetPointsHdl()
-        TopologyHdl  GetTopologyHdl()
-        WORLDPOINTH  GetTriangleCenters()
-        long  GetNumTriangles()
+#         LongPointHdl  GetPointsHdl()
+#         TopologyHdl  GetTopologyHdl()
+#         WORLDPOINTH  GetTriangleCenters()
+#         long  GetNumTriangles()
         OSErr  GetIceFields(Seconds time, double *fraction, double *thickness)
         OSErr  GetIceVelocities(Seconds time, VelocityFRec *ice_velocity)
+        OSErr  GetMovementVelocities(Seconds time, VelocityFRec *ice_velocity)
 
 cdef extern from "CurrentCycleMover_c.h":
 

@@ -82,9 +82,8 @@ def test_loop_gridcurrent():
 
 def test_ice_fields():
     """
-    test one time step with no uncertainty on the spill
+    test that data is loaded
     checks there is non-zero motion.
-    also checks the motion is same for all LEs
     """
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
@@ -93,10 +92,10 @@ def test_ice_fields():
     frac, thick = ice_mover.get_ice_fields(test_time)
 
     # fraction values between 0 and 1
-    assert (np.all(frac[:] <= 1) and np.all(frac[:] >= 0))
+    assert (np.all(frac[:] <= 1) and np.all(frac[:] >= 0) and not np.all(frac[:] == 0))
 
     # thickness >= 0, < 10 in this example...
-    assert (np.all(thick[:] <= 10) and np.all(thick[:] >= 0))
+    assert (np.all(thick[:] <= 10) and np.all(thick[:] >= 0) and not np.all(thick[:] == 0))
 
     # return frac, thick
 

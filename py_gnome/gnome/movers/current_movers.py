@@ -641,6 +641,15 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         self.mover.get_ice_velocities(model_time, vels)
         return vels
 
+    def get_movement_velocities(self, model_time):
+        """
+        :param model_time=0:
+        """
+        num_tri = self.mover.get_num_triangles()
+        vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
+        self.mover.get_movement_velocities(model_time, vels)
+        return vels
+
     def get_ice_fields(self, model_time):
         """
         :param model_time=0:

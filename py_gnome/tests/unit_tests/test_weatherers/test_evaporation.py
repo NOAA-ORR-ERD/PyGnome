@@ -97,7 +97,7 @@ class TestDecayConst:
 
         m1 = Model(start_time=stime, time_step=ts)
         m1.environment += [constant_wind(0, 0), Water()]
-        m1.weatherers += [Evaporation()]
+        m1.weatherers += Evaporation()
         m1.spills += point_line_release_spill(num_les[0], st_pos, stime,
                                               end_release_time=etime,
                                               substance=oil,
@@ -106,7 +106,7 @@ class TestDecayConst:
 
         m2 = Model(start_time=stime, time_step=ts)
         m2.environment += [constant_wind(0, 0), Water()]
-        m2.weatherers += [Evaporation()]
+        m2.weatherers += Evaporation()
         m2.spills += point_line_release_spill(num_les[1], st_pos, stime,
                                               end_release_time=etime,
                                               substance=oil,

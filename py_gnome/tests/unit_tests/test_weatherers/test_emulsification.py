@@ -16,6 +16,7 @@ from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 
 from ..conftest import (sample_sc_release,
+                        sample_model_fcn,
                         sample_model_weathering,
                         sample_model_weathering2,
                         test_oil)

@@ -1,10 +1,15 @@
-cimport numpy as cnp
-import numpy as np
 import os
 
+cimport numpy as cnp
+import numpy as np
+from libc.string cimport memcpy
+
 from type_defs cimport *
+from utils cimport _GetHandleSize
 from movers cimport Mover_c
 from current_movers cimport GridCurrentMover_c, CurrentMover_c
+
+from gnome import basic_types
 from gnome.cy_gnome.cy_mover cimport CyCurrentMoverBase
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 
@@ -207,6 +212,76 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         """
         if err == 2:
             raise ValueError("The value for spill type can only be 'forecast' or 'uncertainty' - you've chosen: " + str(spill_type))
+
+    def _get_points(self):
+        """
+            Invokes the GetPointsHdl method of TriGridVel_c object
+            to get the points for the grid
+        """
+        cdef short tmp_size = sizeof(LongPoint)
+        cdef LongPointHdl pts_hdl
+        cdef cnp.ndarray[LongPoint, ndim = 1] pts
+
+        # allocate memory and copy it over
+        pts_hdl = self.grid_current.GetPointsHdl()
+        sz = _GetHandleSize(<Handle>pts_hdl)
+
+        # will this always work?
+        pts = np.empty((sz / tmp_size,), dtype=basic_types.long_point)
+
+        memcpy(&pts[0], pts_hdl[0], sz)
+
+        return pts
+
+    def _get_center_points(self):
+        """
+            Invokes the GetTriangleCenters method of TriGridVel_c object
+            to get the velocities for the grid
+        """
+        cdef short tmp_size = sizeof(WorldPoint)
+        cdef WORLDPOINTH pts_hdl
+        cdef cnp.ndarray[WorldPoint, ndim = 1] pts
+
+        # allocate memory and copy it over
+        pts_hdl = self.grid_current.GetTriangleCenters()
+        sz = _GetHandleSize(<Handle>pts_hdl)
+
+        # will this always work?
+        pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+
+        memcpy(&pts[0], pts_hdl[0], sz)
+
+        return pts
+
+    def _get_triangle_data(self):
+        """
+            Invokes the GetToplogyHdl method of TriGridVel_c object
+            to get the velocities for the grid
+        """
+        cdef short tmp_size = sizeof(Topology)
+        cdef TopologyHdl top_hdl
+        cdef cnp.ndarray[Topology, ndim = 1] top
+
+        # allocate memory and copy it over
+        # should check that topology exists
+        top_hdl = self.grid_current.GetTopologyHdl()
+        sz = _GetHandleSize(<Handle>top_hdl)
+
+        # will this always work?
+        top = np.empty((sz / tmp_size,), dtype=basic_types.triangle_data)
+
+        memcpy(&top[0], top_hdl[0], sz)
+
+        return top
+
+    def get_num_triangles(self):
+        """
+            Invokes the GetNumTriangles method of TriGridVel_c object
+            to get the number of triangles
+        """
+        num_tri = self.grid_current.GetNumTriangles()
+
+        return num_tri
 
     def get_scaled_velocities(self, Seconds model_time,
                  cnp.ndarray[VelocityFRec] vels):
