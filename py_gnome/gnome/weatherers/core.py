@@ -68,10 +68,11 @@ class Weatherer(Process):
 
     def weather_elements(self, sc, time_step, model_time):
         '''
-        run the equivalent of get_move for weathering processes. It weathers
-        each component and returns the mass remaining at end of time_step. It
-        returns the mass in units of 'kg'
-        some objects do not implement this since they update arrays like 'area'
+        Run the equivalent of get_move for weathering processes. It modifies
+        the SpillContainer's data arrays; most weatherers update
+        'mass_components' and 'mass'
+
+        Some objects do not implement this since they update arrays like 'area'
         in model_step_is_done()
         '''
         pass
