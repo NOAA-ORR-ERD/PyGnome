@@ -12,12 +12,13 @@ API so that the pieces can be used individually.
 Basic Structure
 -------------------
 
-There are a handlful of core base classes you need to use PyGnome for anything
+There are a handful of core base classes you need to use PyGnome for anything
 useful:
 
 a model:
-   This is the main class that keeps track of all the pieces, runs the loop
-   through time, etc. The code comes with a full-featured version -- you may
+   This is the main class that contains objects used to model trajectory and
+   weathering processes. It runs the loop through time, etc.
+   The code comes with a full-featured version -- you may
    want a simpler one if you aren't doing a full-on oil spill model.
 
 movers:
