@@ -9,49 +9,39 @@ import numpy as np
 from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import (NaturalDispersion,
                               Evaporation,
-                              Emulsification,
-                              WeatheringData)
+                              Emulsification)
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 
-from ..conftest import (sample_sc_release,
-                        sample_model_fcn,
-                        sample_model_fcn2,
-                        sample_model_weathering,
+from conftest import weathering_data_arrays
+from ..conftest import (sample_model_weathering,
                         sample_model_weathering2)
 
 
 water = Water()
-wind = constant_wind(15., 270, 'knots')	#also test with lower wind no dispersion
+# also test with lower wind no dispersion
+wind = constant_wind(15., 270, 'knots')
 waves = Waves(wind, water)
-
-arrays = NaturalDispersion().array_types
-wd = WeatheringData(water)
-arrays.update(wd.array_types)
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                          [('ABU SAFAH', 311.15, 3, True),
-                           ('BAHIA', 311.15, 3, True),
-                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3, False)])
+                         [('ABU SAFAH', 311.15, 3, True),
+                          ('BAHIA', 311.15, 3, True),
+                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
+                           False)])
 def test_dispersion(oil, temp, num_elems, on):
     '''
     Fuel Oil #6 does not exist...
     '''
     et = floating(substance=oil)
-    sc = sample_sc_release(num_elements=num_elems,
-                           element_type=et,
-                           arr_types=arrays)
-    sc.amount = 10000
-    time_step = 15. * 60
-    wd.prepare_for_model_run(sc)
-    wd.update(sc.num_released, sc)
+    disp = NaturalDispersion(waves, water)
+    (sc, time_step) = weathering_data_arrays(disp.array_types,
+                                             water,
+                                             element_type=et)[:2]
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 
-    disp = NaturalDispersion(waves, water)
     disp.on = on
-
     disp.prepare_for_model_run(sc)
 
     print "oil"
@@ -67,28 +57,24 @@ def test_dispersion(oil, temp, num_elems, on):
         print "sc.weathering_data['sedimentation']"
         print sc.weathering_data['sedimentation']
     else:
-        #assert np.all(sc.weathering_data['natural_dispersion'] == 0)
         assert 'natural_dispersion' not in sc.weathering_data
         assert 'sedimentation' not in sc.weathering_data
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems'),
-                          [('ABU SAFAH', 288.15, 3)])
+                         [('ABU SAFAH', 288.15, 3)])
 def test_dispersion_not_active(oil, temp, num_elems):
     '''
     Fuel Oil #6 does not exist...
     '''
-    et = floating(substance=oil)
-    sc = sample_sc_release(num_elements=num_elems,
-                           element_type=et,
-                           arr_types=arrays)
+    disp = NaturalDispersion(waves, water)
+    (sc, time_step) = \
+        weathering_data_arrays(disp.array_types,
+                               water,
+                               element_type=floating(substance=oil))[:2]
     sc.amount = 10000
-    time_step = 15. * 60
-    wd.update(sc.num_released, sc)
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
-
-    disp = NaturalDispersion(waves, water)
 
     disp.prepare_for_model_run(sc)
 
@@ -101,8 +87,6 @@ def test_dispersion_not_active(oil, temp, num_elems):
 
     assert np.all(sc.weathering_data['natural_dispersion'] == 0)
     assert np.all(sc.weathering_data['sedimentation'] == 0)
-    #print "sc.weathering_data['natural_dispersion']"
-    #print sc.weathering_data['natural_dispersion']
 
 
 @pytest.mark.parametrize(('oil', 'temp'),
