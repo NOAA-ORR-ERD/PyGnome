@@ -11,8 +11,9 @@ from gnome.environment import constant_wind, Water
 from gnome.weatherers.spreading import FayGravityViscous
 from gnome.weatherers import Langmuir, WeatheringData
 from gnome.spill.elements import floating
-from ..conftest import (sample_sc_release,
-                        test_oil)
+#from ..conftest import (sample_sc_release,
+#                        test_oil)
+from .test_cleanup import ObjForTests
 
 # scalar inputs - for testing
 rel_buoy = 0.2  # relative_buoyancy of oil
@@ -30,14 +31,13 @@ def data_arrays(num_elems=10):
     bulk_init_volume = np.asarray([bulk_init_vol] * num_elems)
     age = np.zeros_like(bulk_init_volume, dtype=int)
     area = np.zeros_like(bulk_init_volume)
-    at_max_area = np.zeros(num_elems, dtype=bool)
 
-    return (bulk_init_volume, age, area, at_max_area)
+    return (bulk_init_volume, age, area)
 
 
 class TestFayGravityViscous:
     spread = FayGravityViscous()
-    spread.set_thickness_limit(1e-4)    # thickness_limit based on viscosity
+    spread._set_thickness_limit(1e-4)    # thickness_limit based on viscosity
 
     def expected(self, init_vol, p_age, dbuoy=rel_buoy):
         '''
@@ -67,14 +67,13 @@ class TestFayGravityViscous:
 
         with pytest.raises(ValueError):
             'age must be > 0'
-            (bulk_init_volume, relative_bouyancy, age, area, at_max_area) = \
+            (bulk_init_volume, relative_bouyancy, age, area) = \
                 data_arrays()
             self.spread.update_area(water_viscosity,
                                     relative_bouyancy,
                                     bulk_init_volume,
                                     age,
-                                    area,
-                                    at_max_area)
+                                    area)
 
     @pytest.mark.parametrize("num", (1, 10))
     def test_values_same_age(self, num):
@@ -82,7 +81,7 @@ class TestFayGravityViscous:
         Compare output of _init_area and _update_thickness to expected output
         returned by self.expected() function.
         '''
-        (bulk_init_volume, age, area, at_max_area) = \
+        (bulk_init_volume, age, area) = \
             data_arrays(num)
         area[:] = self.spread.init_area(water_viscosity,
                                         rel_buoy,
@@ -99,8 +98,7 @@ class TestFayGravityViscous:
                                 rel_buoy,
                                 bulk_init_volume,
                                 area,
-                                age,
-                                at_max_area)
+                                age)
 
         assert np.isclose(area.sum(), p_area)
 
@@ -109,7 +107,7 @@ class TestFayGravityViscous:
         test update_area works correctly for a continuous spill with varying
         age array
         '''
-        (bulk_init_volume, age, area, at_max_area) = \
+        (bulk_init_volume, age, area) = \
             data_arrays(10)
         (a0, area_900) = self.expected(bulk_init_volume[0], 900)
         age[0::2] = 900
@@ -124,8 +122,7 @@ class TestFayGravityViscous:
                                           rel_buoy,
                                           bulk_init_volume,
                                           area,
-                                          age,
-                                          at_max_area)
+                                          age)
         assert np.isclose(area[0::2].sum(), area_900)
         assert np.isclose(area[1::2].sum(), area_1800)
 
@@ -133,7 +130,7 @@ class TestFayGravityViscous:
         '''
         vary bulk_init_vol and age
         '''
-        (bulk_init_volume, age, area, at_max_area) = \
+        (bulk_init_volume, age, area) = \
             data_arrays(10)
         age[0::2] = 900
         bulk_init_volume[0::2] = 60
@@ -149,8 +146,7 @@ class TestFayGravityViscous:
                                           rel_buoy,
                                           bulk_init_volume,
                                           area,
-                                          age,
-                                          at_max_area)
+                                          age)
         assert np.isclose(area[0::2].sum(), area_900)
         assert np.isclose(area[1::2].sum(), area_1800)
 
@@ -158,7 +154,7 @@ class TestFayGravityViscous:
         '''
         tests that when blob reaches minimum thickness, area no longer changes
         '''
-        (bulk_init_volume, age, area, at_max_area) = \
+        (bulk_init_volume, age, area) = \
             data_arrays()
         area[:] = self.spread.init_area(water_viscosity,
                                         rel_buoy,
@@ -180,11 +176,8 @@ class TestFayGravityViscous:
                                 rel_buoy,
                                 bulk_init_volume,
                                 area,
-                                age,
-                                at_max_area)
+                                age)
         assert np.all(area[:4] == i_area)
-        assert all(at_max_area[:4])
-        assert not all(at_max_area[4:])
         assert np.all(area[4:] < i_area)
 
 
@@ -228,8 +221,10 @@ class TestLangmuir:
         assert updated
         assert self.l.serialize() == j
 
+    @pytest.mark.xfail(reason="still working on test")
     def test_weather_elements(self):
         l = Langmuir(self.water, constant_wind(5., 0.))
+        #(self.sc, self.weatherers) = ObjForTests.mk_test_objs()
 
         # create WeatheringData object, initialize instantaneously released
         # elements

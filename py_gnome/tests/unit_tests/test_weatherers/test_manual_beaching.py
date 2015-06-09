@@ -38,7 +38,7 @@ def test_init(timeseries, units):
 
 
 class TestBeaching(ObjForTests):
-    (sc, wd) = ObjForTests.mk_test_objs()
+    (sc, weatherers) = ObjForTests.mk_test_objs()
     sc.spills[0].set('release_time', active_start)
     b = Beaching(active_start, 'l', timeseries, name='test_beaching')
     substance = sc.spills[0].get('substance')
@@ -92,22 +92,14 @@ class TestBeaching(ObjForTests):
 
             amt = self.sc.weathering_data['observed_beached']
 
-            num_rel = self.sc.release_elements(time_step, model_time)
-            self.intrinsic.update(num_rel, self.sc)
-            self.b.prepare_for_model_step(self.sc, time_step, model_time)
-
-            self.b.weather_elements(self.sc, time_step, model_time)
+            self.release_elements(time_step, model_time)
+            self.step(self.b, time_step, model_time)
 
             if not self.b.active:
                 assert self.sc.weathering_data['observed_beached'] == amt
             else:
                 # check total amount removed at each timestep
                 assert self.sc.weathering_data['observed_beached'] > amt
-
-            self.b.model_step_is_done(self.sc)
-            self.sc.model_step_is_done()
-            # model would do the following
-            self.sc['age'][:] = self.sc['age'][:] + time_step
             model_time += timedelta(seconds=time_step)
 
             # check - useful for debugging issues with recursion

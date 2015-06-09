@@ -1,8 +1,6 @@
 '''
 Test emulsification module
 '''
-import os
-import json
 from datetime import timedelta
 
 import pytest
@@ -10,25 +8,20 @@ import numpy as np
 
 from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import (Emulsification,
-                              Evaporation,
-                              WeatheringData)
+                              Evaporation)
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 
-from ..conftest import (sample_sc_release,
-                        sample_model_fcn,
-                        sample_model_weathering,
+from conftest import weathering_data_arrays
+
+from ..conftest import (sample_model_weathering,
                         sample_model_weathering2,
                         test_oil)
 
 
 water = Water()
-wind = constant_wind(15., 0)	#also test with lower wind no emulsification
+wind = constant_wind(15., 0)	# also test with lower wind no emulsification
 waves = Waves(wind, water)
-
-arrays = Emulsification().array_types
-wd = WeatheringData(water)
-arrays.update(wd.array_types)
 
 # need an oil that emulsifies and one that does not
 #s_oils = [test_oil, 'FUEL OIL NO.6']
@@ -42,19 +35,15 @@ def test_emulsification(oil, temp, num_elems, on):
     '''
     Fuel Oil #6 does not emulsify
     '''
-    et = floating(substance=oil)
-    time_step = 15. * 60
-    sc = sample_sc_release(num_elements=num_elems,
-                           element_type=et,
-                           arr_types=arrays,
-                           time_step=time_step)
-    wd.prepare_for_model_run(sc)
-    wd.update(sc.num_released, sc)
-    model_time = (sc.spills[0].get('release_time') +
-                  timedelta(seconds=time_step))
-
     emul = Emulsification(waves)
     emul.on = on
+
+    (sc, time_step) = \
+        weathering_data_arrays(emul.array_types,
+                               water,
+                               element_type=floating(substance=oil))[:2]
+    model_time = (sc.spills[0].get('release_time') +
+                  timedelta(seconds=time_step))
 
     emul.prepare_for_model_run(sc)
 
@@ -149,6 +138,7 @@ def test_bullwinkle():
     assert et.substance.bullwinkle == .303
     et.substance.bullwinkle = .4
     assert et.substance.bullwinkle == .4
+
 
 def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'

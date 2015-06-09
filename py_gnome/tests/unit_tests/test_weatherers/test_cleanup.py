@@ -3,10 +3,9 @@ tests for cleanup options
 '''
 from datetime import datetime, timedelta
 
-from pytest import mark
 import numpy as np
 import unit_conversion as uc
-from pytest import mark, raises
+from pytest import raises, mark
 
 from gnome.basic_types import oil_status, fate
 from gnome.weatherers import WeatheringData, FayGravityViscous
@@ -18,7 +17,7 @@ from gnome.spill import point_line_release_spill
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Waves, constant_wind, Water
 
-from ..conftest import test_oil
+from conftest import test_oil
 
 delay = 1.
 time_step = 900
