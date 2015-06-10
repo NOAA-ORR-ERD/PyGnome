@@ -269,7 +269,12 @@ class FayGravityViscous(Weatherer, Serializable):
         Currently, carrying both 'fay_area' and 'area', but should drop
         'fay_area' eventually. 'area' gets initialized and updated the same
         as 'fay_area'; however, Langmuir updates 'area'.
+
+        If on is False, then arrays should not be included - dont' initialize
         '''
+        if not self.on:
+            return
+
         # do this once incase there are any unit conversions, it only needs to
         # happen once - for efficiency
         water_kvis = self.water.get('kinematic_viscosity',
@@ -340,6 +345,12 @@ class ConstantArea(Weatherer, Serializable):
         self.array_types.update({'fay_area'})
 
     def initialize_data(self, sc):
+        '''
+        If on is False, then arrays should not be included - dont' initialize
+        '''
+        if not self.on:
+            return
+
         for _, data in sc.itersubstancedata(self.array_types):
             if len(data['fay_area']) == 0:
                 continue

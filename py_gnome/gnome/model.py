@@ -514,32 +514,52 @@ class Model(Serializable):
         attr['waves'] = self.find_by_attr('_ref_as', 'waves', self.environment)
 
         weather_data = set()
+        wd = None
+        spread = None
         for coll in ('environment', 'weatherers', 'movers'):
             for item in getattr(self, coll):
 
-                if coll == 'weatherers' and item.on:
-                    weather_data.update(item.array_types)
+                if coll == 'weatherers':
+                    # by default turn WeatheringData and spreading object off
+                    if isinstance(item, WeatheringData):
+                        item.on = False
+                        wd = item
+
+                    try:
+                        if item._ref_as == 'spreading':
+                            item.on = False
+                            spread = item
+
+                    except AttributeError:
+                        pass
+
+                    if item.on:
+                        weather_data.update(item.array_types)
+
+                if hasattr(item, 'on') and not item.on:
+                    # no need to setup references if item is not on
+                    continue
 
                 for name, val in attr.iteritems():
                     if hasattr(item, name) and item.make_default_refs:
                         setattr(item, name, val)
 
-        if 'mass_components' in weather_data:
-            # if WeatheringData object and FayGravityViscous (spreading object)
-            # are not defined by user, add them automatically becuase most
-            # weatherers will need these
-            # check to see if we have a WeatheringData object in weatherers
-            wd = self.find_by_class(WeatheringData, self.weatherers)
-
+        # if WeatheringData object and FayGravityViscous (spreading object)
+        # are not defined by user, add them automatically because most
+        # weatherers will need these
+        if len(weather_data) > 0:
             if wd is None:
                 self.weatherers += WeatheringData(attr['water'])
+            else:
+                wd.on = True
 
+        # if a weatherer is using 'area' array, make sure it is being set.
+        # Objects that set 'area' are referenced as 'spreading'
         if 'area' in weather_data:
-            # if a weatherer is using 'area' array, make sure it is being set
-            # correctly. Objects that set 'area' are referenced as 'spreading'
-            spread = self.find_by_attr('_ref_as', 'spreading', self.weatherers)
             if spread is None:
                 self.weatherers += FayGravityViscous(attr['water'])
+            else:
+                spread.on = True
 
     def setup_model_run(self):
         '''

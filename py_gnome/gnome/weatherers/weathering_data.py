@@ -67,9 +67,14 @@ class WeatheringData(Weatherer, Serializable):
 
     def initialize_data(self, sc, num_released):
         '''
+        If on is False, then arrays should not be included - dont' initialize
+
         1. initialize all weathering data arrays
         2. update aggregated data in sc.weathering_data dict
         '''
+        if not self.on:
+            return
+
         for substance, data in sc.itersubstancedata(self.array_types,
                                                     fate='all'):
             'update properties only if elements are released'

@@ -861,14 +861,19 @@ def test_setup_model_run(model):
     # no exp_keys in model data_arrays
     assert not exp_keys.intersection(model.spills.LE_data)
 
-    model.weatherers += HalfLifeWeatherer()
-    model.movers += gnome.movers.constant_wind_mover(1., 0.)
+    cwm = gnome.movers.constant_wind_mover(1., 0.)
+
+    model.weatherers += [HalfLifeWeatherer(), Evaporation()]
+    model.movers += cwm
     model.rewind()
     model.step()
+
     assert exp_keys.issubset(model.spills.LE_data)
 
-    model.movers[-1].on = False
-    model.weatherers[-1].on = False
+    cwm.on = False
+    for w in xrange(2):
+        model.weatherers[w].on = False
+
     model.rewind()
     model.step()
     assert not exp_keys.intersection(model.spills.LE_data)
@@ -1040,7 +1045,8 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
 
 @pytest.mark.parametrize(("s0", "s1"),
                          [(test_oil, test_oil),
-                          (test_oil, "ARABIAN MEDIUM, EXXON")])
+                          #(test_oil, "ARABIAN MEDIUM, EXXON")
+                          ])
 def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     '''
     only tests data arrays are correct and we don't end up with stale data
@@ -1253,24 +1259,28 @@ def test_weatherer_sort():
 
     model.environment += [Water(), constant_wind(5, 0), Waves()]
     model.weatherers += weatherers
-    assert model.weatherers.values() != exp_order
+
+    # WeatheringData and FayGravityViscous automatically get added to
+    # weatherers. Only do assertion on weatherers contained in list above
+    assert model.weatherers.values()[:len(exp_order)] != exp_order
 
     model.setup_model_run()
-    assert model.weatherers.values() == exp_order
+
+    assert model.weatherers.values()[:len(exp_order)] == exp_order
 
     # check second time around order is kept
     model.rewind()
-    assert model.weatherers.values() == exp_order
+    assert model.weatherers.values()[:len(exp_order)] == exp_order
 
     # Burn, ChemicalDispersion are at same sorting level so appending another Burn to
     # end of the list will sort it to be just after ChemicalDispersion so index 2
     burn = Burn(50, 1, active_start=datetime(2014, 1, 1, 0, 0))
     exp_order.insert(2, burn)
     model.weatherers += exp_order[2]  # add this and check sorting still works
-    assert model.weatherers.values() != exp_order
+    assert model.weatherers.values()[:len(exp_order)] != exp_order
 
     model.setup_model_run()
-    assert model.weatherers.values() == exp_order
+    assert model.weatherers.values()[:len(exp_order)] == exp_order
 
 
 class TestValidateModel():
