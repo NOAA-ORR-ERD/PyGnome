@@ -226,7 +226,11 @@ class Evaporation(Weatherer, Serializable):
 class BlobEvaporation(Evaporation):
     '''
     playing around with blob evaporation and time varying fay_area
-    experimental
+    experimental code - not currently used by Model.
+    Testing out the algorithm in ipython notebooks.
+
+    See documentation in source code:
+        gnome/documentation/evaporation/blob_evap.ipynb
     '''
     def _set_evap_decay_constant(self, model_time, data, substance, time_step):
         '''
