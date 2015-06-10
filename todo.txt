@@ -1,0 +1,87 @@
+WIP - finish by 5/12/2015:
+===========================
+- remove particles that go off maps - this afternoon
+
+WeatheringData() and spreading objects automatically added:
+- must be the last thing we do in weather_elements() -- before age is incremented
+- make sure spreading works fine
+- Also, should weatherers have active_start/active_stop? 'area' is now coupled with other weatherers so it isn't always present
+- Langmuir must happen in weather_elements, but it must get initialized after spreading initializes 'area'
+- add tests for Langmuir integrated into model. Maybe include 'area', remove 'fay_area' and
+  include 'frac_coverage' data array
+- fix broken tests in test_weathering_data()
+
+- clean up Model to use iscollection for fields and base class methods
+- API documentation for movers, weatherers (Process). Save/Load
+
+- update spills to end_position equals start_position, end_release_time, release_time
+
+======================
+
+ISSUES:
+-------
+oil_library:
+- get_oil_props() not working for some oils
+
+Model:
+------
+- cleanup Model code - lots of rewinds. Need to check for None. time_step can be int or timedelta
+
+Model should update some data in sc.weathering_data dict:
+- some keys like 'beached' and 'off_maps' - should be present for traj also. Let model
+  or sc set these instead of WeatheringData(). This is aggregated data.
+
+Model validation:
+- double check lat/long - do validation in Model for lat/long of Wind
+- model needs to check if spill is in the Map's spillable area - add to validate()
+- also check if spill is onland   
+
+Model exceptions:
+- added exceptions, though not used everywhere - need to raise gnome exceptions
+
+Documentation:
+- move evaporation notebooks to documentation
+- model exponential decay versus euler method 
+
+Colander schemas/save/load:
+- revisit serialize/deserialize NumpyArraySchema + inefficiency in serial/deserial wind structure
+- could refactor and make serialize/deserialize more general and put it in base class
+- document various mixins and base classes
+- colander.drop doesn't seem to work for LocalDateTime() objects - need to dig into this with simple example
+- scale_refpoint not being deserialized if only (long, lat) is given!
+
+Weathering: 
+- BIODEGRADATION
+- once LEs get marked for cleanup, should they be included for updating intrinsic - ask? 
+  Mostly effects spreading
+- automatically stop when 'mass' % reaches X%
+- added split_element() but is incomplete. Currently only required for cleanup.
+
+__eq__:
+--------
+- want a way to tell which objects and which attributes are different when eq fails
+
+pytest issues:
+---------------
+- py.test -n 4 --runslow --basetemp=dump fails, but
+  py.test -n 4 --runslow passes .. need to figure out why
+- some way for pytest to skip tests for missing data
+
+
+Big refactors/todos:
+====================
+SpillContainer:
+Generalize concept of subselecting LE data:
+-------------------------------------------
+- revisit concept of FateDataView() in SpillContainer integrate 'status_codes' and 'fate_status'
+- want a bit array for 'status' of each LE which includes weathering
+- movers or weatherers should be able to get LE data by 'status' or by 'substance' and 'status'
+- new code in there without adequate tests
+
+
+outputters/netcdf_outputter
+----------------------------
+- want ability to get data at specified timesteps 
+- for Renderer, change images_dir to output_dir - consistent w/ other outputters
+- active_start = active_stop only raises exception on __init__ .. make it so it always raises exception?
+
