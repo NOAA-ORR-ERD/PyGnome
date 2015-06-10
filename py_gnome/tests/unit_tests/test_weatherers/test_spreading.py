@@ -9,10 +9,6 @@ import pytest
 from gnome import constants
 from gnome.environment import constant_wind, Water
 from gnome.weatherers.spreading import FayGravityViscous
-from gnome.weatherers import Langmuir, WeatheringData
-from gnome.spill.elements import floating
-#from ..conftest import (sample_sc_release,
-#                        test_oil)
 from .test_cleanup import ObjForTests
 
 # scalar inputs - for testing
