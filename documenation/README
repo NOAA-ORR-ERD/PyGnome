@@ -1,0 +1,16 @@
+This folder contains documentation about alogithms and QA/QC testing.
+
+For API documenation specifically for 'gnome' project, look in
+./py_gnome/documenation
+
+Contents:
+==========
+
+*. weathering/. - documentation of weathering algorithms
+
+   *. burn.ipynb - no code, only documenation of burn algorithm. Should probably
+      just be a latex file
+
+   *. evaporation/. - folder contains ipython notebooks used for testing
+      evaporation algorithms and comparing the new algorithm in GnomeAdios
+      with Adios2 output
