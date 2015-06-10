@@ -1,0 +1,11 @@
+This folder contains documentation about alogithms and QA/QC testing.
+
+For API documenation specifically for 'gnome' project, look in
+./py_gnome/documenation
+
+Contents:
+==========
+
+*. evaporation/. - folder contains ipython notebooks used for testing
+   evaporation algorithms and comparing the new algorithm in GnomeAdios agianst
+   Adios 2
