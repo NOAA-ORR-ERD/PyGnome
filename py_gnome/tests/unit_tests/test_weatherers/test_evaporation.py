@@ -112,7 +112,7 @@ class TestDecayConst:
         m2.outputters += WeatheringOutput()
         return (m1, m2)
 
-    @pytest.mark.skipif
+    @pytest.mark.skipif(reason="not sure how to test dependence on timestep")
     def test_evap_decay_const_vary_ts(self, delay=timedelta(0)):
         '''
         evap decay constant does depend on timestep since thickness has a

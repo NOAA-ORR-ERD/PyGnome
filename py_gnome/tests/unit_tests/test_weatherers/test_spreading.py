@@ -8,7 +8,7 @@ import pytest
 
 from gnome import constants
 from gnome.environment import constant_wind, Water
-from gnome.weatherers.spreading import FayGravityViscous
+from gnome.weatherers import FayGravityViscous, Langmuir
 from .test_cleanup import ObjForTests
 
 # scalar inputs - for testing
