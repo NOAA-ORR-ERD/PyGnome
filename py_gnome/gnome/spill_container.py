@@ -30,6 +30,7 @@ from gnome.array_types import (positions,
 from gnome.utilities.orderedcollection import OrderedCollection
 import gnome.spill
 from gnome import AddLogger
+from gnome.exceptions import GnomeRuntimeError
 
 
 # Organize information about spills per substance
@@ -576,7 +577,7 @@ class SpillContainer(AddLogger, SpillContainerData):
                     msg = ("Skipping {0} - not found in gnome.array_types;"
                            " and ArrayType is not provided.").format(array)
                     self.logger.error(msg)
-                    continue
+                    raise GnomeRuntimeError(msg)
 
             # must be an ArrayType of an object
             self._array_types[array.name] = array

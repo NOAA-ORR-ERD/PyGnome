@@ -394,7 +394,7 @@ class Langmuir(Weatherer, Serializable):
         initialize wind to (0, 0) if it is None
         '''
         super(Langmuir, self).__init__(**kwargs)
-        self.array_types.update(('area', 'at_max_area'))
+        self.array_types.update(('area', 'frac_coverage'))
 
         if wind is None:
             self.wind = constant_wind(0, 0)
@@ -421,18 +421,10 @@ class Langmuir(Weatherer, Serializable):
             (v_max**2 * 4 * np.pi**2/(thickness * rel_buoy * gravity))**(1./3)
         frac_cov = 1./cr_k
 
-        # if rel_buoy is an array, then frac_cov will be an array
-        if not isinstance(frac_cov, np.ndarray):
-            frac_cov = np.asarray([frac_cov], np.float64)
-
         frac_cov[frac_cov < 0.1] = 0.1
         frac_cov[frac_cov > 1.0] = 1.0
 
-        if isinstance(cr_k, np.ndarray):
-            return frac_cov
-        else:
-            # must be a scalar
-            return frac_cov[0]
+        return frac_cov
 
     def _wind_speed_bound(self, rel_buoy, thickness):
         '''
@@ -449,23 +441,35 @@ class Langmuir(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         '''
         set the 'area' array based on the Langmuir process
+        This only applies to particles marked for weathering on the surface:
+        ie fate_status is surface_weather
         '''
         if not self.active or sc.num_released == 0:
             return
 
         rho_h2o = self.water.get('density', 'kg/m^3')
-        for _, data in sc.itersubstancedata(self.array_types,
-                                            fate='all'):
-            # need thickness for blob of oil released together - need to
-            # compute per spill
-            thickness = 1.0
+        for _, data in sc.itersubstancedata(self.array_types):
+            for s_num in np.unique(data['spill_num']):
+                s_mask = data['spill_num'] == s_num
+                # thickness for blob of oil released together - need per spill
+                # Use the 'bulk_init_volume' and the 'fay_area' of the
+                # blob of oil. Each LE used to model the blob will have the
+                # same thickness. In order to get the 'fay_area' for the blob
+                # of oil released at same time, from same spill, sum
+                # the 'fay_area' array for elements that belong to same oil
+                # blob.
+                thickness = (data['bulk_init_volume'][s_mask][0] /
+                             data['fay_area'][s_mask].sum())
 
-            # assume only one type of oil is modeled so thickness_limit is
-            # already set and constant for all
-            rel_buoy = (rho_h2o - data['density'])/rho_h2o
-            data['area'] *= self._get_frac_coverage(model_time,
-                                                    rel_buoy,
-                                                    thickness)
+                # assume only one type of oil is modeled so thickness_limit is
+                # already set and constant for all
+                rel_buoy = (rho_h2o - data['density'][s_mask])/rho_h2o
+                data['frac_coverage'][s_mask] = \
+                    self._get_frac_coverage(model_time, rel_buoy, thickness)
+
+            # update 'area'
+            data['area'][:] = data['fay_area'] * data['frac_coverage']
+
         sc.update_from_fatedataview()
 
     def serialize(self, json_='webapi'):
