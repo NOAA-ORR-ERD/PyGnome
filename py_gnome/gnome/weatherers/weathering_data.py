@@ -40,7 +40,12 @@ class WeatheringData(Weatherer, Serializable):
 
     def __init__(self, water, **kwargs):
         '''
-        XXX
+        initialize object.
+
+        :param water: requires a water object
+        :type water: gnome.environment.Water
+
+        Options arguments kwargs: these get passed to base class via super
         '''
         super(WeatheringData, self).__init__(**kwargs)
         self.water = water
