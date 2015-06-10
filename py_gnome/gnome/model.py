@@ -735,6 +735,13 @@ class Model(Serializable):
             for sc in self.spills.items():
                 mover.model_step_is_done(sc)
 
+        for w in self.weatherers:
+            for sc in self.spills.items():
+                w.model_step_is_done(sc)
+
+        for outputter in self.outputters:
+            outputter.model_step_is_done()
+
         for sc in self.spills.items():
             '''
             removes elements with oil_status.to_be_removed
@@ -743,14 +750,6 @@ class Model(Serializable):
 
             # age remaining particles
             sc['age'][:] = sc['age'][:] + self.time_step
-
-        # update 'area' from spreading + langmuir after incrementing age
-        for w in self.weatherers:
-            for sc in self.spills.items():
-                w.model_step_is_done(sc)
-
-        for outputter in self.outputters:
-            outputter.model_step_is_done()
 
     def write_output(self, valid, messages=None):
         output_info = {}

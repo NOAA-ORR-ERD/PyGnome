@@ -143,7 +143,7 @@ class HalfLifeWeatherer(Weatherer, Serializable):
             return
 
         arrays = ['mass_components', 'mass']
-        for substance, data in sc.itersubstancedata(arrays):
+        for _, data in sc.itersubstancedata(arrays):
             hl = self._halflife(data['mass_components'],
                                 self.half_lives, time_step)
             data['mass_components'][:] = hl

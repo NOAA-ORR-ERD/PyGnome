@@ -91,7 +91,11 @@ class WeatheringData(Weatherer, Serializable):
 
     def weather_elements(self, sc, time_step, model_time):
         '''
-        update intrinsic property data arrays: density, viscosity.
+        Update intrinsic property data arrays: density, viscosity.
+        In a model step, this is the last thing that happens. All the
+        weatherers update 'mass_components' so mass_fraction will have changed
+        at the end of the timestep. Update the density and viscosity
+        accordingly.
         '''
         water_rho = self.water.get('density')
 
@@ -104,10 +108,10 @@ class WeatheringData(Weatherer, Serializable):
             k_rho = self._get_k_rho_weathering_dens_update(substance)
 
             # sub-select mass_components array by substance.num_components.
-            # Currently, the physics for modeling multiple spills with different
-            # substances is not being correctly done in the same model. However,
+            # Currently, physics for modeling multiple spills with different
+            # substances is not correctly done in the same model. However,
             # let's put some basic code in place so the data arrays can infact
-            # contain two substances and the code does not raise exceptions. The
+            # contain two substances and the code does not raise exceptions.
             # mass_components are zero padded for substance which has fewer
             # psuedocomponents. Subselecting mass_components array by
             # [mask, :substance.num_components] ensures numpy operations work

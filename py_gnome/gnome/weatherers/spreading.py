@@ -301,9 +301,11 @@ class FayGravityViscous(Weatherer, Serializable):
 
         sc.update_from_fatedataview()
 
-    def model_step_is_done(self, sc):
+    def weather_elements(self, sc, time_step, model_time):
         '''
-        update 'area', 'fay_area' for previously released particles
+        Update 'area', 'fay_area' for previously released particles
+        The updated 'area', 'fay_area' is associated with age of particles at:
+            model_time + time_step
         '''
         water_kvis = self.water.get('kinematic_viscosity',
                                     'square meter per second')
@@ -318,7 +320,7 @@ class FayGravityViscous(Weatherer, Serializable):
                                      self._init_relative_buoyancy,
                                      data['bulk_init_volume'][s_mask],
                                      data['fay_area'][s_mask],
-                                     data['age'][s_mask])
+                                     data['age'][s_mask] + time_step)
                 data['area'][s_mask] = data['fay_area'][s_mask]
 
         sc.update_from_fatedataview()
@@ -338,7 +340,7 @@ class ConstantArea(Weatherer, Serializable):
         self.array_types.update({'fay_area'})
 
     def initialize_data(self, sc):
-        for substance, data in sc.itersubstancedata(self.array_types):
+        for _, data in sc.itersubstancedata(self.array_types):
             if len(data['fay_area']) == 0:
                 continue
 
@@ -348,7 +350,7 @@ class ConstantArea(Weatherer, Serializable):
 
         sc.update_from_fatedataview()
 
-    def model_step_is_done(self, sc):
+    def weather_elements(self, sc, time_step, model_time):
         '''
         return the area array as it was entered since that contains area per
         LE if there is more than one LE. Kept the interface the same as
@@ -442,7 +444,7 @@ class Langmuir(Weatherer, Serializable):
 
         rho_h2o = self.water.get('density', 'kg/m^3')
         for _, data in sc.itersubstancedata(self.array_types,
-                                                    fate='all'):
+                                            fate='all'):
             # need thickness for blob of oil released together - need to
             # compute per spill
             thickness = 1.0

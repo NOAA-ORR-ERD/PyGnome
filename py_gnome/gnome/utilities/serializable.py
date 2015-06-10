@@ -46,7 +46,7 @@ class Field(object):  # ,serializable.Serializable):
         :param bool isdatafile=False: Is the property a datafile that should be
             moved during persistence?
         :param bool update=False: Is the property update-able by the web app?
-        :param bool create=False: Is the property required to re-create the
+        :param bool save=False: Is the property required to re-create the
             object when loading from a save file?
         :param bool read=False: If property is not updateable, perhaps make it
             read only so web app has information about the object
