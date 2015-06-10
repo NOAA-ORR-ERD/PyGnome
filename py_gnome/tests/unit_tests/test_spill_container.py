@@ -28,6 +28,8 @@ from gnome.utilities.distributions import UniformDistribution
 
 from gnome.spill_container import SpillContainer, SpillContainerPair
 from gnome.spill import point_line_release_spill, Spill, Release
+from gnome.exceptions import GnomeRuntimeError
+
 from conftest import test_oil
 
 
@@ -381,14 +383,16 @@ class TestAddArrayTypes:
     def test_bad_array_types_prepare_for_model_run(self):
         """
         Can add a new array type via prepare_for_model_run()
-        at the beginning of the run
+        at the beginning of the run - if an unknown array_type is added,
+        raise an exception
         """
         self.default_arraytypes()
-        self.sc.prepare_for_model_run(array_types={'junk', self.new_at,
-                                                   'mass'})
+        self.sc.prepare_for_model_run(array_types={self.new_at, 'mass'})
         assert 'new_name' in self.sc.array_types
-        assert 'junk' not in self.sc.array_types
         assert 'mass' in self.sc.array_types
+
+        with raises(GnomeRuntimeError):
+            self.sc.prepare_for_model_run(array_types={'unknown'})
 
     def test_addto_array_types_via_data_array(self):
         """
