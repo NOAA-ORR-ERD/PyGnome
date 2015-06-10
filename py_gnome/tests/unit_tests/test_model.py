@@ -1045,13 +1045,17 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
 
 @pytest.mark.parametrize(("s0", "s1"),
                          [(test_oil, test_oil),
-                          #(test_oil, "ARABIAN MEDIUM, EXXON")
+                          (test_oil, "ARABIAN MEDIUM, EXXON")
                           ])
 def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     '''
     only tests data arrays are correct and we don't end up with stale data
     in substance_data structure of spill container. It models each substance
     independently
+
+    We don't accurately model two oils at present. This is a basic test,
+    maybe a useful example when extending code to multiple oils. It is also
+    useful for catching bugs when doing a refactor so leave it in.
     '''
     model = sample_model_weathering(sample_model_fcn, s0)
     model.map = gnome.map.GnomeMap()    # make it all water

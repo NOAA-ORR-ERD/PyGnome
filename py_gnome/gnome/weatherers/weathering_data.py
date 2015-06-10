@@ -85,8 +85,8 @@ class WeatheringData(Weatherer, Serializable):
             # we might end up changing 'age' to something other than 0
             # model should only call initialize_data if new particles were
             # released
-            if num_released > 0:
-                new_LEs_mask = data['density'] == 0
+            new_LEs_mask = data['density'] == 0
+            if np.any(new_LEs_mask):
                 self._init_new_particles(new_LEs_mask, data, substance)
 
         sc.update_from_fatedataview(fate='all')

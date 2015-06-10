@@ -49,7 +49,7 @@ class FayGravityViscous(Weatherer, Serializable):
         # can be set
         self.water = water
         self.array_types.update({'fay_area', 'area', 'spill_num',
-                                 'bulk_init_volume', 'age'})
+                                 'bulk_init_volume', 'age', 'density'})
         # relative_bouyancy - use density at release time. For now
         # temperature is fixed so just compute once and store. When temperature
         # varies over time, may want to do something different
