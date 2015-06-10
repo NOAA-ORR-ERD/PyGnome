@@ -287,7 +287,7 @@ class Test_RasterMap:
         gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
                          map_bounds=((-50, -30), (-50, 30), (50, 30),
                          (50, -30)), projection=NoProjection(),
-                         spillable_area=poly)  # hours
+                         spillable_area=[poly])  # hours
 
         # cases that are spillable
 
@@ -563,7 +563,7 @@ def test_update_from_dict_MapFromBNA():
     serial = gmap.serialize('webapi')
     dict_ = gnome.map.MapFromBNA.deserialize(serial)
     dict_['map_bounds'] = [(-10, 10), (10, 10), (10, -10), (-10, -10)]
-    dict_['spillable_area'] = [(-5, 5), (5, 5), (5, -5), (-5, -5)]
+    dict_['spillable_area'] = [[(-5, 5), (5, 5), (5, -5), (-5, -5)]]
     dict_['refloat_halflife'] = 2
     gmap.update_from_dict(dict_)
     u_json = gmap.serialize('webapi')

@@ -51,6 +51,12 @@ class LongLatBounds(SequenceSchema):
     'Used to define bounds on a map'
     bounds = LongLat()
 
+Polygon = LongLatBounds
+
+
+class PolygonSet(SequenceSchema):
+    polygonset = Polygon()
+
 
 class WorldPoint(LongLat):
     'Used to define reference points. 3D positions (long,lat,z)'
