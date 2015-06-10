@@ -82,7 +82,7 @@ class TestBeaching(ObjForTests):
         total = self.sc.spills[0].get_mass()
         model_time = self.sc.spills[0].get('release_time')
 
-        self.reset_test_objs()
+        self.prepare_test_objs()
         self.b.prepare_for_model_run(self.sc)
 
         assert self.sc.weathering_data['observed_beached'] == 0.0

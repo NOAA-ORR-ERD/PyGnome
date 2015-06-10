@@ -8,10 +8,14 @@ import unit_conversion as uc
 from pytest import raises, mark
 
 from gnome.basic_types import oil_status, fate
-from gnome.weatherers import WeatheringData, FayGravityViscous
 
 from gnome.weatherers.cleanup import CleanUpBase
-from gnome.weatherers import Skimmer, Burn, ChemicalDispersion, weatherer_sort
+from gnome.weatherers import (WeatheringData,
+                              FayGravityViscous,
+                              Skimmer,
+                              Burn,
+                              ChemicalDispersion,
+                              weatherer_sort)
 from gnome.spill_container import SpillContainer
 from gnome.spill import point_line_release_spill
 from gnome.utilities.inf_datetime import InfDateTime
@@ -31,7 +35,7 @@ units = 'kg'    # leave as SI units
 
 class ObjForTests:
     @classmethod
-    def mk_test_objs(cls):
+    def mk_test_objs(cls, water=None):
         '''
         create SpillContainer and test WeatheringData object test objects so
         we can run Skimmer, Burn like a model without using a full on Model
@@ -41,7 +45,8 @@ class ObjForTests:
         '''
         # spreading does not need to be initialized correctly for these tests,
         # but since we are mocking the model, let's do it correctly
-        water = Water()
+        if water is None:
+            water = Water()
 
         # keep this order
         weatherers = [WeatheringData(water), FayGravityViscous(water)]
@@ -55,7 +60,7 @@ class ObjForTests:
                                               units='kg')
         return (sc, weatherers)
 
-    def reset_test_objs(self):
+    def prepare_test_objs(self, obj_arrays=None):
         '''
         reset test objects
         '''
@@ -68,13 +73,16 @@ class ObjForTests:
             wd.prepare_for_model_run(self.sc)
             at.update(wd.array_types)
 
+        if obj_arrays is not None:
+            at.update(obj_arrays)
+
         self.sc.prepare_for_model_run(at)
 
     def reset_and_release(self, rel_time=None, time_step=900.0):
         '''
         reset test objects and relaese elements
         '''
-        self.reset_test_objs()
+        self.prepare_test_objs()
         if rel_time is None:
             # there is only one spill, use its release time
             rel_time = self.sc.spills[0].get('release_time')
@@ -104,22 +112,24 @@ class ObjForTests:
         tests don't necessarily add test_weatherer to the list - so provide
         as input
         '''
+        # define order
+        w_copy = [w for w in self.weatherers]
+        w_copy.append(test_weatherer)
+        w_copy.sort(key=weatherer_sort)
+
         # after release + initialize, weather elements
-        test_weatherer.prepare_for_model_step(self.sc, time_step, model_time)
-        for wd in self.weatherers:
+        for wd in w_copy:
             wd.prepare_for_model_step(self.sc, time_step, model_time)
 
         # weather_elements
-        test_weatherer.weather_elements(self.sc, time_step, model_time)
-        for wd in self.weatherers:
+        for wd in w_copy:
             wd.weather_elements(self.sc, time_step, model_time)
 
         # step is done
         self.sc.model_step_is_done()
         self.sc['age'][:] = self.sc['age'][:] + time_step
 
-        test_weatherer.model_step_is_done(self.sc)
-        for wd in self.weatherers:
+        for wd in w_copy:
             wd.model_step_is_done(self.sc)
 
 
@@ -199,7 +209,7 @@ class TestSkimmer(ObjForTests):
         1) sc['mass'] + sc.weathering_data['skimmed'] =  spill_amount
         2) sc.weathering_data['skimmed']/skimmer.amount = skimmer.efficiency
         '''
-        self.reset_test_objs()
+        self.prepare_test_objs()
         self.skimmer.prepare_for_model_run(self.sc)
 
         assert self.sc.weathering_data['skimmed'] == 0.0
@@ -318,7 +328,7 @@ class TestBurn(ObjForTests):
         It is also used by next test:
         test_elements_weather_slower_with_frac_water
         '''
-        self.reset_test_objs()
+        self.prepare_test_objs()
 
         model_time = rel_time
         burn.prepare_for_model_run(self.sc)
@@ -516,7 +526,7 @@ class TestChemicalDispersion(ObjForTests):
         '''
         test efficiency gets set correctly
         '''
-        self.reset_test_objs()
+        self.prepare_test_objs()
 
         assert 'chem_dispersed' not in self.sc.weathering_data
 
@@ -580,7 +590,7 @@ class TestChemicalDispersion(ObjForTests):
 
     @mark.parametrize("efficiency", (1.0, 0.7))
     def test_weather_elements(self, efficiency):
-        self.reset_test_objs()
+        self.prepare_test_objs()
         self.c_disp.efficiency = efficiency
         self.c_disp.prepare_for_model_run(self.sc)
 

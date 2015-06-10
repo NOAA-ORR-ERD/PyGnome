@@ -181,7 +181,7 @@ class TestFayGravityViscous:
         assert np.all(area[4:] < i_area)
 
 
-class TestLangmuir:
+class TestLangmuir(ObjForTests):
     thick = 1e-4
     wind = constant_wind(5, 0)
     model_time = datetime(2015, 1, 1, 12, 0)
@@ -189,6 +189,8 @@ class TestLangmuir:
 
     l = Langmuir(water, wind)
     (vmin, vmax) = l._wind_speed_bound(rel_buoy, thick)
+
+    (sc, weatherers) = ObjForTests.mk_test_objs(water)
 
     def test_init(self):
         l = Langmuir(self.water, self.wind)
@@ -205,7 +207,11 @@ class TestLangmuir:
         '''
         self.l.wind.timeseries = (self.l.wind.timeseries['time'][0],
                                   (speed, 0.0))
-        frac_cov = l._get_frac_coverage(self.model_time, rel_buoy, self.thick)
+
+        # rel_buoy is always expected to be a numpy array
+        frac_cov = l._get_frac_coverage(self.model_time,
+                                        np.asarray([rel_buoy]),
+                                        self.thick)
         assert frac_cov == exp_bound
 
     def test_update_from_dict(self):
@@ -221,52 +227,24 @@ class TestLangmuir:
         assert updated
         assert self.l.serialize() == j
 
-    @pytest.mark.xfail(reason="still working on test")
     def test_weather_elements(self):
+        '''
+        use ObjMakeTests from test_cleanup to setup test
+        Langmuir weather_elements must be called after weather elements
+        for other objects
+        '''
         l = Langmuir(self.water, constant_wind(5., 0.))
-        #(self.sc, self.weatherers) = ObjForTests.mk_test_objs()
+
+        self.prepare_test_objs(l.array_types)
+        l.prepare_for_model_run(self.sc)
 
         # create WeatheringData object, initialize instantaneously released
         # elements
-        arrays = l.array_types
-        wd = WeatheringData(self.water)
-        arrays.update(wd.array_types)
-        et = floating(substance=test_oil)
-        time_step = 15. * 60
-        sc = sample_sc_release(num_elements=1,
-                               element_type=et,
-                               arr_types=arrays,
-                               time_step=time_step)
+        model_time = self.sc.spills[0].get('release_time')
+        time_step = 900.
+        self.release_elements(time_step, model_time)
+        self.step(l, time_step, model_time)
 
-        # prepare_for_model_run will happen before release; however, this is
-        # convenient and it doesn't break anything so call
-        # prepare_for_model_run after the release
-        wd.prepare_for_model_run(sc)
-        wd.update(sc.num_released, sc)
-        water_kvis = self.water.get('kinematic_viscosity')
-        # update the age of one of the LEs by n_age
-        n_age = (wd.spreading.
-                 _time_to_reach_max_area(water_kvis,
-                                         wd._init_relative_buoyancy,
-                                         sc['bulk_init_volume'][0]))
-
-        model_time = sc.spills[0].get('release_time')
-
-        def step():
-            l.prepare_for_model_step(sc, time_step, model_time)
-            assert l.active
-            l.weather_elements(sc, time_step, model_time)
-            l.model_step_is_done()
-
-        l.prepare_for_model_run(sc)
-        # do two steps
-        step()
-        assert np.all(sc['area'] == sc['fay_area'])
-        # age LEs such that max_area is reached but no new LEs released
-        sc['age'][:] += np.ceil(n_age)
-        model_time += timedelta(seconds=time_step)
-        num = sc.release_elements(default_ts, model_time)
-        wd.update(num, sc)
-
-        step()
-        assert np.all(sc['area'] < sc['fay_area'])
+        assert l.active
+        assert np.all(self.sc['area'] < self.sc['fay_area'])
+        assert np.all(self.sc['frac_coverage'] < 1.0)
