@@ -118,8 +118,8 @@ class FayGravityViscous(Weatherer, Serializable):
         max_area = blob_init_vol/self.thickness_limit
         a0 = min(a0, max_area)
         if a0 == max_area:
-            msg = "max_area is achieved during init_area() ..blah! fix"
-            self.logger.error(msg)
+            msg = "max_area is achieved during init_area()"
+            self.logger.warning(msg)
 
         return a0
 
@@ -215,20 +215,28 @@ class FayGravityViscous(Weatherer, Serializable):
 
         return area
 
-    def _set_thickness_limit(self, vo):
+    def _get_thickness_limit(self, vo):
         '''
-        set the spreading thickness limit based on viscosity
+        return the spreading thickness limit based on viscosity
         todo: documented in langmiur docs
             1. vo >= 1e-4;           limit = 1e-4 m
             2. 1e-4 > vo >= 1e-6;    limit = 1e-5 + 0.9091*(vo - 1e-6) m
             3. 1e-6 > vo;            limit = 1e-5 m
         '''
         if vo >= 1e-4:
-            self.thickness_limit = 1e-4
+            thickness_limit = 1e-4
         elif 1e-4 > vo and vo >= 1e-6:
-            self.thickness_limit = 1e-5 + 0.9091 * (vo - 1e-6)
+            thickness_limit = 1e-5 + 0.9091 * (vo - 1e-6)
         elif vo < 1e-6:
-            self.thickness_limit = 1e-5
+            thickness_limit = 1e-5
+
+        return thickness_limit
+
+    def _set_thickness_limit(self, vo):
+        '''
+        sets internal thickness_limit variable
+        '''
+        self.thickness_limit = self._get_thickness_limit(vo)
 
     def prepare_for_model_run(self, sc):
         '''

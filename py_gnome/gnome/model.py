@@ -551,7 +551,10 @@ class Model(Serializable):
             if wd is None:
                 self.weatherers += WeatheringData(attr['water'])
             else:
+                # turn weathering_data on and make references
                 wd.on = True
+                if wd.make_default_refs:
+                    wd.water = attr['water']
 
         # if a weatherer is using 'area' array, make sure it is being set.
         # Objects that set 'area' are referenced as 'spreading'
@@ -559,7 +562,12 @@ class Model(Serializable):
             if spread is None:
                 self.weatherers += FayGravityViscous(attr['water'])
             else:
+                # turn spreading on and make references
                 spread.on = True
+                if spread.make_default_refs:
+                    for at in attr:
+                        if hasattr(spread, at):
+                            spread.water = attr['water']
 
     def setup_model_run(self):
         '''
