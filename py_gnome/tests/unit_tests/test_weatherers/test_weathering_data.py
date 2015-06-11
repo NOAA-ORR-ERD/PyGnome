@@ -298,7 +298,9 @@ class TestWeatheringData:
                 self.step(w, sc, curr_time)
 
             for key, val in sc.mass_balance.iteritems():
-                if len(sc) > 0 and key not in ('beached', 'non_weathering'):
+                if len(sc) > 0 and key not in ('beached',
+                                               'non_weathering',
+                                               'off_maps'):
                     assert val > 0
                 else:
                     # everything, including avg_density is 0 if nothing is

@@ -1133,7 +1133,9 @@ def test_weathering_data_attr():
     model.step()
 
     for sc in model.spills.items():
-        assert sc.mass_balance == {}
+        assert len(sc.mass_balance) == 2
+        for key in ('beached', 'off_maps'):
+            assert key in sc.mass_balance
 
     model.environment += [Water(), constant_wind(0., 0)]
     model.weatherers += [Evaporation(model.environment[0],
@@ -1161,13 +1163,17 @@ def test_weathering_data_attr():
             assert sc.mass_balance['non_weathering'] == sc['mass'].sum()
             assert sc.mass_balance['non_weathering'] == exp_rel
     model.rewind()
+
     assert sc.mass_balance == {}
 
     # weathering data is now empty for all steps
     del model.weatherers[0]
-    for ix in range(2):
+    for ix in xrange(2):
+        model.step()
         for sc in model.spills.items():
-            assert not sc.mass_balance
+            assert len(sc.mass_balance) == 2
+            assert (len(set(sc.mass_balance.keys()) - {'beached', 'off_maps'})
+                    == 0)
 
 
 def test_run_element_type_no_initializers(model):
