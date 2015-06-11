@@ -612,7 +612,7 @@ class MapFromBNA(RasterMap):
     _state.update(['map_bounds', 'spillable_area'], save=False)
     _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
     _state.add_field(Field('filename', isdatafile=True, save=True,
-                            read=True, test_for_eq=False))
+                           read=True, test_for_eq=False))
     _schema = MapFromBNASchema
 
     def __init__(self, filename, raster_size=1024 * 1024,
@@ -680,7 +680,7 @@ class MapFromBNA(RasterMap):
         # versus what the user entered. if this is within spillable_area for
         # BNA, then include it? else ignore
         #spillable_area = kwargs.pop('spillable_area', spillable_area)
-        user_spillable_area = kwargs.pop('spillable_area', spillable_area)
+        spillable_area = kwargs.pop('spillable_area', spillable_area)
         map_bounds = kwargs.pop('map_bounds', map_bounds)
 
         # stretch the bounding box, to get approximate aspect ratio in
