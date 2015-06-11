@@ -209,9 +209,6 @@ class WeatheringData(Weatherer, Serializable):
              sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
              sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
 
-        #sc.mass_balance['beached'] = sc['mass'][sc['status_codes'] ==
-        #                                           oil_status.on_land].sum()
-
         # add 'non_weathering' key if any mass is released for nonweathering
         # particles.
         nonweather = sc['mass'][sc['fate_status'] == fate.non_weather].sum()
