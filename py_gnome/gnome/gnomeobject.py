@@ -178,7 +178,8 @@ class GnomeId(AddLogger):
         'wind', 'water', 'waves' attributes also have special meaning. An
         object containing this attribute references the corresponding object.
 
-        Logs warnings
+        Logs warnings:
+
         :returns: a tuple of length two containing:
             (a list of messages that were logged, isvalid bool)
             If any references are missing and make_default_refs is False,

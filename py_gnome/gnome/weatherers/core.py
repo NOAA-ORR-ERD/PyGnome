@@ -25,19 +25,22 @@ class WeathererSchema(ObjType, ProcessSchema):
 
 class Weatherer(Process):
     '''
-       Base Weathering agent.  This is almost exactly like the base Mover
-       in the way that it acts upon the model.  It contains the same API
-       as the mover as well. Not Serializable since it does is partial
-       implementation
+    Base Weathering agent.  This is almost exactly like the base Mover
+    in the way that it acts upon the model.  It contains the same API
+    as the mover as well. Not Serializable since it does is partial
+    implementation
     '''
     _state = copy.deepcopy(Process._state)
     _schema = WeathererSchema  # nothing new added so use this schema
 
     def __init__(self, **kwargs):
         '''
-           :param weathering: object that represents the weathering
-                              properties of the substance that our
-                              LEs are made up of.
+        Base weatherer class; defines the API for all weatherers
+        Passes optional arguments to base (Process) class via super. See base
+        class for optional arguments:  `gnome.movers.mover.Process`
+
+        adds 'mass_components', 'mass' to array_types since all weatherers
+        need these.
         '''
         super(Weatherer, self).__init__(**kwargs)
 

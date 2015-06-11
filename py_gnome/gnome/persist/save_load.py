@@ -407,10 +407,10 @@ class Savable(object):
         '''
         loads object from json_data
 
-        - load json for references from files
-        - update paths of datafiles if needed
-        - deserialize json_data
-        - and create object with new_from_dict()
+        * load json for references from files
+        * update paths of datafiles if needed
+        * deserialize json_data
+        * and create object with new_from_dict()
 
         json_data: dict containing json data. It has been parsed through the
             json.loads() command. The json will be valided here when it gets
@@ -419,9 +419,9 @@ class Savable(object):
 
         Optional parameter
 
-        :param saveloc: location of data files or *.json files for objects
+        :param saveloc: location of data files or \*.json files for objects
             stored as references. If object requires no datafiles and does not
-            need to read references from a *.json file in saveloc, then this
+            need to read references from a \*.json file in saveloc, then this
             can be None.
         :param references: references object - if this is called by the Model,
             it will pass a references object. It is not required.

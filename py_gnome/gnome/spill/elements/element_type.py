@@ -84,15 +84,17 @@ class ElementType(Serializable):
 
     def substance_to_dict(self):
         '''
-            Call the tojson() method on substance
-            - An Oil object that has been queried from the database
-              contains a lot of unnecessary relationships that we do not
-              want to represent in our JSON output,
-              So we prune them by first constructing an Oil object from the
-              JSON payload of the queried Oil object.
-              This creates an Oil object in memory that does not have any
-              database links.
-              Then we output the JSON from the unlinked object.
+        Call the tojson() method on substance
+
+        An Oil object that has been queried from the database
+        contains a lot of unnecessary relationships that we do not
+        want to represent in our JSON output,
+
+        So we prune them by first constructing an Oil object from the
+        JSON payload of the queried Oil object.
+
+        This creates an Oil object in memory that does not have any
+        database links. Then output the JSON from the unlinked object.
         '''
         if self._substance is not None:
             return self._substance.tojson()

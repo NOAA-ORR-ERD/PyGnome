@@ -65,6 +65,10 @@ Class Reference:
 
 ``gnome.model`` -- the PyGnome model class
 ---------------------------------------------------
+
+.. include:: model.rst
+------------------------
+
 .. automodule:: gnome.model
 .. autoclass:: Model
    :members:
@@ -107,6 +111,8 @@ Class Reference:
 ``gnome.movers`` -- PyGnome mover classes
 ---------------------------------------------------
 .. automodule:: gnome.movers
+.. autoclass:: Process
+   :members:
 .. autoclass:: Mover
    :members:
 .. autoclass:: CyMover
@@ -167,7 +173,13 @@ Class Reference:
 .. :autoclass:: NetCDFOutput
     :members:
     :show-inheritance:
-.. autoclass:: GeoJson
+.. autoclass:: TrajectoryGeoJsonOutput
+    :members:
+    :show-inheritance:
+.. autoclass:: CurrentGeoJsonOutput
+    :members:
+    :show-inheritance:
+.. autoclass:: IceGeoJsonOutput
     :members:
     :show-inheritance:
 
