@@ -679,6 +679,10 @@ class Model(Serializable):
                     sc['next_positions'] += delta
 
                 self.map.beach_elements(sc)
+
+                # let model mark these particles to be removed
+                sc.mass_balance['off_maps'] = oil_status.to_be_removed
+
                 self._update_fate_status(sc)
 
                 # the final move to the new positions

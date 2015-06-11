@@ -520,6 +520,14 @@ class RasterMap(GnomeMap):
 
         self._set_off_map_status(spill)
 
+        # todo: need a prepare_for_model_run() so map adds these keys to
+        #     mass_balance as opposed to SpillContainer
+        # update 'off_maps'/'beached' in mass_balance
+        spill.mass_balance['beached'] = \
+            spill['mass'][spill['status_codes'] == oil_status.on_land].sum()
+        spill.mass_balance['off_maps'] = \
+            spill['mass'][spill['status_codes'] == oil_status.off_maps].sum()
+
     def refloat_elements(self, spill_container, time_step):
         """
         This method performs the re-float logic -- changing the element

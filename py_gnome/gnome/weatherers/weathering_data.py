@@ -168,7 +168,6 @@ class WeatheringData(Weatherer, Serializable):
             'avg_viscosity',
             'floating',
             'amount_released',
-            'beached'
         todo: amount_released and beached can probably get set by
             SpillContainer. The trajectory only case will probably also care
             about amount 'beached'.
@@ -210,8 +209,8 @@ class WeatheringData(Weatherer, Serializable):
              sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
              sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
 
-        sc.mass_balance['beached'] = sc['mass'][sc['status_codes'] ==
-                                                   oil_status.on_land].sum()
+        #sc.mass_balance['beached'] = sc['mass'][sc['status_codes'] ==
+        #                                           oil_status.on_land].sum()
 
         # add 'non_weathering' key if any mass is released for nonweathering
         # particles.

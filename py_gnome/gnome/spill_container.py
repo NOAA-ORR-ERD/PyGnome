@@ -827,6 +827,12 @@ class SpillContainer(AddLogger, SpillContainerData):
         # _set_substancespills() is invoked
         self.initialize_data_arrays()
 
+        # todo: maybe better to let map do this, but it does not have a
+        # prepare_for_model_run() yet so can't do it there
+        # need 'amount_released' here as well
+        self.mass_balance['beached'] = 0.0
+        self.mass_balance['off_maps'] = 0.0
+
     def initialize_data_arrays(self):
         """
         initialize_data_arrays() is called without input data during rewind
@@ -939,6 +945,8 @@ class SpillContainer(AddLogger, SpillContainerData):
         if len(self._data_arrays) == 0:
             return  # nothing to do - arrays are not yet defined.
 
+        # LEs are marked as to_be_removed
+        # C++ might care about this so leave as is
         to_be_removed = np.where(self['status_codes'] ==
                                  oil_status.to_be_removed)[0]
 
