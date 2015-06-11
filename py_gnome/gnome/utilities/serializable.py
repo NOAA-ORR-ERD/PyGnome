@@ -3,10 +3,6 @@ Created on Feb 15, 2013
 '''
 import copy
 import inspect
-import os
-import json
-import shutil
-from itertools import izip_longest
 
 import numpy
 np = numpy

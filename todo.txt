@@ -1,20 +1,29 @@
 WIP - finish by 5/12/2015:
 ===========================
-- remove particles that go off maps - this afternoon
+- remove particles that go off maps 
+- currently WeatheringData() updates all 'mass_balance', let SpillContainer/map update 'beached',
+  'floating', 'amount_released', 'off_maps'
 
 WeatheringData() and spreading objects automatically added:
-- must be the last thing we do in weather_elements() -- before age is incremented
-- make sure spreading works fine
-- Also, should weatherers have active_start/active_stop? 'area' is now coupled with other weatherers so it isn't always present
-- Langmuir must happen in weather_elements, but it must get initialized after spreading initializes 'area'
-- add tests for Langmuir integrated into model. Maybe include 'area', remove 'fay_area' and
+x must be the last thing we do in weather_elements() -- before age is incremented
+x make sure spreading works fine
+x Langmuir must happen in weather_elements, but it must get initialized after spreading initializes 'area'
+x Maybe include 'area', remove 'fay_area' and
   include 'frac_coverage' data array
-- fix broken tests in test_weathering_data()
-
+x fix broken tests in test_weathering_data()
 - clean up Model to use iscollection for fields and base class methods
+
 - API documentation for movers, weatherers (Process). Save/Load
 
+Incomplete/comments:
+--------------------
 - update spills to end_position equals start_position, end_release_time, release_time
+- WeatheringData() and spreading classes should always set active_start and active_stop to -inf and inf.
+  Other weatherers require these - in the most common case, these will be automatically constructed and
+  active_start/stop will default to -inf/inf.
+- add tests for Langmuir integrated into model.
+  See ipynb in gnome/documentation/weathering/evaporation/spreading_langmuir.ipynb
+  was testing it manually though maybe good to include it in test_persist.py and test_model.py
 
 ======================
 

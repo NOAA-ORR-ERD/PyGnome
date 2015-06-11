@@ -52,6 +52,15 @@ class Weatherer(Process):
                 'active={0.active}'
                 ')'.format(self))
 
+    def initialize_data(self, sc, num_released):
+        '''
+        Let weatherers have a way to customize the initialization of
+        data arrays. Currently, only some weatherers use this to customize
+        initialization of data arrays. If movers also move towards this
+        implementation, then move to 'Process' base class.
+        '''
+        pass
+
     def prepare_for_model_run(self, sc):
         """
         Override for weatherers so they can initialize correct 'mass_balance'
