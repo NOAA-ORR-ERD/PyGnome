@@ -1,8 +1,12 @@
 WIP - finish by 5/12/2015:
 ===========================
-- remove particles that go off maps 
-- currently WeatheringData() updates all 'mass_balance', let SpillContainer/map update 'beached',
-  'floating', 'amount_released', 'off_maps'
+Following changes are in mass_balance branch - needs testing
+
+- SpillContainer should update 'amount_released', 'floating' as well
+
+x currently WeatheringData() updates all 'mass_balance', let SpillContainer/map update 'beached',
+  'off_maps'
+x remove particles that go off maps 
 
 WeatheringData() and spreading objects automatically added:
 x must be the last thing we do in weather_elements() -- before age is incremented
