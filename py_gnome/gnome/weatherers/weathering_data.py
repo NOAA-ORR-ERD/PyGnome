@@ -107,6 +107,9 @@ class WeatheringData(Weatherer, Serializable):
         at the end of the timestep. Update the density and viscosity
         accordingly.
         '''
+        if not self.active:
+            return
+
         water_rho = self.water.get('density')
 
         for substance, data in sc.itersubstancedata(self.array_types,

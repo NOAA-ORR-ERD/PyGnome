@@ -320,6 +320,9 @@ class FayGravityViscous(Weatherer, Serializable):
         The updated 'area', 'fay_area' is associated with age of particles at:
             model_time + time_step
         '''
+        if not self.active:
+            return
+
         water_kvis = self.water.get('kinematic_viscosity',
                                     'square meter per second')
         for _, data in sc.itersubstancedata(self.array_types):
