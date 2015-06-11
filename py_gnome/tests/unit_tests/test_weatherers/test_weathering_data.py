@@ -47,7 +47,7 @@ class TestWeatheringData:
 
         # test initialization as well
         wd.prepare_for_model_run(sc)
-        for val in sc.weathering_data.values():
+        for val in sc.mass_balance.values():
             assert val == 0.0
 
         # test initialization as well
@@ -280,7 +280,7 @@ class TestWeatheringData:
         for w in weatherers:
             w.prepare_for_model_run(sc)
 
-        for val in sc.weathering_data.values():
+        for val in sc.mass_balance.values():
             assert val == 0.0
 
         # test initialization as well
@@ -297,7 +297,7 @@ class TestWeatheringData:
             for w in weatherers:
                 self.step(w, sc, curr_time)
 
-            for key, val in sc.weathering_data.iteritems():
+            for key, val in sc.mass_balance.iteritems():
                 if len(sc) > 0 and key not in ('beached', 'non_weathering'):
                     assert val > 0
                 else:

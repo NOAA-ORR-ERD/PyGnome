@@ -75,10 +75,10 @@ def test_evaporation(oil, temp, num_elems, on):
     print 'frac_lost', sc['frac_lost']
 
     if on:
-        assert sc.weathering_data['evaporated'] > 0.0
-        print 'total evaporated', sc.weathering_data['evaporated']
+        assert sc.mass_balance['evaporated'] > 0.0
+        print 'total evaporated', sc.mass_balance['evaporated']
     else:
-        assert 'evaporated' not in sc.weathering_data
+        assert 'evaporated' not in sc.mass_balance
         assert np.all(sc['mass_components'] == init_mass)
 
 
@@ -219,12 +219,12 @@ def test_full_run(oil, temp):
                 assert np.all(sc['viscosity'] >= init_vis)
 
             mask = sc['status_codes'] == oil_status.in_water
-            assert sc.weathering_data['floating'] == np.sum(sc['mass'][mask])
+            assert sc.mass_balance['floating'] == np.sum(sc['mass'][mask])
 
             print ("Amount released: {0}".
-                   format(sc.weathering_data['amount_released']))
-            print "Mass floating: {0}".format(sc.weathering_data['floating'])
-            print "Mass evap: {0}".format(sc.weathering_data['evaporated'])
+                   format(sc.mass_balance['amount_released']))
+            print "Mass floating: {0}".format(sc.mass_balance['floating'])
+            print "Mass evap: {0}".format(sc.mass_balance['evaporated'])
             print "LEs in water: {0}".format(sum(mask))
             print "Mass on land: {0}".format(np.sum(sc['mass'][~mask]))
 

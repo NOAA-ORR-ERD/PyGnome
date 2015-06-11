@@ -50,15 +50,15 @@ def test_dispersion(oil, temp, num_elems, on):
     disp.weather_elements(sc, time_step, model_time)
 
     if on:
-        assert sc.weathering_data['natural_dispersion'] > 0
-        assert sc.weathering_data['sedimentation'] > 0
-        print "sc.weathering_data['natural_dispersion']"
-        print sc.weathering_data['natural_dispersion']
-        print "sc.weathering_data['sedimentation']"
-        print sc.weathering_data['sedimentation']
+        assert sc.mass_balance['natural_dispersion'] > 0
+        assert sc.mass_balance['sedimentation'] > 0
+        print "sc.mass_balance['natural_dispersion']"
+        print sc.mass_balance['natural_dispersion']
+        print "sc.mass_balance['sedimentation']"
+        print sc.mass_balance['sedimentation']
     else:
-        assert 'natural_dispersion' not in sc.weathering_data
-        assert 'sedimentation' not in sc.weathering_data
+        assert 'natural_dispersion' not in sc.mass_balance
+        assert 'sedimentation' not in sc.mass_balance
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems'),
@@ -85,8 +85,8 @@ def test_dispersion_not_active(oil, temp, num_elems):
     disp.prepare_for_model_step(sc, time_step, model_time)
     disp.weather_elements(sc, time_step, model_time)
 
-    assert np.all(sc.weathering_data['natural_dispersion'] == 0)
-    assert np.all(sc.weathering_data['sedimentation'] == 0)
+    assert np.all(sc.mass_balance['natural_dispersion'] == 0)
+    assert np.all(sc.mass_balance['sedimentation'] == 0)
 
 
 @pytest.mark.parametrize(('oil', 'temp'),
@@ -111,12 +111,12 @@ def test_full_run(sample_model_fcn2, oil, temp):
     for step in model:
         for sc in model.spills.items():
             if step['step_num'] > 0:
-                assert (sc.weathering_data['natural_dispersion'] > 0)
-                assert (sc.weathering_data['sedimentation'] > 0)
+                assert (sc.mass_balance['natural_dispersion'] > 0)
+                assert (sc.mass_balance['sedimentation'] > 0)
             print ("Dispersed: {0}".
-                   format(sc.weathering_data['natural_dispersion']))
+                   format(sc.mass_balance['natural_dispersion']))
             print ("Sedimentation: {0}".
-                   format(sc.weathering_data['sedimentation']))
+                   format(sc.mass_balance['sedimentation']))
             print "Completed step: {0}\n".format(step['step_num'])
 
 

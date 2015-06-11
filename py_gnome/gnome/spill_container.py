@@ -198,7 +198,7 @@ class SpillContainerData(object):
 
         self._data_arrays = data_arrays
         self.current_time_stamp = None
-        self.weathering_data = {}
+        self.mass_balance = {}
 
         # following internal variable is used when comparing two SpillContainer
         # objects. When testing the data arrays are equal, use this tolerance
@@ -758,7 +758,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         self._reset__substances_spills()
         self._reset__fate_data_list()
         self.initialize_data_arrays()
-        self.weathering_data = {}  # reset to empty array
+        self.mass_balance = {}  # reset to empty array
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -1012,9 +1012,9 @@ class SpillContainerPairData(object):
     def LE_data(self):
         data = self._spill_container._data_arrays.keys()
         data.append('current_time_stamp')
-        if self._spill_container.weathering_data:
+        if self._spill_container.mass_balance:
             'only add if it is not an empty dict'
-            data.append('weathering_data')
+            data.append('mass_balance')
 
         return data
 
@@ -1026,8 +1026,8 @@ class SpillContainerPairData(object):
 
         if prop_name == 'current_time_stamp':
             return sc.current_time_stamp
-        elif prop_name == 'weathering_data':
-            return sc.weathering_data
+        elif prop_name == 'mass_balance':
+            return sc.mass_balance
 
         return sc[prop_name]
 

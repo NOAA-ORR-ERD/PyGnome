@@ -48,14 +48,14 @@ class Emulsification(Weatherer, Serializable):
 
     def prepare_for_model_run(self, sc):
         '''
-        add water_content key to weathering_data
+        add water_content key to mass_balance
         Assumes all spills have the same type of oil
         '''
         # create 'water_content' key if it doesn't exist
         # let's only define this the first time
         if self.on:
             super(Emulsification, self).prepare_for_model_run(sc)
-            sc.weathering_data['water_content'] = 0.0
+            sc.mass_balance['water_content'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -73,7 +73,7 @@ class Emulsification(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
-        - sets 'water_content' in sc.weathering_data
+        - sets 'water_content' in sc.mass_balance
         '''
 
         if not self.active:
@@ -117,19 +117,19 @@ class Emulsification(Weatherer, Serializable):
                          Y_max,
                          constants.drop_max)
 
-            #sc.weathering_data['water_content'] += \
+            #sc.mass_balance['water_content'] += \
                 #np.sum(data['frac_water'][:]) / sc.num_released
             # just average the water fraction each time - it is not per time
             # step value but at a certain time value
             # todo: probably should be weighted avg
-            sc.weathering_data['water_content'] = \
+            sc.mass_balance['water_content'] = \
                 np.sum(data['mass']/data['mass'].sum() * data['frac_water'])
                 #np.sum(data['frac_water'][:]*data['mass'][:]) / np.sum(data['mass'])
                 #np.sum(data['frac_water'][:]) / len(data['frac_water']
                 #np.sum(data['frac_water'][:]) / sc.num_released
             self.logger.debug(self._pid + 'water_content for {0}: {1}'.
                               format(substance.name,
-                                     sc.weathering_data['water_content']))
+                                     sc.mass_balance['water_content']))
 
         sc.update_from_fatedataview()
 

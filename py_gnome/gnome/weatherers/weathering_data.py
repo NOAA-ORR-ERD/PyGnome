@@ -68,14 +68,14 @@ class WeatheringData(Weatherer, Serializable):
         # nothing released yet - set everything to 0.0
         for key in ('avg_density', 'floating', 'amount_released',
                     'avg_viscosity', 'beached'):
-            sc.weathering_data[key] = 0.0
+            sc.mass_balance[key] = 0.0
 
     def initialize_data(self, sc, num_released):
         '''
         If on is False, then arrays should not be included - dont' initialize
 
         1. initialize all weathering data arrays
-        2. update aggregated data in sc.weathering_data dict
+        2. update aggregated data in sc.mass_balance dict
         '''
         if not self.on:
             return
@@ -160,7 +160,7 @@ class WeatheringData(Weatherer, Serializable):
     def _aggregated_data(self, sc, new_LEs):
         '''
         aggregated properties that are not set by any other weatherer are
-        set here. The following keys in sc.weathering_data are set here:
+        set here. The following keys in sc.mass_balance are set here:
             'avg_density',
             'avg_viscosity',
             'floating',
@@ -190,9 +190,9 @@ class WeatheringData(Weatherer, Serializable):
             data = sc.substancefatedata(sc.substances[0],
                                         {'mass', 'density', 'viscosity'})
             if data['mass'].sum() > 0.0:
-                sc.weathering_data['avg_density'] = \
+                sc.mass_balance['avg_density'] = \
                     np.sum(data['mass']/data['mass'].sum() * data['density'])
-                sc.weathering_data['avg_viscosity'] = \
+                sc.mass_balance['avg_viscosity'] = \
                     np.sum(data['mass']/data['mass'].sum() * data['viscosity'])
             else:
                 self.logger.info(self._pid + "sum of 'mass' array went to 0.0")
@@ -201,26 +201,26 @@ class WeatheringData(Weatherer, Serializable):
         # todo: remove fate_status and add 'surface' to status_codes. LEs
         # marked to be skimmed, burned, dispersed will also be marked as
         # 'surface' so following can get cleaned up.
-        sc.weathering_data['floating'] = \
+        sc.mass_balance['floating'] = \
             (sc['mass'][sc['fate_status'] == fate.surface_weather].sum() +
              sc['mass'][sc['fate_status'] & fate.skim == fate.skim].sum() +
              sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
              sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
 
-        sc.weathering_data['beached'] = sc['mass'][sc['status_codes'] ==
+        sc.mass_balance['beached'] = sc['mass'][sc['status_codes'] ==
                                                    oil_status.on_land].sum()
 
         # add 'non_weathering' key if any mass is released for nonweathering
         # particles.
         nonweather = sc['mass'][sc['fate_status'] == fate.non_weather].sum()
-        sc.weathering_data['non_weathering'] = nonweather
+        sc.mass_balance['non_weathering'] = nonweather
 
         if new_LEs > 0:
             amount_released = np.sum(sc['mass'][-new_LEs:])
-            if 'amount_released' in sc.weathering_data:
-                sc.weathering_data['amount_released'] += amount_released
+            if 'amount_released' in sc.mass_balance:
+                sc.mass_balance['amount_released'] += amount_released
             else:
-                sc.weathering_data['amount_released'] = amount_released
+                sc.mass_balance['amount_released'] = amount_released
 
     def _init_new_particles(self, mask, data, substance):
         '''
