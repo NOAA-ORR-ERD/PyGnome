@@ -130,7 +130,8 @@ def test_full_run_disp_not_active(sample_model_fcn):
         if no weatherers, then no weathering output - need to add on/off
         switch to WeatheringOutput
         '''
-        assert len(step['WeatheringOutput']) == 2
+        assert 'natural_dispersion' not in step['WeatheringOutput']
+        assert 'sedimentation' not in step['WeatheringOutput']
         assert ('step_num' in step['WeatheringOutput'] and
                 'time_stamp' in step['WeatheringOutput'])
         print ("Completed step: {0}"

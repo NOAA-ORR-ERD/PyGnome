@@ -241,7 +241,7 @@ def test_full_run_evap_not_active(sample_model_fcn):
         if no weatherers, then no weathering output - need to add on/off
         switch to WeatheringOutput
         '''
-        assert len(step['WeatheringOutput']) == 2
+        assert 'evaporated' not in step['WeatheringOutput']
         assert ('step_num' in step['WeatheringOutput'] and
                 'time_stamp' in step['WeatheringOutput'])
         print ("Completed step: {0}"
