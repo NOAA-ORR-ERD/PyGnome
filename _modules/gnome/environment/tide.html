@@ -1,0 +1,309 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.environment.tide &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.environment.tide</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">module contains objects that contain weather related data. For example,</span>
+<span class="sd">the Wind object defines the Wind conditions for the spill</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">drop</span>
+
+<span class="kn">import</span> <span class="nn">gnome</span>
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">time_value_pair</span>
+
+<span class="kn">from</span> <span class="nn">.environment</span> <span class="kn">import</span> <span class="n">Environment</span>
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">validators</span><span class="p">,</span> <span class="n">base_schema</span>
+<span class="kn">from</span> <span class="nn">gnome.persist.extend_colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">DefaultTupleSchema</span><span class="p">,</span>
+                                           <span class="n">LocalDateTime</span><span class="p">,</span>
+                                           <span class="n">DatetimeValue2dArraySchema</span><span class="p">)</span>
+
+<span class="c"># TODO: The name &#39;convert&#39; is doubly defined as</span>
+<span class="c">#       unit_conversion.convert and...</span>
+<span class="c">#       gnome.utilities.convert</span>
+<span class="c">#       This will inevitably cause namespace collisions.</span>
+<span class="c">#       CHB-- I don&#39;t think that&#39;s a problem -- that&#39;s what namespaces are for!</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.time_utils</span> <span class="kn">import</span> <span class="n">date_to_sec</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.convert</span> <span class="kn">import</span> <span class="p">(</span><span class="n">to_time_value_pair</span><span class="p">,</span>
+                                     <span class="n">to_datetime_value_2d</span><span class="p">,</span>
+                                     <span class="n">tsformat</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
+
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_ossm_time</span> <span class="kn">import</span> <span class="n">CyTimeseries</span>
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_shio_time</span> <span class="kn">import</span> <span class="n">CyShioTime</span>
+
+
+<span class="c">#==============================================================================</span>
+<span class="c"># class UVTuple(DefaultTupleSchema):</span>
+<span class="c">#     u = SchemaNode(Float())</span>
+<span class="c">#     v = SchemaNode(Float())</span>
+<span class="c"># </span>
+<span class="c"># </span>
+<span class="c"># class TimeSeriesTuple(DefaultTupleSchema):</span>
+<span class="c">#     &#39;&#39;&#39;</span>
+<span class="c">#     Schema for each tuple in WindTimeSeries list</span>
+<span class="c">#     &#39;&#39;&#39;</span>
+<span class="c">#     datetime = SchemaNode(LocalDateTime(default_tzinfo=None),</span>
+<span class="c">#                           default=base_schema.now,</span>
+<span class="c">#                           validator=validators.convertible_to_seconds)</span>
+<span class="c">#     uv = UVTuple()</span>
+<span class="c"># </span>
+<span class="c"># </span>
+<span class="c"># class TimeSeriesSchema(DatetimeValue2dArraySchema):</span>
+<span class="c">#     &#39;&#39;&#39;</span>
+<span class="c">#     Schema for list of Wind tuples, to make the wind timeseries</span>
+<span class="c">#     &#39;&#39;&#39;</span>
+<span class="c">#     value = TimeSeriesTuple(default=(datetime.datetime.now(), 0, 0))</span>
+<span class="c"># </span>
+<span class="c">#     def validator(self, node, cstruct):</span>
+<span class="c">#         &#39;&#39;&#39;</span>
+<span class="c">#         validate wind timeseries numpy array</span>
+<span class="c">#         &#39;&#39;&#39;</span>
+<span class="c">#         validators.no_duplicate_datetime(node, cstruct)</span>
+<span class="c">#         validators.ascending_datetime(node, cstruct)</span>
+<span class="c">#==============================================================================</span>
+
+
+<span class="k">class</span> <span class="nc">TideSchema</span><span class="p">(</span><span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span><span class="p">):</span>
+    <span class="s">&#39;Tide object schema&#39;</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+
+    <span class="n">scale_factor</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+
+    <span class="c">#timeseries = TimeSeriesSchema(missing=drop)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;tide&#39;</span>
+
+
+<div class="viewcode-block" id="Tide"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Tide">[docs]</a><span class="k">class</span> <span class="nc">Tide</span><span class="p">(</span><span class="n">Environment</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    todo: baseclass called ScaleTimeseries (or something like that)</span>
+<span class="sd">    ScaleCurrent</span>
+<span class="sd">    Define the tide for a spill</span>
+
+<span class="sd">    Currently, this internally defines and uses the CyShioTime object, which is</span>
+<span class="sd">    a cython wrapper around the C++ Shio object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_ref_as</span> <span class="o">=</span> <span class="s">&#39;tide&#39;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Environment</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">TideSchema</span>
+
+    <span class="c"># add &#39;filename&#39; as a Field object</span>
+    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;scale_factor&#39;</span><span class="p">]</span>
+    <span class="n">_create</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="n">_create</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                           <span class="n">test_for_eq</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">filename</span><span class="p">,</span>
+                 <span class="n">yeardata</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">gnome</span><span class="o">.</span><span class="n">__file__</span><span class="p">),</span>
+                                       <span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="s">&#39;yeardata&#39;</span><span class="p">),</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Tide information can be obtained from a filename or set as a</span>
+<span class="sd">        timeseries (timeseries is NOT TESTED YET)</span>
+
+<span class="sd">        It requires one of the following to initialize:</span>
+
+<span class="sd">              1. &#39;timeseries&#39; assumed to be in &#39;uv&#39; format</span>
+<span class="sd">                 (NOT TESTED/IMPLEMENTED OR USED YET)</span>
+<span class="sd">              2. a &#39;filename&#39; containing a header that defines units amongst</span>
+<span class="sd">                 other meta data</span>
+
+<span class="sd">        :param timeseries: numpy array containing tide data</span>
+<span class="sd">        :type timeseries: numpy.ndarray with dtype=datetime_value_1d</span>
+<span class="sd">        :param units: units associated with the timeseries data. If &#39;filename&#39;</span>
+<span class="sd">            is given, then units are read in from the filename.</span>
+<span class="sd">            unit_conversion - NOT IMPLEMENTED YET</span>
+<span class="sd">        :type units=None:  (Optional) string, for example:</span>
+<span class="sd">            &#39;knot&#39;, &#39;meter per second&#39;, &#39;mile per hour&#39; etc</span>
+<span class="sd">        :param filename: path to a long wind filename from which to read</span>
+<span class="sd">            wind data</span>
+<span class="sd">        :param yeardata=&#39;gnome/data/yeardata/&#39;: path to yeardata used for Shio</span>
+<span class="sd">            data.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># define locally so it is available even for OSSM files,</span>
+        <span class="c"># though not used by OSSM files</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_yeardata</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cy_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj_to_create</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="c"># self.yeardata = os.path.abspath( yeardata ) # set yeardata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yeardata</span> <span class="o">=</span> <span class="n">yeardata</span>  <span class="c"># set yeardata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;scale_factor&#39;</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">cy_obj</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">)</span>
+
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;scale_factor&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Tide</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">yeardata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_yeardata</span>
+
+    <span class="nd">@yeardata.setter</span>
+    <span class="k">def</span> <span class="nf">yeardata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        only relevant if underlying cy_obj is CyShioTime</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;Path to yeardata files does not exist: &#39;</span>
+                          <span class="s">&#39;{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+
+        <span class="c"># set private variable and also shio object&#39;s yeardata path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_yeardata</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cy_obj</span><span class="p">,</span> <span class="n">CyShioTime</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cy_obj</span><span class="o">.</span><span class="n">set_shio_yeardata_path</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cy_obj</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="bp">None</span>
+                                      <span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">cy_obj</span><span class="o">.</span><span class="n">filename</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">])</span>
+
+    <span class="n">scale_factor</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">cy_obj</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">,</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span>
+                            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cy_obj</span><span class="p">,</span> <span class="s">&#39;scale_factor&#39;</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_obj_to_create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        open file, read a few lines to determine if it is an ossm file</span>
+<span class="sd">        or a shio file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># mode &#39;U&#39; means universal newline support</span>
+        <span class="n">fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;rU&#39;</span><span class="p">)</span>
+
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">fh</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># look for \r for lines instead of \n</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s">&#39;</span><span class="se">\r</span><span class="s">&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># if this is still 0, then throw an error!</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;This does not appear to be a valid file format &#39;</span>
+                             <span class="s">&#39;that can be read by OSSM or Shio to get &#39;</span>
+                             <span class="s">&#39;tide information&#39;</span><span class="p">)</span>
+
+        <span class="c"># look for following keywords to determine if it is a Shio or OSSM file</span>
+        <span class="n">shio_file</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;[StationInfo]&#39;</span><span class="p">,</span> <span class="s">&#39;Type=&#39;</span><span class="p">,</span> <span class="s">&#39;Name=&#39;</span><span class="p">,</span> <span class="s">&#39;Latitude=&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">shio_file</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">])[:</span><span class="nb">len</span><span class="p">(</span><span class="n">shio_file</span><span class="p">[</span><span class="n">i</span><span class="p">])]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]):</span>
+            <span class="k">return</span> <span class="n">CyShioTime</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="s">&#39;,&#39;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">7</span><span class="p">:</span>
+            <span class="c"># maybe log / display a warning that v=0 for tide file and will be</span>
+            <span class="c"># ignored</span>
+            <span class="c"># if float( string.split(lines[3],&#39;,&#39;)[-1]) != 0.0:</span>
+            <span class="k">return</span> <span class="n">CyTimeseries</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">file_format</span><span class="o">=</span><span class="n">tsformat</span><span class="p">(</span><span class="s">&#39;uv&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;This does not appear to be a valid file format &#39;</span>
+                             <span class="s">&#39;that can be read by OSSM or Shio to get &#39;</span>
+                             <span class="s">&#39;tide information&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Tide.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Tide.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        For the filename - need to make it the full path before saving</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">serial</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Tide</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+            <span class="n">serial</span><span class="p">[</span><span class="s">&#39;filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cy_obj</span><span class="o">.</span><span class="n">path_filename</span>
+
+        <span class="k">return</span> <span class="n">serial</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

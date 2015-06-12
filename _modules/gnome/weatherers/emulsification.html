@@ -1,0 +1,282 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.weatherers.emulsification &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.weatherers.emulsification</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">model emulsification process</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">gnome.array_types</span> <span class="kn">import</span> <span class="p">(</span><span class="n">frac_lost</span><span class="p">,</span>  <span class="c"># due to evaporation and dissolution</span>
+                               <span class="n">age</span><span class="p">,</span>
+                               <span class="n">mass</span><span class="p">,</span>
+                               <span class="n">bulltime</span><span class="p">,</span>
+                               <span class="n">interfacial_area</span><span class="p">,</span>
+                               <span class="n">frac_water</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">WeathererSchema</span>
+<span class="kn">from</span> <span class="nn">gnome.weatherers</span> <span class="kn">import</span> <span class="n">Weatherer</span>
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_weatherers</span> <span class="kn">import</span> <span class="n">emulsify_oil</span>
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">class_from_objtype</span>
+
+
+<div class="viewcode-block" id="Emulsification"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification">[docs]</a><span class="k">class</span> <span class="nc">Emulsification</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Weatherer</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;waves&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">WeathererSchema</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">waves</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param conditions: gnome.environment.Conditions object which contains</span>
+<span class="sd">            things like water temperature</span>
+<span class="sd">        :param waves: waves object for obtaining emulsification wind speed at specified time</span>
+<span class="sd">        :type waves: get_emulsification_wind(model_time)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">waves</span> <span class="o">=</span> <span class="n">waves</span>
+
+        <span class="k">if</span> <span class="n">waves</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;make_default_refs&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;make_default_refs&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Emulsification</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&#39;age&#39;</span><span class="p">,</span> <span class="s">&#39;bulltime&#39;</span><span class="p">,</span> <span class="s">&#39;frac_water&#39;</span><span class="p">,</span>
+                                 <span class="s">&#39;mass&#39;</span><span class="p">,</span> <span class="s">&#39;interfacial_area&#39;</span><span class="p">,</span> <span class="s">&#39;frac_lost&#39;</span><span class="p">})</span>
+
+<div class="viewcode-block" id="Emulsification.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        add water_content key to weathering_data</span>
+<span class="sd">        Assumes all spills have the same type of oil</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># create &#39;water_content&#39; key if it doesn&#39;t exist</span>
+        <span class="c"># let&#39;s only define this the first time</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Emulsification</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;water_content&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+</div>
+<div class="viewcode-block" id="Emulsification.prepare_for_model_step"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification.prepare_for_model_step">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Set/update arrays used by emulsification module for this timestep:</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># do we need this?</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Emulsification</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span>
+                                                           <span class="n">time_step</span><span class="p">,</span>
+                                                           <span class="n">model_time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="Emulsification.weather_elements"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification.weather_elements">[docs]</a>    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        weather elements over time_step</span>
+<span class="sd">        - sets &#39;water_content&#39; in sc.weathering_data</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">num_released</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c"># substance does not contain any surface_weathering LEs</span>
+                <span class="k">continue</span>
+
+            <span class="n">k_emul</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_water_uptake_coeff</span><span class="p">(</span><span class="n">model_time</span><span class="p">,</span> <span class="n">substance</span><span class="p">)</span>
+
+            <span class="c"># bulltime is not in database, but could be set by user</span>
+            <span class="c">#emul_time = substance.get_bulltime()</span>
+            <span class="n">emul_time</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">bulltime</span>
+
+            <span class="c"># get from database bullwinkle (could be overridden by user)</span>
+            <span class="c">#emul_constant = substance.get(&#39;bullwinkle_fraction&#39;)</span>
+            <span class="n">emul_constant</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">bullwinkle</span>
+
+            <span class="c"># max water content fraction - get from database</span>
+            <span class="n">Y_max</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;emulsion_water_fraction_max&#39;</span><span class="p">)</span>
+
+            <span class="c"># doesn&#39;t emulsify, avoid the nans</span>
+            <span class="k">if</span> <span class="n">Y_max</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">S_max</span> <span class="o">=</span> <span class="p">(</span><span class="mf">6.</span> <span class="o">/</span> <span class="n">constants</span><span class="o">.</span><span class="n">drop_min</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">Y_max</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">Y_max</span><span class="p">))</span>
+
+            <span class="n">emulsify_oil</span><span class="p">(</span><span class="n">time_step</span><span class="p">,</span>
+                         <span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">],</span>
+                         <span class="n">data</span><span class="p">[</span><span class="s">&#39;interfacial_area&#39;</span><span class="p">],</span>
+                         <span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_lost&#39;</span><span class="p">],</span>
+                         <span class="n">data</span><span class="p">[</span><span class="s">&#39;age&#39;</span><span class="p">],</span>
+                         <span class="n">data</span><span class="p">[</span><span class="s">&#39;bulltime&#39;</span><span class="p">],</span>
+                         <span class="n">k_emul</span><span class="p">,</span>
+                         <span class="n">emul_time</span><span class="p">,</span>
+                         <span class="n">emul_constant</span><span class="p">,</span>
+                         <span class="n">S_max</span><span class="p">,</span>
+                         <span class="n">Y_max</span><span class="p">,</span>
+                         <span class="n">constants</span><span class="o">.</span><span class="n">drop_max</span><span class="p">)</span>
+
+            <span class="c">#sc.weathering_data[&#39;water_content&#39;] += \</span>
+                <span class="c">#np.sum(data[&#39;frac_water&#39;][:]) / sc.num_released</span>
+            <span class="c"># just average the water fraction each time - it is not per time</span>
+            <span class="c"># step value but at a certain time value</span>
+            <span class="c"># todo: probably should be weighted avg</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;water_content&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">])</span>
+                <span class="c">#np.sum(data[&#39;frac_water&#39;][:]*data[&#39;mass&#39;][:]) / np.sum(data[&#39;mass&#39;])</span>
+                <span class="c">#np.sum(data[&#39;frac_water&#39;][:]) / len(data[&#39;frac_water&#39;]</span>
+                <span class="c">#np.sum(data[&#39;frac_water&#39;][:]) / sc.num_released</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;water_content for {0}: {1}&#39;</span><span class="o">.</span>
+                              <span class="n">format</span><span class="p">(</span><span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                     <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;water_content&#39;</span><span class="p">]))</span>
+
+        <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="Emulsification.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Since &#39;wind&#39;/&#39;waves&#39; property is saved as references in save file</span>
+<span class="sd">        need to add appropriate node to WindMover schema for &#39;webapi&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">serial</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+<span class="c">#             if self.wind is not None:</span>
+<span class="c">#                 serial[&#39;wind&#39;] = self.wind.serialize(json_)</span>
+
+        <span class="k">return</span> <span class="n">serial</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Emulsification.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        append correct schema for waves object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+
+            <span class="n">dict_</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;waves&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+                <span class="n">waves</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;obj_type&#39;</span><span class="p">))</span>
+                <span class="n">dict_</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">waves</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">dict_</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json_</span>
+</div>
+    <span class="k">def</span> <span class="nf">_water_uptake_coeff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="n">substance</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Use higher of wind or pseudo wind corresponding to wave height</span>
+
+<span class="sd">            if (H0 &gt; 0) HU = 2.0286 * sqrt(g * H0)</span>
+<span class="sd">            if (HU &lt; 4.429) HU = pow(HU / .71, .813)</span>
+<span class="sd">            if (U &lt; HU) U = HU</span>
+<span class="sd">            k_emul = 6.0 * K0Y * U * U / d_max</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c">## higher of real or psuedo wind</span>
+        <span class="n">wind_speed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_emulsification_wind</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+
+        <span class="c"># water uptake rate constant - get this from database</span>
+        <span class="n">K0Y</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;k0y&#39;</span><span class="p">)</span>
+
+        <span class="n">k_emul</span> <span class="o">=</span> <span class="mf">6.0</span> <span class="o">*</span> <span class="n">K0Y</span> <span class="o">*</span> <span class="n">wind_speed</span> <span class="o">*</span> <span class="n">wind_speed</span> <span class="o">/</span> <span class="n">constants</span><span class="o">.</span><span class="n">drop_max</span>
+
+        <span class="k">return</span> <span class="n">k_emul</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

@@ -23,12 +23,12 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
     <link rel="up" title="Module code" href="../../index.html" /> 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -45,7 +45,7 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <h1>Source code for gnome.persist.extend_colander</h1><div class="highlight"><pre>
 <span class="sd">&#39;&#39;&#39;</span>
@@ -57,8 +57,8 @@
 <span class="kn">import</span> <span class="nn">numpy</span>
 <span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
 
-<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">Float</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">null</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> \
-    <span class="n">TupleSchema</span><span class="p">,</span> <span class="n">SequenceSchema</span><span class="p">,</span> <span class="n">null</span>
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">Float</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> \
+    <span class="n">TupleSchema</span><span class="p">,</span> <span class="n">SequenceSchema</span><span class="p">,</span> <span class="n">null</span><span class="p">,</span> <span class="n">List</span>
 
 <span class="kn">import</span> <span class="nn">gnome.basic_types</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="kn">import</span> <span class="n">inf_datetime</span>
@@ -71,9 +71,8 @@
 
     <span class="k">def</span> <span class="nf">strip_timezone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_datetime</span><span class="p">):</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">_datetime</span> <span class="ow">and</span>
-            <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">_datetime</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span> <span class="ow">or</span>
-             <span class="nb">isinstance</span><span class="p">(</span><span class="n">_datetime</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">))</span>
-            <span class="p">):</span>
+                <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">_datetime</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span> <span class="ow">or</span>
+                 <span class="nb">isinstance</span><span class="p">(</span><span class="n">_datetime</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">))):</span>
             <span class="n">_datetime</span> <span class="o">=</span> <span class="n">_datetime</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">_datetime</span>
 
@@ -110,16 +109,17 @@
         <span class="k">return</span> <span class="n">items</span>
 
 </div>
-<div class="viewcode-block" id="VelocityArray"><a class="viewcode-back" href="../../../reference.html#gnome.persist.extend_colander.VelocityArray">[docs]</a><span class="k">class</span> <span class="nc">VelocityArray</span><span class="p">(</span><span class="n">Tuple</span><span class="p">):</span>
+<div class="viewcode-block" id="NumpyFixedLen"><a class="viewcode-back" href="../../../reference.html#gnome.persist.extend_colander.NumpyFixedLen">[docs]</a><span class="k">class</span> <span class="nc">NumpyFixedLen</span><span class="p">(</span><span class="n">Tuple</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    A subclass of :class:`colander.Sequence` that converts itself to a numpy</span>
-<span class="sd">    array representing a [velX, velY, velZ] value.</span>
+<span class="sd">    A subclass of :class:`colander.Tuple` that converts itself to a Tuple and</span>
+<span class="sd">    back to a numpy array. This is used to define schemas for Numpy arrays that</span>
+<span class="sd">    have a fixed size like WorldPoint, 3D velocity of SimpleMover.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">appstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>  <span class="c"># colander.null</span>
             <span class="k">return</span> <span class="n">null</span>
 
-        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">VelocityArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">appstruct</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">NumpyFixedLen</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
 
     <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">cstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>
@@ -128,11 +128,58 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cstruct</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 
 </div>
-<span class="k">class</span> <span class="nc">VelocityArraySchema</span><span class="p">(</span><span class="n">TupleSchema</span><span class="p">):</span>
-    <span class="n">schema_type</span> <span class="o">=</span> <span class="n">VelocityArray</span>
+<div class="viewcode-block" id="NumpyArray"><a class="viewcode-back" href="../../../reference.html#gnome.persist.extend_colander.NumpyArray">[docs]</a><span class="k">class</span> <span class="nc">NumpyArray</span><span class="p">(</span><span class="n">List</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A subclass of :class:`colander.List` that converts itself to a more general</span>
+<span class="sd">    numpy array of greater than length 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">appstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>  <span class="c"># colander.null</span>
+            <span class="k">return</span> <span class="n">null</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">NumpyArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">null</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cstruct</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+</div>
+<span class="k">class</span> <span class="nc">NumpyFixedLenSchema</span><span class="p">(</span><span class="n">TupleSchema</span><span class="p">):</span>
+    <span class="n">schema_type</span> <span class="o">=</span> <span class="n">NumpyFixedLen</span>
 
 
 <div class="viewcode-block" id="DatetimeValue2dArray"><a class="viewcode-back" href="../../../reference.html#gnome.persist.extend_colander.DatetimeValue2dArray">[docs]</a><span class="k">class</span> <span class="nc">DatetimeValue2dArray</span><span class="p">(</span><span class="n">Sequence</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A subclass of :class:`colander.Sequence` that converts itself to a numpy</span>
+<span class="sd">    array using :class:`gnome.basic_types.datetime_value_2d` as the data type.</span>
+
+<span class="sd">    todo: serialize/deserialize must happen for each element - not very</span>
+<span class="sd">        efficient.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">appstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>  <span class="c"># colander.null</span>
+            <span class="k">return</span> <span class="n">null</span>
+
+        <span class="c"># getting serialized by PyGnome so data should be correct</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">appstruct</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">),</span>
+                     <span class="n">appstruct</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">DatetimeValue2dArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">null</span>
+
+        <span class="n">items</span> <span class="o">=</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">DatetimeValue2dArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+                 <span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">,</span> <span class="n">accept_scalar</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+        <span class="n">timeseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">gnome</span><span class="o">.</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">timeseries</span>  <span class="c"># validator requires numpy array</span>
+
+</div>
+<div class="viewcode-block" id="DatetimeValue1dArray"><a class="viewcode-back" href="../../../reference.html#gnome.persist.extend_colander.DatetimeValue1dArray">[docs]</a><span class="k">class</span> <span class="nc">DatetimeValue1dArray</span><span class="p">(</span><span class="n">Sequence</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A subclass of :class:`colander.Sequence` that converts itself to a numpy</span>
 <span class="sd">    array using :class:`gnome.basic_types.datetime_value_2d` as the data type.</span>
@@ -141,23 +188,18 @@
         <span class="k">if</span> <span class="n">appstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>  <span class="c"># colander.null</span>
             <span class="k">return</span> <span class="n">null</span>
 
-        <span class="n">series</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">appstruct</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">appstruct</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">),</span> <span class="n">appstruct</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">])</span>
 
-        <span class="k">for</span> <span class="n">wind_value</span> <span class="ow">in</span> <span class="n">appstruct</span><span class="p">:</span>
-            <span class="n">dt</span> <span class="o">=</span> <span class="n">wind_value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">dt</span><span class="p">,</span> <span class="p">(</span><span class="n">wind_value</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">wind_value</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">])))</span>
-        <span class="n">appstruct</span> <span class="o">=</span> <span class="n">series</span>
-
-        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">DatetimeValue2dArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">DatetimeValue1dArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">cstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">null</span>
 
-        <span class="n">items</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">DatetimeValue2dArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span>
-                <span class="n">cstruct</span><span class="p">,</span> <span class="n">accept_scalar</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">DatetimeValue1dArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+                 <span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">,</span> <span class="n">accept_scalar</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
 
-        <span class="n">timeseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">gnome</span><span class="o">.</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+        <span class="n">timeseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">gnome</span><span class="o">.</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_1d</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">timeseries</span>  <span class="c"># validator requires numpy array</span>
 
@@ -194,14 +236,18 @@
 
 <span class="k">class</span> <span class="nc">DatetimeValue2dArraySchema</span><span class="p">(</span><span class="n">SequenceSchema</span><span class="p">):</span>
     <span class="n">schema_type</span> <span class="o">=</span> <span class="n">DatetimeValue2dArray</span>
+
+
+<span class="k">class</span> <span class="nc">DatetimeValue1dArraySchema</span><span class="p">(</span><span class="n">SequenceSchema</span><span class="p">):</span>
+    <span class="n">schema_type</span> <span class="o">=</span> <span class="n">DatetimeValue1dArray</span>
 </pre></div>
 
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../search.html" method="get">
       <input type="text" name="q" />
@@ -218,7 +264,7 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -231,9 +277,9 @@
           <li><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer">
+    <div class="footer" role="contentinfo">
         &copy; Copyright 2012, NOAA Emergecny Response Division.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
     </div>
   </body>
 </html>

@@ -23,12 +23,12 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
     <link rel="up" title="Module code" href="../../index.html" /> 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -45,7 +45,7 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <h1>Source code for gnome.utilities.serializable</h1><div class="highlight"><pre>
 <span class="sd">&#39;&#39;&#39;</span>
@@ -64,9 +64,11 @@
 <span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">GnomeId</span>
 <span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">Savable</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities.orderedcollection</span> <span class="kn">import</span> <span class="n">OrderedCollection</span>
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">class_from_objtype</span>
+<span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="kn">import</span> <span class="n">CollectionItemsList</span>
 
 
-<div class="viewcode-block" id="Field"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Field">[docs]</a><span class="k">class</span> <span class="nc">Field</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>  <span class="c"># ,serializable.Serializable):</span>
+<div class="viewcode-block" id="Field"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Field">[docs]</a><span class="k">class</span> <span class="nc">Field</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>  <span class="c"># ,serializable.Serializable):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Class containing information about the property to be serialized</span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -74,6 +76,7 @@
                  <span class="n">isdatafile</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                  <span class="n">update</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                  <span class="n">save_reference</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">iscollection</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                  <span class="n">test_for_eq</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Constructor for the Field object.</span>
@@ -126,17 +129,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">update</span> <span class="o">=</span> <span class="n">update</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="n">read</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">save_reference</span> <span class="o">=</span> <span class="n">save_reference</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iscollection</span> <span class="o">=</span> <span class="n">iscollection</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">test_for_eq</span> <span class="o">=</span> <span class="n">test_for_eq</span>
 
     <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Field</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">False</span>
 
-        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">isdatafile</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">isdatafile</span> <span class="ow">and</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">save</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">save</span> <span class="ow">and</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">update</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">update</span> <span class="ow">and</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">read</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">__dict__</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">True</span>
 
         <span class="k">return</span> <span class="bp">False</span>
@@ -499,7 +499,7 @@
         <span class="k">return</span> <span class="n">names</span>
 
 
-<div class="viewcode-block" id="Serializable"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable">[docs]</a><span class="k">class</span> <span class="nc">Serializable</span><span class="p">(</span><span class="n">GnomeId</span><span class="p">,</span> <span class="n">Savable</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable">[docs]</a><span class="k">class</span> <span class="nc">Serializable</span><span class="p">(</span><span class="n">GnomeId</span><span class="p">,</span> <span class="n">Savable</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    contains the to_dict and update_from_dict method to output properties of</span>
@@ -530,7 +530,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">_state</span> <span class="o">=</span> <span class="n">State</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">),</span> <span class="n">read</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s">&#39;id&#39;</span><span class="p">),</span>
-        <span class="n">update</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,))</span>
+                   <span class="n">update</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,))</span>
 
     <span class="c"># =========================================================================</span>
     <span class="c"># @classmethod</span>
@@ -600,7 +600,7 @@
                 <span class="k">raise</span>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Serializable.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        creates a new object from dictionary</span>
 
@@ -629,6 +629,9 @@
             <span class="k">if</span> <span class="n">dict_</span><span class="p">:</span>
                 <span class="n">new_obj</span><span class="o">.</span><span class="n">update_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
 
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;constructed object {0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_obj</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        <span class="n">new_obj</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">new_obj</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">new_obj</span>
 </div>
     <span class="k">def</span> <span class="nf">_attrlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">do</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">)):</span>
@@ -651,7 +654,7 @@
 
         <span class="k">return</span> <span class="n">list_</span>
 
-<div class="viewcode-block" id="Serializable.to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        returns a dictionary containing the serialized representation of this</span>
 <span class="sd">        object.</span>
@@ -689,7 +692,7 @@
 
         <span class="k">return</span> <span class="n">data</span>
 </div>
-<div class="viewcode-block" id="Serializable.attr_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.attr_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">attr_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.attr_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.attr_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">attr_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        refactor to_dict&#39;s functionality so child classes can convert a</span>
 <span class="sd">        single attribute to_dict instead of doing a whole list of fields</span>
@@ -703,7 +706,7 @@
 
         <span class="k">return</span> <span class="n">value</span>
 </div>
-<div class="viewcode-block" id="Serializable.update_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.update_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">update_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.update_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.update_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">update_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update the attributes of this object using the dictionary ``data`` by</span>
 <span class="sd">        looking up the value of each key in ``data``.</span>
@@ -780,7 +783,7 @@
 
         <span class="k">return</span> <span class="bp">False</span>
 
-<div class="viewcode-block" id="Serializable.update_attr"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.update_attr">[docs]</a>    <span class="k">def</span> <span class="nf">update_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.update_attr"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.update_attr">[docs]</a>    <span class="k">def</span> <span class="nf">update_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        update the attribute defined by &#39;name&#39; with given &#39;value&#39;</span>
 
@@ -811,64 +814,22 @@
 </div>
     <span class="k">def</span> <span class="nf">_update_orderedcoll_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">curr_oc</span><span class="p">,</span> <span class="n">l_new_oc</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">            Update attribute of type OrderedCollection with items in</span>
-<span class="sd">            the sequence l_new_oc.</span>
-<span class="sd">            Any in-place items in the current collection that differ from</span>
-<span class="sd">            the respective items in the new collection (or sequence) will</span>
-<span class="sd">            be replaced.  For example:</span>
-<span class="sd">                curr_oc = [a, b, c, d]</span>
-<span class="sd">                new_oc  = [a, e, c, f]</span>
-<span class="sd">                               ||</span>
-<span class="sd">                               \/</span>
-<span class="sd">                upd_oc  = [a, e, c, f]</span>
-
-<span class="sd">            If the new sequence is bigger than the current collection, then</span>
-<span class="sd">            the new items will be appended.  For example:</span>
-<span class="sd">                curr_oc = [a, b, c, d]</span>
-<span class="sd">                new_oc  = [a, b, c, d, e, f]</span>
-<span class="sd">                               ||</span>
-<span class="sd">                               \/</span>
-<span class="sd">                upd_oc  = [a, b, c, d, e, f]</span>
-
-<span class="sd">            If the new sequence is smaller than the current collection, then</span>
-<span class="sd">            the extra items in the current collection will be removed.</span>
-<span class="sd">            For example:</span>
-<span class="sd">                curr_oc = [a, b, c, d, e, f]</span>
-<span class="sd">                new_oc  = [a, b, c, d]</span>
-<span class="sd">                               ||</span>
-<span class="sd">                               \/</span>
-<span class="sd">                upd_oc  = [a, b, c, d]</span>
-<span class="sd">            TODO: Some things to worry about:</span>
-<span class="sd">            - any repeated items in l_new_oc?</span>
-<span class="sd">            - should we accept only gnome objects in l_new_oc?</span>
+<span class="sd">        update attribute of type OrderedCollection with items in list l_new_oc</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">updated</span> <span class="o">=</span> <span class="bp">False</span>
 
-        <span class="k">if</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">l_new_oc</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Cannot update if our new list contains &quot;</span>
-                             <span class="s">&quot;null items.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l_new_oc</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">curr_oc</span><span class="p">):</span>
+            <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">elif</span> <span class="nb">any</span><span class="p">([</span><span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">curr_oc</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">l_new_oc</span><span class="p">)]):</span>
+            <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
 
-        <span class="n">list_items</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">izip_longest</span><span class="p">(</span><span class="n">curr_oc</span><span class="p">,</span> <span class="n">l_new_oc</span><span class="p">)]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l_new_oc</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">curr_oc</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">curr</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="n">list_items</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">curr</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-                    <span class="n">curr_oc</span> <span class="o">+=</span> <span class="n">new</span>
-                    <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
-                <span class="k">elif</span> <span class="n">curr</span><span class="o">.</span><span class="n">id</span> <span class="o">!=</span> <span class="n">new</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
-                    <span class="n">curr_oc</span><span class="p">[</span><span class="n">curr</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span>
-                    <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">curr</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">list_items</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">new</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-                    <span class="k">del</span> <span class="n">curr_oc</span><span class="p">[</span><span class="n">curr</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
-                    <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
-                <span class="k">elif</span> <span class="n">curr</span><span class="o">.</span><span class="n">id</span> <span class="o">!=</span> <span class="n">new</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
-                    <span class="n">curr_oc</span><span class="p">[</span><span class="n">curr</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span>
-                    <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
-
+        <span class="k">if</span> <span class="n">updated</span><span class="p">:</span>
+            <span class="n">curr_oc</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">l_new_oc</span><span class="p">:</span>
+                <span class="n">curr_oc</span> <span class="o">+=</span> <span class="n">l_new_oc</span>
         <span class="k">return</span> <span class="n">updated</span>
 
-<div class="viewcode-block" id="Serializable.obj_type_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.obj_type_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">obj_type_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.obj_type_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.obj_type_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">obj_type_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        returns object type to save in dict.</span>
 <span class="sd">        This is base implementation and can be over-ridden</span>
@@ -900,26 +861,15 @@
 <span class="sd">        It looks at attributes defined in self._state and checks the plain</span>
 <span class="sd">        python types match.</span>
 
-<span class="sd">        It does not compare numpy arrays - only the plain python types. If an</span>
-<span class="sd">        object&#39;s state contains numpy arrays like Wind object, it must override</span>
-<span class="sd">        this method and do the comparison in its own class. This is especially</span>
-<span class="sd">        useful when a Model object is recreated from mid-run save and the</span>
-<span class="sd">        SpillContainer&#39;s data_arrays are repopulated. The arrays may not be</span>
-<span class="sd">        exact so SpillContainer does the equality check for numpy arrays but</span>
-<span class="sd">        can still use this base class for testing equality for all other</span>
-<span class="sd">        attributes. Helps in following the DRY principle.</span>
+<span class="sd">        It does an allclose() check for numpy arrays using default atol, rtol.</span>
 
 <span class="sd">        :param other: object of the same type as self that is used for</span>
 <span class="sd">                      comparison in obj1 == other</span>
 
-<span class="sd">        NOTE: This class does not have __init__ method and super is not used.</span>
+<span class="sd">        NOTE: super is not used.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">False</span>
-
-        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">)</span> <span class="o">!=</span>
-            <span class="n">other</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">)):</span>
             <span class="k">return</span> <span class="bp">False</span>
 
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">):</span>
@@ -941,13 +891,16 @@
                         <span class="k">return</span> <span class="bp">False</span>
                 <span class="k">elif</span> <span class="n">self_attr</span> <span class="o">!=</span> <span class="n">other_attr</span><span class="p">:</span>
                     <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="n">other_attr</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="bp">False</span>
 
         <span class="k">return</span> <span class="bp">True</span>
 
     <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span>
 
-<div class="viewcode-block" id="Serializable.to_serialize"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.to_serialize">[docs]</a>    <span class="k">def</span> <span class="nf">to_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.to_serialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.to_serialize">[docs]</a>    <span class="k">def</span> <span class="nf">to_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        invoke to_dict() which converts all attributes defined in _state to</span>
 <span class="sd">        dict. If json_=&#39;save&#39;, it subselects the Fields with save=True. If</span>
@@ -960,14 +913,14 @@
             <span class="n">attrlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attrlist</span><span class="p">(</span><span class="n">do</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">,))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;desired json_ payload must be either for webapi &quot;</span>
-                <span class="s">&quot;or for save files: (&#39;webapi&#39;, &#39;save&#39;)&quot;</span><span class="p">)</span>
+                             <span class="s">&quot;or for save files: (&#39;webapi&#39;, &#39;save&#39;)&quot;</span><span class="p">)</span>
 
         <span class="n">toserial</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">attrlist</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="p">:</span>
                 <span class="c"># if attribute is None, then dict_ does not contain it</span>
                 <span class="k">if</span> <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="ow">and</span>
-                    <span class="nb">hasattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span> <span class="s">&#39;to_serialize&#39;</span><span class="p">)):</span>
+                        <span class="nb">hasattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span> <span class="s">&#39;to_serialize&#39;</span><span class="p">)):</span>
                     <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
                     <span class="c"># recursively call for nested objects</span>
                     <span class="n">toserial</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">attr</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
@@ -978,7 +931,7 @@
         <span class="n">toserial</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json_</span>
         <span class="k">return</span> <span class="n">toserial</span>
 </div>
-<div class="viewcode-block" id="Serializable.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convert the dict returned by object&#39;s to_dict method to valid json</span>
 <span class="sd">        format via colander schema</span>
@@ -1001,12 +954,25 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
-        <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
+        <span class="n">c_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;iscollection&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
+            <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
+            <span class="c"># check for collections</span>
+            <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
+                <span class="n">serial</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">serialize_oc</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">json_</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
+                <span class="c"># add a node for each collection, then serialize</span>
+                <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">CollectionItemsList</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+            <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">serial</span>
 </div>
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Serializable.is_sparse"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.is_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">is_sparse</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.is_sparse"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.is_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">is_sparse</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">            Sparse means that we have a previously created object,</span>
 <span class="sd">            and we are receiving a reference to the object using just</span>
@@ -1019,8 +985,18 @@
 
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">attr_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
 </div>
+<div class="viewcode-block" id="Serializable.serialize_oc"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.serialize_oc">[docs]</a>    <span class="k">def</span> <span class="nf">serialize_oc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coll</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Serialize Model attributes of type ordered collection or list - an</span>
+<span class="sd">        iterable containing serializable objects</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">json_out</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">coll</span><span class="p">:</span>
+            <span class="n">json_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">json_out</span>
+</div>
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Serializable.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            classmethod takes json structure as input, deserializes it using a</span>
 <span class="sd">            colander schema then invokes the new_from_dict method to create an</span>
@@ -1030,17 +1006,80 @@
 <span class="sd">            not treat them, but just send them back.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+            <span class="c"># if there are collections in object, dynamically update schema</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+            <span class="n">c_fields</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;iscollection&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">json_</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
+                <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+                        <span class="n">_to_dict</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> \
+                            <span class="n">cls</span><span class="o">.</span><span class="n">deserialize_oc</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">json_</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+                        <span class="c"># add a node for each collection, then deserialize</span>
+                        <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">CollectionItemsList</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+                <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+            <span class="c"># return deserialized object</span>
+            <span class="k">return</span> <span class="n">_to_dict</span>
+
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">json_</span></div></div>
+            <span class="k">return</span> <span class="n">json_</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Serializable.deserialize_oc"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize_oc">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize_oc</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        check contents of orderered collections to figure out what schema to</span>
+<span class="sd">        use.</span>
+<span class="sd">        Basically, the json serialized ordered collection looks like a regular</span>
+<span class="sd">        list.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">deserial</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+            <span class="n">d_item</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_deserialize_nested_obj</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="n">deserial</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d_item</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">deserial</span>
+</div>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_deserialize_nested_obj</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">json_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">py_class</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;obj_type&#39;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">py_class</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_collection_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coll</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Method takes the instance of a collection containing serializable gnome</span>
+<span class="sd">        objects and outputs a list of dicts, each with two fields:</span>
+<span class="sd">            {obj_type: object type &lt;module.class&gt;,</span>
+<span class="sd">            id: IDs of each object.}</span>
+<span class="sd">        This is a general way to make a dict for a collection which is then</span>
+<span class="sd">        serialized to a &#39;save&#39; file</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">coll</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">obj_type</span> <span class="o">=</span> <span class="s">&#39;{0.__module__}.{0.__class__.__name__}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="n">obj_type</span> <span class="o">=</span> <span class="s">&#39;{0.__class__.__name__}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;obj_type&#39;</span><span class="p">:</span> <span class="n">obj_type</span><span class="p">,</span> <span class="s">&#39;id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">)}</span>
+            <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">items</span></div>
 </pre></div>
 
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../search.html" method="get">
       <input type="text" name="q" />
@@ -1057,7 +1096,7 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -1070,9 +1109,9 @@
           <li><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer">
+    <div class="footer" role="contentinfo">
         &copy; Copyright 2012, NOAA Emergecny Response Division.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
     </div>
   </body>
 </html>

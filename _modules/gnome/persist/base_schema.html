@@ -23,12 +23,12 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
     <link rel="up" title="Module code" href="../../index.html" /> 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -45,7 +45,7 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <h1>Source code for gnome.persist.base_schema</h1><div class="highlight"><pre>
 <span class="kn">import</span> <span class="nn">datetime</span>
@@ -53,6 +53,8 @@
 <span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">deferred</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span>
                       <span class="n">SequenceSchema</span><span class="p">,</span> <span class="n">TupleSchema</span><span class="p">,</span> <span class="n">MappingSchema</span><span class="p">,</span>
                       <span class="n">String</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Int</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">extend_colander</span> <span class="kn">import</span> <span class="n">NumpyFixedLenSchema</span>
 
 
 <span class="nd">@deferred</span>
@@ -77,7 +79,7 @@
     <span class="n">json_</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">())</span>    <span class="c"># either &#39;webapi&#39; or &#39;save&#39;</span>
 
 </div>
-<div class="viewcode-block" id="OrderedCollectionItemMap"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.OrderedCollectionItemMap">[docs]</a><span class="k">class</span> <span class="nc">OrderedCollectionItemMap</span><span class="p">(</span><span class="n">MappingSchema</span><span class="p">):</span>
+<div class="viewcode-block" id="CollectionItemMap"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.CollectionItemMap">[docs]</a><span class="k">class</span> <span class="nc">CollectionItemMap</span><span class="p">(</span><span class="n">MappingSchema</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    This stores the obj_type and obj_index</span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -85,8 +87,8 @@
     <span class="nb">id</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 </div>
-<span class="k">class</span> <span class="nc">OrderedCollectionItemsList</span><span class="p">(</span><span class="n">SequenceSchema</span><span class="p">):</span>
-    <span class="n">item</span> <span class="o">=</span> <span class="n">OrderedCollectionItemMap</span><span class="p">()</span>
+<span class="k">class</span> <span class="nc">CollectionItemsList</span><span class="p">(</span><span class="n">SequenceSchema</span><span class="p">):</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">CollectionItemMap</span><span class="p">()</span>
 
 
 <div class="viewcode-block" id="LongLat"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.LongLat">[docs]</a><span class="k">class</span> <span class="nc">LongLat</span><span class="p">(</span><span class="n">TupleSchema</span><span class="p">):</span>
@@ -105,6 +107,16 @@
     <span class="n">z</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
 
 </div>
+<div class="viewcode-block" id="WorldPointNumpy"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.WorldPointNumpy">[docs]</a><span class="k">class</span> <span class="nc">WorldPointNumpy</span><span class="p">(</span><span class="n">NumpyFixedLenSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Define same schema as WorldPoint; however, the base class NumpyFixedLenSchema</span>
+<span class="sd">    serializes/deserializes it from/to a numpy array</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="nb">long</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+    <span class="n">lat</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+
+</div>
 <div class="viewcode-block" id="ImageSize"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.ImageSize">[docs]</a><span class="k">class</span> <span class="nc">ImageSize</span><span class="p">(</span><span class="n">TupleSchema</span><span class="p">):</span>
     <span class="s">&#39;Only contains 2D (long, lat) positions&#39;</span>
     <span class="n">width</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Int</span><span class="p">())</span>
@@ -114,9 +126,9 @@
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../search.html" method="get">
       <input type="text" name="q" />
@@ -133,7 +145,7 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -146,9 +158,9 @@
           <li><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer">
+    <div class="footer" role="contentinfo">
         &copy; Copyright 2012, NOAA Emergecny Response Division.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
     </div>
   </body>
 </html>

@@ -23,12 +23,12 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../index.html" />
     <link rel="up" title="Module code" href="../index.html" /> 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -45,7 +45,7 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <h1>Source code for gnome.map</h1><div class="highlight"><pre>
 <span class="c">###fixme:</span>
@@ -75,6 +75,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span>
 <span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
@@ -82,9 +83,13 @@
 
 <span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">base_schema</span>
 
+<span class="kn">import</span> <span class="nn">gnome.map</span>
+
 <span class="kn">from</span> <span class="nn">gnome.utilities.map_canvas</span> <span class="kn">import</span> <span class="n">BW_MapCanvas</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities.file_tools</span> <span class="kn">import</span> <span class="n">haz_files</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="kn">import</span> <span class="n">projections</span>
 
 <span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">oil_status</span><span class="p">,</span> <span class="n">world_point_type</span>
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_land_check</span> <span class="kn">import</span> <span class="n">check_land</span>
@@ -95,13 +100,13 @@
 
 
 <span class="k">class</span> <span class="nc">GnomeMapSchema</span><span class="p">(</span><span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span><span class="p">):</span>
-    <span class="n">map_bounds</span> <span class="o">=</span> <span class="n">base_schema</span><span class="o">.</span><span class="n">LongLatBounds</span><span class="p">()</span>
+    <span class="n">map_bounds</span> <span class="o">=</span> <span class="n">base_schema</span><span class="o">.</span><span class="n">LongLatBounds</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
     <span class="n">spillable_area</span> <span class="o">=</span> <span class="n">base_schema</span><span class="o">.</span><span class="n">LongLatBounds</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">MapFromBNASchema</span><span class="p">(</span><span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">MapFromBNASchema</span><span class="p">(</span><span class="n">GnomeMapSchema</span><span class="p">):</span>
     <span class="n">filename</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">())</span>
-    <span class="n">refloat_halflife</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+    <span class="n">refloat_halflife</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">GnomeMap</span><span class="p">(</span><span class="n">Serializable</span><span class="p">):</span>
@@ -120,7 +125,7 @@
 
     <span class="n">refloat_halflife</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c"># note -- no land, so never used</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_bounds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">spillable_area</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_bounds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">spillable_area</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This __init__ will be different for other implementations</span>
 
@@ -153,7 +158,45 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">spillable_area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">spillable_area</span><span class="p">,</span>
                                              <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">on_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_attr_array_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">np_array</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;convert np_array to list of tuples, used for map_bounds,</span>
+<span class="sd">        spillable_area&#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">map</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">np_array</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">_attr_from_list_to_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l_</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        dict returned as list of tuples to be converted to numpy array</span>
+<span class="sd">        Again used to update_from_dict map_bounds and spillable_area</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">l_</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">map_bounds_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="GnomeMap.map_bounds_to_dict"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.map_bounds_to_dict">[docs]</a>        <span class="s">&#39;convert numpy array to a list for serializing&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attr_array_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map_bounds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">map_bounds_update_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span></div>
+<div class="viewcode-block" id="GnomeMap.map_bounds_update_from_dict"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.map_bounds_update_from_dict">[docs]</a>        <span class="s">&#39;convert list of tuples back to numpy array&#39;</span>
+        <span class="n">new_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attr_from_list_to_array</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map_bounds</span> <span class="o">!=</span> <span class="n">new_arr</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">map_bounds</span> <span class="o">=</span> <span class="n">new_arr</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">spillable_area_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="GnomeMap.spillable_area_to_dict"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.spillable_area_to_dict">[docs]</a>        <span class="s">&#39;convert numpy array to a list for serializing&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attr_array_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spillable_area</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">spillable_area_update_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span></div>
+<div class="viewcode-block" id="GnomeMap.spillable_area_update_from_dict"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.spillable_area_update_from_dict">[docs]</a>        <span class="s">&#39;convert list of tuples back to numpy array&#39;</span>
+        <span class="n">new_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attr_from_list_to_array</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spillable_area</span> <span class="o">!=</span> <span class="n">new_arr</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spillable_area</span> <span class="o">=</span> <span class="n">new_arr</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">on_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span></div>
 <div class="viewcode-block" id="GnomeMap.on_map"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.on_map">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param coords: location for test.</span>
 <span class="sd">        :type coords: 3-tuple of floats: (long, lat, depth) or a</span>
@@ -221,7 +264,8 @@
         <span class="n">status_codes</span> <span class="o">=</span> <span class="n">spill</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">]</span>
         <span class="n">off_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_map</span><span class="p">(</span><span class="n">next_positions</span><span class="p">))</span>
 
-        <span class="n">status_codes</span><span class="p">[</span><span class="n">off_map</span><span class="p">]</span> <span class="o">=</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">to_be_removed</span>
+        <span class="c"># let model decide if we want to remove elements marked as off-map</span>
+        <span class="n">status_codes</span><span class="p">[</span><span class="n">off_map</span><span class="p">]</span> <span class="o">=</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">off_maps</span>
 
     <span class="k">def</span> <span class="nf">beach_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spill</span><span class="p">):</span>
 <div class="viewcode-block" id="GnomeMap.beach_elements"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.beach_elements">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
@@ -304,16 +348,10 @@
 
     <span class="n">land_flag</span> <span class="o">=</span> <span class="mi">1</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">refloat_halflife</span><span class="p">,</span> <span class="n">bitmap_array</span><span class="p">,</span> <span class="n">projection</span><span class="p">,</span>
-                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bitmap_array</span><span class="p">,</span> <span class="n">projection</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        create a new RasterMap</span>
 
-<span class="sd">        :param refloat_halflife: The halflife for refloating off land</span>
-<span class="sd">                                 -- assumed to be the same for all land.</span>
-<span class="sd">                                 0.0 means all refloat every time step</span>
-<span class="sd">                                 &lt; 0.0 means never re-float.</span>
-<span class="sd">        :type refloat_halflife: float. Units are hours</span>
 
 <span class="sd">        :param bitmap_array: A numpy array that stores the land-water map</span>
 <span class="sd">        :type bitmap_array: a (W,H) numpy array of type uint8</span>
@@ -323,6 +361,12 @@
 <span class="sd">        :type projection: :class:`gnome.map_canvas.Projection`</span>
 
 <span class="sd">        Optional arguments (kwargs)</span>
+
+<span class="sd">        :param refloat_halflife: The halflife for refloating off land</span>
+<span class="sd">                                 -- assumed to be the same for all land.</span>
+<span class="sd">                                 0.0 means all refloat every time step</span>
+<span class="sd">                                 &lt; 0.0 means never re-float.</span>
+<span class="sd">        :type refloat_halflife: float. Units are hours</span>
 
 <span class="sd">        :param map_bounds: The polygon bounding the map -- could be larger</span>
 <span class="sd">                           or smaller than the land raster</span>
@@ -336,6 +380,7 @@
 
 <span class="sd">        :type id: string</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">refloat_halflife</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;refloat_halflife&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_refloat_halflife</span> <span class="o">=</span> <span class="n">refloat_halflife</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">seconds_in_hour</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">bitmap</span> <span class="o">=</span> <span class="n">bitmap_array</span>
@@ -370,6 +415,7 @@
         <span class="n">im</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">Image</span><span class="o">.</span><span class="n">FLIP_TOP_BOTTOM</span><span class="p">)</span>
 
         <span class="n">im</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;PNG&#39;</span><span class="p">)</span>
+
 
     <span class="k">def</span> <span class="nf">_on_land_pixel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">):</span></div>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -587,7 +633,7 @@
                             <span class="n">read</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">test_for_eq</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">MapFromBNASchema</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">refloat_halflife</span><span class="p">,</span> <span class="n">raster_size</span><span class="o">=</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">raster_size</span><span class="o">=</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates a GnomeMap (specifically a RasterMap) from a bna file.</span>
@@ -615,6 +661,7 @@
         <span class="n">polygons</span> <span class="o">=</span> <span class="n">haz_files</span><span class="o">.</span><span class="n">ReadBNA</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;PolygonSet&#39;</span><span class="p">)</span>
         <span class="n">map_bounds</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="n">spillable_area</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">filename</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
 
         <span class="c"># find the spillable area and map bounds:</span>
         <span class="c"># and create a new polygonset without them</span>
@@ -669,21 +716,178 @@
         <span class="c"># __init__ the  RasterMap</span>
 
         <span class="c"># hours</span>
-        <span class="n">RasterMap</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">refloat_halflife</span><span class="p">,</span> <span class="n">bitmap_array</span><span class="p">,</span>
+        <span class="n">RasterMap</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bitmap_array</span><span class="p">,</span>
                            <span class="n">canvas</span><span class="o">.</span><span class="n">projection</span><span class="p">,</span>
                            <span class="n">map_bounds</span><span class="o">=</span><span class="n">map_bounds</span><span class="p">,</span>
                            <span class="n">spillable_area</span><span class="o">=</span><span class="n">spillable_area</span><span class="p">,</span>
                            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">None</span>
+<span class="k">def</span> <span class="nf">map_from_rectangular_grid</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span></div>
+<div class="viewcode-block" id="map_from_rectangular_grid"><a class="viewcode-back" href="../../reference.html#gnome.map.map_from_rectangular_grid">[docs]</a>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Suitable for a rectangular, but not fully regular, grid</span>
+
+<span class="sd">    Such that it can be described by single longitude and latitude vectors</span>
+<span class="sd">    </span>
+<span class="sd">    :param mask: the land-water mask as a numpy array</span>
+
+<span class="sd">    :param lon: longitude array</span>
+
+<span class="sd">    :param lon: latitude array</span>
+
+<span class="sd">    :param refine=1: amount to refine grid -- 4 will give 4 times the resolution</span>
+<span class="sd">    :type refine: integer</span>
+
+<span class="sd">    :param kwargs: Other keyword arguments are passed on to RasterMap</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c">## expand the grid mask</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">refine</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">refine</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c">## refine the axes:</span>
+    <span class="n">lon</span> <span class="o">=</span> <span class="n">refine_axis</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">refine</span><span class="p">)</span>
+    <span class="n">lat</span> <span class="o">=</span> <span class="n">refine_axis</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">refine</span><span class="p">)</span>
+
+    <span class="n">nlon</span><span class="p">,</span> <span class="n">nlat</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">map_bounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="p">(</span> <span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>   <span class="n">lat</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                             <span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>  <span class="n">lat</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                             <span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">lat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+                             <span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>  <span class="n">lat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+                           <span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span> <span class="p">)</span>
+    
+    <span class="c"># generating projection for raster map</span>
+    <span class="n">proj</span> <span class="o">=</span> <span class="n">projections</span><span class="o">.</span><span class="n">RectangularGridProjection</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
+    
+
+    <span class="k">return</span> <span class="n">gnome</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">RasterMap</span><span class="p">(</span> <span class="n">grid</span><span class="p">,</span>
+                                <span class="n">proj</span><span class="p">,</span>
+                                <span class="n">map_bounds</span><span class="o">=</span><span class="n">map_bounds</span><span class="p">,</span>
+                                <span class="o">**</span><span class="n">kwargs</span>
+                                <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">grid_from_nc</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span></div>
+<div class="viewcode-block" id="grid_from_nc"><a class="viewcode-back" href="../../reference.html#gnome.map.grid_from_nc">[docs]</a>    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    generates a grid_mask and lat lon from a conforming netcdf file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">netCDF4</span>
+
+    <span class="n">nc</span> <span class="o">=</span> <span class="n">netCDF4</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+    <span class="n">lat_var</span> <span class="o">=</span> <span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;lat&#39;</span><span class="p">]</span>
+    <span class="n">lon_var</span> <span class="o">=</span> <span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;lon&#39;</span><span class="p">]</span>
+
+    <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span> <span class="o">=</span> <span class="n">lat_var</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="c"># check for regular grid:</span>
+    <span class="c">## all rows should be same:</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">lon_var</span><span class="p">[</span><span class="n">r</span><span class="p">,:],</span> <span class="n">lon_var</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Row: </span><span class="si">%i</span><span class="s"> isn&#39;t equal!&quot;</span><span class="o">%</span><span class="n">r</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ny</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">lat_var</span><span class="p">[:,</span><span class="n">c</span><span class="p">],</span> <span class="n">lat_var</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;column: </span><span class="si">%i</span><span class="s"> isn&#39;t equal!&quot;</span><span class="o">%</span><span class="n">c</span><span class="p">)</span>
+
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;mask&#39;</span><span class="p">][:]</span>
+
+    <span class="c">#Re-shuffle for gnome raster map orientation:</span>
+    <span class="c"># create the raster</span>
+<span class="c">#    bitmap_array = np.zeros( (nlon, nlat), dtype=np.uint8 )</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">mask</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span> <span class="c"># swap water/land</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fliplr</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">T</span><span class="p">))</span> <span class="c"># to get oriented right.</span>
+
+    <span class="c"># extra point to fill for last grid cell</span>
+    <span class="c"># note: values can be variable, so not *quite* right</span>
+    <span class="n">lon</span> <span class="o">=</span> <span class="n">lon_var</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span>
+    <span class="n">lat</span> <span class="o">=</span> <span class="n">lat_var</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">lon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="n">lon</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">lon</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lon</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]]</span> <span class="p">]</span>
+    <span class="n">lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="n">lat</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">lat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lat</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]]</span> <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">mask</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span>
+
+<span class="k">def</span> <span class="nf">map_from_rectangular_grid_nc_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span></div>
+<div class="viewcode-block" id="map_from_rectangular_grid_nc_file"><a class="viewcode-back" href="../../reference.html#gnome.map.map_from_rectangular_grid_nc_file">[docs]</a>    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    builds a raster map from a rectangular grid in a netcdf file</span>
+
+<span class="sd">    only tested with the HYCOM grid</span>
+<span class="sd">    </span>
+<span class="sd">    :param filename: the full path or opendap url for the netcdf file</span>
+<span class="sd">    :type filename: string</span>
+
+<span class="sd">    :param refine: how much to refine the grid. 1 means keep it as it is, otherwise is will scale</span>
+<span class="sd">    :type refine: integer</span>
+
+<span class="sd">    :param kwargs: other key word arguemnts -- passed on to RasterMap class constructor</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">grid</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">grid_from_nc</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="nb">map</span> <span class="o">=</span> <span class="n">map_from_rectangular_grid</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">refine</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">map</span>
+
+<span class="k">def</span> <span class="nf">refine_axis</span><span class="p">(</span><span class="n">old_axis</span><span class="p">,</span> <span class="n">refine</span><span class="p">):</span></div>
+<div class="viewcode-block" id="refine_axis"><a class="viewcode-back" href="../../reference.html#gnome.map.refine_axis">[docs]</a>    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    refines the axis be interpolating points between each axis points</span>
+
+<span class="sd">    :param old_axis: the axis values</span>
+<span class="sd">    :type old_axis: 1-d numpy array of floats</span>
+
+<span class="sd">    :param refine: amount to refine grid -- 4 will give 4 times the resolution</span>
+<span class="sd">    :type refine: integer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">refine</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">refine</span><span class="p">)</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">old_axis</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="p">((</span><span class="n">axis</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">axis</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">refine</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">refine</span><span class="p">)</span> <span class="o">+</span> <span class="n">axis</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,)</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="n">axis</span><span class="p">,</span> <span class="n">old_axis</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">axis</span>
+
+<span class="k">def</span> <span class="nf">map_from_regular_grid</span><span class="p">(</span><span class="n">grid_mask</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">refine</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">refloat_halflife</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">map_bounds</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></div>
+<div class="viewcode-block" id="map_from_regular_grid"><a class="viewcode-back" href="../../reference.html#gnome.map.map_from_regular_grid">[docs]</a>    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    note: poorly tested -- here to save it in case we need it in the future</span>
+
+<span class="sd">    makes a raster map from a regular grid: i.e delta_lon and delta-lat are constant.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nlon</span><span class="p">,</span> <span class="n">nlat</span> <span class="o">=</span> <span class="n">grid_mask</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">dlon</span> <span class="o">=</span> <span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lon</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">dlat</span> <span class="o">=</span> <span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lat</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c"># create the raster</span>
+    <span class="n">bitmap_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span><span class="n">nlon</span><span class="o">*</span><span class="n">resolution</span><span class="p">,</span> <span class="n">nlat</span><span class="o">*</span><span class="n">resolution</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span> <span class="p">)</span>
+    <span class="c">#add the land to the raster</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">resolution</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">resolution</span><span class="p">):</span>
+            <span class="n">bitmap_array</span><span class="p">[</span><span class="n">i</span><span class="p">::</span><span class="n">resolution</span><span class="p">,</span> <span class="n">j</span><span class="p">::</span><span class="n">resolution</span><span class="p">]</span> <span class="o">=</span> <span class="n">grid_mask</span>
+
+    <span class="c"># compute projection</span>
+    <span class="n">bounding_box</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="p">(</span> <span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>       <span class="n">lat</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                                <span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">dlon</span><span class="p">,</span> <span class="n">lat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">dlat</span><span class="p">),</span>
+                                <span class="p">),</span>
+                              <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+                            <span class="p">)</span> <span class="c"># adjust for last grid cell.</span>
+    <span class="n">proj</span> <span class="o">=</span> <span class="n">RegularGridProjection</span><span class="p">(</span><span class="n">bounding_box</span><span class="p">,</span>
+                                 <span class="n">image_size</span><span class="o">=</span><span class="n">bitmap_array</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                 <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">gnome</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">RasterMap</span><span class="p">(</span><span class="n">bitmap_array</span><span class="p">,</span>
+                                <span class="n">proj</span><span class="p">,</span>
+                                <span class="n">refloat_halflife</span><span class="o">=</span><span class="n">refloat_halflife</span><span class="p">,</span>
+                                <span class="p">)</span>
 </pre></div></div>
 
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../search.html" method="get">
       <input type="text" name="q" />
@@ -700,7 +904,7 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -713,9 +917,9 @@
           <li><a href="../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer">
+    <div class="footer" role="contentinfo">
         &copy; Copyright 2012, NOAA Emergecny Response Division.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
     </div>
   </body>
 </html>

@@ -1,0 +1,659 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.persist.save_load &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.persist.save_load</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Save/load gnome objects</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">zipfile</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">gnome</span>
+
+<span class="c"># as long as loggers are configured before module is loaded, module scope</span>
+<span class="c"># logger will work. If loggers are configured after this module is loaded and</span>
+<span class="c"># the default behavior to disable_existing_loggers is True, then this will no</span>
+<span class="c"># longer work</span>
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">References</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    PyGnome objects like the WindMover contain other objects, eg Wind object.</span>
+<span class="sd">    When persisting a Model, the Wind object is not created by the WindMover,</span>
+<span class="sd">    it is merely referenced by the WindMover. When persisting a Model, the</span>
+<span class="sd">    referenced objects are saved in their own file and a reference is stored</span>
+<span class="sd">    for it. This class manages these references.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        return key if obj already exists in references list</span>
+<span class="sd">        else return None</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="n">obj</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">key</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_add_reference_with_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        add an object reference specified by &#39;name&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">obj</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;a different object is referenced by &#39;</span>
+                    <span class="s">&#39;{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># make sure object doesn&#39;t already exist</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;this object is already referenced by &#39;</span>
+                    <span class="s">&#39;{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)))</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
+
+    <span class="k">def</span> <span class="nf">reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get a unique reference to the object. By default this string is the</span>
+<span class="sd">        filename in which the json for the object is stored</span>
+<span class="sd">        If a reference to obj already exists, then it is returned</span>
+
+<span class="sd">        :param obj: object for which a reference must be added</span>
+<span class="sd">        :param name=None: add an object reference specified by &#39;name&#39; for</span>
+<span class="sd">            filename</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_reference_with_name</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">key</span>
+
+        <span class="n">key</span> <span class="o">=</span> <span class="s">&quot;{0}_{1}.json&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
+        <span class="k">return</span> <span class="n">key</span>
+
+    <span class="k">def</span> <span class="nf">retrieve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        retrieve the object associated with the reference</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">[</span><span class="n">ref</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+
+<span class="k">def</span> <span class="nf">class_from_objtype</span><span class="p">(</span><span class="n">obj_type</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    object type must be a string in the gnome namespace:</span>
+<span class="sd">        gnome.xxx.xxx</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj_type</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c"># call getattr recursively</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="nb">getattr</span><span class="p">,</span> <span class="n">obj_type</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">gnome</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obj</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;{0} is not part of gnome namespace&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj_type</span><span class="p">))</span>
+        <span class="k">raise</span>
+
+
+<span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s">&#39;Model.json&#39;</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    read json from file and load the appropriate object</span>
+<span class="sd">    This is a general purpose load method that looks at the json[&#39;obj_type&#39;]</span>
+<span class="sd">    and invokes json[&#39;obj_type&#39;].loads(json) method</span>
+
+<span class="sd">    :param saveloc: path to zipfile that contains data files and json files.</span>
+<span class="sd">        It could also be a directory containing files - keep original support</span>
+<span class="sd">        for location files.</span>
+<span class="sd">    :param fname: .json file to load. Default is &#39;Model.json&#39;. zipfile/dir</span>
+<span class="sd">        must contain &#39;fname&#39;</span>
+<span class="sd">    :param references=None: References object that keeps track of objects</span>
+<span class="sd">        in a dict as they are constructed, using the filename as the key</span>
+
+<span class="sd">    :returns: object constructed from the json</span>
+
+<span class="sd">    .. note:: Function first assumes saveloc is a directory and looks for</span>
+<span class="sd">        saveloc/fname. If this fails, it checks if saveloc is a zipfile. If</span>
+<span class="sd">        this fails, it checks if saveloc is a file and loads this assuming its</span>
+<span class="sd">        json for a gnome object. If none of these work, it just returns None.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c"># is a directory, look for Model.json in directory</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+        <span class="n">fd</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">fname</span><span class="p">),</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">)</span>
+        <span class="n">fd</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+        <span class="n">fd</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+        <span class="n">saveloc</span><span class="p">,</span> <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">saveloc</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># nothing to do, saveloc is not zipfile or a directory</span>
+        <span class="k">return</span>
+
+    <span class="c"># load json data from file descriptor</span>
+    <span class="n">json_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">l</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">fd</span><span class="p">]))</span>
+    <span class="n">fd</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="c"># create a reference to the object being loaded</span>
+    <span class="n">cls</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;obj_type&#39;</span><span class="p">))</span>
+    <span class="n">obj</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="c"># object failed to load - look in log messages for clues</span>
+        <span class="k">return</span>
+
+    <span class="c"># after loading, add the object to references</span>
+    <span class="k">if</span> <span class="n">references</span><span class="p">:</span>
+        <span class="n">references</span><span class="o">.</span><span class="n">reference</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">obj</span>
+
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Define general purpose functions for checking and rejecting bad zipfiles</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<span class="k">class</span> <span class="nc">Savable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Create a mixin for save/load options for saving and loading serialized</span>
+<span class="sd">    gnome objects. Mix this in with the Serializable class so all gnome objects</span>
+<span class="sd">    can save/load themselves</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_allowzip64</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">_ref_in_saveloc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">ref</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        returns true if reference is found in saveloc, false otherwise</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">z</span><span class="o">.</span><span class="n">namelist</span><span class="p">():</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">ref</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_update_and_save_refs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        for attributes that are stored as references - ensure the references</span>
+<span class="sd">        are moved to saveloc, and update its value in the json_</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">save_reference</span> <span class="ow">and</span>
+                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
+                <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">                attribute is stored as a reference</span>
+<span class="sd">                json_ will not contain a key for the referenced objects</span>
+<span class="sd">                Add a key with the reference</span>
+<span class="sd">                &#39;&#39;&#39;</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">ref</span> <span class="o">=</span> <span class="n">references</span><span class="o">.</span><span class="n">reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ref_in_saveloc</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">ref</span><span class="p">):</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">ref</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json_</span>
+
+    <span class="k">def</span> <span class="nf">_json_to_saveloc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                         <span class="n">json_</span><span class="p">,</span>
+                         <span class="n">saveloc</span><span class="p">,</span>
+                         <span class="n">references</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                         <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        save json_ to saveloc</span>
+
+<span class="sd">        -. first save and update references if any attributes are stored as</span>
+<span class="sd">            references</span>
+<span class="sd">        -. add self to references</span>
+<span class="sd">        -. move any datafiles to saveloc that need to be persisted</span>
+<span class="sd">        -. finally, write json_ directly to zip if saveloc is a zip or dump</span>
+<span class="sd">            to *.json of saveloc is a directory</span>
+
+<span class="sd">        :param json_: json data after serialization. Default is the output of</span>
+<span class="sd">            self.serialize(&#39;save&#39;)</span>
+<span class="sd">        :param saveloc: Either zipfile to which object&#39;s json can be appended.</span>
+<span class="sd">            Or a valid path where object&#39;s *.json can be dumped to a file</span>
+<span class="sd">        :param references: References object to keep track of objects that</span>
+<span class="sd">            have been constructed. If a referenced object has been saved,</span>
+<span class="sd">            no need to add it again to saveloc - don&#39;t want multiple copies</span>
+<span class="sd">        :param name: json is stored in &#39;name.json&#39; in zip archive/specified</span>
+<span class="sd">            directory. Default is self.__class__.__name__. If references object</span>
+<span class="sd">            contains self.__class__.__name__, then let</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">references</span> <span class="o">=</span> <span class="p">(</span><span class="n">references</span><span class="p">,</span> <span class="n">References</span><span class="p">())[</span><span class="n">references</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">]</span>
+        <span class="n">json_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_and_save_refs</span><span class="p">(</span><span class="n">json_</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
+
+        <span class="n">f_name</span> <span class="o">=</span> \
+            <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;{0}.json&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">))[</span><span class="n">name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">]</span>
+
+        <span class="c"># add yourself to references</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">references</span><span class="o">.</span><span class="n">reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f_name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="c"># f_name already assigned to an object, so let References() assign</span>
+            <span class="c"># a different filename</span>
+            <span class="n">f_name</span> <span class="o">=</span> <span class="n">references</span><span class="o">.</span><span class="n">reference</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c"># move datafiles to saveloc</span>
+        <span class="n">json_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_move_data_file</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">json_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_to_zip</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">json_</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># make last leaf of save location if it doesn&#39;t exist</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_to_file</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">json_</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">references</span>
+
+    <span class="k">def</span> <span class="nf">_write_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="n">full_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">f_name</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">full_name</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">json_</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_write_to_zip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">s_data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        general function for writing string data directly to zipfile.</span>
+
+<span class="sd">        f_name is the archive name and s_data is the corresponding string,</span>
+<span class="sd">        added to zipfile</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">,</span>
+                             <span class="n">compression</span><span class="o">=</span><span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">,</span>
+                             <span class="n">allowZip64</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_allowzip64</span><span class="p">)</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
+            <span class="n">z</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="n">f_name</span><span class="p">,</span> <span class="n">s_data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        save object state as json to user specified saveloc</span>
+
+<span class="sd">        :param saveloc: zip archive or a valid directory. Model files are</span>
+<span class="sd">            either persisted here or a new model is re-created from the files</span>
+<span class="sd">            stored here. The files are clobbered when save() is called.</span>
+<span class="sd">        :type saveloc: A path as a string or unicode</span>
+<span class="sd">        :param name=None: filename to store json. If None, default name is:</span>
+<span class="sd">            &quot;{0}.json&quot;.format(self.__class__.__name__). If saveloc is zipfile,</span>
+<span class="sd">            this is the name of archive in which json for self is stored.</span>
+<span class="sd">        :type name: str</span>
+<span class="sd">        :param references: dict of references mapping &#39;id&#39; to a string used for</span>
+<span class="sd">            the reference. The value could be a unique integer or it could be</span>
+<span class="sd">            a filename. It is upto the creator of the reference list to decide</span>
+<span class="sd">            how to reference a nested object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">json_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">)</span>
+        <span class="n">c_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;iscollection&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_save_collection</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
+                                  <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+                                  <span class="n">references</span><span class="p">,</span>
+                                  <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_json_to_saveloc</span><span class="p">(</span><span class="n">json_</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">references</span><span class="p">,</span>
+                                     <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_move_data_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Look at _state attribute of object. Find all fields with &#39;isdatafile&#39;</span>
+<span class="sd">        attribute as True. If there is a key in json_ corresponding with</span>
+<span class="sd">        &#39;name&#39; of the fields with True &#39;isdatafile&#39; attribute then move that</span>
+<span class="sd">        datafile and update the key in the json_ to point to new location</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;isdatafile&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c"># data filename</span>
+            <span class="n">d_fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+                <span class="c"># add datafile to zip archive</span>
+                <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">,</span>
+                                     <span class="n">compression</span><span class="o">=</span><span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">,</span>
+                                     <span class="n">allowZip64</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_allowzip64</span><span class="p">)</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">d_fname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">z</span><span class="o">.</span><span class="n">namelist</span><span class="p">():</span>
+                        <span class="n">z</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">d_fname</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># move datafile to saveloc</span>
+                <span class="k">if</span> <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">!=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">d_fname</span><span class="p">):</span>
+                    <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">saveloc</span><span class="p">)</span>
+
+            <span class="c"># always want to update the reference so it is relative to saveloc</span>
+            <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">d_fname</span>
+
+        <span class="k">return</span> <span class="n">json_</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_load_refs</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        loads up references. First looks for object in references, if not found</span>
+<span class="sd">        then it creates object from json and adds a reference to it. If found</span>
+<span class="sd">        in references, it just uses/returns the object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">ref_fields</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;save_reference&#39;</span><span class="p">)</span>
+
+        <span class="c"># pop references from json_data, create objects for them</span>
+        <span class="n">ref_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">ref_fields</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">ref_fields</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">json_data</span><span class="p">:</span>
+                    <span class="n">i_ref</span> <span class="o">=</span> <span class="n">json_data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="n">ref_obj</span> <span class="o">=</span> <span class="n">references</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">i_ref</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">ref_obj</span><span class="p">:</span>
+                        <span class="n">ref_obj</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">i_ref</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
+
+                    <span class="n">ref_dict</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref_obj</span>
+
+        <span class="k">return</span> <span class="n">ref_dict</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_update_datafile_path</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        update path to attributes that use a datafile</span>
+<span class="sd">        if saveloc is a zipfile, then extract the datafile to same location</span>
+<span class="sd">        as zipfile and upate path in json_data.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">datafiles</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;isdatafile&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datafiles</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">iszip</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+            <span class="n">iszip</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+            <span class="n">saveloc</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">saveloc</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c"># fix datafiles path from relative to absolute so we can load datafiles</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">datafiles</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">json_data</span><span class="p">:</span>
+                <span class="c"># ZipCheck: path must only be defined relative to saveloc</span>
+                <span class="c"># currently, all datafiles stored at same level in saveloc,</span>
+                <span class="c"># no subdirectories.</span>
+                <span class="c"># Also, the datafiles are extracted to saveloc/.</span>
+                <span class="c"># For zip files coming from the web, is_savezip_valid() tests</span>
+                <span class="c"># filenames in archive do not contain paths with &#39;..&#39;</span>
+                <span class="c"># In here, we just extract datafile to saveloc/.</span>
+                <span class="k">if</span> <span class="n">iszip</span><span class="p">:</span>
+                    <span class="n">z</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">saveloc</span><span class="p">)</span>
+
+                <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
+                                                     <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">iszip</span><span class="p">:</span>
+            <span class="n">z</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        loads object from json_data</span>
+
+<span class="sd">        - load json for references from files</span>
+<span class="sd">        - update paths of datafiles if needed</span>
+<span class="sd">        - deserialize json_data</span>
+<span class="sd">        - and create object with new_from_dict()</span>
+
+<span class="sd">        json_data: dict containing json data. It has been parsed through the</span>
+<span class="sd">            json.loads() command. The json will be valided here when it gets</span>
+<span class="sd">            deserialized. Its references and datafile paths will be recreated</span>
+<span class="sd">            here prior to calling new_from_dict()</span>
+
+<span class="sd">        Optional parameter</span>
+
+<span class="sd">        :param saveloc: location of data files or *.json files for objects</span>
+<span class="sd">            stored as references. If object requires no datafiles and does not</span>
+<span class="sd">            need to read references from a *.json file in saveloc, then this</span>
+<span class="sd">            can be None.</span>
+<span class="sd">        :param references: references object - if this is called by the Model,</span>
+<span class="sd">            it will pass a references object. It is not required.</span>
+
+<span class="sd">        :returns: object constructed from json_data.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">references</span> <span class="o">=</span> <span class="p">(</span><span class="n">references</span><span class="p">,</span> <span class="n">References</span><span class="p">())[</span><span class="n">references</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">]</span>
+        <span class="n">ref_dict</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_load_refs</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
+        <span class="n">cls</span><span class="o">.</span><span class="n">_update_datafile_path</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">)</span>
+
+        <span class="c"># deserialize after removing references</span>
+        <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ref_dict</span><span class="p">:</span>
+            <span class="n">_to_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ref_dict</span><span class="p">)</span>
+
+        <span class="n">c_fields</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;iscollection&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
+            <span class="n">_to_dict</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_load_collection</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
+                                                        <span class="n">_to_dict</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">],</span>
+                                                        <span class="n">references</span><span class="p">)</span>
+
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">_to_dict</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="k">def</span> <span class="nf">_save_collection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                         <span class="n">saveloc</span><span class="p">,</span>
+                         <span class="n">coll_</span><span class="p">,</span>
+                         <span class="n">refs</span><span class="p">,</span>
+                         <span class="n">coll_json</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reference objects inside OrderedCollections or list. Since the OC</span>
+<span class="sd">        itself isn&#39;t a reference but the objects in the list are a reference,</span>
+<span class="sd">        do something a little differently here</span>
+
+<span class="sd">        :param OrderedCollection coll_: ordered collection/list to be saved</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">count</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coll_</span><span class="p">):</span>
+            <span class="n">obj_ref</span> <span class="o">=</span> <span class="n">refs</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">obj_ref</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="c"># try following name - if &#39;fname&#39; already exists in references,</span>
+                <span class="c"># then obj.save() assigns a different name to file</span>
+                <span class="n">fname</span> <span class="o">=</span> <span class="s">&#39;{0.__class__.__name__}_{1}.json&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
+                <span class="n">coll_json</span><span class="p">[</span><span class="n">count</span><span class="p">][</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">refs</span><span class="o">.</span><span class="n">reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">coll_json</span><span class="p">[</span><span class="n">count</span><span class="p">][</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj_ref</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_load_collection</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">l_coll_dict</span><span class="p">,</span> <span class="n">refs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        doesn&#39;t need to be classmethod of the Model, but its only used by</span>
+<span class="sd">        Model at present</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">l_coll</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">l_coll_dict</span><span class="p">:</span>
+            <span class="n">i_ref</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">refs</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">i_ref</span><span class="p">):</span>
+                <span class="n">l_coll</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">refs</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">i_ref</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">item</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">],</span> <span class="n">refs</span><span class="p">)</span>
+                <span class="n">l_coll</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">l_coll</span><span class="p">)</span>
+
+
+<span class="c"># max json filesize is 1MegaByte</span>
+<span class="c"># max compression ratio: uncompressed/compressed = 3</span>
+<span class="n">_max_json_filesize</span> <span class="o">=</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span>
+<span class="n">_max_compress_ratio</span> <span class="o">=</span> <span class="mi">3</span>
+
+
+<span class="k">def</span> <span class="nf">is_savezip_valid</span><span class="p">(</span><span class="n">savezip</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    some basic checks on validity of zipfile. Primarily for checking save</span>
+<span class="sd">    zipfiles loaded from the Web. Following are the types of errors it checks:</span>
+
+<span class="sd">    :returns: True if zip is valid, False otherwise</span>
+
+<span class="sd">    1. Failed to open zipfile</span>
+<span class="sd">    2. CRC failed for a file in the archive - rejecting zip</span>
+<span class="sd">    3. Found a *.json with size &gt; _max_json_filesize - rejecting</span>
+<span class="sd">    4. Reject - found a file with:</span>
+<span class="sd">        uncompressed_size/compressed_size &gt; _max_compress_ratio.</span>
+<span class="sd">    5. Found a file in archive that has path outside of saveloc - rejecting</span>
+<span class="sd">        rejects zipfile if it contains an archive with &#39;..&#39;</span>
+
+<span class="sd">    .. note:: can change _max_json_filesize, _max_compress_ratio if required.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">savezip</span><span class="p">):</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;{0} is not a valid zipfile&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">savezip</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">savezip</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
+        <span class="c"># 1) Failed to open zipfile</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">badfile</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">testzip</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;Failed to open or run testzip() on {0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">savezip</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="c"># 2) CRC failed for a file in the archive - rejecting zip</span>
+        <span class="k">if</span> <span class="n">badfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># log the bad zipfile and return False</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;{0} is corrupt. rejecting zipfile&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">badfile</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">for</span> <span class="n">zi</span> <span class="ow">in</span> <span class="n">z</span><span class="o">.</span><span class="n">filelist</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;.json&#39;</span> <span class="ow">and</span>
+                <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span> <span class="o">&gt;</span> <span class="n">_max_json_filesize</span><span class="p">):</span>
+                <span class="c"># 3) Found a *.json with size &gt; _max_json_filesize. Rejecting.</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;Filesize of {0} is {1}. It must be less than &quot;</span>
+                       <span class="s">&quot;_max_json_filesize: {2}. &quot;</span>
+                       <span class="s">&quot;Rejecting zipfile.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span><span class="p">,</span>
+                                                   <span class="n">_max_json_filesize</span><span class="p">))</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="c"># integer division - it will floor</span>
+        <span class="k">if</span> <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span><span class="o">/</span><span class="n">zi</span><span class="o">.</span><span class="n">compress_size</span> <span class="o">&gt;</span> <span class="n">_max_compress_ratio</span><span class="p">:</span>
+            <span class="c"># 4) Found a file with</span>
+            <span class="c">#    uncompressed_size/compressed_size &gt; _max_compress_ratio.</span>
+            <span class="c">#    Rejecting.</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;uncompressed filesize is {0} time compressed filesize.&quot;</span>
+                   <span class="s">&quot;_max_compress_ratio must be less than {1}. &quot;</span>
+                   <span class="s">&quot;Rejecting zipfile&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">file_size</span><span class="o">/</span><span class="n">zi</span><span class="o">.</span><span class="n">compress_size</span><span class="p">,</span>
+                                              <span class="n">_max_compress_ratio</span><span class="p">))</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="s">&#39;..&#39;</span> <span class="ow">in</span> <span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">:</span>
+            <span class="c"># 5) reject zipfile if it contains .. anywhere in filename.</span>
+            <span class="c">#    currently, all datafiles stored at same level in saveloc,</span>
+            <span class="c">#    no subdirectories. Even if we start using subdirectories,</span>
+            <span class="c">#    there should never be a need to do &#39;..&#39;</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;Found &#39;..&#39; in {0}. Rejecting zipfile&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">))</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="c"># all checks pass - so we can load zipfile</span>
+    <span class="k">return</span> <span class="bp">True</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

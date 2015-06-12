@@ -1,0 +1,276 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.weatherers.natural_dispersion &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.weatherers.natural_dispersion</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">model dispersion process</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">gnome</span>    <span class="c"># required by new_from_dict</span>
+
+<span class="kn">from</span> <span class="nn">gnome.array_types</span> <span class="kn">import</span> <span class="p">(</span><span class="n">viscosity</span><span class="p">,</span>	
+                               <span class="n">mass</span><span class="p">,</span>
+                               <span class="n">density</span><span class="p">,</span>
+                               <span class="n">fay_area</span><span class="p">,</span>
+                               <span class="n">frac_water</span><span class="p">)</span>
+                               
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
+
+<span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">WeathererSchema</span>
+<span class="kn">from</span> <span class="nn">gnome.weatherers</span> <span class="kn">import</span> <span class="n">Weatherer</span>
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="kn">import</span> <span class="p">(</span><span class="n">WaterSchema</span><span class="p">,</span>
+                               <span class="n">WavesSchema</span><span class="p">)</span>
+
+
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_weatherers</span> <span class="kn">import</span> <span class="n">disperse_oil</span>
+<span class="kn">from</span> <span class="nn">gnome.exceptions</span> <span class="kn">import</span> <span class="n">ReferencedObjectNotSet</span>
+
+
+<div class="viewcode-block" id="NaturalDispersion"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.NaturalDispersion">[docs]</a><span class="k">class</span> <span class="nc">NaturalDispersion</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Weatherer</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;water&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;waves&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">WeathererSchema</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">waves</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">water</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param conditions: gnome.environment.Conditions object which contains</span>
+<span class="sd">            things like water temperature</span>
+<span class="sd">        :param waves: waves object for obtaining wave_height, etc at given time</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">waves</span> <span class="o">=</span> <span class="n">waves</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">water</span> <span class="o">=</span> <span class="n">water</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaturalDispersion</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&#39;viscosity&#39;</span><span class="p">:</span> <span class="n">viscosity</span><span class="p">,</span>
+                                 <span class="s">&#39;mass&#39;</span><span class="p">:</span>  <span class="n">mass</span><span class="p">,</span>
+                                 <span class="s">&#39;density&#39;</span><span class="p">:</span> <span class="n">density</span><span class="p">,</span>
+                                 <span class="s">&#39;fay_area&#39;</span><span class="p">:</span> <span class="n">fay_area</span><span class="p">,</span>
+                                 <span class="s">&#39;frac_water&#39;</span><span class="p">:</span> <span class="n">frac_water</span><span class="p">,</span>
+                                 <span class="p">})</span>
+
+<div class="viewcode-block" id="NaturalDispersion.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.NaturalDispersion.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        add dispersion and sedimentation keys to weathering_data</span>
+<span class="sd">        Assumes all spills have the same type of oil</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># create &#39;natural_dispersion&#39; and &#39;sedimentation keys if they doesn&#39;t exist</span>
+        <span class="c"># let&#39;s only define this the first time</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">NaturalDispersion</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;natural_dispersion&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;sedimentation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+</div>
+<div class="viewcode-block" id="NaturalDispersion.prepare_for_model_step"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.NaturalDispersion.prepare_for_model_step">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Set/update arrays used by dispersion module for this timestep:</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaturalDispersion</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span>
+                                                        <span class="n">time_step</span><span class="p">,</span>
+                                                        <span class="n">model_time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="k">return</span>
+
+</div>
+<div class="viewcode-block" id="NaturalDispersion.weather_elements"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.NaturalDispersion.weather_elements">[docs]</a>    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        weather elements over time_step</span>
+<span class="sd">        - sets &#39;natural_dispersion&#39; and &#39;sedimentation&#39; in sc.weathering_data</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">num_released</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">wave_height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># from the waves module</span>
+        <span class="n">frac_breaking_waves</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span> <span class="c"># from the waves module</span>
+        <span class="n">disp_wave_energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)[</span><span class="mi">3</span><span class="p">]</span> <span class="c"># from the waves module</span>
+        <span class="n">visc_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">kinematic_viscosity</span>
+        <span class="n">rho_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">density</span>
+        <span class="n">sediment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;sediment&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">&#39;kg/m^3&#39;</span><span class="p">)</span>	<span class="c"># web has different units</span>
+        <span class="c">#sediment = self.waves.water.sediment</span>
+
+        <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c"># substance does not contain any surface_weathering LEs</span>
+                <span class="k">continue</span>
+
+            <span class="n">V_entrain</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">volume_entrained</span>
+            <span class="n">ka</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">ka</span> <span class="c"># oil sticking term</span>
+
+            <span class="n">disp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">])),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="n">sed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">])),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="n">disperse_oil</span><span class="p">(</span><span class="n">time_step</span><span class="p">,</span>
+                         <span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">],</span>
+                         <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">],</span>
+                         <span class="n">data</span><span class="p">[</span><span class="s">&#39;viscosity&#39;</span><span class="p">],</span>
+                         <span class="n">data</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">],</span>
+                         <span class="n">data</span><span class="p">[</span><span class="s">&#39;fay_area&#39;</span><span class="p">],</span>
+                         <span class="n">disp</span><span class="p">,</span>
+                         <span class="n">sed</span><span class="p">,</span>
+                         <span class="n">frac_breaking_waves</span><span class="p">,</span>
+                         <span class="n">disp_wave_energy</span><span class="p">,</span>
+                         <span class="n">wave_height</span><span class="p">,</span>
+                         <span class="n">visc_w</span><span class="p">,</span>
+                         <span class="n">rho_w</span><span class="p">,</span>
+                         <span class="n">sediment</span><span class="p">,</span>
+                         <span class="n">V_entrain</span><span class="p">,</span>
+                         <span class="n">ka</span><span class="p">)</span>
+
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;natural_dispersion&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">disp</span><span class="p">[:])</span>
+            <span class="n">disp_mass_frac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">disp</span><span class="p">[:])</span> <span class="o">/</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">disp_mass_frac</span><span class="p">)</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;sedimentation&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sed</span><span class="p">[:])</span>
+            <span class="n">sed_mass_frac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sed</span><span class="p">[:])</span> <span class="o">/</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">sed_mass_frac</span><span class="p">)</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;Amount Dispersed for {0}: {1}&#39;</span><span class="o">.</span>
+                             <span class="n">format</span><span class="p">(</span><span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;natural_dispersion&#39;</span><span class="p">]))</span>
+
+        <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="NaturalDispersion.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.NaturalDispersion.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &#39;water&#39;/&#39;waves&#39; property is saved as references in save file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="p">:</span>
+                <span class="n">serial</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span><span class="p">:</span>
+                <span class="n">serial</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">serial</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="NaturalDispersion.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.NaturalDispersion.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        append correct schema for water / waves</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+
+            <span class="n">dict_</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;water&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+                <span class="c">#obj = json_[&#39;wind&#39;].pop(&#39;obj_type&#39;)</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">json_</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">][</span><span class="s">&#39;obj_type&#39;</span><span class="p">]</span>
+                <span class="n">dict_</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="s">&#39;waves&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+                <span class="c">#obj = json_[&#39;waves&#39;].pop(&#39;obj_type&#39;)</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">json_</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">][</span><span class="s">&#39;obj_type&#39;</span><span class="p">]</span>
+                <span class="n">dict_</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">]))</span>
+            <span class="k">return</span> <span class="n">dict_</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json_</span>
+        
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

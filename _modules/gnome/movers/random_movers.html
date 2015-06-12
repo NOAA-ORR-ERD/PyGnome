@@ -1,0 +1,243 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.movers.random_movers &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.movers.random_movers</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Movers using diffusion as the forcing function</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">drop</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="kn">import</span> <span class="n">ObjType</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span>
+<span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="kn">import</span> <span class="n">CyMover</span><span class="p">,</span> <span class="n">ProcessSchema</span>
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_random_mover</span> <span class="kn">import</span> <span class="n">CyRandomMover</span>
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_random_vertical_mover</span> <span class="kn">import</span> <span class="n">CyRandomVerticalMover</span>
+
+
+<span class="k">class</span> <span class="nc">RandomMoverSchema</span><span class="p">(</span><span class="n">ObjType</span><span class="p">,</span> <span class="n">ProcessSchema</span><span class="p">):</span>
+    <span class="n">diffusion_coef</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">uncertain_factor</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="RandomMover"><a class="viewcode-back" href="../../../reference.html#gnome.movers.RandomMover">[docs]</a><span class="k">class</span> <span class="nc">RandomMover</span><span class="p">(</span><span class="n">CyMover</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This mover class inherits from CyMover and contains CyRandomMover</span>
+
+<span class="sd">    The real work is done by CyRandomMover.</span>
+<span class="sd">    CyMover sets everything up that is common to all movers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">CyMover</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;diffusion_coef&#39;</span><span class="p">,</span> <span class="s">&#39;uncertain_factor&#39;</span><span class="p">],</span>
+              <span class="n">save</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;diffusion_coef&#39;</span><span class="p">,</span> <span class="s">&#39;uncertain_factor&#39;</span><span class="p">])</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">RandomMoverSchema</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Uses super to invoke base class __init__ method.</span>
+
+<span class="sd">        Optional parameters (kwargs)</span>
+
+<span class="sd">        :param diffusion_coef: Diffusion coefficient for random diffusion.</span>
+<span class="sd">            Default is 100,000 cm2/sec</span>
+<span class="sd">        :param uncertain_factor: Uncertainty factor. Default is 2</span>
+
+<span class="sd">        Remaining kwargs are passed onto :class:`gnome.movers.Mover` __init__</span>
+<span class="sd">        using super.  See Mover documentation for remaining valid kwargs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span> <span class="o">=</span> \
+            <span class="n">CyRandomMover</span><span class="p">(</span><span class="n">diffusion_coef</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;diffusion_coef&#39;</span><span class="p">,</span><span class="mi">100000</span><span class="p">),</span>
+                          <span class="n">uncertain_factor</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;uncertain_factor&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RandomMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">diffusion_coef</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">diffusion_coef</span>
+
+    <span class="nd">@diffusion_coef.setter</span>
+    <span class="k">def</span> <span class="nf">diffusion_coef</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">diffusion_coef</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">uncertain_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">uncertain_factor</span>
+
+    <span class="nd">@uncertain_factor.setter</span>
+    <span class="k">def</span> <span class="nf">uncertain_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">uncertain_factor</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;RandomMover(diffusion_coef={0}, &#39;</span>
+                <span class="s">&#39;uncertain_factor={1}, &#39;</span>
+                <span class="s">&#39;active_start={2}, active_stop={3}, &#39;</span>
+                <span class="s">&#39;on={4})&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diffusion_coef</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_factor</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">active_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">))</span>
+
+</div>
+<span class="k">class</span> <span class="nc">RandomVerticalMoverSchema</span><span class="p">(</span><span class="n">ObjType</span><span class="p">,</span> <span class="n">ProcessSchema</span><span class="p">):</span>
+    <span class="n">vertical_diffusion_coef_above_ml</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">vertical_diffusion_coef_below_ml</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">mixed_layer_depth</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">RandomVerticalMover</span><span class="p">(</span><span class="n">CyMover</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This mover class inherits from CyMover and contains CyRandomVerticalMover</span>
+
+<span class="sd">    The real work is done by CyRandomVerticalMoraneomver.</span>
+<span class="sd">    CyMover sets everything up that is common to all movers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">CyMover</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;vertical_diffusion_coef_above_ml&#39;</span><span class="p">,</span>
+                      <span class="s">&#39;vertical_diffusion_coef_below_ml&#39;</span><span class="p">,</span>
+                      <span class="s">&#39;mixed_layer_depth&#39;</span><span class="p">],</span>
+              <span class="n">save</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;vertical_diffusion_coef_above_ml&#39;</span><span class="p">,</span>
+                      <span class="s">&#39;vertical_diffusion_coef_below_ml&#39;</span><span class="p">,</span>
+                      <span class="s">&#39;mixed_layer_depth&#39;</span><span class="p">])</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">RandomVerticalMoverSchema</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Uses super to invoke base class __init__ method.</span>
+
+<span class="sd">        Optional parameters (kwargs)</span>
+<span class="sd">        :param vertical_diffusion_coef_above_ml: Vertical diffusion coefficient</span>
+<span class="sd">            for random diffusion above the mixed layer. Default is 5 cm2/s</span>
+<span class="sd">        :param vertical_diffusion_coef_below_ml: Vertical diffusion coefficient</span>
+<span class="sd">            for random diffusion below the mixed layer. Default is .11 cm2/s</span>
+<span class="sd">        :param mixed_layer_depth: Mixed layer depth. Default is 10 meters.</span>
+
+<span class="sd">        Remaining kwargs are passed onto Mover&#39;s __init__ using super.</span>
+<span class="sd">        See Mover documentation for remaining valid kwargs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span> <span class="o">=</span> <span class="n">CyRandomVerticalMover</span><span class="p">(</span><span class="n">vertical_diffusion_coef_above_ml</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;vertical_diffusion_coef_above_ml&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+                                           <span class="n">vertical_diffusion_coef_below_ml</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;vertical_diffusion_coef_below_ml&#39;</span><span class="p">,</span> <span class="o">.</span><span class="mi">11</span><span class="p">),</span>
+                                           <span class="n">mixed_layer_depth</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;mixed_layer_depth&#39;</span><span class="p">,</span> <span class="mf">10.</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RandomVerticalMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">vertical_diffusion_coef_above_ml</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">vertical_diffusion_coef_above_ml</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">vertical_diffusion_coef_below_ml</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">vertical_diffusion_coef_below_ml</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mixed_layer_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">mixed_layer_depth</span>
+
+    <span class="nd">@vertical_diffusion_coef_above_ml.setter</span>
+    <span class="k">def</span> <span class="nf">vertical_diffusion_coef_above_ml</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">vertical_diffusion_coef_above_ml</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@vertical_diffusion_coef_below_ml.setter</span>
+    <span class="k">def</span> <span class="nf">vertical_diffusion_coef_below_ml</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">vertical_diffusion_coef_below_ml</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@mixed_layer_depth.setter</span>
+    <span class="k">def</span> <span class="nf">mixed_layer_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">mixed_layer_depth</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        .. todo:: We probably want to include more information.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;RandomVerticalMover(vertical_diffusion_coef_above_ml={0}, &#39;</span>
+                <span class="s">&#39;vertical_diffusion_coef_below_ml={1}, &#39;</span>
+                <span class="s">&#39;mixed_layer_depth={2}, active_start={3}, active_stop={4}, &#39;</span>
+                <span class="s">&#39;on={5})&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vertical_diffusion_coef_above_ml</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">vertical_diffusion_coef_below_ml</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">mixed_layer_depth</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">active_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">))</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

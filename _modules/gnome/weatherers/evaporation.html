@@ -1,0 +1,363 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.weatherers.evaporation &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.weatherers.evaporation</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">model evaporation process</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">oil_status</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">WeathererSchema</span>
+<span class="kn">from</span> <span class="nn">gnome.weatherers</span> <span class="kn">import</span> <span class="n">Weatherer</span>
+<span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="kn">import</span> <span class="p">(</span><span class="n">WindSchema</span><span class="p">,</span>
+                               <span class="n">WaterSchema</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gnome.exceptions</span> <span class="kn">import</span> <span class="n">ReferencedObjectNotSet</span>
+
+
+<div class="viewcode-block" id="Evaporation"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Evaporation">[docs]</a><span class="k">class</span> <span class="nc">Evaporation</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Weatherer</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;water&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;wind&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">WeathererSchema</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">water</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">wind</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param conditions: gnome.environment.Conditions object which contains</span>
+<span class="sd">            things like water temperature</span>
+<span class="sd">        :param wind: wind object for obtaining speed at specified time</span>
+<span class="sd">        :type wind: Wind API, specifically must have get_value(time) method</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">water</span> <span class="o">=</span> <span class="n">water</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wind</span> <span class="o">=</span> <span class="n">wind</span>
+
+        <span class="k">if</span> <span class="n">water</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">wind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;make_default_refs&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;make_default_refs&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Evaporation</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&#39;area&#39;</span><span class="p">,</span> <span class="s">&#39;evap_decay_constant&#39;</span><span class="p">,</span>
+                                 <span class="s">&#39;frac_water&#39;</span><span class="p">,</span> <span class="s">&#39;frac_lost&#39;</span><span class="p">,</span> <span class="s">&#39;init_mass&#39;</span><span class="p">})</span>
+
+<div class="viewcode-block" id="Evaporation.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Evaporation.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        add evaporated key to weathering_data</span>
+<span class="sd">        for now also add &#39;density&#39; key here</span>
+<span class="sd">        Assumes all spills have the same type of oil</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># create &#39;evaporated&#39; key if it doesn&#39;t exist</span>
+        <span class="c"># let&#39;s only define this the first time</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Evaporation</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;evaporated&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;{0._pid} init &#39;evaporated&#39; key to 0.0&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_mass_transport_coeff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Is wind a function of only model_time? How about time_step?</span>
+<span class="sd">        at present yes since wind only contains timeseries data</span>
+
+<span class="sd">            K = c * U ** 0.78 if U &lt;= 10 m/s</span>
+<span class="sd">            K = 0.06 * c * U ** 2 if U &gt; 10 m/s</span>
+
+<span class="sd">        If K is expressed in m/sec, then Buchanan and Hurford set c = 0.0025</span>
+<span class="sd">        U is wind_speed 10m above the surface</span>
+
+<span class="sd">        .. note:: wind speed is at least 1 m/s.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">wind_speed</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">c_evap</span> <span class="o">=</span> <span class="mf">0.0025</span>     <span class="c"># if wind_speed in m/s</span>
+        <span class="k">if</span> <span class="n">wind_speed</span> <span class="o">&lt;=</span> <span class="mf">10.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">c_evap</span> <span class="o">*</span> <span class="n">wind_speed</span> <span class="o">**</span> <span class="mf">0.78</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.06</span> <span class="o">*</span> <span class="n">c_evap</span> <span class="o">*</span> <span class="n">wind_speed</span> <span class="o">**</span> <span class="mi">2</span>
+
+    <span class="k">def</span> <span class="nf">_set_evap_decay_constant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">substance</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
+        <span class="c"># used to compute the evaporation decay constant</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mass_transport_coeff</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+        <span class="n">water_temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;temperature&#39;</span><span class="p">,</span> <span class="s">&#39;K&#39;</span><span class="p">)</span>
+
+        <span class="n">f_diff</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">if</span> <span class="s">&#39;frac_water&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="c"># frac_water content in emulsion will be a per element but is</span>
+            <span class="c"># currently not being set by anything. Fix once we initialize</span>
+            <span class="c"># and properly set frac_water</span>
+            <span class="n">f_diff</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">])</span>
+
+        <span class="n">vp</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">vapor_pressure</span><span class="p">(</span><span class="n">water_temp</span><span class="p">)</span>
+
+        <span class="n">mw</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">molecular_weight</span>
+        <span class="n">sum_mi_mw</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">][:,</span> <span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">vp</span><span class="p">)]</span> <span class="o">/</span> <span class="n">mw</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c"># d_numer = -1/rho * f_diff.reshape(-1, 1) * K * vp</span>
+        <span class="c"># d_denom = (data[&#39;thickness&#39;] * constants.gas_constant *</span>
+        <span class="c">#            water_temp * sum_frac_mw).reshape(-1, 1)</span>
+        <span class="c"># data[&#39;evap_decay_constant&#39;][:, :len(vp)] = d_numer/d_denom</span>
+        <span class="c">#</span>
+        <span class="c"># Do computation together so we don&#39;t need to make intermediate copies</span>
+        <span class="c"># of data - left sum_frac_mw, which is a copy but easier to</span>
+        <span class="c"># read/understand</span>
+        <span class="n">data</span><span class="p">[</span><span class="s">&#39;evap_decay_constant&#39;</span><span class="p">][:,</span> <span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">vp</span><span class="p">)]</span> <span class="o">=</span> \
+            <span class="p">((</span><span class="o">-</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;area&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">f_diff</span> <span class="o">*</span> <span class="n">K</span> <span class="o">/</span>
+              <span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">gas_constant</span> <span class="o">*</span> <span class="n">water_temp</span> <span class="o">*</span> <span class="n">sum_mi_mw</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+             <span class="o">*</span> <span class="n">vp</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;max decay: {0}, min decay: {1}&#39;</span><span class="o">.</span>
+                          <span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;evap_decay_constant&#39;</span><span class="p">]),</span>
+                                 <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;evap_decay_constant&#39;</span><span class="p">])))</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;evap_decay_constant&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Error in Evaporation routine. One of the&quot;</span>
+                             <span class="s">&quot; exponential decay constant is positive&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Evaporation.weather_elements"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Evaporation.weather_elements">[docs]</a>    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        weather elements over time_step</span>
+<span class="sd">        - sets &#39;evaporation&#39; in sc.weathering_data</span>
+<span class="sd">        - currently also sets &#39;density&#39; in sc.weathering_data but may update</span>
+<span class="sd">          this as we add more weatherers and perhaps density gets set elsewhere</span>
+
+<span class="sd">        Following diff eq models rate of change each pseudocomponent of oil:</span>
+<span class="sd">        ::</span>
+<span class="sd">            dm(t)/dt = -(1 - fw) * A/B * m(t)</span>
+
+<span class="sd">        Over a time-step, A, B, C are assumed constant. m(t) is the component</span>
+<span class="sd">        mass at beginning of timestep; m(t + Dt) is mass at end of timestep:</span>
+<span class="sd">        ::</span>
+<span class="sd">            m(t + Dt) = m(t) * exp(-L * Dt)</span>
+<span class="sd">            L := (1 - fw) * A/B</span>
+
+<span class="sd">        Define properties for each pseudocomponent of oil and constants:</span>
+<span class="sd">        ::</span>
+<span class="sd">            vp: vapor pressure</span>
+<span class="sd">            mw: molecular weight</span>
+
+<span class="sd">        The following quantities are defined for a given blob of oil. The</span>
+<span class="sd">        thickness of the blob is same for all LEs regardless of how many LEs</span>
+<span class="sd">        are used to model the blob:</span>
+<span class="sd">        ::</span>
+<span class="sd">            area: area computed from fay spreading</span>
+<span class="sd">            m_i:</span>
+<span class="sd">            sum_m_mw: sum(m_i/mw_i) over all components</span>
+
+<span class="sd">        effect of wind - mass transport coefficient:</span>
+<span class="sd">        ::</span>
+<span class="sd">            K: See _mass_transport_coeff()</span>
+
+<span class="sd">        Finally, Evaporation of component &#39;i&#39; for blob of oil:</span>
+<span class="sd">        ::</span>
+<span class="sd">            A = area * K * vp</span>
+<span class="sd">            B = gas_constant * water_temp * sum_m_mw</span>
+
+<span class="sd">        L becomes:</span>
+<span class="sd">        ::</span>
+<span class="sd">            L = (1 - fw) * area * K * vp/(gas_constant * water_temp * sum_m_mw)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">num_released</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">])</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c"># set evap_decay_constant array</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_evap_decay_constant</span><span class="p">(</span><span class="n">model_time</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">substance</span><span class="p">,</span> <span class="n">time_step</span><span class="p">)</span>
+            <span class="n">mass_remain</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_exp_decay</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">],</span>
+                                <span class="n">data</span><span class="p">[</span><span class="s">&#39;evap_decay_constant&#39;</span><span class="p">],</span>
+                                <span class="n">time_step</span><span class="p">)</span>
+
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;evaporated&#39;</span><span class="p">]</span> <span class="o">+=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">][:,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">mass_remain</span><span class="p">[:,</span> <span class="p">:])</span>
+
+            <span class="c"># log amount evaporated at each step</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;amount evaporated for {0}: {1}&#39;</span><span class="o">.</span>
+                              <span class="n">format</span><span class="p">(</span><span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                     <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">][:,</span> <span class="p">:]</span> <span class="o">-</span>
+                                            <span class="n">mass_remain</span><span class="p">[:,</span> <span class="p">:])))</span>
+
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">mass_remain</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c"># add frac_lost</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_lost&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;init_mass&#39;</span><span class="p">]</span>
+        <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="Evaporation.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Evaporation.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Since &#39;wind&#39;/&#39;water&#39; property is saved as references in save file</span>
+<span class="sd">        need to add appropriate node to WindMover schema for &#39;webapi&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="p">:</span>
+                <span class="c"># add wind schema</span>
+                <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">WindSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;wind&#39;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span><span class="p">:</span>
+                <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">WaterSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;water&#39;</span><span class="p">))</span>
+
+        <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">serial</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Evaporation.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Evaporation.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        append correct schema for wind object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s">&#39;wind&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">WindSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;wind&#39;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="s">&#39;water&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">WaterSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;water&#39;</span><span class="p">))</span>
+        <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_to_dict</span>
+
+</div></div>
+<span class="k">class</span> <span class="nc">BlobEvaporation</span><span class="p">(</span><span class="n">Evaporation</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    playing around with blob evaporation and time varying fay_area</span>
+<span class="sd">    experimental</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">_set_evap_decay_constant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">substance</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        testing - for now assume only one spill and instantaneous spill</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># data should contain &#39;spill_num&#39; as well so compute decay rate for</span>
+        <span class="c"># blobs released together</span>
+        <span class="c"># used to compute the evaporation decay constant</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mass_transport_coeff</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+        <span class="n">water_temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;temperature&#39;</span><span class="p">,</span> <span class="s">&#39;K&#39;</span><span class="p">)</span>
+
+        <span class="n">f_diff</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">if</span> <span class="s">&#39;frac_water&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="c"># frac_water content in emulsion will be a per element but is</span>
+            <span class="c"># currently not being set by anything. Fix once we initialize</span>
+            <span class="c"># and properly set frac_water</span>
+            <span class="n">f_diff</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">]))</span>
+
+        <span class="n">vp</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">vapor_pressure</span><span class="p">(</span><span class="n">water_temp</span><span class="p">)</span>
+
+        <span class="n">mw</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">molecular_weight</span>
+
+        <span class="c"># for now, for testing, assume instantaneous spill so get the</span>
+        <span class="c"># mass of the blob</span>
+        <span class="n">sum_mi_mw</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">][:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">mw</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">const</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">f_diff</span> <span class="o">*</span> <span class="n">K</span> <span class="o">*</span> <span class="n">vp</span> <span class="o">/</span>
+                  <span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">gas_constant</span> <span class="o">*</span> <span class="n">water_temp</span> <span class="o">*</span> <span class="n">sum_mi_mw</span><span class="p">))</span>
+
+        <span class="c"># do it the same way for initial and all subsequent times</span>
+        <span class="n">blob_area</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;area&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;area&#39;</span><span class="p">])</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;age&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">int_area</span> <span class="o">=</span> <span class="n">blob_area</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">int_area</span> <span class="o">=</span> <span class="p">(</span><span class="n">blob_area</span> <span class="o">*</span> <span class="mf">2.</span><span class="o">/</span><span class="mi">3</span> <span class="o">*</span>
+                        <span class="p">((</span><span class="n">t</span> <span class="o">+</span> <span class="n">time_step</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">3.</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">-</span> <span class="n">t</span><span class="p">))</span>
+        <span class="n">data</span><span class="p">[</span><span class="s">&#39;evap_decay_constant&#39;</span><span class="p">][:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">const</span> <span class="o">*</span> <span class="n">int_area</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;max decay: {0}, min decay: {1}&#39;</span><span class="o">.</span>
+                          <span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;evap_decay_constant&#39;</span><span class="p">]),</span>
+                                 <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;evap_decay_constant&#39;</span><span class="p">])))</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

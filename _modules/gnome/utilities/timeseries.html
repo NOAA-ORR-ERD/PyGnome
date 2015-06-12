@@ -1,0 +1,305 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.utilities.timeseries &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.utilities.timeseries</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_ossm_time</span> <span class="kn">import</span> <span class="n">CyTimeseries</span>
+
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">basic_types</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.time_utils</span> <span class="kn">import</span> <span class="n">date_to_sec</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.convert</span> <span class="kn">import</span> <span class="p">(</span><span class="n">to_time_value_pair</span><span class="p">,</span>
+                                     <span class="n">tsformat</span><span class="p">,</span>
+                                     <span class="n">to_datetime_value_2d</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Timeseries</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeseries</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;uv&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a timeseries object from either a timeseries or datafile</span>
+<span class="sd">        containing the timeseries. If both timeseries and file are given,</span>
+<span class="sd">        it will read data from the file</span>
+
+<span class="sd">        If neither are given, timeseries gets initialized as:</span>
+
+<span class="sd">            timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)</span>
+
+<span class="sd">        If user provides timeseries, the default format is &#39;uv&#39;. The C++</span>
+<span class="sd">        stores the data in &#39;uv&#39; format - transformations are done in this</span>
+<span class="sd">        Python code (set_timeseries(), get_timeseries()).</span>
+
+<span class="sd">        C++ code only transforms the data from &#39;r-theta&#39; to &#39;uv&#39; format if</span>
+<span class="sd">        data is read from file. And this happens during initialization because</span>
+<span class="sd">        C++ stores data in &#39;uv&#39; format internally.</span>
+
+<span class="sd">        Units option are not included - let derived classes manage units since</span>
+<span class="sd">        the units for CyTimeseries (OSSMTimeValue_c) are limited. No unit</span>
+<span class="sd">        conversion is performed when get_timeseries, set_timeseries is invoked.</span>
+<span class="sd">        It does, however convert between &#39;uv&#39; and &#39;r-theta&#39; depending on format</span>
+<span class="sd">        specified. Choose format=&#39;uv&#39; if no transformation is desired.</span>
+
+<span class="sd">        .. note:: For the Wind datafiles, the units will get read from the</span>
+<span class="sd">        file. These are stored in ossm.user_units. It would be ideal to remove</span>
+<span class="sd">        units and unit conversion from here, but can&#39;t completely do away with</span>
+<span class="sd">        it since C++ file reading uses/sets it. But, managing units is</span>
+<span class="sd">        responsibility of derived objects.</span>
+
+<span class="sd">        All other keywords are optional</span>
+
+<span class="sd">        :param timeseries: numpy array containing time_value_pair</span>
+<span class="sd">        :type timeseries: numpy.ndarray containing</span>
+<span class="sd">            basic_types.datetime_value_2d or basic_types.datetime_value_1d. It</span>
+<span class="sd">            gets converted to an array containging basic_types.time_value_pair</span>
+<span class="sd">            datatype since that&#39;s what the C++ code expects</span>
+<span class="sd">        :param filename: path to a timeseries file from which to read data.</span>
+<span class="sd">            Datafile must contain either a 3 line or a 5 line header with</span>
+<span class="sd">            following info:</span>
+
+<span class="sd">            1. Station Name: name of the station as a string</span>
+<span class="sd">            2. (long, lat, z): station location as tuple containing floats</span>
+<span class="sd">            3. units: for wind this is knots, meteres per second</span>
+<span class="sd">            or miles per hour. For datafile containing something other than</span>
+<span class="sd">            velocity, this should be &#39;undefined&#39;</span>
+
+<span class="sd">        Optional parameters (kwargs):</span>
+
+<span class="sd">        :param format: (Optional) default timeseries format is</span>
+<span class="sd">            magnitude direction: &#39;r-theta&#39;</span>
+<span class="sd">        :type format: string &#39;r-theta&#39; or &#39;uv&#39;. Default is &#39;r-theta&#39;.</span>
+<span class="sd">            Converts string to integer defined by</span>
+<span class="sd">            gnome.basic_types.ts_format.*</span>
+<span class="sd">            TODO: &#39;format&#39; is a python builtin keyword.  We should</span>
+<span class="sd">            not use it as an argument name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">timeseries</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">filename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="n">timeseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span><span class="p">:</span>
+            <span class="n">datetime_value_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xform_input_timeseries</span><span class="p">(</span><span class="n">timeseries</span><span class="p">)</span>
+            <span class="n">time_value_pair</span> <span class="o">=</span> <span class="n">to_time_value_pair</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ossm</span> <span class="o">=</span> <span class="n">CyTimeseries</span><span class="p">(</span><span class="n">timeseries</span><span class="o">=</span><span class="n">time_value_pair</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ts_format</span> <span class="o">=</span> <span class="n">tsformat</span><span class="p">(</span><span class="n">format</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span> <span class="o">=</span> <span class="n">filename</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ossm</span> <span class="o">=</span> <span class="n">CyTimeseries</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_filename</span><span class="p">,</span>
+                                     <span class="n">file_format</span><span class="o">=</span><span class="n">ts_format</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_xform_input_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datetime_value_2d</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Ensure input data is numpy array with correct dtype and check</span>
+<span class="sd">        timeseries doesn&#39;t have invalid data</span>
+<span class="sd">        Derived classes can use this before updating timeseries, prior to</span>
+<span class="sd">        converting units.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># following fails for 0-d objects so make sure we have a 1-D array</span>
+        <span class="c"># to work with</span>
+        <span class="n">datetime_value_2d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">,</span>
+                                       <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">datetime_value_2d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">():</span>
+            <span class="n">datetime_value_2d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">datetime_value_2d</span><span class="p">],</span>
+                                           <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_timeseries</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">datetime_value_2d</span>
+
+    <span class="k">def</span> <span class="nf">_check_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeseries</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Run some checks to make sure timeseries is valid.</span>
+<span class="sd">        Also, make the resolution to minutes as opposed to seconds</span>
+<span class="sd">        todo: update exceptions to logged errors</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># check to make sure the time values are in ascending order</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">])]</span>
+                  <span class="o">!=</span> <span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;timeseries are not in ascending order. &#39;</span>
+                             <span class="s">&#39;The datetime values in the array must be in &#39;</span>
+                             <span class="s">&#39;ascending order&#39;</span><span class="p">)</span>
+
+        <span class="c"># check for duplicate entries</span>
+        <span class="n">unique</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;timeseries must contain unique time entries. &#39;</span>
+                             <span class="s">&#39;Number of duplicate entries: &#39;</span>
+                             <span class="s">&#39;{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">timeseries</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)))</span>
+
+        <span class="c"># make resolution to minutes in datetime</span>
+        <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">tm</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)):</span>
+            <span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">][</span><span class="n">ix</span><span class="p">]</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">second</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;{0.__module__}.{0.__class__.__name__}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">filename</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span>
+
+    <span class="k">def</span> <span class="nf">get_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datetime</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;uv&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the timeseries in requested format. If datetime=None,</span>
+<span class="sd">        then the original timeseries that was entered is returned.</span>
+<span class="sd">        If datetime is a list containing datetime objects, then the value</span>
+<span class="sd">        for each of those date times is determined by the underlying</span>
+<span class="sd">        C++ object and the timeseries is returned.</span>
+
+<span class="sd">        The output format is defined by the strings &#39;r-theta&#39;, &#39;uv&#39;</span>
+
+<span class="sd">        :param datetime: [optional] datetime object or list of datetime</span>
+<span class="sd">                         objects for which the value is desired</span>
+<span class="sd">        :type datetime: datetime object</span>
+<span class="sd">        :param format: output format for the times series:</span>
+<span class="sd">                       either &#39;r-theta&#39; or &#39;uv&#39;</span>
+<span class="sd">        :type format: either string or integer value defined by</span>
+<span class="sd">                      basic_types.ts_format.* (see cy_basic_types.pyx)</span>
+
+<span class="sd">        :returns: numpy array containing dtype=basic_types.datetime_value_2d.</span>
+<span class="sd">                  Contains user specified datetime and the corresponding</span>
+<span class="sd">                  values in user specified ts_format</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">datetime</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">datetimeval</span> <span class="o">=</span> <span class="n">to_datetime_value_2d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ossm</span><span class="o">.</span><span class="n">timeseries</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">datetime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;datetime64[s]&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">timeval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">datetime</span><span class="p">),</span> <span class="p">),</span>
+                               <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">time_value_pair</span><span class="p">)</span>
+            <span class="n">timeval</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">date_to_sec</span><span class="p">(</span><span class="n">datetime</span><span class="p">)</span>
+            <span class="n">timeval</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ossm</span><span class="o">.</span><span class="n">get_time_value</span><span class="p">(</span><span class="n">timeval</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">])</span>
+            <span class="n">datetimeval</span> <span class="o">=</span> <span class="n">to_datetime_value_2d</span><span class="p">(</span><span class="n">timeval</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">datetimeval</span>
+
+    <span class="k">def</span> <span class="nf">set_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datetime_value_2d</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;uv&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the timeseries to the new value given by a numpy array.  The</span>
+<span class="sd">        format for the input data defaults to</span>
+<span class="sd">        basic_types.format.magnitude_direction but can be changed by the user</span>
+<span class="sd">        Assumes timeseries is valid so _check_timeseries has been invoked</span>
+<span class="sd">        and any unit conversions are done. This function simply converts</span>
+<span class="sd">        datetime_value_2d to time_value_pair and updates the data in underlying</span>
+<span class="sd">        cython/C++ object</span>
+
+<span class="sd">        :param datetime_value_2d: timeseries of wind data defined in a</span>
+<span class="sd">            numpy array</span>
+<span class="sd">        :type datetime_value_2d: numpy array of dtype</span>
+<span class="sd">            basic_types.datetime_value_2d</span>
+<span class="sd">        :param format: output format for the times series; as defined by</span>
+<span class="sd">                       basic_types.format.</span>
+<span class="sd">        :type format: either string or integer value defined by</span>
+<span class="sd">                      basic_types.format.* (see cy_basic_types.pyx)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">datetime_value_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xform_input_timeseries</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+        <span class="n">timeval</span> <span class="o">=</span> <span class="n">to_time_value_pair</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ossm</span><span class="o">.</span><span class="n">timeseries</span> <span class="o">=</span> <span class="n">timeval</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        only checks the timeseries data is equal in (m/s), in &#39;uv&#39; format</span>
+<span class="sd">        filename is irrelevant after data is loaded</span>
+<span class="sd">        checks self.get_timeseries() == other.get_timeseries()</span>
+
+<span class="sd">        Duck typing check - it does not expect type(self) == type(other)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">self_ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_timeseries</span><span class="p">()</span>
+        <span class="n">other_ts</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">get_timeseries</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">self_ts</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">other_ts</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">self_ts</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">],</span> <span class="n">other_ts</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,607 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.environment.wind &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.environment.wind</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">module contains objects that contain weather related data. For example,</span>
+<span class="sd">the Wind object defines the Wind conditions for the spill</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">StringIO</span>
+<span class="kn">import</span> <span class="nn">zipfile</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span> <span class="n">OneOf</span><span class="p">,</span>
+                      <span class="n">Float</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Range</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">unit_conversion</span> <span class="kn">as</span> <span class="nn">uc</span>
+
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">basic_types</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="kn">import</span> <span class="n">serializable</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.distributions</span> <span class="kn">import</span> <span class="n">RayleighDistribution</span> <span class="k">as</span> <span class="n">rayleigh</span>
+
+<span class="kn">from</span> <span class="nn">gnome.persist.extend_colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">DefaultTupleSchema</span><span class="p">,</span>
+                                           <span class="n">LocalDateTime</span><span class="p">,</span>
+                                           <span class="n">DatetimeValue2dArraySchema</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">validators</span><span class="p">,</span> <span class="n">base_schema</span>
+
+<span class="kn">from</span> <span class="nn">.environment</span> <span class="kn">import</span> <span class="n">Environment</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.timeseries</span> <span class="kn">import</span> <span class="n">Timeseries</span>
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_ossm_time</span> <span class="kn">import</span> <span class="n">ossm_wind_units</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">_valid_units</span>
+
+
+<span class="k">class</span> <span class="nc">MagnitudeDirectionTuple</span><span class="p">(</span><span class="n">DefaultTupleSchema</span><span class="p">):</span>
+    <span class="n">speed</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span>
+                       <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                       <span class="n">validator</span><span class="o">=</span><span class="n">Range</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                       <span class="n">min_err</span><span class="o">=</span><span class="s">&#39;wind speed must be &#39;</span>
+                                               <span class="s">&#39;greater than or equal to 0&#39;</span>
+                                       <span class="p">)</span>
+                       <span class="p">)</span>
+    <span class="n">direction</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                           <span class="n">validator</span><span class="o">=</span><span class="n">Range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">360</span><span class="p">,</span>
+                                           <span class="n">min_err</span><span class="o">=</span><span class="s">&#39;wind direction must be &#39;</span>
+                                                   <span class="s">&#39;greater than or equal to &#39;</span>
+                                                   <span class="s">&#39;0&#39;</span><span class="p">,</span>
+                                           <span class="n">max_err</span><span class="o">=</span><span class="s">&#39;wind direction must be &#39;</span>
+                                                   <span class="s">&#39;less than or equal to &#39;</span>
+                                                   <span class="s">&#39;360deg&#39;</span>
+                                           <span class="p">)</span>
+                           <span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">WindTupleSchema</span><span class="p">(</span><span class="n">DefaultTupleSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Schema for each tuple in WindTimeSeries list</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">datetime</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">(</span><span class="n">default_tzinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">),</span>
+                          <span class="n">default</span><span class="o">=</span><span class="n">base_schema</span><span class="o">.</span><span class="n">now</span><span class="p">,</span>
+                          <span class="n">validator</span><span class="o">=</span><span class="n">validators</span><span class="o">.</span><span class="n">convertible_to_seconds</span><span class="p">)</span>
+    <span class="n">mag_dir</span> <span class="o">=</span> <span class="n">MagnitudeDirectionTuple</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">WindTimeSeriesSchema</span><span class="p">(</span><span class="n">DatetimeValue2dArraySchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Schema for list of Wind tuples, to make the wind timeseries</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">WindTupleSchema</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        validate wind timeseries numpy array</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">validators</span><span class="o">.</span><span class="n">no_duplicate_datetime</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">)</span>
+        <span class="n">validators</span><span class="o">.</span><span class="n">ascending_datetime</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">WindSchema</span><span class="p">(</span><span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    validate data after deserialize, before it is given back to pyGnome&#39;s</span>
+<span class="sd">    from_dict to set _state of object</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">updated_at</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+
+    <span class="n">latitude</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">longitude</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">source_id</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">source_type</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span>
+                             <span class="n">validator</span><span class="o">=</span><span class="n">OneOf</span><span class="p">(</span><span class="n">basic_types</span><span class="o">.</span><span class="n">wind_datasource</span><span class="o">.</span><span class="n">_attr</span><span class="p">),</span>
+                             <span class="n">default</span><span class="o">=</span><span class="s">&#39;undefined&#39;</span><span class="p">,</span> <span class="n">missing</span><span class="o">=</span><span class="s">&#39;undefined&#39;</span><span class="p">)</span>
+    <span class="n">units</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;m/s&#39;</span><span class="p">)</span>
+    <span class="n">speed_uncertainty_scale</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+
+    <span class="n">timeseries</span> <span class="o">=</span> <span class="n">WindTimeSeriesSchema</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;wind&#39;</span>
+
+
+<div class="viewcode-block" id="Wind"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind">[docs]</a><span class="k">class</span> <span class="nc">Wind</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">,</span> <span class="n">Timeseries</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Defines the Wind conditions for a spill</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c"># object is referenced by others using this attribute name</span>
+    <span class="n">_ref_as</span> <span class="o">=</span> <span class="s">&#39;wind&#39;</span>
+
+    <span class="c"># default units for input/output data</span>
+    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">,</span>
+               <span class="s">&#39;latitude&#39;</span><span class="p">,</span>
+               <span class="s">&#39;longitude&#39;</span><span class="p">,</span>
+               <span class="s">&#39;source_type&#39;</span><span class="p">,</span>
+               <span class="s">&#39;source_id&#39;</span><span class="p">,</span>  <span class="c"># what is source ID? Buoy ID?</span>
+               <span class="s">&#39;updated_at&#39;</span><span class="p">,</span>
+               <span class="s">&#39;speed_uncertainty_scale&#39;</span><span class="p">]</span>
+
+    <span class="c"># used to create new obj or as readonly parameter</span>
+    <span class="n">_create</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
+
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Environment</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="n">_create</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">)</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">WindSchema</span>
+
+    <span class="c"># add &#39;filename&#39; as a Field object</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                         <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                         <span class="n">test_for_eq</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;timeseries&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                         <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                      <span class="c"># test for equality of units a little differently</span>
+                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;units&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                         <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">test_for_eq</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+                      <span class="p">])</span>
+    <span class="n">_state</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">test_for_eq</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="c"># list of valid velocity units for timeseries</span>
+    <span class="n">valid_vel_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s">&#39;Velocity&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeseries</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;r-theta&#39;</span><span class="p">,</span>
+                 <span class="n">latitude</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">longitude</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">speed_uncertainty_scale</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        todo: update docstrings!</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;updated_at&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;source_id&#39;</span><span class="p">,</span> <span class="s">&#39;undefined&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">longitude</span> <span class="o">=</span> <span class="n">longitude</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">latitude</span> <span class="o">=</span> <span class="n">latitude</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;description&#39;</span><span class="p">,</span> <span class="s">&#39;Wind Object&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed_uncertainty_scale</span> <span class="o">=</span> <span class="n">speed_uncertainty_scale</span>
+
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">source_type</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;source_type&#39;</span><span class="p">,</span> <span class="s">&#39;file&#39;</span><span class="p">)</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="n">format</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="c"># set _user_units attribute to match user_units read from file.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_user_units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ossm</span><span class="o">.</span><span class="n">user_units</span>
+
+            <span class="k">if</span> <span class="n">units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;source_type&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">basic_types</span><span class="o">.</span><span class="n">wind_datasource</span><span class="o">.</span><span class="n">_attr</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">source_type</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;source_type&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">source_type</span> <span class="o">=</span> <span class="s">&#39;undefined&#39;</span>
+
+            <span class="c"># either timeseries is given or nothing is given</span>
+            <span class="c"># create an empty default object</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="s">&#39;mps&#39;</span>  <span class="c"># units for default object</span>
+            <span class="k">if</span> <span class="n">timeseries</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">units</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Units must be provided with timeseries&#39;</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_wind_data</span><span class="p">(</span><span class="n">timeseries</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Checks the user provided units are in list Wind.valid_vel_units</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">units</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Wind</span><span class="o">.</span><span class="n">valid_vel_units</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">uc</span><span class="o">.</span><span class="n">InvalidUnitError</span><span class="p">((</span><span class="n">units</span><span class="p">,</span> <span class="s">&#39;Velocity&#39;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">self_ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeseries</span><span class="o">.</span><span class="n">__repr__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;{0.__class__.__module__}.{0.__class__.__name__}(&#39;</span>
+                <span class="s">&#39;description=&quot;{0.description}&quot;, &#39;</span>
+                <span class="s">&#39;source_id=&quot;{0.source_id}&quot;, &#39;</span>
+                <span class="s">&#39;source_type=&quot;{0.source_type}&quot;, &#39;</span>
+                <span class="s">&#39;units=&quot;{0.units}&quot;, &#39;</span>
+                <span class="s">&#39;updated_at=&quot;{0.updated_at}&quot;, &#39;</span>
+                <span class="s">&#39;timeseries={1}&#39;</span>
+                <span class="s">&#39;)&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">self_ts</span><span class="p">)</span>
+
+    <span class="c"># user_units = property( lambda self: self._user_units)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        returns entire timeseries in &#39;r-theta&#39; format in the units in which</span>
+<span class="sd">        the data was entered or as specified by units attribute</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wind_data</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
+
+    <span class="nd">@timeseries.setter</span>
+    <span class="k">def</span> <span class="nf">timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        set the timeseries for wind. The units for value are as specified by</span>
+<span class="sd">        self.units attribute. Property converts the units to &#39;m/s&#39; so Cython/</span>
+<span class="sd">        C++ object stores timeseries in &#39;m/s&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_wind_data</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Wind.timeseries_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind.timeseries_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">timeseries_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        when serializing data - round it to 2 decimal places</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wind_data</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
+        <span class="n">ts</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">ts</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ts</span>
+</div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        define units in which wind data is input/output</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_units</span>
+
+    <span class="nd">@units.setter</span>
+    <span class="k">def</span> <span class="nf">units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        User can set default units for input/output data</span>
+
+<span class="sd">        These are given as string - derived classes should override</span>
+<span class="sd">        _check_units() to customize for their data. Base class first checks</span>
+<span class="sd">        units, then sets it - derived classes can raise an error in</span>
+<span class="sd">        _check_units if units are incorrect for their type of data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_units</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_user_units</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">_convert_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ts_format</span><span class="p">,</span> <span class="n">from_unit</span><span class="p">,</span> <span class="n">to_unit</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        method to convert units for the &#39;value&#39; stored in the</span>
+<span class="sd">        date/time value pair</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">from_unit</span> <span class="o">!=</span> <span class="n">to_unit</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s">&#39;Velocity&#39;</span><span class="p">,</span> <span class="n">from_unit</span><span class="p">,</span> <span class="n">to_unit</span><span class="p">,</span> <span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="n">basic_types</span><span class="o">.</span><span class="n">ts_format</span><span class="o">.</span><span class="n">uv</span><span class="p">:</span>
+                <span class="c"># TODO: avoid clobbering the &#39;ts_format&#39; namespace</span>
+                <span class="n">data</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s">&#39;Velocity&#39;</span><span class="p">,</span> <span class="n">from_unit</span><span class="p">,</span> <span class="n">to_unit</span><span class="p">,</span>
+                                        <span class="n">data</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+
+<div class="viewcode-block" id="Wind.save"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Write Wind timeseries to file or to zip,</span>
+<span class="sd">        then call save method using super</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;Wind.json&#39;</span><span class="p">)[</span><span class="n">name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">]</span>
+        <span class="n">ts_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">name</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s">&#39;_data.WND&#39;</span>
+
+        <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_timeseries_to_zip</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">ts_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span> <span class="o">=</span> <span class="n">ts_name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">datafile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">ts_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_timeseries_to_file</span><span class="p">(</span><span class="n">datafile</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span> <span class="o">=</span> <span class="n">datafile</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_write_timeseries_to_zip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">ts_name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        use a StringIO type of file descriptor and write directly to zipfile</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">fd</span> <span class="o">=</span> <span class="n">StringIO</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_timeseries_to_fd</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_to_zip</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">ts_name</span><span class="p">,</span> <span class="n">fd</span><span class="o">.</span><span class="n">getvalue</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">_write_timeseries_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datafile</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;write timeseries data to file &#39;&#39;&#39;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">datafile</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fd</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_timeseries_to_fd</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_write_timeseries_to_fd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a general file descriptor as input and writes data to it.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="ow">in</span> <span class="n">ossm_wind_units</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">data_units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># we know C++ understands this unit</span>
+            <span class="n">data_units</span> <span class="o">=</span> <span class="s">&#39;meters per second&#39;</span>
+
+        <span class="n">header</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;Station Name</span><span class="se">\n</span><span class="s">&#39;</span>
+                  <span class="s">&#39;Position</span><span class="se">\n</span><span class="s">&#39;</span>
+                  <span class="s">&#39;{0}</span><span class="se">\n</span><span class="s">&#39;</span>
+                  <span class="s">&#39;LTime</span><span class="se">\n</span><span class="s">&#39;</span>
+                  <span class="s">&#39;0,0,0,0,0,0,0,0</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">data_units</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wind_data</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="n">data_units</span><span class="p">)</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span>
+
+        <span class="n">fd</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">idt</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dt</span><span class="p">):</span>
+            <span class="n">fd</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;{0.day:02}, &#39;</span>
+                     <span class="s">&#39;{0.month:02}, &#39;</span>
+                     <span class="s">&#39;{0.year:04}, &#39;</span>
+                     <span class="s">&#39;{0.hour:02}, &#39;</span>
+                     <span class="s">&#39;{0.minute:02}, &#39;</span>
+                     <span class="s">&#39;{1:02.2f}, {2:02.2f}</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idt</span><span class="p">,</span>
+                                                     <span class="nb">round</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="mi">4</span><span class="p">),</span>
+                                                     <span class="nb">round</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="mi">4</span><span class="p">)))</span>
+
+<div class="viewcode-block" id="Wind.update_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind.update_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">update_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        update attributes from dict - override base class because we want to</span>
+<span class="sd">        set the units before updating the data so conversion is done correctly.</span>
+<span class="sd">        Internally all data is stored in SI units.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">updated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_attr</span><span class="p">(</span><span class="s">&#39;units&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;units&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">super</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">update_from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">updated</span>
+</div>
+<div class="viewcode-block" id="Wind.get_wind_data"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind.get_wind_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_wind_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datetime</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;r-theta&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the timeseries in the requested format. If datetime=None,</span>
+<span class="sd">        then the original timeseries that was entered is returned.</span>
+<span class="sd">        If datetime is a list containing datetime objects, then the value</span>
+<span class="sd">        for each of those date times is determined by the underlying</span>
+<span class="sd">        C++ object and the timeseries is returned.</span>
+
+<span class="sd">        The output format is defined by the strings &#39;r-theta&#39;, &#39;uv&#39;</span>
+
+<span class="sd">        :param datetime: [optional] datetime object or list of datetime</span>
+<span class="sd">                         objects for which the value is desired</span>
+<span class="sd">        :type datetime: datetime object</span>
+<span class="sd">        :param units: [optional] outputs data in these units. Default is to</span>
+<span class="sd">            output data without unit conversion</span>
+<span class="sd">        :type units: string. Uses the unit_conversion module.</span>
+<span class="sd">        :param format: output format for the times series:</span>
+<span class="sd">                       either &#39;r-theta&#39; or &#39;uv&#39;</span>
+<span class="sd">        :type format: either string or integer value defined by</span>
+<span class="sd">                      basic_types.ts_format.* (see cy_basic_types.pyx)</span>
+
+<span class="sd">        :returns: numpy array containing dtype=basic_types.datetime_value_2d.</span>
+<span class="sd">                  Contains user specified datetime and the corresponding</span>
+<span class="sd">                  values in user specified ts_format</span>
+
+<span class="sd">        .. note:: Invokes self._convert_units() to do the unit conversion.</span>
+<span class="sd">            Override this method to define the derived object&#39;s unit conversion</span>
+<span class="sd">            functionality</span>
+
+<span class="sd">        todo: return data in appropriate significant digits</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">datetimeval</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_timeseries</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_units</span><span class="p">)[</span><span class="n">units</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">]</span>
+
+        <span class="n">datetimeval</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_units</span><span class="p">(</span><span class="n">datetimeval</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">],</span>
+                                                   <span class="n">format</span><span class="p">,</span>
+                                                   <span class="s">&#39;meter per second&#39;</span><span class="p">,</span>
+                                                   <span class="n">units</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">datetimeval</span>
+</div>
+<div class="viewcode-block" id="Wind.set_wind_data"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind.set_wind_data">[docs]</a>    <span class="k">def</span> <span class="nf">set_wind_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datetime_value_2d</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;r-theta&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the timeseries of the Wind object to the new value given by</span>
+<span class="sd">        a numpy array.  The format for the input data defaults to</span>
+<span class="sd">        basic_types.format.magnitude_direction but can be changed by the user.</span>
+<span class="sd">        Units are also required with the data.</span>
+
+<span class="sd">        :param datetime_value_2d: timeseries of wind data defined in a</span>
+<span class="sd">                                  numpy array</span>
+<span class="sd">        :type datetime_value_2d: numpy array of dtype</span>
+<span class="sd">                                 basic_types.datetime_value_2d</span>
+<span class="sd">        :param units: units associated with the data. Valid units defined in</span>
+<span class="sd">                      Wind.valid_vel_units list</span>
+<span class="sd">        :param format: output format for the times series; as defined by</span>
+<span class="sd">                       basic_types.format.</span>
+<span class="sd">        :type format: either string or integer value defined by</span>
+<span class="sd">                      basic_types.format.* (see cy_basic_types.pyx)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_units</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span>
+        <span class="n">datetime_value_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xform_input_timeseries</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+        <span class="n">datetime_value_2d</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_convert_units</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">],</span>
+                                <span class="n">format</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="s">&#39;meter per second&#39;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_timeseries</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Wind.get_value"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind.get_value">[docs]</a>    <span class="k">def</span> <span class="nf">get_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return the value at specified time and location. Wind timeseries are</span>
+<span class="sd">        independent of location; however, a gridded datafile may require</span>
+<span class="sd">        location so this interface may get refactored if it needs to support</span>
+<span class="sd">        different types of wind data. It returns the data in SI units (m/s)</span>
+<span class="sd">        in &#39;r-theta&#39; format (speed, direction)</span>
+
+<span class="sd">        :param time: the time(s) you want the data for</span>
+<span class="sd">        :type time: datetime object or sequence of datetime objects.</span>
+
+<span class="sd">        .. note:: It invokes get_wind_data(..) function</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wind_data</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="s">&#39;m/s&#39;</span><span class="p">,</span> <span class="s">&#39;r-theta&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;value&#39;</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="Wind.set_speed_uncertainty"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind.set_speed_uncertainty">[docs]</a>    <span class="k">def</span> <span class="nf">set_speed_uncertainty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">up_or_down</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This function shifts the wind speed values in our time series</span>
+<span class="sd">        based on a single parameter Rayleigh distribution method,</span>
+<span class="sd">        and scaled by a value in the range [0.0 ... 0.5].</span>
+<span class="sd">        This range represents a plus-or-minus percent of uncertainty that</span>
+<span class="sd">        the distribution function should calculate</span>
+
+<span class="sd">        For each wind value in our time series:</span>
+
+<span class="sd">        * We assume it to be the average speed for that sample time</span>
+<span class="sd">        * We calculate its respective Rayleigh distribution mode (sigma).</span>
+<span class="sd">        * We determine either an upper percent uncertainty or a</span>
+<span class="sd">          lower percent uncertainty based on a passed in parameter.</span>
+<span class="sd">        * Using the Rayleigh Quantile method and our calculated percent,</span>
+<span class="sd">          we determine the wind speed that is just at or above the</span>
+<span class="sd">          fractional area under the Probability distribution.</span>
+<span class="sd">        * We assign the wind speed to its new calculated value.</span>
+
+<span class="sd">        Since we are irreversibly changing the wind speed values,</span>
+<span class="sd">        we should probably do this only once.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">up_or_down</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;up&#39;</span><span class="p">,</span> <span class="s">&#39;down&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">speed_uncertainty_scale</span> <span class="o">&lt;=</span> <span class="mf">0.0</span> <span class="ow">or</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">speed_uncertainty_scale</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">percent_uncertainty</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_uncertainty_scale</span>
+
+        <span class="n">time_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wind_data</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">tse</span> <span class="ow">in</span> <span class="n">time_series</span><span class="p">:</span>
+            <span class="n">sigma</span> <span class="o">=</span> <span class="n">rayleigh</span><span class="o">.</span><span class="n">sigma_from_wind</span><span class="p">(</span><span class="n">tse</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">up_or_down</span> <span class="o">==</span> <span class="s">&#39;up&#39;</span><span class="p">:</span>
+                <span class="n">tse</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">rayleigh</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">+</span> <span class="n">percent_uncertainty</span><span class="p">,</span>
+                                                    <span class="n">sigma</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">up_or_down</span> <span class="o">==</span> <span class="s">&#39;down&#39;</span><span class="p">:</span>
+                <span class="n">tse</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">rayleigh</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">-</span> <span class="n">percent_uncertainty</span><span class="p">,</span>
+                                                    <span class="n">sigma</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_wind_data</span><span class="p">(</span><span class="n">time_series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">True</span>
+</div>
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        invoke super to check equality for all &#39;save&#39; parameters. Also invoke</span>
+<span class="sd">        __eq__ for Timeseries object to check equality of timeseries. Super</span>
+<span class="sd">        is not used in any of the __eq__ methods</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">super</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">Timeseries</span><span class="o">.</span><span class="n">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="Wind.validate"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        only issues warning - object is always valid</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">msgs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;wind speed is 0&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_warn_pre</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">msgs</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+
+</div></div>
+<span class="k">def</span> <span class="nf">constant_wind</span><span class="p">(</span><span class="n">speed</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m/s&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    utility to create a constant wind &quot;timeseries&quot;</span>
+
+<span class="sd">    :param speed: speed of wind</span>
+<span class="sd">    :param direction: direction -- degrees True, direction wind is from</span>
+<span class="sd">                      (degrees True)</span>
+<span class="sd">    :param unit=&#39;m/s&#39;: units for speed, as a string, i.e. &quot;knots&quot;, &quot;m/s&quot;,</span>
+<span class="sd">                       &quot;cm/s&quot;, etc.</span>
+
+<span class="sd">    .. note:: The time for a constant wind timeseries is irrelevant. This</span>
+<span class="sd">    function simply sets it to datetime.now() accurate to hours.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">wind_vel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+
+    <span class="c"># just to have a time accurate to minutes</span>
+    <span class="n">wind_vel</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                          <span class="n">second</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                          <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">wind_vel</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">speed</span><span class="p">,</span> <span class="n">direction</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Wind</span><span class="p">(</span><span class="n">timeseries</span><span class="o">=</span><span class="n">wind_vel</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;r-theta&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

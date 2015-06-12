@@ -1,0 +1,986 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.weatherers.cleanup &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.weatherers.cleanup</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">oil removal from various cleanup options</span>
+<span class="sd">add these as weatherers</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span> <span class="n">Range</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">oil_status</span><span class="p">,</span> <span class="n">fate</span> <span class="k">as</span> <span class="n">bt_fate</span>
+<span class="kn">from</span> <span class="nn">gnome.weatherers</span> <span class="kn">import</span> <span class="n">Weatherer</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">gnome.environment.wind</span> <span class="kn">import</span> <span class="n">WindSchema</span>
+<span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="kn">import</span> <span class="n">Waves</span>
+
+<span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">WeathererSchema</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">_valid_units</span>
+
+<span class="kn">import</span> <span class="nn">unit_conversion</span> <span class="kn">as</span> <span class="nn">uc</span>
+
+
+<span class="k">class</span> <span class="nc">RemoveMass</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    create a mixin for mass removal. These methods are used by CleanUpBase and</span>
+<span class="sd">    also by manual_beaching.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c"># todo: following is same as Spill code so rework to make it DRY</span>
+    <span class="n">valid_vol_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s">&#39;Volume&#39;</span><span class="p">)</span>
+    <span class="n">valid_mass_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s">&#39;Mass&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">substance</span><span class="p">,</span> <span class="n">amount</span><span class="p">,</span> <span class="n">units</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        return &#39;amount&#39; in units of &#39;kg&#39; for specified substance</span>
+<span class="sd">        uses the density corresponding with API temperature</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">units</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_mass_units</span><span class="p">:</span>
+            <span class="n">rm_mass</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s">&#39;Mass&#39;</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="s">&#39;kg&#39;</span><span class="p">,</span> <span class="n">amount</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>   <span class="c"># amount must be in volume units</span>
+            <span class="n">rm_vol</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s">&#39;Volume&#39;</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="s">&#39;m^3&#39;</span><span class="p">,</span> <span class="n">amount</span><span class="p">)</span>
+            <span class="n">rm_mass</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">get_density</span><span class="p">()</span> <span class="o">*</span> <span class="n">rm_vol</span>
+
+        <span class="k">return</span> <span class="n">rm_mass</span>
+
+    <span class="k">def</span> <span class="nf">_set__timestep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        For cleanup operations we may know the start time pretty precisely.</span>
+<span class="sd">        Use this to set _timestep to less than time_step resolution. Mostly</span>
+<span class="sd">        done for testing right now so if XXX amount is skimmed between</span>
+<span class="sd">        active_start and active_stop, the rate * duration gives the correct</span>
+<span class="sd">        amount. Object must be active before invoking this, else</span>
+<span class="sd">        self._timestep will give invalid results</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timestep</span> <span class="o">=</span> <span class="n">time_step</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">model_time</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_start</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_timestep</span> <span class="o">=</span> \
+                <span class="n">time_step</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_start</span> <span class="o">-</span>
+                             <span class="n">model_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">&lt;</span> <span class="n">model_time</span> <span class="o">+</span> <span class="n">dt</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_timestep</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">-</span>
+                              <span class="n">model_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Do sub timestep resolution here so numbers add up correctly</span>
+<span class="sd">        Mark LEs to be skimmed - do them in order right now. Assume all LEs</span>
+<span class="sd">        that are released together will be skimmed together since they would</span>
+<span class="sd">        be closer to each other in position.</span>
+
+<span class="sd">        Assumes: there is more mass in water than amount of mass to be</span>
+<span class="sd">        skimmed. The LEs marked for Skimming are marked only once -</span>
+<span class="sd">        code checks to see if any LEs are marked for skimming and if</span>
+<span class="sd">        none are found, it marks them.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">model_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_start</span> <span class="ow">and</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">&gt;</span> <span class="n">model_time</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set__timestep</span><span class="p">(</span><span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">CleanUpBase</span><span class="p">(</span><span class="n">RemoveMass</span><span class="p">,</span> <span class="n">Weatherer</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Just need to add a few internal methods for Skimmer + Burn common code</span>
+<span class="sd">    Currently defined as a base class.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        add &#39;frac_water&#39; to array_types and pass **kwargs to base class</span>
+<span class="sd">        __init__ using super</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&quot;efficiency&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">CleanUpBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&#39;frac_water&#39;</span><span class="p">})</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span>
+
+    <span class="nd">@efficiency.setter</span>
+    <span class="k">def</span> <span class="nf">efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        update efficiency.</span>
+
+<span class="sd">        It must be greater than 0 and less than or equal to 1.0. It can also be</span>
+<span class="sd">        None since that means use wind to compute efficiency.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">elif</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;efficiency must be &gt; 0 and &lt;= 1.0&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_substance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        return a single substance - cleanup operations only know about the</span>
+<span class="sd">        total amount removed. Unclear how to assign this to multiple substances</span>
+<span class="sd">        For now, just log an error if more than one substance present</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">substance</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">get_substances</span><span class="p">(</span><span class="n">complete</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">substance</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;Found more than one type of Oil - not supported. &#39;</span>
+                   <span class="s">&#39;Results will be incorrect&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">substance</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_update_LE_status_codes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">sc</span><span class="p">,</span>
+                                <span class="n">new_status</span><span class="p">,</span>
+                                <span class="n">substance</span><span class="p">,</span>
+                                <span class="n">mass_to_remove</span><span class="p">,</span>
+                                <span class="n">oilwater_mix</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Need to mark LEs to &#39;new_status&#39;. It updates the &#39;fate_status&#39; for</span>
+<span class="sd">        &#39;surface_weather&#39; LEs. Mark LEs based on mass.</span>
+<span class="sd">        Mass to remove is assumed to be the oil/water mixture by default</span>
+<span class="sd">        (oilwater_mix=True) so we need to find the oil_amount given the</span>
+<span class="sd">        water_frac:</span>
+
+<span class="sd">            volume = sc[&#39;mass&#39;]/API_density</span>
+<span class="sd">            (1 - sc[&#39;frac_water&#39;]) * oil_water_vol = volume</span>
+<span class="sd">            oil_water_vol = volume / (1 - sc[&#39;frac_water&#39;])</span>
+
+<span class="sd">        Now, do a cumsum of oil_water_mass and find where</span>
+<span class="sd">            np.cumsum(oil_water_vol) &gt;= vol_to_remove</span>
+<span class="sd">        and change the status_codes of these LEs. Can just as easily multiple</span>
+<span class="sd">        everything by API_density to get</span>
+<span class="sd">            np.cumsum(oil_water_mass) &gt;= mass_to_remove</span>
+<span class="sd">            mass_to_remove = sc[&#39;mass&#39;] / (1 - sc[&#39;frac_water&#39;])</span>
+<span class="sd">        This is why the input is &#39;mass_to_remove&#39; instead of &#39;vol_to_remove&#39;</span>
+<span class="sd">        - less computation</span>
+
+<span class="sd">        Note: For ChemicalDispersion, the mass_to_remove is not the mass of the</span>
+<span class="sd">            oil/water mixture, but the mass of the oil. Use the oilwater_mix</span>
+<span class="sd">            flag to indicate this is the case.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">arrays</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;fate_status&#39;</span><span class="p">,</span> <span class="s">&#39;mass&#39;</span><span class="p">,</span> <span class="s">&#39;frac_water&#39;</span><span class="p">}</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">substancefatedata</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span> <span class="n">arrays</span><span class="p">,</span> <span class="s">&#39;surface_weather&#39;</span><span class="p">)</span>
+        <span class="n">curr_mass</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">oilwater_mix</span><span class="p">:</span>
+            <span class="c"># create a mass array of oil/water mixture and use this when</span>
+            <span class="c"># marking LEs for removal</span>
+            <span class="n">curr_mass</span> <span class="o">=</span> <span class="n">curr_mass</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">])</span>
+
+        <span class="c"># (1 - frac_water) * mass_to_remove</span>
+        <span class="k">if</span> <span class="n">mass_to_remove</span> <span class="o">&gt;=</span> <span class="n">curr_mass</span><span class="o">.</span><span class="n">sum</span><span class="p">():</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;fate_status&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">new_status</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;insufficient mass released for cleanup&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&quot;marked ALL ({0}) LEs, total mass:&quot;</span>
+                                <span class="s">&quot; {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;fate_status&#39;</span><span class="p">]),</span>
+                                              <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># sum up mass until threshold is reached, find index where</span>
+            <span class="c"># total_mass_removed is reached or exceeded</span>
+            <span class="n">ix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">curr_mass</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">mass_to_remove</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c"># change status for elements upto and including &#39;ix&#39;</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;fate_status&#39;</span><span class="p">][:</span><span class="n">ix</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_status</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;marked {0} LEs with mass: &#39;</span>
+                              <span class="s">&#39;{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ix</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][:</span><span class="n">ix</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+
+        <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span> <span class="s">&#39;surface_weather&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_avg_frac_oil</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        find weighted average of frac_water array, return (1 - avg_frac_water)</span>
+<span class="sd">        since we want the average fraction of oil in this data</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">avg_frac_water</span> <span class="o">=</span> <span class="p">((</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">])</span><span class="o">.</span>
+                          <span class="nb">sum</span><span class="p">()</span><span class="o">/</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">avg_frac_water</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">SkimmerSchema</span><span class="p">(</span><span class="n">WeathererSchema</span><span class="p">):</span>
+    <span class="n">amount</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+    <span class="n">units</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">())</span>
+    <span class="n">efficiency</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+
+
+<div class="viewcode-block" id="Skimmer"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Skimmer">[docs]</a><span class="k">class</span> <span class="nc">Skimmer</span><span class="p">(</span><span class="n">CleanUpBase</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Weatherer</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;amount&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;units&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;efficiency&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">SkimmerSchema</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">amount</span><span class="p">,</span>
+                 <span class="n">units</span><span class="p">,</span>
+                 <span class="n">efficiency</span><span class="p">,</span>
+                 <span class="n">active_start</span><span class="p">,</span>
+                 <span class="n">active_stop</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        initialize Skimmer object - calls base class __init__ using super()</span>
+<span class="sd">        active_start and active_stop time are required</span>
+<span class="sd">        cleanup operations must have a valid datetime - cannot use -inf and inf</span>
+<span class="sd">        active_start/active_stop is used to get the mass removal rate</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Skimmer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">active_start</span><span class="o">=</span><span class="n">active_start</span><span class="p">,</span>
+                                      <span class="n">active_stop</span><span class="o">=</span><span class="n">active_stop</span><span class="p">,</span>
+                                      <span class="n">efficiency</span><span class="o">=</span><span class="n">efficiency</span><span class="p">,</span>
+                                      <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_units</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">=</span> <span class="n">amount</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span>
+
+        <span class="c"># get the rate as amount/sec, use this to compute amount at each step</span>
+        <span class="c"># set in prepare_for_model_run()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># let prepare_for_model_step set timestep to use when active_start or</span>
+        <span class="c"># active_stop is between a timestep. Generally don&#39;t do subtimestep</span>
+        <span class="c"># resolution; however, in this case we want numbers to add up correctly</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timestep</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Need valid mass or volume units for amount&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_validunits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="s">&#39;checks if units are either valid_vol_units or valid_mass_units&#39;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_vol_units</span> <span class="ow">or</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_mass_units</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">&#39;return units for amount skimmed&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span>
+
+    <span class="nd">@units.setter</span>
+    <span class="k">def</span> <span class="nf">units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validunits</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_units</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;{0} are not valid volume or mass units.&#39;</span>
+                   <span class="s">&#39; Not updated&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Skimmer.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Skimmer.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        no need to call base class since no new array_types were added</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">-</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">active_start</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;skimmed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+</div>
+<div class="viewcode-block" id="Skimmer.prepare_for_model_step"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Skimmer.prepare_for_model_step">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Do sub timestep resolution here so numbers add up correctly</span>
+<span class="sd">        Mark LEs to be skimmed - do them in order right now. Assume all LEs</span>
+<span class="sd">        that are released together will be skimmed together since they would</span>
+<span class="sd">        be closer to each other in position.</span>
+
+<span class="sd">        Assumes: there is more mass in water than amount of mass to be</span>
+<span class="sd">        skimmed. The LEs marked for Skimming are marked only once -</span>
+<span class="sd">        code checks to see if any LEs are marked for skimming and if</span>
+<span class="sd">        none are found, it marks them.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Skimmer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c"># if active, setup timestep correctly</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;fate_status&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">bt_fate</span><span class="o">.</span><span class="n">skim</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">substance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_substance</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+            <span class="n">total_mass_removed</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_mass</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="p">,</span>
+                                                 <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">)</span> <span class="o">*</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_LE_status_codes</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span>
+                                         <span class="n">bt_fate</span><span class="o">.</span><span class="n">skim</span> <span class="o">|</span> <span class="n">bt_fate</span><span class="o">.</span><span class="n">surface_weather</span><span class="p">,</span>
+                                         <span class="n">substance</span><span class="p">,</span> <span class="n">total_mass_removed</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_mass_to_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">substance</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        use density at 15C, ie corresponding with API to do mass/volume</span>
+<span class="sd">        conversion</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">amount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestep</span>
+        <span class="n">rm_mass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_mass</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span> <span class="n">amount</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">rm_mass</span>
+
+<div class="viewcode-block" id="Skimmer.weather_elements"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Skimmer.weather_elements">[docs]</a>    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Assumes there is only ever 1 substance being modeled!</span>
+<span class="sd">        remove mass equally from LEs marked to be skimmed</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="p">,</span>
+                                                    <span class="n">fate</span><span class="o">=</span><span class="s">&#39;skim&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">])</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">rm_amount</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_avg_frac_oil</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestep</span>
+            <span class="n">rm_mass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_mass</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span>
+                                     <span class="n">rm_amount</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span>
+
+            <span class="n">total_mass</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="n">rm_mass_frac</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">rm_mass</span> <span class="o">/</span> <span class="n">total_mass</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">rm_mass</span> <span class="o">=</span> <span class="n">rm_mass_frac</span> <span class="o">*</span> <span class="n">total_mass</span>
+
+            <span class="c"># if elements are also evaporating following could be true</span>
+            <span class="c"># need to include weathering for skimmed particles, then test and</span>
+            <span class="c"># add if following is required.</span>
+            <span class="c"># if rm_mass_frac &gt; 1:</span>
+            <span class="c">#     rm_mass_frac = 1.0</span>
+
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">rm_mass_frac</span><span class="p">)</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;skimmed&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">rm_mass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;amount skimmed for {0}: {1}&#39;</span><span class="o">.</span>
+                              <span class="n">format</span><span class="p">(</span><span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">rm_mass</span><span class="p">))</span>
+
+        <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">(</span><span class="n">fate</span><span class="o">=</span><span class="s">&#39;skim&#39;</span><span class="p">)</span>
+
+</div></div>
+<span class="k">class</span> <span class="nc">BurnSchema</span><span class="p">(</span><span class="n">WeathererSchema</span><span class="p">):</span>
+    <span class="n">area</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+    <span class="n">thickness</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+    <span class="n">area_units</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">())</span>
+    <span class="n">thickness_units</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">())</span>
+    <span class="n">_oilwater_thickness</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">_oilwater_thick_burnrate</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">_oil_vol_burnrate</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">efficiency</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Burn"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Burn">[docs]</a><span class="k">class</span> <span class="nc">Burn</span><span class="p">(</span><span class="n">CleanUpBase</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">BurnSchema</span>
+
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Weatherer</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;area&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;thickness&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;area_units&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;thickness_units&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;efficiency&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;_oilwater_thickness&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;_oilwater_thick_burnrate&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;_oil_vol_burnrate&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;wind&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+
+    <span class="c"># save active_stop once burn duration is known - not update able but is</span>
+    <span class="c"># returned in webapi json_ so make it readable</span>
+    <span class="n">_state</span><span class="p">[</span><span class="s">&#39;active_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">_state</span><span class="p">[</span><span class="s">&#39;active_stop&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="n">valid_area_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s">&#39;Area&#39;</span><span class="p">)</span>
+    <span class="n">valid_length_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s">&#39;Length&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">area</span><span class="p">,</span>
+                 <span class="n">thickness</span><span class="p">,</span>
+                 <span class="n">active_start</span><span class="p">,</span>
+                 <span class="n">area_units</span><span class="o">=</span><span class="s">&#39;m^2&#39;</span><span class="p">,</span>
+                 <span class="n">thickness_units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span>
+                 <span class="n">efficiency</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                 <span class="n">wind</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Set the area of boomed oil to be burned.</span>
+<span class="sd">        Cleanup operations must have a valid datetime for active_start,</span>
+<span class="sd">        cannot use -inf. Cannot set active_stop - burn automatically stops</span>
+<span class="sd">        when oil/water thickness reaches 2mm.</span>
+
+<span class="sd">        :param float area: area of boomed oil/water mixture to burn</span>
+<span class="sd">        :param float thickness: thickness of boomed oil/water mixture</span>
+<span class="sd">        :param datetime active_start: time when the burn starts</span>
+<span class="sd">        :param str area_units: default is &#39;m^2&#39;</span>
+<span class="sd">        :param str thickness_units: default is &#39;m&#39;</span>
+<span class="sd">        :param float efficiency: burn efficiency, must be greater than 0 and</span>
+<span class="sd">            less than or equal to 1.0</span>
+<span class="sd">        :param wind: gnome.environment.Wind object. Only used to set</span>
+<span class="sd">            efficiency if efficiency is None. Efficiency is defined as:</span>
+<span class="sd">                1 - 0.07 * wind.get_value(model_time)</span>
+<span class="sd">            where wind.get_value(model_time) is value of wind at model_time</span>
+
+<span class="sd">        Kwargs passed onto base class:</span>
+
+<span class="sd">        :param str name: name of object</span>
+<span class="sd">        :param bool on: whether object is on or not for the run</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="s">&#39;active_stop&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="c"># user cannot set &#39;active_stop&#39;</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;active_stop&#39;</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Burn</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">active_start</span><span class="o">=</span><span class="n">active_start</span><span class="p">,</span>
+                                   <span class="n">efficiency</span><span class="o">=</span><span class="n">efficiency</span><span class="p">,</span>
+                                   <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c"># initialize user units to valid units - setters following this will</span>
+        <span class="c"># initialize area_units and thickness_units per input values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_area_units</span> <span class="o">=</span> <span class="s">&#39;m^2&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thickness_units</span> <span class="o">=</span> <span class="s">&#39;m&#39;</span>
+
+        <span class="c"># thickness of burned/boomed oil which is updated at each timestep</span>
+        <span class="c"># this will be set once we figure out how much oil will be burned</span>
+        <span class="c"># in prepare_for_model_step()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_oilwater_thickness</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c"># in SI units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_thickness</span> <span class="o">=</span> <span class="mf">0.002</span>      <span class="c"># stop burn threshold in SI 2mm</span>
+
+        <span class="c"># following are set once LEs are marked for burn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_burn_constant</span> <span class="o">=</span> <span class="mf">0.000058</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_oilwater_thick_burnrate</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_oil_vol_burnrate</span> <span class="o">=</span> <span class="bp">None</span>   <span class="c"># burn rate of only the oil</span>
+
+        <span class="c"># validate user units before setting _area_units/_thickness_units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thickness</span> <span class="o">=</span> <span class="n">thickness</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="n">area</span>
+
+        <span class="c"># setters will validate the units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">area_units</span> <span class="o">=</span> <span class="n">area_units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thickness_units</span> <span class="o">=</span> <span class="n">thickness_units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wind</span> <span class="o">=</span> <span class="n">wind</span>
+
+        <span class="c"># initialize rates and active_stop based on frac_water = 0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_rate_duration</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">area_units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_area_units</span>
+
+    <span class="nd">@area_units.setter</span>
+    <span class="k">def</span> <span class="nf">area_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        value must be one of the valid units given in valid_area_units</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_area_units</span><span class="p">:</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">InvalidUnitError</span><span class="p">((</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;Area&#39;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_area_units</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">thickness</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thickness</span>
+
+    <span class="nd">@thickness.setter</span>
+    <span class="k">def</span> <span class="nf">thickness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        1. log a warning if thickness in SI units is less than _min_thickness</span>
+<span class="sd">        2. if thickness changes, invoke _init_rate_duration() to reset</span>
+<span class="sd">           active_stop - more important for UI so it reflects the correct</span>
+<span class="sd">           duration.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thickness</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_thickness_warning</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_rate_duration</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_log_thickness_warning</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        when thickness or thickness_units are updated, check to see that the</span>
+<span class="sd">        value in SI units is &gt; _min_thickness. If it is not, then log a</span>
+<span class="sd">        warning</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">uc</span><span class="o">.</span><span class="n">Convert</span><span class="p">(</span><span class="s">&#39;Length&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thickness_units</span><span class="p">,</span> <span class="s">&#39;m&#39;</span><span class="p">,</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_thickness</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;thickness of {0} {1}, is less than min required {2} m.&quot;</span>
+                   <span class="s">&quot; Burn will not occur&quot;</span><span class="o">.</span>
+                   <span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thickness</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thickness_units</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">_min_thickness</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">thickness_units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thickness_units</span>
+
+    <span class="nd">@thickness_units.setter</span>
+    <span class="k">def</span> <span class="nf">thickness_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        value must be one of the valid units given in valid_length_units</span>
+<span class="sd">        also reset active_stop()</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_length_units</span><span class="p">:</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">InvalidUnitError</span><span class="p">((</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;Length&#39;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thickness_units</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_rate_duration</span><span class="p">()</span>
+
+        <span class="c"># if thickness in these units is &lt; min required, log a warning</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_thickness_warning</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Burn.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Burn.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        resets internal _oilwater_thickness variable to initial thickness</span>
+<span class="sd">        specified by user and active_stop to &#39;inf&#39; again.</span>
+<span class="sd">        initializes sc.weathering_data[&#39;burned&#39;] = 0.0</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_rate_duration</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;burned&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+</div>
+<div class="viewcode-block" id="Burn.prepare_for_model_step"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Burn.prepare_for_model_step">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        1. set &#39;active&#39; flag based on active_start, and model_time</span>
+<span class="sd">        2. Mark LEs to be burned - do them in order right now. Assume all LEs</span>
+<span class="sd">           that are released together will be burned together since they would</span>
+<span class="sd">           be closer to each other in position.</span>
+<span class="sd">           Assumes: there is more mass in water than amount of mass to be</span>
+<span class="sd">           skimmed. The LEs marked for Burning are marked only once -</span>
+<span class="sd">           during the very first step that the object becomes active</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Burn</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c"># if initial oilwater_thickness is &lt; _min_thickness, then stop</span>
+        <span class="c"># don&#39;t want to deal with active_start being equal to active_stop, need</span>
+        <span class="c"># this incase user sets a bad initial value</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_oilwater_thickness</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_thickness</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">return</span>
+
+        <span class="c"># only when it is active, update the status codes</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;fate_status&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">bt_fate</span><span class="o">.</span><span class="n">burn</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">substance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_substance</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+            <span class="n">_si_area</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">Convert</span><span class="p">(</span><span class="s">&#39;Area&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_units</span><span class="p">,</span> <span class="s">&#39;m^2&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="p">)</span>
+            <span class="n">_si_thickness</span> <span class="o">=</span> \
+                <span class="n">uc</span><span class="o">.</span><span class="n">Convert</span><span class="p">(</span><span class="s">&#39;Length&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thickness_units</span><span class="p">,</span> <span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span><span class="p">)</span>
+            <span class="n">mass_to_remove</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_mass</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span>
+                                            <span class="n">_si_area</span> <span class="o">*</span> <span class="n">_si_thickness</span><span class="p">,</span>
+                                            <span class="s">&#39;m^3&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_LE_status_codes</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">bt_fate</span><span class="o">.</span><span class="n">burn</span><span class="p">,</span>
+                                         <span class="n">substance</span><span class="p">,</span> <span class="n">mass_to_remove</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_burn_params</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">substance</span><span class="p">)</span>
+
+            <span class="c"># set timestep after active stop is set</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set__timestep</span><span class="p">(</span><span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_init_rate_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">avg_frac_oil</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        burn duration based on avg_frac_oil content for LEs marked for burn</span>
+<span class="sd">        __init__ invokes this to initialize all parameters assuming</span>
+<span class="sd">        frac_water = 0.0</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># burn rate constant is defined as a thickness rate in m/sec</span>
+        <span class="n">_si_area</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">Convert</span><span class="p">(</span><span class="s">&#39;Area&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_units</span><span class="p">,</span> <span class="s">&#39;m^2&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="p">)</span>
+
+        <span class="c"># rate if efficiency is 100 %</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_oilwater_thick_burnrate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_burn_constant</span> <span class="o">*</span> <span class="n">avg_frac_oil</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_oil_vol_burnrate</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_burn_constant</span> <span class="o">*</span> <span class="n">avg_frac_oil</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">_si_area</span>
+
+        <span class="c"># burn duration is known once rate is known</span>
+        <span class="c"># reset current thickness to initial thickness whenever model is rerun</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_oilwater_thickness</span> <span class="o">=</span> \
+            <span class="n">uc</span><span class="o">.</span><span class="n">Convert</span><span class="p">(</span><span class="s">&#39;Length&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thickness_units</span><span class="p">,</span> <span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span><span class="p">)</span>
+
+        <span class="n">burn_duration</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_oilwater_thickness</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_thickness</span><span class="p">)</span> <span class="o">/</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">_oilwater_thick_burnrate</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_start</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">burn_duration</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_burn_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">substance</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Once LEs are marked for burn, the frac_water does not change</span>
+<span class="sd">        set burn rate for oil/water thickness, as well as volume burn rate for</span>
+<span class="sd">        oil:</span>
+
+<span class="sd">        If data contains LEs marked for burning, then:</span>
+
+<span class="sd">            avg_frac_oil = mass_weighed_avg(1 - data[&#39;frac_water&#39;])</span>
+<span class="sd">            _oilwater_thick_burnrate = 0.000058 * avg_frac_oil</span>
+<span class="sd">            _oil_vol_burnrate = _oilwater_thick_burnrate * avg_frac_oil * area</span>
+
+<span class="sd">        The burn duration is also known if efficiency is constant. However, if</span>
+<span class="sd">        efficiency is based on variable wind, then duration cannot be computed.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># once LEs are marked for burn, they do not weather. The</span>
+        <span class="c"># frac_water content will not change - let&#39;s find total_mass_rm,</span>
+        <span class="c"># burn_duration and rate since that is now known</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">substancefatedata</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;mass&#39;</span><span class="p">,</span> <span class="s">&#39;frac_water&#39;</span><span class="p">},</span>
+                                    <span class="s">&#39;burn&#39;</span><span class="p">)</span>
+        <span class="n">avg_frac_oil</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_avg_frac_oil</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_rate_duration</span><span class="p">(</span><span class="n">avg_frac_oil</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        return burn efficiency either from efficiency attribute or computed</span>
+<span class="sd">        from wind</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Set the &#39;efficiency&#39; or provide &#39;wind&#39; &quot;</span>
+                              <span class="s">&quot;object so efficiency can be computed. &quot;</span>
+                              <span class="s">&quot;Else using 100</span><span class="si">% e</span><span class="s">fficiency&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># get it from wind</span>
+            <span class="n">ws</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ws</span> <span class="o">&gt;</span> <span class="mf">1.</span><span class="o">/</span><span class="mf">0.07</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;wind speed is greater than {0}.&quot;</span>
+                       <span class="s">&quot; Set efficiency to 0&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">0.07</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">0.07</span> <span class="o">*</span> <span class="n">ws</span>
+
+<div class="viewcode-block" id="Burn.weather_elements"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Burn.weather_elements">[docs]</a>    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        1. figure out the mass to remove for current timestep based on rate and</span>
+<span class="sd">           efficiency. Find fraction of total mass and remove equally from all</span>
+<span class="sd">           &#39;mass_components&#39; of LEs marked for burning.</span>
+<span class="sd">        2. update &#39;mass&#39; array and the amount burned in weathering_data dict</span>
+<span class="sd">        3. append to _burn_duration for each timestep</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="p">,</span>
+                                                    <span class="n">fate</span><span class="o">=</span><span class="s">&#39;burn&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">])</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_efficiency</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+
+            <span class="c"># scale rate by efficiency</span>
+            <span class="c"># this is volume of oil burned - need to get mass from this</span>
+            <span class="n">vol_oil_burned</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_oil_vol_burnrate</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestep</span>
+            <span class="n">rm_mass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_mass</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span> <span class="n">vol_oil_burned</span><span class="p">,</span> <span class="s">&#39;m^3&#39;</span><span class="p">)</span>
+            <span class="n">rm_mass_frac</span> <span class="o">=</span> <span class="n">rm_mass</span> <span class="o">/</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">rm_mass_frac</span><span class="p">)</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c"># new thickness of oil/water mixture</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_oilwater_thickness</span> <span class="o">-=</span> \
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_oilwater_thick_burnrate</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestep</span><span class="p">)</span>
+
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;burned&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">rm_mass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;amount burned for {0}: {1}&#39;</span><span class="o">.</span>
+                              <span class="n">format</span><span class="p">(</span><span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">rm_mass</span><span class="p">))</span>
+
+        <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">(</span><span class="n">fate</span><span class="o">=</span><span class="s">&#39;burn&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Burn.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Burn.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &#39;wind&#39;/&#39;waves&#39; property is saved as references in save file</span>
+<span class="sd">        need to add serialized object for &#39;webapi&#39;. Burn could have &#39;wind&#39; and</span>
+<span class="sd">        ChemicalDispersion could have &#39;waves&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">serial</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Burn</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">serial</span><span class="p">[</span><span class="s">&#39;wind&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">serial</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Burn.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Burn.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        append correct schema for wind object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s">&#39;wind&#39;</span> <span class="ow">in</span> <span class="n">json_</span> <span class="ow">and</span> <span class="n">json_</span><span class="p">[</span><span class="s">&#39;wind&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">WindSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;wind&#39;</span><span class="p">))</span>
+
+        <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_to_dict</span>
+</div>
+    <span class="k">def</span> <span class="nf">update_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s">&#39;efficiency&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;efficiency&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Burn</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">update_from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+</div>
+<span class="k">class</span> <span class="nc">ChemicalDispersionSchema</span><span class="p">(</span><span class="n">WeathererSchema</span><span class="p">):</span>
+    <span class="n">fraction_sprayed</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">validator</span><span class="o">=</span><span class="n">Range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+    <span class="n">efficiency</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span> <span class="n">validator</span><span class="o">=</span><span class="n">Range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+
+
+<span class="k">class</span> <span class="nc">ChemicalDispersion</span><span class="p">(</span><span class="n">CleanUpBase</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Weatherer</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">ChemicalDispersionSchema</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;fraction_sprayed&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;efficiency&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;waves&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;_rate&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">fraction_sprayed</span><span class="p">,</span>
+                 <span class="n">active_start</span><span class="p">,</span>
+                 <span class="n">active_stop</span><span class="p">,</span>
+                 <span class="n">waves</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">efficiency</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        another mass removal mechanism. The volume specified gets dispersed</span>
+<span class="sd">        with efficiency based on wave conditions.</span>
+
+<span class="sd">        :param volume: volume of oil (not oil/water?) applied with surfactant</span>
+<span class="sd">        :type volume: float</span>
+<span class="sd">        :param units: volume units</span>
+<span class="sd">        :type units: str</span>
+<span class="sd">        :param active_start: start time of operation</span>
+<span class="sd">        :type active_start: datetime</span>
+<span class="sd">        :param active_stop: stop time of operation</span>
+<span class="sd">        :type active_stop: datetime</span>
+<span class="sd">        :param waves: waves object - query to get height. It must contain</span>
+<span class="sd">            get_value() method. Default is None to support object creation by</span>
+<span class="sd">            WebClient before a waves object is defined</span>
+<span class="sd">        :type waves: an object with same interface as gnome.environment.Waves</span>
+
+<span class="sd">        Optional Argument: Either efficiency or waves must be set before</span>
+<span class="sd">        running the model. If efficiency is not set, then use wave height to</span>
+<span class="sd">        estimate an efficiency</span>
+
+<span class="sd">        :param efficiency: efficiency of operation.</span>
+<span class="sd">        :type efficiency: float between 0 and 1</span>
+
+<span class="sd">        remaining kwargs include &#39;on&#39; and &#39;name&#39; and these are passed to base</span>
+<span class="sd">        class via super</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ChemicalDispersion</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">active_start</span><span class="o">=</span><span class="n">active_start</span><span class="p">,</span>
+                                                 <span class="n">active_stop</span><span class="o">=</span><span class="n">active_stop</span><span class="p">,</span>
+                                                 <span class="n">efficiency</span><span class="o">=</span><span class="n">efficiency</span><span class="p">,</span>
+                                                 <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c"># fraction_sprayed must be &gt; 0 and &lt;= 1.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fraction_sprayed</span> <span class="o">=</span> <span class="n">fraction_sprayed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">waves</span> <span class="o">=</span> <span class="n">waves</span>
+
+        <span class="c"># rate is set the first timestep in which the object becomes active</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># since efficiency can also be set - do not make_default_refs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">make_default_refs</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        reset _rate to None. It gets set when LEs are marked to be dispersed.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;chem_dispersed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        1. invoke base class method (using super) to set active flag</span>
+<span class="sd">        2. mark LEs for removal</span>
+<span class="sd">        3. set internal _rate attribute for mass removal [kg/sec]</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ChemicalDispersion</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span>
+                                                               <span class="n">time_step</span><span class="p">,</span>
+                                                               <span class="n">model_time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c"># only when it is active, update the status codes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set__timestep</span><span class="p">(</span><span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;fate_status&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">bt_fate</span><span class="o">.</span><span class="n">disperse</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">substance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_substance</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+            <span class="n">mass</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">spill</span><span class="o">.</span><span class="n">get_mass</span><span class="p">()</span> <span class="k">for</span> <span class="n">spill</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">spills</span><span class="p">])</span>
+            <span class="n">rm_total_mass_si</span> <span class="o">=</span> <span class="n">mass</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fraction_sprayed</span>
+
+            <span class="c"># the mass to remove is actual oil mass not mass of oil/water</span>
+            <span class="c"># mixture</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_LE_status_codes</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">bt_fate</span><span class="o">.</span><span class="n">disperse</span><span class="p">,</span>
+                                         <span class="n">substance</span><span class="p">,</span> <span class="n">rm_total_mass_si</span><span class="p">,</span>
+                                         <span class="n">oilwater_mix</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">=</span> \
+                <span class="p">(</span><span class="n">rm_total_mass_si</span> <span class="o">/</span>
+                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_start</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">_set_efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># if wave height &gt; 6.4 m, we get negative results - log and</span>
+            <span class="c"># reset to 0 if this occurs</span>
+            <span class="c"># can efficiency go to 0? Is there a minimum threshold?</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">efficiency</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.241</span> <span class="o">+</span> <span class="mf">0.587</span><span class="o">*</span><span class="n">w</span> <span class="o">-</span> <span class="mf">0.191</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span>
+                          <span class="mf">0.02616</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="mf">0.0016</span> <span class="o">*</span> <span class="n">w</span><span class="o">**</span><span class="mi">4</span> <span class="o">-</span>
+                          <span class="mf">0.000037</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">efficiency</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;wave height {0} - results in negative efficiency. &quot;</span>
+                       <span class="s">&quot;Reset to 0&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="n">efficiency</span>
+
+    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="s">&#39;for now just take away 0.1% at every step&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="p">,</span>
+                                                        <span class="n">fate</span><span class="o">=</span><span class="s">&#39;disperse&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">])</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_set_efficiency</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+                <span class="n">rm_mass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestep</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span>
+
+                <span class="n">total_mass</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                <span class="n">rm_mass_frac</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">rm_mass</span> <span class="o">/</span> <span class="n">total_mass</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+                <span class="n">rm_mass</span> <span class="o">=</span> <span class="n">rm_mass_frac</span> <span class="o">*</span> <span class="n">total_mass</span>
+
+                <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">rm_mass_frac</span><span class="p">)</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span>
+                <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+                <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;chem_dispersed&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">rm_mass</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;amount chemically dispersed for&#39;</span>
+                                  <span class="s">&#39; {0}: {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">rm_mass</span><span class="p">))</span>
+
+            <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">(</span><span class="n">fate</span><span class="o">=</span><span class="s">&#39;disperse&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s">&#39;efficiency&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;efficiency&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ChemicalDispersion</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">update_from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &#39;wind&#39;/&#39;waves&#39; property is saved as references in save file</span>
+<span class="sd">        need to add serialized object for &#39;webapi&#39;. Burn could have &#39;wind&#39; and</span>
+<span class="sd">        ChemicalDispersion could have &#39;waves&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">serial</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ChemicalDispersion</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">serial</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">serial</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ChemicalDispersion could include &#39;waves&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;waves&#39;</span> <span class="ow">in</span> <span class="n">json_</span> <span class="ow">and</span> <span class="n">json_</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">_to_dict</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Waves</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">_to_dict</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

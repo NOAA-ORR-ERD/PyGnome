@@ -1,0 +1,393 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.movers.movers &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.movers.movers</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">MappingSchema</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">drop</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">gnome.persist.validators</span> <span class="kn">import</span> <span class="n">convertible_to_seconds</span>
+<span class="kn">from</span> <span class="nn">gnome.persist.extend_colander</span> <span class="kn">import</span> <span class="n">LocalDateTime</span>
+
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="p">(</span><span class="n">world_point</span><span class="p">,</span>
+                               <span class="n">world_point_type</span><span class="p">,</span>
+                               <span class="n">spill_type</span><span class="p">,</span>
+                               <span class="n">status_code_type</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="kn">import</span> <span class="n">inf_datetime</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="kn">import</span> <span class="n">time_utils</span><span class="p">,</span> <span class="n">serializable</span>
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_rise_velocity_mover</span> <span class="kn">import</span> <span class="n">CyRiseVelocityMover</span>
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">AddLogger</span>
+
+
+<span class="k">class</span> <span class="nc">ProcessSchema</span><span class="p">(</span><span class="n">MappingSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    base Process schema - attributes common to all movers/weatherers</span>
+<span class="sd">    defined at one place</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">on</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Bool</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">active_start</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span>
+                              <span class="n">validator</span><span class="o">=</span><span class="n">convertible_to_seconds</span><span class="p">)</span>
+    <span class="n">active_stop</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span>
+                             <span class="n">validator</span><span class="o">=</span><span class="n">convertible_to_seconds</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Process</span><span class="p">(</span><span class="n">AddLogger</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class from which all Python movers/weatherers can inherit</span>
+
+<span class="sd">    It defines the base functionality for mover/weatherer.</span>
+
+<span class="sd">    NOTE: Since base class is not Serializable, it does not need</span>
+<span class="sd">    a class level _schema attribute.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;on&#39;</span><span class="p">,</span> <span class="s">&#39;active_start&#39;</span><span class="p">,</span> <span class="s">&#39;active_stop&#39;</span><span class="p">],</span>
+               <span class="n">save</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;on&#39;</span><span class="p">,</span> <span class="s">&#39;active_start&#39;</span><span class="p">,</span> <span class="s">&#39;active_stop&#39;</span><span class="p">],</span>
+               <span class="n">read</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;active&#39;</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>   <span class="c"># default min + max values for timespan</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize default Mover/Weatherer parameters</span>
+
+<span class="sd">        All parameters are optional (kwargs)</span>
+
+<span class="sd">        :param on: boolean as to whether the object is on or not. Default is on</span>
+<span class="sd">        :param active_start: datetime when the mover should be active</span>
+<span class="sd">        :param active_stop: datetime after which the mover should be inactive</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;on&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>  <span class="c"># turn the mover on / off for the run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span>  <span class="c"># initial value</span>
+
+        <span class="n">active_start</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;active_start&#39;</span><span class="p">,</span>
+                                  <span class="n">inf_datetime</span><span class="o">.</span><span class="n">InfDateTime</span><span class="p">(</span><span class="s">&#39;-inf&#39;</span><span class="p">))</span>
+        <span class="n">active_stop</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;active_stop&#39;</span><span class="p">,</span>
+                                 <span class="n">inf_datetime</span><span class="o">.</span><span class="n">InfDateTime</span><span class="p">(</span><span class="s">&#39;inf&#39;</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_active_startstop</span><span class="p">(</span><span class="n">active_start</span><span class="p">,</span> <span class="n">active_stop</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">active_start</span> <span class="o">=</span> <span class="n">active_start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">=</span> <span class="n">active_stop</span>
+
+        <span class="c"># empty dict since no array_types required for all movers at present</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">array_types</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">make_default_refs</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;make_default_refs&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_active_startstop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">active_start</span><span class="p">,</span> <span class="n">active_stop</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">active_stop</span> <span class="o">&lt;=</span> <span class="n">active_start</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;active_start {0} should be smaller than active_stop {1}&#39;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">active_start</span><span class="p">,</span> <span class="n">active_stop</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="c"># Methods for active property definition</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">active</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active</span>
+
+    <span class="k">def</span> <span class="nf">datetime_to_seconds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Put the time conversion call here - in case we decide to change it, it</span>
+<span class="sd">        only updates here</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">time_utils</span><span class="o">.</span><span class="n">date_to_sec</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method if a derived mover class needs to perform any</span>
+<span class="sd">        actions prior to a model run</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time_datetime</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        sets active flag based on time_span and on flag.</span>
+<span class="sd">        Object is active if following hold and &#39;on&#39; is True:</span>
+<span class="sd">           1. active_start &lt;= (model_time + time_step/2) so object is on for</span>
+<span class="sd">              more than half the timestep</span>
+<span class="sd">           2. (model_time + time_step/2) &lt;= active_stop so again the object is</span>
+<span class="sd">              on for at least half the time step</span>
+<span class="sd">            flag to true.</span>
+
+<span class="sd">        :param sc: an instance of gnome.spill_container.SpillContainer class</span>
+<span class="sd">        :param time_step: time step in seconds</span>
+<span class="sd">        :param model_time_datetime: current model time as datetime object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_start</span> <span class="o">&lt;=</span>
+            <span class="p">(</span><span class="n">model_time_datetime</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">&gt;=</span>
+            <span class="p">(</span><span class="n">model_time_datetime</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="ow">and</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">model_step_is_done</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method gets called by the model when after everything else is done</span>
+<span class="sd">        in a time step. Put any code need for clean-up, etc in here in</span>
+<span class="sd">        subclassed movers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="Mover"><a class="viewcode-back" href="../../../reference.html#gnome.movers.Mover">[docs]</a><span class="k">class</span> <span class="nc">Mover</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+<div class="viewcode-block" id="Mover.get_move"><a class="viewcode-back" href="../../../reference.html#gnome.movers.Mover.get_move">[docs]</a>    <span class="k">def</span> <span class="nf">get_move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time_datetime</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the move in (long,lat,z) space. It returns the delta move</span>
+<span class="sd">        for each element of the spill as a numpy array of size</span>
+<span class="sd">        (number_elements X 3) and dtype = gnome.basic_types.world_point_type</span>
+
+<span class="sd">        Base class returns an array of numpy.nan for delta to indicate the</span>
+<span class="sd">        get_move is not implemented yet.</span>
+
+<span class="sd">        Each class derived from Mover object must implement it&#39;s own get_move</span>
+
+<span class="sd">        :param sc: an instance of gnome.spill_container.SpillContainer class</span>
+<span class="sd">        :param time_step: time step in seconds</span>
+<span class="sd">        :param model_time_datetime: current model time as datetime object</span>
+
+<span class="sd">        All movers must implement get_move() since that&#39;s what the model calls</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">]</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+        <span class="n">delta</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="k">return</span> <span class="n">delta</span>
+
+</div></div>
+<div class="viewcode-block" id="CyMover"><a class="viewcode-back" href="../../../reference.html#gnome.movers.CyMover">[docs]</a><span class="k">class</span> <span class="nc">CyMover</span><span class="p">(</span><span class="n">Mover</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base class for python wrappers around cython movers.</span>
+<span class="sd">        Uses super(CyMover,self).__init__(\*\*kwargs) to call Mover class</span>
+<span class="sd">        __init__ method</span>
+
+<span class="sd">        All cython movers (CyWindMover, CyRandomMover) are instantiated by a</span>
+<span class="sd">        derived class, and then contained by this class in the member &#39;movers&#39;.</span>
+<span class="sd">        They will need to extract info from spill object.</span>
+
+<span class="sd">        We assumes any derived class will instantiate a &#39;mover&#39; object that</span>
+<span class="sd">        has methods like: prepare_for_model_run, prepare_for_model_step,</span>
+
+<span class="sd">        All kwargs passed on to super class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CyMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c"># initialize variables here for readability, though self.mover = None</span>
+        <span class="c"># produces errors, so that is not initialized here</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_time</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_codes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">status_code_type</span><span class="p">)</span>
+
+        <span class="c"># either a 1, or 2 depending on whether spill is certain or not</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spill_type</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="CyMover.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.movers.CyMover.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calls the contained cython mover&#39;s prepare_for_model_run()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="CyMover.prepare_for_model_step"><a class="viewcode-back" href="../../../reference.html#gnome.movers.CyMover.prepare_for_model_step">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time_datetime</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Default implementation of prepare_for_model_step(...)</span>
+<span class="sd">         - Sets the mover&#39;s active flag if time is within specified timespan</span>
+<span class="sd">           (done in base class Mover)</span>
+<span class="sd">         - Invokes the cython mover&#39;s prepare_for_model_step</span>
+
+<span class="sd">        :param sc: an instance of gnome.spill_container.SpillContainer class</span>
+<span class="sd">        :param time_step: time step in seconds</span>
+<span class="sd">        :param model_time_datetime: current model time as datetime object</span>
+
+<span class="sd">        Uses super to invoke Mover class prepare_for_model_step and does a</span>
+<span class="sd">        couple more things specific to CyMover.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CyMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span>
+                                                    <span class="n">model_time_datetime</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="n">uncertain_spill_count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">uncertain_spill_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span><span class="p">:</span>
+                <span class="n">uncertain_spill_count</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">uncertain_spill_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">sc</span><span class="o">.</span><span class="n">num_released</span><span class="p">,</span> <span class="p">),</span>
+                                                <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">datetime_to_seconds</span><span class="p">(</span><span class="n">model_time_datetime</span><span class="p">),</span>
+                        <span class="n">time_step</span><span class="p">,</span> <span class="n">uncertain_spill_count</span><span class="p">,</span> <span class="n">uncertain_spill_size</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="CyMover.get_move"><a class="viewcode-back" href="../../../reference.html#gnome.movers.CyMover.get_move">[docs]</a>    <span class="k">def</span> <span class="nf">get_move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time_datetime</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base implementation of Cython wrapped C++ movers</span>
+<span class="sd">        Override for things like the WindMover since it has a different</span>
+<span class="sd">        implementation</span>
+
+<span class="sd">        :param sc: spill_container.SpillContainer object</span>
+<span class="sd">        :param time_step: time step in seconds</span>
+<span class="sd">        :param model_time_datetime: current model time as datetime object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepare_data_for_get_move</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">model_time_datetime</span><span class="p">)</span>
+
+        <span class="c"># only call get_move if mover is active, it is on and there are LEs</span>
+        <span class="c"># that have been released</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_move</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">status_codes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spill_type</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">world_point</span><span class="p">)))</span>
+</div>
+<div class="viewcode-block" id="CyMover.prepare_data_for_get_move"><a class="viewcode-back" href="../../../reference.html#gnome.movers.CyMover.prepare_data_for_get_move">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_data_for_get_move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">model_time_datetime</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        organizes the spill object into inputs for calling with Cython</span>
+<span class="sd">        wrapper&#39;s get_move(...)</span>
+
+<span class="sd">        :param sc: an instance of gnome.spill_container.SpillContainer class</span>
+<span class="sd">        :param model_time_datetime: current model time as datetime object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime_to_seconds</span><span class="p">(</span><span class="n">model_time_datetime</span><span class="p">)</span>
+
+        <span class="c"># Get the data:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status_codes</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="n">err</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;The spill container does not have the required&#39;</span>
+                             <span class="s">&#39;data arrays</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">+</span> <span class="n">err</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spill_type</span> <span class="o">=</span> <span class="n">spill_type</span><span class="o">.</span><span class="n">uncertainty</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spill_type</span> <span class="o">=</span> <span class="n">spill_type</span><span class="o">.</span><span class="n">forecast</span>
+
+        <span class="c"># Array is not the same size, change view and reshape</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">world_point</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                                                    <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">),))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">),</span>
+                              <span class="n">dtype</span><span class="o">=</span><span class="n">world_point</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="CyMover.model_step_is_done"><a class="viewcode-back" href="../../../reference.html#gnome.movers.CyMover.model_step_is_done">[docs]</a>    <span class="k">def</span> <span class="nf">model_step_is_done</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method gets called by the model after everything else is done</span>
+<span class="sd">        in a time step, and is intended to perform any necessary clean-up</span>
+<span class="sd">        operations. Subclassed movers can override this method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">sc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">status_codes</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">]</span>
+                    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="n">err</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;The spill container does not have&#39;</span>
+                                         <span class="s">&#39; the required data array</span><span class="se">\n</span><span class="s">&#39;</span>
+                                         <span class="o">+</span> <span class="n">err</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status_codes</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">()</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

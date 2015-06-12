@@ -1,0 +1,244 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.weatherers.core &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.weatherers.core</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">SchemaNode</span>
+
+<span class="kn">from</span> <span class="nn">gnome.persist.extend_colander</span> <span class="kn">import</span> <span class="n">NumpyArray</span>
+<span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="kn">import</span> <span class="n">ObjType</span>
+
+<span class="kn">from</span> <span class="nn">gnome.array_types</span> <span class="kn">import</span> <span class="n">mass_components</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">gnome.exceptions</span> <span class="kn">import</span> <span class="n">ReferencedObjectNotSet</span>
+<span class="kn">from</span> <span class="nn">gnome.movers.movers</span> <span class="kn">import</span> <span class="n">Process</span><span class="p">,</span> <span class="n">ProcessSchema</span>
+
+
+<span class="k">class</span> <span class="nc">WeathererSchema</span><span class="p">(</span><span class="n">ObjType</span><span class="p">,</span> <span class="n">ProcessSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    used to serialize object so need ObjType schema and it only contains</span>
+<span class="sd">    attributes defined in base class (ProcessSchema)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;Weatherer&#39;</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;weatherer schema base class&#39;</span>
+
+
+<div class="viewcode-block" id="Weatherer"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer">[docs]</a><span class="k">class</span> <span class="nc">Weatherer</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">       Base Weathering agent.  This is almost exactly like the base Mover</span>
+<span class="sd">       in the way that it acts upon the model.  It contains the same API</span>
+<span class="sd">       as the mover as well. Not Serializable since it does is partial</span>
+<span class="sd">       implementation</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Process</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">WeathererSchema</span>  <span class="c"># nothing new added so use this schema</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">           :param weathering: object that represents the weathering</span>
+<span class="sd">                              properties of the substance that our</span>
+<span class="sd">                              LEs are made up of.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c"># arrays that all weatherers will update - use this to ask</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&#39;mass_components&#39;</span><span class="p">,</span> <span class="s">&#39;mass&#39;</span><span class="p">})</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;{0.__class__.__module__}.{0.__class__.__name__}(&#39;</span>
+                <span class="s">&#39;active_start={0.active_start!r}, &#39;</span>
+                <span class="s">&#39;active_stop={0.active_stop!r}, &#39;</span>
+                <span class="s">&#39;on={0.on}, &#39;</span>
+                <span class="s">&#39;active={0.active}&#39;</span>
+                <span class="s">&#39;)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Weatherer.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override for weatherers so they can initialize correct &#39;mass_balance&#39;</span>
+<span class="sd">        key and set initial value to 0.0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+            <span class="c"># almost all weatherers require wind, water, waves so raise</span>
+            <span class="c"># exception here if none is found</span>
+            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;wind&#39;</span><span class="p">,</span> <span class="s">&#39;water&#39;</span><span class="p">,</span> <span class="s">&#39;waves&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="n">attr</span> <span class="o">+</span> <span class="s">&quot; object not defined for &quot;</span> <span class="o">+</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">ReferencedObjectNotSet</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Weatherer.weather_elements"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer.weather_elements">[docs]</a>    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        run the equivalent of get_move for weathering processes. It weathers</span>
+<span class="sd">        each component and returns the mass remaining at end of time_step. It</span>
+<span class="sd">        returns the mass in units of &#39;kg&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;All weatherers need to implement this &quot;</span>
+            <span class="s">&quot;method. It returns mass remaining for each component at end of &quot;</span>
+            <span class="s">&quot;time_step in &#39;kg&#39; (SI units)&quot;</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_halflife</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">M_0</span><span class="p">,</span> <span class="n">factors</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="s">&#39;Assumes our factors are half-life values&#39;</span>
+        <span class="n">half</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">total_mass</span> <span class="o">=</span> <span class="n">M_0</span> <span class="o">*</span> <span class="p">(</span><span class="n">half</span> <span class="o">**</span> <span class="p">(</span><span class="n">time</span> <span class="o">/</span> <span class="n">factors</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">total_mass</span>
+
+    <span class="k">def</span> <span class="nf">_exp_decay</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">M_0</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Exponential decay: x(t) = exp(lambda_*time)</span>
+<span class="sd">        The lambda_ should be &#39;negative&#39; in order for function to decay</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">mass_remain</span> <span class="o">=</span> <span class="n">M_0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">lambda_</span> <span class="o">*</span> <span class="n">time</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mass_remain</span>
+
+</div>
+<span class="k">class</span> <span class="nc">HalfLifeWeathererSchema</span><span class="p">(</span><span class="n">WeathererSchema</span><span class="p">):</span>
+    <span class="n">half_lives</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">NumpyArray</span><span class="p">())</span>
+
+
+<span class="k">class</span> <span class="nc">HalfLifeWeatherer</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Give half-life for all components and decay accordingly</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">HalfLifeWeathererSchema</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Weatherer</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="n">Field</span><span class="p">(</span><span class="s">&#39;half_lives&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">half_lives</span><span class="o">=</span><span class="p">(</span><span class="mf">15.</span><span class="o">*</span><span class="mi">60</span><span class="p">,</span> <span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The half_lives are a property of HalfLifeWeatherer. If the</span>
+
+<span class="sd">          len(half_lives) != gnome.array_types.mass_components.shape[0]</span>
+
+<span class="sd">        then, only keep the number of elements of half_lives that equal the</span>
+<span class="sd">        length of half_lives and consequently the mass_components array.</span>
+<span class="sd">        The default is 5, it is possible to change default but not easily done.</span>
+<span class="sd">        HalfLifeWeatherer is currently more for testing, so will change this if</span>
+<span class="sd">        it becomes more widely used and there is a need for user to change</span>
+<span class="sd">        default number of mass components.</span>
+
+<span class="sd">        half_lives could be constants or could be something more complex like</span>
+<span class="sd">        a function of time (not implemented yet). Not storing &#39;half_lives&#39; in</span>
+<span class="sd">        data_arrays since they are neither time-varying nor varying per LE.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">HalfLifeWeatherer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">half_lives</span> <span class="o">=</span> <span class="n">half_lives</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">half_lives</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_half_lives</span>
+
+    <span class="nd">@half_lives.setter</span>
+    <span class="k">def</span> <span class="nf">half_lives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">half_lives</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_half_lives</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">half_lives</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        weather elements over time_step</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">num_released</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">arrays</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">,</span> <span class="s">&#39;mass&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="n">arrays</span><span class="p">):</span>
+            <span class="n">hl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_halflife</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">],</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">half_lives</span><span class="p">,</span> <span class="n">time_step</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">hl</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

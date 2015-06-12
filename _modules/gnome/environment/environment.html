@@ -1,0 +1,391 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.environment.environment &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.environment.environment</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">module contains objects that contain weather related data. For example,</span>
+<span class="sd">the Wind object defines the Wind conditions for the spill</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">MappingSchema</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">OneOf</span>
+<span class="kn">import</span> <span class="nn">unit_conversion</span> <span class="kn">as</span> <span class="nn">uc</span>
+<span class="kn">import</span> <span class="nn">gsw</span>
+<span class="kn">from</span> <span class="nn">repoze.lru</span> <span class="kn">import</span> <span class="n">lru_cache</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="kn">import</span> <span class="n">serializable</span>
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">base_schema</span>
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">constants</span>
+
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">_valid_units</span>
+
+
+<span class="k">class</span> <span class="nc">Environment</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A base class for all classes in environment module</span>
+
+<span class="sd">    This is primarily to define a dtype such that the OrderedCollection</span>
+<span class="sd">    defined in the Model object requires it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+
+    <span class="c"># env objects referenced by others using this attribute name</span>
+    <span class="c"># eg: For Wind objects, set to &#39;wind&#39;, for Water object set to &#39;water&#39;</span>
+    <span class="c"># so we have a way to identify all wind objects without relying on</span>
+    <span class="c"># insinstance() checks. Used by model to automatically hook up objects that</span>
+    <span class="c"># reference environment objects</span>
+    <span class="n">_ref_as</span> <span class="o">=</span> <span class="s">&#39;environment&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">make_default_refs</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        base class for environment objects</span>
+
+<span class="sd">        :param name=None:</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">make_default_refs</span> <span class="o">=</span> <span class="n">make_default_refs</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method if a derived environment class needs to perform any</span>
+<span class="sd">        actions prior to a model run</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method if a derived environment class needs to perform any</span>
+<span class="sd">        actions prior to a model run</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+<span class="c"># define valid units at module scope because the Schema and Object both use it</span>
+<span class="n">_valid_temp_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s">&#39;Temperature&#39;</span><span class="p">)</span>
+<span class="n">_valid_dist_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s">&#39;Length&#39;</span><span class="p">)</span>
+<span class="n">_valid_kvis_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s">&#39;Kinematic Viscosity&#39;</span><span class="p">)</span>
+<span class="n">_valid_density_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s">&#39;Density&#39;</span><span class="p">)</span>
+<span class="n">_valid_salinity_units</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;psu&#39;</span><span class="p">,)</span>
+<span class="n">_valid_sediment_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s">&#39;Concentration In Water&#39;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">UnitsSchema</span><span class="p">(</span><span class="n">MappingSchema</span><span class="p">):</span>
+    <span class="n">temperature</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span>
+                             <span class="n">description</span><span class="o">=</span><span class="s">&#39;SI units for temp&#39;</span><span class="p">,</span>
+                             <span class="n">validator</span><span class="o">=</span><span class="n">OneOf</span><span class="p">(</span><span class="n">_valid_temp_units</span><span class="p">))</span>
+
+    <span class="c"># for now salinity only has one units</span>
+    <span class="n">salinity</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span>
+                          <span class="n">description</span><span class="o">=</span><span class="s">&#39;SI units for salinity&#39;</span><span class="p">,</span>
+                          <span class="n">validator</span><span class="o">=</span><span class="n">OneOf</span><span class="p">(</span><span class="n">_valid_salinity_units</span><span class="p">))</span>
+
+    <span class="c"># sediment load units? Concentration In Water?</span>
+    <span class="n">sediment</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span>
+                          <span class="n">description</span><span class="o">=</span><span class="s">&#39;SI units for density&#39;</span><span class="p">,</span>
+                          <span class="n">validator</span><span class="o">=</span><span class="n">OneOf</span><span class="p">(</span><span class="n">_valid_sediment_units</span><span class="p">))</span>
+
+    <span class="c"># wave height and fetch have distance units</span>
+    <span class="n">wave_height</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span>
+                             <span class="n">description</span><span class="o">=</span><span class="s">&#39;SI units for distance&#39;</span><span class="p">,</span>
+                             <span class="n">validator</span><span class="o">=</span><span class="n">OneOf</span><span class="p">(</span><span class="n">_valid_dist_units</span><span class="p">))</span>
+
+    <span class="n">fetch</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span>
+                       <span class="n">description</span><span class="o">=</span><span class="s">&#39;SI units for distance&#39;</span><span class="p">,</span>
+                       <span class="n">validator</span><span class="o">=</span><span class="n">OneOf</span><span class="p">(</span><span class="n">_valid_dist_units</span><span class="p">))</span>
+    <span class="n">kinematic_viscosity</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span>
+                                     <span class="n">description</span><span class="o">=</span><span class="s">&#39;SI units for viscosity&#39;</span><span class="p">,</span>
+                                     <span class="n">validator</span><span class="o">=</span><span class="n">OneOf</span><span class="p">(</span><span class="n">_valid_kvis_units</span><span class="p">))</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span>
+                         <span class="n">description</span><span class="o">=</span><span class="s">&#39;SI units for density&#39;</span><span class="p">,</span>
+                         <span class="n">validator</span><span class="o">=</span><span class="n">OneOf</span><span class="p">(</span><span class="n">_valid_density_units</span><span class="p">))</span>
+
+
+<span class="k">class</span> <span class="nc">WaterSchema</span><span class="p">(</span><span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span><span class="p">):</span>
+    <span class="s">&#39;Colander Schema for Conditions object&#39;</span>
+    <span class="n">units</span> <span class="o">=</span> <span class="n">UnitsSchema</span><span class="p">()</span>
+    <span class="n">temperature</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+    <span class="n">salinity</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+    <span class="n">sediment</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">wave_height</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">fetch</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Water</span><span class="p">(</span><span class="n">Environment</span><span class="p">,</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Define the environmental conditions for a spill, like water_temperature,</span>
+<span class="sd">    atmos_pressure (most likely a constant)</span>
+
+<span class="sd">    Defined in a Serializable class since user will need to set/get some of</span>
+<span class="sd">    these properties through the client</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_ref_as</span> <span class="o">=</span> <span class="s">&#39;water&#39;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Environment</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;units&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;temperature&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;salinity&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;sediment&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;fetch&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;wave_height&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;kinematic_viscosity&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                  <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">WaterSchema</span>
+
+    <span class="n">_units_type</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;temperature&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;temperature&#39;</span><span class="p">,</span> <span class="n">_valid_temp_units</span><span class="p">),</span>
+                   <span class="s">&#39;salinity&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;salinity&#39;</span><span class="p">,</span> <span class="n">_valid_salinity_units</span><span class="p">),</span>
+                   <span class="s">&#39;sediment&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;concentration in water&#39;</span><span class="p">,</span>
+                                <span class="n">_valid_sediment_units</span><span class="p">),</span>
+                   <span class="s">&#39;wave_height&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;length&#39;</span><span class="p">,</span> <span class="n">_valid_dist_units</span><span class="p">),</span>
+                   <span class="s">&#39;fetch&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;length&#39;</span><span class="p">,</span> <span class="n">_valid_dist_units</span><span class="p">),</span>
+                   <span class="s">&#39;kinematic_viscosity&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;kinematic viscosity&#39;</span><span class="p">,</span>
+                                           <span class="n">_valid_kvis_units</span><span class="p">),</span>
+                   <span class="s">&#39;density&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="n">_valid_density_units</span><span class="p">),</span>
+                   <span class="p">}</span>
+
+    <span class="c"># keep track of valid SI units for properties - these are used for</span>
+    <span class="c"># conversion since internal code uses SI units. Don&#39;t expect to change</span>
+    <span class="c"># these so make it a class level attribute</span>
+    <span class="n">_si_units</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;temperature&#39;</span><span class="p">:</span> <span class="s">&#39;K&#39;</span><span class="p">,</span>
+                 <span class="s">&#39;salinity&#39;</span><span class="p">:</span> <span class="s">&#39;psu&#39;</span><span class="p">,</span>
+                 <span class="s">&#39;sediment&#39;</span><span class="p">:</span> <span class="s">&#39;kg/m^3&#39;</span><span class="p">,</span>
+                 <span class="s">&#39;wave_height&#39;</span><span class="p">:</span> <span class="s">&#39;m&#39;</span><span class="p">,</span>
+                 <span class="s">&#39;fetch&#39;</span><span class="p">:</span> <span class="s">&#39;m&#39;</span><span class="p">,</span>
+                 <span class="s">&#39;density&#39;</span><span class="p">:</span> <span class="s">&#39;kg/m^3&#39;</span><span class="p">,</span>
+                 <span class="s">&#39;kinematic_viscosity&#39;</span><span class="p">:</span> <span class="s">&#39;m^2/s&#39;</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">temperature</span><span class="o">=</span><span class="mf">300.0</span><span class="p">,</span>
+                 <span class="n">salinity</span><span class="o">=</span><span class="mf">35.0</span><span class="p">,</span>
+                 <span class="n">sediment</span><span class="o">=.</span><span class="mo">005</span><span class="p">,</span>	 <span class="c"># kg/m^3 oceanic default</span>
+                 <span class="n">wave_height</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">fetch</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">units</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;temperature&#39;</span><span class="p">:</span> <span class="s">&#39;K&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;salinity&#39;</span><span class="p">:</span> <span class="s">&#39;psu&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;sediment&#39;</span><span class="p">:</span> <span class="s">&#39;kg/m^3&#39;</span><span class="p">,</span>  <span class="c"># do we need SI here?</span>
+                        <span class="s">&#39;wave_height&#39;</span><span class="p">:</span> <span class="s">&#39;m&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;fetch&#39;</span><span class="p">:</span> <span class="s">&#39;m&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;density&#39;</span><span class="p">:</span> <span class="s">&#39;kg/m^3&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;kinematic_viscosity&#39;</span><span class="p">:</span> <span class="s">&#39;m^2/s&#39;</span><span class="p">},</span>
+                 <span class="n">name</span><span class="o">=</span><span class="s">&#39;Water&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Assume units are SI for all properties. &#39;units&#39; attribute assumes SI</span>
+<span class="sd">        by default. This can be changed, but initialization takes SI.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># define properties in SI units</span>
+        <span class="c"># ask if we want unit conversion implemented here?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span> <span class="o">=</span> <span class="n">temperature</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">salinity</span> <span class="o">=</span> <span class="n">salinity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sediment</span> <span class="o">=</span> <span class="n">sediment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wave_height</span> <span class="o">=</span> <span class="n">wave_height</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fetch</span> <span class="o">=</span> <span class="n">fetch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kinematic_viscosity</span> <span class="o">=</span> <span class="mf">0.000001</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_units</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_si_units</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;{0.__class__.__module__}.{0.__class__.__name__}&quot;</span>
+                <span class="s">&quot;(temperature={0.temperature},&quot;</span>
+                <span class="s">&quot; salinity={0.salinity})&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">info</span>
+
+    <span class="n">__str__</span> <span class="o">=</span> <span class="n">__repr__</span>
+
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        return value in desired unit. If None, then return the value in SI</span>
+<span class="sd">        units. The user_unit are given in &#39;units&#39; attribute and each attribute</span>
+<span class="sd">        carries the value in as given in these user_units.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">unit</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># Note: salinity only have one units since we don&#39;t</span>
+            <span class="c"># have any conversions for them in unit_conversion yet - revisit</span>
+            <span class="c"># this per requirements</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_si_units</span> <span class="ow">or</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_si_units</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="p">[</span><span class="n">attr</span><span class="p">]):</span>
+                <span class="k">return</span> <span class="n">val</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_si_units</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">unit</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units_type</span><span class="p">[</span><span class="n">attr</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_units_type</span><span class="p">[</span><span class="n">attr</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="n">attr</span><span class="p">],</span>
+                              <span class="n">unit</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># log to file if we have logger</span>
+            <span class="n">ex</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">InvalidUnitError</span><span class="p">((</span><span class="n">unit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units_type</span><span class="p">[</span><span class="n">attr</span><span class="p">][</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ex</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="n">ex</span>
+
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">unit</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        provide a corresponding set method that requires value and units</span>
+<span class="sd">        The attributes can be directly set. This function just sets the</span>
+<span class="sd">        desired property and also updates the units dict</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">unit</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units_type</span><span class="p">[</span><span class="n">attr</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">uc</span><span class="o">.</span><span class="n">InvalidUnitError</span><span class="p">((</span><span class="n">unit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units_type</span><span class="p">[</span><span class="n">attr</span><span class="p">][</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit</span>
+
+    <span class="nd">@lru_cache</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_get_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">salinity</span><span class="p">,</span> <span class="n">temp</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        use lru cache so we don&#39;t recompute if temp is not changing</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">temp_c</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s">&#39;Temperature&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s">&#39;temperature&#39;</span><span class="p">],</span> <span class="s">&#39;C&#39;</span><span class="p">,</span>
+                            <span class="n">temp</span><span class="p">)</span>
+        <span class="c"># sea level pressure in decibar - don&#39;t expect atmos_pressure to change</span>
+        <span class="c"># also expect constants to have SI units</span>
+        <span class="n">rho</span> <span class="o">=</span> <span class="n">gsw</span><span class="o">.</span><span class="n">rho</span><span class="p">(</span><span class="n">salinity</span><span class="p">,</span>
+                      <span class="n">temp_c</span><span class="p">,</span>
+                      <span class="n">constants</span><span class="o">.</span><span class="n">atmos_pressure</span> <span class="o">*</span> <span class="mf">0.0001</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rho</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">density</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        return the density based on water salinity and temperature. The</span>
+<span class="sd">        salinity is in &#39;psu&#39;; it is not being converted to absolute salinity</span>
+<span class="sd">        units - for our purposes, this is sufficient. Using gsw.rho()</span>
+<span class="sd">        internally which expects salinity in absolute units.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_density</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">salinity</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        override base class:</span>
+
+<span class="sd">        &#39;fetch&#39; and &#39;wave_height&#39; get dropped by colander if value is None.</span>
+<span class="sd">        In this case, toggle the values back to None.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;fetch&#39;</span><span class="p">,</span> <span class="s">&#39;wave_height&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Water</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">update_from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span>
+
+    <span class="nd">@units.setter</span>
+    <span class="k">def</span> <span class="nf">units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_dict</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">prop</span><span class="p">,</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">u_dict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">prop</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units_type</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">unit</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units_type</span><span class="p">[</span><span class="n">prop</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;{0} are invalid units for {1}.&quot;</span>
+                           <span class="s">&quot;Ignore it&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="n">prop</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                    <span class="c"># should we raise error?</span>
+                    <span class="k">raise</span> <span class="n">uc</span><span class="o">.</span><span class="n">InvalidUnitError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="c"># allow user to add new keys to units dict.</span>
+            <span class="c"># also update prop if unit is valid</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="p">[</span><span class="n">prop</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit</span>
+
+    <span class="k">def</span> <span class="nf">_convert_sediment_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_</span><span class="p">,</span> <span class="n">to</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        used internally to convert to/from sediment units.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">from_</span> <span class="o">==</span> <span class="n">to</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sediment</span>
+
+        <span class="k">if</span> <span class="n">from_</span> <span class="o">==</span> <span class="s">&#39;mg/l&#39;</span><span class="p">:</span>
+            <span class="c"># convert to kg/m^3</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sediment</span><span class="o">/</span><span class="mf">1000.0</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sediment</span> <span class="o">*</span> <span class="mf">1000.0</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>
