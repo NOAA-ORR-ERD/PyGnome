@@ -1262,24 +1262,42 @@ def test_split_element():
                                           substance=test_oil)
     o_sc.spills += copy.deepcopy(sc.spills[0])
 
+    sc.prepare_for_model_run({'fate_status'})
     sc.release_elements(900, reltime)
+
+    o_sc.prepare_for_model_run({'fate_status'})
     o_sc.release_elements(900, reltime)
 
-    # now do a split at element
-    ix = 0
+    # now do a split at element - fate data is not being initialized; however
+    # we want to make sure fate_data arrays are sync'd with sc data arrays so
+    # test for fate=non_weather
     num = 2
     l_frac = (.65, .35)
+    subs = sc.get_substances(complete=False)[0]
+    data = sc.substancefatedata(subs,
+                                {'fate_status'},
+                                fate='non_weather')
+    assert 'id' in data
+
+    ix = data['id'][0]
     sc.split_element(ix, num, l_frac)
     for name in sc._data_arrays:
         split = sc[name]
+        d_split = data[name]
+
+        idx = np.where(sc['id'] == ix)[0][0]
         orig = o_sc[name]
         assert len(split) == num_les + num - 1
+        assert len(d_split) == num_les + num - 1
         at = sc.array_types[name]
         if isinstance(at, array_types.ArrayTypeDivideOnSplit):
-            assert np.allclose(split[ix:ix + num].sum(0), orig[ix])
-            assert np.allclose(split[ix], l_frac[0] * orig[ix])
+            assert np.allclose(split[idx:idx + num].sum(0), orig[idx])
+            assert np.allclose(split[idx], l_frac[0] * orig[idx])
         else:
-            assert np.all(split[ix:ix + num] == orig[ix])
+            assert np.all(split[idx:idx + num] == orig[idx])
+
+        # fatedata copy of sc data is also updated
+        assert np.allclose(d_split, split)
 
 
 if __name__ == '__main__':
