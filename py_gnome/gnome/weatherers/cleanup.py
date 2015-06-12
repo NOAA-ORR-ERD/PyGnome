@@ -421,13 +421,14 @@ class Burn(CleanUpBase, Serializable):
             less than or equal to 1.0
         :param wind: gnome.environment.Wind object. Only used to set
             efficiency if efficiency is None. Efficiency is defined as:
-                1 - 0.07 * wind.get_value(model_time)
+            1 - 0.07 * wind.get_value(model_time)
             where wind.get_value(model_time) is value of wind at model_time
 
         Kwargs passed onto base class:
 
         :param str name: name of object
         :param bool on: whether object is on or not for the run
+
         '''
         if 'active_stop' in kwargs:
             # user cannot set 'active_stop'

@@ -103,11 +103,12 @@ class Process(AddLogger):
         """
         sets active flag based on time_span and on flag.
         Object is active if following hold and 'on' is True:
-           1. active_start <= (model_time + time_step/2) so object is on for
-              more than half the timestep
-           2. (model_time + time_step/2) <= active_stop so again the object is
-              on for at least half the time step
-            flag to true.
+
+        1. active_start <= (model_time + time_step/2) so object is on for
+           more than half the timestep
+        2. (model_time + time_step/2) <= active_stop so again the object is
+           on for at least half the time step
+           flag to true.
 
         :param sc: an instance of gnome.spill_container.SpillContainer class
         :param time_step: time step in seconds

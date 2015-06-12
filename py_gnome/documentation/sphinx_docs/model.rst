@@ -1,6 +1,7 @@
 model step:
 
 The model contains:
+
 * map
 * collection of environment objects
 * collection of movers

@@ -37,9 +37,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
     collection of Features. Each Feature contains a Point object with
     associated properties. Following is the format for a particle - the
     data in <> are the results for each element.
-
     ::
-
         {
         "type": "FeatureCollection",
         "features": [
@@ -53,7 +51,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                 },
                 "type": "Feature",
                 "id": <PARTICLE_ID>,
-                "properties": {::
+                "properties": {
                     "current_time": <TIME IN SEC SINCE EPOCH>,
                     "status_code": <>,
                     "spill_id": <UUID OF SPILL OBJECT THAT RELEASED PARTICLE>,
@@ -187,25 +185,26 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
     Each Feature contains a Point object with associated properties.
     Following is the output format - the data in <> are the results
     for each element.
-
     ::
-    {
-     "time_stamp": <TIME IN ISO FORMAT>,
-     "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
-     "feature_collections": {<mover_id>: {"type": "FeatureCollection",
-                                          "features": [{"type": "Feature",
-                                                        "id": <PARTICLE_ID>,
-                                                        "properties": {"velocity": [u, v]
-                                                                       },
-                                                        "geometry": {"type": "Point",
-                                                                     "coordinates": [<LONG>, <LAT>]
-                                                                     },
+        {
+         "time_stamp": <TIME IN ISO FORMAT>,
+         "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
+         "feature_collections": {<mover_id>: {"type": "FeatureCollection",
+                                              "features": [{"type": "Feature",
+                                                            "id": <PARTICLE_ID>,
+                                                            "properties": {"velocity": [u, v]
+                                                                           },
+                                                            "geometry": {"type": "Point",
+                                                                         "coordinates": [<LONG>, <LAT>]
+                                                                         },
                                                         },
                                                         ...
                                                        ],
                                           },
                              ...
                              }
+        }
+
     '''
     _state = copy.deepcopy(Outputter._state)
 
@@ -274,9 +273,9 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
 
     def get_unique_velocities(self, velocities):
         '''
-            In order to make numpy perform this function fast, we will use a
-            contiguous structured array using a view of a void type that
-            joins the whole row into a single item.
+        In order to make numpy perform this function fast, we will use a
+        contiguous structured array using a view of a void type that
+        joins the whole row into a single item.
         '''
         dtype = np.dtype((np.void,
                           velocities.dtype.itemsize * velocities.shape[1]))
@@ -314,28 +313,28 @@ class IceGeoJsonOutput(Outputter, Serializable):
     Each Feature contains a Point object with associated properties.
     Following is the output format - the data in <> are the results
     for each element.
-
     ::
-    {
-     "time_stamp": <TIME IN ISO FORMAT>,
-     "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
-     "feature_collections": {<mover_id>: {"type": "FeatureCollection",
-                                          "features": [{"type": "Feature",
-                                                        "id": <PARTICLE_ID>,
-                                                        "properties": {"ice_fraction": <FRACTION>,
-                                                                       "ice_thickness": <METERS>,
-                                                                       "water_velocity": [u, v],
-                                                                       "ice_velocity": [u, v]
-                                                                       },
-                                                        "geometry": {"type": "Point",
-                                                                     "coordinates": [<LONG>, <LAT>]
-                                                                     },
-                                                        },
-                                                        ...
-                                                       ],
-                                          },
-                             ...
-                             }
+        {
+         "time_stamp": <TIME IN ISO FORMAT>,
+         "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
+         "feature_collections": {<mover_id>: {"type": "FeatureCollection",
+                                              "features": [{"type": "Feature",
+                                                            "id": <PARTICLE_ID>,
+                                                            "properties": {"ice_fraction": <FRACTION>,
+                                                                           "ice_thickness": <METERS>,
+                                                                           "water_velocity": [u, v],
+                                                                           "ice_velocity": [u, v]
+                                                                           },
+                                                            "geometry": {"type": "Point",
+                                                                         "coordinates": [<LONG>, <LAT>]
+                                                                         },
+                                                            },
+                                                            ...
+                                                           ],
+                                              },
+                                 ...
+                                 }
+        }
     '''
     _state = copy.deepcopy(Outputter._state)
 
@@ -431,9 +430,9 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
     def get_unique_ice_values(self, ice_values):
         '''
-            In order to make numpy perform this function fast, we will use a
-            contiguous structured array using a view of a void type that
-            joins the whole row into a single item.
+        In order to make numpy perform this function fast, we will use a
+        contiguous structured array using a view of a void type that
+        joins the whole row into a single item.
         '''
         dtype = np.dtype((np.void,
                           ice_values.dtype.itemsize * ice_values.shape[1]))
@@ -448,10 +447,10 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
     def get_triangles(self, mover):
         '''
-            The triangle data that we get from the mover is in the form of
-            indices into the points array.
-            So we get our triangle data and points array, and then build our
-            triangle coordinates by reference.
+        The triangle data that we get from the mover is in the form of
+        indices into the points array.
+        So we get our triangle data and points array, and then build our
+        triangle coordinates by reference.
         '''
         triangle_data = self.get_triangle_data(mover)
         points = self.get_points(mover)
