@@ -85,29 +85,29 @@ class TestBeaching(ObjForTests):
         self.prepare_test_objs()
         self.b.prepare_for_model_run(self.sc)
 
-        assert self.sc.weathering_data['observed_beached'] == 0.0
+        assert self.sc.mass_balance['observed_beached'] == 0.0
 
         while (model_time <
                self.b.active_stop + timedelta(seconds=time_step)):
 
-            amt = self.sc.weathering_data['observed_beached']
+            amt = self.sc.mass_balance['observed_beached']
 
             self.release_elements(time_step, model_time)
             self.step(self.b, time_step, model_time)
 
             if not self.b.active:
-                assert self.sc.weathering_data['observed_beached'] == amt
+                assert self.sc.mass_balance['observed_beached'] == amt
             else:
                 # check total amount removed at each timestep
-                assert self.sc.weathering_data['observed_beached'] > amt
+                assert self.sc.mass_balance['observed_beached'] > amt
             model_time += timedelta(seconds=time_step)
 
             # check - useful for debugging issues with recursion
-            assert np.isclose(total, self.sc.weathering_data['observed_beached']
+            assert np.isclose(total, self.sc.mass_balance['observed_beached']
                               + self.sc['mass'].sum())
 
         # following should finally hold true for entire run
-        assert np.allclose(total, self.sc.weathering_data['observed_beached'] +
+        assert np.allclose(total, self.sc.mass_balance['observed_beached'] +
                            self.sc['mass'].sum(), atol=1e-6)
 
         # volume units
@@ -115,7 +115,7 @@ class TestBeaching(ObjForTests):
                                       self.b.timeseries['value'].sum(),
                                       self.b.units)
 
-        assert np.isclose(self.sc.weathering_data['observed_beached'],
+        assert np.isclose(self.sc.mass_balance['observed_beached'],
                           total_mass)
 
     def test_serialize_deserialize_update_from_dict(self):

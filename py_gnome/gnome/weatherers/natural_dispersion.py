@@ -56,15 +56,15 @@ class NaturalDispersion(Weatherer, Serializable):
 
     def prepare_for_model_run(self, sc):
         '''
-        add dispersion and sedimentation keys to weathering_data
+        add dispersion and sedimentation keys to mass_balance
         Assumes all spills have the same type of oil
         '''
         # create 'natural_dispersion' and 'sedimentation keys if they doesn't exist
         # let's only define this the first time
         if self.on:
             super(NaturalDispersion, self).prepare_for_model_run(sc)
-            sc.weathering_data['natural_dispersion'] = 0.0
-            sc.weathering_data['sedimentation'] = 0.0
+            sc.mass_balance['natural_dispersion'] = 0.0
+            sc.mass_balance['sedimentation'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -82,7 +82,7 @@ class NaturalDispersion(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
-        - sets 'natural_dispersion' and 'sedimentation' in sc.weathering_data
+        - sets 'natural_dispersion' and 'sedimentation' in sc.mass_balance
         '''
 
         if not self.active:
@@ -126,20 +126,20 @@ class NaturalDispersion(Weatherer, Serializable):
                          V_entrain,
                          ka)
 
-            sc.weathering_data['natural_dispersion'] += np.sum(disp[:])
+            sc.mass_balance['natural_dispersion'] += np.sum(disp[:])
             disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
             data['mass_components'] = \
                 (1 - disp_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
 
-            sc.weathering_data['sedimentation'] += np.sum(sed[:])
+            sc.mass_balance['sedimentation'] += np.sum(sed[:])
             sed_mass_frac = np.sum(sed[:]) / data['mass'].sum()
             data['mass_components'] = \
                 (1 - sed_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
 
             self.logger.debug(self._pid + 'Amount Dispersed for {0}: {1}'.
-                             format(substance.name, sc.weathering_data['natural_dispersion']))
+                             format(substance.name, sc.mass_balance['natural_dispersion']))
 
         sc.update_from_fatedataview()
 

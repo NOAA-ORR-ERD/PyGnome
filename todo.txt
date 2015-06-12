@@ -1,8 +1,12 @@
 WIP - finish by 5/12/2015:
 ===========================
-- remove particles that go off maps 
-- currently WeatheringData() updates all 'mass_balance', let SpillContainer/map update 'beached',
-  'floating', 'amount_released', 'off_maps'
+Following changes are in mass_balance branch - needs testing
+
+- SpillContainer should update 'amount_released', 'floating' as well
+
+x currently WeatheringData() updates all 'mass_balance', let SpillContainer/map update 'beached',
+  'off_maps'
+x remove particles that go off maps 
 
 WeatheringData() and spreading objects automatically added:
 x must be the last thing we do in weather_elements() -- before age is incremented
@@ -11,8 +15,9 @@ x Langmuir must happen in weather_elements, but it must get initialized after sp
 x Maybe include 'area', remove 'fay_area' and
   include 'frac_coverage' data array
 x fix broken tests in test_weathering_data()
-- clean up Model to use iscollection for fields and base class methods
 
+Documentation:
+x added ipynb analyses to gnome/documenatation/.
 - API documentation for movers, weatherers (Process). Save/Load
 
 Incomplete/comments:
@@ -24,6 +29,10 @@ Incomplete/comments:
 - add tests for Langmuir integrated into model.
   See ipynb in gnome/documentation/weathering/evaporation/spreading_langmuir.ipynb
   was testing it manually though maybe good to include it in test_persist.py and test_model.py
+- clean up Model to set 'iscollection' attribute for (movers, weatherers, environment, outputters),
+  and use base class serialize/deserialize
+  - tried this but got errors so abandoned the idea. It works as it is and will reduce code by a
+    few lines but not much so abandoned this refactor for now.
 
 ======================
 

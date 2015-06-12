@@ -45,7 +45,7 @@ class Evaporation(Weatherer, Serializable):
 
     def prepare_for_model_run(self, sc):
         '''
-        add evaporated key to weathering_data
+        add evaporated key to mass_balance
         for now also add 'density' key here
         Assumes all spills have the same type of oil
         '''
@@ -54,7 +54,7 @@ class Evaporation(Weatherer, Serializable):
         if self.on:
             super(Evaporation, self).prepare_for_model_run(sc)
 
-            sc.weathering_data['evaporated'] = 0.0
+            sc.mass_balance['evaporated'] = 0.0
             msg = ("{0._pid} init 'evaporated' key to 0.0").format(self)
             self.logger.debug(msg)
 
@@ -117,8 +117,8 @@ class Evaporation(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
-        - sets 'evaporation' in sc.weathering_data
-        - currently also sets 'density' in sc.weathering_data but may update
+        - sets 'evaporation' in sc.mass_balance
+        - currently also sets 'density' in sc.mass_balance but may update
           this as we add more weatherers and perhaps density gets set elsewhere
 
         Following diff eq models rate of change each pseudocomponent of oil:
@@ -173,7 +173,7 @@ class Evaporation(Weatherer, Serializable):
                                 data['evap_decay_constant'],
                                 time_step)
 
-            sc.weathering_data['evaporated'] += \
+            sc.mass_balance['evaporated'] += \
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])
 
             # log amount evaporated at each step

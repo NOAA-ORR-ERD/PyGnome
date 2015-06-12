@@ -198,7 +198,7 @@ class SpillContainerData(object):
 
         self._data_arrays = data_arrays
         self.current_time_stamp = None
-        self.weathering_data = {}
+        self.mass_balance = {}
 
         # following internal variable is used when comparing two SpillContainer
         # objects. When testing the data arrays are equal, use this tolerance
@@ -758,7 +758,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         self._reset__substances_spills()
         self._reset__fate_data_list()
         self.initialize_data_arrays()
-        self.weathering_data = {}  # reset to empty array
+        self.mass_balance = {}  # reset to empty array
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -826,6 +826,12 @@ class SpillContainer(AddLogger, SpillContainerData):
         # 'substance' data_array may have been added so initialize after
         # _set_substancespills() is invoked
         self.initialize_data_arrays()
+
+        # todo: maybe better to let map do this, but it does not have a
+        # prepare_for_model_run() yet so can't do it there
+        # need 'amount_released' here as well
+        self.mass_balance['beached'] = 0.0
+        self.mass_balance['off_maps'] = 0.0
 
     def initialize_data_arrays(self):
         """
@@ -939,6 +945,8 @@ class SpillContainer(AddLogger, SpillContainerData):
         if len(self._data_arrays) == 0:
             return  # nothing to do - arrays are not yet defined.
 
+        # LEs are marked as to_be_removed
+        # C++ might care about this so leave as is
         to_be_removed = np.where(self['status_codes'] ==
                                  oil_status.to_be_removed)[0]
 
@@ -1012,9 +1020,9 @@ class SpillContainerPairData(object):
     def LE_data(self):
         data = self._spill_container._data_arrays.keys()
         data.append('current_time_stamp')
-        if self._spill_container.weathering_data:
+        if self._spill_container.mass_balance:
             'only add if it is not an empty dict'
-            data.append('weathering_data')
+            data.append('mass_balance')
 
         return data
 
@@ -1026,8 +1034,8 @@ class SpillContainerPairData(object):
 
         if prop_name == 'current_time_stamp':
             return sc.current_time_stamp
-        elif prop_name == 'weathering_data':
-            return sc.weathering_data
+        elif prop_name == 'mass_balance':
+            return sc.mass_balance
 
         return sc[prop_name]
 

@@ -551,7 +551,7 @@ class Model(Serializable):
             if wd is None:
                 self.weatherers += WeatheringData(attr['water'])
             else:
-                # turn weathering_data on and make references
+                # turn mass_balance on and make references
                 wd.on = True
                 if wd.make_default_refs:
                     wd.water = attr['water']
@@ -599,7 +599,7 @@ class Model(Serializable):
         weathering = False
         for w in self.weatherers:
             for sc in self.spills.items():
-                # weatherers will initialize 'weathering_data' key/values
+                # weatherers will initialize 'mass_balance' key/values
                 # to 0.0
                 if w.on:
                     w.prepare_for_model_run(sc)
@@ -679,6 +679,10 @@ class Model(Serializable):
                     sc['next_positions'] += delta
 
                 self.map.beach_elements(sc)
+
+                # let model mark these particles to be removed
+                sc.mass_balance['off_maps'] = oil_status.to_be_removed
+
                 self._update_fate_status(sc)
 
                 # the final move to the new positions
@@ -1153,7 +1157,7 @@ class Model(Serializable):
 
             sc.current_time_stamp = data.pop('current_time_stamp').item()
             sc._data_arrays = data
-            sc.weathering_data = weather_data
+            sc.mass_balance = weather_data
 
         # delete file after data is loaded - since no longer needed
         os.remove(spill_data)

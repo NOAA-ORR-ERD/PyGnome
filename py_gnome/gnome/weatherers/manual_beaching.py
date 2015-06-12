@@ -167,7 +167,7 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         Preparation of data arrays related to beaching
         '''
         if self.on:
-            sc.weathering_data['observed_beached'] = 0.0
+            sc.mass_balance['observed_beached'] = 0.0
 
     def _remove_mass(self, time_step, model_time, substance):
         '''
@@ -253,7 +253,7 @@ class Beaching(RemoveMass, Weatherer, Serializable):
                 (1 - rm_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
 
-            sc.weathering_data['observed_beached'] += rm_mass
+            sc.mass_balance['observed_beached'] += rm_mass
             self.logger.debug(self._pid + 'amount observed_beached for {0}: {1}'.
                               format(substance.name, rm_mass))
 

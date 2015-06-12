@@ -169,7 +169,7 @@ class TestSkimmer(ObjForTests):
     def test_prepare_for_model_run(self):
         self.reset_and_release()
         self.skimmer.prepare_for_model_run(self.sc)
-        assert self.sc.weathering_data['skimmed'] == 0.
+        assert self.sc.mass_balance['skimmed'] == 0.
         assert (self.skimmer._rate ==
                 self.skimmer.amount/(self.skimmer.active_stop -
                                      self.skimmer.active_start).total_seconds())
@@ -206,19 +206,19 @@ class TestSkimmer(ObjForTests):
     def test_weather_elements(self, avg_frac_water):
         '''
         Test only the mass removed due to Skimmer operation:
-        1) sc['mass'] + sc.weathering_data['skimmed'] =  spill_amount
-        2) sc.weathering_data['skimmed']/skimmer.amount = skimmer.efficiency
+        1) sc['mass'] + sc.mass_balance['skimmed'] =  spill_amount
+        2) sc.mass_balance['skimmed']/skimmer.amount = skimmer.efficiency
         '''
         self.prepare_test_objs()
         self.skimmer.prepare_for_model_run(self.sc)
 
-        assert self.sc.weathering_data['skimmed'] == 0.0
+        assert self.sc.mass_balance['skimmed'] == 0.0
 
         model_time = rel_time
         while (model_time <
                self.skimmer.active_stop + timedelta(seconds=2*time_step)):
 
-            amt_skimmed = self.sc.weathering_data['skimmed']
+            amt_skimmed = self.sc.mass_balance['skimmed']
             num_rel = self.release_elements(time_step, model_time)
             if num_rel > 0:
                 self.sc['frac_water'][:] = avg_frac_water
@@ -226,23 +226,23 @@ class TestSkimmer(ObjForTests):
             self.step(self.skimmer, time_step, model_time)
 
             if not self.skimmer.active:
-                assert self.sc.weathering_data['skimmed'] == amt_skimmed
+                assert self.sc.mass_balance['skimmed'] == amt_skimmed
             else:
                 # check total amount removed at each timestep
-                assert self.sc.weathering_data['skimmed'] > amt_skimmed
+                assert self.sc.mass_balance['skimmed'] > amt_skimmed
 
             model_time += timedelta(seconds=time_step)
 
             # check - useful for debugging issues with recursion
-            assert (amount == self.sc.weathering_data['skimmed'] +
+            assert (amount == self.sc.mass_balance['skimmed'] +
                     self.sc['mass'].sum())
 
         # following should finally hold true for entire run
-        assert np.allclose(amount, self.sc.weathering_data['skimmed'] +
+        assert np.allclose(amount, self.sc.mass_balance['skimmed'] +
                            self.sc['mass'].sum(), atol=1e-6)
         # efficiency decreased since only (1 - avg_frac_water) is the fraction
         # of oil collected by skimmer
-        assert np.allclose(self.sc.weathering_data['skimmed']/self.skimmer.amount,
+        assert np.allclose(self.sc.mass_balance['skimmed']/self.skimmer.amount,
                            self.skimmer.efficiency * (1 - avg_frac_water),
                            atol=1e-6)
 
@@ -333,12 +333,12 @@ class TestBurn(ObjForTests):
         model_time = rel_time
         burn.prepare_for_model_run(self.sc)
 
-        # once burn becomes active, sc.weathering_data['burned'] > 0.0 and
+        # once burn becomes active, sc.mass_balance['burned'] > 0.0 and
         # burn becomes inactive once
         # burn._oil_thickness == burn._min_thickness
         step_num = 0
         while ((model_time > burn.active_start and
-                burn.active) or self.sc.weathering_data['burned'] == 0.0):
+                burn.active) or self.sc.mass_balance['burned'] == 0.0):
 
             num_rel = self.release_elements(time_step, model_time)
             if num_rel > 0:
@@ -377,7 +377,7 @@ class TestBurn(ObjForTests):
         other than 'm'.
 
         1) tests the expected burned mass equals 'burned' amount stored in
-           weathering_data
+           mass_balance
         2) also tests the mass_remaining is consistent with what we expect
         3) tests the mass of LEs set for burn equals the mass of oil given
            avg_frac_water and the thickness, and area. Since we cannot have
@@ -398,14 +398,14 @@ class TestBurn(ObjForTests):
         self._weather_elements_helper(burn, avg_frac_water)
 
         # following should finally hold true for entire run
-        assert np.allclose(amount, self.sc.weathering_data['burned'] +
+        assert np.allclose(amount, self.sc.mass_balance['burned'] +
                            self.sc['mass'].sum(), atol=1e-6)
 
         # want mass of oil thickness * area gives volume of oil-water so we
         # need to scale this by (1 - avg_frac_water)
         exp_burned = ((thick_si - burn._min_thickness) * (1 - avg_frac_water) *
                       burn.area * self.op.get_density())
-        assert np.isclose(self.sc.weathering_data['burned'], exp_burned)
+        assert np.isclose(self.sc.mass_balance['burned'], exp_burned)
 
         mask = self.sc['fate_status'] & fate.burn == fate.burn
 
@@ -468,9 +468,9 @@ class TestBurn(ObjForTests):
         burn2 = Burn(area, 1., active_start, efficiency=eff)
 
         self._weather_elements_helper(burn1)
-        amount_burn1 = self.sc.weathering_data['burned']
+        amount_burn1 = self.sc.mass_balance['burned']
         self._weather_elements_helper(burn2)
-        amount_burn2 = self.sc.weathering_data['burned']
+        amount_burn2 = self.sc.mass_balance['burned']
 
         assert np.isclose(amount_burn2/amount_burn1, eff)
         assert burn1.active_start == burn2.active_start
@@ -528,10 +528,10 @@ class TestChemicalDispersion(ObjForTests):
         '''
         self.prepare_test_objs()
 
-        assert 'chem_dispersed' not in self.sc.weathering_data
+        assert 'chem_dispersed' not in self.sc.mass_balance
 
         self.c_disp.prepare_for_model_run(self.sc)
-        assert self.sc.weathering_data['chem_dispersed'] == 0.0
+        assert self.sc.mass_balance['chem_dispersed'] == 0.0
 
     def test_set_efficiency(self):
         '''
@@ -594,24 +594,24 @@ class TestChemicalDispersion(ObjForTests):
         self.c_disp.efficiency = efficiency
         self.c_disp.prepare_for_model_run(self.sc)
 
-        assert self.sc.weathering_data['chem_dispersed'] == 0.0
+        assert self.sc.mass_balance['chem_dispersed'] == 0.0
 
         model_time = self.spill.get('release_time')
         while (model_time < self.c_disp.active_stop +
                timedelta(seconds=time_step)):
-            amt_disp = self.sc.weathering_data['chem_dispersed']
+            amt_disp = self.sc.mass_balance['chem_dispersed']
             self.release_elements(time_step, model_time)
             self.step(self.c_disp, time_step, model_time)
 
             if not self.c_disp.active:
-                assert self.sc.weathering_data['chem_dispersed'] == amt_disp
+                assert self.sc.mass_balance['chem_dispersed'] == amt_disp
             else:
-                assert self.sc.weathering_data['chem_dispersed'] > amt_disp
+                assert self.sc.mass_balance['chem_dispersed'] > amt_disp
 
             model_time += timedelta(seconds=time_step)
 
-        assert np.allclose(amount, self.sc.weathering_data['chem_dispersed'] +
+        assert np.allclose(amount, self.sc.mass_balance['chem_dispersed'] +
                            self.sc['mass'].sum(), atol=1e-6)
-        assert np.allclose(self.sc.weathering_data['chem_dispersed'] /
+        assert np.allclose(self.sc.mass_balance['chem_dispersed'] /
                            self.spill.get_mass(),
                            self.c_disp.fraction_sprayed * efficiency)

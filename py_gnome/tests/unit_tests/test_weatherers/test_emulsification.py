@@ -94,10 +94,10 @@ def test_full_run(sample_model_fcn, oil, temp):
         for sc in model.spills.items():
             # need or condition to account for water_content = 0.9000000000012
             # or just a little bit over 0.9
-            assert (sc.weathering_data['water_content'] <= .9 or
-                    np.isclose(sc.weathering_data['water_content'], 0.9))
+            assert (sc.mass_balance['water_content'] <= .9 or
+                    np.isclose(sc.mass_balance['water_content'], 0.9))
             print ("Water fraction: {0}".
-                   format(sc.weathering_data['water_content']))
+                   format(sc.mass_balance['water_content']))
             print "Completed step: {0}\n".format(step['step_num'])
 
 
@@ -111,7 +111,7 @@ def test_full_run_emul_not_active(sample_model_fcn):
         if no weatherers, then no weathering output - need to add on/off
         switch to WeatheringOutput
         '''
-        assert len(step['WeatheringOutput']) == 2
+        assert 'water_content' not in step['WeatheringOutput']
         assert ('step_num' in step['WeatheringOutput'] and
                 'time_stamp' in step['WeatheringOutput'])
         print ("Completed step: {0}"
