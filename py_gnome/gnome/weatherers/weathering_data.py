@@ -67,7 +67,7 @@ class WeatheringData(Weatherer, Serializable):
         '''
         # nothing released yet - set everything to 0.0
         for key in ('avg_density', 'floating', 'amount_released',
-                    'avg_viscosity', 'beached'):
+                    'avg_viscosity'):
             sc.mass_balance[key] = 0.0
 
     def initialize_data(self, sc, num_released):

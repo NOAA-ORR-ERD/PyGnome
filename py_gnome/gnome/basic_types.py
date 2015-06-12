@@ -69,12 +69,13 @@ wind_datasource = enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
 ### WEATHERING STATUS ###
 # Define an enum for weathering status. The numpy array will contain np.uint8
 # datatype. Can still define 2 more flags as 2**6, 2**7
-fate = enum(non_weather=1,      # 2**0
-            surface_weather=2,  # 2**1
-            subsurf_weather=4,  # 2**2
-            skim=8,             # 2**3
-            burn=16,            # 2**4
-            disperse=32,        # 2**5
+# These are bit flags
+fate = enum(non_weather=1,
+            surface_weather=2,
+            subsurf_weather=4,
+            skim=8,
+            burn=16,
+            disperse=32,        # marked for chemical_dispersion
             )
 
 # ----------------------------------------------------------------

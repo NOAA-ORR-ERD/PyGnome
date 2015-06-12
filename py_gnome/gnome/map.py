@@ -471,7 +471,7 @@ class RasterMap(GnomeMap):
                                                                  asint=True)[0]
                                         )
 
-    def beach_elements(self, spill):
+    def beach_elements(self, sc):
         """
         Determines which elements were or weren't beached.
 
@@ -481,21 +481,21 @@ class RasterMap(GnomeMap):
         This version uses a modified Bresenham algorithm to find out
         which pixels the LE may have crossed.
 
-        :param spill: the current spill container
-        :type spill:  :class:`gnome.spill_container.SpillContainer`
+        :param sc: the current spill container
+        :type sc:  :class:`gnome.spill_container.SpillContainer`
             It must have the following data arrays:
             ('prev_position', 'positions', 'last_water_pt', 'status_code')
         """
-        self.resurface_airborne_elements(spill)
+        self.resurface_airborne_elements(sc)
 
-        # pull the data from the spill
+        # pull the data from the sc
         # Is the last water point the same as the previous position? why not??
         # If beached, it won't move, if not, then we can use it?
 
-        start_pos = spill['positions']
-        next_pos = spill['next_positions']
-        status_codes = spill['status_codes']
-        last_water_positions = spill['last_water_positions']
+        start_pos = sc['positions']
+        next_pos = sc['next_positions']
+        status_codes = sc['status_codes']
+        last_water_positions = sc['last_water_positions']
 
         # transform to pixel coords:
         # NOTE: must be integers!
@@ -518,15 +518,15 @@ class RasterMap(GnomeMap):
         last_water_positions[beached, :2] = \
             self.projection.to_lonlat(last_water_pos_pixel[beached, :2])
 
-        self._set_off_map_status(spill)
+        self._set_off_map_status(sc)
 
         # todo: need a prepare_for_model_run() so map adds these keys to
         #     mass_balance as opposed to SpillContainer
         # update 'off_maps'/'beached' in mass_balance
-        spill.mass_balance['beached'] = \
-            spill['mass'][spill['status_codes'] == oil_status.on_land].sum()
-        spill.mass_balance['off_maps'] = \
-            spill['mass'][spill['status_codes'] == oil_status.off_maps].sum()
+        sc.mass_balance['beached'] = \
+            sc['mass'][sc['status_codes'] == oil_status.on_land].sum()
+        sc.mass_balance['off_maps'] = \
+            sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
 
     def refloat_elements(self, spill_container, time_step):
         """

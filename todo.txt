@@ -1,9 +1,5 @@
 WIP - finish by 5/12/2015:
 ===========================
-Following changes are in mass_balance branch - needs testing
-
-- SpillContainer should update 'amount_released', 'floating' as well
-
 x currently WeatheringData() updates all 'mass_balance', let SpillContainer/map update 'beached',
   'off_maps'
 x remove particles that go off maps 
@@ -22,6 +18,7 @@ x added ipynb analyses to gnome/documenatation/.
 
 Incomplete/comments:
 --------------------
+- SpillContainer should update 'amount_released', 'floating' as well instead of WeatheringData() doing this work
 - update spills to end_position equals start_position, end_release_time, release_time
 - WeatheringData() and spreading classes should always set active_start and active_stop to -inf and inf.
   Other weatherers require these - in the most common case, these will be automatically constructed and
@@ -30,7 +27,8 @@ Incomplete/comments:
   See ipynb in gnome/documentation/weathering/evaporation/spreading_langmuir.ipynb
   was testing it manually though maybe good to include it in test_persist.py and test_model.py
 - clean up Model to set 'iscollection' attribute for (movers, weatherers, environment, outputters),
-  and use base class serialize/deserialize
+  and use base class serialize/deserialize. The model will still need to override base class serialize/
+  deserialize. (NOTE: low priority, model already works as is)
   - tried this but got errors so abandoned the idea. It works as it is and will reduce code by a
     few lines but not much so abandoned this refactor for now.
 
@@ -43,11 +41,8 @@ oil_library:
 
 Model:
 ------
-- cleanup Model code - lots of rewinds. Need to check for None. time_step can be int or timedelta
-
-Model should update some data in sc.weathering_data dict:
-- some keys like 'beached' and 'off_maps' - should be present for traj also. Let model
-  or sc set these instead of WeatheringData(). This is aggregated data.
+- cleanup Model code - lots of rewinds. Maybe we can skip rewinding all objects if model 
+  hasn't even started running yet.
 
 Model validation:
 - double check lat/long - do validation in Model for lat/long of Wind
@@ -57,16 +52,14 @@ Model validation:
 Model exceptions:
 - added exceptions, though not used everywhere - need to raise gnome exceptions
 
-Documentation:
-- move evaporation notebooks to documentation
-- model exponential decay versus euler method 
-
 Colander schemas/save/load:
 - revisit serialize/deserialize NumpyArraySchema + inefficiency in serial/deserial wind structure
+- scale_refpoint not being deserialized if only (long, lat) is given! Works if (long, lat, z) is given
+  - maybe just need to add missing=drop in WorldPoint() (look in base_schema.py)
+
+Misc stuff - low priority:
 - could refactor and make serialize/deserialize more general and put it in base class
-- document various mixins and base classes
 - colander.drop doesn't seem to work for LocalDateTime() objects - need to dig into this with simple example
-- scale_refpoint not being deserialized if only (long, lat) is given!
 
 Weathering: 
 - BIODEGRADATION
@@ -78,12 +71,15 @@ Weathering:
 __eq__:
 --------
 - want a way to tell which objects and which attributes are different when eq fails
+  need something like diff()
 
 pytest issues:
 ---------------
 - py.test -n 4 --runslow --basetemp=dump fails, but
   py.test -n 4 --runslow passes .. need to figure out why
 - some way for pytest to skip tests for missing data
+- maybe start adding conftest.py for test subdirectories so pytest works from unit_tests/. and
+  from test_*/ subdirectories. See test_weatherers/. as an example.
 
 
 Big refactors/todos:

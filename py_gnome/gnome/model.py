@@ -681,7 +681,8 @@ class Model(Serializable):
                 self.map.beach_elements(sc)
 
                 # let model mark these particles to be removed
-                sc.mass_balance['off_maps'] = oil_status.to_be_removed
+                tbr_mask = sc['status_codes'] == oil_status.off_maps
+                sc['status_codes'][tbr_mask] = oil_status.to_be_removed
 
                 self._update_fate_status(sc)
 
