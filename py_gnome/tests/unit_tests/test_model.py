@@ -834,16 +834,11 @@ def test_simple_run_no_spills(model):
 def test_all_weatherers_in_model(model, add_langmuir):
     '''
     test model run with weatherer
+    todo: integrate Langmuir in Model; can ensure 'frac_coverage' gets added
+        to spill container data
     '''
     model.weatherers += HalfLifeWeatherer()
 
-    #==========================================================================
-    # if add_langmuir:
-    #     wind = constant_wind(5.0, 0)
-    #     langmuir = Langmuir(wind)
-    #     model.environment += langmuir
-    #     assert wind in model.environment
-    #==========================================================================
     model.environment += Water()
     model.full_run()
 
