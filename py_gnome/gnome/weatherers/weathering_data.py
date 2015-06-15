@@ -343,8 +343,13 @@ class WeatheringData(Weatherer, Serializable):
         User does not manipuate it. It automatically uses default Water object
         if make_default_refs is True
         '''
+
         if json_ == 'webapi':
-            return
+            toserial = self.to_serialize(json_)
+            schema = self.__class__._schema()
+            serial = schema.serialize(toserial)
+            
+            return serial
 
         # for save files - call super
         return super(WeatheringData, self).serialize(json_)
