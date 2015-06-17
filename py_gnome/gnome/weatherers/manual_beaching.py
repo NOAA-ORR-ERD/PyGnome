@@ -134,12 +134,11 @@ class Beaching(RemoveMass, Weatherer, Serializable):
 
         # prepends active_start to _timeseries array. This is for convenience
         to_insert = np.zeros(1, dtype=datetime_value_1d)
+
         if self.active_start != InfDateTime('-inf'):
             to_insert['time'][0] = np.datetime64(self.active_start)
 
         self._timeseries = np.insert(value, 0, to_insert)
-        print 'Beaching.timeseries(): after insert: ', self._timeseries['time']
-
         self.active_stop = self._timeseries['time'][-1].astype(datetime)
 
     @property
