@@ -119,7 +119,10 @@ class Beaching(RemoveMass, Weatherer, Serializable):
 
     @property
     def timeseries(self):
-        return self._timeseries[1:]
+        if self._timeseries is not None:
+            return self._timeseries[1:]
+
+        return None
 
     @timeseries.setter
     def timeseries(self, value):
@@ -135,7 +138,9 @@ class Beaching(RemoveMass, Weatherer, Serializable):
             to_insert['time'][0] = np.datetime64(self.active_start)
 
         self._timeseries = np.insert(value, 0, to_insert)
-        self.active_stop = self.timeseries['time'][-1].astype(datetime)
+        print 'Beaching.timeseries(): after insert: ', self._timeseries['time']
+
+        self.active_stop = self._timeseries['time'][-1].astype(datetime)
 
     @property
     def units(self):
