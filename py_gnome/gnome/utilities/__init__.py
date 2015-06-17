@@ -5,7 +5,8 @@ a few small things here, 'cause why not?
 
 """
 
-import sys, warnings
+import sys
+import warnings
 
 div = {'GB': 1024*1024*1024,
        'MB': 1024*1024,
@@ -13,18 +14,15 @@ div = {'GB': 1024*1024*1024,
        }
 
 if sys.platform.startswith('win'):
-
     """
-
     Functions for getting memory usage of Windows processes.
 
     from:
 
     http://code.activestate.com/recipes/578513-get-memory-usage-of-windows-processes-using-getpro/
 
-    get_mem_use(units='MB') is the one to get memory use for the current process.
-
-
+    get_mem_use(units='MB') is the one to get memory use
+    for the current process.
     """
     import ctypes
     from ctypes import wintypes
@@ -86,7 +84,7 @@ if sys.platform.startswith('win'):
         return info['PrivateUsage'] / float(div[units])
 
 
-else: # for posix systems only tested on OS-X for now
+else:  # for posix systems only tested on OS-X for now
     def get_mem_use(units='MB'):
         """
         returns the total memory use of the current python process
@@ -106,5 +104,6 @@ else: # for posix systems only tested on OS-X for now
         elif sys.platform.startswith("linux"):
             d /= 1024
         else:
-            warning.warn("memory use reported may not be correct on this platform")
+            warnings.warn('memory use reported may not be correct '
+                          'on this platform')
         return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / float(d)
