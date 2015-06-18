@@ -127,13 +127,23 @@ class NaturalDispersion(Weatherer, Serializable):
                          ka)
 
             sc.mass_balance['natural_dispersion'] += np.sum(disp[:])
-            disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
+            if data['mass'].sum() > 0:
+                disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
+                if disp_mass_frac > 1:
+                    disp_mass_frac = 1
+            else:
+                disp_mass_frac = 0
             data['mass_components'] = \
                 (1 - disp_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
 
             sc.mass_balance['sedimentation'] += np.sum(sed[:])
-            sed_mass_frac = np.sum(sed[:]) / data['mass'].sum()
+            if data['mass'].sum() > 0:
+                sed_mass_frac = np.sum(sed[:]) / data['mass'].sum()
+                if sed_mass_frac > 1:
+                    sed_mass_frac = 1
+            else:
+                sed_mass_frac = 0
             data['mass_components'] = \
                 (1 - sed_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
