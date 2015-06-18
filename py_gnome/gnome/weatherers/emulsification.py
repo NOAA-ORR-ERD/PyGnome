@@ -82,7 +82,8 @@ class Emulsification(Weatherer, Serializable):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['frac_water']) == 0:
+            if len(data['age']) == 0:
+            #if len(data['frac_water']) == 0:
                 # substance does not contain any surface_weathering LEs
                 continue
 

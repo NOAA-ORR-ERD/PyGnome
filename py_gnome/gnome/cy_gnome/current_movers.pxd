@@ -104,7 +104,9 @@ cdef extern from "GridCurrentMover_c.h":
         OSErr  			GetScaledVelocities(Seconds time, VelocityFRec *velocity)
         LongPointHdl  GetPointsHdl()
         TopologyHdl  GetTopologyHdl()
+        GridCellInfoHdl  GetCellDataHdl()
         WORLDPOINTH  GetTriangleCenters()
+        WORLDPOINTH  GetCellCenters()
         long  GetNumTriangles()
 
 cdef extern from "IceMover_c.h":

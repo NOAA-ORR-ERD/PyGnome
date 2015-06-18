@@ -100,6 +100,15 @@ cdef extern from "TypeDefs.h":
     ctypedef TimeValuePair **TimeValuePairH
     ctypedef TimeValuePair *TimeValuePairP 
 
+    ctypedef struct GridCellInfo:
+        long cellNum
+        long topLeft
+        long topRight
+        long bottomLeft
+        long bottomRight
+
+    ctypedef GridCellInfo **GridCellInfoHdl
+
     ctypedef enum LEStatus:
         OILSTAT_NOTRELEASED = 0
         OILSTAT_INWATER = 2

@@ -1988,6 +1988,7 @@ TimeGridVelCurv_c::TimeGridVelCurv_c () : TimeGridVelRect_c()
 {
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;
+	fGridCellInfoH = 0;
 	//bIsCOOPSWaterMask = false;
 	bVelocitiesOnNodes = false;
 }	
@@ -1996,6 +1997,7 @@ void TimeGridVelCurv_c::Dispose ()
 {
 	if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
 	if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
+	if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
 	
 	TimeGridVelRect_c::Dispose ();
 }
@@ -5360,6 +5362,53 @@ OSErr TimeGridVelCurv_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_
 		scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor;
 	}
 	return err;
+}
+
+GridCellInfoHdl TimeGridVelCurv_c::GetCellData()
+{	// use for curvilinear
+	OSErr err = 0;
+	char errmsg[256];
+	
+	long i,numTri,numCells,index1,index2;
+	LongPointHdl ptsHdl = 0;
+	TopologyHdl topH = 0;
+	Topology tri1, tri2;
+	
+	if (fGridCellInfoH) return fGridCellInfoH;
+	
+	topH = fGrid -> GetTopologyHdl();
+	if(topH)
+		numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	else 
+		numTri = 0;
+		
+	numCells = numTri / 2;
+	GridCellInfoHdl fGridCellInfoH = (GridCellInfoHdl)_NewHandleClear(numCells * sizeof(**fGridCellInfoH));
+	if (!fGridCellInfoH) 
+	{
+		err = memFullErr; 
+		goto done;
+	}
+	
+	for (i=0; i<numCells; i++)
+	{
+		index1 = i*2;
+		index2 = i*2+1;
+		tri1 = INDEXH(topH,index1);
+		tri2 = INDEXH(topH,index2);
+		INDEXH(fGridCellInfoH,i).cellNum = i;
+		INDEXH(fGridCellInfoH,i).topLeft = tri1.vertex2;
+		INDEXH(fGridCellInfoH,i).topRight = tri1.vertex1;
+		INDEXH(fGridCellInfoH,i).bottomLeft = tri1.vertex3;
+		INDEXH(fGridCellInfoH,i).bottomRight = tri2.vertex2;
+	}
+	
+done:
+	if (err)
+	{
+		if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
+	}
+	return fGridCellInfoH;
 }
 
 TimeGridVelIce_c::TimeGridVelIce_c () : TimeGridVelCurv_c(), TimeGridVel_c()

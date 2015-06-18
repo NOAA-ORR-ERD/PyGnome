@@ -372,6 +372,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
 
         # check if this is stored with cy_gridcurrent_mover?
         self.filename = filename
+        self.name = os.path.split(filename)[1]
 
         # check if this is stored with cy_gridcurrent_mover?
         self.topology_file = topology_file
@@ -559,6 +560,7 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
 
         # check if this is stored with cy_ice_mover?
         self.filename = filename
+        self.name = os.path.split(filename)[1]
 
         # check if this is stored with cy_ice_mover?
         self.topology_file = topology_file

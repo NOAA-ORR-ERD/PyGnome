@@ -113,6 +113,7 @@ public:
 	virtual double 	GetEndVVelocity(long index);
 	
 	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity){return -1;}
+	virtual GridCellInfoHdl 	GetCellData() {return 0;}
 
 	long 					GetNumTimesInFile();
 	long 					GetNumFiles();
@@ -200,6 +201,7 @@ public:
 	
 	LONGH fVerdatToNetCDFH;	// for curvilinear
 	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
+	GridCellInfoHdl fGridCellInfoH;
 	Boolean bVelocitiesOnNodes;		// default is velocities on cells
 
 	TimeGridVelCurv_c ();
@@ -226,6 +228,7 @@ public:
 	float		GetTotalDepth(WorldPoint refPoint,long ptIndex);
 
 	OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
+	virtual GridCellInfoHdl 	GetCellData();
 
 	virtual	OSErr ReadTopology(std::vector<std::string> &linesInFile);
 	virtual	OSErr ReadTopology(const char *path);

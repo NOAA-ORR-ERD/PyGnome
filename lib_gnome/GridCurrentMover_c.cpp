@@ -454,6 +454,11 @@ TopologyHdl GridCurrentMover_c::GetTopologyHdl(void)
 	return timeGrid->fGrid->GetTopologyHdl();
 }
 
+GridCellInfoHdl GridCurrentMover_c::GetCellDataHdl(void)
+{
+	return timeGrid->GetCellData();
+}
+
 WORLDPOINTH	GridCurrentMover_c::GetTriangleCenters()
 {
 	return timeGrid->fGrid->GetCenterPointsHdl();
@@ -466,5 +471,14 @@ long GridCurrentMover_c::GetNumTriangles(void)
 	if (topoH) numTriangles = _GetHandleSize((Handle)topoH)/sizeof(**topoH);
 	
 	return numTriangles;
+}
+
+long GridCurrentMover_c::GetNumPoints(void)
+{
+	long numPts = 0;
+	LongPointHdl ptsH = GetPointsHdl();
+	if (ptsH) numPts = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
+	
+	return numPts;
 }
 

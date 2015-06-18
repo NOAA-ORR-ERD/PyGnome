@@ -89,7 +89,8 @@ void CATSMover_c::Dispose()
 OSErr CATSMover_c::InitMover()
 {
 	// this is for python  - time is not used so set to 0
-	(this)->ComputeVelocityScale(0);
+	OSErr err = (this)->ComputeVelocityScale(0);
+	return err;
 }
 
 // this function computes and sets this->refScale

@@ -905,6 +905,12 @@ OSErr NetCDFMoverTri_c::ReorderPoints2(TMap **newMap, long *bndry_indices, long 
 		//short islandNum, index;
 		long islandNum, index;
 		index = bndry_indices[i];
+		if (index > nv)
+		{
+			printNote("Boundary indices are out of bounds");
+			err = -1;
+			goto done;
+		}
 		islandNum = bndry_nums[i];
 		if (addOne) islandNum++;	// for debugging
 		INDEXH(vertFlagsH,index-1) = 1;	// note that point has been used

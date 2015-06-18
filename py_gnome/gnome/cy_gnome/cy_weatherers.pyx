@@ -22,7 +22,8 @@ def emulsify_oil(step_len, cnp.ndarray[cnp.npy_double] frac_water,
     """
     """
     cdef OSErr emul_err
-    N = len(frac_water)  
+    #N = len(frac_water)  
+    N = len(le_age)  
         
     emul_err = emulsify(N,
                                 step_len,
@@ -62,7 +63,8 @@ def disperse_oil(step_len, cnp.ndarray[cnp.npy_double] frac_water,
     """
     """
     cdef OSErr disp_err
-    N = len(frac_water)  
+    #N = len(frac_water)  
+    N = len(le_mass)  
         
     disp_err = disperse(N,
                                 step_len,

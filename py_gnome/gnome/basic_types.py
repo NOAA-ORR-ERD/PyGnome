@@ -107,6 +107,10 @@ triangle_data = np.dtype([('v1', np_long), ('v2', np_long),
                        ('n2', np_long), ('n3', np_long)],
                        align=True)
 
+cell_data = np.dtype([('cell_num', np_long), ('top_left', np_long), 
+                       ('top_right', np_long), ('bottom_left', np_long),
+                       ('bottom_right', np_long)], align=True)
+
 # In the C++ TypeDefs.h, the enum type for LEStatus is defined as a short
 # this is also consistent with the definition in type_defs.pxd ..
 # define it here to keep things consistent
