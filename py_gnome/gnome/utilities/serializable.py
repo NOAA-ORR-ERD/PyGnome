@@ -383,7 +383,7 @@ class State(object):
                 setattr(field, 'read', read_)
 
             for (key, val) in kwargs.iteritems():
-                if key == 'update' and val == True:
+                if key == 'update' and val is True:
                     if getattr(field, 'read'):
                         raise AttributeError("The 'read' and 'update' "
                                              "attribute cannot both be True")
@@ -538,7 +538,7 @@ class Serializable(GnomeId, Savable):
         for key in dict_.keys():
             if not hasattr(new_obj, key):
                 raise AttributeError('{0} is not an attribute '
-                    'of {1}'.format(key, cls.__name__))
+                                     'of {1}'.format(key, cls.__name__))
             try:
                 setattr(new_obj, key, dict_[key])
             except AttributeError:

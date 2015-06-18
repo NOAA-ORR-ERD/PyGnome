@@ -97,7 +97,7 @@ class Beaching(RemoveMass, Weatherer, Serializable):
             Assumes the delta time (t1 - t0) is larger than model's time_step.
 
         .. note:: Assumes the model's
-            time_step is smaller than the timeseries timestep, meaning the 
+            time_step is smaller than the timeseries timestep, meaning the
         '''
         if 'active_stop' in kwargs:
             # user cannot set 'active_stop'. active_stop is automatically set
@@ -114,12 +114,15 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         self._rate = None
         self._timeseries = None
 
-        if timeseries is not None:
+        if timeseries is not None and len(timeseries) > 0:
             self.timeseries = timeseries
 
     @property
     def timeseries(self):
-        return self._timeseries[1:]
+        if self._timeseries is not None:
+            return self._timeseries[1:]
+
+        return None
 
     @timeseries.setter
     def timeseries(self, value):
@@ -131,11 +134,12 @@ class Beaching(RemoveMass, Weatherer, Serializable):
 
         # prepends active_start to _timeseries array. This is for convenience
         to_insert = np.zeros(1, dtype=datetime_value_1d)
+
         if self.active_start != InfDateTime('-inf'):
             to_insert['time'][0] = np.datetime64(self.active_start)
 
         self._timeseries = np.insert(value, 0, to_insert)
-        self.active_stop = self.timeseries['time'][-1].astype(datetime)
+        self.active_stop = self._timeseries['time'][-1].astype(datetime)
 
     @property
     def units(self):
@@ -249,12 +253,12 @@ class Beaching(RemoveMass, Weatherer, Serializable):
                        format(model_time))
                 self.logger.warning(msg)
 
-            data['mass_components'] = \
-                (1 - rm_mass_frac) * data['mass_components']
+            data['mass_components'] = ((1 - rm_mass_frac) *
+                                       data['mass_components'])
             data['mass'] = data['mass_components'].sum(1)
 
             sc.mass_balance['observed_beached'] += rm_mass
-            self.logger.debug(self._pid + 'amount observed_beached for {0}: {1}'.
-                              format(substance.name, rm_mass))
+            self.logger.debug('{0} amount observed_beached for {1}: {2}'
+                              .format(self._pid, substance.name, rm_mass))
 
         sc.update_from_fatedataview()
