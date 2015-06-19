@@ -164,7 +164,7 @@ class InfDateTime(datetime.datetime):
     A special datetime object:
 
     It is either a regular datetime object, with the provisio
-    that it can't be set outside the range given my the module
+    that it can't be set outside the range given by the module
     variables:
 
     min_datetime
