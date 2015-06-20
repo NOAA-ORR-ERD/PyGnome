@@ -149,9 +149,11 @@ OSErr TimeGridWindRect_c::TextRead(const char *path, const char *topFilePath)
 	static size_t pt_count[2];
 	Seconds startTime, startTime2;
 	double timeConversion = 1.;
-	char errmsg[256] = "";
 	char fileName[256],s[256],*modelTypeStr=0;
 	char  outPath[256];
+
+	char errmsg[256];
+	errmsg[0] = 0;
 	
     if (!path || !path[0])
 		return 0;
@@ -666,12 +668,14 @@ scale:
 OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) // don't want a map
 {
 	OSErr err = 0;
-	char errmsg[256] = "";
 	char s[256], topPath[256];
 	char recname[NC_MAX_NAME];
 	char dimname[NC_MAX_NAME];
 	char fileName[256];
 	char outPath[256];
+
+	char errmsg[256];
+	errmsg[0] = 0;
 
 	long i, j, numScanned, indexOfStart = 0;
 	int status, ncid, latIndexid, lonIndexid, latid, lonid, recid, timeid, numdims;

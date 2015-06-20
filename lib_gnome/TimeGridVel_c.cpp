@@ -5367,13 +5367,15 @@ OSErr TimeGridVelCurv_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_
 GridCellInfoHdl TimeGridVelCurv_c::GetCellData()
 {	// use for curvilinear
 	OSErr err = 0;
-	char errmsg[256];
-	
+
 	long i,numTri,numCells,index1,index2;
 	LongPointHdl ptsHdl = 0;
 	TopologyHdl topH = 0;
 	Topology tri1, tri2;
-	
+
+	char errmsg[256];
+	errmsg[0] = 0;
+
 	if (fGridCellInfoH) return fGridCellInfoH;
 	
 	topH = fGrid -> GetTopologyHdl();
@@ -6087,7 +6089,6 @@ OSErr TimeGridVelIce_c::ReadTimeDataIce(long index,VelocityFH *velocityH, char* 
 	double *curr_uvals = 0, *curr_vvals = 0, fill_value = -1e+34, test_value = 8e+10;
 	double /**landmask = 0,*/ velConversion = 1.;
 	double *angle_vals = 0, debug_mask;
-	//cbar errmsg[256];
 
 	VelocityFH velH = 0;
 	Boolean bRotated = true;
@@ -6452,7 +6453,6 @@ OSErr TimeGridVelIce_c::GetIceFields(Seconds time, double *thickness, double *fr
 	double timeAlpha;
 	Seconds startTime,endTime;
 	OSErr err = 0;
-	char errmsg[256];
 	
 	long numVertices,i,numTri,index=-1;
 	InterpolationVal interpolationVal;
@@ -6462,6 +6462,10 @@ OSErr TimeGridVelIce_c::GetIceFields(Seconds time, double *thickness, double *fr
 	Boolean loaded;
 	//TTriGridVel* triGrid = (TTriGridVel*)fGrid;
 	TTriGridVel* triGrid = (dynamic_cast<TTriGridVel*>(fGrid));
+
+	char errmsg[256];
+	errmsg[0] = 0;
+
 	err = this -> SetInterval(errmsg, time);
 	if(err) return err;
 	loaded = this -> CheckInterval(timeDataInterval, time);	 
@@ -6546,7 +6550,9 @@ OSErr TimeGridVelIce_c::GetIceVelocities(Seconds time, VelocityFRec *ice_velocit
 	double timeAlpha;
 	Seconds startTime,endTime;
 	OSErr err = 0;
+
 	char errmsg[256];
+	errmsg[0] = 0;
 	
 	long numVertices,i,numTri,index=-1;
 	InterpolationVal interpolationVal;
@@ -6647,11 +6653,10 @@ OSErr TimeGridVelIce_c::GetIceVelocities(Seconds time, VelocityFRec *ice_velocit
 
 OSErr TimeGridVelIce_c::GetMovementVelocities(Seconds time, VelocityFRec *movement_velocity)
 {	// use for curvilinear
+	OSErr err = 0;
 	double timeAlpha;
 	double frac_coverage = 0, max_coverage = .8, min_coverage = .2, fracAlpha;
 	Seconds startTime,endTime;
-	OSErr err = 0;
-	char errmsg[256];
 	
 	long numVertices,i,numTri,index=-1;
 	InterpolationVal interpolationVal;
@@ -6664,6 +6669,9 @@ OSErr TimeGridVelIce_c::GetMovementVelocities(Seconds time, VelocityFRec *moveme
 	VelocityRec velocity = {0.,0.}, iceVelocity = {0.,0.}, currentVelocity = {0.,0.};
 	VelocityRec iceVelocityStart = {0.,0.}, currentVelocityStart = {0.,0.}, iceVelocityEnd = {0.,0.}, currentVelocityEnd = {0.,0.};
 	
+	char errmsg[256];
+	errmsg[0] = 0;
+
 	err = this -> SetInterval(errmsg, time);
 	if(err) return err;
 	
@@ -7273,10 +7281,12 @@ OSErr TimeGridVelTri_c::TextRead(const char *path, const char *topFilePath)
 	// needs to be updated once triangle grid format is set
 
 	OSErr err = 0;
-	char errmsg[256] = "";
+	long i, numScanned;
 	char fileName[256], s[256], topPath[256], outPath[256];
 	char recname[NC_MAX_NAME];
-	long i, numScanned;
+
+	char errmsg[256];
+	errmsg[0] = 0;
 
 	int status;
 	int ncid, nodeid, nbndid, bndid, neleid, latid, lonid, recid, timeid, sigmaid, sigmavarid, depthid;
@@ -7940,7 +7950,6 @@ OSErr TimeGridVelTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* err
 {	// - needs to be updated once triangle grid format is set
 	OSErr err = 0;
 	long i,j;
-	char path[256], outPath[256]; 
 	int status, ncid, numdims, uv_ndims;
 	int curr_ucmp_id, curr_vcmp_id, uv_dimid[3], nele_id;
 	static size_t curr_index[] = {0,0,0,0};
@@ -7952,6 +7961,7 @@ OSErr TimeGridVelTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* err
 	long numTris = fNumEles;
 	long numDepths = fVar.maxNumDepths;	// assume will always have full set of depths at each point for now
 	double scale_factor = 1.;
+	char path[256], outPath[256];
 	
 	errmsg[0]=0;
 	
@@ -8107,7 +8117,6 @@ done:
 OSErr TimeGridVelTri_c::ReorderPoints2(long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors, long ntri, Boolean isCCW) 
 {
 	OSErr err = 0;
-	char errmsg[256];
 	long i, n, nv = fNumNodes;
 	long currentBoundary;
 	long numVerdatPts = 0, numVerdatBreakPts = 0;
@@ -8132,6 +8141,9 @@ OSErr TimeGridVelTri_c::ReorderPoints2(long *bndry_indices, long *bndry_nums, lo
 	
 	Boolean addOne = false;	// for debugging
 	
+	char errmsg[256];
+	errmsg[0] = 0;
+
 	/////////////////////////////////////////////////
 	
 	
@@ -8394,7 +8406,6 @@ done:
 OSErr TimeGridVelTri_c::ReorderPoints(long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts) 
 {
 	OSErr err = 0;
-	char errmsg[256];
 	long i, n, nv = fNumNodes;
 	long currentBoundary;
 	long numVerdatPts = 0, numVerdatBreakPts = 0;
@@ -8416,6 +8427,9 @@ OSErr TimeGridVelTri_c::ReorderPoints(long *bndry_indices, long *bndry_nums, lon
 	
 	Boolean addOne = false;	// for debugging
 	
+	char errmsg[256];
+	errmsg[0] = 0;
+
 	/////////////////////////////////////////////////
 	
 	
@@ -8645,9 +8659,12 @@ long TimeGridVelTri_c::GetNumDepthLevels()
 	// and check both sigma grid and multilayer grid (and maybe others)
 	long numDepthLevels = 0;
 	OSErr err = 0;
-	char path[256], outPath[256];
 	int status, ncid, sigmaid, sigmavarid;
 	size_t sigmaLength=0;
+	char path[256], outPath[256];
+	path[0] = 0;
+	outPath[0] = 0;
+
 	//if (fDepthLevelsHdl) numDepthLevels = _GetHandleSize((Handle)fDepthLevelsHdl)/sizeof(**fDepthLevelsHdl);
 	//status = nc_open(fVar.pathName, NC_NOWRITE, &ncid);
 	//if (status != NC_NOERR) {/*err = -1; goto done;*/return -1;}
@@ -8692,7 +8709,6 @@ long TimeGridVelTri_c::GetNumDepthLevels()
 OSErr TimeGridVelTri_c::ReadTopology(vector<string> &linesInFile)
 {
 	OSErr err = 0;
-	char errmsg[256];
 
 	string currentLine;
 	long i, numPoints, numTopoPoints, line = 0, numPts;
@@ -8711,6 +8727,7 @@ OSErr TimeGridVelTri_c::ReadTopology(vector<string> &linesInFile)
 
 	LONGH boundarySegs = 0, waterBoundaries = 0, boundaryPts = 0;
 
+	char errmsg[256];
 	errmsg[0] = 0;
 
 	MySpinCursor(); // JLM 8/4/99
@@ -8945,7 +8962,6 @@ OSErr TimeGridVelTri_c::ExportTopology(char *path)
 	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0, nBoundaryPts;
 	long i, n=0, v1,v2,v3,n1,n2,n3;
 	double x,y,z=0;
-	char buffer[512],hdrStr[64],topoStr[128];
 	TopologyHdl topH=0;
 	TTriGridVel* triGrid = 0;
 	TDagTree* dagTree = 0;
@@ -8956,6 +8972,11 @@ OSErr TimeGridVelTri_c::ExportTopology(char *path)
 	FILE *fp = fopen(path, "w");
 	//BFPB bfpb;
 	//PtCurMap *map = GetPtCurMap();
+
+	char buffer[512], hdrStr[64], topoStr[128];
+	buffer[0] = 0;
+	hdrStr[0] = 0;
+	topoStr[0] = 0;
 
 	triGrid = dynamic_cast<TTriGridVel*>(this->fGrid);
 	if (!triGrid) {printError("There is no topology to export"); return -1;}
@@ -9403,7 +9424,6 @@ OSErr ScanFileForTimes(char *path,Seconds ***timeH)
 	long i,numScanned,line=0;
 	DateTimeRec time;
 	Seconds timeSeconds;
-	char s[1024], outPath[256];
 	CHARH fileBufH = 0;
 	int status, ncid, recid, timeid;
 	size_t recs, t_len, t_len2;
@@ -9412,8 +9432,13 @@ OSErr ScanFileForTimes(char *path,Seconds ***timeH)
 	static size_t timeIndex;
 	Seconds startTime2;
 	double timeConversion = 1.;
-	char errmsg[256] = "";
 	Seconds **timeHdl = 0;
+
+	char s[1024], outPath[256];
+	char errmsg[256];
+	s[0] = 0;
+	outPath[0] = 0;
+	errmsg[0] = 0;
 
 	status = nc_open(path, NC_NOWRITE, &ncid);
 	// code goes here, will need to resolve file paths to unix paths in readinputfilenames
@@ -11106,7 +11131,7 @@ OSErr TimeGridCurTri_c::TextRead(vector<string> &linesInFile,
 	// code goes here, worry about really long lines in the file
 
 	// read past the header
-	for (long i = 0; i < linesInFile.size(); i++) {
+	for (unsigned long i = 0; i < linesInFile.size(); i++) {
 		currentLine = trim(linesInFile[line++]);
 		if (currentLine[0] != '[')
 			break;
@@ -11406,12 +11431,12 @@ OSErr TimeGridCurTri_c::TextRead(const char *path, const char *topFilePath)
 OSErr TimeGridCurTri_c::ReadHeaderLines(vector<string> &linesInFile,
 								 string containingDir, UncertaintyParameters *uncertainParams)
 {
-	char errmsg[256];
 	OSErr err = 0;
 	string currentLine;
 	
 	long line = 0;
 	
+	char errmsg[256];
 	errmsg[0] = 0;
 	
 	// code goes here, we need to worry about really big files
@@ -11419,7 +11444,7 @@ OSErr TimeGridCurTri_c::ReadHeaderLines(vector<string> &linesInFile,
 	// code goes here, worry about really long lines in the file
 	
 	// read past the header
-	for (long i = 0; i < linesInFile.size(); i++) {
+	for (unsigned long i = 0; i < linesInFile.size(); i++) {
 		currentLine = trim(linesInFile[line++]);
 		if (currentLine[0] != '[')
 			break;
