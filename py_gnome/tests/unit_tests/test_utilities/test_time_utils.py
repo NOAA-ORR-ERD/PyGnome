@@ -3,6 +3,8 @@
 """
 test time_utils different input formats
 """
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2, width=120)
 
 from datetime import datetime
 import numpy as np
@@ -13,10 +15,9 @@ def _convert(x):
     """
     helper method for the next 4 tests
     """
-
     y = time_utils.date_to_sec(x)
-    xn = time_utils.sec_to_date(y)
-    return xn
+
+    return time_utils.sec_to_date(y)
 
 
 def test_scalar_input():
@@ -39,8 +40,9 @@ def test_datetime_array():
     test time_utils conversion works for python datetime object
     """
 
-    x = np.zeros((3, ), dtype=datetime)
+    x = time_utils.make_zero_time_array(3, datetime)
     xn = _convert(x)
+
     assert np.all(time_utils.round_time(x, roundTo=1) == xn)
 
 
@@ -49,7 +51,7 @@ def test_numpy_array():
     time_utils works for numpy datetime object
     """
 
-    x = np.zeros((3, ), dtype='datetime64[s]')
+    x = time_utils.make_zero_time_array(3, 'datetime64[s]')
     xn = _convert(x)
     assert np.all(x == xn)
 
