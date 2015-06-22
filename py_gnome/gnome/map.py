@@ -525,7 +525,6 @@ class RasterMap(GnomeMap):
         # update 'off_maps'/'beached' in mass_balance
         sc.mass_balance['beached'] = \
             sc['mass'][sc['status_codes'] == oil_status.on_land].sum()
-        #sc.mass_balance['off_maps'] = \
         sc.mass_balance['off_maps'] += \
             sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
 
