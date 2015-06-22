@@ -11,7 +11,7 @@ import numpy
 np = numpy
 
 
-def beginning_of_epoch():
+def timezone_offset_seconds():
     '''
         This function returns the offset value in seconds of the beginning
         of the unix epoch.
@@ -23,7 +23,7 @@ def beginning_of_epoch():
 
 
 def make_zero_time_array(size, dtype):
-    zero_time = beginning_of_epoch()
+    zero_time = timezone_offset_seconds()
     return np.array([datetime.datetime.utcfromtimestamp(zero_time)] * size,
                     dtype=dtype)
 
