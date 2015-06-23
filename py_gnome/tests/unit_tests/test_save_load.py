@@ -102,16 +102,16 @@ base_dir = os.path.dirname(__file__)
 # For WindMover test_save_load in test_wind_mover
 g_objects = (environment.Tide(testdata['CatsMover']['tide']),
              environment.Wind(filename=testdata['ComponentMover']['wind']),
-             environment.Wind(timeseries=(0, (0, 0)), units='mps'),
+             environment.Wind(timeseries=(12 * 60 * 60,
+                                          (0, 0)), units='mps'),
              environment.Water(temperature=273),
              movers.random_movers.RandomMover(),
              movers.CatsMover(testdata['CatsMover']['curr']),
              movers.CatsMover(testdata['CatsMover']['curr'],
-                 tide=environment.Tide(testdata['CatsMover']['tide'])),
+                              tide=environment.Tide(testdata['CatsMover']['tide'])),
              movers.ComponentMover(testdata['ComponentMover']['curr']),
              movers.ComponentMover(testdata['ComponentMover']['curr'],
-                 wind=environment.Wind(
-                     filename=testdata['ComponentMover']['wind'])),
+                                   wind=environment.Wind(filename=testdata['ComponentMover']['wind'])),
              movers.RandomVerticalMover(),
              movers.SimpleMover(velocity=(10.0, 10.0, 0.0)),
              map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
@@ -131,12 +131,13 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
              weatherers.ChemicalDispersion(.2, datetime(2014, 1, 1, 0, 0),
                                            datetime(2014, 1, 1, 4, 0),
                                            efficiency=.3),
-            # todo: ask Caitlin how to fix
-            #movers.RiseVelocityMover(),
-            # todo: This is incomplete - no _schema for SpatialRelease, GeoJson
-            #spill.SpatialRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
-            outputters.TrajectoryGeoJsonOutput(),
-            )
+             # todo: ask Caitlin how to fix
+             # movers.RiseVelocityMover(),
+             # todo: This is incomplete - no _schema for
+             #       SpatialRelease, GeoJson
+             # spill.SpatialRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
+             outputters.TrajectoryGeoJsonOutput(),
+             )
 
 
 @pytest.mark.parametrize("obj", g_objects)
@@ -156,7 +157,8 @@ for a file it works fine, no decimal places stored in file for magnitude
 
 
 @pytest.mark.parametrize("obj",
-                         (environment.Wind(timeseries=(0, (1, 30)),
+                         (environment.Wind(timeseries=(12 * 60 * 60,
+                                                       (1, 30)),
                                            units='meters per second'),
                           weatherers.Evaporation(environment.
                                                  constant_wind(1., 30.),
@@ -176,10 +178,10 @@ netcdf data files. All files are being closed in C++.
 '''
 
 l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-                topology_file=testdata['CurrentCycleMover']['top'],
-                tide=environment.Tide(testdata['CurrentCycleMover']['tide'])),
+                                      topology_file=testdata['CurrentCycleMover']['top'],
+                                      tide=environment.Tide(testdata['CurrentCycleMover']['tide'])),
              movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-               topology_file=testdata['CurrentCycleMover']['top']),
+                                      topology_file=testdata['CurrentCycleMover']['top']),
              movers.GridCurrentMover(testdata['GridCurrentMover']['curr_tri'],
                                      testdata['GridCurrentMover']['top_tri']),
              movers.GridWindMover(testdata['GridWindMover']['wind_curv'],
@@ -193,13 +195,13 @@ def test_save_load_grids(saveloc_, obj):
     refs = obj.save(saveloc_)
     obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
     assert obj == obj2
-    #==========================================================================
+    # ==========================================================================
     # temp = os.path.join(dump, 'temp')
     # for dir_ in (temp, os.path.relpath(temp)):
     #     refs = obj.save(dir_)
     #     obj2 = load(os.path.join(dir_, refs.reference(obj)))
     #     assert obj == obj2
-    #==========================================================================
+    # ==========================================================================
 
 
 class TestSaveZipIsValid:
