@@ -57,8 +57,9 @@ def to_time_value_pair(datetime_value, in_ts_format=None):
         else:
 
             raise ValueError('in_ts_format is not one of the two supported '
-                'types: basic_types.ts_format.magnitude_direction, '
-                'basic_types.ts_format.uv')
+                             'types: '
+                             'basic_types.ts_format.magnitude_direction, '
+                             'basic_types.ts_format.uv')
 
     return time_value_pair
 
@@ -75,8 +76,8 @@ def to_datetime_value_2d(time_value_pair, out_ts_format):
     """
 
     if time_value_pair.dtype != basic_types.time_value_pair:
-        raise ValueError('Method expects a numpy array containing basic_types.time_value_pair'
-                         )
+        raise ValueError('Method expects a numpy array containing '
+                         'basic_types.time_value_pair')
 
     datetime_value_2d = np.zeros((len(time_value_pair), ),
                                  dtype=basic_types.datetime_value_2d)
@@ -102,9 +103,10 @@ def to_datetime_value_2d(time_value_pair, out_ts_format):
         datetime_value_2d['value'][:, 0] = time_value_pair['value']['u']
         datetime_value_2d['value'][:, 1] = time_value_pair['value']['v']
     else:
-
-        raise ValueError('out_ts_format is not one of the two supported types: basic_types.ts_format.magnitude_direction, basic_types.ts_format.uv'
-                         )
+        raise ValueError('out_ts_format is not one of the two supported '
+                         'types: '
+                         'basic_types.ts_format.magnitude_direction, '
+                         'basic_types.ts_format.uv')
 
     return datetime_value_2d
 

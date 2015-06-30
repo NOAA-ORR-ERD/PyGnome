@@ -1,7 +1,5 @@
 import os
 from datetime import datetime
-import shutil
-import json
 
 import pytest
 from pytest import raises
@@ -9,9 +7,8 @@ from pytest import raises
 import numpy
 np = numpy
 
-import unit_conversion
-
-from gnome.utilities.time_utils import date_to_sec
+from gnome.utilities.time_utils import (timezone_offset_seconds,
+                                        sec_to_date)
 from gnome.basic_types import datetime_value_2d
 from gnome.environment import Wind, constant_wind, RunningAverage
 
@@ -19,6 +16,7 @@ from ..conftest import testdata
 
 data_dir = os.path.join(os.path.dirname(__file__), 'sample_data')
 wind_file = testdata['timeseries']['wind_ts_av']
+
 
 def test_av_from_variable_wind():
     '''
@@ -29,7 +27,7 @@ def test_av_from_variable_wind():
     #          (datetime(2012, 9, 7, 14, 0), (28, 270)),
     #          (datetime(2012, 9, 7, 20, 0), (28, 270)),
     #          (datetime(2012, 9, 8, 02, 0), (10, 270))]
-             
+
     # wm = Wind(timeseries=ts, units='m/s')
 
     wm = Wind(timeseries=[(datetime(2012, 9, 7, 8, 0), (10, 270)),
@@ -38,8 +36,7 @@ def test_av_from_variable_wind():
                           (datetime(2012, 9, 8, 02, 0), (10, 270))],
               units='m/s')
 
-
-    #wm = Wind(filename=wind_file)
+    # wm = Wind(filename=wind_file)
     av = RunningAverage(wm)
 #     print "wm.ossm.timeseries"
 #     print wm.ossm.timeseries[:]
@@ -49,6 +46,7 @@ def test_av_from_variable_wind():
     assert av.ossm.timeseries['time'][0] == wm.ossm.timeseries['time'][0]
     assert av.ossm.timeseries['value']['u'][0] == wm.ossm.timeseries['value']['u'][0]
     assert av.ossm.timeseries['value']['u'][1] == 10.5
+
 
 def test_av_from_constant_wind():
     '''
@@ -74,10 +72,10 @@ def test_av_from_timeseries():
              (datetime(2014, 1, 1, 11, 10, 00), (20, 0)),
              (datetime(2014, 1, 1, 12, 10), (10, 0))]
     av = RunningAverage(timeseries=ts)
-    #print "av1"
-    #print av.ossm.timeseries[:]
-   
-    
+    # print "av1"
+    # print av.ossm.timeseries[:]
+
+
 def test_full_run():
     '''
     test a wind series that has a constant average
@@ -91,7 +89,7 @@ def test_full_run():
           (datetime(2015, 1, 1, 7, 0), (10, 0)),
           (datetime(2015, 1, 1, 8, 0), (20, 0)),
           (datetime(2015, 1, 1, 9, 0), (10, 0)),
-          (datetime(2015, 1, 1, 10, 0),(20, 0))]
+          (datetime(2015, 1, 1, 10, 0), (20, 0))]
 
     start_time = datetime(2015, 1, 1, 1)
     model_time = start_time
@@ -145,7 +143,7 @@ def test_full_run_extended():
     model_time = start_time
 
     running_av = RunningAverage(wind=wm)
-    #running_av = RunningAverage(timeseries=ts)
+    # running_av = RunningAverage(timeseries=ts)
     running_av.prepare_for_model_run(model_time)
     running_av.prepare_for_model_step(model_time)
 
@@ -174,8 +172,14 @@ def test_past_hours_to_average():
 
 
 def test_default_init():
+    zero_time = timezone_offset_seconds()
+    if zero_time < 0:
+        zero_time = 0
+
     av = RunningAverage()
-    assert av.timeseries == np.zeros((1,), dtype=datetime_value_2d)
+
+    assert av.timeseries == np.array([(sec_to_date(zero_time), [0.0, 0.0])],
+                                     dtype=datetime_value_2d)
     assert av.units == 'mps'
 
 

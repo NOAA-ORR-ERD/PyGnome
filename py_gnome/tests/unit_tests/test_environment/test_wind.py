@@ -11,6 +11,8 @@ np = numpy
 import unit_conversion
 
 from gnome.basic_types import datetime_value_2d
+from gnome.utilities.time_utils import (timezone_offset_seconds,
+                                        sec_to_date)
 from gnome.environment import Wind, constant_wind
 
 from ..conftest import testdata
@@ -74,8 +76,15 @@ def test_units():
 
 
 def test_default_init():
+    zero_time = timezone_offset_seconds()
+    if zero_time < 0:
+        zero_time = 0
+
     wind = Wind()
-    assert wind.timeseries == np.zeros((1,), dtype=datetime_value_2d)
+
+    assert wind.timeseries == np.array([(sec_to_date(zero_time), [0.0, 0.0])],
+                                       dtype=datetime_value_2d)
+
     assert wind.units == 'mps'
 
 
