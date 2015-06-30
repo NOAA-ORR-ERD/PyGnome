@@ -205,6 +205,9 @@ class WeatheringData(Weatherer, Serializable):
         # 'surface' so following can get cleaned up.
         sc.mass_balance['floating'] = \
             (sc['mass'][sc['fate_status'] == fate.surface_weather].sum() +
+             sc['mass'][sc['fate_status'] == fate.non_weather].sum() -
+             sc['mass'][sc['status_codes'] == oil_status.on_land].sum() -
+             sc['mass'][sc['status_codes'] == oil_status.to_be_removed].sum() +
              sc['mass'][sc['fate_status'] & fate.skim == fate.skim].sum() +
              sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
              sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
