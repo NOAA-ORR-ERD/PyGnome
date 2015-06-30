@@ -22,10 +22,10 @@ def timezone_offset_seconds():
     return time.mktime(time.localtime()) - time.mktime(time.gmtime())
 
 
-def make_zero_time_array(size, dtype):
-    zero_time = timezone_offset_seconds()
-    return np.array([datetime.datetime.utcfromtimestamp(zero_time)] * size,
-                    dtype=dtype)
+def zero_time():
+    offset = timezone_offset_seconds()
+
+    return offset if offset >= 0 else 0
 
 
 def date_to_sec(date_time):

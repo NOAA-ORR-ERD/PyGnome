@@ -4,10 +4,9 @@ from datetime import datetime
 import pytest
 from pytest import raises
 
-import numpy
-np = numpy
+import numpy as np
 
-from gnome.utilities.time_utils import (timezone_offset_seconds,
+from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
 from gnome.basic_types import datetime_value_2d
 from gnome.environment import Wind, constant_wind, RunningAverage
@@ -172,13 +171,9 @@ def test_past_hours_to_average():
 
 
 def test_default_init():
-    zero_time = timezone_offset_seconds()
-    if zero_time < 0:
-        zero_time = 0
-
     av = RunningAverage()
 
-    assert av.timeseries == np.array([(sec_to_date(zero_time), [0.0, 0.0])],
+    assert av.timeseries == np.array([(sec_to_date(zero_time()), [0.0, 0.0])],
                                      dtype=datetime_value_2d)
     assert av.units == 'mps'
 
