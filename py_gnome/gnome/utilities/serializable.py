@@ -4,8 +4,7 @@ Created on Feb 15, 2013
 import copy
 import inspect
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome import GnomeId
 from gnome.persist import Savable
@@ -994,6 +993,7 @@ class Serializable(GnomeId, Savable):
     def _deserialize_nested_obj(cls, json_):
         if json_ is not None:
             py_class = class_from_objtype(json_['obj_type'])
+
             return py_class.deserialize(json_)
         else:
             return None
