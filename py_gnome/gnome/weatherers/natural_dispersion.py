@@ -7,24 +7,21 @@ import copy
 
 import numpy as np
 
-import gnome    # required by new_from_dict
+import gnome    # required by deserialize
 
-from gnome.array_types import (viscosity,	
+from gnome import constants
+from gnome.cy_gnome.cy_weatherers import disperse_oil
+from gnome.array_types import (viscosity,
                                mass,
                                density,
                                fay_area,
                                frac_water)
-                               
+
 from gnome.utilities.serializable import Serializable, Field
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
-from gnome import constants
-from gnome.environment import (WaterSchema,
-                               WavesSchema)
 
-
-from gnome.cy_gnome.cy_weatherers import disperse_oil
 
 class NaturalDispersion(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
@@ -54,15 +51,16 @@ class NaturalDispersion(Weatherer, Serializable):
 
     def prepare_for_model_run(self, sc):
         '''
-        add dispersion and sedimentation keys to weathering_data
+        add dispersion and sedimentation keys to mass_balance
         Assumes all spills have the same type of oil
         '''
-        # create 'natural_dispersion' and 'sedimentation keys if they doesn't exist
+        # create 'natural_dispersion' and 'sedimentation keys
+        # if they doesn't exist
         # let's only define this the first time
         if self.on:
-            sc.weathering_data['natural_dispersion'] = 0.0
-            sc.weathering_data['sedimentation'] = 0.0
-
+            super(NaturalDispersion, self).prepare_for_model_run(sc)
+            sc.mass_balance['natural_dispersion'] = 0.0
+            sc.mass_balance['sedimentation'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -71,31 +69,33 @@ class NaturalDispersion(Weatherer, Serializable):
         '''
 
         super(NaturalDispersion, self).prepare_for_model_step(sc,
-                                                        time_step,
-                                                        model_time)
+                                                              time_step,
+                                                              model_time)
+
         if not self.active:
             return
-
 
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
-        - sets 'natural_dispersion' and 'sedimentation' in sc.weathering_data
+        - sets 'natural_dispersion' and 'sedimentation' in sc.mass_balance
         '''
-
         if not self.active:
             return
 
         if sc.num_released == 0:
             return
 
-        wave_height = self.waves.get_value(model_time)[0] # from the waves module
-        frac_breaking_waves = self.waves.get_value(model_time)[2] # from the waves module
-        disp_wave_energy = self.waves.get_value(model_time)[3] # from the waves module
+        # from the waves module
+        wave_height = self.waves.get_value(model_time)[0]
+        frac_breaking_waves = self.waves.get_value(model_time)[2]
+        disp_wave_energy = self.waves.get_value(model_time)[3]
+
         visc_w = self.waves.water.kinematic_viscosity
         rho_w = self.waves.water.density
-        sediment = self.waves.water.get('sediment', unit='kg/m^3')	# web has different units
-        #sediment = self.waves.water.sediment
+
+        # web has different units
+        sediment = self.waves.water.get('sediment', unit='kg/m^3')
 
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['mass']) == 0:
@@ -103,10 +103,11 @@ class NaturalDispersion(Weatherer, Serializable):
                 continue
 
             V_entrain = constants.volume_entrained
-            ka = constants.ka # oil sticking term
+            ka = constants.ka  # oil sticking term
 
             disp = np.zeros((len(data['mass'])), dtype=np.float64)
             sed = np.zeros((len(data['mass'])), dtype=np.float64)
+
             disperse_oil(time_step,
                          data['frac_water'],
                          data['mass'],
@@ -124,20 +125,36 @@ class NaturalDispersion(Weatherer, Serializable):
                          V_entrain,
                          ka)
 
-            sc.weathering_data['natural_dispersion'] += np.sum(disp[:])
-            disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
-            data['mass_components'] = \
-                (1 - disp_mass_frac) * data['mass_components']
+            sc.mass_balance['natural_dispersion'] += np.sum(disp[:])
+
+            if data['mass'].sum() > 0:
+                disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
+                if disp_mass_frac > 1:
+                    disp_mass_frac = 1
+            else:
+                disp_mass_frac = 0
+
+            data['mass_components'] = ((1 - disp_mass_frac) *
+                                       data['mass_components'])
             data['mass'] = data['mass_components'].sum(1)
 
-            sc.weathering_data['sedimentation'] += np.sum(sed[:])
-            sed_mass_frac = np.sum(sed[:]) / data['mass'].sum()
-            data['mass_components'] = \
-                (1 - sed_mass_frac) * data['mass_components']
+            sc.mass_balance['sedimentation'] += np.sum(sed[:])
+
+            if data['mass'].sum() > 0:
+                sed_mass_frac = np.sum(sed[:]) / data['mass'].sum()
+                if sed_mass_frac > 1:
+                    sed_mass_frac = 1
+            else:
+                sed_mass_frac = 0
+
+            data['mass_components'] = ((1 - sed_mass_frac) *
+                                       data['mass_components'])
             data['mass'] = data['mass_components'].sum(1)
 
-            self.logger.debug(self._pid + 'Amount Dispersed for {0}: {1}'.
-                             format(substance.name, sc.weathering_data['natural_dispersion']))
+            self.logger.debug('{0} Amount Dispersed for {1}: {2}'
+                              .format(self._pid,
+                                      substance.name,
+                                      sc.mass_balance['natural_dispersion']))
 
         sc.update_from_fatedataview()
 
@@ -160,23 +177,20 @@ class NaturalDispersion(Weatherer, Serializable):
     @classmethod
     def deserialize(cls, json_):
         """
-        append correct schema for water / waves
+        Append correct schema for water / waves
         """
         if not cls.is_sparse(json_):
             schema = cls._schema()
-
             dict_ = schema.deserialize(json_)
+
             if 'water' in json_:
-                #obj = json_['wind'].pop('obj_type')
                 obj = json_['water']['obj_type']
                 dict_['water'] = (eval(obj).deserialize(json_['water']))
+
             if 'waves' in json_:
-                #obj = json_['waves'].pop('obj_type')
                 obj = json_['waves']['obj_type']
                 dict_['waves'] = (eval(obj).deserialize(json_['waves']))
-            return dict_
 
+            return dict_
         else:
             return json_
-        
-

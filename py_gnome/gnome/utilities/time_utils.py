@@ -1,16 +1,31 @@
 #!/usr/bin/env python
-
 """
 time_utils
 
 assorted utilities for working with time and datetime
 """
-
 import datetime
 import time
 
 import numpy
 np = numpy
+
+
+def timezone_offset_seconds():
+    '''
+        This function returns the offset value in seconds of the beginning
+        of the unix epoch.
+        This is mostly for testing purposes.
+        - we will calculate the minimum acceptable date, considering timezones
+          east of GMT.
+    '''
+    return time.mktime(time.localtime()) - time.mktime(time.gmtime())
+
+
+def zero_time():
+    offset = timezone_offset_seconds()
+
+    return offset if offset >= 0 else 0
 
 
 def date_to_sec(date_time):
@@ -54,7 +69,6 @@ def sec_to_date(seconds):
           to test that it works in the same way as the lib_gnome C++
           cython wrapper
     """
-
     t_array = np.asarray(seconds, dtype=np.uint32).reshape(-1)
     d_array = np.zeros(np.shape(t_array), dtype='datetime64[s]')
 

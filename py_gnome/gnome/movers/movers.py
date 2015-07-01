@@ -48,7 +48,7 @@ class Process(AddLogger):
 
     def __init__(self, **kwargs):   # default min + max values for timespan
         """
-        Initialize default Mover parameters
+        Initialize default Mover/Weatherer parameters
 
         All parameters are optional (kwargs)
 
@@ -72,6 +72,7 @@ class Process(AddLogger):
         # empty dict since no array_types required for all movers at present
         self.array_types = set()
         self.name = kwargs.pop('name', self.__class__.__name__)
+        self.make_default_refs = kwargs.pop('make_default_refs', True)
 
     def _check_active_startstop(self, active_start, active_stop):
         if active_stop <= active_start:
@@ -102,11 +103,12 @@ class Process(AddLogger):
         """
         sets active flag based on time_span and on flag.
         Object is active if following hold and 'on' is True:
-           1. active_start <= (model_time + time_step/2) so object is on for
-              more than half the timestep
-           2. (model_time + time_step/2) <= active_stop so again the object is
-              on for at least half the time step
-            flag to true.
+
+        1. active_start <= (model_time + time_step/2) so object is on for
+           more than half the timestep
+        2. (model_time + time_step/2) <= active_stop so again the object is
+           on for at least half the time step
+           flag to true.
 
         :param sc: an instance of gnome.spill_container.SpillContainer class
         :param time_step: time step in seconds
@@ -117,7 +119,7 @@ class Process(AddLogger):
             (model_time_datetime + timedelta(seconds=time_step/2)) and
             self.active_stop >=
             (model_time_datetime + timedelta(seconds=time_step/2)) and
-             self.on):
+            self.on):
             self._active = True
         else:
             self._active = False

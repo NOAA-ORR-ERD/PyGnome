@@ -283,7 +283,7 @@ class Skimmer(CleanUpBase, Serializable):
         self._rate = self.amount/(self.active_stop -
                                   self.active_start).total_seconds()
         if self.on:
-            sc.weathering_data['skimmed'] = 0.0
+            sc.mass_balance['skimmed'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -357,7 +357,7 @@ class Skimmer(CleanUpBase, Serializable):
                 (1 - rm_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
 
-            sc.weathering_data['skimmed'] += rm_mass
+            sc.mass_balance['skimmed'] += rm_mass
             self.logger.debug(self._pid + 'amount skimmed for {0}: {1}'.
                               format(substance.name, rm_mass))
 
@@ -421,13 +421,14 @@ class Burn(CleanUpBase, Serializable):
             less than or equal to 1.0
         :param wind: gnome.environment.Wind object. Only used to set
             efficiency if efficiency is None. Efficiency is defined as:
-                1 - 0.07 * wind.get_value(model_time)
+            1 - 0.07 * wind.get_value(model_time)
             where wind.get_value(model_time) is value of wind at model_time
 
         Kwargs passed onto base class:
 
         :param str name: name of object
         :param bool on: whether object is on or not for the run
+
         '''
         if 'active_stop' in kwargs:
             # user cannot set 'active_stop'
@@ -536,12 +537,12 @@ class Burn(CleanUpBase, Serializable):
         '''
         resets internal _oilwater_thickness variable to initial thickness
         specified by user and active_stop to 'inf' again.
-        initializes sc.weathering_data['burned'] = 0.0
+        initializes sc.mass_balance['burned'] = 0.0
         '''
         self._init_rate_duration()
 
         if self.on:
-            sc.weathering_data['burned'] = 0.0
+            sc.mass_balance['burned'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -657,7 +658,7 @@ class Burn(CleanUpBase, Serializable):
         1. figure out the mass to remove for current timestep based on rate and
            efficiency. Find fraction of total mass and remove equally from all
            'mass_components' of LEs marked for burning.
-        2. update 'mass' array and the amount burned in weathering_data dict
+        2. update 'mass' array and the amount burned in mass_balance dict
         3. append to _burn_duration for each timestep
         '''
         if not self.active or len(sc) == 0:
@@ -684,7 +685,7 @@ class Burn(CleanUpBase, Serializable):
             self._oilwater_thickness -= \
                 (self._oilwater_thick_burnrate * self._timestep)
 
-            sc.weathering_data['burned'] += rm_mass
+            sc.mass_balance['burned'] += rm_mass
             self.logger.debug(self._pid + 'amount burned for {0}: {1}'.
                               format(substance.name, rm_mass))
 
@@ -781,13 +782,16 @@ class ChemicalDispersion(CleanUpBase, Serializable):
         # rate is set the first timestep in which the object becomes active
         self._rate = None
 
+        # since efficiency can also be set - do not make_default_refs
+        self.make_default_refs = False
+
     def prepare_for_model_run(self, sc):
         '''
         reset _rate to None. It gets set when LEs are marked to be dispersed.
         '''
         self._rate = None
         if self.on:
-            sc.weathering_data['chem_dispersed'] = 0.0
+            sc.mass_balance['chem_dispersed'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -853,7 +857,7 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                     (1 - rm_mass_frac) * data['mass_components']
                 data['mass'] = data['mass_components'].sum(1)
 
-                sc.weathering_data['chem_dispersed'] += rm_mass
+                sc.mass_balance['chem_dispersed'] += rm_mass
                 self.logger.debug(self._pid + 'amount chemically dispersed for'
                                   ' {0}: {1}'.format(substance.name, rm_mass))
 

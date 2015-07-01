@@ -89,7 +89,8 @@ void CATSMover_c::Dispose()
 OSErr CATSMover_c::InitMover()
 {
 	// this is for python  - time is not used so set to 0
-	(this)->ComputeVelocityScale(0);
+	OSErr err = (this)->ComputeVelocityScale(0);
+	return err;
 }
 
 // this function computes and sets this->refScale
@@ -532,6 +533,16 @@ OSErr CATSMover_c::TextRead(vector<string> &linesInFile)
 	errmsg[0] = 0;
 
 	MySpinCursor();
+	
+	if (IsTriGridFile(linesInFile)) 
+	{
+		//= new TTriGridVel;
+	}
+	else 
+	{
+		cerr << "File type is not supported" << endl;
+		goto done;
+	}
 
 	err = ReadTVertices(linesInFile, &line, &pts, &depths, errmsg);
 	if (err) {
@@ -707,43 +718,3 @@ WORLDPOINTH	CATSMover_c::GetTriangleCenters()
 	return dynamic_cast<TriGridVel_c *>(fGrid)->GetCenterPointsHdl();
 }
 
-/*WORLDPOINTH	CATSMover_c::GetTriangleCenters()
-{
-	OSErr err = 0;
-	LongPointHdl ptsH = 0;
-	WORLDPOINTH wpH = 0;
-	TopologyHdl topH ;
-	LongPoint wp1,wp2,wp3;
-	WorldPoint wp;
-	int32_t numPts = 0, numTri = 0;
-	
-	topH = dynamic_cast<TriGridVel_c *>(fGrid)->GetTopologyHdl();
-	ptsH = GetPointsHdl();
-	numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
-	numPts = _GetHandleSize((Handle)ptsH)/sizeof(LongPoint);
-	wpH = (WORLDPOINTH)_NewHandle(numTri * sizeof(WorldPoint));
-	if (!wpH) {
-		err = -1;
-		TechError("CATSMover_c::GetPointsHdl()", "_NewHandle()", 0);
-		goto done;
-	}
-	
-	for (int i=0; i<numTri; i++)
-	{
-		wp1 = (*ptsH)[(*topH)[i].vertex1];
-		wp2 = (*ptsH)[(*topH)[i].vertex2];
-		wp3 = (*ptsH)[(*topH)[i].vertex3];
-
-#ifndef pyGNOME
-		wp.pLong = (wp1.h+wp2.h+wp3.h)/3;
-		wp.pLat = (wp1.v+wp2.v+wp3.v)/3;
-#else
-		wp.pLong = (double)(wp1.h+wp2.h+wp3.h)/3.e6;
-		wp.pLat = (double)(wp1.v+wp2.v+wp3.v)/3.e6;
-#endif
-		INDEXH(wpH,i) = wp;
-	}
-	
-done:
-	return wpH;
-}*/

@@ -71,9 +71,8 @@ OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seco
 	OSErr err = 0;
 
 	char errmsg[256];
-	
-	errmsg[0]=0;
-	
+	errmsg[0] = 0;
+
 	if (bIsFirstStep)
 		fModelStartTime = model_time;
 
@@ -169,7 +168,9 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeSte
 	//Seconds time = model->GetModelTime();
 	VelocityRec windVelocity;
 	OSErr err = noErr;
+
 	char errmsg[256];
+	errmsg[0] = 0;
 	
 	if ((*theLE).z > 0) return deltaPoint; // wind doesn't act below surface
 	// or use some sort of exponential decay below the surface...

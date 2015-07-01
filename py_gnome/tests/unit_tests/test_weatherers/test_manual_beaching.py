@@ -38,7 +38,7 @@ def test_init(timeseries, units):
 
 
 class TestBeaching(ObjForTests):
-    (sc, intrinsic) = ObjForTests.mk_test_objs()
+    (sc, weatherers) = ObjForTests.mk_test_objs()
     sc.spills[0].set('release_time', active_start)
     b = Beaching(active_start, 'l', timeseries, name='test_beaching')
     substance = sc.spills[0].get('substance')
@@ -82,40 +82,32 @@ class TestBeaching(ObjForTests):
         total = self.sc.spills[0].get_mass()
         model_time = self.sc.spills[0].get('release_time')
 
-        self.reset_test_objs()
+        self.prepare_test_objs()
         self.b.prepare_for_model_run(self.sc)
 
-        assert self.sc.weathering_data['observed_beached'] == 0.0
+        assert self.sc.mass_balance['observed_beached'] == 0.0
 
         while (model_time <
                self.b.active_stop + timedelta(seconds=time_step)):
 
-            amt = self.sc.weathering_data['observed_beached']
+            amt = self.sc.mass_balance['observed_beached']
 
-            num_rel = self.sc.release_elements(time_step, model_time)
-            self.intrinsic.update(num_rel, self.sc)
-            self.b.prepare_for_model_step(self.sc, time_step, model_time)
-
-            self.b.weather_elements(self.sc, time_step, model_time)
+            self.release_elements(time_step, model_time)
+            self.step(self.b, time_step, model_time)
 
             if not self.b.active:
-                assert self.sc.weathering_data['observed_beached'] == amt
+                assert self.sc.mass_balance['observed_beached'] == amt
             else:
                 # check total amount removed at each timestep
-                assert self.sc.weathering_data['observed_beached'] > amt
-
-            self.b.model_step_is_done(self.sc)
-            self.sc.model_step_is_done()
-            # model would do the following
-            self.sc['age'][:] = self.sc['age'][:] + time_step
+                assert self.sc.mass_balance['observed_beached'] > amt
             model_time += timedelta(seconds=time_step)
 
             # check - useful for debugging issues with recursion
-            assert np.isclose(total, self.sc.weathering_data['observed_beached']
+            assert np.isclose(total, self.sc.mass_balance['observed_beached']
                               + self.sc['mass'].sum())
 
         # following should finally hold true for entire run
-        assert np.allclose(total, self.sc.weathering_data['observed_beached'] +
+        assert np.allclose(total, self.sc.mass_balance['observed_beached'] +
                            self.sc['mass'].sum(), atol=1e-6)
 
         # volume units
@@ -123,7 +115,7 @@ class TestBeaching(ObjForTests):
                                       self.b.timeseries['value'].sum(),
                                       self.b.units)
 
-        assert np.isclose(self.sc.weathering_data['observed_beached'],
+        assert np.isclose(self.sc.mass_balance['observed_beached'],
                           total_mass)
 
     def test_serialize_deserialize_update_from_dict(self):

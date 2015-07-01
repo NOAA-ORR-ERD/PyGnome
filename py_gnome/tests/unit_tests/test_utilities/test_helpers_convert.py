@@ -1,14 +1,19 @@
 """
 Unit tests ConvertDatetimeValue methods
 """
-
 import numpy as np
 
-from gnome.basic_types import datetime_value_2d, time_value_pair, \
-    ts_format, datetime_value_1d
+from gnome.basic_types import (ts_format,
+                               datetime_value_1d,
+                               datetime_value_2d,
+                               time_value_pair)
 
-from gnome.utilities.convert import to_time_value_pair, \
-    to_datetime_value_2d, to_datetime_value_1d, tsformat
+from gnome.utilities.convert import (to_time_value_pair,
+                                     to_datetime_value_1d,
+                                     to_datetime_value_2d,
+                                     tsformat)
+from gnome.utilities.time_utils import (timezone_offset_seconds,
+                                        sec_to_date)
 
 import pytest
 
@@ -21,24 +26,19 @@ def wind_ts(rq_wind):
     - returns a dict with the expected datetime_rq, datetime_uv
       and time_value_pair objects
     """
+    date_times = ([sec_to_date(timezone_offset_seconds())] *
+                  len(rq_wind['rq']))
+    dtv_rq = (np.array(zip(date_times, rq_wind['rq']), dtype=datetime_value_2d)
+              .view(dtype=np.recarray))
 
-    dtv_rq = np.zeros((len(rq_wind['rq']), ),
-                      dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv_rq.value = rq_wind['rq']
+    date_times = ([sec_to_date(timezone_offset_seconds())] *
+                  len(rq_wind['uv']))
+    dtv_uv = (np.array(zip(date_times, rq_wind['uv']), dtype=datetime_value_2d)
+              .view(dtype=np.recarray))
 
-    dtv_uv = np.zeros((len(dtv_rq), ),
-                      dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv_uv.value = rq_wind['uv']
-
-    tv = np.zeros((len(dtv_uv), ),
-                  dtype=time_value_pair).view(dtype=np.recarray)
-
-    # for np.zeros for datetime, this is the time in sec.
-    # It is 8hours offset from GMT - need to make this locale independent
-
-    tv.time = 8 * 3600
-    tv.value.u = rq_wind['uv'][:, 0]
-    tv.value.v = rq_wind['uv'][:, 1]
+    date_times = ([timezone_offset_seconds()] * len(rq_wind['uv']))
+    tv = (np.array(zip(date_times, rq_wind['uv']), dtype=time_value_pair)
+          .view(dtype=np.recarray))
 
     print 'Test Case - actual values:'
     print 'datetime_value_2d: datetime, (r, theta):'
@@ -113,7 +113,8 @@ rtol = 0
 def test_to_time_value_pair(wind_ts, in_ts_format):
     out_tv = to_time_value_pair(wind_ts['dtv_rq'],
                                 in_ts_format).view(dtype=np.recarray)
-    #assert np.all(wind_ts['tv'].time == out_tv.time)
+
+    # assert np.all(wind_ts['tv'].time == out_tv.time)
     assert np.allclose(wind_ts['tv'].value.u, out_tv.value.u, atol, rtol)
     assert np.allclose(wind_ts['tv'].value.v, out_tv.value.v, atol, rtol)
 
@@ -130,6 +131,7 @@ def test_to_time_value_pair_from_1d():
 def test_to_datetime_value_1d(wind_ts):
     'test convert from time_value_pair to datetime_value_1d'
     out_dtval = to_datetime_value_1d(wind_ts['tv']).view(dtype=np.recarray)
+
     assert len(out_dtval.shape) == 1
     assert np.all(out_dtval['value'] == wind_ts['tv'].value.u)
 
@@ -138,7 +140,8 @@ def test_to_datetime_value_1d(wind_ts):
                          [ts_format.magnitude_direction, 'r-theta'])
 def test_to_datetime_value_2d_rq(wind_ts, out_ts_format):
     out_dtval = to_datetime_value_2d(wind_ts['tv'],
-            out_ts_format).view(dtype=np.recarray)
+                                     out_ts_format).view(dtype=np.recarray)
+
     assert np.all(out_dtval.time == wind_ts['dtv_rq'].time)
     assert np.allclose(out_dtval.value, wind_ts['dtv_rq'].value, atol,
                        rtol)
@@ -147,7 +150,7 @@ def test_to_datetime_value_2d_rq(wind_ts, out_ts_format):
 @pytest.mark.parametrize('out_ts_format', [ts_format.uv, 'uv'])
 def test_to_datetime_value_2d_uv(wind_ts, out_ts_format):
     out_dtval = to_datetime_value_2d(wind_ts['tv'],
-            out_ts_format).view(dtype=np.recarray)
-    #assert np.all(out_dtval.time == wind_ts['dtv_rq'].time)
+                                     out_ts_format).view(dtype=np.recarray)
+
     assert np.allclose(out_dtval.value, wind_ts['dtv_uv'].value, atol,
                        rtol)

@@ -15,7 +15,7 @@ import numpy
 np = numpy
 from numpy import random
 
-from colander import (SchemaNode, TupleSchema, Float)
+from colander import (SchemaNode, Float)
 
 from gnome.basic_types import oil_status, mover_type
 from gnome.utilities.projections import FlatEarthProjection as proj
@@ -24,10 +24,10 @@ from gnome.utilities import serializable
 from gnome.movers import Mover, ProcessSchema
 
 from gnome.persist.base_schema import ObjType
-from gnome.persist.extend_colander import NumpyArraySchema
+from gnome.persist.extend_colander import NumpyFixedLenSchema
 
 
-class SimpleMoverVelocitySchema(NumpyArraySchema):
+class SimpleMoverVelocitySchema(NumpyFixedLenSchema):
     '''
     Currently this is only used by SimpleMover so it is here. If it becomes
     more general purpose then move it to gnome.persist.base_schema
@@ -84,13 +84,6 @@ class SimpleMover(Mover, serializable.Serializable):
 
     def __repr__(self):
         return 'SimpleMover(<%s>)' % self.id
-
-    def velocity_to_dict(self):
-        """
-        convert velocity back into a tuple
-        """
-
-        return tuple(self.velocity.tolist())
 
     def get_move(
         self,

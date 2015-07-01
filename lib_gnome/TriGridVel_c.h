@@ -49,6 +49,7 @@ public:
 	VelocityRec GetSmoothVelocity(WorldPoint p);
 	virtual double GetDepthAtPoint(WorldPoint p);
 	virtual InterpolationVal GetInterpolationValues(WorldPoint refPoint);
+	InterpolationVal GetInterpolationValuesFromIndex(long triNum);
 	virtual	long GetRectIndexFromTriIndex(WorldPoint refPoint, LONGH ptrVerdatToNetCDFH, long numCols_ext);
 	virtual	long GetRectIndexFromTriIndex2(long triIndex, LONGH ptrVerdatToNetCDFH, long numCols_ext);
 	virtual LongPoint GetRectIndicesFromTriIndex(WorldPoint refPoint,LONGH ptrVerdatToNetCDFH,long numCols_ext);

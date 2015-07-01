@@ -1638,6 +1638,499 @@ done:
 	return err;
 }*/
 
+TimeGridVelIce::TimeGridVelIce () : TimeGridVelCurv()
+{
+	memset(&fStartDataIce,0,sizeof(fStartDataIce));
+	fStartDataIce.timeIndex = UNASSIGNEDINDEX; 
+	fStartDataIce.dataHdl = 0; 
+	memset(&fEndDataIce,0,sizeof(fEndDataIce));
+	fEndDataIce.timeIndex = UNASSIGNEDINDEX;
+	fEndDataIce.dataHdl = 0;
+	
+	memset(&fStartDataThickness,0,sizeof(fStartDataThickness));
+	fStartDataThickness.timeIndex = UNASSIGNEDINDEX; 
+	fStartDataThickness.dataHdl = 0; 
+	memset(&fEndDataThickness,0,sizeof(fEndDataThickness));
+	fEndDataThickness.timeIndex = UNASSIGNEDINDEX;
+	fEndDataThickness.dataHdl = 0;
+	
+	memset(&fStartDataFraction,0,sizeof(fStartDataFraction));
+	fStartDataFraction.timeIndex = UNASSIGNEDINDEX; 
+	fStartDataFraction.dataHdl = 0; 
+	memset(&fEndDataFraction,0,sizeof(fEndDataFraction));
+	fEndDataFraction.timeIndex = UNASSIGNEDINDEX;
+	fEndDataFraction.dataHdl = 0;
+	
+}
+	
+#define TimeGridVelIceREADWRITEVERSION 1 //JLM
+
+OSErr TimeGridVelIce::Write (BFPB *bfpb)
+{
+	long i, version = TimeGridVelIceREADWRITEVERSION; //JLM
+	ClassID id = GetClassID ();
+	long numPoints = 0, numPts = 0, index;
+	WorldPointF vertex;
+	OSErr err = 0;
+	
+	if (err = TimeGridVelCurv::Write (bfpb)) return err;
+	
+	StartReadWriteSequence("TimeGridVelIce::Write()");
+	if (err = WriteMacValue(bfpb, id)) return err;
+	if (err = WriteMacValue(bfpb, version)) return err;
+	////
+	
+	/*if (fVerdatToNetCDFH) numPoints = _GetHandleSize((Handle)fVerdatToNetCDFH)/sizeof(**fVerdatToNetCDFH);
+	if (err = WriteMacValue(bfpb, numPoints)) goto done;
+	for (i=0;i<numPoints;i++)
+	{
+		index = INDEXH(fVerdatToNetCDFH,i);
+		if (err = WriteMacValue(bfpb, index)) goto done;
+	}
+	
+	if (fVertexPtsH) numPts = _GetHandleSize((Handle)fVertexPtsH)/sizeof(**fVertexPtsH);
+	if (err = WriteMacValue(bfpb, numPts)) goto done;
+	for (i=0;i<numPts;i++)
+	{
+		vertex = INDEXH(fVertexPtsH,i);
+		if (err = WriteMacValue(bfpb, vertex.pLat)) goto done;
+		if (err = WriteMacValue(bfpb, vertex.pLong)) goto done;
+	}*/
+	
+done:
+	if(err)
+		TechError("TimeGridVelIce::Write(char* path)", " ", 0); 
+	
+	return err;
+}
+
+OSErr TimeGridVelIce::Read(BFPB *bfpb)	
+{
+	long i, version, index, numPoints;
+	ClassID id;
+	WorldPointF vertex;
+	OSErr err = 0;
+	
+	if (err = TimeGridVelCurv::Read(bfpb)) return err;
+	
+	StartReadWriteSequence("TimeGridVelIce::Read()");
+	if (err = ReadMacValue(bfpb,&id)) return err;
+	if (id != GetClassID ()) { TechError("TimeGridVelIce::Read()", "id != TYPE_TIMEGRIDVELICE", 0); return -1; }
+	if (err = ReadMacValue(bfpb,&version)) return err;
+	if (version != TimeGridVelIceREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
+	////
+	/*if (err = ReadMacValue(bfpb, &numPoints)) goto done;	
+	fVerdatToNetCDFH = (LONGH)_NewHandleClear(sizeof(long)*numPoints);	// for curvilinear
+	if(!fVerdatToNetCDFH)
+	{TechError("TimeGridVelIce::Read()", "_NewHandle()", 0); err = memFullErr; goto done;}
+	for (i = 0 ; i < numPoints ; i++) {
+		if (err = ReadMacValue(bfpb, &index)) goto done;
+		INDEXH(fVerdatToNetCDFH, i) = index;
+	}
+	
+	if (err = ReadMacValue(bfpb, &numPoints)) goto done;	
+	fVertexPtsH = (WORLDPOINTFH)_NewHandleClear(sizeof(WorldPointF)*numPoints);	// for curvilinear
+	if(!fVertexPtsH)
+	{TechError("TimeGridVelIce::Read()", "_NewHandle()", 0); err = memFullErr; goto done;}
+	for (i = 0 ; i < numPoints ; i++) {
+		if (err = ReadMacValue(bfpb, &vertex.pLat)) goto done;
+		if (err = ReadMacValue(bfpb, &vertex.pLong)) goto done;
+		INDEXH(fVertexPtsH, i) = vertex;
+	}*/
+	
+done:
+	if(err)
+	{
+		TechError("TimeGridVelIce::Read(char* path)", " ", 0); 
+		//if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
+		//if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
+	}
+	return err;
+}
+
+Boolean TimeGridVelIce::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth)
+{	// code goes here, this is triangle code, not curvilinear
+	char uStr[32],vStr[32],sStr[32],depthStr[32],errmsg[64];
+	double lengthU, lengthS;
+	VelocityRec velocity = {0.,0.};
+	OSErr err = 0;
+	
+	Seconds startTime, endTime, time = model->GetModelTime();
+	double timeAlpha, depthAlpha;
+	float topDepth, bottomDepth, totalDepth = 0.;
+	long index = 0;
+	LongPoint indices;
+	
+	long ptIndex1,ptIndex2,ptIndex3; 
+	InterpolationVal interpolationVal;
+	long depthIndex1,depthIndex2;	// default to -1?
+	
+	
+	if (fGrid) 
+	{
+		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+		if (bVelocitiesOnNodes)
+		{
+			//code goes here, put in interpolation
+			interpolationVal = fGrid -> GetInterpolationValues(wp.p);
+			if (interpolationVal.ptIndex1<0) return false;
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+		}
+		else
+			index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		if (index < 0) return 0;
+		indices = this->GetVelocityIndices(wp.p);
+	}
+	else return 0;
+	totalDepth = GetTotalDepth(wp.p,index);
+	GetDepthIndices(index,arrowDepth,totalDepth,&depthIndex1,&depthIndex2);
+	if (depthIndex1==UNASSIGNEDINDEX && depthIndex2==UNASSIGNEDINDEX)
+		return false;	// no value for this point at chosen depth - should show as 0,0 or nothing?
+	
+	if (depthIndex2!=UNASSIGNEDINDEX)
+	{
+		// Calculate the depth weight factor
+		//topDepth = INDEXH(fDepthLevelsHdl,depthIndex1)*totalDepth; // times totalDepth
+		//bottomDepth = INDEXH(fDepthLevelsHdl,depthIndex2)*totalDepth;
+		topDepth = GetDepthAtIndex(depthIndex1,totalDepth); // times totalDepth
+		bottomDepth = GetDepthAtIndex(depthIndex2,totalDepth); // times totalDepth
+		//topDepth = GetTopDepth(depthIndex1,totalDepth); // times totalDepth
+		//bottomDepth = GetBottomDepth(depthIndex2,totalDepth);
+		if (totalDepth == 0) depthAlpha = 1;
+		else
+			depthAlpha = (bottomDepth - arrowDepth)/(double)(bottomDepth - topDepth);
+	}
+	
+	// Check for constant current 
+	if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime)  || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+		//if(GetNumTimesInFile()==1)
+	{
+		// Calculate the interpolated velocity at the point
+		if (index >= 0 && depthIndex1 >= 0) 
+		{
+			//velocity.u = INDEXH(fStartData.dataHdl,index).u;
+			//velocity.v = INDEXH(fStartData.dataHdl,index).v;
+			if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
+			{
+				velocity.u = INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u;
+				velocity.v = INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v;
+			}	
+			else
+			{
+				velocity.u = depthAlpha*INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u+(1-depthAlpha)*INDEXH(fStartData.dataHdl,index+depthIndex2*fNumRows*fNumCols).u;
+				velocity.v = depthAlpha*INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v+(1-depthAlpha)*INDEXH(fStartData.dataHdl,index+depthIndex2*fNumRows*fNumCols).v;
+			}
+		}
+		else	// set vel to zero
+		{
+			velocity.u = 0.;
+			velocity.v = 0.;
+		}
+	}
+	else // time varying current 
+	{
+		// Calculate the time weight factor
+		// Calculate the time weight factor
+		startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+		timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		
+		// Calculate the interpolated velocity at the point
+		if (index >= 0 && depthIndex1 >= 0) 
+		{
+			//velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,index).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).u;
+			//velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,index).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).v;
+			if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
+			{
+				velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u;
+				velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v;
+			}
+			else
+			{
+				velocity.u = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u);
+				velocity.u += (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,index+depthIndex2*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index+depthIndex2*fNumRows*fNumCols).u);
+				velocity.v = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v);
+				velocity.v += (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,index+depthIndex2*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index+depthIndex2*fNumRows*fNumCols).v);
+			}
+		}
+		else	// set vel to zero
+		{
+			velocity.u = 0.;
+			velocity.v = 0.;
+		}
+	}
+	
+	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
+	//lengthS = this->fWindScale * lengthU;
+	//lengthS = this->fVar.curScale * lengthU;
+	//lengthS = this->fVar.curScale * fFileScaleFactor * lengthU;
+	lengthS = lengthU * fVar.fileScaleFactor;	// pass this in
+	if (lengthS > 1000000 || this->fVar.fileScaleFactor==0) return true;	// if bad data in file causes a crash
+	
+	StringWithoutTrailingZeros(uStr,lengthU,4);
+	StringWithoutTrailingZeros(sStr,lengthS,4);
+	if (indices.h >= 0 && fNumRows-indices.v-1 >=0 && indices.h < fNumCols && fNumRows-indices.v-1 < fNumRows)
+	{
+		//sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s], file indices : [%ld, %ld]",
+		//this->className, uStr, sStr, fNumRows-indices.v-1, indices.h);
+		StringWithoutTrailingZeros(uStr,fVar.fileScaleFactor*velocity.u,4);
+		StringWithoutTrailingZeros(vStr,fVar.fileScaleFactor*velocity.v,4);
+		StringWithoutTrailingZeros(depthStr,depthIndex1,4);
+		sprintf(diagnosticStr, " [grid: %s, u vel: %s m/s, v vel: %s m/s], file indices : [%ld, %ld]",
+			fVar.userName, uStr, vStr, fNumRows-indices.v-1, indices.h);
+		//sprintf(diagnosticStr, " [grid: u vel: %s m/s, v vel: %s m/s], file indices : [%ld, %ld]",
+				//uStr, vStr, fNumRows-indices.v-1, indices.h);
+		//if (depthIndex1>0 || !(depthIndex2==UNASSIGNEDINDEX))
+		if (fVar.gridType!=TWO_D)
+			sprintf(diagnosticStr, " [grid: %s, u vel: %s m/s, v vel: %s m/s], file indices : [%ld, %ld, %ld]",
+				fVar.userName, uStr, vStr, fNumRows-indices.v-1, indices.h, depthIndex1);
+			//sprintf(diagnosticStr, " [grid: u vel: %s m/s, v vel: %s m/s], file indices : [%ld, %ld, %ld]",
+					//uStr, vStr, fNumRows-indices.v-1, indices.h, depthIndex1);
+	}
+	else
+	{
+		sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s]",
+			fVar.userName, uStr, sStr);
+		//sprintf(diagnosticStr, " [grid: unscaled: %s m/s, scaled: %s m/s]",
+				//uStr, sStr);
+	}
+	
+	return true;
+}
+
+void TimeGridVelIce::Draw(Rect r, WorldRect view,double refScale,double arrowScale,
+						   double arrowDepth,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor) 
+{	// use for curvilinear
+	WorldPoint wayOffMapPt = {-200*1000000,-200*1000000};
+	double timeAlpha,depthAlpha;
+	float topDepth,bottomDepth;
+	Point p;
+	Rect c;
+	Seconds startTime,endTime;
+	Seconds time = model->GetModelTime();
+	OSErr err = 0;
+	char errmsg[256];
+	long depthIndex1,depthIndex2;	// default to -1?
+	long amtOfDepthData = 0;
+	Rect currentMapDrawingRect = MapDrawingRect();
+	WorldRect cmdr;
+	
+	
+	//RGBForeColor(&colors[PURPLE]);
+	RGBForeColor(&arrowColor);
+	
+	if (fDepthLevelsHdl) amtOfDepthData = _GetHandleSize((Handle)fDepthLevelsHdl)/sizeof(**fDepthLevelsHdl);
+	
+	if(bDrawArrows || bDrawGrid)
+	{
+		Boolean overrideDrawArrows = FALSE;
+		//if (bDrawGrid) 	// make sure to draw grid even if don't draw arrows
+		 //{
+		 //((TTriGridVel*)fGrid)->DrawCurvGridPts(r,view);
+		 //return;
+		 //}	 // I think this is redundant with the draw triangle (maybe just a diagnostic)
+		if (bDrawArrows)
+		{ // we have to draw the arrows
+			long numVertices,i;
+			LongPointHdl ptsHdl = 0;
+			long timeDataInterval;
+			Boolean loaded;
+			TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+			
+			err = this -> SetInterval(errmsg, model->GetModelTime());
+			if(err) return;
+			
+			loaded = this -> CheckInterval(timeDataInterval, model->GetModelTime());	 
+			
+			if(!loaded) return;
+			
+			ptsHdl = triGrid -> GetPointsHdl();
+			if(ptsHdl)
+				numVertices = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
+			else 
+				numVertices = 0;
+			
+			// Check for time varying current 
+			if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
+				//if(GetNumTimesInFile()>1 && loaded && !err)
+			{
+				// Calculate the time weight factor
+				if (GetNumFiles()>1 && fOverLap)
+					startTime = fOverLapStartTime + fTimeShift;
+				else
+					startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+				//startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+				if (fEndData.timeIndex == UNASSIGNEDINDEX && (time > startTime || time < startTime) && fAllowExtrapolationInTime)
+					//if (fEndData.timeIndex == UNASSIGNEDINDEX && time != startTime && fAllowExtrapolationOfCurrentsInTime)
+				{
+					timeAlpha = 1;
+				}
+				else
+				{	//return false;
+					endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+					timeAlpha = (endTime - time)/(double)(endTime - startTime);
+				}
+				//endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+				//timeAlpha = (endTime - time)/(double)(endTime - startTime);
+			}
+			
+			cmdr = ScreenToWorldRect(currentMapDrawingRect, MapDrawingRect(), settings.currentView);	// have a look at this to see how to recognize out of view points
+			for(i = 0; i < numVertices; i++)
+			{
+			 	// get the value at each vertex and draw an arrow
+				LongPoint pt = INDEXH(ptsHdl,i);
+				long ptIndex=-1,iIndex,jIndex;
+				//long ptIndex2=-1,iIndex2,jIndex2;
+				WorldPoint wp,wp2;
+				Point p,p2;
+				VelocityRec velocity = {0.,0.};
+				Boolean offQuickDrawPlane = false;				
+				float totalDepth=0.;
+				
+				wp.pLat = pt.v;
+				wp.pLong = pt.h;
+				
+				ptIndex = INDEXH(fVerdatToNetCDFH,i);
+				
+				if (bVelocitiesOnNodes)
+				{
+				iIndex = ptIndex/(fNumCols);
+				jIndex = ptIndex%(fNumCols);
+				}
+				else
+				{
+				iIndex = ptIndex/(fNumCols+1);
+				jIndex = ptIndex%(fNumCols+1);
+				}
+				if (iIndex>0 && jIndex<fNumCols)
+					ptIndex = (iIndex-1)*(fNumCols)+jIndex;
+				else
+				{ptIndex = -1; continue;}
+				
+				if (bVelocitiesOnNodes) ptIndex = INDEXH(fVerdatToNetCDFH,i);
+				totalDepth = GetTotalDepth(wp,ptIndex);
+	 			if (amtOfDepthData>0 && ptIndex>=0)
+				{
+					if (totalDepth==-1)
+					{
+						depthIndex1 = -1; depthIndex2 = -1;
+					}
+					else GetDepthIndices(ptIndex,arrowDepth,totalDepth,&depthIndex1,&depthIndex2);
+				}
+				else
+				{	// for old SAV files without fDepthDataInfo
+					//depthIndex1 = ptIndex;
+					depthIndex1 = 0;
+					depthIndex2 = -1;
+				}
+				
+				if (depthIndex1==UNASSIGNEDINDEX && depthIndex2==UNASSIGNEDINDEX)
+					continue;	// no value for this point at chosen depth
+				
+				if (depthIndex2!=UNASSIGNEDINDEX)
+				{
+					// Calculate the depth weight factor
+					//topDepth = INDEXH(fDepthLevelsHdl,depthIndex1)*totalDepth; // times totalDepth
+					//bottomDepth = INDEXH(fDepthLevelsHdl,depthIndex2)*totalDepth;
+					topDepth = GetDepthAtIndex(depthIndex1,totalDepth); // times totalDepth
+					bottomDepth = GetDepthAtIndex(depthIndex2,totalDepth);
+					//topDepth = GetTopDepth(depthIndex1,totalDepth); // times totalDepth
+					//bottomDepth = GetBottomDepth(depthIndex2,totalDepth);
+					if (totalDepth == 0) depthAlpha = 1;
+					else
+						depthAlpha = (bottomDepth - arrowDepth)/(double)(bottomDepth - topDepth);
+				}
+				// for now draw arrow at midpoint of diagonal of gridbox
+				// this will result in drawing some arrows more than once
+				if (GetLatLonFromIndex(iIndex-1,jIndex+1,&wp2)!=-1)	// may want to get all four points and interpolate
+				{
+					wp.pLat = (wp.pLat + wp2.pLat)/2.;
+					wp.pLong = (wp.pLong + wp2.pLong)/2.;
+				}
+				
+				if (bVelocitiesOnNodes)
+				{
+					wp.pLat = (long)(1e6*INDEXH(fVertexPtsH,ptIndex).pLat);
+					wp.pLong = (long)(1e6*INDEXH(fVertexPtsH,ptIndex).pLong);
+				}
+				if (wp.pLong < cmdr.loLong || wp.pLong > cmdr.hiLong || wp.pLat < cmdr.loLat || wp.pLat > cmdr.hiLat) 
+					continue;
+				p = GetQuickDrawPt(wp.pLong, wp.pLat, &r, &offQuickDrawPlane);	// should put velocities in center of grid box
+				
+				// Should check vs fFillValue
+				// Check for constant current 
+				if(((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha == 1) && ptIndex!=-1)
+					//if(GetNumTimesInFile()==1 && ptIndex!=-1)
+				{
+					//velocity.u = INDEXH(fStartData.dataHdl,ptIndex).u;
+					//velocity.v = INDEXH(fStartData.dataHdl,ptIndex).v;
+					if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
+					{
+						velocity.u = GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
+						velocity.v = GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
+						//velocity.u = INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u;
+						//velocity.v = INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v;
+					}
+					else 	// below surface velocity
+					{
+						velocity.u = depthAlpha*GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-depthAlpha)*GetStartUVelocity(ptIndex+depthIndex2*fNumRows*fNumCols);
+						velocity.v = depthAlpha*GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-depthAlpha)*GetStartVVelocity(ptIndex+depthIndex2*fNumRows*fNumCols);
+						//velocity.u = depthAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u+(1-depthAlpha)*INDEXH(fStartData.dataHdl,ptIndex+depthIndex2*fNumRows*fNumCols).u;
+						//velocity.v = depthAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v+(1-depthAlpha)*INDEXH(fStartData.dataHdl,ptIndex+depthIndex2*fNumRows*fNumCols).v;
+					}
+				}
+				else if (ptIndex!=-1)// time varying current
+				{
+					// need to rescale velocities for Navy case, store angle
+					// should check for fillValue, don't want to try to interpolate in that case
+					//velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,ptIndex).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex).u;
+					//velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,ptIndex).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex).v;
+					if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
+					{	
+						velocity.u = timeAlpha*GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-timeAlpha)*GetEndUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
+						velocity.v = timeAlpha*GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-timeAlpha)*GetEndVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
+						//velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u;
+						//velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v;
+					}
+					else	// below surface velocity
+					{
+						velocity.u = depthAlpha*(timeAlpha*GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols) + (1-timeAlpha)*GetEndUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols));
+						velocity.u += (1-depthAlpha)*(timeAlpha*GetStartUVelocity(ptIndex+depthIndex2*fNumRows*fNumCols) + (1-timeAlpha)*GetEndUVelocity(ptIndex+depthIndex2*fNumRows*fNumCols));
+						velocity.v = depthAlpha*(timeAlpha*GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols) + (1-timeAlpha)*GetEndVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols));
+						velocity.v += (1-depthAlpha)*(timeAlpha*GetStartVVelocity(ptIndex+depthIndex2*fNumRows*fNumCols) + (1-timeAlpha)*GetEndVVelocity(ptIndex+depthIndex2*fNumRows*fNumCols));
+						//velocity.u = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u);
+						//velocity.u += (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex2*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex+depthIndex2*fNumRows*fNumCols).u);
+						//velocity.v = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v);
+						//velocity.v += (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex2*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex+depthIndex2*fNumRows*fNumCols).v);
+					}
+					//velocity.u = timeAlpha*GetStartUVelocity(ptIndex) + (1-timeAlpha)*GetEndUVelocity(ptIndex);
+					//velocity.v = timeAlpha*GetStartVVelocity(ptIndex) + (1-timeAlpha)*GetEndVVelocity(ptIndex);
+				}
+				if ((velocity.u != 0 || velocity.v != 0) && (velocity.u != fFillValue && velocity.v != fFillValue)) // should already have handled fill value issue
+				{
+					float inchesX = (velocity.u * refScale * fVar.fileScaleFactor) / arrowScale;
+					float inchesY = (velocity.v * refScale * fVar.fileScaleFactor) / arrowScale;
+					short pixX = inchesX * PixelsPerInchCurrent();
+					short pixY = inchesY * PixelsPerInchCurrent();
+					p2.h = p.h + pixX;
+					p2.v = p.v - pixY;
+					MyMoveTo(p.h, p.v);
+					MyLineTo(p2.h, p2.v);
+					MyDrawArrow(p.h,p.v,p2.h,p2.v);
+				}
+			}
+		}
+	}
+	if (bDrawGrid) fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,arrowDepth,false,true,arrowColor);
+	//if (bShowDepthContours && fVar.gridType!=TWO_D) ((TTriGridVel*)fGrid)->DrawDepthContours(r,view,bShowDepthContourLabels);// careful with 3D grid
+	
+	RGBForeColor(&colors[BLACK]);
+}
+
 TimeGridVelTri::TimeGridVelTri () : TimeGridVelCurv()
 {
 	fNumNodes = 0;

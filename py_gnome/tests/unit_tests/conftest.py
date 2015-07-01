@@ -26,6 +26,7 @@ from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
 from gnome.weatherers import Skimmer
+from gnome.environment import constant_wind, Water, Waves
 from gnome.utilities.remote_data import get_datafile
 import gnome.array_types as gat
 
@@ -206,6 +207,8 @@ def get_testdata():
          'curr_reg': get_datafile(os.path.join(curr_dir, 'test.cdf')),
          'curr_curv': get_datafile(os.path.join(curr_dir, 'ny_cg.nc')),
          'top_curv': get_datafile(os.path.join(curr_dir, 'NYTopology.dat')),
+         'ice_curr_curv': get_datafile(os.path.join(curr_dir, 'acnfs_example.nc')),
+         'ice_top_curv': get_datafile(os.path.join(curr_dir, 'acnfs_topo.dat')),
          'ptCur': get_datafile(os.path.join(curr_dir, 'ptCurNoMap.cur')),
          'grid_ts': get_datafile(os.path.join(curr_dir, 'gridcur_ts.cur')),
          'series_gridCur': get_datafile(os.path.join(curr_dir,
@@ -214,6 +217,10 @@ def get_testdata():
                                                   'flist2.txt')),
          'series_top': get_datafile(os.path.join(curr_dir, 'file_series',
                                                  'HiROMSTopology.dat'))}
+
+    data['IceMover'] = \
+        {'ice_curr_curv': get_datafile(os.path.join(curr_dir, 'acnfs_example.nc')),
+         'ice_top_curv': get_datafile(os.path.join(curr_dir, 'acnfs_topo.dat'))}
 
     # get netcdf stored in fileseries flist2.txt, gridcur_ts_hdr2
     get_datafile(os.path.join(curr_dir, 'file_series', 'hiog_file1.nc'))
@@ -625,6 +632,7 @@ def sample_model_fcn2():
     'sample_model with function scope'
     return sample_model2()
 
+
 def sample_model_weathering(sample_model_fcn,
                             oil,
                             temp=311.16,
@@ -645,6 +653,9 @@ def sample_model_weathering(sample_model_fcn,
                                                  amount=100,
                                                  units='kg')
     model.spills += spill
+
+    # define environment objects that weatherers require
+    model.environment += [constant_wind(1, 0), Water(), Waves()]
     return model
 
 

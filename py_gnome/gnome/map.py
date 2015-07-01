@@ -52,7 +52,7 @@ from gnome.utilities.geometry.polygons import PolygonSet
 
 class GnomeMapSchema(base_schema.ObjType):
     map_bounds = base_schema.LongLatBounds(missing=drop)
-    spillable_area = base_schema.LongLatBounds(missing=drop)
+    spillable_area = base_schema.PolygonSet(missing=drop)
 
 
 class MapFromBNASchema(GnomeMapSchema):
@@ -85,7 +85,10 @@ class GnomeMap(Serializable):
         :param map_bounds: The polygon bounding the map -- could be larger
                            or smaller than the land raster
 
-        :param spillable_area: The polygon bounding the spillable_area
+        :param spillable_area: The PolygonSet bounding the spillable_area.
+        :type spillable_area: Either a PolygonSet object or a list of lists
+            from which a polygon set can be created. Each element in the list
+            is a list of points defining a polygon.
 
         Note on 'map_bounds':
             ( (x1,y1), (x2,y2),(x3,y3),..)
@@ -104,10 +107,25 @@ class GnomeMap(Serializable):
                                        dtype=np.float64)
 
         if spillable_area is None:
-            self.spillable_area = self.map_bounds
+            #self.spillable_area = self.map_bounds
+            self.spillable_area = PolygonSet()
+            self.spillable_area.append(self.map_bounds)
         else:
-            self.spillable_area = np.asarray(spillable_area,
-                                             dtype=np.float64).reshape(-1, 2)
+            if not isinstance(spillable_area, PolygonSet):
+                spillable_area = self._polygon_set_from_points(spillable_area)
+
+            self.spillable_area = spillable_area
+
+    def _polygon_set_from_points(self, poly):
+        '''
+        create PolygonSet() object from list of polygons which in turn is a
+        list of points
+        :returns: PolygonSet() object
+        '''
+        x = PolygonSet()
+        for p in poly:
+            x.append(p)
+        return x
 
     def _attr_array_to_dict(self, np_array):
         '''convert np_array to list of tuples, used for map_bounds,
@@ -136,13 +154,23 @@ class GnomeMap(Serializable):
 
     def spillable_area_to_dict(self):
         'convert numpy array to a list for serializing'
-        return self._attr_array_to_dict(self.spillable_area)
+        #return self._attr_array_to_dict(self.spillable_area)
+        x = []
+        for poly in self.spillable_area:
+            x.append(poly.points.tolist())
+        return x
 
-    def spillable_area_update_from_dict(self, val):
+    def spillable_area_update_from_dict(self, poly_set):
         'convert list of tuples back to numpy array'
-        new_arr = self._attr_from_list_to_array(val)
-        if np.any(self.spillable_area != new_arr):
-            self.spillable_area = new_arr
+        # since metadata will not match, let's create a new PolygonSet,
+        # check equality on _PointsArray and update if not equal
+        ps = PolygonSet()
+        for poly in poly_set:
+            ps.append(poly)
+
+        if not np.array_equal(self.spillable_area._PointsArray,
+                              ps._PointsArray):
+            self.spillable_area = ps
             return True
 
         return False
@@ -200,7 +228,11 @@ class GnomeMap(Serializable):
         .. note:: it could be either off the map, or in a location that
                   spills aren't allowed
         """
-        return points_in_poly(self.spillable_area, coord)
+        for poly in self.spillable_area:
+            if points_in_poly(poly.points, coord):
+                return True
+
+        return False
 
     def _set_off_map_status(self, spill):
         """
@@ -367,7 +399,6 @@ class RasterMap(GnomeMap):
 
         im.save(filename, format='PNG')
 
-
     def _on_land_pixel(self, coord):
         """
         returns 1 if the point is on land, 0 otherwise
@@ -440,7 +471,7 @@ class RasterMap(GnomeMap):
                                                                  asint=True)[0]
                                         )
 
-    def beach_elements(self, spill):
+    def beach_elements(self, sc):
         """
         Determines which elements were or weren't beached.
 
@@ -450,21 +481,21 @@ class RasterMap(GnomeMap):
         This version uses a modified Bresenham algorithm to find out
         which pixels the LE may have crossed.
 
-        :param spill: the current spill container
-        :type spill:  :class:`gnome.spill_container.SpillContainer`
+        :param sc: the current spill container
+        :type sc:  :class:`gnome.spill_container.SpillContainer`
             It must have the following data arrays:
             ('prev_position', 'positions', 'last_water_pt', 'status_code')
         """
-        self.resurface_airborne_elements(spill)
+        self.resurface_airborne_elements(sc)
 
-        # pull the data from the spill
+        # pull the data from the sc
         # Is the last water point the same as the previous position? why not??
         # If beached, it won't move, if not, then we can use it?
 
-        start_pos = spill['positions']
-        next_pos = spill['next_positions']
-        status_codes = spill['status_codes']
-        last_water_positions = spill['last_water_positions']
+        start_pos = sc['positions']
+        next_pos = sc['next_positions']
+        status_codes = sc['status_codes']
+        last_water_positions = sc['last_water_positions']
 
         # transform to pixel coords:
         # NOTE: must be integers!
@@ -487,7 +518,15 @@ class RasterMap(GnomeMap):
         last_water_positions[beached, :2] = \
             self.projection.to_lonlat(last_water_pos_pixel[beached, :2])
 
-        self._set_off_map_status(spill)
+        self._set_off_map_status(sc)
+
+        # todo: need a prepare_for_model_run() so map adds these keys to
+        #     mass_balance as opposed to SpillContainer
+        # update 'off_maps'/'beached' in mass_balance
+        sc.mass_balance['beached'] = \
+            sc['mass'][sc['status_codes'] == oil_status.on_land].sum()
+        sc.mass_balance['off_maps'] += \
+            sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
 
     def refloat_elements(self, spill_container, time_step):
         """
@@ -555,7 +594,7 @@ class RasterMap(GnomeMap):
                 if self.spillable_area is None:
                     return True
                 else:
-                    return points_in_poly(self.spillable_area, coord)
+                    return super(RasterMap, self).allowable_spill_position(coord)
             else:
                 return False
         else:
@@ -581,7 +620,7 @@ class MapFromBNA(RasterMap):
     _state.update(['map_bounds', 'spillable_area'], save=False)
     _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
     _state.add_field(Field('filename', isdatafile=True, save=True,
-                            read=True, test_for_eq=False))
+                           read=True, test_for_eq=False))
     _schema = MapFromBNASchema
 
     def __init__(self, filename, raster_size=1024 * 1024,
@@ -611,7 +650,6 @@ class MapFromBNA(RasterMap):
         self.filename = filename
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
-        spillable_area = None
         self.name = kwargs.pop('name', os.path.split(filename)[1])
 
         # find the spillable area and map bounds:
@@ -620,10 +658,12 @@ class MapFromBNA(RasterMap):
         #      or a gnome_map_data object...
 
         just_land = PolygonSet()  # and lakes....
+        spillable_area = PolygonSet()
 
         for p in polygons:
             if p.metadata[1].lower() == 'spillablearea':
-                spillable_area = p
+                spillable_area.append(p)
+
             elif p.metadata[1].lower() == 'map bounds':
                 map_bounds = p
             else:
@@ -638,12 +678,16 @@ class MapFromBNA(RasterMap):
         if map_bounds is None:
             map_bounds = BB.AsPoly()
 
-        if spillable_area is None:
-            spillable_area = map_bounds
+        if len(spillable_area) == 0:
+            spillable_area.append(map_bounds)
 
         # user defined spillable_area, map_bounds overrides data obtained
         # from polygons
 
+        # todo: should there be a check between spillable_area read from BNA
+        # versus what the user entered. if this is within spillable_area for
+        # BNA, then include it? else ignore
+        #spillable_area = kwargs.pop('spillable_area', spillable_area)
         spillable_area = kwargs.pop('spillable_area', spillable_area)
         map_bounds = kwargs.pop('map_bounds', map_bounds)
 
@@ -674,51 +718,52 @@ class MapFromBNA(RasterMap):
                            **kwargs)
 
         return None
+
+
 def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
 
     """
     Suitable for a rectangular, but not fully regular, grid
 
     Such that it can be described by single longitude and latitude vectors
-    
+
     :param mask: the land-water mask as a numpy array
 
     :param lon: longitude array
 
     :param lon: latitude array
 
-    :param refine=1: amount to refine grid -- 4 will give 4 times the resolution
+    :param refine=1: amount to refine grid -- 4 will give 4 times the
+        resolution
     :type refine: integer
 
     :param kwargs: Other keyword arguments are passed on to RasterMap
 
     """
 
-    ## expand the grid mask
-    grid = np.repeat(mask, refine, axis = 0)
-    grid = np.repeat(grid, refine, axis = 1)
+    # expand the grid mask
+    grid = np.repeat(mask, refine, axis=0)
+    grid = np.repeat(grid, refine, axis=1)
 
-    ## refine the axes:
+    # refine the axes:
     lon = refine_axis(lon, refine)
     lat = refine_axis(lat, refine)
 
     nlon, nlat = grid.shape
 
-    map_bounds = np.array( ( (lon[0],   lat[0]),
-                             (lon[-1],  lat[0]),
-                             (lon[-1], lat[-1]),
-                             (lon[0],  lat[-1]),
-                           ), dtype=np.float )
-    
+    map_bounds = np.array(((lon[0], lat[0]),
+                           (lon[-1], lat[0]),
+                           (lon[-1], lat[-1]),
+                           (lon[0], lat[-1]),
+                           ), dtype=np.float)
+
     # generating projection for raster map
     proj = projections.RectangularGridProjection(lon, lat)
-    
 
-    return gnome.map.RasterMap( grid,
-                                proj,
-                                map_bounds=map_bounds,
-                                **kwargs
-                                )
+    return gnome.map.RasterMap(grid,
+                               proj,
+                               map_bounds=map_bounds,
+                               **kwargs)
 
 
 def grid_from_nc(filename):
@@ -735,52 +780,56 @@ def grid_from_nc(filename):
     nx, ny = lat_var.shape
 
     # check for regular grid:
-    ## all rows should be same:
+    # all rows should be same:
     for r in range(nx):
-        if not np.array_equal(lon_var[r,:], lon_var[0,:]):
-            raise ValueError("Row: %i isn't equal!"%r)
+        if not np.array_equal(lon_var[r, :], lon_var[0, :]):
+            raise ValueError("Row: %i isn't equal!" % r)
 
     for c in range(ny):
-        if not np.array_equal(lat_var[:,c], lat_var[:,0]):
-            raise ValueError("column: %i isn't equal!"%c)
+        if not np.array_equal(lat_var[:, c], lat_var[:, 0]):
+            raise ValueError("column: %i isn't equal!" % c)
 
     mask = nc.variables['mask'][:]
 
-    #Re-shuffle for gnome raster map orientation:
+    # Re-shuffle for gnome raster map orientation:
     # create the raster
-#    bitmap_array = np.zeros( (nlon, nlat), dtype=np.uint8 )
-    mask = (mask == 0).astype(np.uint8) # swap water/land
-    mask = np.ascontiguousarray(np.fliplr(mask.T)) # to get oriented right.
+    # bitmap_array = np.zeros( (nlon, nlat), dtype=np.uint8 )
+    mask = (mask == 0).astype(np.uint8)  # swap water/land
+    mask = np.ascontiguousarray(np.fliplr(mask.T))  # to get oriented right.
 
     # extra point to fill for last grid cell
     # note: values can be variable, so not *quite* right
-    lon = lon_var[0,:]
-    lat = lat_var[:,0]
-    lon = np.r_[lon, [2*lon[-1] - lon[-2]] ]
-    lat = np.r_[lat, [2*lat[-1] - lat[-2]] ]
+    lon = lon_var[0, :]
+    lat = lat_var[:, 0]
+    lon = np.r_[lon, [2*lon[-1] - lon[-2]]]
+    lat = np.r_[lat, [2*lat[-1] - lat[-2]]]
 
     return mask, lon, lat
+
 
 def map_from_rectangular_grid_nc_file(filename, refine=1, **kwargs):
     """
     builds a raster map from a rectangular grid in a netcdf file
 
     only tested with the HYCOM grid
-    
+
     :param filename: the full path or opendap url for the netcdf file
     :type filename: string
 
-    :param refine: how much to refine the grid. 1 means keep it as it is, otherwise is will scale
+    :param refine: how much to refine the grid. 1 means keep it as it is,
+        otherwise is will scale
     :type refine: integer
 
-    :param kwargs: other key word arguemnts -- passed on to RasterMap class constructor
+    :param kwargs: other key word arguemnts -- passed on to RasterMap class
+        constructor
 
     """
 
     grid, lon, lat = grid_from_nc(filename)
-    map = map_from_rectangular_grid(grid, lon, lat, refine, **kwargs)
+    map_ = map_from_rectangular_grid(grid, lon, lat, refine, **kwargs)
 
-    return map
+    return map_
+
 
 def refine_axis(old_axis, refine):
     """
@@ -793,17 +842,20 @@ def refine_axis(old_axis, refine):
     :type refine: integer
     """
     refine = int(refine)
-    axis = old_axis.reshape((-1,1))
+    axis = old_axis.reshape((-1, 1))
     axis = ((axis[1:] - axis[:-1]) / refine) * np.arange(refine) + axis[:-1]
     axis.shape = (-1,)
     axis = np.r_[axis, old_axis[-1]]
     return axis
 
-def map_from_regular_grid(grid_mask, lon, lat, refine = 4, refloat_halflife=6, map_bounds=None):
+
+def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=6,
+                          map_bounds=None):
     """
     note: poorly tested -- here to save it in case we need it in the future
 
-    makes a raster map from a regular grid: i.e delta_lon and delta-lat are constant.
+    makes a raster map from a regular grid: i.e delta_lon and delta-lat are
+    constant.
 
     """
     nlon, nlat = grid_mask.shape
@@ -811,26 +863,21 @@ def map_from_regular_grid(grid_mask, lon, lat, refine = 4, refloat_halflife=6, m
     dlat = (lat[-1] - lat[0]) / (len(lat)-1)
 
     # create the raster
-    bitmap_array = np.zeros( (nlon*resolution, nlat*resolution), dtype=np.uint8 )
-    #add the land to the raster
+    bitmap_array = np.zeros((nlon*resolution, nlat*resolution), dtype=np.uint8)
+    # add the land to the raster
     for i in range(resolution):
         for j in range(resolution):
             bitmap_array[i::resolution, j::resolution] = grid_mask
 
     # compute projection
-    bounding_box =  np.array( ( (lon[0],       lat[0]),
-                                (lon[-1]+dlon, lat[-1]+dlat),
-                                ),
-                              dtype=np.float64
-                            ) # adjust for last grid cell.
+    bounding_box = np.array(((lon[0], lat[0]),
+                             (lon[-1]+dlon, lat[-1]+dlat),
+                             ), dtype=np.float64)  # adjust for last grid cell
     proj = RegularGridProjection(bounding_box,
                                  image_size=bitmap_array.shape,
                                  )
 
     return gnome.map.RasterMap(bitmap_array,
-                                proj,
-                                refloat_halflife=refloat_halflife,
-                                )
-
-
-
+                               proj,
+                               refloat_halflife=refloat_halflife,
+                               )

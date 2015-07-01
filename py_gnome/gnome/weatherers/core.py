@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 import copy
-from datetime import timedelta
 
 import numpy
 np = numpy
-from colander import (SchemaNode, drop, Bool)
+from colander import SchemaNode
 
-from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import NumpyArray
 from gnome.persist.base_schema import ObjType
-from gnome.persist.extend_colander import LocalDateTime
 
 from gnome.array_types import mass_components
-from gnome.utilities.serializable import Serializable
-
+from gnome.utilities.serializable import Serializable, Field
+from gnome.exceptions import ReferencedObjectNotSet
 from gnome.movers.movers import Process, ProcessSchema
 
 
@@ -27,19 +25,22 @@ class WeathererSchema(ObjType, ProcessSchema):
 
 class Weatherer(Process):
     '''
-       Base Weathering agent.  This is almost exactly like the base Mover
-       in the way that it acts upon the model.  It contains the same API
-       as the mover as well. Not Serializable since it does is partial
-       implementation
+    Base Weathering agent.  This is almost exactly like the base Mover
+    in the way that it acts upon the model.  It contains the same API
+    as the mover as well. Not Serializable since it does is partial
+    implementation
     '''
     _state = copy.deepcopy(Process._state)
     _schema = WeathererSchema  # nothing new added so use this schema
 
     def __init__(self, **kwargs):
         '''
-           :param weathering: object that represents the weathering
-                              properties of the substance that our
-                              LEs are made up of.
+        Base weatherer class; defines the API for all weatherers
+        Passes optional arguments to base (Process) class via super. See base
+        class for optional arguments:  `gnome.movers.mover.Process`
+
+        adds 'mass_components', 'mass' to array_types since all weatherers
+        need these.
         '''
         super(Weatherer, self).__init__(**kwargs)
 
@@ -54,22 +55,39 @@ class Weatherer(Process):
                 'active={0.active}'
                 ')'.format(self))
 
+    def initialize_data(self, sc, num_released):
+        '''
+        Let weatherers have a way to customize the initialization of
+        data arrays. Currently, only some weatherers use this to customize
+        initialization of data arrays. If movers also move towards this
+        implementation, then move to 'Process' base class.
+        '''
+        pass
+
     def prepare_for_model_run(self, sc):
         """
         Override for weatherers so they can initialize correct 'mass_balance'
         key and set initial value to 0.0
         """
-        pass
+        if self.on:
+            # almost all weatherers require wind, water, waves so raise
+            # exception here if none is found
+            for attr in ('wind', 'water', 'waves'):
+                if hasattr(self, attr) and getattr(self, attr) is None:
+                    msg = (attr + " object not defined for " +
+                           self.__class__.__name__)
+                    raise ReferencedObjectNotSet(msg)
 
     def weather_elements(self, sc, time_step, model_time):
         '''
-        run the equivalent of get_move for weathering processes. It weathers
-        each component and returns the mass remaining at end of time_step. It
-        returns the mass in units of 'kg'
+        Run the equivalent of get_move for weathering processes. It modifies
+        the SpillContainer's data arrays; most weatherers update
+        'mass_components' and 'mass'
+
+        Some objects do not implement this since they update arrays like 'area'
+        in model_step_is_done()
         '''
-        raise NotImplementedError("All weatherers need to implement this "
-            "method. It returns mass remaining for each component at end of "
-            "time_step in 'kg' (SI units)")
+        pass
 
     def _halflife(self, M_0, factors, time):
         'Assumes our factors are half-life values'
@@ -87,10 +105,18 @@ class Weatherer(Process):
         return mass_remain
 
 
-class HalfLifeWeatherer(Weatherer):
+class HalfLifeWeathererSchema(WeathererSchema):
+    half_lives = SchemaNode(NumpyArray())
+
+
+class HalfLifeWeatherer(Weatherer, Serializable):
     '''
     Give half-life for all components and decay accordingly
     '''
+    _schema = HalfLifeWeathererSchema
+    _state = copy.deepcopy(Weatherer._state)
+    _state += Field('half_lives', save=True, update=True)
+
     def __init__(self, half_lives=(15.*60, ), **kwargs):
         '''
         The half_lives are a property of HalfLifeWeatherer. If the
@@ -128,8 +154,7 @@ class HalfLifeWeatherer(Weatherer):
         if sc.num_released == 0:
             return
 
-        arrays = ['mass_components', 'mass']
-        for substance, data in sc.itersubstancedata(arrays):
+        for _, data in sc.itersubstancedata(self.array_types):
             hl = self._halflife(data['mass_components'],
                                 self.half_lives, time_step)
             data['mass_components'][:] = hl

@@ -1,8 +1,6 @@
 '''
 Test emulsification module
 '''
-import os
-import json
 from datetime import timedelta
 
 import pytest
@@ -10,24 +8,20 @@ import numpy as np
 
 from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import (Emulsification,
-                              Evaporation,
-                              WeatheringData)
+                              Evaporation)
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 
-from ..conftest import (sample_sc_release,
-                        sample_model_weathering,
+from conftest import weathering_data_arrays
+
+from ..conftest import (sample_model_weathering,
                         sample_model_weathering2,
                         test_oil)
 
 
 water = Water()
-wind = constant_wind(15., 0)	#also test with lower wind no emulsification
+wind = constant_wind(15., 0)	# also test with lower wind no emulsification
 waves = Waves(wind, water)
-
-arrays = Emulsification().array_types
-intrinsic = WeatheringData(water)
-arrays.update(intrinsic.array_types)
 
 # need an oil that emulsifies and one that does not
 #s_oils = [test_oil, 'FUEL OIL NO.6']
@@ -41,19 +35,15 @@ def test_emulsification(oil, temp, num_elems, on):
     '''
     Fuel Oil #6 does not emulsify
     '''
-    et = floating(substance=oil)
-    time_step = 15. * 60
-    sc = sample_sc_release(num_elements=num_elems,
-                           element_type=et,
-                           arr_types=arrays,
-                           time_step=time_step)
-    intrinsic.prepare_for_model_run(sc)
-    intrinsic.update(sc.num_released, sc)
-    model_time = (sc.spills[0].get('release_time') +
-                  timedelta(seconds=time_step))
-
     emul = Emulsification(waves)
     emul.on = on
+
+    (sc, time_step) = \
+        weathering_data_arrays(emul.array_types,
+                               water,
+                               element_type=floating(substance=oil))[:2]
+    model_time = (sc.spills[0].get('release_time') +
+                  timedelta(seconds=time_step))
 
     emul.prepare_for_model_run(sc)
 
@@ -95,21 +85,19 @@ def test_full_run(sample_model_fcn, oil, temp):
     for 'weathering_model.json' in dump directory
     '''
     model = sample_model_weathering2(sample_model_fcn, oil, temp)
-    model.water = Water(temp)
-    wind = constant_wind(15., 0)
-    waves = Waves(wind, model.water)
-    model.environment += [waves, wind]
-    model.weatherers += Evaporation(model.water, wind)
-    model.weatherers += Emulsification(waves)
+    model.environment += [Waves(), wind, Water(temp)]
+    model.weatherers += Evaporation()
+    model.weatherers += Emulsification()
+    model.set_make_default_refs(True)
 
     for step in model:
         for sc in model.spills.items():
             # need or condition to account for water_content = 0.9000000000012
             # or just a little bit over 0.9
-            assert (sc.weathering_data['water_content'] <= .9 or
-                    np.isclose(sc.weathering_data['water_content'], 0.9))
+            assert (sc.mass_balance['water_content'] <= .9 or
+                    np.isclose(sc.mass_balance['water_content'], 0.9))
             print ("Water fraction: {0}".
-                   format(sc.weathering_data['water_content']))
+                   format(sc.mass_balance['water_content']))
             print "Completed step: {0}\n".format(step['step_num'])
 
 
@@ -123,7 +111,7 @@ def test_full_run_emul_not_active(sample_model_fcn):
         if no weatherers, then no weathering output - need to add on/off
         switch to WeatheringOutput
         '''
-        assert len(step['WeatheringOutput']) == 2
+        assert 'water_content' not in step['WeatheringOutput']
         assert ('step_num' in step['WeatheringOutput'] and
                 'time_stamp' in step['WeatheringOutput'])
         print ("Completed step: {0}"
@@ -150,6 +138,7 @@ def test_bullwinkle():
     assert et.substance.bullwinkle == .303
     et.substance.bullwinkle = .4
     assert et.substance.bullwinkle == .4
+
 
 def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'

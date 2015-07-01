@@ -79,11 +79,11 @@ class WeatheringOutput(Outputter, Serializable):
         if not self._write_step:
             return None
 
-        # return a dict - json of the weathering_data data
+        # return a dict - json of the mass_balance data
         # weathering outputter should only apply to forecast spill_container
         sc = self.cache.load_timestep(step_num).items()[0]
         dict_ = {}
-        dict_.update(sc.weathering_data)
+        dict_.update(sc.mass_balance)
 
         output_info = {'step_num': step_num,
                        'time_stamp': sc.current_time_stamp.isoformat()}
@@ -100,7 +100,7 @@ class WeatheringOutput(Outputter, Serializable):
         return output_info
 
     def output_to_file(self, json_content, step_num):
-        file_format = 'weathering_data_{0:06d}.json'
+        file_format = 'mass_balance_{0:06d}.json'
         filename = os.path.join(self.output_dir,
                                 file_format.format(step_num))
 
@@ -112,7 +112,7 @@ class WeatheringOutput(Outputter, Serializable):
     def clean_output_files(self):
         if self.output_dir:
             files = glob(os.path.join(self.output_dir,
-                                      'weathering_data_*.json'))
+                                      'mass_balance_*.json'))
             for f in files:
                 os.remove(f)
 

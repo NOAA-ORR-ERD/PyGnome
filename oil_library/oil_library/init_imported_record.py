@@ -63,6 +63,7 @@ def add_oil_object(session, file_columns, row_data):
                     for c in file_columns]
     row_dict = dict(zip(file_columns, row_data))
 
+    fix_name(row_dict)
     fix_pour_point(row_dict)
     fix_flash_point(row_dict)
     fix_preferred_oils(row_dict)
@@ -79,6 +80,10 @@ def add_oil_object(session, file_columns, row_data):
 
     session.add(oil)
     transaction.commit()
+
+
+def fix_name(kwargs):
+    kwargs['oil_name'] = kwargs['oil_name'].strip()
 
 
 def fix_pour_point(kwargs):

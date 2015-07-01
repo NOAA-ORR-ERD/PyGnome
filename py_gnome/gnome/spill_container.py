@@ -30,6 +30,7 @@ from gnome.array_types import (positions,
 from gnome.utilities.orderedcollection import OrderedCollection
 import gnome.spill
 from gnome import AddLogger
+from gnome.exceptions import GnomeRuntimeError
 
 
 # Organize information about spills per substance
@@ -48,6 +49,9 @@ substances_spills = namedtuple('substances_spills',
 
 
 class FateDataView(AddLogger):
+    _dicts_ = ('surface_weather', 'subsurf_weather', 'skim', 'burn',
+               'disperse', 'non_weather', 'all')
+
     def __init__(self, substance_id):
         self.reset()
         self.substance_id = substance_id
@@ -107,6 +111,8 @@ class FateDataView(AddLogger):
         'all', 'surface_weather', 'subsurf_weather', 'skim', 'non_weather',
         'burn'
         '''
+        # always add 'id' to array_types
+        array_types.update({'id'})
         self._set_data(sc, array_types,
                        self._get_fate_mask(sc, fate),
                        fate)
@@ -161,6 +167,19 @@ class FateDataView(AddLogger):
         if reset_view:
             setattr(self, fate, {})
 
+    def _reset_fatedata(self, sc, ix):
+        '''
+        reset all arrays that contain LE with 'id' = ix
+        '''
+        for fate in self._dicts_:
+            data = getattr(self, fate)
+            if len(data) > 0:
+                idx = np.where(data['id'] == ix)[0]
+                if len(idx) > 0:
+                    self._set_data(sc, data.keys(),
+                                   self._get_fate_mask(sc, fate),
+                                   fate)
+
 
 class SpillContainerData(object):
     """
@@ -197,7 +216,7 @@ class SpillContainerData(object):
 
         self._data_arrays = data_arrays
         self.current_time_stamp = None
-        self.weathering_data = {}
+        self.mass_balance = {}
 
         # following internal variable is used when comparing two SpillContainer
         # objects. When testing the data arrays are equal, use this tolerance
@@ -576,7 +595,7 @@ class SpillContainer(AddLogger, SpillContainerData):
                     msg = ("Skipping {0} - not found in gnome.array_types;"
                            " and ArrayType is not provided.").format(array)
                     self.logger.error(msg)
-                    continue
+                    raise GnomeRuntimeError(msg)
 
             # must be an ArrayType of an object
             self._array_types[array.name] = array
@@ -757,7 +776,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         self._reset__substances_spills()
         self._reset__fate_data_list()
         self.initialize_data_arrays()
-        self.weathering_data = {}  # reset to empty array
+        self.mass_balance = {}  # reset to empty array
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -825,6 +844,12 @@ class SpillContainer(AddLogger, SpillContainerData):
         # 'substance' data_array may have been added so initialize after
         # _set_substancespills() is invoked
         self.initialize_data_arrays()
+
+        # todo: maybe better to let map do this, but it does not have a
+        # prepare_for_model_run() yet so can't do it there
+        # need 'amount_released' here as well
+        self.mass_balance['beached'] = 0.0
+        self.mass_balance['off_maps'] = 0.0
 
     def initialize_data_arrays(self):
         """
@@ -915,7 +940,8 @@ class SpillContainer(AddLogger, SpillContainerData):
         given to each new element. len(l_frac) must be equal to num and
         sum(l_frac) == 1.0
 
-        :param ix: index into numpy array of the element that will be split
+        :param ix: id of element to be split - before splitting each element
+            has a unique 'id' defined in 'id' data array
         :type ix: int
         :param num: split ix into 'num' number of elements
         :type num: int
@@ -923,12 +949,28 @@ class SpillContainer(AddLogger, SpillContainerData):
             len(l_frac) == num
         :type l_frac: list or tuple or numpy array
         '''
+        # split the first location where 'id' matches
+        try:
+            idx = np.where(self['id'] == ix)[0][0]
+        except IndexError:
+            msg = "no element with id = {0} found".format(ix)
+            self.logger.warning(msg)
+            raise
+
         for name, at in self.array_types.iteritems():
             data = self[name]
-            split_elems = at.split_element(num, self[name][ix], l_frac)
-            data = np.insert(data, ix, split_elems[:-1], 0)
-            data[ix + len(split_elems) - 1] = split_elems[-1]
+            split_elems = at.split_element(num, self[name][idx], l_frac)
+            data = np.insert(data, idx, split_elems[:-1], 0)
+            data[idx + len(split_elems) - 1] = split_elems[-1]
             self._data_arrays[name] = data
+
+        # update fate_dataview which contains this LE
+        # for now we only have one type of substance
+        if len(self._fate_data_list) > 1:
+            msg = "split_elements assumes only one substance is being modeled"
+            self.logger.error(msg)
+
+        self._fate_data_list[0]._reset_fatedata(self, ix)
 
     def model_step_is_done(self):
         '''
@@ -938,6 +980,8 @@ class SpillContainer(AddLogger, SpillContainerData):
         if len(self._data_arrays) == 0:
             return  # nothing to do - arrays are not yet defined.
 
+        # LEs are marked as to_be_removed
+        # C++ might care about this so leave as is
         to_be_removed = np.where(self['status_codes'] ==
                                  oil_status.to_be_removed)[0]
 
@@ -1011,9 +1055,9 @@ class SpillContainerPairData(object):
     def LE_data(self):
         data = self._spill_container._data_arrays.keys()
         data.append('current_time_stamp')
-        if self._spill_container.weathering_data:
+        if self._spill_container.mass_balance:
             'only add if it is not an empty dict'
-            data.append('weathering_data')
+            data.append('mass_balance')
 
         return data
 
@@ -1025,8 +1069,8 @@ class SpillContainerPairData(object):
 
         if prop_name == 'current_time_stamp':
             return sc.current_time_stamp
-        elif prop_name == 'weathering_data':
-            return sc.weathering_data
+        elif prop_name == 'mass_balance':
+            return sc.mass_balance
 
         return sc[prop_name]
 

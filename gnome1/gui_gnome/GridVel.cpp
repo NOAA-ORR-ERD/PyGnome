@@ -147,7 +147,60 @@ Boolean IsRectGridFile (char *path)
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 
+bool IsTriGridFile (vector<string> &linesInFile)
+{
+	long lineIdx = 0;
+	string currentLine;
+
+	string value1S;
+
+	// First line, must start with 'DAG'
+	currentLine = trim(linesInFile[lineIdx++]);
+
+	istringstream lineStream(currentLine);
+
+	lineStream >> value1S;
+	if (lineStream.fail())
+		return false;
+
+	if (value1S != "DAG")
+		return false;
+
+	return true;
+}
+
 Boolean IsTriGridFile (char *path)
+{
+	Boolean bIsValid = false;
+	OSErr	err = noErr;
+	long line;
+	char strLine [256];
+	char firstPartOfFile [256];
+	long lenToRead,fileLength;
+	short numScanned;
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return false;
+	
+	lenToRead = _min(512,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
+	if (!err)
+	{	// must start with DAG
+		char * strToMatch = "DAG";
+		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 512);
+		if (!strncmp (strLine,strToMatch,strlen(strToMatch)))
+		{
+			bIsValid = true;
+		}
+	}
+	
+done:
+	return bIsValid;
+}
+
+/*Boolean IsTriGridFile (char *path)
 {
 	Boolean	bIsValid = false;
 	OSErr	err = noErr;
@@ -172,7 +225,7 @@ Boolean IsTriGridFile (char *path)
 	
 	return bIsValid;
 }
-
+*/
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 

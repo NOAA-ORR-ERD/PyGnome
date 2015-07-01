@@ -5,12 +5,13 @@ import shutil
 import pytest
 from pytest import raises
 
-import numpy
-np = numpy
+import numpy as np
 
 import unit_conversion
 
 from gnome.basic_types import datetime_value_2d
+from gnome.utilities.time_utils import (zero_time,
+                                        sec_to_date)
 from gnome.environment import Wind, constant_wind
 
 from ..conftest import testdata
@@ -75,7 +76,11 @@ def test_units():
 
 def test_default_init():
     wind = Wind()
-    assert wind.timeseries == np.zeros((1,), dtype=datetime_value_2d)
+
+    assert wind.timeseries == np.array([(sec_to_date(zero_time()),
+                                         [0.0, 0.0])],
+                                       dtype=datetime_value_2d)
+
     assert wind.units == 'mps'
 
 

@@ -114,25 +114,4 @@ def test_current_grid_geojson_output(model):
                 assert geometry['type'] == 'Point'
 
                 assert 'coordinates' in geometry
-                assert len(geometry['coordinates']) == 2
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                assert len(geometry['coordinates']) > 0

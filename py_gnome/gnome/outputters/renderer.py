@@ -152,8 +152,13 @@ class Renderer(Outputter, MapCanvas):
         self.last_filename = ''
         self.draw_ontop = draw_ontop
 
-        Outputter.__init__(self, cache, output_timestep, output_zero_step,
-                           output_last_step)
+        Outputter.__init__(self,
+                           cache,
+                           kwargs.pop('on', True),
+                           output_timestep,
+                           output_zero_step,
+                           output_last_step,
+                           kwargs.pop('name', None))
         MapCanvas.__init__(self, image_size, land_polygons=polygons,
                            **kwargs)
 

@@ -483,6 +483,12 @@ void TimeGridVel_c::DisposeLoadedData(LoadedData *dataPtr)
 	ClearLoadedData(dataPtr);
 }
 
+void TimeGridVel_c::DisposeLoadedData(LoadedFieldData *dataPtr)
+{
+	if(dataPtr -> dataHdl) DisposeHandle((Handle) dataPtr -> dataHdl);
+	ClearLoadedData(dataPtr);
+}
+
 void TimeGridVel_c::DisposeAllLoadedData()
 {
 	if(fStartData.dataHdl)DisposeLoadedData(&fStartData); 
@@ -490,6 +496,12 @@ void TimeGridVel_c::DisposeAllLoadedData()
 }
 
 void TimeGridVel_c::ClearLoadedData(LoadedData *dataPtr)
+{
+	dataPtr -> dataHdl = 0;
+	dataPtr -> timeIndex = UNASSIGNEDINDEX;
+}
+
+void TimeGridVel_c::ClearLoadedData(LoadedFieldData *dataPtr)
 {
 	dataPtr -> dataHdl = 0;
 	dataPtr -> timeIndex = UNASSIGNEDINDEX;
@@ -1976,6 +1988,7 @@ TimeGridVelCurv_c::TimeGridVelCurv_c () : TimeGridVelRect_c()
 {
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;
+	fGridCellInfoH = 0;
 	//bIsCOOPSWaterMask = false;
 	bVelocitiesOnNodes = false;
 }	
@@ -1984,6 +1997,7 @@ void TimeGridVelCurv_c::Dispose ()
 {
 	if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
 	if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
+	if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
 	
 	TimeGridVelRect_c::Dispose ();
 }
@@ -5246,6 +5260,1535 @@ done:
 	return err;
 }
 
+OSErr TimeGridVelCurv_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity)
+{	// use for curvilinear
+	double timeAlpha;
+	Seconds startTime,endTime;
+	OSErr err = 0;
+	char errmsg[256];
+	
+	long numVertices,i,numTri,index=-1;
+	InterpolationVal interpolationVal;
+	LongPointHdl ptsHdl = 0;
+	TopologyHdl topH ;
+	long timeDataInterval;
+	Boolean loaded;
+	//TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	TTriGridVel* triGrid = (dynamic_cast<TTriGridVel*>(fGrid));
+	VelocityFRec velocity;
+	
+	err = this -> SetInterval(errmsg, time);
+	if(err) return err;
+	
+	loaded = this -> CheckInterval(timeDataInterval, time);	 
+	
+	if(!loaded) return -1;
+	
+	//topH = triGrid -> GetTopologyHdl();
+	topH = fGrid -> GetTopologyHdl();
+	if(topH)
+		numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	else 
+		numTri = 0;
+		
+	/*ptsHdl = triGrid -> GetPointsHdl();
+	if(ptsHdl)
+		numVertices = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
+	else 
+		numVertices = 0;*/
+	
+	// Check for time varying current 
+	if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+
+		if (fEndData.timeIndex == UNASSIGNEDINDEX && (time > startTime || time < startTime) && fAllowExtrapolationInTime)
+		{
+			timeAlpha = 1;
+		}
+		else
+		{	
+			endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+			timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		}
+	}
+	
+	for (i = 0 ; i< numTri; i++)
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			//interpolationVal = triGrid -> GetInterpolationValues(refPoint.p);
+			interpolationVal = triGrid -> GetInterpolationValuesFromIndex(i);
+			if (interpolationVal.ptIndex1<0) {scaled_velocity[i].u = 0;	scaled_velocity[i].v = 0;}// should this be an error?
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			//index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+			index = triGrid->GetRectIndexFromTriIndex2(i,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+
+		if (index < 0) {scaled_velocity[i].u = 0;	scaled_velocity[i].v = 0;}// should this be an error?
+		
+		// Should check vs fFillValue
+		// Check for constant current 
+		if(((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha == 1) && index!=-1)
+		{
+				velocity.u = GetStartUVelocity(index);
+				velocity.v = GetStartVVelocity(index);
+		}
+		else if (index!=-1)// time varying current
+		{
+			velocity.u = timeAlpha*GetStartUVelocity(index) + (1-timeAlpha)*GetEndUVelocity(index);
+			velocity.v = timeAlpha*GetStartVVelocity(index) + (1-timeAlpha)*GetEndVVelocity(index);
+		}
+		if (velocity.u == fFillValue) velocity.u = 0.;
+		if (velocity.v == fFillValue) velocity.v = 0.;
+		/*if ((velocity.u != 0 || velocity.v != 0) && (velocity.u != fFillValue && velocity.v != fFillValue)) // should already have handled fill value issue
+		{
+			// code goes here, fill up arrays with data
+			float inchesX = (velocity.u * refScale * fVar.fileScaleFactor) / arrowScale;
+			float inchesY = (velocity.v * refScale * fVar.fileScaleFactor) / arrowScale;
+		}*/
+		//u[i] = velocity.u * fVar.fileScaleFactor;
+		//v[i] = velocity.v * fVar.fileScaleFactor;
+		scaled_velocity[i].u = velocity.u * fVar.fileScaleFactor;
+		scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor;
+	}
+	return err;
+}
+
+GridCellInfoHdl TimeGridVelCurv_c::GetCellData()
+{	// use for curvilinear
+	OSErr err = 0;
+
+	long i,numTri,numCells,index1,index2;
+	LongPointHdl ptsHdl = 0;
+	TopologyHdl topH = 0;
+	Topology tri1, tri2;
+
+	char errmsg[256];
+	errmsg[0] = 0;
+
+	if (fGridCellInfoH) return fGridCellInfoH;
+	
+	topH = fGrid -> GetTopologyHdl();
+	if(topH)
+		numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	else 
+		numTri = 0;
+		
+	numCells = numTri / 2;
+	GridCellInfoHdl fGridCellInfoH = (GridCellInfoHdl)_NewHandleClear(numCells * sizeof(**fGridCellInfoH));
+	if (!fGridCellInfoH) 
+	{
+		err = memFullErr; 
+		goto done;
+	}
+	
+	for (i=0; i<numCells; i++)
+	{
+		index1 = i*2;
+		index2 = i*2+1;
+		tri1 = INDEXH(topH,index1);
+		tri2 = INDEXH(topH,index2);
+		INDEXH(fGridCellInfoH,i).cellNum = i;
+		INDEXH(fGridCellInfoH,i).topLeft = tri1.vertex2;
+		INDEXH(fGridCellInfoH,i).topRight = tri1.vertex1;
+		INDEXH(fGridCellInfoH,i).bottomLeft = tri1.vertex3;
+		INDEXH(fGridCellInfoH,i).bottomRight = tri2.vertex2;
+	}
+	
+done:
+	if (err)
+	{
+		if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
+	}
+	return fGridCellInfoH;
+}
+
+TimeGridVelIce_c::TimeGridVelIce_c () : TimeGridVelCurv_c(), TimeGridVel_c()
+{
+	memset(&fStartDataIce,0,sizeof(fStartDataIce));
+	fStartDataIce.timeIndex = UNASSIGNEDINDEX; 
+	fStartDataIce.dataHdl = 0; 
+	memset(&fEndDataIce,0,sizeof(fEndDataIce));
+	fEndDataIce.timeIndex = UNASSIGNEDINDEX;
+	fEndDataIce.dataHdl = 0;
+	
+	memset(&fStartDataThickness,0,sizeof(fStartDataThickness));
+	fStartDataThickness.timeIndex = UNASSIGNEDINDEX; 
+	fStartDataThickness.dataHdl = 0; 
+	memset(&fEndDataThickness,0,sizeof(fEndDataThickness));
+	fEndDataThickness.timeIndex = UNASSIGNEDINDEX;
+	fEndDataThickness.dataHdl = 0;
+	
+	memset(&fStartDataFraction,0,sizeof(fStartDataFraction));
+	fStartDataFraction.timeIndex = UNASSIGNEDINDEX; 
+	fStartDataFraction.dataHdl = 0; 
+	memset(&fEndDataFraction,0,sizeof(fEndDataFraction));
+	fEndDataFraction.timeIndex = UNASSIGNEDINDEX;
+	fEndDataFraction.dataHdl = 0;
+	
+}
+
+void TimeGridVelIce_c::Dispose ()
+{
+	if(fStartDataIce.dataHdl)DisposeLoadedData(&fStartDataIce); 
+	if(fEndDataIce.dataHdl)DisposeLoadedData(&fEndDataIce); 
+	if(fStartDataThickness.dataHdl)DisposeLoadedData(&fStartDataThickness);
+	if(fEndDataThickness.dataHdl)DisposeLoadedData(&fEndDataThickness);
+	if(fStartDataFraction.dataHdl)DisposeLoadedData(&fStartDataFraction);
+	if(fEndDataFraction.dataHdl)DisposeLoadedData(&fEndDataFraction);
+	
+	TimeGridVelCurv_c::Dispose ();
+}
+
+/*void TimeGridVelIce_c::DisposeLoadedFieldData(LoadedFieldData *dataPtr)
+{
+	if(dataPtr -> dataHdl) DisposeHandle((Handle) dataPtr -> dataHdl);
+	ClearLoadedData(dataPtr);
+}*/
+
+void TimeGridVelIce_c::DisposeLoadedStartData()
+{
+	if(fStartData.dataHdl)DisposeLoadedData(&fStartData); 
+	if(fStartDataIce.dataHdl)DisposeLoadedData(&fStartDataIce);
+	if(fStartDataThickness.dataHdl)DisposeLoadedData(&fStartDataThickness);
+	if(fStartDataFraction.dataHdl)DisposeLoadedData(&fStartDataFraction);
+}
+
+void TimeGridVelIce_c::DisposeLoadedEndData()
+{
+	if(fEndData.dataHdl)DisposeLoadedData(&fEndData); 
+	if(fEndDataIce.dataHdl)DisposeLoadedData(&fEndDataIce);
+	if(fEndDataThickness.dataHdl)DisposeLoadedData(&fEndDataThickness);
+	if(fEndDataFraction.dataHdl)DisposeLoadedData(&fEndDataFraction);
+}
+
+void TimeGridVelIce_c::ShiftInterval()
+{
+	fStartData = fEndData;
+	fStartDataIce = fEndDataIce;
+	fStartDataThickness = fEndDataThickness;
+	fStartDataFraction = fEndDataFraction;
+	ClearLoadedEndData();
+	
+}
+
+/*void TimeGridVelIce_c::ClearLoadedData(LoadedFieldData *dataPtr)
+{
+	dataPtr -> dataHdl = 0;
+	dataPtr -> timeIndex = UNASSIGNEDINDEX;
+}*/
+
+void TimeGridVelIce_c::ClearLoadedEndData()
+{
+	if(fEndData.dataHdl)ClearLoadedData(&fEndData); 
+	if(fEndDataIce.dataHdl)ClearLoadedData(&fEndDataIce);
+	if(fEndDataThickness.dataHdl)ClearLoadedData(&fEndDataThickness);
+	if(fEndDataFraction.dataHdl)ClearLoadedData(&fEndDataFraction);
+	
+}
+
+OSErr TimeGridVelIce_c::SetInterval(char *errmsg, const Seconds& model_time)
+{
+	OSErr err = 0;
+
+	long timeDataInterval = 0;
+	Boolean intervalLoaded = this->CheckInterval(timeDataInterval, model_time);
+	long indexOfStart = timeDataInterval - 1;
+	long indexOfEnd = timeDataInterval;
+	long numTimesInFile = this->GetNumTimesInFile();
+
+	errmsg[0] = 0;
+
+	if (intervalLoaded)
+		return 0;
+
+	// check for constant current 
+	if (numTimesInFile == 1 && !(GetNumFiles() > 1))
+		//or if(timeDataInterval==-1)
+	{
+		indexOfStart = 0;
+		indexOfEnd = UNASSIGNEDINDEX;	// should already be -1
+	}
+
+	if (timeDataInterval == 0 && fAllowExtrapolationInTime) {
+		indexOfStart = 0;
+		indexOfEnd = -1;
+	}
+
+	//cerr << "timeDataInterval: " << timeDataInterval << endl;
+	if (timeDataInterval == 0 || timeDataInterval == numTimesInFile)
+	{
+
+		//cerr << "GetNumFiles(): " << GetNumFiles() << endl;
+		// before the first step in the file
+		if (GetNumFiles() > 1) {
+			if ((err = CheckAndScanFile(errmsg, model_time)) || fOverLap)
+				goto done;
+			
+			intervalLoaded = this->CheckInterval(timeDataInterval, model_time);
+			
+			indexOfStart = timeDataInterval - 1;
+			indexOfEnd = timeDataInterval;
+			numTimesInFile = this->GetNumTimesInFile();
+			if (fAllowExtrapolationInTime &&
+				(timeDataInterval == numTimesInFile || timeDataInterval == 0))
+			{
+				if (intervalLoaded)
+					return 0;
+				indexOfEnd = -1;
+				if (timeDataInterval == 0)
+					indexOfStart = 0;	// if we allow extrapolation we need to load the first time
+			}
+		}
+		else {
+			if(fTimeAlpha>=0 && timeDataInterval == numTimesInFile)
+				indexOfEnd = 0;	// start over
+			else if (fAllowExtrapolationInTime && timeDataInterval == numTimesInFile) {
+				fStartData.timeIndex = numTimesInFile-1;//check if time > last model time in all files
+				fStartDataIce.timeIndex = numTimesInFile-1;//check if time > last model time in all files
+				fStartDataThickness.timeIndex = numTimesInFile-1;//check if time > last model time in all files
+				fStartDataFraction.timeIndex = numTimesInFile-1;//check if time > last model time in all files
+				fEndData.timeIndex = UNASSIGNEDINDEX;//check if time > last model time in all files
+				fEndDataIce.timeIndex = UNASSIGNEDINDEX;//check if time > last model time in all files
+				fEndDataThickness.timeIndex = UNASSIGNEDINDEX;//check if time > last model time in all files
+				fEndDataFraction.timeIndex = UNASSIGNEDINDEX;//check if time > last model time in all files
+			}
+			else if (fAllowExtrapolationInTime && timeDataInterval == 0) {
+				fStartData.timeIndex = 0;//check if time > last model time in all files
+				fStartDataIce.timeIndex = 0;//check if time > last model time in all files
+				fStartDataFraction.timeIndex = 0;//check if time > last model time in all files
+				fStartDataThickness.timeIndex = 0;//check if time > last model time in all files
+				fEndData.timeIndex = UNASSIGNEDINDEX;//check if time > last model time in all files
+				fEndDataIce.timeIndex = UNASSIGNEDINDEX;//check if time > last model time in all files
+				fEndDataFraction.timeIndex = UNASSIGNEDINDEX;//check if time > last model time in all files
+				fEndDataThickness.timeIndex = UNASSIGNEDINDEX;//check if time > last model time in all files
+			}
+			else {
+				err = -1;
+				strcpy(errmsg,"Time outside of interval being modeled");
+				goto done;
+			}
+		}
+		// code goes here, if time > last time in files allow user to continue
+		// leave last two times loaded? move last time to start and nothing for end?
+		// redefine as constant or just check if time > last time and some flag set
+		// careful with timeAlpha, really just want to use the last time but needs to be loaded
+		// want to check so that don't reload at every step, should recognize last time is ok
+	}
+	//else // load the two intervals
+	{
+		//DisposeLoadedData(&fStartData);
+		DisposeLoadedStartData();
+		
+		if(indexOfStart == fEndData.timeIndex) // passing into next interval
+		{
+			ShiftInterval();
+			//ClearAllLoadedEndData();
+			//ClearLoadedData(&fEndData);
+		}
+		else
+		{
+			//DisposeLoadedData(&fEndData);
+			DisposeLoadedEndData();
+		}
+		
+		//////////////////
+		
+		if(fStartData.dataHdl == 0 && indexOfStart >= 0) 
+		{ // start data is not loaded
+			err = this -> ReadTimeData(indexOfStart,&fStartData.dataHdl,errmsg);
+			err = this -> ReadTimeDataIce(indexOfStart,&fStartDataIce.dataHdl,errmsg);
+			err = this -> ReadTimeDataFields(indexOfStart,&fStartDataThickness.dataHdl,&fStartDataFraction.dataHdl,errmsg);
+			if(err) goto done;
+			fStartData.timeIndex = indexOfStart;
+			fStartDataIce.timeIndex = indexOfStart;
+			fStartDataThickness.timeIndex = indexOfStart;
+			fStartDataFraction.timeIndex = indexOfStart;
+		}	
+		
+		if(indexOfEnd < numTimesInFile && indexOfEnd != UNASSIGNEDINDEX)  // not past the last interval and not constant current
+		{
+			err = this -> ReadTimeData(indexOfEnd,&fEndData.dataHdl,errmsg);
+			err = this -> ReadTimeDataIce(indexOfEnd,&fEndDataIce.dataHdl,errmsg);
+			err = this -> ReadTimeDataFields(indexOfEnd,&fEndDataThickness.dataHdl,&fEndDataFraction.dataHdl,errmsg);
+			if(err) goto done;
+			fEndData.timeIndex = indexOfEnd;
+			fEndDataIce.timeIndex = indexOfEnd;
+			fEndDataThickness.timeIndex = indexOfEnd;
+			fEndDataFraction.timeIndex = indexOfEnd;
+		}
+	}
+	
+done:	
+	if(err)
+	{
+		if(!errmsg[0])strcpy(errmsg,"Error in TimeGridVelIce::SetInterval()");
+		//DisposeLoadedData(&fStartData);
+		//DisposeLoadedData(&fEndData);
+		DisposeLoadedStartData();
+		DisposeLoadedEndData();
+	}
+	return err;
+	
+}
+
+
+
+OSErr TimeGridVelIce_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
+{
+	OSErr err = 0;
+	Seconds time = model_time, startTime, endTime, lastEndTime, testTime, firstStartTime; 
+	
+	long i, numFiles = GetNumFiles();
+
+	errmsg[0] = 0;
+
+	if (fEndData.timeIndex!=UNASSIGNEDINDEX)
+		testTime = (*fTimeHdl)[fEndData.timeIndex];	// currently loaded end time
+	
+	firstStartTime = (*fInputFilesHdl)[0].startTime + fTimeShift;
+	for (i = 0; i < numFiles; i++)
+	{
+		startTime = (*fInputFilesHdl)[i].startTime + fTimeShift;
+		endTime = (*fInputFilesHdl)[i].endTime + fTimeShift;
+		if (startTime<=time&&time<=endTime && !(startTime==endTime))
+		{
+			//if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
+			DisposeTimeHdl();
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl);	
+			
+			// code goes here, check that start/end times match
+			strcpy(fVar.pathName,(*fInputFilesHdl)[i].pathName);
+			fOverLap = false;
+			return err;
+		}
+		if (startTime==endTime && startTime==time)	// one time in file, need to overlap
+		{
+			long fileNum;
+			if (i<numFiles-1)
+				fileNum = i+1;
+			else
+				fileNum = i;
+			fOverLapStartTime = (*fInputFilesHdl)[fileNum-1].endTime;	// last entry in previous file
+			//DisposeLoadedData(&fStartData);
+			DisposeLoadedStartData();
+			/*if (fOverLapStartTime==testTime)	// shift end time data to start time data
+			 {
+			 fStartData = fEndData;
+			 ClearLoadedData(&fEndData);
+			 }
+			 else*/
+			{
+				//if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
+				DisposeTimeHdl();
+				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeHdl);	
+				
+				//DisposeLoadedData(&fEndData);
+				DisposeLoadedEndData();
+				strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum-1].pathName);
+				err = this->ReadTimeData(GetNumTimesInFile() - 1, &fStartData.dataHdl, errmsg);
+				//err = this->ReadTimeDataIce(GetNumTimesInFile() - 1, &fStartDataIce.dataHdl, errmsg);
+				//err = this->ReadTimeDataFields(GetNumTimesInFile() - 1, &fStartDataThickness.dataHdl,  &fStartDataFraction.dataHdl, errmsg);
+				if (err)
+					return err;
+			}
+			fStartData.timeIndex = UNASSIGNEDINDEX;
+			fStartDataIce.timeIndex = UNASSIGNEDINDEX;
+			fStartDataFraction.timeIndex = UNASSIGNEDINDEX;
+			fStartDataThickness.timeIndex = UNASSIGNEDINDEX;
+			//if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
+			DisposeTimeHdl();
+			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeHdl);	
+			
+			strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum].pathName);
+			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
+			//err = this -> ReadTimeDataIce(0,&fEndDataIce.dataHdl,errmsg);
+			//err = this -> ReadTimeDataFields(0,&fEndDataThickness.dataHdl,&fEndDataFraction.dataHdl,errmsg);
+			if(err) return err;
+			fEndData.timeIndex = 0;
+			fEndDataIce.timeIndex = 0;
+			fEndDataFraction.timeIndex = 0;
+			fEndDataThickness.timeIndex = 0;
+			fOverLap = true;
+			return noErr;
+		}
+		if (i>0 && (lastEndTime<time && time<startTime))
+		{
+			fOverLapStartTime = (*fInputFilesHdl)[i-1].endTime;	// last entry in previous file
+			DisposeLoadedData(&fStartData);
+			if (fOverLapStartTime==testTime)	// shift end time data to start time data
+			{
+				//fStartData = fEndData;
+				//ClearLoadedData(&fEndData);
+				ShiftInterval();
+			}
+			else
+			{
+				//if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
+				DisposeTimeHdl();
+				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeHdl);	
+				
+				//DisposeLoadedData(&fEndData);
+				DisposeLoadedEndData();
+				strcpy(fVar.pathName,(*fInputFilesHdl)[i-1].pathName);
+				err = this->ReadTimeData(GetNumTimesInFile() - 1, &fStartData.dataHdl, errmsg);
+				//err = this->ReadTimeDataIce(GetNumTimesInFile() - 1, &fStartDataIce.dataHdl, errmsg);
+				//err = this->ReadTimeDataFields(GetNumTimesInFile() - 1, &fStartDataThickness.dataHdl, &fStartDataFraction.dataHdl, errmsg);
+				if (err)
+					return err;
+			}
+			fStartData.timeIndex = UNASSIGNEDINDEX;
+			fStartDataIce.timeIndex = UNASSIGNEDINDEX;
+			fStartDataThickness.timeIndex = UNASSIGNEDINDEX;
+			fStartDataFraction.timeIndex = UNASSIGNEDINDEX;
+			//if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
+			DisposeTimeHdl();
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl);	
+			
+			strcpy(fVar.pathName,(*fInputFilesHdl)[i].pathName);
+			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
+			//err = this -> ReadTimeDataIce(0,&fEndDataIce.dataHdl,errmsg);
+			//err = this -> ReadTimeDataFields(0,&fEndDataThickness.dataHdl,&fEndDataFraction.dataHdl,errmsg);
+			if(err) return err;
+			fEndData.timeIndex = 0;
+			fEndDataIce.timeIndex = 0;
+			fEndDataThickness.timeIndex = 0;
+			fEndDataFraction.timeIndex = 0;
+			fOverLap = true;
+			return noErr;
+		}
+		lastEndTime = endTime;
+	}
+	if (fAllowExtrapolationInTime && time > lastEndTime)
+	{
+		//if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
+		DisposeTimeHdl();
+		err = ScanFileForTimes((*fInputFilesHdl)[numFiles-1].pathName,&fTimeHdl);	
+		
+		// code goes here, check that start/end times match
+		strcpy(fVar.pathName,(*fInputFilesHdl)[numFiles-1].pathName);
+		fOverLap = false;
+		return err;
+	}
+	if (fAllowExtrapolationInTime && time < firstStartTime)
+	{
+		//if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
+		DisposeTimeHdl();
+		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl);	
+		
+		// code goes here, check that start/end times match
+		strcpy(fVar.pathName,(*fInputFilesHdl)[0].pathName);
+		fOverLap = false;
+		return err;
+	}
+	strcpy(errmsg,"Time outside of interval being modeled");
+	return -1;	
+}
+
+double TimeGridVelIce_c::GetStartFieldValue(long index, long field)
+{	// 
+	double value = 0;
+	if (index>=0)
+	{
+		if (field==1)	// thickness
+		{
+			if (fStartDataThickness.dataHdl) value = INDEXH(fStartDataThickness.dataHdl,index);
+			if (value==fFillValue) value = 0;
+		}
+		if (field==2)	// fraction
+		{
+			if (fStartDataFraction.dataHdl) value = INDEXH(fStartDataFraction.dataHdl,index);
+			if (value==fFillValue) value = 0;
+		}
+	}
+	return value;
+}
+
+double TimeGridVelIce_c::GetEndFieldValue(long index, long field)
+{	// 
+	double value = 0;
+	if (index>=0)
+	{
+		if (field==1)	// thickness
+		{
+			if (fEndDataThickness.dataHdl) value = INDEXH(fEndDataThickness.dataHdl,index);
+			if (value==fFillValue) value = 0;
+		}
+		if (field==2)	// fraction
+		{
+			if (fEndDataFraction.dataHdl) value = INDEXH(fEndDataFraction.dataHdl,index);
+			if (value==fFillValue) value = 0;
+		}
+	}
+	return value;
+}
+
+/////////////////////////////////////////////////
+double TimeGridVelIce_c::GetStartIceUVelocity(long index)
+{	// 
+	double u = 0;
+	if (index>=0)
+	{
+		if (fStartDataIce.dataHdl) u = INDEXH(fStartDataIce.dataHdl,index).u;
+		if (u==fFillValue) u = 0;
+	}
+	return u;
+}
+
+double TimeGridVelIce_c::GetEndIceUVelocity(long index)
+{
+	double u = 0;
+	if (index>=0)
+	{
+		if (fEndDataIce.dataHdl) u = INDEXH(fEndDataIce.dataHdl,index).u;
+		if (u==fFillValue) u = 0;
+	}
+	return u;
+}
+
+double TimeGridVelIce_c::GetStartIceVVelocity(long index)
+{
+	double v = 0;
+	if (index >= 0)
+	{
+		if (fStartDataIce.dataHdl) v = INDEXH(fStartDataIce.dataHdl,index).v;
+		if (v==fFillValue) v = 0;
+	}
+	return v;
+}
+
+double TimeGridVelIce_c::GetEndIceVVelocity(long index)
+{
+	double v = 0;
+	if (index >= 0)
+	{
+		if (fEndDataIce.dataHdl) v = INDEXH(fEndDataIce.dataHdl,index).v;
+		if (v==fFillValue) v = 0;
+	}
+	return v;
+}
+
+VelocityRec TimeGridVelIce_c::GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint)
+{
+	double frac_coverage = 0, max_coverage = .8, min_coverage = .2, fracAlpha;
+	VelocityRec scaledPatVelocity = {0.,0.}, iceVelocity = {0.,0.}, currentVelocity = {0.,0.};
+
+	frac_coverage = GetDataField(model_time, refPoint, 2);
+	iceVelocity = GetScaledPatValueIce(model_time, refPoint);
+	currentVelocity = TimeGridVelCurv_c::GetScaledPatValue(model_time, refPoint);
+	
+	if (frac_coverage >= max_coverage)
+	{
+		return iceVelocity;
+	}
+	else if (frac_coverage <= min_coverage)
+	{
+		return currentVelocity;
+	}
+	else
+	{
+		fracAlpha = (.8 - frac_coverage)/(double)(max_coverage - min_coverage);
+		scaledPatVelocity.u = fracAlpha*currentVelocity.u + (1 - fracAlpha)*iceVelocity.u;
+		scaledPatVelocity.v = fracAlpha*currentVelocity.v + (1 - fracAlpha)*iceVelocity.v;
+	}
+	return scaledPatVelocity;
+}
+
+VelocityRec TimeGridVelIce_c::GetScaledPatValueIce(const Seconds& model_time, WorldPoint3D refPoint)
+{	
+	double timeAlpha, depthAlpha, depth = refPoint.z;
+	float topDepth, bottomDepth;
+	long index = -1, depthIndex1, depthIndex2; 
+	float totalDepth; 
+	Seconds startTime,endTime;
+	VelocityRec scaledPatVelocity = {0.,0.};
+	InterpolationVal interpolationVal;
+	OSErr err = 0;
+	
+	if (fGrid) 
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			interpolationVal = fGrid -> GetInterpolationValues(refPoint.p);
+			if (interpolationVal.ptIndex1<0) return scaledPatVelocity;
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+	}
+	if (index < 0) return scaledPatVelocity;
+	
+	totalDepth = GetTotalDepth(refPoint.p,index);	// may want to know depth relative to ice thickness...
+	
+	// Check for constant current 
+	if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+		//if(GetNumTimesInFile()==1)
+	{
+		// Calculate the interpolated velocity at the point
+		if (index >= 0) 
+		{
+			//scaledPatVelocity.u = INDEXH(fStartData.dataHdl,index).u;
+			//scaledPatVelocity.v = INDEXH(fStartData.dataHdl,index).v;
+			scaledPatVelocity.u = INDEXH(fStartDataIce.dataHdl,index).u;
+			scaledPatVelocity.v = INDEXH(fStartDataIce.dataHdl,index).v;
+		}
+		else	// set vel to zero
+		{
+			scaledPatVelocity.u = 0.;
+			scaledPatVelocity.v = 0.;
+		}
+	}
+	else // time varying current 
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		//startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+		
+		// Calculate the interpolated velocity at the point
+		if (index >= 0) 
+		{
+			//scaledPatVelocity.u = timeAlpha*INDEXH(fStartData.dataHdl,index).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).u;
+			//scaledPatVelocity.v = timeAlpha*INDEXH(fStartData.dataHdl,index).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).v;			{
+			scaledPatVelocity.u = timeAlpha*INDEXH(fStartDataIce.dataHdl,index).u + (1-timeAlpha)*INDEXH(fEndDataIce.dataHdl,index).u;
+			scaledPatVelocity.v = timeAlpha*INDEXH(fStartDataIce.dataHdl,index).v + (1-timeAlpha)*INDEXH(fEndDataIce.dataHdl,index).v;
+		}
+		else	// set vel to zero
+		{
+			scaledPatVelocity.u = 0.;
+			scaledPatVelocity.v = 0.;
+		}
+	}
+	
+scale:
+	
+	//scaledPatVelocity.u *= fVar.curScale; // is there a dialog scale factor?
+	//scaledPatVelocity.v *= fVar.curScale; 
+	scaledPatVelocity.u *= fVar.fileScaleFactor; // may want to allow some sort of scale factor, though should be in file
+	scaledPatVelocity.v *= fVar.fileScaleFactor; 
+			
+	return scaledPatVelocity;
+}
+
+double TimeGridVelIce_c::GetDataField(const Seconds& model_time, WorldPoint3D refPoint, long field)
+{	
+	double timeAlpha, depthAlpha, depth = refPoint.z;
+	long index = -1; 
+	float totalDepth; 
+	Seconds startTime,endTime;
+	double iceDataValue = 0.;
+	InterpolationVal interpolationVal;
+	OSErr err = 0;
+	
+	if (fGrid) 
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			interpolationVal = fGrid -> GetInterpolationValues(refPoint.p);
+			if (interpolationVal.ptIndex1<0) return iceDataValue;
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+	}
+	if (index < 0) return iceDataValue;
+	
+	totalDepth = GetTotalDepth(refPoint.p,index);	// may want to know depth relative to ice thickness...
+	
+	// Check for constant current 
+	if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+		//if(GetNumTimesInFile()==1)
+	{
+		// Calculate the interpolated data at the point
+		if (index >= 0) 
+		{
+			//scaledPatVelocity.u = INDEXH(fStartData.dataHdl,index).u;
+			//scaledPatVelocity.v = INDEXH(fStartData.dataHdl,index).v;
+			if (field == 1) iceDataValue = INDEXH(fStartDataThickness.dataHdl,index);
+			if (field == 2) iceDataValue = INDEXH(fStartDataFraction.dataHdl,index);
+		}
+		else	// set value to zero
+		{
+			iceDataValue = 0.;
+		}
+	}
+	else // time varying current 
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		//startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+		
+		// Calculate the interpolated data at the point
+		if (index >= 0) 
+		{
+			//scaledPatVelocity.u = timeAlpha*INDEXH(fStartData.dataHdl,index).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).u;
+			//scaledPatVelocity.v = timeAlpha*INDEXH(fStartData.dataHdl,index).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).v;			
+			if (field == 1) iceDataValue = timeAlpha*INDEXH(fStartDataThickness.dataHdl,index) + (1-timeAlpha)*INDEXH(fEndDataThickness.dataHdl,index);
+			if (field == 2) iceDataValue = timeAlpha*INDEXH(fStartDataFraction.dataHdl,index) + (1-timeAlpha)*INDEXH(fEndDataFraction.dataHdl,index);
+		}
+		else	// set value to zero
+		{
+			iceDataValue = 0.;
+		}
+	}
+	
+scale:
+	
+	//scaledPatVelocity.u *= fVar.curScale; // is there a dialog scale factor?
+	//scaledPatVelocity.v *= fVar.curScale; 
+	//scaledPatVelocity.u *= fVar.fileScaleFactor; // may want to allow some sort of scale factor, though should be in file
+	//scaledPatVelocity.v *= fVar.fileScaleFactor; 
+			
+	return iceDataValue;
+}
+
+OSErr TimeGridVelIce_c::ReadTimeDataIce(long index,VelocityFH *velocityH, char* errmsg) 
+{
+	OSErr err = 0;
+	char path[256], outPath[256];
+
+	long i, j;
+	int status, ncid, numdims;
+	int curr_ucmp_id, curr_vcmp_id, angle_id, mask_id, uv_ndims;
+	long latlength = fNumRows;
+	long lonlength = fNumCols;
+	long totalNumberOfVels = fNumRows * fNumCols;	// assume ice is just surface velocities
+	size_t velunit_len;
+	static size_t curr_index[] = {0, 0, 0}, angle_index[] = {0, 0};
+	static size_t curr_count[3], angle_count[2];
+
+	double scale_factor = 1., angle = 0., u_grid, v_grid;
+	char *velUnits = 0;
+	double *curr_uvals = 0, *curr_vvals = 0, fill_value = -1e+34, test_value = 8e+10;
+	double /**landmask = 0,*/ velConversion = 1.;
+	double *angle_vals = 0, debug_mask;
+
+	VelocityFH velH = 0;
+	Boolean bRotated = true;
+	
+	errmsg[0] = 0;
+	
+	strcpy(path,fVar.pathName);
+	if (!path || !path[0]) return -1;
+	
+	status = nc_open(path, NC_NOWRITE, &ncid);
+	if (status != NC_NOERR) {err = -1; goto done;}
+
+	status = nc_inq_ndims(ncid, &numdims);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	
+	curr_index[0] = index;	// time 
+	curr_count[0] = 1;	// take one at a time
+	/*if (numdims>=4)	// should check what the dimensions are
+	{
+		//curr_count[1] = 1;	// depth
+		curr_count[1] = numDepths;	// depth
+		curr_count[2] = latlength;
+		curr_count[3] = lonlength;
+	}
+	else*/
+	{
+		curr_count[1] = latlength;	
+		curr_count[2] = lonlength;
+	}
+	angle_count[0] = latlength;
+	angle_count[1] = lonlength;
+	
+	status = nc_inq_varid(ncid, "ang", &angle_id);
+	if (status != NC_NOERR) {/*err = -1; goto done;*/bRotated = false;}
+	else
+	{
+		angle_vals = new double[latlength*lonlength]; 
+		if(!angle_vals) {TechError("TimeGridVelIce_c::ReadTimeData()", "new[ ]", 0); err = memFullErr; goto done;}
+		status = nc_get_vara_double(ncid, angle_id, angle_index, angle_count, angle_vals);
+		if (status != NC_NOERR) {/*err = -1; goto done;*/bRotated = false;}
+	}
+	curr_uvals = new double[latlength*lonlength]; 
+	if(!curr_uvals) 
+	{
+		TechError("TimeGridVelIce_c::ReadTimeData()", "new[]", 0); 
+		err = memFullErr; 
+		goto done;
+	}
+	curr_vvals = new double[latlength*lonlength]; 
+	if(!curr_vvals) 
+	{
+		TechError("TimeGridVelIce_c::ReadTimeData()", "new[]", 0); 
+		err = memFullErr; 
+		goto done;
+	}
+
+	status = nc_inq_varid(ncid, "ice_u", &curr_ucmp_id);
+	if (status != NC_NOERR)
+	{
+		status = nc_inq_varid(ncid, "ICE_U", &curr_ucmp_id);
+		if (status != NC_NOERR)
+		{
+			err = -1; goto done;
+		}
+	}
+	status = nc_inq_varid(ncid, "ice_v", &curr_vcmp_id);
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_varid(ncid, "ICE_V", &curr_vcmp_id);
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
+	}
+	//status = nc_inq_varndims(ncid, curr_ucmp_id, &uv_ndims);
+	//if (status==NC_NOERR){if (uv_ndims < numdims && uv_ndims==3) {curr_count[1] = latlength; curr_count[2] = lonlength;}}	// could have more dimensions than are used in u,v
+
+	status = nc_get_vara_double(ncid, curr_ucmp_id, curr_index, curr_count, curr_uvals);
+	if (status != NC_NOERR) {err = -1; goto done;}
+
+	status = nc_get_vara_double(ncid, curr_vcmp_id, curr_index, curr_count, curr_vvals);
+	if (status != NC_NOERR) {err = -1; goto done;}
+
+	status = nc_inq_attlen(ncid, curr_ucmp_id, "units", &velunit_len);
+	if (status == NC_NOERR)
+	{
+		velUnits = new char[velunit_len+1];
+		status = nc_get_att_text(ncid, curr_ucmp_id, "units", velUnits);
+		if (status == NC_NOERR)
+		{
+			velUnits[velunit_len] = '\0';
+			if (!strcmpnocase(velUnits,"cm/s"))
+				velConversion = .01;
+			else if (!strcmpnocase(velUnits,"m/s"))
+				velConversion = 1.0;
+		}
+	}
+	
+	
+	status = nc_get_att_double(ncid, curr_ucmp_id, "_FillValue", &fill_value);
+	if (status != NC_NOERR) {status = nc_get_att_double(ncid, curr_ucmp_id, "Fill_Value", &fill_value);/*if (status != NC_NOERR){fill_value=-1e+32;}{err = -1; goto done;}*/}	// don't require
+	if (status != NC_NOERR) {status = nc_get_att_double(ncid, curr_ucmp_id, "FillValue", &fill_value);/*if (status != NC_NOERR){fill_value=-1e+32;}{err = -1; goto done;}*/}	// don't require
+	if (status != NC_NOERR) {status = nc_get_att_double(ncid, curr_ucmp_id, "missing_value", &fill_value);/*if (status != NC_NOERR){fill_value=-1e+32;}{err = -1; goto done;}*/}	// don't require
+	//if (status != NC_NOERR) {err = -1; goto done;}	// don't require
+	status = nc_get_att_double(ncid, curr_ucmp_id, "scale_factor", &scale_factor);
+
+	status = nc_close(ncid);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	
+	// NOTE: if allow fill_value as NaN need to be sure to check for it wherever fill_value is used
+	if (isnan(fill_value))
+		fill_value = -9999.;
+	
+	velH = (VelocityFH)_NewHandleClear(totalNumberOfVels * sizeof(VelocityFRec));
+	if (!velH) 
+	{
+		err = memFullErr; 
+		goto done;
+	}
+	//for (i=0;i<totalNumberOfVels;i++)
+	for (i=0;i<latlength;i++)
+	{
+		for (j=0;j<lonlength;j++)
+		{
+			if (curr_uvals[(latlength-i-1)*lonlength+j]==fill_value || curr_vvals[(latlength-i-1)*lonlength+j]==fill_value)
+				curr_uvals[(latlength-i-1)*lonlength+j] = curr_vvals[(latlength-i-1)*lonlength+j] = 0;
+			// NOTE: if leave velocity as NaN need to be sure to check for it wherever velocity is used (GetMove,Draw,...)
+			if (isnan(curr_uvals[(latlength-i-1)*lonlength+j]) || isnan(curr_vvals[(latlength-i-1)*lonlength+j]))
+				curr_uvals[(latlength-i-1)*lonlength+j] = curr_vvals[(latlength-i-1)*lonlength+j] = 0;
+			/////////////////////////////////////////////////
+			/*if (bRotated)
+			{
+				u_grid = (double)curr_uvals[(latlength-i-1)*lonlength+j] * velConversion;
+				v_grid = (double)curr_vvals[(latlength-i-1)*lonlength+j] * velConversion;
+				if (bRotated) angle = angle_vals[(latlength-i-1)*lonlength+j];
+				INDEXH(velH,i*lonlength+j).u = u_grid*cos(angle)-v_grid*sin(angle);	//in radians
+				INDEXH(velH,i*lonlength+j).v = u_grid*sin(angle)+v_grid*cos(angle);
+			}
+			else*/
+			{
+				INDEXH(velH,i*lonlength+j).u = curr_uvals[(latlength-i-1)*lonlength+j] * velConversion;	// need units
+				INDEXH(velH,i*lonlength+j).v = curr_vvals[(latlength-i-1)*lonlength+j] * velConversion;
+			}
+		}
+	}
+	*velocityH = velH;
+	fFillValue = fill_value * velConversion;
+	
+	//if (scale_factor!=1.) fVar.curScale = scale_factor;	// hmm, this forces a reset of scale factor each time, overriding any set by hand
+	if (scale_factor!=1.) fVar.fileScaleFactor = scale_factor;
+	
+done:
+	if (err)
+	{
+		strcpy(errmsg,"Error reading current data from NetCDF file");
+		// We don't want to put up an error message here because it can lead to an infinite loop of messages.
+		//printNote("Error opening NetCDF file");
+		if(velH) {DisposeHandle((Handle)velH); velH = 0;}
+	}
+	if (curr_uvals) 
+	{
+		delete [] curr_uvals; 
+		curr_uvals = 0;
+	}
+	if (curr_vvals) 
+	{
+		delete [] curr_vvals; 
+		curr_vvals = 0;
+	}
+	
+	//if (landmask) {delete [] landmask; landmask = 0;}
+	if (angle_vals) {delete [] angle_vals; angle_vals = 0;}
+	if (velUnits) {delete [] velUnits;}
+	return err;
+}
+
+OSErr TimeGridVelIce_c::ReadTimeDataFields(long index, DOUBLEH *thicknessH, DOUBLEH *fractionH, char* errmsg) 
+{
+	OSErr err = 0;
+	char path[256], outPath[256];
+
+	long i, j;
+	int status, ncid, numdims;
+	int data_fraction_id, data_thickness_id, mask_id, uv_ndims;
+	long latlength = fNumRows;
+	long lonlength = fNumCols;
+	long totalNumberOfValues = fNumRows * fNumCols;	// assume ice is just surface values
+	size_t unit_len;
+	static size_t data_index[] = {0, 0, 0, 0};
+	static size_t data_count[4];
+
+	double scale_factor1 = 1., scale_factor2 = 1., u_grid, v_grid;
+	char *units = 0;
+	double *data_thickness = 0, *data_fraction = 0, fill_value = -1e+34, test_value = 8e+10;
+	double /**landmask = 0,*/ unitConversion = 1.;
+	double debug_mask;
+
+	DOUBLEH thickH = 0, fracH = 0;
+	
+	errmsg[0] = 0;
+	strcpy(path,fVar.pathName);
+	if (!path || !path[0]) return -1;
+	
+	status = nc_open(path, NC_NOWRITE, &ncid);
+	if (status != NC_NOERR) {err = -1; goto done;}
+
+	status = nc_inq_ndims(ncid, &numdims);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	
+	data_index[0] = index;	// time 
+	data_count[0] = 1;	// take one at a time
+	/*if (numdims>=4)	// should check what the dimensions are
+	{
+		//curr_count[1] = 1;	// depth
+		curr_count[1] = numDepths;	// depth
+		curr_count[2] = latlength;
+		curr_count[3] = lonlength;
+	}
+	else*/
+	{
+		data_count[1] = latlength;	
+		data_count[2] = lonlength;
+	}
+	
+	data_thickness = new double[latlength*lonlength]; 
+	if(!data_thickness) 
+	{
+		TechError("TimeGridVelIce_c::ReadTimeData()", "new[]", 0); 
+		err = memFullErr; 
+		goto done;
+	}
+	data_fraction = new double[latlength*lonlength]; 
+	if(!data_fraction) 
+	{
+		TechError("TimeGridVelIce_c::ReadTimeData()", "new[]", 0); 
+		err = memFullErr; 
+		goto done;
+	}
+
+	status = nc_inq_varid(ncid, "ice_thickness", &data_thickness_id);
+	if (status != NC_NOERR)
+	{
+		status = nc_inq_varid(ncid, "ICE_U", &data_thickness_id);
+		if (status != NC_NOERR)
+		{
+			err = -1; goto done;
+		}
+	}
+	status = nc_inq_varid(ncid, "ice_fraction", &data_fraction_id);
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_varid(ncid, "ICE_V", &data_fraction_id);
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
+	}
+
+	status = nc_inq_varndims(ncid, data_thickness_id, &uv_ndims);
+	if (status==NC_NOERR){if (uv_ndims < numdims && uv_ndims==3) {data_count[1] = latlength; data_count[2] = lonlength;}}	// could have more dimensions than are used in u,v
+
+	status = nc_get_vara_double(ncid, data_thickness_id, data_index, data_count, data_thickness);
+	if (status != NC_NOERR) {err = -1; goto done;}
+
+	status = nc_get_vara_double(ncid, data_fraction_id, data_index, data_count, data_fraction);
+	if (status != NC_NOERR) {err = -1; goto done;}
+
+	// what are unit options?
+	status = nc_inq_attlen(ncid, data_thickness_id, "units", &unit_len);
+	if (status == NC_NOERR)
+	{
+		units = new char[unit_len+1];
+		status = nc_get_att_text(ncid, data_thickness_id, "units", units);
+		if (status == NC_NOERR)
+		{
+			units[unit_len] = '\0';
+			if (!strcmpnocase(units,"cm"))
+				unitConversion = .01;
+			else if (!strcmpnocase(units,"m"))
+				unitConversion = 1.0;
+		}
+	}
+	
+	
+	status = nc_get_att_double(ncid, data_thickness_id, "_FillValue", &fill_value);
+	if (status != NC_NOERR) {status = nc_get_att_double(ncid, data_thickness_id, "Fill_Value", &fill_value);/*if (status != NC_NOERR){fill_value=-1e+32;}{err = -1; goto done;}*/}	// don't require
+	if (status != NC_NOERR) {status = nc_get_att_double(ncid, data_thickness_id, "FillValue", &fill_value);/*if (status != NC_NOERR){fill_value=-1e+32;}{err = -1; goto done;}*/}	// don't require
+	if (status != NC_NOERR) {status = nc_get_att_double(ncid, data_thickness_id, "missing_value", &fill_value);/*if (status != NC_NOERR){fill_value=-1e+32;}{err = -1; goto done;}*/}	// don't require
+	//if (status != NC_NOERR) {err = -1; goto done;}	// don't require
+	status = nc_get_att_double(ncid, data_thickness_id, "scale_factor", &scale_factor1);
+	status = nc_get_att_double(ncid, data_fraction_id, "scale_factor", &scale_factor2);
+
+	status = nc_close(ncid);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	
+	// NOTE: if allow fill_value as NaN need to be sure to check for it wherever fill_value is used
+	if (isnan(fill_value))
+		fill_value = -9999.;
+	
+	fracH = (DOUBLEH)_NewHandleClear(totalNumberOfValues * sizeof(double));
+	if (!fracH) 
+	{
+		err = memFullErr; 
+		goto done;
+	}
+	thickH = (DOUBLEH)_NewHandleClear(totalNumberOfValues * sizeof(double));
+	if (!thickH) 
+	{
+		err = memFullErr; 
+		goto done;
+	}
+	//for (i=0;i<totalNumberOfVels;i++)
+	for (i=0;i<latlength;i++)
+	{
+		for (j=0;j<lonlength;j++)
+		{
+			if (data_thickness[(latlength-i-1)*lonlength+j]==fill_value || data_fraction[(latlength-i-1)*lonlength+j]==fill_value)
+				data_thickness[(latlength-i-1)*lonlength+j] = data_fraction[(latlength-i-1)*lonlength+j] = 0;
+			// NOTE: if leave velocity as NaN need to be sure to check for it wherever velocity is used (GetMove,Draw,...)
+			if (isnan(data_thickness[(latlength-i-1)*lonlength+j]) || isnan(data_fraction[(latlength-i-1)*lonlength+j]))
+				data_thickness[(latlength-i-1)*lonlength+j] = data_fraction[(latlength-i-1)*lonlength+j] = 0;
+			/////////////////////////////////////////////////
+			INDEXH(thickH,i*lonlength+j) = data_thickness[(latlength-i-1)*lonlength+j] * scale_factor1 * unitConversion;	// need units
+			INDEXH(fracH,i*lonlength+j) = data_fraction[(latlength-i-1)*lonlength+j] * scale_factor2 * unitConversion;
+		}
+	}
+	*fractionH = fracH;
+	*thicknessH = thickH;
+	//fFillValue = fill_value;	// do we want to store fill_values / scale_factors ?
+	
+	// code goes here, will need separate scale factors for each (or just apply it on read?)
+	//if (scale_factor!=1.) fVar.fileScaleFactor = scale_factor;
+	
+	
+done:
+	if (err)
+	{
+		strcpy(errmsg,"Error reading ice data from NetCDF file");
+		// We don't want to put up an error message here because it can lead to an infinite loop of messages.
+		//printNote("Error opening NetCDF file");
+		if(fracH) {DisposeHandle((Handle)fracH); fracH = 0;}
+		if(thickH) {DisposeHandle((Handle)thickH); thickH = 0;}
+	}
+	if (data_thickness) 
+	{
+		delete [] data_thickness; 
+		data_thickness = 0;
+	}
+	if (data_fraction) 
+	{
+		delete [] data_fraction; 
+		data_fraction = 0;
+	}
+	
+	//if (landmask) {delete [] landmask; landmask = 0;}
+	if (units) {delete [] units;}
+	return err;
+}
+
+OSErr TimeGridVelIce_c::GetIceFields(Seconds time, double *thickness, double *fraction)
+{	// use for curvilinear
+	double timeAlpha;
+	Seconds startTime,endTime;
+	OSErr err = 0;
+	
+	long numVertices,i,numTri,index=-1;
+	InterpolationVal interpolationVal;
+	LongPointHdl ptsHdl = 0;
+	TopologyHdl topH ;
+	long timeDataInterval;
+	Boolean loaded;
+	//TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	TTriGridVel* triGrid = (dynamic_cast<TTriGridVel*>(fGrid));
+
+	char errmsg[256];
+	errmsg[0] = 0;
+
+	err = this -> SetInterval(errmsg, time);
+	if(err) return err;
+	loaded = this -> CheckInterval(timeDataInterval, time);	 
+	
+	if(!loaded) return -1;
+	
+	//topH = triGrid -> GetTopologyHdl();
+	topH = fGrid -> GetTopologyHdl();
+	if(topH)
+		numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	else 
+		numTri = 0;
+		
+	/*ptsHdl = triGrid -> GetPointsHdl();
+	if(ptsHdl)
+		numVertices = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
+	else 
+		numVertices = 0;*/
+	
+	// Check for time varying current 
+	if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+
+		if (fEndData.timeIndex == UNASSIGNEDINDEX && (time > startTime || time < startTime) && fAllowExtrapolationInTime)
+		{
+			timeAlpha = 1;
+		}
+		else
+		{	
+			endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+			timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		}
+	}
+	
+	for (i = 0 ; i< numTri; i++)
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			//interpolationVal = triGrid -> GetInterpolationValues(refPoint.p);
+			interpolationVal = triGrid -> GetInterpolationValuesFromIndex(i);
+			if (interpolationVal.ptIndex1<0) {thickness[i] = 0;	fraction[i] = 0;}// should this be an error?
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			//index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+			index = triGrid->GetRectIndexFromTriIndex2(i,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+
+		if (index < 0) {thickness[i] = 0;	fraction[i] = 0;}// should this be an error?
+		
+		// Should check vs fFillValue
+		// Check for constant current 
+		if(((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha == 1) && index!=-1)
+		{
+				thickness[i] = GetStartFieldValue(index,1);
+				fraction[i] = GetStartFieldValue(index,2);
+		}
+		else if (index!=-1)// time varying current
+		{
+			thickness[i] = timeAlpha*GetStartFieldValue(index,1) + (1-timeAlpha)*GetEndFieldValue(index,1);
+			fraction[i] = timeAlpha*GetStartFieldValue(index,2) + (1-timeAlpha)*GetEndFieldValue(index,2);
+		}
+		if (thickness[i] == fFillValue) thickness[i] = 0.;
+		if (fraction[i] == fFillValue) fraction[i] = 0.;
+		//thickness[i] *= fVar.fileScaleFactor;	// doing this on read
+		//fraction[i] *= fVar.fileScaleFactor; // doing this on read
+	}
+	return err;
+}
+
+//OSErr TimeGridVelIce_c::GetIceVelocities(Seconds time, double *u, double *v)
+OSErr TimeGridVelIce_c::GetIceVelocities(Seconds time, VelocityFRec *ice_velocity)
+{	// use for curvilinear
+	double timeAlpha;
+	Seconds startTime,endTime;
+	OSErr err = 0;
+
+	char errmsg[256];
+	errmsg[0] = 0;
+	
+	long numVertices,i,numTri,index=-1;
+	InterpolationVal interpolationVal;
+	LongPointHdl ptsHdl = 0;
+	TopologyHdl topH ;
+	long timeDataInterval;
+	Boolean loaded;
+	//TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	TTriGridVel* triGrid = (dynamic_cast<TTriGridVel*>(fGrid));
+	VelocityFRec velocity;
+	
+	err = this -> SetInterval(errmsg, time);
+	if(err) return err;
+	
+	loaded = this -> CheckInterval(timeDataInterval, time);	 
+	
+	if(!loaded) return -1;
+	
+	//topH = triGrid -> GetTopologyHdl();
+	topH = fGrid -> GetTopologyHdl();
+	if(topH)
+		numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	else 
+		numTri = 0;
+		
+	/*ptsHdl = triGrid -> GetPointsHdl();
+	if(ptsHdl)
+		numVertices = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
+	else 
+		numVertices = 0;*/
+	
+	// Check for time varying current 
+	if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+
+		if (fEndData.timeIndex == UNASSIGNEDINDEX && (time > startTime || time < startTime) && fAllowExtrapolationInTime)
+		{
+			timeAlpha = 1;
+		}
+		else
+		{	
+			endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+			timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		}
+	}
+	
+	for (i = 0 ; i< numTri; i++)
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			//interpolationVal = triGrid -> GetInterpolationValues(refPoint.p);
+			interpolationVal = triGrid -> GetInterpolationValuesFromIndex(i);
+			if (interpolationVal.ptIndex1<0) {ice_velocity[i].u = 0;	ice_velocity[i].v = 0;}// should this be an error?
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			//index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+			index = triGrid->GetRectIndexFromTriIndex2(i,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+
+		if (index < 0) {ice_velocity[i].u = 0;	ice_velocity[i].v = 0;}// should this be an error?
+		
+		// Should check vs fFillValue
+		// Check for constant current 
+		if(((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha == 1) && index!=-1)
+		{
+				velocity.u = GetStartIceUVelocity(index);
+				velocity.v = GetStartIceVVelocity(index);
+		}
+		else if (index!=-1)// time varying current
+		{
+			velocity.u = timeAlpha*GetStartIceUVelocity(index) + (1-timeAlpha)*GetEndIceUVelocity(index);
+			velocity.v = timeAlpha*GetStartIceVVelocity(index) + (1-timeAlpha)*GetEndIceVVelocity(index);
+		}
+		if (velocity.u == fFillValue) velocity.u = 0.;
+		if (velocity.v == fFillValue) velocity.v = 0.;
+		/*if ((velocity.u != 0 || velocity.v != 0) && (velocity.u != fFillValue && velocity.v != fFillValue)) // should already have handled fill value issue
+		{
+			// code goes here, fill up arrays with data
+			float inchesX = (velocity.u * refScale * fVar.fileScaleFactor) / arrowScale;
+			float inchesY = (velocity.v * refScale * fVar.fileScaleFactor) / arrowScale;
+		}*/
+		//u[i] = velocity.u * fVar.fileScaleFactor;
+		//v[i] = velocity.v * fVar.fileScaleFactor;
+		ice_velocity[i].u = velocity.u * fVar.fileScaleFactor;
+		ice_velocity[i].v = velocity.v * fVar.fileScaleFactor;
+	}
+	return err;
+}
+
+OSErr TimeGridVelIce_c::GetMovementVelocities(Seconds time, VelocityFRec *movement_velocity)
+{	// use for curvilinear
+	OSErr err = 0;
+	double timeAlpha;
+	double frac_coverage = 0, max_coverage = .8, min_coverage = .2, fracAlpha;
+	Seconds startTime,endTime;
+	
+	long numVertices,i,numTri,index=-1;
+	InterpolationVal interpolationVal;
+	LongPointHdl ptsHdl = 0;
+	TopologyHdl topH ;
+	long timeDataInterval;
+	Boolean loaded;
+	//TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	TTriGridVel* triGrid = (dynamic_cast<TTriGridVel*>(fGrid));
+	VelocityRec velocity = {0.,0.}, iceVelocity = {0.,0.}, currentVelocity = {0.,0.};
+	VelocityRec iceVelocityStart = {0.,0.}, currentVelocityStart = {0.,0.}, iceVelocityEnd = {0.,0.}, currentVelocityEnd = {0.,0.};
+	
+	char errmsg[256];
+	errmsg[0] = 0;
+
+	err = this -> SetInterval(errmsg, time);
+	if(err) return err;
+	
+	loaded = this -> CheckInterval(timeDataInterval, time);	 
+	
+	if(!loaded) return -1;
+	
+	//topH = triGrid -> GetTopologyHdl();
+	topH = fGrid -> GetTopologyHdl();
+	if(topH)
+		numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	else 
+		numTri = 0;
+		
+	/*ptsHdl = triGrid -> GetPointsHdl();
+	if(ptsHdl)
+		numVertices = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
+	else 
+		numVertices = 0;*/
+	
+	// Check for time varying current 
+	if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+
+		if (fEndData.timeIndex == UNASSIGNEDINDEX && (time > startTime || time < startTime) && fAllowExtrapolationInTime)
+		{
+			timeAlpha = 1;
+		}
+		else
+		{	
+			endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+			timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		}
+	}
+	
+	for (i = 0 ; i< numTri; i++)
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			//interpolationVal = triGrid -> GetInterpolationValues(refPoint.p);
+			interpolationVal = triGrid -> GetInterpolationValuesFromIndex(i);
+			if (interpolationVal.ptIndex1<0) {movement_velocity[i].u = 0;	movement_velocity[i].v = 0; return err;}// should this be an error?
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			//index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+			index = triGrid->GetRectIndexFromTriIndex2(i,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+
+		if (index < 0) {movement_velocity[i].u = 0;	movement_velocity[i].v = 0; return err;}// should this be an error?
+		
+		// Should check vs fFillValue
+		// Check for constant current 
+		frac_coverage = GetStartFieldValue(index,2);
+		fracAlpha = (.8 - frac_coverage)/(double)(max_coverage - min_coverage);
+		iceVelocityStart.u = GetStartIceUVelocity(index);
+		iceVelocityStart.v = GetStartIceVVelocity(index);
+		currentVelocityStart.u = GetStartUVelocity(index);
+		currentVelocityStart.v = GetStartVVelocity(index);
+		if(((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha == 1) && index!=-1)
+		{
+			if (frac_coverage >= max_coverage)
+			{
+				velocity.u = iceVelocityStart.u;
+				velocity.v = iceVelocityStart.v;
+			}
+			else if (frac_coverage <= min_coverage)
+			{
+				velocity.u = currentVelocityStart.u;
+				velocity.v = currentVelocityStart.v;
+			}
+			else
+			{
+				velocity.u = fracAlpha*currentVelocityStart.u + (1 - fracAlpha)*iceVelocityStart.u;
+				velocity.v = fracAlpha*currentVelocityStart.v + (1 - fracAlpha)*iceVelocityStart.v;
+			}
+		}
+		else if (index!=-1)// time varying current
+		{
+			iceVelocityEnd.u = GetEndIceUVelocity(index);
+			iceVelocityEnd.v = GetEndIceVVelocity(index);
+			currentVelocityEnd.u = GetEndUVelocity(index);
+			currentVelocityEnd.v = GetEndVVelocity(index);
+			if (frac_coverage >= max_coverage)
+			{
+				velocity.u = timeAlpha*iceVelocityStart.u + (1-timeAlpha)*iceVelocityEnd.u;
+				velocity.v = timeAlpha*iceVelocityStart.v + (1-timeAlpha)*iceVelocityEnd.v;
+			}
+			else if (frac_coverage <= min_coverage)
+			{
+				velocity.u = timeAlpha*currentVelocityStart.u + (1-timeAlpha)*currentVelocityEnd.u;
+				velocity.v = timeAlpha*currentVelocityStart.v + (1-timeAlpha)*currentVelocityEnd.v;
+			}
+			else
+			{
+				currentVelocity.u = timeAlpha*currentVelocityStart.u + (1-timeAlpha)*currentVelocityEnd.u;
+				currentVelocity.v = timeAlpha*currentVelocityStart.v + (1-timeAlpha)*currentVelocityEnd.v;
+				iceVelocity.u = timeAlpha*iceVelocityStart.u + (1-timeAlpha)*iceVelocityEnd.u;
+				iceVelocity.v = timeAlpha*iceVelocityStart.v + (1-timeAlpha)*iceVelocityEnd.v;
+				velocity.u = fracAlpha*currentVelocity.u + (1 - fracAlpha)*iceVelocity.u;
+				velocity.v = fracAlpha*currentVelocity.v + (1 - fracAlpha)*iceVelocity.v;
+			}
+		}
+
+		movement_velocity[i].u = velocity.u * fVar.fileScaleFactor;
+		movement_velocity[i].v = velocity.v * fVar.fileScaleFactor;
+	}
+	return err;
+}
 
 TimeGridVelTri_c::TimeGridVelTri_c () : TimeGridVelCurv_c(), TimeGridVel_c()
 {
@@ -5738,10 +7281,12 @@ OSErr TimeGridVelTri_c::TextRead(const char *path, const char *topFilePath)
 	// needs to be updated once triangle grid format is set
 
 	OSErr err = 0;
-	char errmsg[256] = "";
+	long i, numScanned;
 	char fileName[256], s[256], topPath[256], outPath[256];
 	char recname[NC_MAX_NAME];
-	long i, numScanned;
+
+	char errmsg[256];
+	errmsg[0] = 0;
 
 	int status;
 	int ncid, nodeid, nbndid, bndid, neleid, latid, lonid, recid, timeid, sigmaid, sigmavarid, depthid;
@@ -6405,7 +7950,6 @@ OSErr TimeGridVelTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* err
 {	// - needs to be updated once triangle grid format is set
 	OSErr err = 0;
 	long i,j;
-	char path[256], outPath[256]; 
 	int status, ncid, numdims, uv_ndims;
 	int curr_ucmp_id, curr_vcmp_id, uv_dimid[3], nele_id;
 	static size_t curr_index[] = {0,0,0,0};
@@ -6417,6 +7961,7 @@ OSErr TimeGridVelTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* err
 	long numTris = fNumEles;
 	long numDepths = fVar.maxNumDepths;	// assume will always have full set of depths at each point for now
 	double scale_factor = 1.;
+	char path[256], outPath[256];
 	
 	errmsg[0]=0;
 	
@@ -6572,7 +8117,6 @@ done:
 OSErr TimeGridVelTri_c::ReorderPoints2(long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors, long ntri, Boolean isCCW) 
 {
 	OSErr err = 0;
-	char errmsg[256];
 	long i, n, nv = fNumNodes;
 	long currentBoundary;
 	long numVerdatPts = 0, numVerdatBreakPts = 0;
@@ -6597,6 +8141,9 @@ OSErr TimeGridVelTri_c::ReorderPoints2(long *bndry_indices, long *bndry_nums, lo
 	
 	Boolean addOne = false;	// for debugging
 	
+	char errmsg[256];
+	errmsg[0] = 0;
+
 	/////////////////////////////////////////////////
 	
 	
@@ -6859,7 +8406,6 @@ done:
 OSErr TimeGridVelTri_c::ReorderPoints(long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts) 
 {
 	OSErr err = 0;
-	char errmsg[256];
 	long i, n, nv = fNumNodes;
 	long currentBoundary;
 	long numVerdatPts = 0, numVerdatBreakPts = 0;
@@ -6881,6 +8427,9 @@ OSErr TimeGridVelTri_c::ReorderPoints(long *bndry_indices, long *bndry_nums, lon
 	
 	Boolean addOne = false;	// for debugging
 	
+	char errmsg[256];
+	errmsg[0] = 0;
+
 	/////////////////////////////////////////////////
 	
 	
@@ -7110,9 +8659,12 @@ long TimeGridVelTri_c::GetNumDepthLevels()
 	// and check both sigma grid and multilayer grid (and maybe others)
 	long numDepthLevels = 0;
 	OSErr err = 0;
-	char path[256], outPath[256];
 	int status, ncid, sigmaid, sigmavarid;
 	size_t sigmaLength=0;
+	char path[256], outPath[256];
+	path[0] = 0;
+	outPath[0] = 0;
+
 	//if (fDepthLevelsHdl) numDepthLevels = _GetHandleSize((Handle)fDepthLevelsHdl)/sizeof(**fDepthLevelsHdl);
 	//status = nc_open(fVar.pathName, NC_NOWRITE, &ncid);
 	//if (status != NC_NOERR) {/*err = -1; goto done;*/return -1;}
@@ -7157,7 +8709,6 @@ long TimeGridVelTri_c::GetNumDepthLevels()
 OSErr TimeGridVelTri_c::ReadTopology(vector<string> &linesInFile)
 {
 	OSErr err = 0;
-	char errmsg[256];
 
 	string currentLine;
 	long i, numPoints, numTopoPoints, line = 0, numPts;
@@ -7176,6 +8727,7 @@ OSErr TimeGridVelTri_c::ReadTopology(vector<string> &linesInFile)
 
 	LONGH boundarySegs = 0, waterBoundaries = 0, boundaryPts = 0;
 
+	char errmsg[256];
 	errmsg[0] = 0;
 
 	MySpinCursor(); // JLM 8/4/99
@@ -7410,7 +8962,6 @@ OSErr TimeGridVelTri_c::ExportTopology(char *path)
 	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0, nBoundaryPts;
 	long i, n=0, v1,v2,v3,n1,n2,n3;
 	double x,y,z=0;
-	char buffer[512],hdrStr[64],topoStr[128];
 	TopologyHdl topH=0;
 	TTriGridVel* triGrid = 0;
 	TDagTree* dagTree = 0;
@@ -7421,6 +8972,11 @@ OSErr TimeGridVelTri_c::ExportTopology(char *path)
 	FILE *fp = fopen(path, "w");
 	//BFPB bfpb;
 	//PtCurMap *map = GetPtCurMap();
+
+	char buffer[512], hdrStr[64], topoStr[128];
+	buffer[0] = 0;
+	hdrStr[0] = 0;
+	topoStr[0] = 0;
 
 	triGrid = dynamic_cast<TTriGridVel*>(this->fGrid);
 	if (!triGrid) {printError("There is no topology to export"); return -1;}
@@ -7868,7 +9424,6 @@ OSErr ScanFileForTimes(char *path,Seconds ***timeH)
 	long i,numScanned,line=0;
 	DateTimeRec time;
 	Seconds timeSeconds;
-	char s[1024], outPath[256];
 	CHARH fileBufH = 0;
 	int status, ncid, recid, timeid;
 	size_t recs, t_len, t_len2;
@@ -7877,8 +9432,13 @@ OSErr ScanFileForTimes(char *path,Seconds ***timeH)
 	static size_t timeIndex;
 	Seconds startTime2;
 	double timeConversion = 1.;
-	char errmsg[256] = "";
 	Seconds **timeHdl = 0;
+
+	char s[1024], outPath[256];
+	char errmsg[256];
+	s[0] = 0;
+	outPath[0] = 0;
+	errmsg[0] = 0;
 
 	status = nc_open(path, NC_NOWRITE, &ncid);
 	// code goes here, will need to resolve file paths to unix paths in readinputfilenames
@@ -9571,7 +11131,7 @@ OSErr TimeGridCurTri_c::TextRead(vector<string> &linesInFile,
 	// code goes here, worry about really long lines in the file
 
 	// read past the header
-	for (long i = 0; i < linesInFile.size(); i++) {
+	for (unsigned long i = 0; i < linesInFile.size(); i++) {
 		currentLine = trim(linesInFile[line++]);
 		if (currentLine[0] != '[')
 			break;
@@ -9871,12 +11431,12 @@ OSErr TimeGridCurTri_c::TextRead(const char *path, const char *topFilePath)
 OSErr TimeGridCurTri_c::ReadHeaderLines(vector<string> &linesInFile,
 								 string containingDir, UncertaintyParameters *uncertainParams)
 {
-	char errmsg[256];
 	OSErr err = 0;
 	string currentLine;
 	
 	long line = 0;
 	
+	char errmsg[256];
 	errmsg[0] = 0;
 	
 	// code goes here, we need to worry about really big files
@@ -9884,7 +11444,7 @@ OSErr TimeGridCurTri_c::ReadHeaderLines(vector<string> &linesInFile,
 	// code goes here, worry about really long lines in the file
 	
 	// read past the header
-	for (long i = 0; i < linesInFile.size(); i++) {
+	for (unsigned long i = 0; i < linesInFile.size(); i++) {
 		currentLine = trim(linesInFile[line++]);
 		if (currentLine[0] != '[')
 			break;

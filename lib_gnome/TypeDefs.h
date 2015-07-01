@@ -369,6 +369,11 @@ typedef struct {
 	VelocityFH3D dataHdl; // numVertices
 }  LoadedData3D,*LoadedDataP3D;
 
+typedef struct {
+	long timeIndex;
+	DOUBLEH dataHdl; 
+}  LoadedFieldData,*LoadedFieldDataP;
+
 
 typedef struct {
 	float totalDepth;

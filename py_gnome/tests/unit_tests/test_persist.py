@@ -21,8 +21,9 @@ from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
 from gnome.persist import load
 from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
+from gnome.movers import RandomMover, WindMover, CatsMover, IceMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
+from gnome.outputters import CurrentGeoJsonOutput, IceGeoJsonOutput
 
 from conftest import dump, testdata, test_oil
 
@@ -131,10 +132,9 @@ def make_model(uncertain=False):
     # model.movers += comp_mover
 
     print 'adding a Weatherer'
-    model.water = Water(311.15)
+    model.environment += Water(311.15)
     skim_start = start_time + timedelta(hours=3)
-
-    model.weatherers += [Evaporation(model.water, w_mover.wind),
+    model.weatherers += [Evaporation(),
                          Skimmer(spill_amount * .5,
                                  spill_units,
                                  efficiency=.3,
@@ -142,6 +142,10 @@ def make_model(uncertain=False):
                                  active_stop=skim_start + timedelta(hours=2)),
                          Burn(0.2 * spill_volume, 1.0, skim_start,
                               efficiency=0.9)]
+
+    model.outputters += \
+        CurrentGeoJsonOutput(model.find_by_attr('_ref_as', 'current_movers',
+                                                model.movers, allitems=True))
 
     return model
 
@@ -170,6 +174,11 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
     original model
     '''
     model = make_model(uncertain)
+    ice_mover = IceMover(testdata['IceMover']['ice_curr_curv'],
+                         testdata['IceMover']['ice_top_curv'])
+    model.movers += ice_mover
+    model.outputters += IceGeoJsonOutput([ice_mover])
+
     model.zipsave = zipsave
 
     print 'saving scenario ..'
@@ -293,6 +302,9 @@ class TestWebApi:
         self.del_saveloc(self.webapi_files)
         os.makedirs(self.webapi_files)
         serial = model.serialize('webapi')
+        assert 'valid' in serial
+        assert serial['valid']
+
         fname = os.path.join(self.webapi_files, 'Model.json')
         self._write_to_file(fname, serial)
 
@@ -314,11 +326,13 @@ class TestWebApi:
     @pytest.mark.parametrize('uncertain', [False, True])
     def test_model_rt(self, uncertain):
         model = make_model(uncertain)
-        deserial = Model.deserialize(model.serialize('webapi'))
+        serial = model.serialize('webapi')
+        deserial = Model.deserialize(serial)
 
         # update the dict so it gives a valid model to load
         deserial['map'] = model.map
-        deserial['water'] = model.water
+        water = model.find_by_attr('_ref_as', 'water', model.environment)
+        deserial['water'] = water
         for coll in ['movers', 'weatherers', 'environment', 'outputters',
                      'spills']:
             for ix, item in enumerate(deserial[coll]):

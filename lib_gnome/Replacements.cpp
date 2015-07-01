@@ -505,4 +505,36 @@ Boolean IsShioFile(char* path)
 		return false;
 }
 
+bool IsTriGridFile (vector<string> &linesInFile)
+{
+	long lineIdx = 0;
+	string currentLine;
+
+	string value1S;
+
+	// First line, must start with 'DAG'
+	currentLine = trim(linesInFile[lineIdx++]);
+
+	istringstream lineStream(currentLine);
+
+	lineStream >> value1S;
+	if (lineStream.fail())
+		return false;
+
+	if (value1S != "DAG")
+		return false;
+
+	return true;
+}
+
+Boolean IsTriGridFile (char *path)
+{
+	vector<string> linesInFile;
+	
+	if (ReadLinesInFile(path, linesInFile))
+		return IsShioFile(linesInFile);
+	else
+		return false;
+}
+
 #endif

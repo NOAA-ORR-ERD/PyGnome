@@ -1,12 +1,13 @@
 import datetime
-import os
 
 import numpy as np
 
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 
 from gnome import basic_types
-from gnome.utilities.time_utils import date_to_sec
+from gnome.utilities.time_utils import (zero_time,
+                                        date_to_sec,
+                                        sec_to_date)
 from gnome.utilities.convert import (to_time_value_pair,
                                      tsformat,
                                      to_datetime_value_2d)
@@ -71,7 +72,8 @@ class Timeseries(object):
             not use it as an argument name
         """
         if (timeseries is None and filename is None):
-            timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
+            timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])],
+                                  dtype=basic_types.datetime_value_2d)
 
         self._filename = None
 
@@ -100,6 +102,7 @@ class Timeseries(object):
             datetime_value_2d = np.asarray([datetime_value_2d],
                                            dtype=basic_types.datetime_value_2d)
         self._check_timeseries(datetime_value_2d)
+
         return datetime_value_2d
 
     def _check_timeseries(self, timeseries):
@@ -109,8 +112,8 @@ class Timeseries(object):
         todo: update exceptions to logged errors
         '''
         # check to make sure the time values are in ascending order
-        if np.any(timeseries['time'][np.argsort(timeseries['time'])]
-                  != timeseries['time']):
+        if np.any(timeseries['time'][np.argsort(timeseries['time'])] !=
+                  timeseries['time']):
             raise ValueError('timeseries are not in ascending order. '
                              'The datetime values in the array must be in '
                              'ascending order')

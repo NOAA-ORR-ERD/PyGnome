@@ -13,6 +13,7 @@ from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 from gnome.environment import (WindSchema,
                                WaterSchema)
+from gnome.exceptions import ReferencedObjectNotSet
 
 
 class Evaporation(Weatherer, Serializable):
@@ -34,20 +35,26 @@ class Evaporation(Weatherer, Serializable):
         self.water = water
         self.wind = wind
 
+        if water is not None and wind is not None:
+            kwargs['make_default_refs'] = \
+                kwargs.pop('make_default_refs', False)
+
         super(Evaporation, self).__init__(**kwargs)
         self.array_types.update({'area', 'evap_decay_constant',
                                  'frac_water', 'frac_lost', 'init_mass'})
 
     def prepare_for_model_run(self, sc):
         '''
-        add evaporated key to weathering_data
+        add evaporated key to mass_balance
         for now also add 'density' key here
         Assumes all spills have the same type of oil
         '''
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
         if self.on:
-            sc.weathering_data['evaporated'] = 0.0
+            super(Evaporation, self).prepare_for_model_run(sc)
+
+            sc.mass_balance['evaporated'] = 0.0
             msg = ("{0._pid} init 'evaporated' key to 0.0").format(self)
             self.logger.debug(msg)
 
@@ -110,19 +117,19 @@ class Evaporation(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
-        - sets 'evaporation' in sc.weathering_data
-        - currently also sets 'density' in sc.weathering_data but may update
+
+        - sets 'evaporation' in sc.mass_balance
+        - currently also sets 'density' in sc.mass_balance but may update
           this as we add more weatherers and perhaps density gets set elsewhere
 
-        Following diff eq models rate of change each pseudocomponent of oil:
-        ::
-            dm(t)/dt = -(1 - fw) * A/B * m(t)
+        Following diff eq models rate of change each pseudocomponent of oil::
+        dm(t)/dt = -(1 - fw) * A/B * m(t)
 
         Over a time-step, A, B, C are assumed constant. m(t) is the component
         mass at beginning of timestep; m(t + Dt) is mass at end of timestep:
         ::
-            m(t + Dt) = m(t) * exp(-L * Dt)
-            L := (1 - fw) * A/B
+           m(t + Dt) = m(t) * exp(-L * Dt)
+           L := (1 - fw) * A/B
 
         Define properties for each pseudocomponent of oil and constants:
         ::
@@ -134,7 +141,7 @@ class Evaporation(Weatherer, Serializable):
         are used to model the blob:
         ::
             area: area computed from fay spreading
-            m_i:
+            m_i: mass of component 'i'
             sum_m_mw: sum(m_i/mw_i) over all components
 
         effect of wind - mass transport coefficient:
@@ -166,7 +173,7 @@ class Evaporation(Weatherer, Serializable):
                                 data['evap_decay_constant'],
                                 time_step)
 
-            sc.weathering_data['evaporated'] += \
+            sc.mass_balance['evaporated'] += \
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])
 
             # log amount evaporated at each step
@@ -219,7 +226,11 @@ class Evaporation(Weatherer, Serializable):
 class BlobEvaporation(Evaporation):
     '''
     playing around with blob evaporation and time varying fay_area
-    experimental
+    experimental code - not currently used by Model.
+    Testing out the algorithm in ipython notebooks.
+
+    See documentation in source code:
+        gnome/documentation/evaporation/blob_evap.ipynb
     '''
     def _set_evap_decay_constant(self, model_time, data, substance, time_step):
         '''

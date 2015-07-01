@@ -67,9 +67,10 @@ def test_loop():
 
     _assert_move(delta)
 
-    #set windage to be constant or each particle has a different position, doesn't work with uncertainty on
-    #assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
-    #assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
+    # set windage to be constant or each particle has a different position,
+    # doesn't work with uncertainty on
+    # assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
+    # assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
 
     # returned delta is used in test_certain_uncertain test
     return delta
@@ -114,16 +115,16 @@ def test_default_props():
     test default properties
     use _defaults helper function defined in test_wind_mover.py
     """
-    #==========================================================================
+    # ==========================================================================
     # assert w_grid.active == True  # timespan is as big as possible
     # assert w_grid.uncertain_duration == 3.0
     # assert w_grid.uncertain_time_delay == 0
     # assert w_grid.uncertain_speed_scale == 2
     # assert w_grid.uncertain_angle_scale == 0.4
     # assert w_grid.uncertain_angle_units == 'rad'
-    #==========================================================================
+    # ==========================================================================
     assert w_grid.wind_scale == 1
-    assert w_grid.extrapolate == False
+    assert w_grid.extrapolate is False
     assert w_grid.time_offset == 0
 
     _defaults(w_grid)

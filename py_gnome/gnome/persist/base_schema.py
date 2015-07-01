@@ -4,7 +4,7 @@ from colander import (SchemaNode, deferred, drop,
                       SequenceSchema, TupleSchema, MappingSchema,
                       String, Float, Int)
 
-from extend_colander import NumpyArraySchema
+from extend_colander import NumpyFixedLenSchema
 
 
 @deferred
@@ -29,7 +29,7 @@ class ObjType(MappingSchema):
     json_ = SchemaNode(String())    # either 'webapi' or 'save'
 
 
-class OrderedCollectionItemMap(MappingSchema):
+class CollectionItemMap(MappingSchema):
     '''
     This stores the obj_type and obj_index
     '''
@@ -37,8 +37,8 @@ class OrderedCollectionItemMap(MappingSchema):
     id = SchemaNode(String(), missing=drop)
 
 
-class OrderedCollectionItemsList(SequenceSchema):
-    item = OrderedCollectionItemMap()
+class CollectionItemsList(SequenceSchema):
+    item = CollectionItemMap()
 
 
 class LongLat(TupleSchema):
@@ -51,15 +51,21 @@ class LongLatBounds(SequenceSchema):
     'Used to define bounds on a map'
     bounds = LongLat()
 
+Polygon = LongLatBounds
+
+
+class PolygonSet(SequenceSchema):
+    polygonset = Polygon()
+
 
 class WorldPoint(LongLat):
     'Used to define reference points. 3D positions (long,lat,z)'
     z = SchemaNode(Float(), default=0.0)
 
 
-class WorldPointNumpy(NumpyArraySchema):
+class WorldPointNumpy(NumpyFixedLenSchema):
     '''
-    Define same schema as WorldPoint; however, the base class NumpyArraySchema
+    Define same schema as WorldPoint; however, the base class NumpyFixedLenSchema
     serializes/deserializes it from/to a numpy array
     '''
     long = SchemaNode(Float())

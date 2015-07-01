@@ -2,10 +2,10 @@ from core import Weatherer, HalfLifeWeatherer
 from evaporation import Evaporation
 from emulsification import Emulsification
 from natural_dispersion import NaturalDispersion
-from intrinsic import WeatheringData
+from weathering_data import WeatheringData
 from cleanup import Skimmer, Burn, ChemicalDispersion
 from manual_beaching import Beaching
-from spreading import Langmuir
+from spreading import Langmuir, FayGravityViscous, ConstantArea
 
 __all__ = [Weatherer,
            HalfLifeWeatherer,
@@ -17,6 +17,8 @@ __all__ = [Weatherer,
            ChemicalDispersion,
            Beaching,
            WeatheringData,
+           FayGravityViscous,
+           ConstantArea,
            Langmuir]
 
 
@@ -26,7 +28,6 @@ def weatherer_sort(weatherer):
 
     Weatherers are sorted as follows:
 
-    -1. Langmuir - sets the 'area' array, do this first
     0.  cleanup options including Skimmer, Burn
     1.  chemical dispersion - currently there is only one Dispersion
     2.  half-life - these are not used with following real weatherers but need
@@ -37,10 +38,14 @@ def weatherer_sort(weatherer):
     6.  dissolution - does not exist
     7.  biodegradation - does not exist
     8.  emulsification
+    9.  WeatheringData - defines initialize_data() method to initialize all
+        weathering data arrays. In weather_elements, this updates data arrays
+        corresponding with wd properties (density, viscosity)
+    10. FayGravityViscous - initializes the 'fay_area' and 'area' array. Also
+        updates the 'area' and 'fay_area' array
+    11. Langmuir - modifies the 'area' array with fractional coverage based on
+        langmuir cells.
     '''
-    if isinstance(weatherer, (Langmuir)):
-        return -1
-
     if isinstance(weatherer, (Skimmer, Burn)):
         return 0
 
@@ -65,3 +70,12 @@ def weatherer_sort(weatherer):
 
     if isinstance(weatherer, (Emulsification,)):
         return 8
+
+    if isinstance(weatherer, (WeatheringData, )):
+        return 9
+
+    if isinstance(weatherer, (FayGravityViscous, ConstantArea)):
+        return 10
+
+    if isinstance(weatherer, (Langmuir, )):
+        return 11

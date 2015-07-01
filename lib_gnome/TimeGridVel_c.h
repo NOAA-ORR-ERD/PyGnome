@@ -112,6 +112,9 @@ public:
 	virtual double 	GetEndUVelocity(long index);
 	virtual double 	GetEndVVelocity(long index);
 	
+	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity){return -1;}
+	virtual GridCellInfoHdl 	GetCellData() {return 0;}
+
 	long 					GetNumTimesInFile();
 	long 					GetNumFiles();
 	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	
@@ -126,7 +129,9 @@ public:
 
 	virtual void		DisposeTimeHdl();
 	void 				DisposeLoadedData(LoadedData * dataPtr);	
+	void 				DisposeLoadedData(LoadedFieldData * dataPtr);	
 	void 				ClearLoadedData(LoadedData * dataPtr);
+	void 				ClearLoadedData(LoadedFieldData *dataPtr);
 	void 				DisposeAllLoadedData();
 };
 
@@ -196,6 +201,7 @@ public:
 	
 	LONGH fVerdatToNetCDFH;	// for curvilinear
 	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
+	GridCellInfoHdl fGridCellInfoH;
 	Boolean bVelocitiesOnNodes;		// default is velocities on cells
 
 	TimeGridVelCurv_c ();
@@ -220,6 +226,9 @@ public:
 	void 				GetDepthIndices(long ptIndex, float depthAtPoint, float totalDepth, long *depthIndex1, long *depthIndex2);
 	float		GetTotalDepthFromTriIndex(long triIndex);
 	float		GetTotalDepth(WorldPoint refPoint,long ptIndex);
+
+	OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
+	virtual GridCellInfoHdl 	GetCellData();
 
 	virtual	OSErr ReadTopology(std::vector<std::string> &linesInFile);
 	virtual	OSErr ReadTopology(const char *path);
@@ -262,6 +271,55 @@ public:
 
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
 };
+
+class TimeGridVelIce_c : virtual public TimeGridVelCurv_c
+{
+public:
+	
+	LoadedData fStartDataIce; 
+	LoadedData fEndDataIce;
+		
+	LoadedFieldData fStartDataThickness;
+	LoadedFieldData fEndDataThickness;
+	
+	LoadedFieldData fStartDataFraction;
+	LoadedFieldData fEndDataFraction;
+	
+	TimeGridVelIce_c ();
+	virtual ~TimeGridVelIce_c () { Dispose (); }
+	virtual void		Dispose ();
+	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELICE; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELICE) return TRUE; return TimeGridVelCurv_c::IAm(id); }
+	//void 				ClearLoadedData(LoadedFieldData *dataPtr);
+	//void 				DisposeLoadedFieldData(LoadedFieldData *dataPtr);
+	void 				DisposeLoadedStartData();
+	void 				DisposeLoadedEndData();
+	void 				ClearLoadedEndData();
+	void 				ShiftInterval();
+	virtual OSErr 		SetInterval(char *errmsg, const Seconds& model_time);
+	//OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
+	OSErr 				CheckAndScanFile(char *errmsg, const Seconds& model_time);
+	double 				GetStartFieldValue(long index, long field);
+	double 				GetEndFieldValue(long index, long field);
+	double 				GetStartIceUVelocity(long index);
+	double 				GetStartIceVVelocity(long index);
+	double 				GetEndIceUVelocity(long index);
+	double 				GetEndIceVVelocity(long index);
+	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
+	VelocityRec 		GetScaledPatValueIce(const Seconds& model_time, WorldPoint3D refPoint);
+	double 				GetDataField(const Seconds& model_time, WorldPoint3D refPoint, long field);
+	OSErr 				ReadTimeDataIce(long index,VelocityFH *velocityH, char* errmsg); 
+	OSErr 				ReadTimeDataFields(long index,DOUBLEH *thicknessH, DOUBLEH *fractionH, char* errmsg); 
+	OSErr 				GetIceFields(Seconds time, double *thickness, double *fraction);
+	OSErr 				GetIceVelocities(Seconds time, VelocityFRec *ice_velocity);
+	OSErr 				GetMovementVelocities(Seconds time, VelocityFRec *movement_velocity);
+	//OSErr 				GetIceVelocities(Seconds time, double *u, double *v);
+	//VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
+	//VelocityRec 		GetScaledPatValue3D(const Seconds& model_time, InterpolationVal interpolationVal,float depth);
+	
+	//virtual OSErr TextRead(const char *path, const char *topFilePath);
+};
+
 
 
 //#ifndef pyGNOME

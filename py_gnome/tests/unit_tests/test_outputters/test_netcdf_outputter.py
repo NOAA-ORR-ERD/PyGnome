@@ -63,7 +63,6 @@ def model(sample_model_fcn, output_filename):
                                  units='kg')
 
     water = Water()
-    model.water = water
     model.movers += RandomMover(diffusion_coef=100000)
     model.movers += constant_wind_mover(1.0, 0.0)
     model.weatherers += Evaporation(water, model.movers[-1].wind)
@@ -416,7 +415,7 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
                 else:
                     sc = scp.items()[0]
 
-                assert sc.weathering_data == weathering_data
+                assert sc.mass_balance == weathering_data
             else:
                 raise Exception("Assertions not tested since no data found in"
                     " NetCDF file for timestamp: {0}".format(curr_time))
@@ -469,7 +468,7 @@ def test_read_all_arrays(model):
                     elif key == 'positions':
                         assert np.allclose(scp.LE('positions', uncertain),
                                            nc_data['positions'], rtol, atol)
-                    elif key == 'weathering_data':
+                    elif key == 'mass_balance':
                         assert scp.LE(key, uncertain) == mb
                     else:
                         #if key not in ['last_water_positions',
@@ -537,7 +536,7 @@ def test_write_output_post_run(model, output_ts_factor):
             # does infact give the next consecutive index
             (data_by_index, mb) = NetCDFOutput.read_data(file_, index=ix)
             assert curr_time == data_by_index['current_time_stamp'].item()
-            assert scp.LE('weathering_data', uncertain) == mb
+            assert scp.LE('mass_balance', uncertain) == mb
 
             ix += 1
 
@@ -549,12 +548,12 @@ def test_write_output_post_run(model, output_ts_factor):
             curr_time = scp.LE('current_time_stamp', uncertain)
             (nc_data, mb) = NetCDFOutput.read_data(file_, curr_time)
             assert curr_time == nc_data['current_time_stamp'].item()
-            assert scp.LE('weathering_data', uncertain) == mb
+            assert scp.LE('mass_balance', uncertain) == mb
 
             # again, check that last time step
             (data_by_index, mb) = NetCDFOutput.read_data(file_, index=ix)
             assert curr_time == data_by_index['current_time_stamp'].item()
-            assert scp.LE('weathering_data', uncertain) == mb
+            assert scp.LE('mass_balance', uncertain) == mb
             with pytest.raises(IndexError):
                 # check that no more data exists in NetCDF
                 NetCDFOutput.read_data(file_, index=ix+1)

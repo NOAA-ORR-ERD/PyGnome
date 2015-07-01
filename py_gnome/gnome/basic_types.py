@@ -69,12 +69,13 @@ wind_datasource = enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
 ### WEATHERING STATUS ###
 # Define an enum for weathering status. The numpy array will contain np.uint8
 # datatype. Can still define 2 more flags as 2**6, 2**7
-fate = enum(non_weather=1,      # 2**0
-            surface_weather=2,  # 2**1
-            subsurf_weather=4,  # 2**2
-            skim=8,             # 2**3
-            burn=16,            # 2**4
-            disperse=32,        # 2**5
+# These are bit flags
+fate = enum(non_weather=1,
+            surface_weather=2,
+            subsurf_weather=4,
+            skim=8,
+            burn=16,
+            disperse=32,        # marked for chemical_dispersion
             )
 
 # ----------------------------------------------------------------
@@ -105,6 +106,10 @@ triangle_data = np.dtype([('v1', np_long), ('v2', np_long),
                        ('v3', np_long), ('n1', np_long),
                        ('n2', np_long), ('n3', np_long)],
                        align=True)
+
+cell_data = np.dtype([('cell_num', np_long), ('top_left', np_long), 
+                       ('top_right', np_long), ('bottom_left', np_long),
+                       ('bottom_right', np_long)], align=True)
 
 # In the C++ TypeDefs.h, the enum type for LEStatus is defined as a short
 # this is also consistent with the definition in type_defs.pxd ..
