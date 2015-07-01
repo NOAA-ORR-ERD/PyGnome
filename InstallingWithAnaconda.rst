@@ -5,110 +5,176 @@ Building / Installing GNOME with the Anaconda python distribution
 
 Anaconda (https://store.continuum.io/cshop/anaconda/) is a Python distribution that comes with most of the difficult to build and install packages that py_gnome needs. Thus it's a nice target for running GNOME on your own system.
 
+Windows:
+--------
+You want the Windows 64 bit Python 2.7 version. Installing with the defaults works fine. You probably want to let it set the PATH for you -- that's a pain to do by hand.
+
+OS-X:
+-----
+
+Anaconda provides a 64 bit version -- this should work well with py_gnome. Either the graphical installer or the command line one is fine -- use the graphical one if you are not all that comfortable with the *nix command line.
+
+Linux:
+------
+
+The Linux 64bit-python2.7 is the one to use.
+
+NOTE: using Anaconda on Linux is NOT tested, and may not work.
+
 conda
 =====
 
 conda (http://conda.pydata.org/docs/intro.html) is the package manager that Anaconda is built on. So when working with Anaconda, you are really using the conda package manager, and installing conda packages.
 
-dependencies
+Dependencies
 ============
 
-Dependencies are listed in the requirements.txt file (and the conda build meta.yaml) file.
+Dependencies are listed in conda_packages.txt file
 
 But to get the whole setup, the ``conda_requirements.txt`` file has a full dump of a conda environment with all the dependencies. You can set up a conda environment for py_gnome with::
 
   conda create -n py_gnome --file conda_packages.txt 
+
+Note that if you are using python primarily for py_gnome, you don't need to create a separate environment.
 
 Many of the dependencies that py_gnome requires come out of the box with Anaconda. But a few don't so we've set up a "channel" on binstar, to supply the extra packages. Once that channel is setup, conda should be able to find everything it needs.
 
 Setting up
 ===========
 
-Once you have Anaconda installed, you should start by getting everything up to date::
+Install miniconda or Anaconda
 
-  conda update anaconda
+http://conda.pydata.org/miniconda.html
 
-And install the binstar client::
+miniconda is a minimal anaconda installation -- only Python and conda -- you then need to install the packages you need.
 
-  conda install binstar
+Or install the full Anaconda -- Anaconda will give you a wide variety of extra stuff, including development tools, that are very useful for scientific computing.
 
-(maybe only for building / uploading packages to binstar?)
+https://store.continuum.io/cshop/anaconda/
+
+Once you have either Anaconda or miniconda installed, the rest of the instructions should be the same.
+
+Update your (new) system
+-------------------------
+
+Once you have Anaconda or miniconda installed, you should start by getting everything up to date, sometimes pacakges have been updated since the installer was built::
+
+  $ conda update anaconda
+
+or::
+
+  $ conda update conda
+
+(if you have miniconda)
+
 
 Setting up binstar
 -------------------
 
-To add the NOAA-ORR-ERD binstar channel to Anaconda::
+binstar (http://binstar.org) is a web site where people can host pacakges for download. WE have set up a binstar "channel", where we put various pacakges needed for py_gnome: https://conda.binstar.org/noaa-orr-erd. But you don't need to access the web site to use it -- conda can find everything you need:
+
+Install the binstar client::
+
+  $ conda install binstar
+
+Add the NOAA-ORR-ERD binstar channel to Anaconda::
 
   conda config --add channels http://conda.binstar.org/NOAA-ORR-ERD
 
-We also rely on the channel of one of the core conda developers:
+Now conda will know to go look in our binstar channel for the pacakges you need.
 
-  conda config --add channels http://conda.binstar.org/asmeurer
+Install the dependencies:
+-------------------------
+
+Switch to pygnome directory.
+
+Install all the packages pygnome needs::
+
+  $ conda install --file conda_packages.txt
 
 
 Installing GNOME, etc.
 ----------------------
 
-It should now be as easy as::
- 
-  conda install py_gnome
+You will need the source code for py_gnome. You probably already have it if you have gotten this far. But it is available from:
 
-This will install the latest version that we have up on binstar
+https://github.com/NOAA-ORR-ERD/PyGnome
 
 
 Building the oil_library and py_gnome
 ======================================
 
-If you want to work with the bleeding edge version of py_gnome, and/or contribute to development, then you need to set up your conda environment with all the dependencies, then build py_gnome and the oil library yourself:
+At this point, it is best to build py_gnome from source. We usually build in "develop" mode -- this means that when you change python code (or update from source control), the changes will take place immediately.
 
-Getting all the dependencies
-----------------------------
+**OS-X Note:**
 
-conda can install a list of dependencies from a file, so you can simply do:
+Anaconda does some strange things with system libraries and linking on OS-X, so we have a high level script that will build and re-link the libs for you. So to build py_gnome on OS-X::
 
+  $ cd py_gnome
+  $ ./build_anaconda.sh
 
+**Other platforms** As far as I know, the same linking issues don't exist, so you can build directly. There are a number of options for building:
 
-Building with conda should be straightforward. In the oil_library directory::
+  $ python setup.py developall
 
-  conda build oil_library_conda_recipe/
+builds everything -- gnome and the oil library lib. There are also these options::
 
+  $ python setup.py develop
 
-**********************************************
-Notes on installation of py_gnome for Windows.
-**********************************************
+build and install just py_gnome in 'development mode'::
 
-These instuctions assume you have the py_gnoem source from gitHub (or similar source): https://github.com/NOAA-ORR-ERD/PyGnome
+  $ python setup.py cleandev
 
-Using the Anaconda Python Distribution
-======================================
+cleans files generated by 'develop' mode and files auto-generated by cython::
 
-* Install Anaconda:
+If the oil database has been updated since you last ran all this, you need to re-build the oil database::
+  $ python setup.py remake_oil_db
 
-https://store.continuum.io/cshop/anaconda/
+Testing py_gnome
+-----------------
 
-You want the Windows 64 bit Python 2.7 version. Installing wit the defautls works fine. YOu probably want to let it set the PATH for you -- that's a pain to do by hand.
+Test it::
+  $ cd tests/unit_tests/
+  $ py.test
 
-It's a good idea to update anaconda -- particularly if you didn't just install it::
+and if those pass, you can run:
 
-  > conda update conda
-  > conda update anaconda
+  $py.test --runslow
 
-C / C++ compiler
-----------------
+which will run some more tests, some of which take a while to run.
 
-In order to compile py_gnome (and maybe other packages) you need a compiler. Anaconda provides gcc, but we have set up the py_gnome build to use the MS compiler, and even Anaconda itself is built with the MS compiler. 
-
-Download the MS compiler here:
-
-http://www.microsoft.com/en-us/download/details.aspx?id=44266
-
-Installing with the defaults works fine there, too.
+Note that the tests will try to auto- download some data files -- if you have are not on th einternet, this will fail, and if you have a slow connection, it could take a while.
 
 
+**********
+Compilers 
+**********
+
+To build py_gnome, you will need a C/C++ compiler.
+
+OS-X
+-----
+
+The system compiler for OS-X is XCode and command line tools. It can be installed from the App Store. Note: it is a HUGE download. 
+
+After installing XCode, you still need to install the "command line tools": Xcode includes a new "Downloads" preference pane to install optional components such as command line tools, and previous iOS Simulators. To open this pane click the "Xcode" button in the top left of the screen near the Apple logo, then click "Preferences", then click "Downloads".
+
+Once the command line tools are installed, you should be able to build  py_gnome as above.
 
 
+Windows
+--------
+
+On Windows, you need MS Visual Studio 2008 or the "Microsoft Visual C++ Compiler for Python 2.7":
+
+https://www.microsoft.com/en-us/download/details.aspx?id=44266
+
+Installing with the defaults should work fine there, too.
 
 
+Linux
+------
 
+On Linux, you want the system gcc compiler. Use your system package manager to get it.
 
 
