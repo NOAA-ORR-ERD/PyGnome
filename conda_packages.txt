@@ -1,48 +1,27 @@
-# all the packages required by py_gnome and the oil_library
-# This file may be used to create an environment using:
-# $ conda create --name <env> --file <this file>
-# platform: osx-64
-awesome-slugify
-colander=1.0=py27_0
-curl
-cython=0.21.1=py27_0
-freetype
-geojson>=1.0.9=py27_0
-hdf5=1.8.13
-ipython
-iso8601
-jpeg
-lcms
-libnetcdf>=4.3
-libsodium
-netcdf4
-nose
-numpy
-openssl
-pil
-progressbar
-psutil
-py
-pytest
-python=2.7.10
-python.app
-pyzmq
-readline
-regex
-repoze.lru
-scipy>=0.14
+# Documents the packages required for PyGnome
+# This should be the minimal conda install
+
 setuptools
+numpy
+scipy
+ipython      
+matplotlib
+netCDF4
+gsw
+pillow
+pyzmq
+cython
+pytest
+testfixtures
+psutil
+sphinx
+progressbar
 six
-sqlalchemy>=0.9.8
-sqlite
-tk
-transaction
-translationstring
-unidecode
+geojson
+repoze.lru 
 unit_conversion
-zeromq
-zlib
+colander
+sqlalchemy
 zope.interface
 zope.sqlalchemy
-gsw
 
