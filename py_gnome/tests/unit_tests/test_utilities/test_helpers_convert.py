@@ -12,7 +12,7 @@ from gnome.utilities.convert import (to_time_value_pair,
                                      to_datetime_value_1d,
                                      to_datetime_value_2d,
                                      tsformat)
-from gnome.utilities.time_utils import (timezone_offset_seconds,
+from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
 
 import pytest
@@ -26,17 +26,17 @@ def wind_ts(rq_wind):
     - returns a dict with the expected datetime_rq, datetime_uv
       and time_value_pair objects
     """
-    date_times = ([sec_to_date(timezone_offset_seconds())] *
+    date_times = ([sec_to_date(zero_time())] *
                   len(rq_wind['rq']))
     dtv_rq = (np.array(zip(date_times, rq_wind['rq']), dtype=datetime_value_2d)
               .view(dtype=np.recarray))
 
-    date_times = ([sec_to_date(timezone_offset_seconds())] *
+    date_times = ([sec_to_date(zero_time())] *
                   len(rq_wind['uv']))
     dtv_uv = (np.array(zip(date_times, rq_wind['uv']), dtype=datetime_value_2d)
               .view(dtype=np.recarray))
 
-    date_times = ([timezone_offset_seconds()] * len(rq_wind['uv']))
+    date_times = ([zero_time()] * len(rq_wind['uv']))
     tv = (np.array(zip(date_times, rq_wind['uv']), dtype=time_value_pair)
           .view(dtype=np.recarray))
 
