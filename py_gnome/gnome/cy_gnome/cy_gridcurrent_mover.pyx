@@ -274,6 +274,27 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         return top
 
+    def _get_cell_data(self):
+        """
+            Invokes the GetCellDataHdl method of TimeGridVel_c object
+            to get the velocities for the grid
+        """
+        cdef short tmp_size = sizeof(GridCellInfo)
+        cdef GridCellInfoHdl cell_data_hdl
+        cdef cnp.ndarray[GridCellInfo, ndim = 1] cell_data
+
+        # allocate memory and copy it over
+        # should check that cell data exists
+        cell_data_hdl = self.grid_current.GetCellDataHdl()
+        sz = _GetHandleSize(<Handle>cell_data_hdl)
+
+        # will this always work?
+        cell_data = np.empty((sz / tmp_size,), dtype=basic_types.cell_data)
+
+        memcpy(&cell_data[0], cell_data_hdl[0], sz)
+
+        return cell_data
+
     def get_num_triangles(self):
         """
             Invokes the GetNumTriangles method of TriGridVel_c object

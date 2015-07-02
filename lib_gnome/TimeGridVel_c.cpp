@@ -6987,7 +6987,7 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue(const Seconds& model_time, World
 	
 	// code goes here, need interpolation in z if LE is below surface
 	// what kind of weird things can triangles do below the surface ??
-	if (/*depth>0 &&*/ interpolationVal.ptIndex1 >= 0) 
+	if (depth>0 && interpolationVal.ptIndex1 >= 0) 
 	{
 		scaledPatVelocity = GetScaledPatValue3D(model_time, interpolationVal,depth);
 		goto scale;
@@ -7194,10 +7194,10 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue3D(const Seconds& model_time, Int
 	{
 		// Calculate the time weight factor
 		if (GetNumFiles()>1 && fOverLap)
-			startTime = fOverLapStartTime;
+			startTime = fOverLapStartTime + fTimeShift;
 		else
-			startTime = (*fTimeHdl)[fStartData.timeIndex];
-		endTime = (*fTimeHdl)[fEndData.timeIndex];
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
 		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
 		
 		// Calculate the time weight factor

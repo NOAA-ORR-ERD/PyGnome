@@ -386,7 +386,7 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 	
 	// code goes here, need interpolation in z if LE is below surface
 	// what kind of weird things can triangles do below the surface ??
-	if (/*depth>0 &&*/ interpolationVal.ptIndex1 >= 0) 
+	if (depth>0 && interpolationVal.ptIndex1 >= 0) 
 	{
 		scaledPatVelocity = GetMove3D(interpolationVal,depth);
 		goto scale;
@@ -626,10 +626,10 @@ VelocityRec NetCDFMoverTri_c::GetMove3D(InterpolationVal interpolationVal,float 
 	{
 		// Calculate the time weight factor
 		if (dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1 && fOverLap)
-			startTime = fOverLapStartTime;
+			startTime = fOverLapStartTime + fTimeShift;
 		else
-			startTime = (*fTimeHdl)[fStartData.timeIndex];
-		endTime = (*fTimeHdl)[fEndData.timeIndex];
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
 		timeAlpha = (endTime - time)/(double)(endTime - startTime);
 		
 		if (pt1depthIndex1!=-1)
