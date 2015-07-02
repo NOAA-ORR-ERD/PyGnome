@@ -3,9 +3,6 @@
 """
 test time_utils different input formats
 """
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2, width=120)
-
 from datetime import datetime
 import numpy as np
 from gnome.utilities import time_utils
@@ -40,7 +37,8 @@ def test_datetime_array():
     test time_utils conversion works for python datetime object
     """
 
-    x = time_utils.make_zero_time_array(3, datetime)
+    x = np.array([datetime.utcfromtimestamp(time_utils.zero_time())] * 3,
+                 dtype=datetime)
     xn = _convert(x)
 
     assert np.all(time_utils.round_time(x, roundTo=1) == xn)
@@ -51,7 +49,9 @@ def test_numpy_array():
     time_utils works for numpy datetime object
     """
 
-    x = time_utils.make_zero_time_array(3, 'datetime64[s]')
+    x = np.array([datetime.utcfromtimestamp(time_utils.zero_time())] * 3,
+                 dtype='datetime64[s]')
+
     xn = _convert(x)
     assert np.all(x == xn)
 
@@ -69,5 +69,3 @@ def test_time_dst():
     x = datetime(2013, 2, 21, 23, 10)  # no daylight savings
     xn = _convert(x)
     assert np.all(x == xn)
-
-

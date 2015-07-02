@@ -6,14 +6,13 @@ generic time series
 import datetime
 import copy
 
-import numpy
-np = numpy
+import numpy as np
 
 from colander import (SchemaNode, drop, Float)
 
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome import basic_types
-from gnome.utilities.time_utils import (timezone_offset_seconds,
+from gnome.utilities.time_utils import (zero_time,
                                         date_to_sec,
                                         sec_to_date)
 from gnome.utilities.serializable import Serializable, Field
@@ -114,11 +113,7 @@ class RunningAverage(Environment, Serializable):
         self.wind = wind
 
         if (wind is None and timeseries is None):
-            zero_time = timezone_offset_seconds()
-            if zero_time < 0:
-                zero_time = 0
-
-            mvg_timeseries = np.array([(sec_to_date(zero_time), [0.0, 0.0])],
+            mvg_timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])],
                                       dtype=basic_types.datetime_value_2d)
             moving_timeseries = self._convert_to_time_value_pair(mvg_timeseries)
 

@@ -14,8 +14,11 @@ import copy
 import numpy as np
 from repoze.lru import lru_cache
 
+import gnome    # required by deserialize
+
 from gnome.basic_types import oil_status, fate
 from gnome.utilities.serializable import Serializable, Field
+
 from .core import Weatherer, WeathererSchema
 
 
@@ -48,6 +51,7 @@ class WeatheringData(Weatherer, Serializable):
         Options arguments kwargs: these get passed to base class via super
         '''
         super(WeatheringData, self).__init__(**kwargs)
+
         self.water = water
         self.array_types = {'fate_status', 'positions', 'status_codes',
                             'density', 'viscosity', 'mass_components', 'mass',
@@ -91,6 +95,7 @@ class WeatheringData(Weatherer, Serializable):
             # model should only call initialize_data if new particles were
             # released
             new_LEs_mask = data['density'] == 0
+
             if np.any(new_LEs_mask):
                 self._init_new_particles(new_LEs_mask, data, substance)
 
@@ -131,6 +136,7 @@ class WeatheringData(Weatherer, Serializable):
             mass_frac = \
                 (data['mass_components'][:, :substance.num_components] /
                  data['mass'].reshape(len(data['mass']), -1))
+
             # check if density becomes > water, set it equal to water in this
             # case - 'density' is for the oil-water emulsion
             oil_rho = k_rho*(substance.component_density * mass_frac).sum(1)
@@ -138,22 +144,26 @@ class WeatheringData(Weatherer, Serializable):
             # oil/water emulsion density
             new_rho = (data['frac_water'] * water_rho +
                        (1 - data['frac_water']) * oil_rho)
+
             if np.any(new_rho > self.water.density):
                 new_rho[new_rho > self.water.density] = self.water.density
-                self.logger.info(self._pid + "during update, density is larger"
-                                 " than water density - set to water density")
+                self.logger.info('{0} during update, density is larger '
+                                 'than water density - set to water density'
+                                 .format(self._pid))
 
             data['density'] = new_rho
 
             # following implementation results in an extra array called
             # fw_d_fref but is easy to read
             v0 = substance.get_viscosity(self.water.get('temperature', 'K'))
+
             if v0 is not None:
                 kv1 = self._get_kv1_weathering_visc_update(v0)
                 fw_d_fref = data['frac_water']/self.visc_f_ref
-                data['viscosity'] = \
-                    (v0 * np.exp(kv1 * data['frac_lost']) *
-                     (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
+
+                data['viscosity'] = (v0 *
+                                     np.exp(kv1 * data['frac_lost']) *
+                                     (1 + (fw_d_fref * 2.0 / 1.187) ** 2.49))
 
         sc.update_from_fatedataview(fate='all')
 
@@ -180,24 +190,28 @@ class WeatheringData(Weatherer, Serializable):
         # todo: move weighted average to utilities
         # also added a check for 'mass' == 0, edge case
         if len(sc.substances) > 1:
-            self.logger.warning(self._pid + "current code isn't valid for "
-                                "multiple weathering substances")
+            self.logger.warning('{0} current code is not valid for '
+                                'multiple weathering substances'
+                                .format(self._pid))
         elif len(sc.substances) == 0:
             # should not happen with the Web API. Just log a warning for now
-            self.logger.warning(self._pid + "weathering is on but found no"
-                                "weatherable substances.")
+            self.logger.warning('{0} weathering is on but found no '
+                                'weatherable substances.'
+                                .format(self._pid))
         else:
             # avg_density, avg_viscosity applies to elements that are on the
             # surface and being weathered
             data = sc.substancefatedata(sc.substances[0],
                                         {'mass', 'density', 'viscosity'})
+
             if data['mass'].sum() > 0.0:
                 sc.mass_balance['avg_density'] = \
                     np.sum(data['mass']/data['mass'].sum() * data['density'])
                 sc.mass_balance['avg_viscosity'] = \
                     np.sum(data['mass']/data['mass'].sum() * data['viscosity'])
             else:
-                self.logger.info(self._pid + "sum of 'mass' array went to 0.0")
+                self.logger.info("{0} sum of 'mass' array went to 0.0"
+                                 .format(self._pid))
 
         # floating includes LEs marked to be skimmed + burned + dispersed
         # todo: remove fate_status and add 'surface' to status_codes. LEs
@@ -205,6 +219,9 @@ class WeatheringData(Weatherer, Serializable):
         # 'surface' so following can get cleaned up.
         sc.mass_balance['floating'] = \
             (sc['mass'][sc['fate_status'] == fate.surface_weather].sum() +
+             sc['mass'][sc['fate_status'] == fate.non_weather].sum() -
+             sc['mass'][sc['status_codes'] == oil_status.on_land].sum() -
+             sc['mass'][sc['status_codes'] == oil_status.to_be_removed].sum() +
              sc['mass'][sc['fate_status'] & fate.skim == fate.skim].sum() +
              sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
              sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
@@ -216,6 +233,7 @@ class WeatheringData(Weatherer, Serializable):
 
         if new_LEs > 0:
             amount_released = np.sum(sc['mass'][-new_LEs:])
+
             if 'amount_released' in sc.mass_balance:
                 sc.mass_balance['amount_released'] += amount_released
             else:
@@ -232,14 +250,16 @@ class WeatheringData(Weatherer, Serializable):
         '''
         water_temp = self.water.get('temperature', 'K')
         density = substance.get_density(water_temp)
+
         if density > self.water.get('density'):
             msg = ("{0} will sink at given water temperature: {1} {2}. "
-                   "Set density to water density".
-                   format(substance.name,
-                          self.water.get('temperature',
-                                         self.water.units['temperature']),
-                          self.water.units['temperature']))
+                   "Set density to water density"
+                   .format(substance.name,
+                           self.water.get('temperature',
+                                          self.water.units['temperature']),
+                           self.water.units['temperature']))
             self.logger.error(msg)
+
             data['density'][mask] = self.water.get('density')
         else:
             data['density'][mask] = density
@@ -261,8 +281,7 @@ class WeatheringData(Weatherer, Serializable):
 
         if substance.get_viscosity(water_temp) is not None:
             'make sure we do not add NaN values'
-            data['viscosity'][mask] = \
-                substance.get_viscosity(water_temp)
+            data['viscosity'][mask] = substance.get_viscosity(water_temp)
 
         # initialize the fate_status array based on positions and status_codes
         self._init_fate_status(mask, data)
@@ -278,16 +297,14 @@ class WeatheringData(Weatherer, Serializable):
         and for refloated LEs which should also have been marked as non_weather
         when they beached.
         '''
-        surf_mask = \
-            np.logical_and(update_LEs_mask,
-                           np.logical_and(data['positions'][:, 2] == 0,
-                                          data['status_codes'] ==
-                                          oil_status.in_water))
-        subs_mask = \
-            np.logical_and(update_LEs_mask,
-                           np.logical_and(data['positions'][:, 2] > 0,
-                                          data['status_codes'] ==
-                                          oil_status.in_water))
+        surf_mask = np.logical_and(update_LEs_mask,
+                                   np.logical_and(data['positions'][:, 2] == 0,
+                                                  data['status_codes'] ==
+                                                  oil_status.in_water))
+        subs_mask = np.logical_and(update_LEs_mask,
+                                   np.logical_and(data['positions'][:, 2] > 0,
+                                                  data['status_codes'] ==
+                                                  oil_status.in_water))
 
         # set status for new_LEs correctly
         data['fate_status'][surf_mask] = fate.surface_weather
@@ -309,12 +326,11 @@ class WeatheringData(Weatherer, Serializable):
         lru_cache on this function to cache the result for a given initial
         viscosity: v0
         '''
-        # find kv1
         kv1 = np.sqrt(v0) * self.visc_curvfit_param
+
         if kv1 < 1:
             kv1 = 1
-
-        if kv1 > 10:
+        elif kv1 > 10:
             kv1 = 10
 
         return kv1
@@ -339,28 +355,31 @@ class WeatheringData(Weatherer, Serializable):
 
     def serialize(self, json_='webapi'):
         '''
-        No need to return serialized version of this for WebAPI
-        User does not manipuate it. It automatically uses default Water object
-        if make_default_refs is True
+            'water' property is saved as references in save file
         '''
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        serial = schema.serialize(toserial)
 
         if json_ == 'webapi':
-            toserial = self.to_serialize(json_)
-            schema = self.__class__._schema()
-            serial = schema.serialize(toserial)
-            
-            return serial
+            if self.water:
+                serial['water'] = self.water.serialize(json_)
 
-        # for save files - call super
-        return super(WeatheringData, self).serialize(json_)
+        return serial
 
     @classmethod
     def deserialize(cls, json_):
         '''
-        do not expect to get this object from 'webapi' since it isn't being
-        serialized for 'webapi'. User does not manipulate it.
-        If we wish to display to user, this can be updated - just need to add
-        a serialized 'wind' object.
+            Append correct schema for water
         '''
-        if json_['json_'] == 'save':
-            return super(cls, WeatheringData).deserialize(json_)
+        if not cls.is_sparse(json_):
+            schema = cls._schema()
+            dict_ = schema.deserialize(json_)
+
+            if 'water' in json_:
+                obj = json_['water']['obj_type']
+                dict_['water'] = (eval(obj).deserialize(json_['water']))
+
+            return dict_
+        else:
+            return json_

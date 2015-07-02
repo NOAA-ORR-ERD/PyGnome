@@ -93,10 +93,10 @@ class OrderedCollection(object):
                         raise
                     self.add(e)
             except:
-                raise TypeError('{0}: expected {1}, '
-                                'got {2}'.format(self.__class__.__name__,
-                                                 self.dtype,
-                                                 type(elem)))
+                raise TypeError('{0}: expected {1!r}, '
+                                'got {2!r}'.format(self.__class__.__name__,
+                                                   self.dtype,
+                                                   elem))
 
     def append(self, elem):
         self.add(elem)
