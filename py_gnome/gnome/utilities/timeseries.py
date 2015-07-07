@@ -4,7 +4,7 @@ import numpy as np
 
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 
-from gnome import basic_types
+from gnome import basic_types, GnomeId
 from gnome.utilities.time_utils import (zero_time,
                                         date_to_sec,
                                         sec_to_date)
@@ -13,7 +13,7 @@ from gnome.utilities.convert import (to_time_value_pair,
                                      to_datetime_value_2d)
 
 
-class Timeseries(object):
+class Timeseries(GnomeId):
     def __init__(self, timeseries=None, filename=None, format='uv'):
         """
         Initializes a timeseries object from either a timeseries or datafile
@@ -75,19 +75,95 @@ class Timeseries(object):
             timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])],
                                   dtype=basic_types.datetime_value_2d)
 
-        self._filename = None
+        self._filename = filename
 
-        if not filename:
-            datetime_value_2d = self._xform_input_timeseries(timeseries)
-            time_value_pair = to_time_value_pair(datetime_value_2d, format)
-            self.ossm = CyTimeseries(timeseries=time_value_pair)
+        if filename is None:
+            if self._check_timeseries(timeseries):
+                datetime_value_2d = self._xform_input_timeseries(timeseries)
+
+                time_value_pair = to_time_value_pair(datetime_value_2d, format)
+                self.ossm = CyTimeseries(timeseries=time_value_pair)
+            else:
+                raise ValueError('Bad timeseries as input')
         else:
             ts_format = tsformat(format)
-            self._filename = filename
             self.ossm = CyTimeseries(filename=self._filename,
                                      file_format=ts_format)
 
-    def _xform_input_timeseries(self, datetime_value_2d):
+    def _check_timeseries(self, timeseries):
+        '''
+        Run some checks to make sure timeseries is valid.
+        - We accept numpy arrays
+        - We will also accept a list of timeseries values of the form
+          (datetime(...), (N, N))
+        - we will also accept a constant single timeseries  value.
+        Also, make the resolution to minutes as opposed to seconds
+        '''
+        if not isinstance(timeseries, np.ndarray):
+            if self._is_timeseries_value(timeseries):
+                return True
+            else:
+                for i in timeseries:
+                    if not self._is_timeseries_value(i):
+                        return False
+
+                return True
+
+        if not self._timeseries_is_ascending(timeseries):
+            self.logger.error('{0} - timeseries are not in ascending order. '
+                              'The datetime values in the array must be in '
+                              'ascending order'
+                              .format(self._pid))
+            return False
+
+        if self._timeseries_has_duplicates(timeseries):
+            self.logger.error('{0} - timeseries must contain unique '
+                              'time entries'
+                              .format(self._pid))
+            return False
+
+        return True
+
+    def _is_timeseries_value(self, value):
+        if not isinstance(value, (list, tuple)):
+            return False
+
+        if len(value) != 2:
+            return False
+
+        if not isinstance(value[0], (datetime.datetime, np.datetime64)):
+            return False
+
+        if len(value[1]) not in (1, 2):
+            return False
+
+        return True
+
+    def _timeseries_is_ascending(self, timeseries):
+        # we need to have a valid shape to sort
+        if timeseries.shape == ():
+            timeseries = np.asarray([timeseries],
+                                    dtype=basic_types.datetime_value_2d)
+
+        if np.any(timeseries['time'][np.argsort(timeseries['time'])] !=
+                  timeseries['time']):
+            return False
+        else:
+            return True
+
+    def _timeseries_has_duplicates(self, timeseries):
+        # we need to have a valid shape to sort
+        if timeseries.shape == ():
+            timeseries = np.asarray([timeseries],
+                                    dtype=basic_types.datetime_value_2d)
+
+        unique = np.unique(timeseries['time'])
+        if len(unique) != len(timeseries['time']):
+            return True
+        else:
+            return False
+
+    def _xform_input_timeseries(self, timeseries):
         '''
         Ensure input data is numpy array with correct dtype and check
         timeseries doesn't have invalid data
@@ -96,38 +172,18 @@ class Timeseries(object):
         '''
         # following fails for 0-d objects so make sure we have a 1-D array
         # to work with
-        datetime_value_2d = np.asarray(datetime_value_2d,
-                                       dtype=basic_types.datetime_value_2d)
-        if datetime_value_2d.shape == ():
-            datetime_value_2d = np.asarray([datetime_value_2d],
-                                           dtype=basic_types.datetime_value_2d)
-        self._check_timeseries(datetime_value_2d)
+        timeseries = np.asarray(timeseries,
+                                dtype=basic_types.datetime_value_2d)
 
-        return datetime_value_2d
+        if timeseries.shape == ():
+            timeseries = np.asarray([timeseries],
+                                    dtype=basic_types.datetime_value_2d)
 
-    def _check_timeseries(self, timeseries):
-        '''
-        Run some checks to make sure timeseries is valid.
-        Also, make the resolution to minutes as opposed to seconds
-        todo: update exceptions to logged errors
-        '''
-        # check to make sure the time values are in ascending order
-        if np.any(timeseries['time'][np.argsort(timeseries['time'])] !=
-                  timeseries['time']):
-            raise ValueError('timeseries are not in ascending order. '
-                             'The datetime values in the array must be in '
-                             'ascending order')
-
-        # check for duplicate entries
-        unique = np.unique(timeseries['time'])
-        if len(unique) != len(timeseries['time']):
-            raise ValueError('timeseries must contain unique time entries. '
-                             'Number of duplicate entries: '
-                             '{0}'.format(len(timeseries) - len(unique)))
-
-        # make resolution to minutes in datetime
+        # Our datetime granularity is in minutes, so zero out the seconds.
         for ix, tm in enumerate(timeseries['time'].astype(datetime.datetime)):
             timeseries['time'][ix] = tm.replace(second=0)
+
+        return timeseries
 
     def __str__(self):
         return '{0.__module__}.{0.__class__.__name__}'.format(self)
@@ -191,6 +247,7 @@ class Timeseries(object):
         """
         datetime_value_2d = self._xform_input_timeseries(datetime_value_2d)
         timeval = to_time_value_pair(datetime_value_2d, format)
+
         self.ossm.timeseries = timeval
 
     def __eq__(self, other):

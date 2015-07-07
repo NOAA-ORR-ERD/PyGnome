@@ -54,13 +54,12 @@ class References(object):
         if self.retrieve(name):
             if self.retrieve(name) is not obj:
                 raise ValueError('a different object is referenced by '
-                    '{0}'.format(name))
+                                 '{0}'.format(name))
         else:
             # make sure object doesn't already exist
             if self.get_reference(obj):
                 raise ValueError('this object is already referenced by '
-                    '{0}'.format(self.get_reference(obj)))
-
+                                 '{0}'.format(self.get_reference(obj)))
             else:
                 self._refs[name] = obj
 
@@ -201,7 +200,7 @@ class Savable(object):
         '''
         for field in self._state:
             if (field.save_reference and
-                getattr(self, field.name) is not None):
+                    getattr(self, field.name) is not None):
                 '''
                 attribute is stored as a reference
                 json_ will not contain a key for the referenced objects
