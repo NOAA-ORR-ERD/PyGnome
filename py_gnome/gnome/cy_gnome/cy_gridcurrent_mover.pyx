@@ -295,6 +295,13 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         return cell_data
 
+    def _is_triangle_grid(self):
+        """
+            Invokes the IsTriangleGrid TimeGridVel_c object
+        """
+
+        return self.grid_current.IsTriangleGrid()
+
     def get_num_triangles(self):
         """
             Invokes the GetNumTriangles method of TriGridVel_c object

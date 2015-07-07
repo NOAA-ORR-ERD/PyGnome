@@ -438,6 +438,22 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                                                      'time_offset',
                                                      val * 3600.))
 
+    def get_grid_data(self):
+        """
+            Invokes the GetCellDataHdl or GetToplogyHdl method of TimeGridVel_c object
+        """
+
+        is_tri_grid = self.mover._is_triangle_grid()
+        if is_tri_grid != True:
+            # should check that grid data exists
+            grid_data = self.mover._get_cell_data()
+
+        else:
+            # should check that grid data exists
+            grid_data = self.mover._get_triangle_data()
+
+        return grid_data
+
     def get_scaled_velocities(self, time):
         """
         :param model_time=0:
@@ -624,6 +640,22 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
                            lambda self, val: setattr(self.mover,
                                                      'time_offset',
                                                      val * 3600.))
+
+    def get_grid_data(self):
+        """
+            Invokes the GetCellDataHdl or GetToplogyHdl method of TimeGridVel_c object
+        """
+
+        is_tri_grid = self.mover._is_triangle_grid()
+        if is_tri_grid != True:
+            # should check that grid data exists
+            grid_data = self.mover._get_cell_data()
+
+        else:
+            # should check that grid data exists
+            grid_data = self.mover._get_triangle_data()
+
+        return grid_data
 
     def get_scaled_velocities(self, model_time):
         """
