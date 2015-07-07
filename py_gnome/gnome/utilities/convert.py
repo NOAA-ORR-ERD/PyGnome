@@ -23,26 +23,25 @@ def to_time_value_pair(datetime_value, in_ts_format=None):
         string 'r-theta', 'uv' or by an integer defined by one of the options
         given in basic_types.ts_format.
     """
-
-    if(datetime_value.dtype != basic_types.datetime_value_2d and
-        datetime_value.dtype != basic_types.datetime_value_1d):
+    if (datetime_value.dtype not in (basic_types.datetime_value_2d,
+                                     basic_types.datetime_value_1d)):
         raise ValueError('Method expects a numpy array containing '
-            'basic_types.datetime_value_2d or basic_types.datetime_value_1d')
+                         'basic_types.datetime_value_2d or '
+                         'basic_types.datetime_value_1d')
 
     # convert datetime_value_2d to time_value_pair
-
     time_value_pair = np.zeros((len(datetime_value), ),
                                dtype=basic_types.time_value_pair)
+    time_value_pair['time'] = time_utils.date_to_sec(datetime_value['time'])
 
-    time_value_pair['time'] = \
-            time_utils.date_to_sec(datetime_value['time'])
     if datetime_value.dtype == basic_types.datetime_value_1d:
         time_value_pair['value']['u'] = datetime_value['value'][:]
-
     else:
         if in_ts_format is None:
-            raise ValueError("for datetime_value_2d data conversion, the "
-                "format defined by 'in_ts_format', cannot be None ")
+            raise ValueError("for datetime_value_2d data conversion, "
+                             "the format defined by 'in_ts_format' "
+                             "cannot be None ")
+
         if isinstance(in_ts_format, basestring):
             in_ts_format = tsformat(in_ts_format)
 
@@ -55,7 +54,6 @@ def to_time_value_pair(datetime_value, in_ts_format=None):
             time_value_pair['value']['u'] = datetime_value['value'][:, 0]
             time_value_pair['value']['v'] = datetime_value['value'][:, 1]
         else:
-
             raise ValueError('in_ts_format is not one of the two supported '
                              'types: '
                              'basic_types.ts_format.magnitude_direction, '
@@ -74,7 +72,6 @@ def to_datetime_value_2d(time_value_pair, out_ts_format):
     :param out_ts_format: desired format of the array defined by one of the
                           options given in basic_types.ts_format
     """
-
     if time_value_pair.dtype != basic_types.time_value_pair:
         raise ValueError('Method expects a numpy array containing '
                          'basic_types.time_value_pair')
@@ -86,7 +83,6 @@ def to_datetime_value_2d(time_value_pair, out_ts_format):
         out_ts_format = tsformat(out_ts_format)
 
     # convert time_value_pair to datetime_value_2d in desired output format
-
     if out_ts_format == basic_types.ts_format.magnitude_direction:
         datetime_value_2d['time'] = \
             time_utils.sec_to_date(time_value_pair['time'])
@@ -97,7 +93,6 @@ def to_datetime_value_2d(time_value_pair, out_ts_format):
 
         datetime_value_2d['value'] = transforms.uv_to_r_theta_wind(uv)
     elif out_ts_format == basic_types.ts_format.uv:
-
         datetime_value_2d['time'] = \
             time_utils.sec_to_date(time_value_pair['time'])
         datetime_value_2d['value'][:, 0] = time_value_pair['value']['u']
@@ -130,13 +125,12 @@ def to_datetime_value_1d(time_value_pair):
     '''
     if time_value_pair.dtype != basic_types.time_value_pair:
         raise ValueError('Method expects a numpy array containing '
-            'basic_types.time_value_pair')
+                         'basic_types.time_value_pair')
 
     datetime_value_1d = np.zeros((len(time_value_pair), ),
                                  dtype=basic_types.datetime_value_1d)
-    datetime_value_1d['time'] = \
-        time_utils.sec_to_date(time_value_pair['time'])
 
+    datetime_value_1d['time'] = time_utils.sec_to_date(time_value_pair['time'])
     datetime_value_1d['value'][:] = time_value_pair['value']['u']
 
     return datetime_value_1d
@@ -147,10 +141,11 @@ def tsformat(format_):
     convert string 'uv' or 'magnitude_direction' into appropriate integer given
     by basic_types.ts_format.*
     """
-
     try:
         format_ = (format_, 'r_theta')[format_ == 'r-theta']
+
         return getattr(basic_types.ts_format, format_)
     except AttributeError:
-        raise ValueError("timeseries format can only be 'r-theta' or 'uv',"
-            " format entered is not recognized: {0}".format(format_))
+        raise ValueError("timeseries format can only be 'r-theta' or 'uv'.  "
+                         "Format entered is not recognized: {0}"
+                         .format(format_))

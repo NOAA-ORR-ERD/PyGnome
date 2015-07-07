@@ -5,10 +5,12 @@ import os
 from datetime import datetime
 from zipfile import ZipFile, ZIP_DEFLATED
 
-from gnome.persist import References, load
+from gnome.utilities.time_utils import sec_to_date
+from gnome.persist import (References, load,
+                           class_from_objtype, is_savezip_valid)
+
 from gnome.movers import constant_wind_mover
 from gnome import movers, outputters, environment, map, spill, weatherers
-from gnome.persist import class_from_objtype, is_savezip_valid
 # following is modified for testing only
 from gnome.persist import save_load
 
@@ -102,7 +104,7 @@ base_dir = os.path.dirname(__file__)
 # For WindMover test_save_load in test_wind_mover
 g_objects = (environment.Tide(testdata['CatsMover']['tide']),
              environment.Wind(filename=testdata['ComponentMover']['wind']),
-             environment.Wind(timeseries=(12 * 60 * 60,
+             environment.Wind(timeseries=(sec_to_date(24 * 60 * 60),
                                           (0, 0)), units='mps'),
              environment.Water(temperature=273),
              movers.random_movers.RandomMover(),
@@ -145,6 +147,7 @@ def test_save_load(saveloc_, obj):
     'test save/load functionality'
     refs = obj.save(saveloc_)
     obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
+
     assert obj == obj2
 
 
@@ -157,7 +160,7 @@ for a file it works fine, no decimal places stored in file for magnitude
 
 
 @pytest.mark.parametrize("obj",
-                         (environment.Wind(timeseries=(12 * 60 * 60,
+                         (environment.Wind(timeseries=(sec_to_date(24 * 3600),
                                                        (1, 30)),
                                            units='meters per second'),
                           weatherers.Evaporation(environment.
