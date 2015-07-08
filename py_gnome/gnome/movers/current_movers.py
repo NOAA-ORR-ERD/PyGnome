@@ -258,6 +258,25 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
 
         self._tide = tide_obj
 
+    def get_grid_data(self):
+        """
+            Invokes the GetToplogyHdl method of TriGridVel_c object
+        """
+
+        # we are assuming cats are always triangle grids, but may want to extend
+        grid_data = self.mover._get_triangle_data()
+
+#         is_tri_grid = self.mover._is_triangle_grid()
+#         if is_tri_grid != True:
+#             # should check that grid data exists
+#             grid_data = self.mover._get_cell_data()
+# 
+#         else:
+#             # should check that grid data exists
+#             grid_data = self.mover._get_triangle_data()
+# 
+        return grid_data
+
     def get_scaled_velocities(self, model_time):
         """
         Get file values scaled to ref pt value, with tide applied (if any)
