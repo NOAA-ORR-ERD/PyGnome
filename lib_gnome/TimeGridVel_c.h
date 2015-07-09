@@ -63,7 +63,7 @@ public:
 	long fOffset;
 	float fFraction;
 	float fTimeAlpha;
-	float fModelStartTime;
+	Seconds fModelStartTime;
 	Boolean bIsCycleMover;
 	
 	Boolean fOverLap;
