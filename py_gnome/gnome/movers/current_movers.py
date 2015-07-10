@@ -708,8 +708,9 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
-        frac_coverage = np.zeros(num_tri, dtype=np.float64)
-        thickness = np.zeros(num_tri, dtype=np.float64)
+        num_cells = num_tri / 2
+        frac_coverage = np.zeros(num_cells, dtype=np.float64)
+        thickness = np.zeros(num_cells, dtype=np.float64)
         self.mover.get_ice_fields(model_time, frac_coverage, thickness)
         return frac_coverage, thickness
 
