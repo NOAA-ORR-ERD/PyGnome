@@ -1,7 +1,6 @@
 '''
 Movers using currents and tides as forcing functions
 '''
-
 import os
 import copy
 
@@ -9,7 +8,7 @@ import numpy as np
 
 from colander import (SchemaNode, Bool, String, Float, drop)
 
-from gnome.persist.base_schema import ObjType, WorldPoint, LongLat
+from gnome.persist.base_schema import ObjType, WorldPoint
 
 from gnome.movers import CyMover, ProcessSchema
 from gnome import environment
@@ -51,15 +50,53 @@ class CurrentMoversBase(CyMover):
 
     uncertain_duration = property(lambda self:
                                   self.mover.uncertain_duration / 3600.,
-                                  lambda self, val: setattr(self.mover,
-                                                            'uncertain_duration',
-                                                            val * 3600.))
+                                  lambda self, val:
+                                  setattr(self.mover, 'uncertain_duration',
+                                          val * 3600.))
 
     uncertain_time_delay = property(lambda self:
                                     self.mover.uncertain_time_delay / 3600.,
-                                    lambda self, val: setattr(self.mover,
-                                                              'uncertain_time_delay',
-                                                              val * 3600.))
+                                    lambda self, val:
+                                    setattr(self.mover, 'uncertain_time_delay',
+                                            val * 3600.))
+
+    def get_triangles(self):
+        """
+            Invokes the GetToplogyHdl method of TimeGridVel_c object.
+            Cross-references point data to get triangle coordinates.
+        """
+        triangle_data = self.mover._get_triangle_data()
+        points = self.get_points()
+
+        dtype = triangle_data[0].dtype.descr
+        unstructured_type = dtype[0][1]
+        unstructured = (triangle_data.view(dtype=unstructured_type)
+                        .reshape(-1, len(dtype))[:, :3])
+
+        return points[unstructured]
+
+    def get_cells(self):
+        """
+            Invokes the GetCellDataHdl method of TimeGridVel_c object.
+            Cross-references point data to get cell coordinates.
+        """
+        cell_data = self.mover._get_cell_data()
+        points = self.get_points()
+
+        dtype = cell_data[0].dtype.descr
+        unstructured_type = dtype[0][1]
+        unstructured = (cell_data.view(dtype=unstructured_type)
+                        .reshape(-1, len(dtype))[:, 1:])
+
+        return points[unstructured]
+
+    def get_points(self):
+        points = (self.mover._get_points()
+                  .astype([('long', '<f8'), ('lat', '<f8')]))
+        points['long'] /= 10 ** 6
+        points['lat'] /= 10 ** 6
+
+        return points
 
 
 class CatsMoverSchema(CurrentMoversBaseSchema):
@@ -98,8 +135,7 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
                                          save_reference=True)])
     _schema = CatsMoverSchema
 
-    def __init__(self, filename, tide=None,
-                 uncertain_duration=48,
+    def __init__(self, filename, tide=None, uncertain_duration=48,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method.
@@ -131,7 +167,6 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
-
         if not os.path.exists(filename):
             raise ValueError('Path for Cats filename does not exist: {0}'
                              .format(filename))
@@ -171,13 +206,9 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
         super(CatsMover, self).__init__(uncertain_duration, **kwargs)
 
     def __repr__(self):
-        """
-        Unambiguous representation of object
-        """
         return 'CatsMover(filename={0})'.format(self.filename)
 
     # Properties
-
     scale = property(lambda self: bool(self.mover.scale_type),
                      lambda self, val: setattr(self.mover,
                                                'scale_type',
@@ -194,25 +225,26 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
                                                           val))
 
     down_cur_uncertain = property(lambda self: self.mover.down_cur_uncertain,
-                                  lambda self, val: setattr(self.mover,
-                                                            'down_cur_uncertain',
-                                                            val))
+                                  lambda self, val:
+                                  setattr(self.mover, 'down_cur_uncertain',
+                                          val))
 
     right_cur_uncertain = property(lambda self: self.mover.right_cur_uncertain,
-                                   lambda self, val: setattr(self.mover,
-                                                             'right_cur_uncertain',
-                                                             val))
+                                   lambda self, val:
+                                   setattr(self.mover, 'right_cur_uncertain',
+                                           val))
 
     left_cur_uncertain = property(lambda self: self.mover.left_cur_uncertain,
-                                  lambda self, val: setattr(self.mover,
-                                                            'left_cur_uncertain',
-                                                            val))
+                                  lambda self, val:
+                                  setattr(self.mover, 'left_cur_uncertain',
+                                          val))
 
     uncertain_eddy_diffusion = property(lambda self:
                                         self.mover.uncertain_eddy_diffusion,
-                                        lambda self, val: setattr(self.mover,
-                                                                  'uncertain_eddy_diffusion',
-                                                                  val))
+                                        lambda self, val:
+                                        setattr(self.mover,
+                                                'uncertain_eddy_diffusion',
+                                                val))
 
     uncertain_eddy_v0 = property(lambda self: self.mover.uncertain_eddy_v0,
                                  lambda self, val: setattr(self.mover,
@@ -237,6 +269,7 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
             self.mover.ref_point = (val[0], val[1], 0.)
         else:
             self.mover.ref_point = val
+
         self.mover.compute_velocity_scale()
 
     @property
@@ -262,37 +295,26 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
         """
             Invokes the GetToplogyHdl method of TriGridVel_c object
         """
-
-        # we are assuming cats are always triangle grids, but may want to extend
-        grid_data = self.mover._get_triangle_data()
-
-#         is_tri_grid = self.mover._is_triangle_grid()
-#         if is_tri_grid != True:
-#             # should check that grid data exists
-#             grid_data = self.mover._get_cell_data()
-# 
-#         else:
-#             # should check that grid data exists
-#             grid_data = self.mover._get_triangle_data()
-# 
-        return grid_data
+        # we are assuming cats are always triangle grids,
+        # but may want to extend
+        return self.get_triangles()
 
     def get_scaled_velocities(self, model_time):
         """
         Get file values scaled to ref pt value, with tide applied (if any)
         """
         velocities = self.mover._get_velocity_handle()
-        ref_scale = self.ref_scale # this needs to be computed, needs a time
+        ref_scale = self.ref_scale  # this needs to be computed, needs a time
+
         if self._tide is not None:
             time_value = self._tide.cy_obj.get_time_value(model_time)
             tide = time_value[0][0]
         else:
             tide = 1
 
-        velocities['u'] *= ref_scale
-        velocities['v'] *= ref_scale
-        velocities['u'] *= tide
-        velocities['v'] *= tide
+        velocities['u'] *= ref_scale * tide
+        velocities['v'] *= ref_scale * tide
+
         return velocities
 
     def serialize(self, json_='webapi'):
@@ -302,6 +324,7 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
         """
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
+
         if json_ == 'webapi' and 'tide' in toserial:
             schema.add(environment.TideSchema(name='tide'))
 
@@ -314,6 +337,7 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
         """
         if not cls.is_sparse(json_):
             schema = cls._schema()
+
             if 'tide' in json_:
                 schema.add(environment.TideSchema())
 
@@ -405,11 +429,6 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         super(GridCurrentMover, self).__init__(**kwargs)
 
     def __repr__(self):
-        """
-        .. todo::
-            We probably want to include more information.
-        """
-
         return ('GridCurrentMover('
                 'uncertain_duration={0.uncertain_duration},'
                 'uncertain_time_delay={0.uncertain_time_delay}, '
@@ -459,19 +478,12 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
 
     def get_grid_data(self):
         """
-            Invokes the GetCellDataHdl or GetToplogyHdl method of TimeGridVel_c object
+            The main function for getting grid data from the mover
         """
-
-        is_tri_grid = self.mover._is_triangle_grid()
-        if is_tri_grid != True:
-            # should check that grid data exists
-            grid_data = self.mover._get_cell_data()
-
+        if self.mover._is_triangle_grid():
+            return self.get_triangles()
         else:
-            # should check that grid data exists
-            grid_data = self.mover._get_triangle_data()
-
-        return grid_data
+            return self.get_cells()
 
     def get_scaled_velocities(self, time):
         """
@@ -479,7 +491,9 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         """
         num_tri = self.mover.get_num_triangles()
         vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
+
         self.mover.get_scaled_velocities(time, vels)
+
         return vels
 
     def export_topology(self, topology_file):
@@ -487,7 +501,6 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         :param topology_file=None: absolute or relative path where
                                    topology file will be written.
         """
-
         if topology_file is None:
             raise ValueError('Topology file path required: {0}'
                              .format(topology_file))
@@ -499,7 +512,6 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         :param extrapolate=false: allow current data to be extrapolated
                                   before and after file data.
         """
-
         self.mover.extrapolate_in_time(extrapolate)
 
     def offset_time(self, time_offset):
@@ -578,12 +590,6 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         if type(self) == IceMover:
             self.mover = CyIceMover()
 
-#        self.mover = CyIceMover(current_scale=kwargs.pop('current_scale', 1),
-#                                uncertain_duration=3600. * kwargs.pop('uncertain_duration', 24),
-#                                uncertain_time_delay=3600. * kwargs.pop('uncertain_time_delay', 0),
-#                                uncertain_along=kwargs.pop('uncertain_along', 0.5),
-#                                uncertain_cross=kwargs.pop('uncertain_cross', 0.25))
-
         if not os.path.exists(filename):
             raise ValueError('Path for current file does not exist: {0}'
                              .format(filename))
@@ -608,11 +614,6 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         super(IceMover, self).__init__(**kwargs)
 
     def __repr__(self):
-        """
-        .. todo::
-            We probably want to include more information.
-        """
-
         return ('IceMover('
                 'uncertain_duration={0.uncertain_duration}, '
                 'uncertain_time_delay={0.uncertain_time_delay}, '
@@ -661,20 +662,10 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
                                                      val * 3600.))
 
     def get_grid_data(self):
-        """
-            Invokes the GetCellDataHdl or GetToplogyHdl method of TimeGridVel_c object
-        """
-
-        is_tri_grid = self.mover._is_triangle_grid()
-        if is_tri_grid != True:
-            # should check that grid data exists
-            grid_data = self.mover._get_cell_data()
-
+        if self.mover._is_triangle_grid():
+            return self.get_triangles()
         else:
-            # should check that grid data exists
-            grid_data = self.mover._get_triangle_data()
-
-        return grid_data
+            return self.get_cells()
 
     def get_scaled_velocities(self, model_time):
         """
@@ -683,6 +674,7 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         num_tri = self.mover.get_num_triangles()
         vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
         self.mover.get_scaled_velocities(model_time, vels)
+
         return vels
 
     def get_ice_velocities(self, model_time):
@@ -692,6 +684,7 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         num_tri = self.mover.get_num_triangles()
         vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
         self.mover.get_ice_velocities(model_time, vels)
+
         return vels
 
     def get_movement_velocities(self, model_time):
@@ -701,6 +694,7 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         num_tri = self.mover.get_num_triangles()
         vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
         self.mover.get_movement_velocities(model_time, vels)
+
         return vels
 
     def get_ice_fields(self, model_time):
@@ -712,6 +706,7 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         frac_coverage = np.zeros(num_cells, dtype=np.float64)
         thickness = np.zeros(num_cells, dtype=np.float64)
         self.mover.get_ice_fields(model_time, frac_coverage, thickness)
+
         return frac_coverage, thickness
 
     def export_topology(self, topology_file):
@@ -719,7 +714,6 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         :param topology_file=None: absolute or relative path where
                                    topology file will be written.
         """
-
         if topology_file is None:
             raise ValueError('Topology file path required: {0}'
                              .format(topology_file))
@@ -731,7 +725,6 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         :param extrapolate=false: allow current data to be extrapolated
                                   before and after file data.
         """
-
         self.mover.extrapolate_in_time(extrapolate)
         self.extrapolate = extrapolate
 
@@ -800,8 +793,10 @@ class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
         #       and other dialog fields.
         #       use super with kwargs to invoke base class __init__
         self.mover = CyCurrentCycleMover()
+
         tide = kwargs.pop('tide', None)
         self._tide = None
+
         if tide is not None:
             self.tide = tide
 
@@ -810,10 +805,6 @@ class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
                                                 **kwargs)
 
     def __repr__(self):
-        """
-        .. TODO::
-            We probably want to include more information.
-        """
         return ('GridCurrentMover(uncertain_duration={0.uncertain_duration}, '
                 'uncertain_time_delay={0.uncertain_time_delay}, '
                 'uncertain_cross={0.uncertain_cross}, '
@@ -862,6 +853,7 @@ class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
         """
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
+
         if json_ == 'webapi' and 'tide' in toserial:
             schema.add(environment.TideSchema(name='tide'))
 
@@ -873,6 +865,7 @@ class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
         append correct schema for tide object
         """
         schema = cls._schema()
+
         if 'tide' in json_:
             schema.add(environment.TideSchema())
 
@@ -983,21 +976,21 @@ class ComponentMover(CyMover, serializable.Serializable):
 
     # Properties
 
-#     scale_type = property(lambda self: bool(self.mover.scale_type),
-#                      lambda self, val: setattr(self.mover, 'scale_type'
-#                      , int(val)))
+    # scale_type = property(lambda self: bool(self.mover.scale_type),
+    #                       lambda self, val: setattr(self.mover, 'scale_type',
+    #                                                 int(val)))
 
-#     scale_by = property(lambda self: bool(self.mover.scale_by),
-#                      lambda self, val: setattr(self.mover, 'scale_by'
-#                      , int(val)))
+    # scale_by = property(lambda self: bool(self.mover.scale_by),
+    #                     lambda self, val: setattr(self.mover, 'scale_by',
+    #                                               int(val)))
 
     pat1_angle = property(lambda self: self.mover.pat1_angle,
-                          lambda self, val: setattr(self.mover,
-                                                    'pat1_angle', val))
+                          lambda self, val: setattr(self.mover, 'pat1_angle',
+                                                    val))
 
     pat1_speed = property(lambda self: self.mover.pat1_speed,
-                          lambda self, val: setattr(self.mover,
-                                                    'pat1_speed', val))
+                          lambda self, val: setattr(self.mover, 'pat1_speed',
+                                                    val))
 
     pat1_speed_units = property(lambda self: self.mover.pat1_speed_units,
                                 lambda self, val: setattr(self.mover,
@@ -1005,17 +998,17 @@ class ComponentMover(CyMover, serializable.Serializable):
                                                           val))
 
     pat1_scale_to_value = property(lambda self: self.mover.pat1_scale_to_value,
-                                   lambda self, val: setattr(self.mover,
-                                                             'pat1_scale_to_value',
-                                                             val))
+                                   lambda self, val:
+                                   setattr(self.mover, 'pat1_scale_to_value',
+                                           val))
 
     pat2_angle = property(lambda self: self.mover.pat2_angle,
-                          lambda self, val: setattr(self.mover,
-                                                    'pat2_angle', val))
+                          lambda self, val: setattr(self.mover, 'pat2_angle',
+                                                    val))
 
     pat2_speed = property(lambda self: self.mover.pat2_speed,
-                          lambda self, val: setattr(self.mover,
-                                                    'pat2_speed', val))
+                          lambda self, val: setattr(self.mover, 'pat2_speed',
+                                                    val))
 
     pat2_speed_units = property(lambda self: self.mover.pat2_speed_units,
                                 lambda self, val: setattr(self.mover,
@@ -1023,9 +1016,9 @@ class ComponentMover(CyMover, serializable.Serializable):
                                                           val))
 
     pat2_scale_to_value = property(lambda self: self.mover.pat2_scale_to_value,
-                                   lambda self, val: setattr(self.mover,
-                                                             'pat2_scale_to_value',
-                                                             val))
+                                   lambda self, val:
+                                   setattr(self.mover, 'pat2_scale_to_value',
+                                           val))
 
     scale_by = property(lambda self: self.mover.scale_by,
                         lambda self, val: setattr(self.mover, 'scale_by', val))
@@ -1064,6 +1057,7 @@ class ComponentMover(CyMover, serializable.Serializable):
         """
         dict_ = self.to_serialize(json_)
         schema = self.__class__._schema()
+
         if json_ == 'webapi' and 'wind' in dict_:
             schema.add(environment.WindSchema(name='wind'))
 
@@ -1075,6 +1069,7 @@ class ComponentMover(CyMover, serializable.Serializable):
         append correct schema for wind object
         """
         schema = cls._schema()
+
         if 'wind' in json_:
             # for 'webapi', there will be nested Wind structure
             # for 'save' option, there should be no nested 'wind'. It is
