@@ -90,6 +90,28 @@ class CurrentMoversBase(CyMover):
 
         return points[unstructured]
 
+    def get_triangle_center_points(self):
+        '''
+            Right now the cython mover only gets the triangular center points.
+        '''
+        return self.mover._get_center_points().view(dtype='<f8').reshape(-1, 2)
+
+    def get_cell_center_points(self):
+        '''
+            Right now the cython mover only gets the triangular center points,
+            so we need to calculate centers based on the cells themselves.
+
+            Cells will have the format (tl, tr, bl, br)
+            We need to get the rectangular centers
+             - center will be (tl + ((br - tl) / 2.))
+        '''
+        cells = self.get_cells()
+        raw_cells = cells.view(dtype='<f8').reshape(-1, 4, 2)
+        centers = (raw_cells[:, 0, :] +
+                   (raw_cells[:, 3, :] - raw_cells[:, 0, :]) / 2.)
+
+        return centers
+
     def get_points(self):
         points = (self.mover._get_points()
                   .astype([('long', '<f8'), ('lat', '<f8')]))
@@ -299,6 +321,9 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
         # but may want to extend
         return self.get_triangles()
 
+    def get_center_points(self):
+        return self.get_triangle_center_points()
+
     def get_scaled_velocities(self, model_time):
         """
         Get file values scaled to ref pt value, with tide applied (if any)
@@ -485,6 +510,12 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         else:
             return self.get_cells()
 
+    def get_center_points(self):
+        if self.mover._is_triangle_grid():
+            return self.get_triangle_center_points()
+        else:
+            return self.get_cell_center_points()
+
     def get_scaled_velocities(self, time):
         """
         :param model_time=0:
@@ -666,6 +697,12 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
             return self.get_triangles()
         else:
             return self.get_cells()
+
+    def get_center_points(self):
+        if self.mover._is_triangle_grid():
+            return self.get_triangle_center_points()
+        else:
+            return self.get_cell_center_points()
 
     def get_scaled_velocities(self, model_time):
         """

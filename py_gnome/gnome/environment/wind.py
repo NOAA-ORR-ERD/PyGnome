@@ -170,7 +170,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
             # either timeseries is given or nothing is given
             # create an empty default object
-            super(Wind, self).__init__()
+            super(Wind, self).__init__(format=format)
 
             self.units = 'mps'  # units for default object
             if timeseries is not None:

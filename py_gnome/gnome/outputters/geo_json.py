@@ -241,7 +241,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         geojson = {}
         for cm in self.current_movers:
             features = []
-            centers = cm.mover._get_center_points()
+            centers = cm.get_center_points()
             velocities = cm.get_scaled_velocities(model_time)
 
             current_vals = np.hstack((centers.view(dtype='<f8')

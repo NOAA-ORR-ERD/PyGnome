@@ -68,13 +68,15 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         cdef OSErr err
         topology_file = os.path.normpath(topology_file)
         topology_file = to_bytes(unicode(topology_file))
+
         err = self.grid_current.ExportTopology(topology_file)
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors
             are defined and enumerated
             """
-            raise OSError("GridCurrentMover_c.ExportTopology returned an error.")
+            raise OSError('GridCurrentMover_c.ExportTopology '
+                          'returned an error.')
 
     def __init__(self, current_scale=1,
                  uncertain_duration=24*3600,
@@ -82,17 +84,21 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
                  uncertain_along=.5,
                  uncertain_cross=.25):
         """
-        .. function:: __init__(self, current_scale=1, uncertain_duration=24*3600, uncertain_time_delay=0,
+        .. function:: __init__(self, current_scale=1,
+                 uncertain_duration=24*3600, uncertain_time_delay=0,
                  uncertain_along = .5, uncertain_cross = .25)
 
         initialize a grid current mover
 
-        :param uncertain_duation: time in seconds after which the uncertainty values are updated
-        :param uncertain_time_delay: wait this long after model_start_time to turn on uncertainty
-        :param uncertain_cross: used in uncertainty computation, perpendicular to current flow
-        :param uncertain_along: used in uncertainty computation, parallel to current flow
+        :param uncertain_duation: time in seconds after which the
+                                  uncertainty values are updated
+        :param uncertain_time_delay: wait this long after model_start_time
+                                     to turn on uncertainty
+        :param uncertain_cross: used in uncertainty computation,
+                                perpendicular to current flow
+        :param uncertain_along: used in uncertainty computation, parallel
+                                to current flow
         :param current_scale: scale factor applied to current values
-
         """
         super(CyGridCurrentMover, self).__init__(uncertain_duration=uncertain_duration,
                                                  uncertain_time_delay=uncertain_time_delay,
@@ -105,17 +111,27 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         self.grid_current.fIsOptimizedForStep = 0
 
     def __repr__(self):
-        """
-        unambiguous repr of object, reuse for str() method
-        """
-        info = "CyGridCurrentMover(uncertain_duration=%s,uncertain_time_delay=%s,uncertain_along=%s,uncertain_cross=%s)" \
-        % (self.grid_current.fDuration, self.grid_current.fUncertainStartTime, self.grid_current.fUpCurUncertainty, self.grid_current.fRightCurUncertainty)
-        return info
+        return ('CyGridCurrentMover(uncertain_duration={0}, '
+                'uncertain_time_delay={1}, '
+                'uncertain_along={2}, '
+                'uncertain_cross={3})'
+                .format(self.grid_current.fDuration,
+                        self.grid_current.fUncertainStartTime,
+                        self.grid_current.fUpCurUncertainty,
+                        self.grid_current.fRightCurUncertainty))
 
     def __str__(self):
         """Return string representation of this object"""
-        info  = "CyGridCurrentMover object - \n  uncertain_duration: %s \n  uncertain_time_delay: %s \n  uncertain_along: %s\n  uncertain_cross: %s" \
-        % (self.grid_current.fDuration, self.grid_current.fUncertainStartTime, self.grid_current.fUpCurUncertainty, self.grid_current.fRightCurUncertainty)
+        info = ('CyGridCurrentMover object - \n'
+                '    uncertain_duration: {0} \n'
+                '    uncertain_time_delay: {1} \n'
+                '    uncertain_along: {2}\n'
+                '    uncertain_cross: {3}'
+                .format(self.grid_current.fDuration,
+                        self.grid_current.fUncertainStartTime,
+                        self.grid_current.fUpCurUncertainty,
+                        self.grid_current.fRightCurUncertainty))
+
         return info
 
     property current_scale:
@@ -131,7 +147,7 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         def __set__(self, value):
             self.grid_current.fRightCurUncertainty = value
-            self.grid_current.fLeftCurUncertainty = -1.*value
+            self.grid_current.fLeftCurUncertainty = -1. * value
 
     property uncertain_along:
         def __get__(self):
@@ -139,7 +155,7 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         def __set__(self, value):
             self.grid_current.fUpCurUncertainty = value
-            self.grid_current.fDownCurUncertainty = -1.*value
+            self.grid_current.fDownCurUncertainty = -1. * value
 
     property extrapolate:
         def __get__(self):
@@ -198,20 +214,23 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         N = len(ref_points)
 
         err = self.grid_current.get_move(N, model_time, step_len,
-                                 &ref_points[0],
-                                 &delta[0],
-                                 &LE_status[0],
-                                 spill_type,
-                                 0)
+                                         &ref_points[0],
+                                         &delta[0],
+                                         &LE_status[0],
+                                         spill_type, 0)
+
         if err == 1:
-            raise ValueError("Make sure numpy arrays for ref_points and delta are defined")
+            raise ValueError('Make sure numpy arrays for ref_points '
+                             'and delta are defined')
 
         """
         Can probably raise this error before calling the C++ code,
         but the C++ also throwing this error
         """
         if err == 2:
-            raise ValueError("The value for spill type can only be 'forecast' or 'uncertainty' - you've chosen: " + str(spill_type))
+            raise ValueError("The value for spill type can only be "
+                             "'forecast' or 'uncertainty' - you've chosen: {0}"
+                             .format(spill_type))
 
     def _get_points(self):
         """
@@ -299,7 +318,6 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         """
             Invokes the IsTriangleGrid TimeGridVel_c object
         """
-
         return self.grid_current.IsTriangleGrid()
 
     def get_num_triangles(self):
@@ -312,18 +330,18 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         return num_tri
 
     def get_scaled_velocities(self, Seconds model_time,
-                 cnp.ndarray[VelocityFRec] vels):
+                              cnp.ndarray[VelocityFRec] vels):
         """
             Invokes the GetScaledVelocities method of TimeGridVel_c object
             to get the velocities on the triangles
         """
         cdef OSErr err
-        err = self.grid_current.GetScaledVelocities(model_time,&vels[0])
 
+        err = self.grid_current.GetScaledVelocities(model_time, &vels[0])
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors
             are defined and enumerated
             """
-            raise OSError("GridCurrentMover_c.GetScaledVelocities returned an error.")
-
+            raise OSError('GridCurrentMover_c.GetScaledVelocities '
+                          'returned an error.')
