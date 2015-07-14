@@ -87,19 +87,16 @@ def test_default_init():
 def test_init_timeseries():
     'test init succeeds via different methods'
     constant = (datetime(2014, 6, 25, 10, 14), (0, 0))
-    ts = [constant,
-          (datetime(2014, 6, 25, 10, 20), (1, 1))]
+    ts = [constant, (datetime(2014, 6, 25, 10, 20), (1, 1))]
+
     Wind(timeseries=constant, units='mps')
     Wind(timeseries=ts, units='mps')
-    np.asarray(constant)
+
     Wind(timeseries=np.asarray(constant, dtype=datetime_value_2d), units='mps')
     Wind(timeseries=np.asarray(ts, dtype=datetime_value_2d), units='mps')
 
-    # todo!!!
-    # following should fail, but it doesn't because
-    # np.asarray((1, 2), dtype=datetime_value_2d) does not raise an error!
-    # no exceptions raised for this at present - should fix
-    Wind(timeseries=(1, 2), units='mps')
+    with raises(ValueError):
+        Wind(timeseries=(1, 2), units='mps')
 
 
 def test_wind_circ_fixture(wind_circ):

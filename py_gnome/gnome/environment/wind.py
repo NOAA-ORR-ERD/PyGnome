@@ -170,7 +170,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
             # either timeseries is given or nothing is given
             # create an empty default object
-            super(Wind, self).__init__()
+            super(Wind, self).__init__(format=format)
 
             self.units = 'mps'  # units for default object
             if timeseries is not None:
@@ -375,7 +375,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
         return datetimeval
 
-    def set_wind_data(self, datetime_value_2d, units, format='r-theta'):
+    def set_wind_data(self, wind_data, units, format='r-theta'):
         """
         Sets the timeseries of the Wind object to the new value given by
         a numpy array.  The format for the input data defaults to
@@ -393,13 +393,18 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         :type format: either string or integer value defined by
                       basic_types.format.* (see cy_basic_types.pyx)
         """
-        self._check_units(units)
-        self.units = units
-        datetime_value_2d = self._xform_input_timeseries(datetime_value_2d)
-        datetime_value_2d['value'] = \
-            self._convert_units(datetime_value_2d['value'],
-                                format, units, 'meter per second')
-        super(Wind, self).set_timeseries(datetime_value_2d, format)
+        if self._check_timeseries(wind_data):
+            self._check_units(units)
+            self.units = units
+
+            wind_data = self._xform_input_timeseries(wind_data)
+            wind_data['value'] = self._convert_units(wind_data['value'],
+                                                     format, units,
+                                                     'meter per second')
+
+            super(Wind, self).set_timeseries(wind_data, format)
+        else:
+            raise ValueError('Bad timeseries as input')
 
     def get_value(self, time):
         '''

@@ -3420,7 +3420,7 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			if (item != M53OK) {err = -1;goto done;} // note: might be user cancel
 			*/
 			//
-			if(!gKMLPath[0]) strcpy(gKMLPath,"splots");
+			if(!gKMLPath[0]) strcpy(gKMLPath,"trajectory");
 			//err = AskUserForSaveFilename(gKMLPath,path,".kml",false);
 			err = AskUserForSaveFilename(gKMLPath,path,"",false);
 			if(err) goto done; // note: might be user cancel

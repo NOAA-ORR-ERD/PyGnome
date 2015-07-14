@@ -332,8 +332,8 @@ class TestGridCurrentMover:
         self.check_move_certain_uncertain(self.gcm.uncertain_time_delay)
 
         actual = np.empty((self.cm.num_le, ), dtype=world_point)
-        actual[:]['lat'] = -.00170908
-        actual[:]['long'] = -.0003672
+        actual[:]['lat'] = .00148925
+        actual[:]['long'] = .00088789
         tol = 1e-5
 
         msg = r"{0} move is not within a tolerance of {1}"

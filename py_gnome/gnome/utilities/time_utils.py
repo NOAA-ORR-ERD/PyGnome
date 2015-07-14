@@ -82,6 +82,7 @@ def sec_to_date(seconds):
                    'array elem: {1}, '
                    'timestruct: {2}'.format(li, t_array[li], t))
             raise
+
     return len(d_array) == 1 and d_array[0].astype(object) or d_array
 
 

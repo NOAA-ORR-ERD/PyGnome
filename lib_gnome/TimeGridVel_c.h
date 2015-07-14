@@ -63,7 +63,7 @@ public:
 	long fOffset;
 	float fFraction;
 	float fTimeAlpha;
-	float fModelStartTime;
+	Seconds fModelStartTime;
 	Boolean bIsCycleMover;
 	
 	Boolean fOverLap;
@@ -133,6 +133,8 @@ public:
 	void 				ClearLoadedData(LoadedData * dataPtr);
 	void 				ClearLoadedData(LoadedFieldData *dataPtr);
 	void 				DisposeAllLoadedData();
+
+	virtual	bool 		IsTriangleGrid(){return false;}
 };
 
 
@@ -270,6 +272,8 @@ public:
 	virtual OSErr ExportTopology(char *path);
 
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
+
+	virtual	bool 		IsTriangleGrid(){return true;}
 };
 
 class TimeGridVelIce_c : virtual public TimeGridVelCurv_c
@@ -396,6 +400,8 @@ public:
 
 	virtual OSErr TextRead(std::vector<std::string> &linesInFile, std::string containingDir);
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
+
+	virtual	bool 		IsTriangleGrid(){return true;}
 };
 
 
