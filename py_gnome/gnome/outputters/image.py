@@ -5,6 +5,7 @@ These will output images for use in the Web client / OpenLayers
 
 """
 import copy
+import os
 
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.time_utils import date_to_sec
@@ -83,8 +84,6 @@ class IceImageOutput(Outputter, Serializable):
                        'bounding_box': ((-85.0, 29.0),(-55.0, 45.0)),
                        'projection': ("EPSG:3857"),
                        }
-        print "returning output_dict"
-        print output_dict.keys()
         return output_dict
 
     def get_sample_image(self):

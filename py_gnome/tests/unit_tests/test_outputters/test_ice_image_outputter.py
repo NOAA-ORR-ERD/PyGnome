@@ -109,13 +109,18 @@ def test_ice_image_output():
     begin = time.time()
     for step in model:
         print '\n\ngot step at: ', time.time() - begin
-        print step.keys()
-        print step['time_stamp']
-        print step['image'][:50] # could be really big!
-        print step['bounding_box']
-        print step['projection']
 
-    assert False
+        ice_output = step['IceImageOutput']
+        print ice_output['time_stamp']
+        print ice_output['image'][:50] # could be really big!
+        print ice_output['bounding_box']
+        print ice_output['projection']
+        for key in ('time_stamp', 'image', 'bounding_box', 'projection'):
+            assert key in ice_output
+
+    ## not sure what to assert here -- at least it runs!
+
+
 #         assert 'IceGeoJsonOutput' in step
 #         assert 'step_num' in step['IceGeoJsonOutput']
 #         assert 'time_stamp' in step['IceGeoJsonOutput']
