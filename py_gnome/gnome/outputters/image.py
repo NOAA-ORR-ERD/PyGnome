@@ -76,15 +76,26 @@ class IceImageOutput(Outputter, Serializable):
             # do something with self.get_coverage_fc(ice_coverage, mover_triangles))
             # do somethign with self.get_thickness_fc(ice_thickness, mover_triangles))
 
-        # dummy string for now -- this will be the image base64 encoded in JSON
-        image_json = ""
         # info to return to the caller
-        output_info = {'step_num': step_num,
+        output_dict = {'step_num': step_num,
                        'time_stamp': sc.current_time_stamp.isoformat(),
-                       'image': image_json 
+                       'image': "data:image/png;base64,%s"%self.get_sample_image(),# dummy image
+                       'bounding_box': ((-85.0, 29.0),(-55.0, 45.0)),
+                       'projection': ("EPSG:3857"),
                        }
+        print "returning output_dict"
+        print output_dict.keys()
+        return output_dict
 
-        return output_info
+    def get_sample_image(self):
+        """
+        this returns a base 64 encoded PNG image for testing -- just so we have something
+
+        This should be removed when we have real functionality
+        """
+        ## hard-coding the base64 really confused my editor..
+        image_file_file_path = os.path.join(os.path.split(__file__)[0], 'sample.b64')
+        return open(image_file_file_path).read()
 
     def get_coverage_fc(self, coverage, triangles):
         return self.get_grouped_fc_from_1d_array(coverage, triangles,

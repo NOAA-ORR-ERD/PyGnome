@@ -1,11 +1,11 @@
 '''
-tests for ic eimage outputter
+tests for ice image outputter
 '''
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2, width=120)
 
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 import pytest
@@ -62,11 +62,11 @@ c_ice_mover = IceMover(curr_file, topology_file)
 #     return model
 
 def make_model():
-    model = Model()
-# #    rel_start_pos = sample_model['release_start_pos']
-# #    rel_end_pos = sample_model['release_end_pos']
 
-    model.start_time = datetime(2015, 5, 14, 0)
+    start_time = datetime(2015, 5, 14, 0)
+    model = Model(time_step=3600*24, # one day
+                  start_time=start_time,
+                  duration=timedelta(days=3),)
     model.cache_enabled = False
     model.uncertain = False
 
@@ -109,7 +109,11 @@ def test_ice_image_output():
     begin = time.time()
     for step in model:
         print '\n\ngot step at: ', time.time() - begin
-        print step
+        print step.keys()
+        print step['time_stamp']
+        print step['image'][:50] # could be really big!
+        print step['bounding_box']
+        print step['projection']
 
     assert False
 #         assert 'IceGeoJsonOutput' in step
