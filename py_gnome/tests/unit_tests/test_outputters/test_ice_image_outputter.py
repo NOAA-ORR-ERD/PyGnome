@@ -24,8 +24,6 @@ from ..conftest import testdata
 
 curr_file = testdata['IceMover']['ice_curr_curv']
 topology_file = testdata['IceMover']['ice_top_curv']
-c_ice_mover = IceMover(curr_file, topology_file)
-
 
 
 ## fixme: should use a proper pytest fixutre r-- but a bit broken.
@@ -85,24 +83,26 @@ def make_model():
 #     #                          release_time=model.start_time)
 
 #     # model.spills += Spill(release)
-
+    c_ice_mover = IceMover(curr_file, topology_file)
     model.movers += c_ice_mover
 
-    model.outputters += IceImageOutput([c_ice_mover,])
+    model.outputters += IceImageOutput(c_ice_mover)
 
     return model
 
 
 def test_init():
     'simple initialization passes'
-    o = IceImageOutput([c_ice_mover,])
-    assert o.ice_movers[0] == c_ice_mover
+    c_ice_mover = IceMover(curr_file, topology_file)
+    o = IceImageOutput(c_ice_mover)
+    assert o.ice_mover is c_ice_mover
 
 
 def test_ice_image_output():
     '''
-        test image outputter with a model 
-        NOTE: could it be tested with just a mover?
+    Test image outputter with a model 
+    NOTE: could it be tested with just a mover, and not a full model?
+      -- that gets tricky with the cache and timesteps...
     '''
     model = make_model()
 
@@ -111,79 +111,94 @@ def test_ice_image_output():
         print '\n\ngot step at: ', time.time() - begin
 
         ice_output = step['IceImageOutput']
-        print ice_output['time_stamp']
-        print ice_output['image'][:50] # could be really big!
-        print ice_output['bounding_box']
-        print ice_output['projection']
-        for key in ('time_stamp', 'image', 'bounding_box', 'projection'):
+        # print ice_output['time_stamp']
+        # print ice_output['concentration_image'][:50] # could be really big!
+        # print ice_output['bounding_box']
+        # print ice_output['projection']
+        for key in ('time_stamp',
+                    'thickness_image',
+                    'concentration_image',
+                    'bounding_box',
+                    'projection'):
             assert key in ice_output
 
     ## not sure what to assert here -- at least it runs!
 
+# def test_ice_image_output_1step():
+#     '''
+#     Test image outputter with a model 
+#     NOTE: could it be tested with just a mover, and not a full model?
+#       -- that gets tricky with the cache and timesteps...
+#     '''
+#     model = make_model()
 
-#         assert 'IceGeoJsonOutput' in step
-#         assert 'step_num' in step['IceGeoJsonOutput']
-#         assert 'time_stamp' in step['IceGeoJsonOutput']
-#         assert 'feature_collections' in step['IceGeoJsonOutput']
+#     begin = time.time()
+#     step  = model.step()
+#     print '\n\ngot step at: ', time.time() - begin
 
-#         fcs = step['IceGeoJsonOutput']['feature_collections']
+#     ice_output = step['IceImageOutput']
+#     # print ice_output['time_stamp']
+#     # print ice_output['concentration_image'][:50] # could be really big!
+#     # print ice_output['bounding_box']
+#     # print ice_output['projection']
+#     for key in ('time_stamp',
+#                 'thickness_image',
+#                 'concentration_image',
+#                 'bounding_box',
+#                 'projection'):
+#         assert key in ice_output
+#     assert False
 
-#         # There should be only one key, but we will iterate anyway.
-#         # We just want to verify here that our keys exist in the movers
-#         # collection.
-#         for k in fcs.keys():
-#             assert model.movers.index(k) > 0
+# def test_ice_image_output_1step():
+#     '''
+#     Test image outputter with a model 
 
-#         # Check that our structure is correct.
-#         for fc_list in fcs.values():
+#     This only runs the first step
 
-#             # our first feature collection should be for coverage
-#             fc = fc_list[0]
-#             assert 'type' in fc
-#             assert fc['type'] == 'FeatureCollection'
-#             assert 'features' in fc
-#             assert len(fc['features']) > 0
+#     NOTE: could it be tested with just a mover, and not a full model?
+#       -- that gets tricky with the cache and timesteps...
+#     '''
+#     model = make_model()
+#     begin = time.time()
 
-#             for feature in fc['features']:
-#                 assert 'type' in feature
-#                 assert feature['type'] == 'Feature'
 
-#                 assert 'properties' in feature
-#                 assert 'coverage' in feature['properties']
+#     model.rewind()
+#     step = model.step()
+#     print '\n\ngot step at: ', time.time() - begin
 
-#                 assert 'geometry' in feature
-#                 geometry = feature['geometry']
+#     ice_output = step['IceImageOutput']
+#     # print ice_output['time_stamp']
+#     # print ice_output['concentration_image'][:50] # could be really big!
+#     # print ice_output['bounding_box']
+#     # print ice_output['projection']
+#     for key in ('time_stamp',
+#                 'thickness_image',
+#                 'concentration_image',
+#                 'bounding_box',
+#                 'projection'):
+#         assert key in ice_output
 
-#                 assert 'type' in geometry
-#                 assert geometry['type'] == 'MultiPolygon'
 
-#                 assert 'coordinates' in geometry
-#                 assert len(geometry['coordinates']) > 0
+# def test_ice_image_output2():
+#     '''
+#     Test image outputter without a model 
+#        -- not working -- need time step to real time adjustment somehow.
+#     '''
+#     iio = IceImageOutput(c_ice_mover)
 
-#             # our second feature collection should be for thickness
-#             fc = fc_list[1]
-#             assert 'type' in fc
-#             assert fc['type'] == 'FeatureCollection'
-#             assert 'features' in fc
-#             assert len(fc['features']) > 0
+#     ice_output = iio.write_output(step_num=0)
+#     # print ice_output['time_stamp']
+#     # print ice_output['concentration_image'][:50] # could be really big!
+#     # print ice_output['bounding_box']
+#     # print ice_output['projection']
+#     for key in ('time_stamp',
+#                 'thickness_image',
+#                 'concentration_image',
+#                 'bounding_box',
+#                 'projection'):
+#         assert key in ice_output
 
-#             for feature in fc['features']:
-#                 assert 'type' in feature
-#                 assert feature['type'] == 'Feature'
 
-#                 assert 'properties' in feature
-#                 assert 'thickness' in feature['properties']
-
-#                 assert 'geometry' in feature
-#                 geometry = feature['geometry']
-
-#                 assert 'type' in geometry
-#                 assert geometry['type'] == 'MultiPolygon'
-
-#                 assert 'coordinates' in geometry
-#                 assert len(geometry['coordinates']) > 0
-
-#         print 'checked step at: ', time.time() - begin
 
 
 

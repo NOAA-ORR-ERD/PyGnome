@@ -12,6 +12,7 @@ from gnome.outputters import TrajectoryGeoJsonOutput
 from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.basic_types import oil_status
 
+from ..conftest import sample_model
 
 @pytest.fixture(scope='function')
 def model(sample_model, output_dir):

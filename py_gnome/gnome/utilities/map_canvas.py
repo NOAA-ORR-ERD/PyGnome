@@ -345,6 +345,14 @@ class MapCanvas(object):
             arr[(pixel_pos[not_on_land, 1] + 0.5).astype(np.int32),
                 (pixel_pos[not_on_land, 0] + 0.5).astype(np.int32)] = color
 
+    def draw_triangles(self, tris):
+        """
+        draws a triangular mesh to the foreground
+
+        expects an NX3X2 numpy array of coordinate pairs
+        """
+
+
     def save_background(self, filename, type_in='PNG'):
         if self.back_image is None:
             raise ValueError("There is no background image to save. You may want to call .draw_background() first")

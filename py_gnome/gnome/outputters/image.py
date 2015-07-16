@@ -32,19 +32,20 @@ class IceImageOutput(Outputter, Serializable):
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('ice_movers',
+    _state.add_field(Field('ice_mover',
                            save=True, update=True, iscollection=True))
 
     _schema = IceImageSchema
 
-    def __init__(self, ice_movers, **kwargs):
+    def __init__(self, ice_mover, **kwargs):
         '''
-        :param list current_movers: A list or collection of current grid mover
-                                    objects.
+        :param mover: An ice_mover object.
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+        Use super to pass optional \*\*kwargs to base class __init__ method
         '''
-        self.ice_movers = ice_movers
+
+        # NOTE: only supports one ice mover
+        self.ice_mover = ice_mover
 
         super(IceImageOutput, self).__init__(**kwargs)
 
@@ -56,23 +57,23 @@ class IceImageOutput(Outputter, Serializable):
         """
         Generate image from data
         """
+        # I don't think we need this for this outputter:
+        #   - it does stuff with cache initialization
         super(IceImageOutput, self).write_output(step_num, islast_step)
 
         if self.on is False or not self._write_step:
             return None
 
+        ## fixme -- doing all this cache stuff just to get the timestep..
+        ## maybe timestep should be passed in.
         for sc in self.cache.load_timestep(step_num).items():
             pass
 
         model_time = date_to_sec(sc.current_time_stamp)
 
+        thick_image, conc_image = self.render_images(model_time)
         ## fixme: Can we really loop through the movers?
         ##        or should there be one IceImage outputter for each Ice Mover.
-        for mover in self.ice_movers:
-            mover_triangles = self.get_triangles(mover)
-            ## this shojuld be separate, yes?
-            ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
-
             ## here is where we render....
             # do something with self.get_coverage_fc(ice_coverage, mover_triangles))
             # do somethign with self.get_thickness_fc(ice_thickness, mover_triangles))
@@ -80,7 +81,8 @@ class IceImageOutput(Outputter, Serializable):
         # info to return to the caller
         output_dict = {'step_num': step_num,
                        'time_stamp': sc.current_time_stamp.isoformat(),
-                       'image': "data:image/png;base64,%s"%self.get_sample_image(),# dummy image
+                       'thickness_image': thick_image,
+                       'concentration_image': conc_image,
                        'bounding_box': ((-85.0, 29.0),(-55.0, 45.0)),
                        'projection': ("EPSG:3857"),
                        }
@@ -95,6 +97,29 @@ class IceImageOutput(Outputter, Serializable):
         ## hard-coding the base64 really confused my editor..
         image_file_file_path = os.path.join(os.path.split(__file__)[0], 'sample.b64')
         return open(image_file_file_path).read()
+
+    def render_images(self, model_time):
+        """
+        render the actual images
+
+        returns: thickness_image, concentration_image
+
+        This uses the MapCanvas code to do the actual rendering
+        """
+
+        canvas = self.map_canvas
+
+        triangles = self.get_triangles()
+        ice_coverage, ice_thickness = self.ice_mover.get_ice_fields(model_time)
+
+            ## here is where we render....
+            # do something with self.get_coverage_fc(ice_coverage, mover_triangles))
+            # do somethign with self.get_thickness_fc(ice_thickness, mover_triangles))
+
+        return ("data:image/png;base64,%s"%self.get_sample_image(),
+                "data:image/png;base64,%s"%self.get_sample_image())
+
+
 
     def get_coverage_fc(self, coverage, triangles):
         return self.get_grouped_fc_from_1d_array(coverage, triangles,
@@ -154,35 +179,33 @@ class IceImageOutput(Outputter, Serializable):
     def get_matching_ice_values(self, ice_values, v):
         return np.where((ice_values == v).all(axis=1))
 
-    def get_triangles(self, mover):
+    def get_triangles(self):
+        # fixme: This seems very coupled -- can we abstract that some?
+        #        Maybe should be using pyugrid for some of this.
         '''
         The triangle data that we get from the mover is in the form of
         indices into the points array.
+
         So we get our triangle data and points array, and then build our
         triangle coordinates by reference.
         '''
-        triangle_data = self.get_triangle_data(mover)
-        points = self.get_points(mover)
+
+        ## fixme: maybe update API? -- shouldn't have to reachi into a mover to get the c++ mover underneith
+        triangle_data = self.ice_mover.mover._get_triangle_data()
+        ## fixme -- define this in basic types somewhere?
+        ##          or -- points array should be in the right dtype already.
+        points = self.ice_mover.mover._get_points().astype( [('long', '<f8'), ('lat', '<f8')] )
+        
+        points['long'] /= 10 ** 6
+        points['lat'] /= 10 ** 6
 
         dtype = triangle_data[0].dtype.descr
         unstructured_type = dtype[0][1]
-        unstructured = (triangle_data.view(dtype=unstructured_type)
-                        .reshape(-1, len(dtype))[:, :3])
+        unstructured = (triangle_data.view(dtype=unstructured_type).reshape(-1, len(dtype))[:, :3])
 
         triangles = points[unstructured]
 
         return triangles
-
-    def get_triangle_data(self, mover):
-        return mover.mover._get_triangle_data()
-
-    def get_points(self, mover):
-        points = (mover.mover._get_points()
-                  .astype([('long', '<f8'), ('lat', '<f8')]))
-        points['long'] /= 10 ** 6
-        points['lat'] /= 10 ** 6
-
-        return points
 
     def rewind(self):
         'remove previously written files'
@@ -190,16 +213,13 @@ class IceImageOutput(Outputter, Serializable):
 
     def serialize(self, json_='webapi'):
         """
-            Serialize our current velocities outputter to JSON
+        Serialize this outputter to JSON
         """
         dict_ = self.to_serialize(json_)
         schema = self.__class__._schema()
         json_out = schema.serialize(dict_)
 
-        json_out['ice_movers'] = []
-
-        for cm in self.ice_movers:
-            json_out['ice_movers'].append(cm.serialize(json_))
+        json_out['ice_mover'] = ice_mover.serialize(json_)
 
         return json_out
 
@@ -211,12 +231,8 @@ class IceImageOutput(Outputter, Serializable):
         schema = cls._schema()
         _to_dict = schema.deserialize(json_)
 
-        if 'ice_movers' in json_:
-            _to_dict['ice_movers'] = []
-            for i, cm in enumerate(json_['ice_movers']):
-                cm_cls = class_from_objtype(cm['obj_type'])
-                cm_dict = cm_cls.deserialize(json_['ice_movers'][i])
-
-                _to_dict['ice_movers'].append(cm_dict)
-
+        if 'ice_mover' in json_:
+            cm_cls = class_from_objtype(cm['obj_type'])
+            cm_dict = cm_cls.deserialize(json_['ice_mover'][i])
+            _to_dict['ice_mover'] = cm_dict
         return _to_dict
