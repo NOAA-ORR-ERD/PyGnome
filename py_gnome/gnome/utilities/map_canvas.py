@@ -176,7 +176,7 @@ class MapCanvas(object):
     def viewport(self):
         """
         returns the current value of viewport of map:
-          the bounding box of the image
+        the bounding box of the image
         """
         return self.projection.to_lonlat(((0, self.image_size[1]),
                 (self.image_size[0], 0)))

@@ -6,14 +6,7 @@ from weathering import WeatheringOutput
 from geo_json import (TrajectoryGeoJsonOutput,
                       CurrentGeoJsonOutput,
                       IceGeoJsonOutput)
+from image import IceImageOutput
 
-__all__ = [BaseSchema,
-           Outputter,
-           NetCDFOutput,
-           NetCDFOutputSchema,
-           Renderer,
-           RendererSchema,
-           WeatheringOutput,
-           TrajectoryGeoJsonOutput,
-           CurrentGeoJsonOutput,
-           IceGeoJsonOutput]
+## NOTE: no need for __all__ if you want export everything!
+
