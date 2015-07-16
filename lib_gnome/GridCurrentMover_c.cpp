@@ -459,9 +459,12 @@ GridCellInfoHdl GridCurrentMover_c::GetCellDataHdl(void)
 	return timeGrid->GetCellData();
 }
 
-WORLDPOINTH	GridCurrentMover_c::GetTriangleCenters()
-{
-	return timeGrid->fGrid->GetCenterPointsHdl();
+WORLDPOINTH	GridCurrentMover_c::GetTriangleCenters(void)
+{	// should rename this function...
+	if (IsTriangleGrid())
+		return timeGrid->fGrid->GetCenterPointsHdl();
+	else
+		return timeGrid->GetCellCenters();
 }
 
 long GridCurrentMover_c::GetNumTriangles(void)
