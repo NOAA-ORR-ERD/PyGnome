@@ -1989,6 +1989,7 @@ TimeGridVelCurv_c::TimeGridVelCurv_c () : TimeGridVelRect_c()
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;
 	fGridCellInfoH = 0;
+	fCenterPtsH = 0;
 	//bIsCOOPSWaterMask = false;
 	bVelocitiesOnNodes = false;
 }	
@@ -1998,6 +1999,7 @@ void TimeGridVelCurv_c::Dispose ()
 	if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
 	if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
 	if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
+	if(fCenterPtsH) {DisposeHandle((Handle)fCenterPtsH); fCenterPtsH=0;}
 	
 	TimeGridVelRect_c::Dispose ();
 }
@@ -2005,6 +2007,12 @@ void TimeGridVelCurv_c::Dispose ()
 LongPointHdl TimeGridVelCurv_c::GetPointsHdl()
 {
 	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
+	//return ((TTriGridVel*)fGrid) -> GetPointsHdl();
+}
+
+TopologyHdl TimeGridVelCurv_c::GetTopologyHdl()
+{
+	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetTopologyHdl();
 	//return ((TTriGridVel*)fGrid) -> GetPointsHdl();
 }
 
@@ -5364,6 +5372,50 @@ OSErr TimeGridVelCurv_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_
 	return err;
 }
 
+
+WORLDPOINTH TimeGridVelCurv_c::GetCellCenters()
+{
+	OSErr err = 0;
+	LongPointHdl ptsH = 0;
+	WORLDPOINTH wpH = 0;
+	TopologyHdl topH ;
+	LongPoint wp1,wp2,wp3;
+	WorldPoint wp;
+	int32_t numPts = 0, numTri = 0;
+	
+	if (fCenterPtsH) return fCenterPtsH;
+	
+	topH = GetTopologyHdl();
+	ptsH = GetPointsHdl();
+	numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
+	numPts = _GetHandleSize((Handle)ptsH)/sizeof(LongPoint);
+	fCenterPtsH = (WORLDPOINTH)_NewHandle(numTri * sizeof(WorldPoint));
+	if (!fCenterPtsH) {
+		err = -1;
+		TechError("TriGridVel_c::GetCenterPointsHdl()", "_NewHandle()", 0);
+		goto done;
+	}
+	
+	for (int i=0; i<numTri; i++)
+	{
+		wp1 = (*ptsH)[(*topH)[i].vertex1];
+		wp2 = (*ptsH)[(*topH)[i].vertex2];
+		wp3 = (*ptsH)[(*topH)[i].vertex3];
+
+#ifndef pyGNOME
+		wp.pLong = (wp1.h+wp2.h+wp3.h)/3;
+		wp.pLat = (wp1.v+wp2.v+wp3.v)/3;
+#else
+		wp.pLong = (double)(wp1.h+wp2.h+wp3.h)/3.e6;
+		wp.pLat = (double)(wp1.v+wp2.v+wp3.v)/3.e6;
+#endif
+		INDEXH(fCenterPtsH,i) = wp;
+	}
+	
+done:
+	return fCenterPtsH;
+}
+
 GridCellInfoHdl TimeGridVelCurv_c::GetCellData()
 {	// use for curvilinear
 	OSErr err = 0;
@@ -5401,8 +5453,11 @@ GridCellInfoHdl TimeGridVelCurv_c::GetCellData()
 		INDEXH(fGridCellInfoH,i).cellNum = i;
 		INDEXH(fGridCellInfoH,i).topLeft = tri1.vertex2;
 		INDEXH(fGridCellInfoH,i).topRight = tri1.vertex1;
-		INDEXH(fGridCellInfoH,i).bottomLeft = tri1.vertex3;
-		INDEXH(fGridCellInfoH,i).bottomRight = tri2.vertex2;
+		//INDEXH(fGridCellInfoH,i).bottomLeft = tri1.vertex3;
+		//INDEXH(fGridCellInfoH,i).bottomRight = tri2.vertex2;
+		// for now switch these so we go around the cell
+		INDEXH(fGridCellInfoH,i).bottomLeft = tri2.vertex2;
+		INDEXH(fGridCellInfoH,i).bottomRight = tri1.vertex3;
 	}
 	
 done:
