@@ -12,6 +12,9 @@ from gnome.utilities.time_utils import date_to_sec
 
 from gnome.utilities.map_canvas import MapCanvas
 
+from gnome.persist import class_from_objtype, References
+from gnome.persist.base_schema import CollectionItemsList
+
 from . import Outputter, BaseSchema
 
 
@@ -37,7 +40,7 @@ class IceImageOutput(Outputter, Serializable):
 
     _schema = IceImageSchema
 
-    def __init__(self, ice_mover, **kwargs):
+    def __init__(self, ice_mover=None, **kwargs):
         '''
         :param mover: An ice_mover object.
 
@@ -219,7 +222,10 @@ class IceImageOutput(Outputter, Serializable):
         schema = self.__class__._schema()
         json_out = schema.serialize(dict_)
 
-        json_out['ice_mover'] = ice_mover.serialize(json_)
+        if self.ice_mover is not None:
+            json_out['ice_mover'] = self.ice_mover.serialize(json_)
+        else:
+            json_out['ice_mover'] = None
 
         return json_out
 
@@ -231,8 +237,8 @@ class IceImageOutput(Outputter, Serializable):
         schema = cls._schema()
         _to_dict = schema.deserialize(json_)
 
-        if 'ice_mover' in json_:
-            cm_cls = class_from_objtype(cm['obj_type'])
-            cm_dict = cm_cls.deserialize(json_['ice_mover'][i])
+        if 'ice_mover' in json_ and json_['ice_mover'] is not None:
+            cm_cls = class_from_objtype(json_['ice_mover']['obj_type'])
+            cm_dict = cm_cls.deserialize(json_['ice_mover'])
             _to_dict['ice_mover'] = cm_dict
         return _to_dict
