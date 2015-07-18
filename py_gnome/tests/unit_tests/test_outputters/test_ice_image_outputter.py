@@ -124,6 +124,46 @@ def test_ice_image_output():
 
     ## not sure what to assert here -- at least it runs!
 
+def test_ice_image_mid_run():
+    '''
+    Test image outputter with a model 
+    NOTE: could it be tested with just a mover, and not a full model?
+      -- that gets tricky with the cache and timesteps...
+    '''
+    start_time = datetime(2015, 5, 14, 0)
+    model = Model(time_step=3600*24, # one day
+                  start_time=start_time,
+                  duration=timedelta(days=3),)
+    model.cache_enabled = False
+    model.uncertain = False
+    c_ice_mover = IceMover(curr_file, topology_file)
+    model.movers += c_ice_mover
+
+    ## run the model a couple steps
+    step = model.step()
+    step = model.step()
+
+    ## now add the outputter
+    model.outputters += IceImageOutput(c_ice_mover)
+
+    ## and run some more:
+    step = model.step()
+    step = model.step()
+    ice_output = step['IceImageOutput']
+    # print ice_output['time_stamp']
+    # print ice_output['concentration_image'][:50] # could be really big!
+    # print ice_output['bounding_box']
+    # print ice_output['projection']
+    for key in ('time_stamp',
+                'thickness_image',
+                'concentration_image',
+                'bounding_box',
+                'projection'):
+        assert key in ice_output
+
+    ## not sure what to assert here -- at least it runs!
+
+
 # def test_ice_image_output_1step():
 #     '''
 #     Test image outputter with a model 

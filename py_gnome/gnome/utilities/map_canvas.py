@@ -347,10 +347,20 @@ class MapCanvas(object):
 
     def draw_triangles(self, tris):
         """
-        draws a triangular mesh to the foreground
+        Draws a triangular mesh to the foreground
 
-        expects an NX3X2 numpy array of coordinate pairs
+        :param tris: coordinates of all the triangles
+        :type tris: Nx3x2 numpy array of coordinate pairs
         """
+        ## create the PIL drawer
+        pass
+        # drawer = ImageDraw.Draw(self.fore_image)
+
+        # for tri in tris:
+        #     drawer.line(coords, fill=self.colors['raster_map_outline'])
+
+
+
 
 
     def save_background(self, filename, type_in='PNG'):
