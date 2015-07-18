@@ -64,7 +64,7 @@ class IceImageOutput(Outputter, Serializable):
         #   - it does stuff with cache initialization
         super(IceImageOutput, self).write_output(step_num, islast_step)
 
-        if self.on is False or not self._write_step:
+        if self.on is False or not self._write_step or self.ice_mover is None:
             return None
 
         ## fixme -- doing all this cache stuff just to get the timestep..
