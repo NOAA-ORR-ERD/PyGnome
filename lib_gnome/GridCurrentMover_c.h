@@ -76,6 +76,7 @@ public:
 			WORLDPOINTH	GetTriangleCenters();
 			long 		GetNumTriangles(void);
 			long 		GetNumPoints(void);
+			bool 		IsTriangleGrid(){return timeGrid->IsTriangleGrid();}
 
 			OSErr		get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID);
 

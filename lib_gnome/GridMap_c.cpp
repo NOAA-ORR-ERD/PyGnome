@@ -3567,6 +3567,8 @@ OSErr GridMap_c::TextRead(char *path)
 
 	WorldRect bounds = theWorld;
 	short gridType;
+	
+	errmsg[0] = 0;
 
 	if (IsNetCDFFile(path, &gridType))
 	{

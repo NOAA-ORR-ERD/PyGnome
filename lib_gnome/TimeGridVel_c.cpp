@@ -1989,6 +1989,7 @@ TimeGridVelCurv_c::TimeGridVelCurv_c () : TimeGridVelRect_c()
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;
 	fGridCellInfoH = 0;
+	fCenterPtsH = 0;
 	//bIsCOOPSWaterMask = false;
 	bVelocitiesOnNodes = false;
 }	
@@ -1998,6 +1999,7 @@ void TimeGridVelCurv_c::Dispose ()
 	if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
 	if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
 	if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
+	if(fCenterPtsH) {DisposeHandle((Handle)fCenterPtsH); fCenterPtsH=0;}
 	
 	TimeGridVelRect_c::Dispose ();
 }
@@ -2005,6 +2007,12 @@ void TimeGridVelCurv_c::Dispose ()
 LongPointHdl TimeGridVelCurv_c::GetPointsHdl()
 {
 	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
+	//return ((TTriGridVel*)fGrid) -> GetPointsHdl();
+}
+
+TopologyHdl TimeGridVelCurv_c::GetTopologyHdl()
+{
+	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetTopologyHdl();
 	//return ((TTriGridVel*)fGrid) -> GetPointsHdl();
 }
 
@@ -5364,6 +5372,50 @@ OSErr TimeGridVelCurv_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_
 	return err;
 }
 
+
+WORLDPOINTH TimeGridVelCurv_c::GetCellCenters()
+{
+	OSErr err = 0;
+	LongPointHdl ptsH = 0;
+	WORLDPOINTH wpH = 0;
+	TopologyHdl topH ;
+	LongPoint wp1,wp2,wp3;
+	WorldPoint wp;
+	int32_t numPts = 0, numTri = 0;
+	
+	if (fCenterPtsH) return fCenterPtsH;
+	
+	topH = GetTopologyHdl();
+	ptsH = GetPointsHdl();
+	numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
+	numPts = _GetHandleSize((Handle)ptsH)/sizeof(LongPoint);
+	fCenterPtsH = (WORLDPOINTH)_NewHandle(numTri * sizeof(WorldPoint));
+	if (!fCenterPtsH) {
+		err = -1;
+		TechError("TriGridVel_c::GetCenterPointsHdl()", "_NewHandle()", 0);
+		goto done;
+	}
+	
+	for (int i=0; i<numTri; i++)
+	{
+		wp1 = (*ptsH)[(*topH)[i].vertex1];
+		wp2 = (*ptsH)[(*topH)[i].vertex2];
+		wp3 = (*ptsH)[(*topH)[i].vertex3];
+
+#ifndef pyGNOME
+		wp.pLong = (wp1.h+wp2.h+wp3.h)/3;
+		wp.pLat = (wp1.v+wp2.v+wp3.v)/3;
+#else
+		wp.pLong = (double)(wp1.h+wp2.h+wp3.h)/3.e6;
+		wp.pLat = (double)(wp1.v+wp2.v+wp3.v)/3.e6;
+#endif
+		INDEXH(fCenterPtsH,i) = wp;
+	}
+	
+done:
+	return fCenterPtsH;
+}
+
 GridCellInfoHdl TimeGridVelCurv_c::GetCellData()
 {	// use for curvilinear
 	OSErr err = 0;
@@ -5401,8 +5453,11 @@ GridCellInfoHdl TimeGridVelCurv_c::GetCellData()
 		INDEXH(fGridCellInfoH,i).cellNum = i;
 		INDEXH(fGridCellInfoH,i).topLeft = tri1.vertex2;
 		INDEXH(fGridCellInfoH,i).topRight = tri1.vertex1;
-		INDEXH(fGridCellInfoH,i).bottomLeft = tri1.vertex3;
-		INDEXH(fGridCellInfoH,i).bottomRight = tri2.vertex2;
+		//INDEXH(fGridCellInfoH,i).bottomLeft = tri1.vertex3;
+		//INDEXH(fGridCellInfoH,i).bottomRight = tri2.vertex2;
+		// for now switch these so we go around the cell
+		INDEXH(fGridCellInfoH,i).bottomLeft = tri2.vertex2;
+		INDEXH(fGridCellInfoH,i).bottomRight = tri1.vertex3;
 	}
 	
 done:
@@ -6454,7 +6509,7 @@ OSErr TimeGridVelIce_c::GetIceFields(Seconds time, double *thickness, double *fr
 	Seconds startTime,endTime;
 	OSErr err = 0;
 	
-	long numVertices,i,numTri,index=-1;
+	long numVertices,i,numTri,numCells,index=-1,triIndex;
 	InterpolationVal interpolationVal;
 	LongPointHdl ptsHdl = 0;
 	TopologyHdl topH ;
@@ -6505,13 +6560,17 @@ OSErr TimeGridVelIce_c::GetIceFields(Seconds time, double *thickness, double *fr
 		}
 	}
 	
-	for (i = 0 ; i< numTri; i++)
+	numCells = numTri / 2;
+	//for (i = 0 ; i< numTri; i++)
+	for (i = 0 ; i< numCells; i++)
 	{
+		triIndex = i*2;
 		if (bVelocitiesOnNodes)
 		{
 			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
 			//interpolationVal = triGrid -> GetInterpolationValues(refPoint.p);
-			interpolationVal = triGrid -> GetInterpolationValuesFromIndex(i);
+			//interpolationVal = triGrid -> GetInterpolationValuesFromIndex(i);
+			interpolationVal = triGrid -> GetInterpolationValuesFromIndex(triIndex);
 			if (interpolationVal.ptIndex1<0) {thickness[i] = 0;	fraction[i] = 0;}// should this be an error?
 			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
 			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
@@ -6520,7 +6579,8 @@ OSErr TimeGridVelIce_c::GetIceFields(Seconds time, double *thickness, double *fr
 		}
 		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
 			//index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
-			index = triGrid->GetRectIndexFromTriIndex2(i,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+			//index = triGrid->GetRectIndexFromTriIndex2(i,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+			index = triGrid->GetRectIndexFromTriIndex2(triIndex,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 
 		if (index < 0) {thickness[i] = 0;	fraction[i] = 0;}// should this be an error?
 		
@@ -6946,7 +7006,7 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue(const Seconds& model_time, World
 	double timeAlpha, depth = refPoint.z;
 	long ptIndex1,ptIndex2,ptIndex3,triIndex; 
 	long index = -1; 
-	Seconds startTime,endTime;
+	Seconds startTime,endTime, relTime;
 	InterpolationVal interpolationVal;
 	VelocityRec scaledPatVelocity = {0.,0.};
 	OSErr err = 0;
@@ -6987,7 +7047,7 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue(const Seconds& model_time, World
 	
 	// code goes here, need interpolation in z if LE is below surface
 	// what kind of weird things can triangles do below the surface ??
-	if (/*depth>0 &&*/ interpolationVal.ptIndex1 >= 0) 
+	if (depth>0 && interpolationVal.ptIndex1 >= 0) 
 	{
 		scaledPatVelocity = GetScaledPatValue3D(model_time, interpolationVal,depth);
 		goto scale;
@@ -7032,10 +7092,11 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue(const Seconds& model_time, World
 		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
 		
 		// Calculate the time weight factor
+ 		// fModelStartTime needs to be set in the mover
 		if (fTimeAlpha==-1)
 		{
 			//Seconds relTime = time - model->GetStartTime();
-			Seconds relTime = model_time - fModelStartTime;
+			relTime = model_time - fModelStartTime;
 			startTime = (*fTimeHdl)[fStartData.timeIndex];
 			endTime = (*fTimeHdl)[fEndData.timeIndex];
 			//timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
@@ -7094,7 +7155,7 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue3D(const Seconds& model_time, Int
 	double topDepth, bottomDepth, depthAlpha, timeAlpha;
 	VelocityRec pt1interp = {0.,0.}, pt2interp = {0.,0.}, pt3interp = {0.,0.};
 	VelocityRec scaledPatVelocity = {0.,0.};
-	Seconds startTime, endTime;
+	Seconds startTime, endTime, relTime;
 	
 	if (interpolationVal.ptIndex1 >= 0)  // if negative corresponds to negative ntri
 	{
@@ -7194,17 +7255,17 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue3D(const Seconds& model_time, Int
 	{
 		// Calculate the time weight factor
 		if (GetNumFiles()>1 && fOverLap)
-			startTime = fOverLapStartTime;
+			startTime = fOverLapStartTime + fTimeShift;
 		else
-			startTime = (*fTimeHdl)[fStartData.timeIndex];
-		endTime = (*fTimeHdl)[fEndData.timeIndex];
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
 		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
 		
 		// Calculate the time weight factor
 		if (fTimeAlpha==-1)
 		{
 			//Seconds relTime = time - model->GetStartTime();
-			Seconds relTime = model_time - fModelStartTime;
+			relTime = model_time - fModelStartTime;
 			startTime = (*fTimeHdl)[fStartData.timeIndex];
 			endTime = (*fTimeHdl)[fEndData.timeIndex];
 			//timeAlpha = (endTime - model_time)/(double)(endTime - startTime);

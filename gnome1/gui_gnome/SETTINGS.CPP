@@ -1004,7 +1004,7 @@ OSErr AddMapsDialog2()
 	{
 		TMap *newMap = 0;
 		
-		char s[256],fileName[256];
+		char s[256],fileName[256], outPath[256];
 		WorldRect bounds = theWorld;
 
 		strcpy(s,path);
@@ -1019,12 +1019,20 @@ OSErr AddMapsDialog2()
 			long numRows=0, numCols=0, numNodes=0, numTri=0, numBoundaryPts=0;
 			char errmsg[256];
 			gridMap = new GridMap_c();
+			
+#if TARGET_API_MAC_CARBON
+			err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+			//if (!err) strcpy(path,outPath);
+#else
+			strcpy(outPath,path);
+#endif
+
 			if (gridType == CURVILINEAR)
 			{
 				DOUBLEH maskH = 0;
 				//err = gMap->GetPointsAndMask(path,&maskH,&vertexPtsH,&depthPtsH,&numRows, &numCols);	//Text read	
 				//if (!err) err = gMap->SetUpCurvilinearGrid(maskH,numRows,numCols,vertexPtsH,depthPtsH,errmsg);	//Reorder points
-				err = gridMap->GetPointsAndMask(path,&maskH,&vertexPtsH,&depthPtsH,&numRows, &numCols);	//Text read	
+				err = gridMap->GetPointsAndMask(outPath,&maskH,&vertexPtsH,&depthPtsH,&numRows, &numCols);	//Text read	
 				if (!err) err = gridMap->SetUpCurvilinearGrid(maskH,numRows,numCols,vertexPtsH,depthPtsH,errmsg);	//Reorder points
 				if(maskH) {DisposeHandle((Handle)maskH); maskH = 0;}
 			}
@@ -1032,7 +1040,7 @@ OSErr AddMapsDialog2()
 			{	// check if topology is included
 				LONGPTR bndry_indices=0, bndry_nums=0, bndry_type=0, tri_verts=0, tri_neighbors=0;
 				//err = gMap->GetPointsAndBoundary(path,&vertexPtsH,&depthPtsH, &numNodes, &bndry_indices, &bndry_nums, &bndry_type, &numBoundaryPts, &tri_verts, &tri_neighbors, &numTri);	//Text read	
-				err = gridMap->GetPointsAndBoundary(path,&vertexPtsH,&depthPtsH, &numNodes, &bndry_indices, &bndry_nums, &bndry_type, &numBoundaryPts, &tri_verts, &tri_neighbors, &numTri);	//Text read	
+				err = gridMap->GetPointsAndBoundary(outPath,&vertexPtsH,&depthPtsH, &numNodes, &bndry_indices, &bndry_nums, &bndry_type, &numBoundaryPts, &tri_verts, &tri_neighbors, &numTri);	//Text read	
 				if (!err) 
 				{	// separate points and boundary
 					if (numTri == 0)

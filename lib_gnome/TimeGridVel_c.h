@@ -63,7 +63,7 @@ public:
 	long fOffset;
 	float fFraction;
 	float fTimeAlpha;
-	float fModelStartTime;
+	Seconds fModelStartTime;
 	Boolean bIsCycleMover;
 	
 	Boolean fOverLap;
@@ -114,6 +114,7 @@ public:
 	
 	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity){return -1;}
 	virtual GridCellInfoHdl 	GetCellData() {return 0;}
+	virtual WORLDPOINTH 	GetCellCenters() {return 0;}
 
 	long 					GetNumTimesInFile();
 	long 					GetNumFiles();
@@ -133,6 +134,8 @@ public:
 	void 				ClearLoadedData(LoadedData * dataPtr);
 	void 				ClearLoadedData(LoadedFieldData *dataPtr);
 	void 				DisposeAllLoadedData();
+
+	virtual	bool 		IsTriangleGrid(){return false;}
 };
 
 
@@ -201,6 +204,7 @@ public:
 	
 	LONGH fVerdatToNetCDFH;	// for curvilinear
 	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
+	WORLDPOINTH fCenterPtsH;		// for curvilinear, all vertex points from file
 	GridCellInfoHdl fGridCellInfoH;
 	Boolean bVelocitiesOnNodes;		// default is velocities on cells
 
@@ -211,6 +215,7 @@ public:
 	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELCURV) return TRUE; return TimeGridVelRect_c::IAm(id); }
 	
 	LongPointHdl		GetPointsHdl();
+	TopologyHdl 		GetTopologyHdl();
 	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	VelocityRec			GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
 
@@ -229,6 +234,7 @@ public:
 
 	OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
 	virtual GridCellInfoHdl 	GetCellData();
+	virtual WORLDPOINTH 	GetCellCenters();
 
 	virtual	OSErr ReadTopology(std::vector<std::string> &linesInFile);
 	virtual	OSErr ReadTopology(const char *path);
@@ -270,6 +276,8 @@ public:
 	virtual OSErr ExportTopology(char *path);
 
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
+
+	virtual	bool 		IsTriangleGrid(){return true;}
 };
 
 class TimeGridVelIce_c : virtual public TimeGridVelCurv_c
@@ -396,6 +404,8 @@ public:
 
 	virtual OSErr TextRead(std::vector<std::string> &linesInFile, std::string containingDir);
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
+
+	virtual	bool 		IsTriangleGrid(){return true;}
 };
 
 

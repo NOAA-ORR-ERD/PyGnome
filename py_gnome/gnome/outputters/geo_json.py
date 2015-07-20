@@ -241,7 +241,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         geojson = {}
         for cm in self.current_movers:
             features = []
-            centers = cm.mover._get_center_points()
+            centers = cm.get_center_points()
             velocities = cm.get_scaled_velocities(model_time)
 
             current_vals = np.hstack((centers.view(dtype='<f8')
@@ -452,20 +452,33 @@ class IceGeoJsonOutput(Outputter, Serializable):
         So we get our triangle data and points array, and then build our
         triangle coordinates by reference.
         '''
-        triangle_data = self.get_triangle_data(mover)
         points = self.get_points(mover)
 
-        dtype = triangle_data[0].dtype.descr
-        unstructured_type = dtype[0][1]
-        unstructured = (triangle_data.view(dtype=unstructured_type)
-                        .reshape(-1, len(dtype))[:, :3])
+        if mover.mover._is_triangle_grid():
+            data = self.get_triangle_data(mover)
+            dtype = data[0].dtype.descr
+            unstructured_type = dtype[0][1]
+            unstructured = (data.view(dtype=unstructured_type)
+                            .reshape(-1, len(dtype))[:, :3])
 
-        triangles = points[unstructured]
+            triangles = points[unstructured]
+            return triangles
 
-        return triangles
+        else:
+            data = self.get_cell_data(mover)
+            dtype = data[0].dtype.descr
+            unstructured_type = dtype[0][1]
+            unstructured = (data.view(dtype=unstructured_type)
+                            .reshape(-1, len(dtype))[:, 1:])
+
+            cells = points[unstructured]
+            return cells
 
     def get_triangle_data(self, mover):
         return mover.mover._get_triangle_data()
+
+    def get_cell_data(self, mover):
+        return mover.mover._get_cell_data()
 
     def get_points(self, mover):
         points = (mover.mover._get_points()

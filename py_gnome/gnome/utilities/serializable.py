@@ -968,9 +968,8 @@ class Serializable(GnomeId, Savable):
                         schema.add(CollectionItemsList(name=field.name))
 
                 _to_dict = schema.deserialize(json_)
-            # return deserialized object
-            return _to_dict
 
+            return _to_dict
         else:
             return json_
 

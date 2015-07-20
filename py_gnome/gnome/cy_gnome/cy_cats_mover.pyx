@@ -75,10 +75,10 @@ cdef class CyCatsMover(CyCurrentMover):
             self.ref_point = ref_point
 
         super(CyCatsMover, self).__init__(*args, **kwargs)
-        ## should not have to do this manually.
-        ## make-shifting for now.
-        #self.cats.fOptimize.isOptimizedForStep = 0
-        #self.cats.fOptimize.isFirstStep = 1
+        # # should not have to do this manually.
+        # # make-shifting for now.
+        # self.cats.fOptimize.isOptimizedForStep = 0
+        # self.cats.fOptimize.isFirstStep = 1
 
     property scale_type:
         def __get__(self):
@@ -112,7 +112,6 @@ cdef class CyCatsMover(CyCurrentMover):
     property ref_scale:
         def __get__(self):
             return self.cats.refScale
-
 
     property ref_point:
         def __get__(self):
@@ -169,6 +168,7 @@ cdef class CyCatsMover(CyCurrentMover):
                   'uncertain_eddy_v0={0.uncertain_eddy_v0}, ').format(self)
         # append ref_point and base class props:
         c_repr += 'ref_point=%s, ' % str(self.ref_point) + b_add
+
         return c_repr
 
     def __str__(self):
@@ -179,6 +179,7 @@ cdef class CyCatsMover(CyCurrentMover):
                          '  eddy diffusion coef={0.uncertain_eddy_diffusion}\n'
                          '  ref_point={0.ref_point}\n'
                          .format(self))
+
         return c_str
 
     def set_shio(self, CyShioTime cy_shio):
@@ -193,6 +194,7 @@ cdef class CyCatsMover(CyCurrentMover):
 
         self.cats.bTimeFileActive = True
         self.cats.scaleType = 1
+
         return True
 
     def set_ossm(self, CyOSSMTime ossm):
@@ -202,8 +204,10 @@ cdef class CyCatsMover(CyCurrentMover):
         """
         self.cats.SetTimeDep(ossm.time_dep)
         self.cats.bTimeFileActive = True   # What is this?
+
         if ossm.station_location is not None:
             self.ref_point = ossm.station_location
+
         return True
 
     def text_read(self, fname):
@@ -212,10 +216,13 @@ cdef class CyCatsMover(CyCurrentMover):
         """
         cdef OSErr err
         path_ = filename_as_bytes(fname)
+
         err = self.cats.TextRead(path_)
-        if err != False:
-            raise ValueError('CATSMover.text_read(..) returned an error. '
-                             'OSErr: {0}'.format(err))
+        if err is not False:
+            raise ValueError('CATSMover.text_read(..) '
+                             'returned an error. OSErr: {0}'
+                             .format(err))
+
         return True
 
     def compute_velocity_scale(self):
@@ -223,10 +230,13 @@ cdef class CyCatsMover(CyCurrentMover):
         compute velocity scale
         """
         cdef OSErr err
+
         err = self.cats.InitMover()
-        if err != False:
-            raise ValueError('CATSMover.compute_velocity_scale(..) returned an error. '
-                             'OSErr: {0}'.format(err))
+        if err is not False:
+            raise ValueError('CATSMover.compute_velocity_scale(..) '
+                             'returned an error. OSErr: {0}'
+                             .format(err))
+
         return True
 
     def get_move(self,
@@ -282,15 +292,14 @@ cdef class CyCatsMover(CyCurrentMover):
                              '"forecast" or "uncertainty" '
                              '- you have chosen: {0!s}'.format(spill_type))
 
-    #==========================================================================
+    # ==========================================================================
     # TODO: What are these used for
     # def compute_velocity_scale(self, model_time):
     #    self.mover.ComputeVelocityScale(model_time)
     #
     # def set_velocity_scale(self, scale_value):
     #    self.mover.refScale = scale_value
-    #==========================================================================
-
+    # ==========================================================================
 
     def _get_velocity_handle(self):
         """
@@ -391,4 +400,3 @@ cdef class CyCatsMover(CyCurrentMover):
         memcpy(&top[0], top_hdl[0], sz)
 
         return top
-

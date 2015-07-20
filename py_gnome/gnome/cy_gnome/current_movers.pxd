@@ -108,6 +108,7 @@ cdef extern from "GridCurrentMover_c.h":
         WORLDPOINTH  GetTriangleCenters()
         WORLDPOINTH  GetCellCenters()
         long  GetNumTriangles()
+        bool  IsTriangleGrid()
 
 cdef extern from "IceMover_c.h":
 
