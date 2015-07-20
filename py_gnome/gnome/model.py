@@ -144,15 +144,8 @@ class Model(Serializable):
         [model.movers.add(obj) for obj in g_objects]
         [model.weatherers.add(obj) for obj in l_weatherers]
 
-        # register callback with OrderedCollection after objects are added
-        model.movers.register_callback(model._callback_add_mover,
-                                       ('add', 'replace'))
-
-        model.weatherers.register_callback(model._callback_add_weatherer_env,
-                                           ('add', 'replace'))
-
-        model.environment.register_callback(model._callback_add_weatherer_env,
-                                            ('add', 'replace'))
+        # register callbacks with OrderedCollections after objects are added
+        model._register_callbacks()
 
         # OrderedCollections are being used so maintain order.
         if json_ == 'webapi':
@@ -198,15 +191,22 @@ class Model(Serializable):
                          weathering_substeps,
                          uncertain, cache_enabled, map, name)
 
-        # register callback with OrderedCollection
+        self._register_callbacks()
+
+    def _register_callbacks(self):
+
+        '''
+        Register callbacks with the OrderedCollections
+        '''
         self.movers.register_callback(self._callback_add_mover,
                                       ('add', 'replace'))
-
         self.weatherers.register_callback(self._callback_add_weatherer_env,
                                           ('add', 'replace'))
-
         self.environment.register_callback(self._callback_add_weatherer_env,
                                            ('add', 'replace'))
+        self.outputters.register_callback(self._callback_add_outputter,
+                                          ('add', 'replace'))
+
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map, name):
@@ -944,6 +944,14 @@ class Model(Serializable):
         'Callback after mover has been added'
         self._add_to_environ_collec(obj_added)
         self.rewind()  # rewind model if a new mover is added
+
+    def _callback_add_outputter(self, obj_added):
+        'Callback after outputter has been added'
+        print "_outputter callback called"
+        # hook up the cache
+        obj_added.cache = self._cache
+
+
 
     def _callback_add_weatherer_env(self, obj_added):
         '''

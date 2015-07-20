@@ -86,7 +86,7 @@ class IceImageOutput(Outputter, Serializable):
                        'time_stamp': sc.current_time_stamp.isoformat(),
                        'thickness_image': thick_image,
                        'concentration_image': conc_image,
-                       'bounding_box': ((-85.0, 29.0),(-55.0, 45.0)),
+                       'bounding_box': ((-85.0, 20.0),(-55.0, 45.0)),
                        'projection': ("EPSG:3857"),
                        }
         return output_dict

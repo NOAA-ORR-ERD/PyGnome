@@ -144,11 +144,14 @@ def test_ice_image_mid_run():
     step = model.step()
 
     ## now add the outputter
-    model.outputters += IceImageOutput(c_ice_mover)
+    iio = IceImageOutput(c_ice_mover)
+    model.outputters += iio
 
     ## and run some more:
+
     step = model.step()
     step = model.step()
+    ## and check the output
     ice_output = step['IceImageOutput']
     # print ice_output['time_stamp']
     # print ice_output['concentration_image'][:50] # could be really big!
