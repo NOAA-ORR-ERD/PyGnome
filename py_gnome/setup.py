@@ -68,7 +68,11 @@ def build_oil_lib(mode):
     oil_lib_path = os.path.join(SETUP_PATH, '../oil_library')
     os.chdir(oil_lib_path)
     print "Installing oil_library since it isn't found"
-    call(['python', 'setup.py', mode])
+    if mode in ['develop', 'developall']:
+        # anaconda doesn't like setuptools doing dependencies
+        call(['python', 'setup.py', mode, '--no-deps'])
+    else:
+        call(['python', 'setup.py', mode])
     print "Change back to user's current working directory"
     os.chdir(CWD)
 
