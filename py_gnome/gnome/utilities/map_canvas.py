@@ -345,22 +345,22 @@ class MapCanvas(object):
             arr[(pixel_pos[not_on_land, 1] + 0.5).astype(np.int32),
                 (pixel_pos[not_on_land, 0] + 0.5).astype(np.int32)] = color
 
-    def draw_triangles(self, tris):
+    def draw_cells(self, cells):
         """
-        Draws a triangular mesh to the foreground
+        Draws the boundaries of the cells
 
-        :param tris: coordinates of all the triangles
-        :type tris: Nx3x2 numpy array of coordinate pairs
+        :param cells: coordinates of all the cells
+        :type cells: NxMx2 numpy array of coordinate pairs.
+                     N is the number of cells.
+                     M is the numbre of vertices per cell
+                     (i.e 3 for triangles, 4 for quads)
         """
         ## create the PIL drawer
-        pass
-        # drawer = ImageDraw.Draw(self.fore_image)
+        drawer = ImageDraw.Draw(self.fore_image)
 
-        # for tri in tris:
-        #     drawer.line(coords, fill=self.colors['raster_map_outline'])
-
-
-
+        for cell in cells:
+            coords = cell.flat()
+            drawer.line(coords, fill=self.colors['raster_map_outline'])
 
 
     def save_background(self, filename, type_in='PNG'):
