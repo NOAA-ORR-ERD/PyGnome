@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Model &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="model">
+<h1>Model<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h1>
+<p>This is the main class that contains objects used to model trajectory and
+weathering processes. It runs the loop through time, etc.
+The code comes with a full-featured version &#8211; you may want a simpler one if
+you aren&#8217;t doing a full-on oil spill model. The model contains:</p>
+<ul class="simple">
+<li>map</li>
+<li>collection of environment objects</li>
+<li>collection of movers</li>
+<li>collection of weatherers</li>
+<li>a spills</li>
+<li>its own attributes</li>
+</ul>
+<div class="section" id="model-loop">
+<h2>model loop<a class="headerlink" href="#model-loop" title="Permalink to this headline">¶</a></h2>
+<p>In pseudocode, the model loop is defined below. In the first step, it sets up the
+model run and in subsequent steps the model moves and weathers elements.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">start_at_step_num</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+<span class="k">if</span> <span class="n">step_num</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">setup_model_run</span><span class="p">()</span>
+
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">setup_time_step</span><span class="p">()</span>
+    <span class="n">move</span><span class="p">()</span>
+    <span class="n">weather</span><span class="p">()</span>
+    <span class="n">step_is_done</span><span class="p">()</span>
+
+<span class="n">step_num</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">num</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">release_elements</span><span class="p">()</span>     <span class="c"># initialize mover data arrays</span>
+
+    <span class="k">if</span> <span class="n">num</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weatherers</span><span class="p">:</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">initialize_data</span><span class="p">()</span>     <span class="c"># initialize weatherer data arrays</span>
+
+<span class="n">o</span> <span class="o">=</span> <span class="n">write_output</span><span class="p">()</span>
+
+<span class="k">return</span> <span class="n">o</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="collection-of-environment-objects">
+<h2>collection of environment objects<a class="headerlink" href="#collection-of-environment-objects" title="Permalink to this headline">¶</a></h2>
+<p>The model&#8217;s environment attribute in an
+<a class="reference external" href="reference.html#gnome.utilities.orderedcollection.OrderedCollection">OrderedCollection</a>
+containing objects from gnome&#8217;s
+<a class="reference external" href="reference.html#module-gnome.environment">environment</a> namespace</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Model</a><ul>
+<li><a class="reference internal" href="#model-loop">model loop</a></li>
+<li><a class="reference internal" href="#collection-of-environment-objects">collection of environment objects</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/model.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

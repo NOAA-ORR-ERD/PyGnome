@@ -12,15 +12,11 @@ API so that the pieces can be used individually.
 Basic Structure
 -------------------
 
-There are a handlful of core base classes you need to use PyGnome for anything
+There are a handful of core base classes you need to use PyGnome for anything
 useful:
 
-a model:
-   This is the main class that keeps track of all the pieces, runs the loop
-   through time, etc. The code comes with a full-featured version -- you may
-   want a simpler one if you aren't doing a full-on oil spill model.
-
-movers:
+* `a model <reference.html#model>`_
+* movers:
    These are classes that represent anything that moves a particle.  Or in fact,
    alters a particle in any way (the name mover is a bit historical -- they
    used to only move particles...).  Examples include surface winds, currents
@@ -34,8 +30,7 @@ movers:
    the required arrays are extracted from the spill object -- this lets us pass
    to a mover only the data that it really needs, and lets us use Python for
    the dynamic parts -- making sure that the data needed exists.
-
-spills:
+* spills:
    A spill class is a class that holds a set of particles and various
    information about them. Each of the particle properties are stored as numpy
    arrays (in a dict) -- so that for a given model setup, the spill only needs
@@ -49,8 +44,7 @@ spills:
    
    Each spill is a composition of the type of substance spilled (ElementType)
    and how elements are released (instantaneous, continuous, etc).
-
-a map:
+* a map:
    A map keeps track of where land and water are.  The simplest map is all the
    earth with no land.  It has methods to ask if a location is on land, if a
    location is "spillable", etc.  The most commonly used map for surface oil
@@ -61,6 +55,9 @@ a map:
 
 Class Reference:
 -------------------
+
+.. include:: model.rst
+------------------------
 
 ``gnome.model`` -- the PyGnome model class
 ---------------------------------------------------
@@ -106,6 +103,8 @@ Class Reference:
 ``gnome.movers`` -- PyGnome mover classes
 ---------------------------------------------------
 .. automodule:: gnome.movers
+.. autoclass:: Process
+   :members:
 .. autoclass:: Mover
    :members:
 .. autoclass:: CyMover
@@ -166,15 +165,27 @@ Class Reference:
 .. :autoclass:: NetCDFOutput
     :members:
     :show-inheritance:
-.. autoclass:: GeoJson
+.. autoclass:: TrajectoryGeoJsonOutput
+    :members:
+    :show-inheritance:
+.. autoclass:: CurrentGeoJsonOutput
+    :members:
+    :show-inheritance:
+.. autoclass:: IceGeoJsonOutput
     :members:
     :show-inheritance:
 
 ``gnome.utilities`` -- PyGnome utilities module
 ---------------------------------------------------
+
 .. automodule:: gnome.utilities.serializable
     :members:
     :show-inheritance:
+
+.. automodule:: gnome.utilities.orderedcollection
+    :members:
+    :show-inheritance:
+
 
 ``gnome.persist`` -- PyGnome persistance classes
 ---------------------------------------------------
