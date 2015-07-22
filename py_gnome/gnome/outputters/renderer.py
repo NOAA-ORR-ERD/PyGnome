@@ -95,6 +95,7 @@ class Renderer(Outputter, MapCanvas):
         output_zero_step=True,
         output_last_step=True,
         draw_ontop='forecast',
+        draw_back_to_fore=True,
         **kwargs
         ):
         """
@@ -122,6 +123,9 @@ class Renderer(Outputter, MapCanvas):
         :param draw_ontop: draw 'forecast' or 'uncertain' LEs on top. Default
             is to draw 'forecast' LEs, which are in black on top
         :type draw_ontop: str
+
+        :param draw_back_to_fore=True: draw the background (map) to the foregound image when drawing Elements.
+        :type draw_ontop: boolean
 
         Remaining kwargs are passed onto baseclass's __init__ with a direct
         call: MapCanvas.__init__(..)
@@ -151,7 +155,6 @@ class Renderer(Outputter, MapCanvas):
         self.images_dir = images_dir
         self.last_filename = ''
         self.draw_ontop = draw_ontop
-
         Outputter.__init__(self,
                            cache,
                            kwargs.pop('on', True),
@@ -159,7 +162,10 @@ class Renderer(Outputter, MapCanvas):
                            output_zero_step,
                            output_last_step,
                            kwargs.pop('name', None))
-        MapCanvas.__init__(self, image_size, land_polygons=polygons,
+        MapCanvas.__init__(self,
+                           image_size,
+                           land_polygons=polygons,
+                           draw_back_to_fore=draw_back_to_fore,
                            **kwargs)
 
     filename = property(lambda self: self._filename)
