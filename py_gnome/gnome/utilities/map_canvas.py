@@ -76,7 +76,6 @@ class MapCanvas(object):
     def __init__(self,
                  image_size,
                  land_polygons=None,
-                 draw_back_to_fore=False,
                  **kwargs):
         """
         create a new map image from scratch -- specifying the size:
@@ -111,9 +110,6 @@ class MapCanvas(object):
         self.image_mode = kwargs.pop('image_mode', 'P')
 
         self.back_image = None
-
-        self.draw_back_to_fore = draw_back_to_fore ## should the base map get drawn onto the foreground.
-        # optional arguments (kwargs)
 
         self._land_polygons = land_polygons
         self.map_BB = kwargs.pop('map_BB', None)
@@ -294,21 +290,27 @@ class MapCanvas(object):
         self.fore_image = Image.fromarray(self.fore_image_array, mode='P')
         self.fore_image.putpalette(self.palette)
 
+    def add_back_to_fore(self):
+        """
+        adds the background image to the foreground
+        this is optionally called if you want the
+        background on every image. i.e. don't want to
+        have to compose them later.
+        """
+        if self.back_image is not None:
+            # compose the foreground and background
+            self.fore_image_array[:] = np.asarray(self.back_image)
+
     def draw_elements(self, sc):
         """
         Draws the individual elements to a foreground image
 
         :param sc: a SpillContainer object to draw
 
-        :param draw_background: draw the background map first?
-
         """
-        # TODO: add checks for the status flag (beached, etc)!
-        if sc.num_released > 0:  # nothing to draw if no elements
-            if self.draw_back_to_fore and self.back_image is not None:
-                # compose the foreground and background
-                self.fore_image_array[:] = np.asarray(self.back_image)
+        # TODO: add checks for the other status flags!
 
+        if sc.num_released > 0:  # nothing to draw if no elements
             arr = self.fore_image_array
             if sc.uncertain:
                 color = self.colors['uncert_LE']

@@ -155,6 +155,7 @@ class Renderer(Outputter, MapCanvas):
         self.images_dir = images_dir
         self.last_filename = ''
         self.draw_ontop = draw_ontop
+        self.draw_back_to_fore = draw_back_to_fore
         Outputter.__init__(self,
                            cache,
                            kwargs.pop('on', True),
@@ -165,7 +166,6 @@ class Renderer(Outputter, MapCanvas):
         MapCanvas.__init__(self,
                            image_size,
                            land_polygons=polygons,
-                           draw_back_to_fore=draw_back_to_fore,
                            **kwargs)
 
     filename = property(lambda self: self._filename)
@@ -289,6 +289,9 @@ class Renderer(Outputter, MapCanvas):
 
         # draw data for self.draw_ontop second so it draws on top
         scp = self.cache.load_timestep(step_num).items()
+        if self.draw_back_to_fore:
+            self.add_back_to_fore()
+
         if len(scp) == 1:
             self.draw_elements(scp[0])
         else:
