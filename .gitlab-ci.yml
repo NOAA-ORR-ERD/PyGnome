@@ -12,5 +12,5 @@ master:
 develop:
   script:
     - py.test
- only:
-   - develop
+  only:
+    - develop
