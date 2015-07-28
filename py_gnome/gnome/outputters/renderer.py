@@ -212,13 +212,13 @@ class Renderer(Outputter, MapCanvas):
         # clear out output dir:
         # don't need to do this -- it will get written over.
 
+        print "clear_output_dir called"
+
         try:
             os.remove(os.path.join(self.images_dir,
                       self.background_map_name))
         except OSError:
-
                         # it's not there to delete..
-
             pass
 
         foreground_filenames = glob.glob(os.path.join(self.images_dir,
@@ -226,11 +226,11 @@ class Renderer(Outputter, MapCanvas):
         for name in foreground_filenames:
             os.remove(name)
 
-    def rewind(self):
-        '''call parent class's rewind.
-        Call clear_output_dir to delete output files'''
-        super(Renderer, self).rewind()
-        self.clear_output_dir()
+    # def rewind(self):
+    #     '''call parent class's rewind.
+    #     Call clear_output_dir to delete output files'''
+    #     super(Renderer, self).rewind()
+    #     self.clear_output_dir()
 
     def write_output(self, step_num, islast_step=False):
         """

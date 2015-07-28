@@ -24,4 +24,6 @@ colander
 sqlalchemy
 zope.interface
 zope.sqlalchemy
+awesome-slugify
+
 
