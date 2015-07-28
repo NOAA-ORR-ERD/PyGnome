@@ -1,7 +1,8 @@
 before_script: 
-  - pip install -r ./py_gnome/requirements.txt
-  - python ./py_gnome/setup.py cleandev
-  - python ./py_gnome/setup.py develop
+  - cd ./py_gnome
+  - pip install -r requirements.txt
+  - python ./setup.py cleandev
+  - python ./setup.py develop
 
 master: 
   script:
