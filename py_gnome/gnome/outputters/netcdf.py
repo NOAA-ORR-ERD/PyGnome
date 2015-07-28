@@ -445,6 +445,8 @@ class NetCDFOutput(Outputter, Serializable):
         file. This must be done in prepare_for_model_run because if model _state
         changes, it is rewound and re-run from the beginning.
 
+        If there are existing output files, they are deleted here.
+
         This takes more than standard 'cache' argument. Some of these are
         required arguments - they contain None for defaults because non-default
         argument cannot follow default argument. Since cache is already 2nd
@@ -477,6 +479,7 @@ class NetCDFOutput(Outputter, Serializable):
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         spills, **kwargs)
+        self.delete_output_files()
 
         self._update_var_attributes(spills)
 
@@ -635,20 +638,25 @@ class NetCDFOutput(Outputter, Serializable):
                                     self._u_netcdf_filename),
                 'time_stamp': time_stamp}
 
+    def delete_output_files(self):
+        '''
+        deletes ouput files that may be around
+
+        called by prepare_for_model_run  
+
+        here in case it needs to be called from elsewhere
+        '''
+        if os.path.exists(self.netcdf_filename):
+            os.remove(self.netcdf_filename)
+        if (os.path.exists(self._u_netcdf_filename)):
+            os.remove(self._u_netcdf_filename)
+
     def rewind(self):
         '''
-        If rewound, delete both the files and expect prepare_for_model_run to
-        be called since rewind means start from beginning.
-
-        Also call base class rewind to reset internal variables. Using super
+        reset a few parameter and call base class rewind to reset internal variables.
         '''
         super(NetCDFOutput, self).rewind()
 
-        if os.path.exists(self.netcdf_filename):
-            os.remove(self.netcdf_filename)
-
-        if (os.path.exists(self._u_netcdf_filename)):
-            os.remove(self._u_netcdf_filename)
 
         self._middle_of_run = False
         self._start_idx = 0
