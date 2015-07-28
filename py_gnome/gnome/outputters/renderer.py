@@ -212,8 +212,6 @@ class Renderer(Outputter, MapCanvas):
         # clear out output dir:
         # don't need to do this -- it will get written over.
 
-        print "clear_output_dir called"
-
         try:
             os.remove(os.path.join(self.images_dir,
                       self.background_map_name))
