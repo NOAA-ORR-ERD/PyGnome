@@ -5275,7 +5275,7 @@ OSErr TimeGridVelCurv_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_
 	OSErr err = 0;
 	char errmsg[256];
 	
-	long numVertices,i,numTri,index=-1;
+	long numVertices,i,numTri,index=-1,vel_index=0;
 	InterpolationVal interpolationVal;
 	LongPointHdl ptsHdl = 0;
 	TopologyHdl topH ;
@@ -5324,8 +5324,9 @@ OSErr TimeGridVelCurv_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_
 			timeAlpha = (endTime - time)/(double)(endTime - startTime);
 		}
 	}
-	
-	for (i = 0 ; i< numTri; i++)
+	// for now just get every other one since each pair of triangles corresponds to a cell
+	for (i = 0 ; i< numTri; i+=2)
+	//for (i = 0 ; i< numTri; i++)
 	{
 		if (bVelocitiesOnNodes)
 		{
@@ -5366,8 +5367,9 @@ OSErr TimeGridVelCurv_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_
 		}*/
 		//u[i] = velocity.u * fVar.fileScaleFactor;
 		//v[i] = velocity.v * fVar.fileScaleFactor;
-		scaled_velocity[i].u = velocity.u * fVar.fileScaleFactor;
-		scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor;
+		scaled_velocity[vel_index].u = velocity.u * fVar.fileScaleFactor;
+		scaled_velocity[vel_index].v = velocity.v * fVar.fileScaleFactor;
+		vel_index++;
 	}
 	return err;
 }
@@ -5379,9 +5381,11 @@ WORLDPOINTH TimeGridVelCurv_c::GetCellCenters()
 	LongPointHdl ptsH = 0;
 	WORLDPOINTH wpH = 0;
 	TopologyHdl topH ;
-	LongPoint wp1,wp2,wp3;
+	LongPoint wp1,wp2,wp3,wp4;
 	WorldPoint wp;
-	int32_t numPts = 0, numTri = 0;
+	int32_t numPts = 0, numTri = 0, numCells;
+	int32_t i, index1, index2; 
+	Topology tri1, tri2;
 	
 	if (fCenterPtsH) return fCenterPtsH;
 	
@@ -5389,29 +5393,37 @@ WORLDPOINTH TimeGridVelCurv_c::GetCellCenters()
 	ptsH = GetPointsHdl();
 	numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
 	numPts = _GetHandleSize((Handle)ptsH)/sizeof(LongPoint);
-	fCenterPtsH = (WORLDPOINTH)_NewHandle(numTri * sizeof(WorldPoint));
+	numCells = numTri / 2;
+	fCenterPtsH = (WORLDPOINTH)_NewHandle(numCells * sizeof(WorldPoint));
 	if (!fCenterPtsH) {
 		err = -1;
 		TechError("TriGridVel_c::GetCenterPointsHdl()", "_NewHandle()", 0);
 		goto done;
 	}
 	
-	for (int i=0; i<numTri; i++)
+	for (i=0; i<numCells; i++)
 	{
-		wp1 = (*ptsH)[(*topH)[i].vertex1];
-		wp2 = (*ptsH)[(*topH)[i].vertex2];
-		wp3 = (*ptsH)[(*topH)[i].vertex3];
+		index1 = i*2;
+		index2 = i*2+1;
+		tri1 = INDEXH(topH,index1);
+		tri2 = INDEXH(topH,index2);
+
+		wp1 = (*ptsH)[(*topH)[index1].vertex1];
+		wp2 = (*ptsH)[(*topH)[index1].vertex2];
+		wp3 = (*ptsH)[(*topH)[index1].vertex3];
+		wp4 = (*ptsH)[(*topH)[index2].vertex2];
 
 #ifndef pyGNOME
-		wp.pLong = (wp1.h+wp2.h+wp3.h)/3;
-		wp.pLat = (wp1.v+wp2.v+wp3.v)/3;
+		wp.pLong = (wp1.h+wp2.h+wp3.h + wp4.h)/4;
+		wp.pLat = (wp1.v+wp2.v+wp3.v + wp4.v)/4;
 #else
-		wp.pLong = (double)(wp1.h+wp2.h+wp3.h)/3.e6;
-		wp.pLat = (double)(wp1.v+wp2.v+wp3.v)/3.e6;
+		wp.pLong = (double)(wp1.h+wp2.h+wp3.h + wp4.h)/4.e6;
+		wp.pLat = (double)(wp1.v+wp2.v+wp3.v + wp4.v)/4.e6;
 #endif
 		INDEXH(fCenterPtsH,i) = wp;
+
 	}
-	
+		
 done:
 	return fCenterPtsH;
 }

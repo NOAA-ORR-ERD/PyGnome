@@ -105,12 +105,15 @@ class CurrentMoversBase(CyMover):
             We need to get the rectangular centers
              - center will be (tl + ((br - tl) / 2.))
         '''
-        cells = self.get_cells()
-        raw_cells = cells.view(dtype='<f8').reshape(-1, 4, 2)
-        centers = (raw_cells[:, 0, :] +
-                   (raw_cells[:, 3, :] - raw_cells[:, 0, :]) / 2.)
+        return self.mover._get_center_points().view(dtype='<f8').reshape(-1, 2)
 
-        return centers
+#         cells = self.get_cells()
+#         raw_cells = cells.view(dtype='<f8').reshape(-1, 4, 2)
+#         centers = (raw_cells[:, 0, :] +
+#                    #(raw_cells[:, 3, :] - raw_cells[:, 0, :]) / 2.)
+#                    (raw_cells[:, 2, :] - raw_cells[:, 0, :]) / 2.)
+# 
+#         return centers
 
     def get_points(self):
         points = (self.mover._get_points()
@@ -521,7 +524,12 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
-        vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
+        # will need to update this for regular grids
+        if self.mover._is_triangle_grid():
+            num_cells = num_tri
+        else:
+            num_cells = num_tri / 2
+        vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
 
         self.mover.get_scaled_velocities(time, vels)
 
@@ -709,7 +717,11 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
-        vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
+        if self.mover._is_triangle_grid():
+            num_cells = num_tri
+        else:
+            num_cells = num_tri / 2
+        vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
         self.mover.get_scaled_velocities(model_time, vels)
 
         return vels
