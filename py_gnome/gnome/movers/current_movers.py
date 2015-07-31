@@ -515,7 +515,10 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
 
     def get_center_points(self):
         if self.mover._is_triangle_grid():
-            return self.get_triangle_center_points()
+            if self.mover._is_data_on_cells():
+                return self.get_triangle_center_points()
+            else:
+                return self.get_points()            
         else:
             return self.get_cell_center_points()
 
@@ -526,7 +529,11 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         num_tri = self.mover.get_num_triangles()
         # will need to update this for regular grids
         if self.mover._is_triangle_grid():
-            num_cells = num_tri
+            if self.mover._is_data_on_cells():
+                num_cells = num_tri
+            else:
+                num_vertices = self.mover.get_num_points()
+                num_cells = num_vertices
         else:
             num_cells = num_tri / 2
         vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)

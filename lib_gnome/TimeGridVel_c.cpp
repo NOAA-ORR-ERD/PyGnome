@@ -9242,6 +9242,221 @@ done:
 	return err;
 }
 
+OSErr TimeGridVelTri_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity) // will want to input depth level
+{	// use for curvilinear
+	double timeAlpha,depthAlpha,arrowDepth=0;	// eventually pass in arrow depth;
+	float topDepth,bottomDepth;
+	Seconds startTime,endTime;
+	OSErr err = 0;
+	char errmsg[256];
+	WorldPoint wp;
+	
+	long numVertices,i,numTri,index=-1;
+	//InterpolationVal interpolationVal;
+	LongPointHdl ptsHdl = 0;
+	TopologyHdl topH ;
+	long timeDataInterval;
+	Boolean loaded;
+	TTriGridVel* triGrid = (dynamic_cast<TTriGridVel*>(fGrid));
+	VelocityFRec velocity = {0.,0.};
+	
+	long amtOfDepthData = 0;
+	
+	if(fDepthDataInfo) amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
+	
+	errmsg[0] = 0;
+	
+	err = this -> SetInterval(errmsg, time);
+	if(err) return err;
+	
+	loaded = this -> CheckInterval(timeDataInterval, time);	 
+	
+	if(!loaded) return -1;
+	
+	//topH = triGrid -> GetTopologyHdl();
+	topH = fGrid -> GetTopologyHdl();
+	if(topH)
+		numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	else 
+		numTri = 0;
+		
+	ptsHdl = triGrid -> GetPointsHdl();
+	if(ptsHdl)
+		numVertices = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
+	else 
+		numVertices = 0;
+	
+	// Check for time varying current 
+	if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+
+		if (fEndData.timeIndex == UNASSIGNEDINDEX && (time > startTime || time < startTime) && fAllowExtrapolationInTime)
+		{
+			timeAlpha = 1;
+		}
+		else
+		{	
+			endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+			timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		}
+	}
+	if (bVelocitiesOnTriangles == false)
+	{ // we have to draw the arrows
+		for(i = 0; i < numVertices; i++)
+		{
+			// get the value at each vertex and draw an arrow
+			LongPoint pt = INDEXH(ptsHdl,i);
+			long index = i;
+			if (fVerdatToNetCDFH) index = INDEXH(fVerdatToNetCDFH,i);
+			VelocityRec velocity = {0.,0.};
+			long depthIndex1,depthIndex2;	// default to -1?, eventually use in surface velocity case
+			
+			if (amtOfDepthData>0)
+			{
+				//dynamic_cast<NetCDFMoverTri *>(this)->GetDepthIndices(index,arrowDepth,&depthIndex1,&depthIndex2);
+				GetDepthIndices(index,arrowDepth,&depthIndex1,&depthIndex2);
+			}
+			else
+			{	// for old SAV files without fDepthDataInfo
+				depthIndex1 = index;
+				depthIndex2 = -1;
+			}
+			
+			if (depthIndex1==UNASSIGNEDINDEX && depthIndex2==UNASSIGNEDINDEX)
+				continue;	// no value for this point at chosen depth
+			
+			if (depthIndex2!=UNASSIGNEDINDEX)
+			{
+				// Calculate the depth weight factor
+				topDepth = INDEXH(fDepthsH,depthIndex1);
+				bottomDepth = INDEXH(fDepthsH,depthIndex2);
+				depthAlpha = (bottomDepth - arrowDepth)/(double)(bottomDepth - topDepth);
+			}
+			
+			wp.pLat = pt.v;
+			wp.pLong = pt.h;
+			
+			
+			// Check for constant current 
+			if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha==1)
+			{
+				if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
+				{
+					velocity.u = INDEXH(fStartData.dataHdl,depthIndex1).u;
+					velocity.v = INDEXH(fStartData.dataHdl,depthIndex1).v;
+				}
+				else 	// below surface velocity
+				{
+					velocity.u = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u+(1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).u;
+					velocity.v = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v+(1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).v;
+				}
+			}
+			else // time varying current
+			{
+				if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
+				{
+					velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex1).u;
+					velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex1).v;
+				}
+				else	// below surface velocity
+				{
+					velocity.u = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex1).u);
+					velocity.u += (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex2).u);
+					velocity.v = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex1).v);
+					velocity.v += (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex2).v);
+				}
+			}
+			// may want to add an arrow_scale from the user
+			scaled_velocity[i].u = velocity.u * fVar.fileScaleFactor;
+			scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor;
+		}
+	}
+	else if (bVelocitiesOnTriangles)
+	{ // we have to draw the arrows
+		LongPoint wp1,wp2,wp3;
+		for(i = 0; i < numTri; i++)
+		{
+			// get the value at each vertex and draw an arrow
+			long depthIndex1,depthIndex2;	// default to -1?, eventually use in surface velocity case
+			
+			wp1 = (*ptsHdl)[(*topH)[i].vertex1];
+			wp2 = (*ptsHdl)[(*topH)[i].vertex2];
+			wp3 = (*ptsHdl)[(*topH)[i].vertex3];
+			
+			wp.pLong = (wp1.h+wp2.h+wp3.h)/3;
+			wp.pLat = (wp1.v+wp2.v+wp3.v)/3;
+
+			if (amtOfDepthData>0)	// for now, will have to figure out how depth data is handled
+			{
+				if (!bVelocitiesOnTriangles)
+					GetDepthIndices(i,arrowDepth,&depthIndex1,&depthIndex2);
+					//dynamic_cast<NetCDFMoverTri *>(this)->GetDepthIndices(i,arrowDepth,&depthIndex1,&depthIndex2);
+				else 
+				{
+					double depthAtPoint = dynamic_cast<TriGridVel_c *>(fGrid)->GetDepthAtPoint(wp);
+					TimeGridVelCurv_c::GetDepthIndices(i,arrowDepth,depthAtPoint,&depthIndex1,&depthIndex2);
+				}
+
+			}
+			else
+			{	
+				depthIndex1 = i;
+				depthIndex2 = -1;
+			}
+			
+			if (depthIndex1==UNASSIGNEDINDEX && depthIndex2==UNASSIGNEDINDEX)
+				continue;	// no value for this point at chosen depth
+			
+			if (depthIndex2!=UNASSIGNEDINDEX)
+			{
+				// Calculate the depth weight factor
+				topDepth = INDEXH(fDepthsH,depthIndex1);
+				bottomDepth = INDEXH(fDepthsH,depthIndex2);
+				depthAlpha = (bottomDepth - arrowDepth)/(double)(bottomDepth - topDepth);
+			}
+			
+			// Check for constant current 
+			if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha==1)
+			{
+				if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
+				{
+					velocity.u = INDEXH(fStartData.dataHdl,i).u;
+					velocity.v = INDEXH(fStartData.dataHdl,i).v;
+				}
+				else 	// below surface velocity
+				{
+					velocity.u = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u+(1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).u;
+					velocity.v = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v+(1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).v;
+				}
+			}
+			else // time varying current
+			{
+				if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
+				{
+					velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,i).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,i).u;
+					velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,i).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,i).v;
+				}
+				else	// below surface velocity
+				{
+					velocity.u = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex1).u);
+					velocity.u += (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex2).u);
+					velocity.v = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex1).v);
+					velocity.v += (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex2).v);
+				}
+			}
+			// may want to add an arrow_scale from the user
+			scaled_velocity[i].u = velocity.u * fVar.fileScaleFactor;
+			scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor;
+		}
+	}
+	return err;
+}
+
 TimeGridCurRect_c::TimeGridCurRect_c () : TimeGridVel_c()
 {
 	fTimeDataHdl = 0;
