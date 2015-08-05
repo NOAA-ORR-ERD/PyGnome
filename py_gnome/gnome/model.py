@@ -6,8 +6,8 @@ import copy
 import inspect
 import zipfile
 
-import numpy
-np = numpy
+import numpy as np
+
 from colander import (SchemaNode,
                       Float, Int, Bool, drop)
 

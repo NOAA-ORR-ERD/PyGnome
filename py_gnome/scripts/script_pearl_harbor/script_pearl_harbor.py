@@ -9,8 +9,7 @@ import os
 from datetime import datetime, timedelta
 from urllib2 import HTTPError
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
@@ -23,8 +22,9 @@ from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, GridCurrentMover
 
-from gnome.outputters import Renderer
-from gnome.outputters import NetCDFOutput
+from gnome.outputters import (Renderer,
+                              NetCDFOutput,
+                              )
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -33,12 +33,14 @@ base_dir = os.path.dirname(__file__)
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
-    start_time = datetime(2013, 1, 1, 1)  # data starts at 1:00 instead of 0:00
+    # data starts at 1:00 instead of 0:00
+    start_time = datetime(2013, 1, 1, 1)
+
     model = Model(start_time=start_time, duration=timedelta(days=1),
                   time_step=900, uncertain=False)
 
     try:
-        mapfile = get_datafile(os.path.join(base_dir, './pearl_harbor.bna'))
+        mapfile = get_datafile(os.path.join(base_dir, 'pearl_harbor.bna'))
     except HTTPError:
         print ('Could not download Pearl Harbor data from server - '
                'returning empty model')
@@ -76,8 +78,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a current mover:'
     # this is CH3D currents
-    curr_file = os.path.join(base_dir, r"./ch3d2013.nc")
-    topology_file = os.path.join(base_dir, r"./PearlHarborTop.dat")
+    curr_file = os.path.join(base_dir, 'ch3d2013.nc')
+    topology_file = os.path.join(base_dir, 'PearlHarborTop.dat')
     model.movers += GridCurrentMover(curr_file, topology_file)
 
     # #

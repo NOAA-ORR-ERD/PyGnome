@@ -31,8 +31,7 @@ movers needs
 
 import sys
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome.basic_types import (world_point_type,
                                windage_type,

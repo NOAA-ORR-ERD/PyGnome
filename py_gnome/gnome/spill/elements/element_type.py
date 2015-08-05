@@ -16,7 +16,7 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromPlume)
-from oil_library import get_oil_props, get_oil
+from oil_library import get_oil_props
 
 from gnome.persist import base_schema, class_from_objtype
 import unit_conversion as uc
