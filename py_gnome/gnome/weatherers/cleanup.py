@@ -204,8 +204,13 @@ class CleanUpBase(RemoveMass, Weatherer):
         find weighted average of frac_water array, return (1 - avg_frac_water)
         since we want the average fraction of oil in this data
         '''
-        avg_frac_water = ((data['mass'] * data['frac_water']).
-                          sum()/data['mass'].sum())
+        if data['mass'].sum() > 0:
+            avg_frac_water = ((data['mass'] * data['frac_water']).
+                              sum())/data['mass'].sum()
+        else:
+            avg_frac_water = 0
+            self.logger.warning(self._pid + "set avg_frac_water = ({0}), total mass:"
+                                " {1}".format(avg_frac_water, data['mass'].sum()))
         return (1 - avg_frac_water)
 
 
@@ -551,7 +556,7 @@ class Burn(CleanUpBase, Serializable):
            that are released together will be burned together since they would
            be closer to each other in position.
            Assumes: there is more mass in water than amount of mass to be
-           skimmed. The LEs marked for Burning are marked only once -
+           burned. The LEs marked for Burning are marked only once -
            during the very first step that the object becomes active
         '''
         super(Burn, self).prepare_for_model_step(sc, time_step, model_time)
