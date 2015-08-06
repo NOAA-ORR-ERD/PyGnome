@@ -17,7 +17,7 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitWindages,
                            InitMassFromPlume)
 from oil_library import get_oil_props
-
+from oil_library import build_oil_props
 from gnome.persist import base_schema, class_from_objtype
 import unit_conversion as uc
 
@@ -265,6 +265,8 @@ def plume(distribution_type='droplet_size',
     initializer with user specified parameters for distribution.
 
     See below docs for details on the parameters.
+    
+    NOTE: substance_name or density must be provided 
 
     :param str distribution_type: default 'droplet_size' available options:
 
@@ -284,11 +286,18 @@ def plume(distribution_type='droplet_size',
     if density is not None:
         # Assume density is at 15 K - convert density to api
         api = uc.convert('density', density_units, 'API', density)
-        substance = get_oil_props({'name': substance_name,
-                                   'api': api}, 2)
-    else:
+        if substance_name is not None:
+            substance = build_oil_props({'name':substance_name, 'api': api}, 2)
+        else:
+            substance = build_oil_props({'api': api}, 2)
+    elif substance_name is not None:
         # model 2 cuts if fake oil
         substance = get_oil_props(substance_name, 2)
+    else:
+        ex = ValueError()
+        ex.message = ("plume substance density and/or name must be provided")
+        raise ex
+        
 
     if distribution_type == 'droplet_size':
         return ElementType([InitRiseVelFromDropletSizeFromDist(

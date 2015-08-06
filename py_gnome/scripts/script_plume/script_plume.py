@@ -74,7 +74,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                      release_time=start_time,
                                      end_release_time=end_time,
                                      element_type=plume(distribution=wd,
-                                                        substance_name='oil_crude')
+                                                        density=600)
                                      )
     model.spills += spill
 
@@ -115,7 +115,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # model.movers += w_mover
 
     print 'adding a simple mover:'
-    s_mover = SimpleMover(velocity=(0.0, -.1, 0.0))
+    s_mover = SimpleMover(velocity=(0.0, -.3, 0.0))
     model.movers += s_mover
 
     return model
