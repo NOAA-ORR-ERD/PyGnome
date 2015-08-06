@@ -6,8 +6,7 @@ a simple script to run GNOME
 import os
 from datetime import datetime, timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
@@ -30,7 +29,7 @@ base_dir = os.path.dirname(__file__)
 def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'creating the maps'
-    mapfile = get_datafile(os.path.join(base_dir, './LowerMississippiMap.bna'))
+    mapfile = get_datafile(os.path.join(base_dir, 'LowerMississippiMap.bna'))
     gnome_map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
     print 'initializing the model'
@@ -64,7 +63,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += w_mover
 
     print 'adding a cats mover:'
-    curr_file = get_datafile(os.path.join(base_dir, r"LMiss.CUR"))
+    curr_file = get_datafile(os.path.join(base_dir, 'LMiss.CUR'))
     c_mover = CatsMover(curr_file)
 
     # but do need to scale (based on river stage)

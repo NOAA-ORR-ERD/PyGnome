@@ -9,8 +9,7 @@ set of arrays. The spills themselves provide some of the arrays themselves
 import os
 from collections import namedtuple
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome.basic_types import fate as bt_fate
 from gnome.basic_types import oil_status

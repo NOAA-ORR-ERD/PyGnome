@@ -9,9 +9,6 @@ Rise velocity and vertical diffusion
 import os
 from datetime import datetime, timedelta
 
-import numpy
-np = numpy
-
 from gnome import scripting
 from gnome.spill.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
@@ -45,7 +42,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
     renderer = Renderer(images_dir=images_dir,
-                        #size=(800, 600),
+                        # size=(800, 600),
                         output_timestep=timedelta(hours=1),
                         draw_ontop='uncertain')
     renderer.viewport = ((-76.5, 37.), (-75.8, 38.))
@@ -76,7 +73,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                                      1700),
                                      release_time=start_time,
                                      end_release_time=end_time,
-                                     element_type=plume(distribution=wd))
+                                     element_type=plume(distribution=wd,
+                                                        density=600)
+                                     )
     model.spills += spill
 
     wd = WeibullDistribution(alpha=1.8, lambda_=.00456,
@@ -86,7 +85,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                      start_position=(-76.126872, 37.680952,
                                                      1800),
                                      release_time=start_time,
-                                     element_type=plume(distribution=wd))
+                                     element_type=plume(distribution=wd,
+                                                        substance_name='oil_crude')
+                                     )
     model.spills += spill
 
     print 'adding a RandomMover:'
@@ -114,7 +115,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # model.movers += w_mover
 
     print 'adding a simple mover:'
-    s_mover = SimpleMover(velocity=(0.0, -.1, 0.0))
+    s_mover = SimpleMover(velocity=(0.0, -.3, 0.0))
     model.movers += s_mover
 
     return model
@@ -128,4 +129,3 @@ if __name__ == "__main__":
         print step
     for sc in model.spills.items():
         print "sc:", sc
-

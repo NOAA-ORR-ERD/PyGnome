@@ -6,8 +6,7 @@ Script to test GNOME with guam data
 import os
 from datetime import datetime, timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
@@ -40,7 +39,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   uncertain=False)
 
     print 'adding the map'
-    mapfile = get_datafile(os.path.join(base_dir, './GuamMap.bna'))
+    mapfile = get_datafile(os.path.join(base_dir, 'GuamMap.bna'))
     model.map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
     print 'adding outputters'
@@ -78,7 +77,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.environment += w_mover.wind
 
     print 'adding a cats mover:'
-    curr_file = get_datafile(os.path.join(base_dir, r"./OutsideWAC.cur"))
+    curr_file = get_datafile(os.path.join(base_dir, 'OutsideWAC.cur'))
     c_mover = CatsMover(curr_file)
 
     c_mover.scale = True
@@ -88,8 +87,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += c_mover
 
     print 'adding a cats shio mover:'
-    curr_file = get_datafile(os.path.join(base_dir, r"./WACFloodTide.cur"))
-    tide_file = get_datafile(os.path.join(base_dir, r"./WACFTideShioHts.txt"))
+    curr_file = get_datafile(os.path.join(base_dir, 'WACFloodTide.cur'))
+    tide_file = get_datafile(os.path.join(base_dir, 'WACFTideShioHts.txt'))
 
     c_mover = CatsMover(curr_file, tide=Tide(tide_file))
 
@@ -100,10 +99,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     c_mover.scale_value = 1
 
     # will need the fScaleFactor for heights files
+    # c_mover.time_dep.scale_factor = 1.1864
     c_mover.tide.scale_factor = 1.1864
-
-    # will need the fScaleFactor for heights files
-    #c_mover.time_dep.scale_factor = 1.1864
 
     model.movers += c_mover
     model.environment += c_mover.tide
@@ -116,5 +113,6 @@ if __name__ == "__main__":
     model = make_model()
     model.duration = timedelta(hours=2)
     model.full_run(log=True)
+
     for sc in model.spills.items():
         print "sc:", sc

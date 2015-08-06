@@ -7,8 +7,7 @@ import os
 import shutil
 from datetime import datetime, timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
@@ -32,7 +31,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
     start_time = datetime(2012, 9, 15, 12, 0)
-    mapfile = get_datafile(os.path.join(base_dir, './LongIslandSoundMap.BNA'))
+    mapfile = get_datafile(os.path.join(base_dir, 'LongIslandSoundMap.BNA'))
 
     gnome_map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
@@ -74,10 +73,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += WindMover(wind)
 
     print 'adding a cats mover:'
-    curr_file = get_datafile(os.path.join(base_dir, r"./LI_tidesWAC.CUR"))
-    tide_file = get_datafile(os.path.join(base_dir, r"./CLISShio.txt"))
+    curr_file = get_datafile(os.path.join(base_dir, 'LI_tidesWAC.CUR'))
+    tide_file = get_datafile(os.path.join(base_dir, 'CLISShio.txt'))
 
     c_mover = CatsMover(curr_file, tide=Tide(tide_file))
+
     model.movers += c_mover
     model.environment += c_mover.tide
 
@@ -92,6 +92,7 @@ def post_run(model):
 
     # create a place for test images (cleaning out any old ones)
     images_dir = os.path.join(base_dir, 'images_2')
+
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
 
