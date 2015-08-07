@@ -66,7 +66,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     wd = WeibullDistribution(alpha=1.8, lambda_=.00456,
                              min_=.0002)  # 200 micron min
     end_time = start_time + timedelta(hours=24)
-    spill = point_line_release_spill(num_elements=1000,
+    spill = point_line_release_spill(num_elements=10,
                                      amount=90,  # default volume_units=m^3
                                      units='m^3',
                                      start_position=(-76.126872, 37.680952,
@@ -80,7 +80,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     wd = WeibullDistribution(alpha=1.8, lambda_=.00456,
                              max_=.0002)  # 200 micron max
-    spill = point_line_release_spill(num_elements=1000, amount=10,
+    spill = point_line_release_spill(num_elements=10, amount=90,
                                      units='m^3',
                                      start_position=(-76.126872, 37.680952,
                                                      1800),
@@ -124,8 +124,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == "__main__":
     model = make_model()
     scripting.make_images_dir()
-    model = make_model()
     for step in model:
         print step
-    for sc in model.spills.items():
-        print "sc:", sc
+        print model.get_spill_data('spill_num', 'age < 4000')
+#     for sc in model.spills.items():
+    print model.get_spill_property('positions')
