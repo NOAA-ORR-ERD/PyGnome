@@ -76,18 +76,22 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                                      1700),
                                      release_time=start_time,
                                      end_release_time=end_time,
-                                     element_type=plume(distribution=wd))
+                                     element_type=plume(distribution=wd,
+                                                        #density=900.0,
+                                                        substance_name='ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
+                                                        )
+                                     )
     model.spills += spill
 
-    wd = WeibullDistribution(alpha=1.8, lambda_=.00456,
-                             max_=.0002)  # 200 micron max
-    spill = point_line_release_spill(num_elements=1000, amount=10,
-                                     units='m^3',
-                                     start_position=(-76.126872, 37.680952,
-                                                     1800),
-                                     release_time=start_time,
-                                     element_type=plume(distribution=wd))
-    model.spills += spill
+    # wd = WeibullDistribution(alpha=1.8, lambda_=.00456,
+    #                          max_=.0002)  # 200 micron max
+    # spill = point_line_release_spill(num_elements=1000, amount=10,
+    #                                  units='m^3',
+    #                                  start_position=(-76.126872, 37.680952,
+    #                                                  1800),
+    #                                  release_time=start_time,
+    #                                  element_type=plume(distribution=wd))
+    # model.spills += spill
 
     print 'adding a RandomMover:'
     model.movers += RandomMover(diffusion_coef=50000)

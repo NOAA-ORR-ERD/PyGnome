@@ -112,7 +112,7 @@ class IceImageOutput(Outputter, Serializable):
 
         canvas = self.map_canvas
 
-        triangles = self.get_triangles()
+        cells = self.get_cells()
         ice_coverage, ice_thickness = self.ice_mover.get_ice_fields(model_time)
 
             ## here is where we render....
@@ -121,7 +121,6 @@ class IceImageOutput(Outputter, Serializable):
 
         return ("data:image/png;base64,%s"%self.get_sample_image(),
                 "data:image/png;base64,%s"%self.get_sample_image())
-
 
 
     def get_coverage_fc(self, coverage, triangles):
@@ -182,19 +181,21 @@ class IceImageOutput(Outputter, Serializable):
     def get_matching_ice_values(self, ice_values, v):
         return np.where((ice_values == v).all(axis=1))
 
-    def get_triangles(self):
+    def get_cells(self):
         # fixme: This seems very coupled -- can we abstract that some?
         #        Maybe should be using pyugrid for some of this.
         '''
-        The triangle data that we get from the mover is in the form of
+        The cell data that we get from the mover is in the form of
         indices into the points array.
 
-        So we get our triangle data and points array, and then build our
-        triangle coordinates by reference.
+        So we get our cell data and points array, and then build our
+        cell coordinates by reference.
+
+        cells can be either triangles or quads
         '''
 
         ## fixme: maybe update API? -- shouldn't have to reachi into a mover to get the c++ mover underneith
-        triangle_data = self.ice_mover.mover._get_triangle_data()
+        cell_data = self.ice_mover.mover._get_cell_data()
         ## fixme -- define this in basic types somewhere?
         ##          or -- points array should be in the right dtype already.
         points = self.ice_mover.mover._get_points().astype( [('long', '<f8'), ('lat', '<f8')] )
@@ -202,13 +203,13 @@ class IceImageOutput(Outputter, Serializable):
         points['long'] /= 10 ** 6
         points['lat'] /= 10 ** 6
 
-        dtype = triangle_data[0].dtype.descr
+        dtype = cell_data[0].dtype.descr
         unstructured_type = dtype[0][1]
-        unstructured = (triangle_data.view(dtype=unstructured_type).reshape(-1, len(dtype))[:, :3])
+        unstructured = (cell_data.view(dtype=unstructured_type).reshape(-1, len(dtype))[:, :3])
 
-        triangles = points[unstructured]
+        cells = points[unstructured]
 
-        return triangles
+        return cells
 
     def rewind(self):
         'remove previously written files'
