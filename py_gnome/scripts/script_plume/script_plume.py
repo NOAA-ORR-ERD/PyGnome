@@ -126,6 +126,6 @@ if __name__ == "__main__":
     scripting.make_images_dir()
     for step in model:
         print step
-        print model.get_spill_data('spill_num', 'age < 4000')
+        print model.get_spill_data('spill_num && positions', 'age < 8000 && spill_num == 1 || mass < 8100')
 #     for sc in model.spills.items():
     print model.get_spill_property('positions')

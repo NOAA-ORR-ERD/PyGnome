@@ -1431,12 +1431,28 @@ class Model(Serializable):
     def get_spill_data(self, target_properties, conditions, ucert=0):
         '''
         Convenience method to allow user to write an expression to filter raw spill data
-        Example case: get_spill_data('position && mass','position > 50 && spill_num == 1 && status_codes == 1')
+        Example case: 
+        get_spill_data('position && mass','position > 50 && spill_num == 1 || status_codes == 1')
+        
+        WARNING: EXPENSIVE! USE AT YOUR OWN RISK ON LARGE num_elements!
         '''
-        def elem_val(cond,index):
-            dicts = self.spills.items()[0].data_arrays
-            
-            return dicts[cond][index]
+        def elem_val(prop,index):
+            '''
+            Gets the column containing the information on one element
+            '''
+            val = self.spills.items()[0].data_arrays[prop][index]
+            return val
+        
+        def test_phrase(phrase):
+            for sub_cond in phrase:
+                    cond = sub_cond.rsplit()
+                    prop_val = elem_val(cond[0],i)
+                    op = cond [1]
+                    test_num = cond[2]
+                    if test(prop_val,op,test_num):
+                        return True
+                    
+            return False
         
         def test(elem_value, op, test_val):
             if op in {'<','<=','>','>=','=='}:
@@ -1448,7 +1464,9 @@ class Model(Serializable):
             except ValueError:
                 return float(s)
         target_properties = target_properties.rsplit('&&')
+        target_properties = [t.strip() for t in target_properties]
         conditions = conditions.rsplit('&&')
+        conditions = [str(cond).rsplit('||') for cond in conditions]
         
         
         sc = self.spills.items()[0]
@@ -1456,16 +1474,13 @@ class Model(Serializable):
         for t in target_properties:
             result[t] = []
         for i in range(0,len(sc)):
-            for cond in conditions:
-                cond = cond.rsplit()
-                prop_val = elem_val(cond[0],i)
-                op = cond [1]
-                test_num = cond[2]
-                if not test(prop_val,op,test_num):
+            test_result = True
+            for phrase in conditions:
+                if not test_phrase(phrase):
+                    test_result = False
                     break
-                else:
-                    for k in result.keys():
-                        n = elem_val(k,i)
-                        result[k].append(n)
-                    
+            if test_result:         
+                for k in result.keys():
+                    n = elem_val(k,i)
+                    result[k].append(n)       
         return result
