@@ -1424,9 +1424,11 @@ class Model(Serializable):
     def get_spill_property(self, prop_name, ucert=0):
         '''
         Convenience method to allow user to look up properties of a spill.
-        If ucert isn't specified or not available it will always return the forecast
+        User can specify ucert as 'ucert' or 1
         '''
-        return self.spills.items()[0][prop_name]
+        if ucert == 'ucert':
+            ucert = 1
+        return self.spills.items()[ucert][prop_name]
     
     def get_spill_data(self, target_properties, conditions, ucert=0):
         '''
@@ -1463,8 +1465,6 @@ class Model(Serializable):
                 return int(s)
             except ValueError:
                 return float(s)
-        target_properties = target_properties.rsplit('&&')
-        target_properties = [t.strip() for t in target_properties]
         conditions = conditions.rsplit('&&')
         conditions = [str(cond).rsplit('||') for cond in conditions]
         

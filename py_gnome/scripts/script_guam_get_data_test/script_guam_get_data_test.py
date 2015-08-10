@@ -115,4 +115,4 @@ if __name__ == "__main__":
     print model.spills.items()[0]
     for step in model:
         print step
-        print model.get_spill_data('id && age', 'status_codes == 3')
+        print model.get_spill_data(['id','age'], 'status_codes == 3 && age < 130000')
