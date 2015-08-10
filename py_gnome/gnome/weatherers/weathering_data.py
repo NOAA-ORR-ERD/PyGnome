@@ -163,7 +163,8 @@ class WeatheringData(Weatherer, Serializable):
 
                 data['viscosity'] = (v0 *
                                      np.exp(kv1 * data['frac_lost']) *
-                                     (1 + (fw_d_fref * 2.0 / 1.187) ** 2.49))
+                                     (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49
+                                     )
 
         sc.update_from_fatedataview(fate='all')
 
