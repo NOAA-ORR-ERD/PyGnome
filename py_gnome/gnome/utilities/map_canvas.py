@@ -73,7 +73,9 @@ class MapCanvas(object):
     palette = np.array([i[1] for i in colors_rgb],
                        dtype=np.uint8).reshape((-1, ))
 
-    def __init__(self, image_size, land_polygons=None,
+    def __init__(self,
+                 image_size,
+                 land_polygons=None,
                  **kwargs):
         """
         create a new map image from scratch -- specifying the size:
@@ -108,8 +110,6 @@ class MapCanvas(object):
         self.image_mode = kwargs.pop('image_mode', 'P')
 
         self.back_image = None
-
-        # optional arguments (kwargs)
 
         self._land_polygons = land_polygons
         self.map_BB = kwargs.pop('map_BB', None)
@@ -290,14 +290,28 @@ class MapCanvas(object):
         self.fore_image = Image.fromarray(self.fore_image_array, mode='P')
         self.fore_image.putpalette(self.palette)
 
+    def add_back_to_fore(self):
+        """
+        adds the background image to the foreground
+        this is optionally called if you want the
+        background on every image. i.e. don't want to
+        have to compose them later.
+        """
+        if self.back_image is not None:
+            # compose the foreground and background
+            self.fore_image_array[:] = np.asarray(self.back_image)
+
     def draw_elements(self, sc):
         """
         Draws the individual elements to a foreground image
 
         :param sc: a SpillContainer object to draw
+
         """
-        # TODO: add checks for the status flag (beached, etc)!
+        # TODO: add checks for the other status flags!
+
         if sc.num_released > 0:  # nothing to draw if no elements
+            arr = self.fore_image_array
             if sc.uncertain:
                 color = self.colors['uncert_LE']
             else:
@@ -306,7 +320,6 @@ class MapCanvas(object):
             positions = sc['positions']
 
             pixel_pos = self.projection.to_pixel(positions, asint=False)
-            arr = self.fore_image_array
 
             # remove points that are off the view port
             on_map = ((pixel_pos[:, 0] > 1) &
@@ -368,7 +381,21 @@ class MapCanvas(object):
             raise ValueError("There is no background image to save. You may want to call .draw_background() first")
         self.back_image.save(filename, type_in)
 
-    def save_foreground(self, filename, type_in='PNG'):
+    def save_foreground(self, filename, type_in='PNG', add_background=True):
+        """
+        save the foreground image in a file
+
+        :param filename: name of file to save image to
+
+        :param type_in: format to use (not supported yet)
+
+        :param add_background=True: whether to render the background image under the forground
+
+        """
+        if type_in != 'PNG':
+            raise NotImplementedError("only PNG is currently supported")
+
+
         self.fore_image.save(filename,
                              transparency=self.colors['transparent'])
 

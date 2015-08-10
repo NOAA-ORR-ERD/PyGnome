@@ -136,6 +136,7 @@ public:
 	void 				DisposeAllLoadedData();
 
 	virtual	bool 		IsTriangleGrid(){return false;}
+	virtual	bool 		IsDataOnCells(){return true;}
 };
 
 
@@ -232,7 +233,8 @@ public:
 	float		GetTotalDepthFromTriIndex(long triIndex);
 	float		GetTotalDepth(WorldPoint refPoint,long ptIndex);
 
-	OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
+	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
+	virtual	bool 		IsDataOnCells(){return !bVelocitiesOnNodes;}
 	virtual GridCellInfoHdl 	GetCellData();
 	virtual WORLDPOINTH 	GetCellCenters();
 
@@ -278,6 +280,8 @@ public:
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
 
 	virtual	bool 		IsTriangleGrid(){return true;}
+	virtual	bool 		IsDataOnCells(){return bVelocitiesOnTriangles;}
+	virtual OSErr 		GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity);
 };
 
 class TimeGridVelIce_c : virtual public TimeGridVelCurv_c

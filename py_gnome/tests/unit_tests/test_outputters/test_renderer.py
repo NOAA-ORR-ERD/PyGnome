@@ -28,6 +28,7 @@ bna_star = testdata['Renderer']['bna_star']
 
 
 def test_exception(output_dir):
+
     with pytest.raises(ValueError):
         Renderer(bna_sample, output_dir, draw_ontop='forecasting')
 
@@ -93,9 +94,11 @@ def test_rewind(output_dir):
 
 def test_render_elements(output_dir):
     """
-    Should this test be in map_cnavas?
+    Should this test be in map_canvas?
     """
 
+#   put in current dir for now:
+    output_dir = './'
     r = Renderer(bna_sample, output_dir, image_size=(800, 600))
 
     BB = r.map_BB

@@ -320,6 +320,12 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         """
         return self.grid_current.IsTriangleGrid()
 
+    def _is_data_on_cells(self):
+        """
+            Invokes the IsDataOnCells TimeGridVel_c object
+        """
+        return self.grid_current.IsDataOnCells()
+
     def get_num_triangles(self):
         """
             Invokes the GetNumTriangles method of TriGridVel_c object
@@ -328,6 +334,15 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         num_tri = self.grid_current.GetNumTriangles()
 
         return num_tri
+
+    def get_num_points(self):
+        """
+            Invokes the GetNumPoints method of TriGridVel_c object
+            to get the number of triangles
+        """
+        num_pts = self.grid_current.GetNumPoints()
+
+        return num_pts
 
     def get_scaled_velocities(self, Seconds model_time,
                               cnp.ndarray[VelocityFRec] vels):
