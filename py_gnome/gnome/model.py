@@ -1437,6 +1437,10 @@ class Model(Serializable):
         get_spill_data('position && mass','position > 50 && spill_num == 1 || status_codes == 1')
         
         WARNING: EXPENSIVE! USE AT YOUR OWN RISK ON LARGE num_elements!
+        
+        Example spill element properties are below. This list may not contain all properties tracked by the model.
+        'positions', 'next_positions', 'last_water_positions', 'status_codes',
+        'spill_num', 'id', 'mass', 'age'
         '''
         def elem_val(prop,index):
             '''
