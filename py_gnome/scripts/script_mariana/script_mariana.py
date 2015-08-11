@@ -20,7 +20,7 @@ from gnome.outputters import (Renderer,
                               # NetCDFOutput
                               )
 
-NUM_ELEMENTS = 1e6
+NUM_ELEMENTS = 1e5
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -32,7 +32,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     start_time = datetime(2013, 5, 18, 0)
 
     model = Model(start_time=start_time, duration=timedelta(days=8),
-                  time_step=1 * 3600, uncertain=False)
+                  time_step=4 * 3600, uncertain=False)
 
     mapfile = get_datafile(os.path.join(base_dir, 'mariana_island.bna'))
 

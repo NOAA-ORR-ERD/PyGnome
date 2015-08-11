@@ -261,43 +261,131 @@ OSErr GridCurrentMover_c::get_move(int n, Seconds model_time, Seconds step_len, 
 	return noErr;
 }
 
+//Helper function to scale WorldPoint when used as a delta distance...useful in Runge-Kutta
+WorldPoint3D GridCurrentMover_c::scale_WP(WorldPoint3D point, double scale)
+{
+	WorldPoint3D retval;
+	retval.p.pLat = point.p.pLat * scale;
+	retval.p.pLong = point.p.pLong * scale;
+	retval.z = point.z * scale;
+	return retval;
+}
+
+WorldPoint3D GridCurrentMover_c::add_WP3D(const WorldPoint3D &a, const WorldPoint3D &b)
+{
+	WorldPoint3D retval(a);
+	retval.p.pLat += b.p.pLat;
+	retval.p.pLong += b.p.pLong;
+	retval.z += b.z;
+	return retval;
+}
+
+
 WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
-	WorldPoint3D	deltaPoint = {{0,0},0.};
-	WorldPoint3D refPoint;	
+
+	WorldPoint3D deltaD[5] = {{0,0},0}; // [ dummy, dy1, dy2, dy3, dy4 ]
+	double RK_dy_Factors[4] = {0, .5, .5, 1};
+	double RK_Factors[4] = {1./6., 1./3., 1./3., 1./6.};
+	WorldPoint3D finalDelta = {{0,0},0};
+	WorldPoint3D startPoint; // yn
+	startPoint.p = (*theLE).p;
+	startPoint.z = (*theLE).z;
+	VelocityRec scaledVel[4];
 	double dLong, dLat;
-	
-	VelocityRec scaledPatVelocity = {0.,0.};
-	Boolean useEddyUncertainty = false;	
-	OSErr err = 0;
-	char errmsg[256];
-	
-	if(!fIsOptimizedForStep) 
-	{
-		err = timeGrid->SetInterval(errmsg, model_time); 
-		
-		if (err) return deltaPoint;
+	Boolean useEddyUncertainty = false;
+		OSErr err = 0;
+		char errmsg[256];
+
+		if(!fIsOptimizedForStep)
+		{
+			err = timeGrid->SetInterval(errmsg, model_time);
+
+			if (err) return finalDelta;
+		}
+
+	for (int i = 0; i < 4; i++) {
+		WorldPoint3D RKDelta = scale_WP(deltaD[i], RK_dy_Factors[i]);
+		scaledVel[i] = timeGrid->GetScaledPatValue(model_time + (Seconds)(timeStep*RK_dy_Factors[i]), add_WP3D(startPoint, RKDelta));
+		scaledVel[i].u *= fCurScale;
+		scaledVel[i].v *= fCurScale;
+		dLong = ((scaledVel[i].u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (startPoint.p.pLat);
+		dLat  =  (scaledVel[i].v / METERSPERDEGREELAT) * timeStep;
+		deltaD[i+1].p.pLong = dLong * 1000000;
+		deltaD[i+1].p.pLat  = dLat  * 1000000;
 	}
 
-	refPoint.p = (*theLE).p;	
-	refPoint.z = (*theLE).z;
-	scaledPatVelocity = timeGrid->GetScaledPatValue(model_time, refPoint);
-
-	scaledPatVelocity.u *= fCurScale;
-	scaledPatVelocity.v *= fCurScale;
-	
-	if(leType == UNCERTAINTY_LE)
-	{
-		AddUncertainty(setIndex,leIndex,&scaledPatVelocity,timeStep,useEddyUncertainty);
+	for (int i = 0; i <4; i++) {
+		finalDelta = add_WP3D(finalDelta, scale_WP(deltaD[i+1], RK_Factors[i]));
 	}
-	
-	dLong = ((scaledPatVelocity.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (refPoint.p.pLat);
-	dLat  =  (scaledPatVelocity.v / METERSPERDEGREELAT) * timeStep;
 
-	deltaPoint.p.pLong = dLong * 1000000;
-	deltaPoint.p.pLat  = dLat  * 1000000;
-	
-	return deltaPoint;
+	return finalDelta;
+
+
+	//f(tn,yn) = what? GetScaledPatValue.
+	//tn = model_time + timeStep * factor
+	//yn = startPoint + previous delta * factor
+	//dy = 1/6 (d1 + 2d2 + 2d3 +d4)
+	//d1 = timeStep * v1
+	//d2 = timeStep *
+//
+//
+//	WorldPoint3D	delta1, delta2, delta3, delta4 = {{0,0},0.};
+//	WorldPoint3D refPointstart, refPoint1, refPoint2, refPoint3, refPoint4;
+//	double dLong, dLat;
+//
+//	VelocityRec scaledPatVelocity1, scaledPatVelocity2, scaledPatVelocity3, scaledPatVelocity4 = {0.,0.};
+//	Boolean useEddyUncertainty = false;
+//	OSErr err = 0;
+//	char errmsg[256];
+//
+//	if(!fIsOptimizedForStep)
+//	{
+//		err = timeGrid->SetInterval(errmsg, model_time);
+//
+//		if (err) return delta1;
+//	}
+//
+//	//get 4
+//	refPoint1.p = (*theLE).p;
+//	refPoint1.z = (*theLE).z;
+//	refPoint2.p = (*theLE).p;
+//	refPoint2.z = (*theLE).z;
+//	refPoint3.p = (*theLE).p;
+//	refPoint3.z = (*theLE).z;
+//	refPoint4.p = (*theLE).p;
+//	refPoint4.z = (*theLE).z;
+//
+//	scaledPatVelocity1 = timeGrid->GetScaledPatValue(model_time, refPointstart);
+//	scaledPatVelocity1.u *= fCurScale;
+//	scaledPatVelocity1.v *= fCurScale;
+//	dLong = ((scaledPatVelocity1.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (refPointstart.p.pLat);
+//	dLat  =  (scaledPatVelocity1.v / METERSPERDEGREELAT) * timeStep;
+//	delta1.p.pLong = dLong * 1000000;
+//	delta1.p.pLat  = dLat  * 1000000;
+//	refPoint1.p.pLong += delta2.p.pLong;
+//	refPoint1.p.pLat += delta2.p.pLat;
+//
+//	refPoint2.p.pLong += delta1.p.pLong/2;
+//	refPoint2.p.pLat += delta1.p.pLat/2;
+//	scaledPatVelocity2 = timeGrid->GetScaledPatValue(model_time+timeStep/2, refPoint1 );
+//	scaledPatVelocity1.u *= fCurScale;
+//	scaledPatVelocity1.v *= fCurScale;
+//	dLong = ((scaledPatVelocity1.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (refPointstart.p.pLat);
+//	dLat  =  (scaledPatVelocity1.v / METERSPERDEGREELAT) * timeStep;
+//	deltaPoint.p.pLong = dLong * 1000000;
+//	deltaPoint.p.pLat  = dLat  * 1000000;
+//	refPoint1.p.pLong += deltaPoint.p.pLong;
+//	refPoint1.p.pLat += deltaPoint.p.pLat;
+//
+//
+//	if(leType == UNCERTAINTY_LE)
+//	{
+//		// scaledpatVelocity changed to final computed velocity
+//		AddUncertainty(setIndex,leIndex,&scaledPatVelocity,timeStep,useEddyUncertainty);
+//	}
+//
+//	return deltaPoint;
 }
 
 OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath) 
