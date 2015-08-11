@@ -29,13 +29,14 @@ bna_sample = testdata['Renderer']['bna_sample']
 bna_star = testdata['Renderer']['bna_star']
 
 
-# def test_exception(output_dir):
-#     with pytest.raises(ValueError):
-#         Renderer(bna_sample, output_dir, draw_ontop='forecasting')
+def test_exception(output_dir):
+    # wrong name for draw on top
+    with pytest.raises(ValueError):
+        Renderer(bna_sample, output_dir, draw_ontop='forecasting')
 
-#     r = Renderer(bna_sample, output_dir)
-#     with pytest.raises(ValueError):
-#         r.draw_ontop = 'forecasting'
+    r = Renderer(bna_sample, output_dir)
+    with pytest.raises(ValueError):
+        r.draw_ontop = 'forecasting'
 
 
 def test_init(output_dir):
@@ -45,96 +46,99 @@ def test_init(output_dir):
     assert True
 
 
-# def test_file_delete(output_dir):
-#     r = Renderer(bna_sample, output_dir)
-#     bg_name = r.background_map_name
-#     fg_format = r.foreground_filename_format
+def test_file_delete(output_dir):
+    r = Renderer(bna_sample, output_dir)
+    bg_name = r.background_map_name
+    fg_format = r.foreground_filename_format
 
-#     # dump some files into output dir:
+    # dump some files into output dir:
 
-#     open(os.path.join(output_dir, bg_name), 'w').write('some junk')
+    open(os.path.join(output_dir, bg_name), 'w').write('some junk')
 
-#     for i in range(5):
-#         open(os.path.join(output_dir, fg_format.format(i)), 'w'
-#              ).write('some junk')
+    for i in range(5):
+        open(os.path.join(output_dir, fg_format.format(i)), 'w'
+             ).write('some junk')
 
-#     r.prepare_for_model_run(model_start_time=datetime.now())
+    r.prepare_for_model_run(model_start_time=datetime.now())
 
-#     # there should only be a background image now.
+    # there should only be a background image now.
 
-#     files = os.listdir(output_dir)
-#     assert files == [r.background_map_name]
-
-
-# def test_rewind(output_dir):
-#     'test rewind calls base function and clear_output_dir'
-#     r = Renderer(bna_sample, output_dir)
-#     bg_name = r.background_map_name
-#     fg_format = r.foreground_filename_format
-
-#     # dump some files into output dir:
-
-#     open(os.path.join(output_dir, bg_name), 'w').write('some junk')
-
-#     for i in range(5):
-#         open(os.path.join(output_dir, fg_format.format(i)), 'w'
-#              ).write('some junk')
-
-#     now = datetime.now()
-#     r.prepare_for_model_run(model_start_time=now)
-
-#     assert r._model_start_time == now
-
-#     r.rewind()
-#     assert r._model_start_time is None  # check super is called correctly
-#     # there should only be a background image now.
-
-#     files = os.listdir(output_dir)
-#     assert files == []
+    files = os.listdir(output_dir)
+    assert files == [r.background_map_name]
 
 
-# def test_render_elements(output_dir):
-#     """
-#     Should this test be in map_cnavas?
-#     """
+def test_rewind(output_dir):
+    'test rewind calls base function and clear_output_dir'
+    r = Renderer(bna_sample, output_dir)
+    bg_name = r.background_map_name
+    fg_format = r.foreground_filename_format
 
-#     r = Renderer(bna_sample, output_dir, image_size=(800, 600))
+    # dump some files into output dir:
 
-#     BB = r.map_BB
-#     (min_lon, min_lat) = BB[0]
-#     (max_lon, max_lat) = BB[1]
+    open(os.path.join(output_dir, bg_name), 'w').write('some junk')
 
-#     N = 1000
+    for i in range(5):
+        open(os.path.join(output_dir,
+             fg_format.format(i)),
+             'w'
+             ).write('some junk')
 
-#     # create some random particle positions:
+    now = datetime.now()
+    r.prepare_for_model_run(model_start_time=now)
 
-#     lon = random.uniform(min_lon, max_lon, (N, ))
-#     lat = random.uniform(min_lat, max_lat, (N, ))
+    assert r._model_start_time == now
 
-#     # create a sc
+    # prepare for model run clears output dir, but adds in the background map
+    files = os.listdir(output_dir)
+    assert files == [r.background_map_name]
 
-#     sc = sample_sc_release(num_elements=N)
-#     sc['positions'][:, 0] = lon
-#     sc['positions'][:, 1] = lat
+    r.rewind()
 
-#     r.create_foreground_image()
-#     r.draw_elements(sc)
+    assert r._model_start_time is None  # check superclass rewind is called
 
-#     # create an uncertainty sc
 
-#     lon = random.uniform(min_lon, max_lon, (N, ))
-#     lat = random.uniform(min_lat, max_lat, (N, ))
+def test_render_elements(output_dir):
+    """
+    See if the "splots" get rendered corectly
+    """
 
-#     sc = sample_sc_release(num_elements=N, uncertain=True)
-#     sc['positions'][:, 0] = lon
-#     sc['positions'][:, 1] = lat
+    r = Renderer(bna_sample, output_dir, image_size=(800, 600))
 
-#     r.draw_elements(sc)
+    BB = r.map_BB
+    (min_lon, min_lat) = BB[0]
+    (max_lon, max_lat) = BB[1]
 
-#     # save the image
+    N = 1000
 
-#     r.save_foreground(os.path.join(output_dir, 'foreground1.png'))
-#     assert True
+    # create some random particle positions:
+
+    lon = random.uniform(min_lon, max_lon, (N, ))
+    lat = random.uniform(min_lat, max_lat, (N, ))
+
+    # create a sc
+
+    sc = sample_sc_release(num_elements=N)
+    sc['positions'][:, 0] = lon
+    sc['positions'][:, 1] = lat
+
+    r.create_foreground_image()
+    r.draw_elements(sc)
+
+    # create an uncertainty sc
+
+    lon = random.uniform(min_lon, max_lon, (N, ))
+    lat = random.uniform(min_lat, max_lat, (N, ))
+
+    sc = sample_sc_release(num_elements=N, uncertain=True)
+    sc['positions'][:, 0] = lon
+    sc['positions'][:, 1] = lat
+
+    r.draw_elements(sc)
+
+    # save the image
+
+    r.save_foreground(os.path.join(output_dir, 'foreground1.png'))
+    assert True
 
 
 # def test_render_beached_elements(output_dir):

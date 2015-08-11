@@ -21,6 +21,9 @@ from . import Outputter, BaseSchema
 from gnome.utilities.map_canvas_gd import MapCanvas
 from gnome.utilities.serializable import Field
 from gnome.utilities.file_tools import haz_files
+from gnome.utilities import projections
+
+from gnome.basic_types import oil_status
 
 
 class RendererSchema(BaseSchema):
@@ -46,6 +49,17 @@ class Renderer(Outputter, MapCanvas):
         writes the frames for the LE "movies", etc.
 
     """
+
+    map_colors = [('transparent', (  0,  0,  0, 127)),
+                  ('background', (255, 255, 255)), # white
+                  ('lake', (255, 255, 255)), # white
+                  ('land', (255, 204, 153)), # brown
+                  ('LE', (0, 0, 0)), # black
+                  ('uncert_LE', (255, 0, 0)), # red
+                  ('map_bounds', (175, 175, 175)), # grey
+                  ('raster_map', (175, 175, 175)), # grey
+                  ('raster_map_outline', (0, 0, 0)), # black
+                  ]
 
     background_map_name = 'background_map.png'
     foreground_filename_format = 'foreground_{0:05d}.png'
@@ -149,9 +163,9 @@ class Renderer(Outputter, MapCanvas):
 
         self._filename = filename
         if filename is not None:
-            polygons = haz_files.ReadBNA(filename, 'PolygonSet')
+            self.land_polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         else:
-            polygons = None
+            self.land_polygons = [] # empty list so we can loop thru it
 
         self.images_dir = images_dir
         self.last_filename = ''
@@ -165,31 +179,29 @@ class Renderer(Outputter, MapCanvas):
                            output_last_step,
                            kwargs.pop('name', None))
 
-
-
-
-        MapCanvas.__init__(image_size,
-                           projection_class = projections.FlatEarthProjection,
-                           viewport=None):
-        self._land_polygons = land_polygons
+        MapCanvas.__init__(self,
+                           image_size,
+                           projection_class = projection_class,
+                           viewport=None)
 
         if map_BB is None:
-            if self.land_polygons is None:
+            if not self.land_polygons:
                 self.map_BB = ((-180, -90), (180, 90))
             else:
                 self.map_BB = self.land_polygons.bounding_box
 
-        # BB will be re-set
-        self.projection = projection_class(self.map_BB, self.image_size)
-
-        # assorted status flags:
-
+        # assorted rendering flags:
         self.draw_map_bounds = True
-
         self.raster_map = None
         self.raster_map_fill=True
         self.raster_map_outline=False
 
+        # initilize the images:
+        self.create_foreground_image()
+        self.fore_image.add_colors(self.map_colors)
+
+        self.create_background_image()
+        self.back_image.add_colors(self.map_colors)
 
     filename = property(lambda self: self._filename)
 
@@ -232,10 +244,9 @@ class Renderer(Outputter, MapCanvas):
                              )
 
     def clear_output_dir(self):
-
-        # clear out output dir:
-        # don't need to do this -- it will get written over.
-
+        """
+        Clear all the images from the ouput dir
+        """
         try:
             os.remove(os.path.join(self.images_dir,
                                    self.background_map_name))
@@ -248,13 +259,69 @@ class Renderer(Outputter, MapCanvas):
         for name in foreground_filenames:
             os.remove(name)
 
-    def rewind(self):
-        '''
-        call parent class's rewind.
-        Call clear_output_dir to delete output files
-        '''
-        super(Renderer, self).rewind()
-        self.clear_output_dir()
+    def draw_background(self):
+        """
+        Draws the background image -- just land for now
+
+        This should be called whenever the scale changes
+        """
+        # create a new background image
+        self.clear_background()
+        self.draw_land()
+        if self.raster_map is not None:
+            self.draw_raster_map()
+
+    def draw_land(self):
+        """
+        Draws the land map to the internal background image.
+        """
+        # TODO: should we make sure to draw the lakes after the land???
+        for poly in self.land_polygons:
+            if poly.metadata[1].strip().lower() == 'map bounds':
+                if self.draw_map_bounds:
+                    # Draw the map bounds polygon
+                    self.draw_polyline(poly, line_color='map_bounds', line_width=1)
+            elif poly.metadata[1].strip().lower() == 'spillablearea':
+                # not drawing the spillable area polygon
+                # fixme -- add an option to draw the spillable area
+                continue
+            elif poly.metadata[2] == '2':
+                # this is a lake
+                self.draw_polygon(poly, fill_color='lake')
+            else:
+                self.draw_polygon(poly, fill_color='land')
+        return None
+
+    def draw_elements(self, sc):
+        """
+        Draws the individual elements to a foreground image
+
+        :param sc: a SpillContainer object to draw
+
+        """
+        # TODO: add checks for the other status flags!
+
+        if sc.num_released > 0:  # nothing to draw if no elements
+            if sc.uncertain:
+                color = 'uncert_LE'
+            else:
+                color = 'LE'
+
+            positions = sc['positions']
+
+            # which ones are on land?
+            on_land = sc['status_codes'] == oil_status.on_land
+
+            self.draw_points(positions[on_land],
+                             diameter=2,
+                             color=color,
+                             shape="x")
+            # draw the four pixels for the elements not on land and
+            # not off the map
+            self.draw_points(positions[~on_land],
+                             diameter=2,
+                             color=color,
+                             shape="round")
 
     def write_output(self, step_num, islast_step=False):
         """
