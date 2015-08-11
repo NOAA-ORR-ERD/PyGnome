@@ -29,6 +29,15 @@ bna_sample = testdata['Renderer']['bna_sample']
 bna_star = testdata['Renderer']['bna_star']
 
 
+# ## fixme: put this in a fixture?
+# output_dir = os.path.join(os.path.split(__file__)[0], "sample_output")
+
+# try:
+#     os.mkdir(output_dir)
+# except OSError:
+#     pass # already there
+
+
 def test_exception(output_dir):
     # wrong name for draw on top
     with pytest.raises(ValueError):
@@ -47,6 +56,9 @@ def test_init(output_dir):
 
 
 def test_file_delete(output_dir):
+
+    output_dir = os.path.join(output_dir, 'clear_test')
+
     r = Renderer(bna_sample, output_dir)
     bg_name = r.background_map_name
     fg_format = r.foreground_filename_format
@@ -69,6 +81,7 @@ def test_file_delete(output_dir):
 
 def test_rewind(output_dir):
     'test rewind calls base function and clear_output_dir'
+    output_dir = os.path.join(output_dir, 'clear_test')
     r = Renderer(bna_sample, output_dir)
     bg_name = r.background_map_name
     fg_format = r.foreground_filename_format
@@ -96,6 +109,14 @@ def test_rewind(output_dir):
 
     assert r._model_start_time is None  # check superclass rewind is called
 
+def test_render_basemap(output_dir):
+    """
+    render the basemap
+    """
+    r = Renderer(bna_star, output_dir, image_size=(600, 600))
+
+    r.draw_background()
+    r.save_background(os.path.join(output_dir, 'background_test.png'))
 
 def test_render_elements(output_dir):
     """
@@ -141,118 +162,115 @@ def test_render_elements(output_dir):
     assert True
 
 
-# def test_render_beached_elements(output_dir):
-#     """
-#     Should this test be in map_canvas?
-#     """
+def test_render_beached_elements(output_dir):
 
-#     r = Renderer(bna_sample, output_dir, image_size=(800, 600))
+    r = Renderer(bna_sample, output_dir, image_size=(800, 600))
 
-#     BB = r.map_BB
-#     (min_lon, min_lat) = BB[0]
-#     (max_lon, max_lat) = BB[1]
+    BB = r.map_BB
+    (min_lon, min_lat) = BB[0]
+    (max_lon, max_lat) = BB[1]
 
-#     N = 100
+    N = 100
 
-#     # create some random particle positions:
+    # create some random particle positions:
 
-#     lon = random.uniform(min_lon, max_lon, (N, ))
-#     lat = random.uniform(min_lat, max_lat, (N, ))
+    lon = random.uniform(min_lon, max_lon, (N, ))
+    lat = random.uniform(min_lat, max_lat, (N, ))
 
-#     # create a sc
+    # create a sc
 
-#     sc = sample_sc_release(num_elements=N)
-#     sc['positions'][:, 0] = lon
-#     sc['positions'][:, 1] = lat
+    sc = sample_sc_release(num_elements=N)
+    sc['positions'][:, 0] = lon
+    sc['positions'][:, 1] = lat
 
-#     # make half of them on land
+    # make half of them on land
 
-#     sc['status_codes'][::2] = oil_status.on_land
+    sc['status_codes'][::2] = oil_status.on_land
 
-#     r.create_foreground_image()
-#     r.draw_elements(sc)
+    r.create_foreground_image()
+    r.draw_elements(sc)
 
-#     # create an uncertainty sc
+    # create an uncertainty sc
 
-#     lon = random.uniform(min_lon, max_lon, (N, ))
-#     lat = random.uniform(min_lat, max_lat, (N, ))
+    lon = random.uniform(min_lon, max_lon, (N, ))
+    lat = random.uniform(min_lat, max_lat, (N, ))
 
-#     sc = sample_sc_release(num_elements=N, uncertain=True)
-#     sc['positions'][:, 0] = lon
-#     sc['positions'][:, 1] = lat
+    sc = sample_sc_release(num_elements=N, uncertain=True)
+    sc['positions'][:, 0] = lon
+    sc['positions'][:, 1] = lat
 
-#     # make half of them on land
+    # make half of them on land
 
-#     sc['status_codes'][::2] = oil_status.on_land
+    sc['status_codes'][::2] = oil_status.on_land
 
-#     r.draw_elements(sc)
+    r.draw_elements(sc)
 
-#     # save the image
+    # save the image
 
-#     r.save_foreground(os.path.join(output_dir, 'foreground2.png'))
-#     assert True
+    r.save_foreground(os.path.join(output_dir, 'foreground2.png'))
+    assert True
 
 
-# def test_show_hide_map_bounds(output_dir):
-#     r = Renderer(bna_star, output_dir, image_size=(600, 600))
+def test_show_hide_map_bounds(output_dir):
+    r = Renderer(bna_star, output_dir, image_size=(600, 600))
 
-#     r.draw_background()
-#     r.save_background(os.path.join(output_dir, 'star_background.png'))
+    r.draw_background()
+    r.save_background(os.path.join(output_dir, 'star_background.png'))
 
-#     # try again without the map bounds:
+    # try again without the map bounds:
 
-#     r.draw_map_bounds = False
-#     r.draw_background()
-#     r.save_background(os.path.join(output_dir,
-#                       'star_background_no_bound.png'))
-
-
-# def test_set_viewport(output_dir):
-#     """
-#     tests various rendering, re-zooming, etc
-
-#     NOTE: this will only test if the code crashes, you have to look
-#           at the rendered images to see if it does the right thing
-#     """
-
-#     r = Renderer(bna_star, output_dir, image_size=(600, 600),
-#                  projection_class=GeoProjection)
-
-#     # re-scale:
-#     # should show upper right corner
-
-#     r.viewport = ((-73, 40), (-70, 43))
-#     r.draw_background()
-#     r.save_background(os.path.join(output_dir, 'star_upper_right.png'))
-
-#     # re-scale:
-#     # should show lower right corner
-
-#     r.viewport = ((-73, 37), (-70, 40))
-#     r.draw_background()
-#     r.save_background(os.path.join(output_dir, 'star_lower_right.png'))
-
-#     # re-scale:
-#     # should show lower left corner
-
-#     r.viewport = ((-76, 37), (-73, 40))
-#     r.draw_background()
-#     r.save_background(os.path.join(output_dir, 'star_lower_left.png'))
-
-#     # re-scale:
-#     # should show upper left corner
-
-#     r.viewport = ((-76, 40), (-73, 43))
-#     r.draw_background()
-#     r.save_background(os.path.join(output_dir, 'star_upper_left.png'))
+    r.draw_map_bounds = False
+    r.draw_background()
+    r.save_background(os.path.join(output_dir,
+                      'star_background_no_bound.png'))
 
 
-# @pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-# def test_serialize_deserialize(json_, output_dir):
-#     r = Renderer(bna_sample, output_dir)
-#     r2 = Renderer.new_from_dict(r.deserialize(r.serialize(json_)))
-#     if json_ == 'save':
-#         assert r == r2
+def test_set_viewport(output_dir):
+    """
+    tests various rendering, re-zooming, etc
+
+    NOTE: this will only test if the code crashes, you have to look
+          at the rendered images to see if it does the right thing
+    """
+
+    r = Renderer(bna_star, output_dir, image_size=(600, 600),
+                 projection_class=GeoProjection)
+
+    # re-scale:
+    # should show upper right corner
+
+    r.viewport = ((-73, 40), (-70, 43))
+    r.draw_background()
+    r.save_background(os.path.join(output_dir, 'star_upper_right.png'))
+
+    # re-scale:
+    # should show lower right corner
+
+    r.viewport = ((-73, 37), (-70, 40))
+    r.draw_background()
+    r.save_background(os.path.join(output_dir, 'star_lower_right.png'))
+
+    # re-scale:
+    # should show lower left corner
+
+    r.viewport = ((-76, 37), (-73, 40))
+    r.draw_background()
+    r.save_background(os.path.join(output_dir, 'star_lower_left.png'))
+
+    # re-scale:
+    # should show upper left corner
+
+    r.viewport = ((-76, 40), (-73, 43))
+    r.draw_background()
+    r.save_background(os.path.join(output_dir, 'star_upper_left.png'))
+
+
+@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
+def test_serialize_deserialize(json_, output_dir):
+    r = Renderer(bna_sample, output_dir)
+    r2 = Renderer.new_from_dict(r.deserialize(r.serialize(json_)))
+    if json_ == 'save':
+        assert r == r2
 
 
 # if __name__ == '__main__':

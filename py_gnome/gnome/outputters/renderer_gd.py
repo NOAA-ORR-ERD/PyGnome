@@ -167,6 +167,12 @@ class Renderer(Outputter, MapCanvas):
         else:
             self.land_polygons = [] # empty list so we can loop thru it
 
+        # make sure the output_dir exits:
+        try:
+            os.mkdir(images_dir)
+        except OSError:
+            pass
+
         self.images_dir = images_dir
         self.last_filename = ''
         self.draw_ontop = draw_ontop
@@ -198,7 +204,7 @@ class Renderer(Outputter, MapCanvas):
 
         # initilize the images:
         self.create_foreground_image()
-        self.fore_image.add_colors(self.map_colors)
+        self.add_colors(self.map_colors)
 
         self.create_background_image()
         self.back_image.add_colors(self.map_colors)

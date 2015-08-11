@@ -1,5 +1,5 @@
 """
-Tests of the map canvas code.
+Tests of the gd map canvas code.
 """
 
 import os
