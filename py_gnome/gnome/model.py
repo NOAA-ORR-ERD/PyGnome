@@ -1442,11 +1442,13 @@ class Model(Serializable):
         'positions', 'next_positions', 'last_water_positions', 'status_codes',
         'spill_num', 'id', 'mass', 'age'
         '''
+        if ucert == 'ucert':
+            ucert = 1
         def elem_val(prop,index):
             '''
             Gets the column containing the information on one element
             '''
-            val = self.spills.items()[0].data_arrays[prop][index]
+            val = self.spills.items()[ucert].data_arrays[prop][index]
             return val
         
         def test_phrase(phrase):
@@ -1473,7 +1475,7 @@ class Model(Serializable):
         conditions = [str(cond).rsplit('||') for cond in conditions]
         
         
-        sc = self.spills.items()[0]
+        sc = self.spills.items()[ucert]
         result = {}
         for t in target_properties:
             result[t] = []
