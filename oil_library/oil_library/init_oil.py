@@ -9,8 +9,7 @@
 from math import log, log10, exp, fabs
 import transaction
 
-import numpy
-np = numpy
+import numpy as np
 
 from oil_library.models import (ImportedRecord, Oil, Estimated,
                                 Density, KVis, Cut,
@@ -538,8 +537,39 @@ def add_bullwinkle_fractions(imported_rec, oil):
         else:
             bullwinkle_fraction = -1.038 - 0.78935 * log10(1.0 / oil.api)
 
+        bullwinkle_fraction = new_bull_calc(oil, bullwinkle_fraction)
+
     oil.bullwinkle_fraction = bullwinkle_fraction
     oil.estimated.bullwinkle_fraction = True
+
+
+def new_bull_calc(imported_rec, bullwinkle_fraction):
+    '''
+        From the Adios2 c++ file OilInitialize.cpp, there is functionality
+        inside the function CAdiosData::Bullwinkle() which is annotated
+        in the code as 'new bull calc'.
+
+        It uses the following definitions:
+        - TG, Documented as the value 'dT/df - evaporation'.
+              I can only assume this is the initial fractional rate of
+              evaporation.
+        - TBP, Documented as the 'ADIOS 1 liquid boiling point (bubble pt)'.
+        - BullAdios1, which appears to be used to scale-average the initially
+                      computed bullwinkle fraction.
+
+        Regardless, in order to approximate what Adios2 is doing, we
+        need this modification of our bullwinkle fraction.
+    '''
+    t_g = 1356.7 - 247.36 * log(imported_rec.api)
+    t_bp = 532.98 - 3.1295 * imported_rec.api
+    bull_adios1 = (483.0 - t_bp) / t_g
+
+    if bull_adios1 < 0.0:
+        bull_adios1 = 0.0
+    elif bull_adios1 > 0.4:
+        bull_adios1 = 0.4
+
+    return 0.5 * (bullwinkle_fraction + bull_adios1)
 
 
 def add_adhesion(imported_rec, oil):
