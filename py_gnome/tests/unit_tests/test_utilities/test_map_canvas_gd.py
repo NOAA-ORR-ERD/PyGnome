@@ -53,7 +53,7 @@ def test_background_poly(output_dir):
                       background = True,
                     )
 
-    mc.save_background(os.path.join(output_dir, "image_background.png"))
+    mc.save_background(os.path.join(output_dir, "background.png"))
 
 def test_foreground_poly(output_dir):
     """
@@ -74,7 +74,28 @@ def test_foreground_poly(output_dir):
                       background = False,
                     )
 
-    mc.save_foreground(os.path.join(output_dir, "image_foreground.png"))
+    mc.save_foreground(os.path.join(output_dir, "foreground.png"))
+
+def test_foreground_polyline(output_dir):
+    """
+    test drawing polygons to the background
+    """
+    mc = MapCanvas( (400,300), preset_colors='web' )
+
+    mc.background_color = 'transparent'
+    mc.clear_background()
+
+    mc.draw_polyline( ( (-30, 30),
+                       ( 30, 30),
+                       ( 30,-20),
+                       (-30,-20)
+                      ),
+                      line_color = 'red',
+                      line_width = 5,
+                      background = False,
+                    )
+
+    mc.save_foreground(os.path.join(output_dir, "foreground_polyline.png"))
 
 def test_projection(output_dir):
     """
@@ -118,13 +139,6 @@ def test_projection(output_dir):
                     )
 
     mc.save_foreground(os.path.join(output_dir, "image_projection_south.png"))
-
-    assert False
-
-
-
-
-
 
 
 # def test_render(dump):

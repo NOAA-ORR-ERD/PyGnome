@@ -28,7 +28,6 @@ from ..conftest import sample_sc_release, testdata
 bna_sample = testdata['Renderer']['bna_sample']
 bna_star = testdata['Renderer']['bna_star']
 
-
 # ## fixme: put this in a fixture?
 # output_dir = os.path.join(os.path.split(__file__)[0], "sample_output")
 
@@ -116,14 +115,23 @@ def test_render_basemap(output_dir):
     r = Renderer(bna_star, output_dir, image_size=(600, 600))
 
     r.draw_background()
-    r.save_background(os.path.join(output_dir, 'background_test.png'))
+    r.save_background(os.path.join(output_dir, 'basemap.png'))
+
+def test_render_basemap_with_bounds(output_dir):
+    """
+    render the basemap
+    """
+    r = Renderer(bna_sample, output_dir, image_size=(600, 600))
+
+    r.draw_background()
+    r.save_background(os.path.join(output_dir, 'basemap_bounds.png'))
 
 def test_render_elements(output_dir):
     """
     See if the "splots" get rendered corectly
     """
 
-    r = Renderer(bna_sample, output_dir, image_size=(800, 600))
+    r = Renderer(bna_sample, output_dir, image_size=(400, 400))
 
     BB = r.map_BB
     (min_lon, min_lat) = BB[0]
@@ -142,7 +150,6 @@ def test_render_elements(output_dir):
     sc['positions'][:, 0] = lon
     sc['positions'][:, 1] = lat
 
-    r.create_foreground_image()
     r.draw_elements(sc)
 
     # create an uncertainty sc
@@ -158,13 +165,13 @@ def test_render_elements(output_dir):
 
     # save the image
 
-    r.save_foreground(os.path.join(output_dir, 'foreground1.png'))
-    assert True
-
+    r.save_foreground(os.path.join(output_dir, 'elements1.png'))
 
 def test_render_beached_elements(output_dir):
 
-    r = Renderer(bna_sample, output_dir, image_size=(800, 600))
+    r = Renderer(bna_sample,
+                 output_dir,
+                 image_size=(800, 600))
 
     BB = r.map_BB
     (min_lon, min_lat) = BB[0]
@@ -187,7 +194,6 @@ def test_render_beached_elements(output_dir):
 
     sc['status_codes'][::2] = oil_status.on_land
 
-    r.create_foreground_image()
     r.draw_elements(sc)
 
     # create an uncertainty sc
@@ -207,8 +213,7 @@ def test_render_beached_elements(output_dir):
 
     # save the image
 
-    r.save_foreground(os.path.join(output_dir, 'foreground2.png'))
-    assert True
+    r.save_foreground(os.path.join(output_dir, 'elements2.png'))
 
 
 def test_show_hide_map_bounds(output_dir):
@@ -273,5 +278,5 @@ def test_serialize_deserialize(json_, output_dir):
         assert r == r2
 
 
-# if __name__ == '__main__':
-#     test_set_viewport()
+# # if __name__ == '__main__':
+# #     test_set_viewport()
