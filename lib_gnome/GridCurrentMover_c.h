@@ -37,7 +37,7 @@ public:
 	float	fMaxDepthForExtrapolation;
 	
 #ifndef pyGNOME
-	GridCurrentMover_c (TMap *owner, char *name, METHOD m = EULER);
+	GridCurrentMover_c (TMap *owner, char *name);
 #endif
 	GridCurrentMover_c (); 
 	virtual ~GridCurrentMover_c () { Dispose (); }
