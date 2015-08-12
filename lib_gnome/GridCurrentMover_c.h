@@ -32,12 +32,12 @@ public:
 	char fUserName[kPtCurUserNameLen];
 	Boolean fIsOptimizedForStep;
 	TimeGridVel *timeGrid;
-	
+	int num_method;
 	Boolean fAllowVerticalExtrapolationOfCurrents;
 	float	fMaxDepthForExtrapolation;
 	
 #ifndef pyGNOME
-	GridCurrentMover_c (TMap *owner, char *name);
+	GridCurrentMover_c (TMap *owner, char *name, METHOD m = EULER);
 #endif
 	GridCurrentMover_c (); 
 	virtual ~GridCurrentMover_c () { Dispose (); }
@@ -81,9 +81,11 @@ public:
 
 			OSErr		get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID);
 
+
+
 private:
 	WorldPoint3D scale_WP(WorldPoint3D, double);
-	WorldPoint3D add_WP3D(const WorldPoint3D&, const WorldPoint3D&);
+	WorldPoint3D add_two_WP3D(const WorldPoint3D&, const WorldPoint3D&);
 };
 
 #endif

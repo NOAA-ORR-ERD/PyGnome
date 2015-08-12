@@ -13,6 +13,7 @@ import sys
 
 import numpy
 np = numpy
+from enum import Enum
 
 from cy_gnome.cy_basic_types import *  # pull everything from the cython code
 
@@ -137,3 +138,10 @@ date_rec = np.dtype([
         ('second', np.short),
         ('dayOfWeek', np.short),
         ], align=True)
+
+#------------------------------------------------
+# Enum to choose which numerical method for calculating the 
+# movement of a particle in a vector field
+class num_methods(Enum):
+    EULER = 0
+    RK4 = 1

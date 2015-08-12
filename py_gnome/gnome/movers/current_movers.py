@@ -404,6 +404,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                  current_scale=1,
                  uncertain_along=0.5,
                  uncertain_across=0.25,
+                 num_method=0,
                  **kwargs):
         """
         Initialize a GridCurrentMover
@@ -424,6 +425,8 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         :param extrapolate: Allow current data to be extrapolated
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
+        :param num_method: Numerical method for calculating movement delta. Default Euler
+                            option: Runga-Kutta 4 (RK4)
 
         uses super, super(GridCurrentMover,self).__init__(\*\*kwargs)
         """
@@ -453,6 +456,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         self.mover.text_read(filename, topology_file)
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
+        self.mover.num_method=num_method.value
 
         super(GridCurrentMover, self).__init__(**kwargs)
 
@@ -503,6 +507,10 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                            lambda self, val: setattr(self.mover,
                                                      'time_offset',
                                                      val * 3600.))
+    num_method = property(lambda self: self.mover.num_method,
+                           lambda self, val: setattr(self.mover,
+                                                     'num_method',
+                                                     val))
 
     def get_grid_data(self):
         """
@@ -573,6 +581,8 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                               (hours).
         """
         return (self.mover.get_offset_time()) / 3600.
+    def get_num_method(self):
+        return self.mover.num_method
 
 
 class IceMoverSchema(CurrentMoversBaseSchema):

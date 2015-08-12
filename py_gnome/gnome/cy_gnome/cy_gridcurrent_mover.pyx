@@ -82,7 +82,8 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
                  uncertain_duration=24*3600,
                  uncertain_time_delay=0,
                  uncertain_along=.5,
-                 uncertain_cross=.25):
+                 uncertain_cross=.25,
+                 num_method = 0):
         """
         .. function:: __init__(self, current_scale=1,
                  uncertain_duration=24*3600, uncertain_time_delay=0,
@@ -109,6 +110,7 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         self.grid_current.fCurScale = current_scale
         self.grid_current.fIsOptimizedForStep = 0
+        self.grid_current.num_method = num_method
 
     def __repr__(self):
         return ('CyGridCurrentMover(uncertain_duration={0}, '
@@ -170,6 +172,14 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         def __set__(self, value):
             self.grid_current.SetTimeShift(value)
+            
+                #Does this need to be here? - Jay
+    property num_method:
+        def __get__(self):
+            return self.grid_current.num_method
+        
+        def __set__(self, value):
+            self.grid_current.num_method = value
 
     def extrapolate_in_time(self, extrapolate):
         self.grid_current.SetExtrapolationInTime(extrapolate)
