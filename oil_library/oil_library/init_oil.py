@@ -9,8 +9,7 @@
 from math import log, log10, exp, fabs
 import transaction
 
-import numpy
-np = numpy
+import numpy as np
 
 from oil_library.models import (ImportedRecord, Oil, Estimated,
                                 Density, KVis, Cut,
@@ -140,8 +139,8 @@ def add_densities(imported_rec, oil):
                .format(imported_rec.adios_oil_id))
 
     if not [d for d in oil.densities
-            if d.ref_temp_k is not None
-            and np.isclose(d.ref_temp_k, 273.0 + 15, atol=.15)]:
+            if (d.ref_temp_k is not None and
+                np.isclose(d.ref_temp_k, 273.0 + 15, atol=.15))]:
         # add a 15C density from api
         kg_m_3, ref_temp_k = estimate_density_from_api(oil.api)
 
@@ -162,8 +161,9 @@ def density_at_temperature(oil_rec, temperature, weathering=0.0):
     # first, get the density record closest to our temperature
     density_list = [(d, abs(d.ref_temp_k - temperature))
                     for d in oil_rec.densities
-                    if d.ref_temp_k is not None
-                    and d.weathering == weathering]
+                    if (d.ref_temp_k is not None and
+                        d.weathering == weathering)]
+
     if density_list:
         density_rec = sorted(density_list, key=lambda d: d[1])[0][0]
         d_ref = density_rec.kg_m_3
@@ -259,8 +259,8 @@ def get_kvis_from_dvis(oil_rec):
 
 def kvis_exists_at_temp_and_weathering(kvis, temperature, weathering):
     return len([v for v in kvis
-                if v[1] == temperature
-                and v[2] == weathering]) > 0
+                if (v[1] == temperature and
+                    v[2] == weathering)]) > 0
 
 
 def add_oil_water_interfacial_tension(imported_rec, oil):
@@ -517,8 +517,8 @@ def add_bullwinkle_fractions(imported_rec, oil):
               if imported_rec.vanadium is not None else 0.0)
         f_asph = [af.fraction
                   for af in oil.sara_fractions
-                  if af.sara_type == 'Asphaltenes'
-                  and af.fraction > 0]
+                  if (af.sara_type == 'Asphaltenes' and
+                      af.fraction > 0)]
         f_asph = f_asph[0] if len(f_asph) > 0 else 0.0
 
         if (Ni > 0.0 and Va > 0.0 and Ni + Va > 15.0):
@@ -538,8 +538,39 @@ def add_bullwinkle_fractions(imported_rec, oil):
         else:
             bullwinkle_fraction = -1.038 - 0.78935 * log10(1.0 / oil.api)
 
+        bullwinkle_fraction = new_bull_calc(oil, bullwinkle_fraction)
+
     oil.bullwinkle_fraction = bullwinkle_fraction
     oil.estimated.bullwinkle_fraction = True
+
+
+def new_bull_calc(imported_rec, bullwinkle_fraction):
+    '''
+        From the Adios2 c++ file OilInitialize.cpp, there is functionality
+        inside the function CAdiosData::Bullwinkle() which is annotated
+        in the code as 'new bull calc'.
+
+        It uses the following definitions:
+        - TG, Documented as the value 'dT/df - evaporation'.
+              I can only assume this is the initial fractional rate of
+              evaporation.
+        - TBP, Documented as the 'ADIOS 1 liquid boiling point (bubble pt)'.
+        - BullAdios1, which appears to be used to scale-average the initially
+                      computed bullwinkle fraction.
+
+        Regardless, in order to approximate what Adios2 is doing, we
+        need this modification of our bullwinkle fraction.
+    '''
+    t_g = 1356.7 - 247.36 * log(imported_rec.api)
+    t_bp = 532.98 - 3.1295 * imported_rec.api
+    bull_adios1 = (483.0 - t_bp) / t_g
+
+    if bull_adios1 < 0.0:
+        bull_adios1 = 0.0
+    elif bull_adios1 > 0.4:
+        bull_adios1 = 0.4
+
+    return 0.5 * (bullwinkle_fraction + bull_adios1)
 
 
 def add_adhesion(imported_rec, oil):

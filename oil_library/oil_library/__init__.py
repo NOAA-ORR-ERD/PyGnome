@@ -235,6 +235,7 @@ def get_oil_props(oil_info, max_cuts=None):
     oil_ = get_oil(oil_info, max_cuts)
     return OilProps(oil_)
 
+
 def build_oil_props(props, max_cuts=2):
     '''
     Builds an OilProps object from a dict of properties and max_cuts

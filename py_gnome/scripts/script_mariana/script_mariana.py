@@ -6,6 +6,8 @@ Script to test GNOME with HYCOM data in Mariana Islands region.
 import os
 from datetime import datetime, timedelta
 
+from gnome import basic_types
+
 from gnome import scripting
 from gnome import utilities
 from gnome.utilities.remote_data import get_datafile
@@ -19,8 +21,10 @@ from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 from gnome.outputters import (Renderer,
                               # NetCDFOutput
                               )
+from gnome.basic_types import num_methods as nm
 
-NUM_ELEMENTS = 1e6
+
+NUM_ELEMENTS = 1e5
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -32,7 +36,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     start_time = datetime(2013, 5, 18, 0)
 
     model = Model(start_time=start_time, duration=timedelta(days=8),
-                  time_step=1 * 3600, uncertain=False)
+                  time_step=4 * 3600, uncertain=False)
 
     mapfile = get_datafile(os.path.join(base_dir, 'mariana_island.bna'))
 
@@ -65,7 +69,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # # this is HYCOM currents
     curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
-    model.movers += GridCurrentMover(curr_file)
+    model.movers += GridCurrentMover(curr_file,num_method=nm.RK4);
 
     # #
     # # Add some spills (sources of elements)
