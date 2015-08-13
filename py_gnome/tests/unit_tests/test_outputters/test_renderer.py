@@ -3,6 +3,8 @@
 """
 test code for renderer
 
+-- this version uses the map_canvas_gd (uses libgd)
+
 NOTE: some of these only really test if the code crashes
   -- whether the rendering looks right -- who knows?
   -- It's a good idea to look at the output.
@@ -17,7 +19,7 @@ import numpy.random as random
 
 from gnome.basic_types import oil_status
 
-from gnome.outputters import Renderer
+from gnome.outputters.renderer import Renderer
 from gnome.utilities.projections import GeoProjection
 
 from ..conftest import sample_sc_release, testdata
@@ -26,9 +28,17 @@ from ..conftest import sample_sc_release, testdata
 bna_sample = testdata['Renderer']['bna_sample']
 bna_star = testdata['Renderer']['bna_star']
 
+# ## fixme: put this in a fixture?
+# output_dir = os.path.join(os.path.split(__file__)[0], "sample_output")
+
+# try:
+#     os.mkdir(output_dir)
+# except OSError:
+#     pass # already there
+
 
 def test_exception(output_dir):
-
+    # wrong name for draw on top
     with pytest.raises(ValueError):
         Renderer(bna_sample, output_dir, draw_ontop='forecasting')
 
@@ -45,6 +55,9 @@ def test_init(output_dir):
 
 
 def test_file_delete(output_dir):
+
+    output_dir = os.path.join(output_dir, 'clear_test')
+
     r = Renderer(bna_sample, output_dir)
     bg_name = r.background_map_name
     fg_format = r.foreground_filename_format
@@ -67,6 +80,7 @@ def test_file_delete(output_dir):
 
 def test_rewind(output_dir):
     'test rewind calls base function and clear_output_dir'
+    output_dir = os.path.join(output_dir, 'clear_test')
     r = Renderer(bna_sample, output_dir)
     bg_name = r.background_map_name
     fg_format = r.foreground_filename_format
@@ -76,7 +90,9 @@ def test_rewind(output_dir):
     open(os.path.join(output_dir, bg_name), 'w').write('some junk')
 
     for i in range(5):
-        open(os.path.join(output_dir, fg_format.format(i)), 'w'
+        open(os.path.join(output_dir,
+             fg_format.format(i)),
+             'w'
              ).write('some junk')
 
     now = datetime.now()
@@ -84,22 +100,38 @@ def test_rewind(output_dir):
 
     assert r._model_start_time == now
 
-    r.rewind()
-    assert r._model_start_time is None  # check super is called correctly
-    # there should only be a background image now.
-
+    # prepare for model run clears output dir, but adds in the background map
     files = os.listdir(output_dir)
-    assert files == []
+    assert files == [r.background_map_name]
 
+    r.rewind()
+
+    assert r._model_start_time is None  # check superclass rewind is called
+
+def test_render_basemap(output_dir):
+    """
+    render the basemap
+    """
+    r = Renderer(bna_star, output_dir, image_size=(600, 600))
+
+    r.draw_background()
+    r.save_background(os.path.join(output_dir, 'basemap.png'))
+
+def test_render_basemap_with_bounds(output_dir):
+    """
+    render the basemap
+    """
+    r = Renderer(bna_sample, output_dir, image_size=(600, 600))
+
+    r.draw_background()
+    r.save_background(os.path.join(output_dir, 'basemap_bounds.png'))
 
 def test_render_elements(output_dir):
     """
-    Should this test be in map_canvas?
+    See if the "splots" get rendered corectly
     """
 
-#   put in current dir for now:
-    output_dir = './'
-    r = Renderer(bna_sample, output_dir, image_size=(800, 600))
+    r = Renderer(bna_sample, output_dir, image_size=(400, 400))
 
     BB = r.map_BB
     (min_lon, min_lat) = BB[0]
@@ -118,7 +150,6 @@ def test_render_elements(output_dir):
     sc['positions'][:, 0] = lon
     sc['positions'][:, 1] = lat
 
-    r.create_foreground_image()
     r.draw_elements(sc)
 
     # create an uncertainty sc
@@ -134,16 +165,13 @@ def test_render_elements(output_dir):
 
     # save the image
 
-    r.save_foreground(os.path.join(output_dir, 'foreground1.png'))
-    assert True
-
+    r.save_foreground(os.path.join(output_dir, 'elements1.png'))
 
 def test_render_beached_elements(output_dir):
-    """
-    Should this test be in map_canvas?
-    """
 
-    r = Renderer(bna_sample, output_dir, image_size=(800, 600))
+    r = Renderer(bna_sample,
+                 output_dir,
+                 image_size=(800, 600))
 
     BB = r.map_BB
     (min_lon, min_lat) = BB[0]
@@ -166,7 +194,6 @@ def test_render_beached_elements(output_dir):
 
     sc['status_codes'][::2] = oil_status.on_land
 
-    r.create_foreground_image()
     r.draw_elements(sc)
 
     # create an uncertainty sc
@@ -186,8 +213,7 @@ def test_render_beached_elements(output_dir):
 
     # save the image
 
-    r.save_foreground(os.path.join(output_dir, 'foreground2.png'))
-    assert True
+    r.save_foreground(os.path.join(output_dir, 'elements2.png'))
 
 
 def test_show_hide_map_bounds(output_dir):
@@ -212,8 +238,11 @@ def test_set_viewport(output_dir):
           at the rendered images to see if it does the right thing
     """
 
-    r = Renderer(bna_star, output_dir, image_size=(600, 600),
-                 projection_class=GeoProjection)
+    r = Renderer(bna_star,
+                 output_dir,
+                 image_size=(600, 600),
+                 projection=GeoProjection(),
+                 )
 
     # re-scale:
     # should show upper right corner
@@ -243,6 +272,10 @@ def test_set_viewport(output_dir):
     r.draw_background()
     r.save_background(os.path.join(output_dir, 'star_upper_left.png'))
 
+def test_write_output(output_dir):
+     pass
+
+
 
 @pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 def test_serialize_deserialize(json_, output_dir):
@@ -252,5 +285,5 @@ def test_serialize_deserialize(json_, output_dir):
         assert r == r2
 
 
-if __name__ == '__main__':
-    test_set_viewport()
+# # if __name__ == '__main__':
+# #     test_set_viewport()

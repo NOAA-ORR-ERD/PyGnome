@@ -89,6 +89,7 @@ def test_init_exceptions():
 def test_exceptions(output_filename):
     spill_pair = SpillContainerPair()
 
+    print "output_filename:", output_filename
     # begin tests
     netcdf = NetCDFOutput(output_filename, which_data='all')
     netcdf.rewind() # delete temporary files
@@ -108,20 +109,23 @@ def test_exceptions(output_filename):
     with raises(ValueError):
         netcdf.which_data = 'some random string'
 
-    with raises(ValueError):
-        # raise error because file 'temp.nc' should exist after 1st call
-        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
-                                     spills=spill_pair,
-                                     num_time_steps=4)
-        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
-                                     spills=spill_pair,
-                                     num_time_steps=4)
+    ## no longer relevent -- teh model no longer deltetes on rewind,
+    ##   but rather in prepare_for_model_run
+    # with raises(ValueError):
+    #     # raise error because file 'temp.nc' should exist after 1st call
+    #     netcdf.prepare_for_model_run(model_start_time=datetime.now(),
+    #                                  spills=spill_pair,
+    #                                  num_time_steps=4)
+    #     netcdf.prepare_for_model_run(model_start_time=datetime.now(),
+    #                                  spills=spill_pair,
+    #                                  num_time_steps=4)
 
     with raises(AttributeError):
         'cannot change after prepare_for_model_run has been called'
+        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
+                                     spills=spill_pair,
+                                     num_time_steps=4)
         netcdf.which_data = 'most'
-
-    netcdf.rewind()     # delete datafiles
 
 
 def test_exceptions_middle_of_run(model):
@@ -492,7 +496,7 @@ def test_write_output_post_run(model, output_ts_factor):
     test_write_output_standard already checks data is correctly written.
 
     Instead, make sure if output_timestep is not same as model.time_step,
-    then data is output at correct time stamps 
+    then data is output at correct time stamps
     """
     model.rewind()
 
