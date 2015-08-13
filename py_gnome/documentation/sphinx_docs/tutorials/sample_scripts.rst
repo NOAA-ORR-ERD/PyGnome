@@ -3,7 +3,9 @@
 Sample Scripts
 =====================
 
-A good way to learn to use PyGNOME is to find an example script that uses similar coponets what you need, and work on that. the Sample scripts can be found in the ``py_gnome/scripts`` dir, in directories names with a ``script_*``.
+A good way to learn to use PyGNOME is to find an example script that uses similar components 
+to what you need, and use that as a starting point. the Sample scripts can be found in 
+the ``py_gnome/scripts`` dir, in directories named ``script_*``.
 
 There are also a few utilities in the ``scripts`` directory:
 
@@ -19,7 +21,9 @@ Below are summaries of a few of them:
 ``script_marianas``
 --------------------
 
-This script used current from the Navy's HYCOM model, subsetted to a region around the Marianas Islands. The land-water map is a BNA pulled from the GOODS shoreline extractor, with a map_bounds hand added to a larger region.
+This script used current from the Navy's HYCOM model, subsetted to a region around the Marianas Islands. 
+The land-water map is a BNA pulled from the GOODS shoreline extractor, with a map_bounds hand added 
+to a larger region.
 
 ``script_boston``
 ------------------

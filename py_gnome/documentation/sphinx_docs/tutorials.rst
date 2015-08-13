@@ -3,14 +3,15 @@
 Tutorials
 =====================
 
-A collection of tutorials and example scripts to get you up an running.
+A collection of tutorials and example scripts to get you up and running.
 
 
 .. toctree::
    :maxdepth: 2
-
-   sample_scripts
-   tutorial_1
-   tutorial_2
+   
+   tutorials/tutorial_intro
+   tutorials/sample_scripts
+   tutorials/tutorial_cats
+   tutorials/tutorial_mixedlayer_release
 
 
