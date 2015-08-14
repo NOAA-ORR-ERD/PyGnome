@@ -313,7 +313,6 @@ class Renderer(Outputter, MapCanvas):
                 # this is a lake
                 self.draw_polygon(poly, fill_color='lake', background=True)
             else:
-                print "drawing a land polygon"
                 self.draw_polygon(poly,
                                   fill_color='land', background=True)
         return None

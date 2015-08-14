@@ -44,7 +44,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
-    renderer = Renderer(images_dir=images_dir,
+    renderer = Renderer(output_dir_dir=images_dir,
                         #size=(800, 600),
                         output_timestep=timedelta(hours=1),
                         draw_ontop='uncertain')

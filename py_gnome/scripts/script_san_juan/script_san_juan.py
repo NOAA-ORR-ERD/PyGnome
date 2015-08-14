@@ -46,7 +46,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     mapfile = get_datafile(os.path.join(base_dir, './SanJuanMap.bna'))
     gnome_map = MapFromBNA(mapfile, refloat_halflife=1, raster_size= 1024 * 1024)  # hours
 
-    renderer = Renderer(mapfile, images_dir, size=(800, 800),
+    renderer = Renderer(mapfile,
+                        images_dir,
+                        size=(800, 800),
                         projection_class=GeoProjection)
 
     renderer.viewport = ((-66.24, 18.39), (-66.1, 18.55))
