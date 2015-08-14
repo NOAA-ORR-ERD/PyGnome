@@ -97,6 +97,37 @@ def test_foreground_polyline(output_dir):
 
     mc.save_foreground(os.path.join(output_dir, "foreground_polyline.png"))
 
+def test_copy_back_to_fore(output_dir):
+
+    mc = MapCanvas( (400,300), preset_colors='web' )
+
+    mc.background_color = 'white'
+    mc.clear_background()
+    mc.clear_foreground()
+
+    mc.draw_polyline( ( (-30, 30),
+                       ( 30, 30),
+                       ( 30,-20),
+                       (-30,-20)
+                      ),
+                      line_color = 'red',
+                      line_width = 5,
+                      background = True,
+                    )
+    mc.copy_back_to_fore()
+    mc.draw_polyline( ( (-20, 20),
+                       ( 20, 20),
+                       ( 20,-10),
+                       (-20,-10)
+                      ),
+                      line_color = 'blue',
+                      line_width = 5,
+                      background = False,
+                    )
+
+    mc.save_foreground(os.path.join(output_dir, "copy_back_to_fore.png"))
+
+
 def test_projection(output_dir):
     """
     draw the "same sized" rectangle at three latitudes to see how the look

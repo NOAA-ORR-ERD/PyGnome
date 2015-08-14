@@ -116,6 +116,7 @@ class Renderer(Outputter, MapCanvas):
         output_zero_step=True,
         output_last_step=True,
         draw_ontop='forecast',
+        draw_back_to_fore=True,
         name=None,
         on=True,
         **kwargs
@@ -146,8 +147,13 @@ class Renderer(Outputter, MapCanvas):
             is to draw 'forecast' LEs, which are in black on top
         :type draw_ontop: str
 
+        :param draw_back_to_fore=True: draw the background (map) to the
+                                       foregound image when outputting the images
+                                       each time step.
+        :type draw_back_to_fore: boolean
+
         Remaining kwargs are passed onto baseclass's __init__ with a direct
-        call: MapCanvas.__init__(..)
+        call: Outputter.__init__(..)
 
         """
 
@@ -168,6 +174,7 @@ class Renderer(Outputter, MapCanvas):
         self.images_dir = images_dir
         self.last_filename = ''
         self.draw_ontop = draw_ontop
+        self.draw_back_to_fore = draw_back_to_fore
 
         Outputter.__init__(self,
                            cache,
@@ -364,16 +371,24 @@ class Renderer(Outputter, MapCanvas):
                                       self.foreground_filename_format
                                       .format(step_num))
 
-        #self.create_foreground_image()
+        self.clear_foreground
+        if self.draw_back_to_fore:
+            self.copy_back_to_fore()
 
-        # do a function call so data arrays get garbage collected after
-        # function exists
-        current_time_stamp = self._draw(step_num)
+        # draw data for self.draw_ontop second so it draws on top
+        scp = self.cache.load_timestep(step_num).items()
+        if len(scp) == 1:
+            self.draw_elements(scp[0])
+        else:
+            if self.draw_ontop == 'forecast':
+                self.draw_elements(scp[1])
+                self.draw_elements(scp[0])
+            else:
+                self.draw_elements(scp[0])
+                self.draw_elements(scp[1])
 
-        # get the timestamp:
-        time_stamp = current_time_stamp.isoformat()
+        time_stamp = scp[0].current_time_stamp.isoformat()
         self.save_foreground(image_filename)
-
         self.last_filename = image_filename
 
         return {'step_num': step_num, 'image_filename': image_filename,

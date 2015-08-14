@@ -167,6 +167,51 @@ def test_render_elements(output_dir):
 
     r.save_foreground(os.path.join(output_dir, 'elements1.png'))
 
+from gnome.spill_container import SpillContainerData, SpillContainerPairData
+
+class FakeCache(object):
+    def __init__(self, sc):
+        # pass in a  spill containters
+        self.sc = sc
+        self.sc.current_time_stamp = datetime.now()
+    def load_timestep(self, step):
+        return SpillContainerPairData(self.sc, )
+
+def test_write_output(output_dir):
+    """
+    render the basemap
+    """
+    r = Renderer(bna_star,
+                 output_dir,
+                 image_size=(600, 600),
+                 draw_back_to_fore=True)
+
+    r.draw_background()
+
+    BB = r.map_BB
+    (min_lon, min_lat) = BB[0]
+    (max_lon, max_lat) = BB[1]
+
+    N = 100
+    # create some random particle positions:
+    lon = random.uniform(min_lon, max_lon, (N, ))
+    lat = random.uniform(min_lat, max_lat, (N, ))
+
+    # create a sc
+    sc = sample_sc_release(num_elements=N)
+    sc['positions'][:, 0] = lon
+    sc['positions'][:, 1] = lat
+
+    r.cache = FakeCache( sc )
+
+    r.write_output(0)
+    r.save_foreground(os.path.join(output_dir, 'map_and_elements.png'))
+
+    r.draw_back_to_fore = False
+    r.clear_foreground()
+    r.write_output(1)
+    r.save_foreground(os.path.join(output_dir, 'just_elements.png'))
+
 def test_render_beached_elements(output_dir):
 
     r = Renderer(bna_sample,
@@ -271,9 +316,6 @@ def test_set_viewport(output_dir):
     r.viewport = ((-76, 40), (-73, 43))
     r.draw_background()
     r.save_background(os.path.join(output_dir, 'star_upper_left.png'))
-
-def test_write_output(output_dir):
-     pass
 
 
 

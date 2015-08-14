@@ -10,10 +10,10 @@ import pytest
 def tmp_output_dir(tmpdir, request):
     '''
     return a temporary directory for outputter to dump its data
-    puts it in where tmpfiles go, so good for autoamted testing,
+    puts it in where tmpfiles go, so good for automated testing,
     not good for looking at the results.
     '''
-    name = 'output_' + request.function.func_name
+    name = 'output_' + request.function.func_name.lstrip('test_')
     name = tmpdir.mkdir(name).strpath
 
     return name
@@ -30,7 +30,7 @@ def output_dir(request):
     '''
     #create the dir name from the module path
     path, name = os.path.split(request.module.__file__)
-    name = os.path.splitext(name)[0]
+    name = os.path.splitext(name)[0].lstrip('test_')
     name = os.path.join(path, "output_"+name)
 
     # make sure it exists
