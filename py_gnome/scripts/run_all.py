@@ -6,6 +6,7 @@ runs all scripts in here
 '''
 
 import os, sys, glob
+import subprocess
 
 import script_runner
 
@@ -64,7 +65,12 @@ def run_all_alone():
     ## this could (and probably should) be made much smarter
     ##   should it use subprocess??
     for script in scripts:
-        os.system("python %s"%script)
+        print "**************************"
+        print "*"
+        print "*  Running:   %s"%script
+        print "*"
+        print "**************************"
+        subprocess.check_call(["python", script], shell=False)
 
 
 

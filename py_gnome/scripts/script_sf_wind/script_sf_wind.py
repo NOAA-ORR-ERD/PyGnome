@@ -79,3 +79,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += w_mover
 
     return model
+
+if __name__ == '__main__':
+    scripting.make_images_dir()
+
+    model = make_model()
+
+    model.full_run()
+

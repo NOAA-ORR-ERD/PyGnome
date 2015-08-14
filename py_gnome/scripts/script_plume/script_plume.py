@@ -125,11 +125,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
 if __name__ == "__main__":
-    model = make_model()
     scripting.make_images_dir()
     model = make_model()
     for step in model:
         print step
-    for sc in model.spills.items():
-        print "sc:", sc
 

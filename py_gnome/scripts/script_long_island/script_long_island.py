@@ -124,5 +124,5 @@ if __name__ == '__main__':
 
     model = make_model()
 
-    model.full_run(logger=True)
+    model.full_run()
     post_run(model)

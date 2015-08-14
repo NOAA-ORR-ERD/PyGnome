@@ -150,7 +150,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     comp_mover.pat2_speed = 19.44
     comp_mover.pat2_speed_units = 1
     comp_mover.pat2ScaleToValue = .05121
-    
+
     model.movers += comp_mover
 
     print 'adding a spill'
@@ -165,3 +165,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.spills += spill
 
     return model
+
+if __name__ == "__main__":
+
+    # run outside of the script runner
+
+    scripting.make_images_dir()
+
+    model = make_model()
+    model.full_run()
+
+
+

@@ -101,4 +101,4 @@ if __name__ == '__main__':
 
     model = make_model()
 
-    model.full_run(log=True)
+    model.full_run()
