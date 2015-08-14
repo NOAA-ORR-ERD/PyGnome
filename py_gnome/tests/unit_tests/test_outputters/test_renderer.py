@@ -28,13 +28,17 @@ from ..conftest import sample_sc_release, testdata
 bna_sample = testdata['Renderer']['bna_sample']
 bna_star = testdata['Renderer']['bna_star']
 
-# ## fixme: put this in a fixture?
-# output_dir = os.path.join(os.path.split(__file__)[0], "sample_output")
 
-# try:
-#     os.mkdir(output_dir)
-# except OSError:
-#     pass # already there
+## fixme -- this should be in conftest
+from gnome.spill_container import SpillContainerData, SpillContainerPairData
+class FakeCache(object):
+    def __init__(self, sc):
+        # pass in a  spill containters
+        self.sc = sc
+        self.sc.current_time_stamp = datetime.now()
+    def load_timestep(self, step):
+        return SpillContainerPairData(self.sc, )
+
 
 
 def test_exception(output_dir):
@@ -167,15 +171,7 @@ def test_render_elements(output_dir):
 
     r.save_foreground(os.path.join(output_dir, 'elements1.png'))
 
-from gnome.spill_container import SpillContainerData, SpillContainerPairData
 
-class FakeCache(object):
-    def __init__(self, sc):
-        # pass in a  spill containters
-        self.sc = sc
-        self.sc.current_time_stamp = datetime.now()
-    def load_timestep(self, step):
-        return SpillContainerPairData(self.sc, )
 
 def test_write_output(output_dir):
     """

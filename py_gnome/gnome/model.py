@@ -947,7 +947,6 @@ class Model(Serializable):
 
     def _callback_add_outputter(self, obj_added):
         'Callback after outputter has been added'
-        print "_outputter callback called"
         # hook up the cache
         obj_added.cache = self._cache
 

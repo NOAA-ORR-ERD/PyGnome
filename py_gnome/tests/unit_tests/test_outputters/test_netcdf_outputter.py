@@ -503,14 +503,17 @@ def test_write_output_post_run(model, output_ts_factor):
     o_put = [model.outputters[outputter.id] for outputter in
              model.outputters if isinstance(outputter, NetCDFOutput)][0]
     o_put.which_data = 'standard'
-    o_put.output_timestep = timedelta(seconds=model.time_step *
-                                      output_ts_factor)
+    o_put.output_timestep = timedelta(seconds=model.time_step * output_ts_factor)
+
 
     del model.outputters[o_put.id]  # remove from list of outputters
 
     _run_model(model)
 
-    assert (not os.path.exists(o_put.netcdf_filename))
+    # clear out old files...
+    o_put.clean_output_files()
+    assert not os.path.exists(o_put.netcdf_filename)
+
     if o_put._u_netcdf_filename:
         assert (not os.path.exists(o_put._u_netcdf_filename))
 

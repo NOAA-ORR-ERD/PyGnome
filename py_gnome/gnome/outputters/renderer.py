@@ -33,10 +33,10 @@ class RendererSchema(BaseSchema):
 
     # following are only used when creating objects, not updating -
     # so missing=drop
-    filename = SchemaNode(String(), missing=drop)
+    map_filename = SchemaNode(String(), missing=drop)
     projection = SchemaNode(String(), missing=drop)
     image_size = base_schema.ImageSize(missing=drop)
-    images_dir = SchemaNode(String())
+    output_dir = SchemaNode(String())
     draw_ontop = SchemaNode(String())
 
 
@@ -65,16 +65,16 @@ class Renderer(Outputter, MapCanvas):
     foreground_filename_format = 'foreground_{0:05d}.png'
     foreground_filename_glob = 'foreground_?????.png'
 
-    # todo: how should images_dir be saved? Absolute? Currently, it is relative
+    # todo: how should output_dir be saved? Absolute? Currently, it is relative
     _update = ['viewport', 'map_BB', 'image_size', 'draw_ontop']
     _create = ['image_size', 'projection', 'draw_ontop']
 
     _create.extend(_update)
     _state = copy.deepcopy(Outputter._state)
     _state.add(save=_create, update=_update)
-    _state.add_field(Field('filename', isdatafile=True,
+    _state.add_field(Field('map_filename', isdatafile=True,
                     save=True, read=True, test_for_eq=False))
-    _state += Field('images_dir', save=True, update=True, test_for_eq=False)
+    _state += Field('output_dir', save=True, update=True, test_for_eq=False)
     _schema = RendererSchema
 
     @classmethod
@@ -105,8 +105,8 @@ class Renderer(Outputter, MapCanvas):
 
     def __init__(
         self,
-        filename=None,
-        images_dir='./',
+        map_filename=None,
+        output_dir='./',
         image_size=(800, 600),
         projection = projections.FlatEarthProjection(),
         viewport=None,
@@ -123,6 +123,22 @@ class Renderer(Outputter, MapCanvas):
         ):
         """
         Init the image renderer.
+
+        :param map_filename=None: name of file for basemap (BNA)
+
+        :param output_dir='./': directory to output the images
+
+        :param image_size=(800, 600): size of images to output
+
+        :param projection = projections.FlatEarthProjection(): projection to use
+        :type projection: a gnome.utilities.projection.Projection instance
+
+        :param viewport: viewport of map -- what gets drawn and on what
+                         scale. Default is full globe: (((-180, -90), (180, 90)))
+        :type viewport: pair of (lon, lat) tuples ( lower_left, upper right )
+
+        :param map_BB=None: bounding box of map if None, it will use teh
+                            bounding box of the mapfile.
 
         Following args are passed to base class Outputter's init:
 
@@ -159,19 +175,12 @@ class Renderer(Outputter, MapCanvas):
 
         # set up the canvas
 
-        self._filename = filename
-        if filename is not None:
-            self.land_polygons = haz_files.ReadBNA(filename, 'PolygonSet')
+        self._map_filename = map_filename
+        if map_filename is not None:
+            self.land_polygons = haz_files.ReadBNA(map_filename, 'PolygonSet')
         else:
             self.land_polygons = [] # empty list so we can loop thru it
 
-        # make sure the output_dir exits:
-        try:
-            os.mkdir(images_dir)
-        except OSError:
-            pass
-
-        self.images_dir = images_dir
         self.last_filename = ''
         self.draw_ontop = draw_ontop
         self.draw_back_to_fore = draw_back_to_fore
@@ -182,7 +191,9 @@ class Renderer(Outputter, MapCanvas):
                            output_timestep,
                            output_zero_step,
                            output_last_step,
-                           name)
+                           name,
+                           output_dir
+                           )
 
         if map_BB is None:
             if not self.land_polygons:
@@ -207,7 +218,7 @@ class Renderer(Outputter, MapCanvas):
         self.add_colors(self.map_colors)
         self.background_color='background'
 
-    filename = property(lambda self: self._filename)
+    map_filename = property(lambda self: self._map_filename)
 
     @property
     def draw_ontop(self):
@@ -217,11 +228,11 @@ class Renderer(Outputter, MapCanvas):
     def draw_ontop(self, val):
         if val not in ['forecast', 'uncertain']:
             raise ValueError("'draw_ontop' must be either 'forecast' or"
-                            "'uncertain'. {0} is invalid.".format(val))
+                             "'uncertain'. {0} is invalid.".format(val))
         self._draw_ontop = val
 
-    def images_dir_to_dict(self):
-        return os.path.abspath(self.images_dir)
+    def output_dir_to_dict(self):
+        return os.path.abspath(self.output_dir)
 
     def prepare_for_model_run(self, *args, **kwargs):
         """
@@ -235,30 +246,31 @@ class Renderer(Outputter, MapCanvas):
         In this case, it draws the background image and clears the previous
         images. If you want to save the previous images, a new output dir
         should be set.
-
         """
 
         super(Renderer, self).prepare_for_model_run(*args, **kwargs)
 
-        self.clear_output_dir()
+        self.clean_output_files()
 
         self.draw_background()
-        self.save_background(os.path.join(self.images_dir,
+        self.save_background(os.path.join(self.output_dir,
                                           self.background_map_name)
                              )
 
-    def clear_output_dir(self):
+    def clean_output_files(self):
         """
-        Clear all the images from the ouput dir
+        Clean files from the output dir
+
+        Tries to clean only those that it wrote...
         """
         try:
-            os.remove(os.path.join(self.images_dir,
+            os.remove(os.path.join(self.output_dir,
                                    self.background_map_name))
         except OSError:
             # it's not there to delete..
             pass
 
-        foreground_filenames = glob.glob(os.path.join(self.images_dir,
+        foreground_filenames = glob.glob(os.path.join(self.output_dir,
                 self.foreground_filename_glob))
         for name in foreground_filenames:
             os.remove(name)
@@ -367,7 +379,7 @@ class Renderer(Outputter, MapCanvas):
         if not self._write_step:
             return None
 
-        image_filename = os.path.join(self.images_dir,
+        image_filename = os.path.join(self.output_dir,
                                       self.foreground_filename_format
                                       .format(step_num))
 
@@ -427,14 +439,14 @@ class Renderer(Outputter, MapCanvas):
 
     def save(self, saveloc, references=None, name=None):
         '''
-        update the 'images_dir' key in the json_ to point to directory
+        update the 'output_dir' key in the json_ to point to directory
         inside saveloc, then save the json - do not copy image files or
         image directory over
         '''
         json_ = self.serialize('save')
-        out_dir = os.path.split(json_['images_dir'])[1]
-        # store images_dir relative to saveloc
-        json_['images_dir'] = os.path.join('./', out_dir)
+        out_dir = os.path.split(json_['output_dir'])[1]
+        # store output_dir relative to saveloc
+        json_['output_dir'] = os.path.join('./', out_dir)
 
         return self._json_to_saveloc(json_, saveloc, references, name)
 
@@ -443,13 +455,13 @@ class Renderer(Outputter, MapCanvas):
         '''
         loads object from json_data
 
-        prepend saveloc path to 'images_dir' and create images_dir in saveloc,
+        prepend saveloc path to 'output_dir' and create output_dir in saveloc,
         then call super to load object
         '''
         if zipfile.is_zipfile(saveloc):
             saveloc = os.path.split(saveloc)[0]
 
-        os.mkdir(os.path.join(saveloc, json_data['images_dir']))
-        json_data['images_dir'] = os.path.join(saveloc,
-                                               json_data['images_dir'])
+        os.mkdir(os.path.join(saveloc, json_data['output_dir']))
+        json_data['output_dir'] = os.path.join(saveloc,
+                                               json_data['output_dir'])
         return super(Renderer, cls).loads(json_data, saveloc, references)

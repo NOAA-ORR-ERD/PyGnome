@@ -17,6 +17,7 @@ from ..conftest import sample_model
 @pytest.fixture(scope='function')
 def model(sample_model, output_dir):
     model = sample_model['model']
+
     rel_start_pos = sample_model['release_start_pos']
     rel_end_pos = sample_model['release_end_pos']
 
@@ -39,11 +40,10 @@ def model(sample_model, output_dir):
                              release_time=model.start_time)
 
     model.spills += Spill(release)
+
     model.outputters += TrajectoryGeoJsonOutput(output_dir=output_dir)
     model.rewind()
-
     return model
-
 
 def test_init():
     'simple initialization passes'
@@ -53,16 +53,18 @@ def test_init():
     assert g.round_data
 
 
-def test_rewind(model, output_dir):
+def test_clean_output_files(model, output_dir):
     'test geojson outputter with a model since simplest to do that'
     model.rewind()
     model.full_run()
     files = glob(os.path.join(output_dir, '*.geojson'))
+    print files
     assert len(files) == model.num_time_steps
 
-    model.rewind()
+    model.outputters[-1].clean_output_files()
 
     files = glob(os.path.join(output_dir, '*.geojson'))
+    print files
     assert len(files) == 0
 
 
@@ -73,9 +75,15 @@ def test_write_output_post_run(model, output_ts_factor, output_dir):
     o_geojson = model.outputters[-1]
     o_geojson.output_timestep = timedelta(seconds=model.time_step *
                                           output_ts_factor)
+
     del model.outputters[-1]
 
     model.full_run()
+    # purge the output
+    # note: there are two outputter on the model -- not sure why
+    #       so still one after removing this one so need to clear output dir
+    o_geojson.clean_output_files()
+
     files = glob(os.path.join(output_dir, '*.geojson'))
     assert len(files) == 0
 
@@ -83,8 +91,11 @@ def test_write_output_post_run(model, output_ts_factor, output_dir):
                                     model.num_time_steps,
                                     cache=model._cache,
                                     spills=model.spills)
+
     files = glob(os.path.join(output_dir, '*.geojson'))
+
     assert len(files) == int((model.num_time_steps-2)/output_ts_factor) + 2
+
     o_geojson.output_timestep = None
     model.outputters += o_geojson
 
