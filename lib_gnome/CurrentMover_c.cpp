@@ -243,7 +243,9 @@ OSErr CurrentMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESet
 			//sprintf(errmsg,"Num LEs to Allocate = %ld, previous Size = %ld\n",numrec,uncertListSize);
 			//printNote(errmsg);
 			//for pyGNOME there should only be one uncertainty spill so fLESetSizes has only 1 value which is zero and doesn't need to be updated.
+#ifdef pyGNOME
 			if (numLESets != 1 || numLESetsStored != 1) {printError("num uncertainty spills not equal 1\n"); return -1;}
+#endif
 			if (needToReInit) printNote("Uncertainty arrays are being reset\n");	// this shouldn't happen
 			//if(elapsedTime >= fTimeUncertaintyWasSet + fDuration) // we exceeded the persistance, time to update - either update whole list or just add on
 			for(i=uncertListSize;i<numrec;i++)

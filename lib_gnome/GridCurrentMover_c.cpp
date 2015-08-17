@@ -63,6 +63,8 @@ GridCurrentMover_c::GridCurrentMover_c (TMap *owner, char *name) : CurrentMover_
 	
 	fAllowVerticalExtrapolationOfCurrents = false;
 	fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
+
+	num_method = 0;	// Euler
 }
 #endif
 
@@ -105,6 +107,7 @@ GridCurrentMover_c::GridCurrentMover_c () : CurrentMover_c()
 	
 	fAllowVerticalExtrapolationOfCurrents = false;
 	fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
+	
 	
 }
 
