@@ -282,7 +282,7 @@ WorldPoint3D GridCurrentMover_c::add_two_WP3D(const WorldPoint3D &a, const World
 
 WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
-	if (num_method == 0) { //EULER
+	if (num_method == EULER) { //EULER
 		WorldPoint3D	deltaPoint = {{0,0},0.};
 		WorldPoint3D refPoint;
 		double dLong, dLat;
