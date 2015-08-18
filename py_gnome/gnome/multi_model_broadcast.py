@@ -1,5 +1,3 @@
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2)
 
 import sys
 import os
@@ -11,8 +9,7 @@ import logging
 from cPickle import loads, dumps
 import uuid
 
-import multiprocessing
-mp = multiprocessing
+import multiprocessing as mp
 
 
 import zmq
@@ -98,12 +95,15 @@ class ModelConsumer(mp.Process):
             self.loop.stop()
         else:
             try:
-                res = getattr(self, '_' + cmd[0])(**cmd[1])
+                cmd, args = cmd[:2]
+                res = getattr(self, '_' + cmd)(**args)
+
                 self.stream.send_unicode(dumps(res))
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 fmt = traceback.format_exception(exc_type, exc_value,
                                                  exc_traceback)
+
                 self.stream.send_unicode(dumps(fmt))
 
     def _rewind(self):
@@ -174,7 +174,7 @@ class ModelConsumer(mp.Process):
         self.model._cache.enabled = enabled
 
     def _get_outputters(self):
-        return self.model.outputters
+        return [o for o in self.model.outputters]
 
     def _get_weatherer_attribute(self, idx, attr):
         return getattr(self.model.weatherers[idx], attr)
