@@ -95,6 +95,7 @@ class Renderer(Outputter, MapCanvas):
         output_zero_step=True,
         output_last_step=True,
         draw_ontop='forecast',
+        draw_back_to_fore=True,
         **kwargs
         ):
         """
@@ -122,6 +123,9 @@ class Renderer(Outputter, MapCanvas):
         :param draw_ontop: draw 'forecast' or 'uncertain' LEs on top. Default
             is to draw 'forecast' LEs, which are in black on top
         :type draw_ontop: str
+
+        :param draw_back_to_fore=True: draw the background (map) to the foregound image when drawing Elements.
+        :type draw_ontop: boolean
 
         Remaining kwargs are passed onto baseclass's __init__ with a direct
         call: MapCanvas.__init__(..)
@@ -151,7 +155,7 @@ class Renderer(Outputter, MapCanvas):
         self.images_dir = images_dir
         self.last_filename = ''
         self.draw_ontop = draw_ontop
-
+        self.draw_back_to_fore = draw_back_to_fore
         Outputter.__init__(self,
                            cache,
                            kwargs.pop('on', True),
@@ -159,7 +163,9 @@ class Renderer(Outputter, MapCanvas):
                            output_zero_step,
                            output_last_step,
                            kwargs.pop('name', None))
-        MapCanvas.__init__(self, image_size, land_polygons=polygons,
+        MapCanvas.__init__(self,
+                           image_size,
+                           land_polygons=polygons,
                            **kwargs)
 
     filename = property(lambda self: self._filename)
@@ -206,13 +212,13 @@ class Renderer(Outputter, MapCanvas):
         # clear out output dir:
         # don't need to do this -- it will get written over.
 
+        print "clear_output_dir called"
+
         try:
             os.remove(os.path.join(self.images_dir,
                       self.background_map_name))
         except OSError:
-
                         # it's not there to delete..
-
             pass
 
         foreground_filenames = glob.glob(os.path.join(self.images_dir,
@@ -220,11 +226,11 @@ class Renderer(Outputter, MapCanvas):
         for name in foreground_filenames:
             os.remove(name)
 
-    def rewind(self):
-        '''call parent class's rewind.
-        Call clear_output_dir to delete output files'''
-        super(Renderer, self).rewind()
-        self.clear_output_dir()
+    # def rewind(self):
+    #     '''call parent class's rewind.
+    #     Call clear_output_dir to delete output files'''
+    #     super(Renderer, self).rewind()
+    #     self.clear_output_dir()
 
     def write_output(self, step_num, islast_step=False):
         """
@@ -283,6 +289,9 @@ class Renderer(Outputter, MapCanvas):
 
         # draw data for self.draw_ontop second so it draws on top
         scp = self.cache.load_timestep(step_num).items()
+        if self.draw_back_to_fore:
+            self.add_back_to_fore()
+
         if len(scp) == 1:
             self.draw_elements(scp[0])
         else:
