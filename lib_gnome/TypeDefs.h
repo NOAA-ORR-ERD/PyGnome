@@ -59,7 +59,7 @@ typedef short LandType;
 #endif
 
 
-typedef unsigned long LETYPE ;
+typedef unsigned long LETYPE;
 
 ///// TYPES ///////////////////////////////////////////////////////////////////////
 
