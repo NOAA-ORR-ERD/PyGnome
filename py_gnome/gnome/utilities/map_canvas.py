@@ -307,22 +307,10 @@ class MapCanvas(object):
 
         :param sc: a SpillContainer object to draw
 
-<<<<<<< HEAD
-        :param draw_background: draw the background map first?
-
-=======
->>>>>>> f3c5ed112c0138a0551f462318b824befc982ce1
         """
         # TODO: add checks for the other status flags!
 
         if sc.num_released > 0:  # nothing to draw if no elements
-<<<<<<< HEAD
-            if self.draw_back_to_fore and self.back_image is not None:
-                # compose the foreground and background
-                self.fore_image_array[:] = np.asarray(self.back_image)
-
-=======
->>>>>>> f3c5ed112c0138a0551f462318b824befc982ce1
             arr = self.fore_image_array
             if sc.uncertain:
                 color = self.colors['uncert_LE']
