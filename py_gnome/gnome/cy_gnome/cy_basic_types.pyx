@@ -21,6 +21,7 @@ def enum(**enums):
       _attr - contains the list of keywords in the input
       _int - contains the list of int values for this enum
     These are in the same order, and can be helpful for error checking, etc
+    Make sure your enum name here is NOT THE SAME as in the C++ code or it will not build!
     """
     # append keys and int to dict
     enums.update({'_attr': enums.keys(), '_int': enums.values()})
@@ -36,6 +37,9 @@ oil_status = enum(not_released=OILSTAT_NOTRELEASED,
                   off_maps=OILSTAT_OFFMAPS,
                   evaporated=OILSTAT_EVAPORATED,
                   to_be_removed=OILSTAT_TO_BE_REMOVED)
+
+numerical_methods = enum(euler=EULER,
+                  rk4=RK4)
 
 """
 disperse status as an enum type

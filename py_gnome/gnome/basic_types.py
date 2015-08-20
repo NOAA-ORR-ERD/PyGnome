@@ -13,7 +13,6 @@ import sys
 
 import numpy
 np = numpy
-from enum import Enum
 
 from cy_gnome.cy_basic_types import *  # pull everything from the cython code
 
@@ -79,6 +78,8 @@ fate = enum(non_weather=1,
             disperse=32,        # marked for chemical_dispersion
             )
 
+numerical_methods= enum(euler=0,
+                        rk4=1)
 # ----------------------------------------------------------------
 # Mirror C++ structures, following are used by cython code to
 # access C++ methods/classes
@@ -139,9 +140,4 @@ date_rec = np.dtype([
         ('dayOfWeek', np.short),
         ], align=True)
 
-#------------------------------------------------
-# Enum to choose which numerical method for calculating the 
-# movement of a particle in a vector field
-class num_methods(Enum):
-    EULER = 0
-    RK4 = 1
+
