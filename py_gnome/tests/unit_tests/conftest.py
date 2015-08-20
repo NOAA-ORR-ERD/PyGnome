@@ -244,7 +244,7 @@ def get_testdata():
             get_datafile(os.path.join(curr_dir, 'BigCombinedwMap.cur')),
          }
 
-    # following are not on server, they are part of git repo so just set the 
+    # following are not on server, they are part of git repo so just set the
     # path correctly
     data['timeseries'] = \
         {'wind_ts': os.path.join(s_data, 'WindDataFromGnome.WND'),
@@ -706,3 +706,48 @@ def CyCurrentMover_props():
                     ('right_cur_uncertain', 0.1),
                     ('left_cur_uncertain', -0.1))
     return default_prop
+
+
+import cmath
+
+
+## for checking if floating point nuimberas are close
+## this is built in to py3.5!
+def isclose(a,
+            b,
+            rel_tol=1e-9,
+            abs_tol=0.0):
+    """
+    returns True if a is close in value to b. False otherwise
+    :param a: one of the values to be tested
+    :param b: the other value to be tested
+    :param rel_tol=1e-8: The relative tolerance -- the amount of error
+                         allowed, relative to the magnitude of the input
+                         values.
+    :param abs_tol=0.0: The minimum absolute tolerance level -- useful for
+                        comparisons to zero.
+    NOTES:
+    -inf, inf and NaN behave similar to the IEEE 754 standard. That
+    -is, NaN is not close to anything, even itself. inf and -inf are
+    -only close to themselves.
+    Complex values are compared based on their absolute value.
+    The function can be used with Decimal types, if the tolerance(s) are
+    specified as Decimals::
+      isclose(a, b, rel_tol=Decimal('1e-9'))
+    See PEP-0485 for a detailed description
+    """
+    if rel_tol < 0.0 or abs_tol < 0.0:
+        raise ValueError('error tolerances must be non-negative')
+
+    if a == b:  # short-circuit exact equality
+        return True
+    # use cmath so it will work with complex or float
+    if cmath.isinf(a) or cmath.isinf(b):
+        # This includes the case of two infinities of opposite sign, or
+        # one infinity and one finite number. Two infinities of opposite sign
+        # would otherwise have an infinite relative tolerance.
+        return False
+    diff = abs(b - a)
+    return (((diff <= abs(rel_tol * b)) or
+             (diff <= abs(rel_tol * a))) or
+            (diff <= abs_tol))

@@ -4,11 +4,14 @@ Tests of the gd map canvas code.
 
 import os
 
+
+from gnome.utilities import map_canvas_gd
 from gnome.utilities.map_canvas_gd import MapCanvas
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities.geometry.polygons import Polygon, PolygonSet
 
-from ..conftest import testdata
+import pytest
+from ..conftest import testdata, isclose
 
 
 input_file = testdata["Renderer"]["bna_sample"]
@@ -24,7 +27,7 @@ def test_set_colors():
     mc = MapCanvas( (400,300) )
 
     colors = [ ('blue', (  0,   0, 255)),
-                ('red', (255,   0,   0))]
+               ('red', (255,   0,   0))]
 
     mc.add_colors(colors)
 
@@ -170,6 +173,52 @@ def test_projection(output_dir):
                     )
 
     mc.save_foreground(os.path.join(output_dir, "image_projection_south.png"))
+
+def test_find_grat_locations():
+
+    image_size = (1000, 1000)
+    viewport =  ((0,0),(35,55))
+    locations = MapCanvas._find_graticule_locations(image_size, viewport)
+
+#    assert False
+
+
+## NOTE: needs more tests!!
+@pytest.mark.parametrize( ("ref", "expected"), [(  0.0021,      0.002),
+                                                (  0.02,       0.02),
+                                                (   0.2,     0.2),
+                                                (   2.0,     2.0),
+                                                (    20,     20.0),
+                                               ]
+                         )
+
+def test_DecimalDegreeGridLines(ref, expected):
+    gl = map_canvas_gd.DecimalDegreeGridLines()
+
+    result = gl.get_step_size(ref)
+
+    print ref, result
+
+
+
+
+@pytest.mark.parametrize( ("val","exp","num_digits"), [(    1.1,     1.0,      1 ),
+                                                       ( 0.0011,     0.001,    1 ),
+                                                       (  1100.,     1000.0,   1 ),
+                                                       (  1900 ,     2000.0,   1 ),
+                                                       (  0.0000154, 0.00002,  1 ),
+                                                       (  0.0000154, 0.000015, 2 ),
+                                                       (  1234.56,   1200.0,   2 ),
+                                                       (  1234567,   1230000,      3 ),
+                                                      ]
+                         )
+def test_round_to_digit(val, exp, num_digits):
+
+    rounded = MapCanvas._round_to_digit(val, num_digits)
+
+    assert isclose(rounded, exp, rel_tol=1e-14)
+
+
 
 
 # def test_render(dump):

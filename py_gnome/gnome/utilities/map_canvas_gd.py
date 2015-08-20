@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf8
 """
 Module to hold classes and suporting code for the map canvas for GNOME:
 
@@ -12,6 +13,8 @@ GNOME-specific.
 
 This version used libgd and py_gd instead of PIL for the rendering
 """
+
+from math import floor, log10
 
 import numpy as np
 
@@ -268,6 +271,65 @@ class MapCanvas(object):
                          line_width=line_width,
                          )
 
+    def draw_graticule(self, background=False):
+        """
+        draw a graticule (grid lines) on the map
+
+        only supports decimal degrees for now...
+        """
+        ( (min_lat, min_lon), (max_lat, max_lon) ) = self.viewport
+
+        d_lat = max_lat - min_lat
+        d_lon = max_lon - min_lon
+
+        # Want about one grid line per 100 pixels
+        ppg = 100.0 # a float!
+
+        delta_lon = d_lon / (self.image_size[0]/ppg)
+        delta_lat = d_lat / (self.image_size[1]/ppg)
+
+    @staticmethod
+    def _find_graticule_locations(image_size, viewport,  units="decimal_degrees"):
+        """
+        finds where we want the graticlue located.
+
+        intended to be used internally by the graticule printer
+
+        """
+        ( (min_lat, min_lon), (max_lat, max_lon) ) = viewport
+
+        d_lat = max_lat - min_lat
+        d_lon = max_lon - min_lon
+
+        # Want about one grid line per 100 pixels
+        ppg = 100.0 # a float!
+
+        delta_lon = d_lon / (image_size[0]/ppg)
+        delta_lat = d_lat / (image_size[1]/ppg)
+
+        # round to single digit
+
+        print delta_lon, delta_lat
+
+        delta_lon, delta_lat = MapCanvas._round_to_digit(delta_lon, 2), MapCanvas._round_to_digit(delta_lat, 2)
+
+
+
+    @staticmethod
+    def _round_to_digit(value, num_digits = 1):
+        """
+        rounds to teh number significatn figures requested
+        used by _find_graticule_locations
+
+        :param value: the value to round
+
+        :param num_digits: number of digits to preserve
+
+        """
+        mag = 10**floor( log10( value )-(num_digits-1))
+        return round(value / mag) * mag
+
+
     def save_background(self, filename, file_type='png'):
         self.back_image.save(filename, file_type)
 
@@ -287,6 +349,105 @@ class MapCanvas(object):
         """
 
         self.fore_image.save(filename, file_type = file_type)
+
+## GRidlines code borrowed from MapRoom
+import bisect
+class GridLines(object):
+    """
+    class to hold logic for determining where the gridlines should be
+    for the graticule
+    """
+    def get_step_size(self, reference_size):
+        """
+        get the steps required given a reference_size
+
+        :param reference_size: the approximate size you want
+        """
+        return self.STEPS[min( bisect.bisect(self.STEPS, abs(reference_size)),
+                               self.STEP_COUNT - 1,)
+                         ]
+
+class DegreeMinuteGridLines(GridLines):
+    DEGREE = np.float64(1.0)
+    MINUTE = DEGREE / 60.0
+    SECOND = MINUTE / 60.0
+
+    STEPS = (
+        MINUTE,
+        MINUTE * 2,
+        MINUTE * 3,
+        MINUTE * 4,
+        MINUTE * 5,
+        MINUTE * 10,
+        MINUTE * 15,
+        MINUTE * 20,
+        MINUTE * 30,
+        DEGREE,
+        DEGREE * 2,
+        DEGREE * 3,
+        DEGREE * 4,
+        DEGREE * 5,
+        DEGREE * 10,
+        DEGREE * 15,
+        DEGREE * 20,
+        DEGREE * 30,
+        DEGREE * 40,
+    )
+    STEP_COUNT = len(STEPS)
+
+    def format_lat_line_label(self, latitude):
+        return coordinates.format_lat_line_label(latitude)
+
+    def format_lon_line_label(self, longitude):
+        return coordinates.format_lon_line_label(longitude)
+
+class DecimalDegreeGridLines(GridLines):
+    ## could this be done with logic???
+    ##   a bit hard, cause wnat to do somethign different according to scale
+
+    ## any reason to make these np types?
+    DEGREE = np.float64(1.0)
+    TENTH = DEGREE / 10.0
+    HUNDREDTH = DEGREE / 100.0
+    THOUSANDTH = DEGREE / 1000.0
+
+
+    STEPS = (
+        THOUSANDTH,
+        THOUSANDTH * 2,
+        THOUSANDTH * 5,
+        HUNDREDTH,
+        HUNDREDTH * 2,
+        HUNDREDTH * 5,
+        TENTH,
+        TENTH * 2,
+        TENTH * 5,
+        DEGREE,
+        DEGREE * 2,
+        DEGREE * 3,
+        DEGREE * 4,
+        DEGREE * 5,
+        DEGREE * 10,
+        DEGREE * 15,
+        DEGREE * 20,
+        DEGREE * 30,
+        DEGREE * 40,
+    )
+    STEP_COUNT = len(STEPS)
+
+    def format_lat_line_label(self, latitude):
+        ( degrees, direction ) = \
+            coordinates.float_to_degrees(latitude, directions=("N", "S"))
+
+        return u" %.2f° %s " % (degrees, direction)
+
+    def format_lon_line_label(self, longitude):
+        ( degrees, direction ) = \
+            coordinates.float_to_degrees(longitude, directions=("E", "W"))
+
+        return u" %.2f° %s " % (degrees, direction)
+
+
 
 
 # if __name__ == "__main__":
