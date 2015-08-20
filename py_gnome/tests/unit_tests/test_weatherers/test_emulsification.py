@@ -20,11 +20,11 @@ from ..conftest import (sample_model_weathering,
 
 
 water = Water()
-wind = constant_wind(15., 0)	# also test with lower wind no emulsification
+wind = constant_wind(15., 0)  # also test with lower wind no emulsification
 waves = Waves(wind, water)
 
 # need an oil that emulsifies and one that does not
-#s_oils = [test_oil, 'FUEL OIL NO.6']
+# s_oils = [test_oil, 'FUEL OIL NO.6']
 s_oils = [test_oil, test_oil]
 
 
@@ -35,6 +35,8 @@ def test_emulsification(oil, temp, num_elems, on):
     '''
     Fuel Oil #6 does not emulsify
     '''
+    print oil, temp, num_elems, on
+
     emul = Emulsification(waves)
     emul.on = on
 
@@ -54,8 +56,10 @@ def test_emulsification(oil, temp, num_elems, on):
     # sc['frac_lost'][:] = .35
     print "sc['frac_lost'][:]"
     print sc['frac_lost'][:]
+
     emul.prepare_for_model_step(sc, time_step, model_time)
     emul.weather_elements(sc, time_step, model_time)
+
     print "sc['frac_water'][:]"
     print sc['frac_water'][:]
 
@@ -68,12 +72,18 @@ def test_emulsification(oil, temp, num_elems, on):
     sc['frac_lost'][:] = .2
     print "sc['frac_lost'][:]"
     print sc['frac_lost'][:]
+
     emul.prepare_for_model_step(sc, time_step, model_time)
     emul.weather_elements(sc, time_step, model_time)
+
     print "sc['frac_water'][:]"
     print sc['frac_water'][:]
 
-    assert np.all(sc['frac_water'] == 0)
+    if on:
+        assert np.all(sc['frac_lost'] > 0) and np.all(sc['frac_lost'] < 1.0)
+        assert np.all(sc['frac_water'] > 0) and np.all(sc['frac_water'] <= .9)
+    else:
+        assert np.all(sc['frac_water'] == 0)
 
 
 @pytest.mark.parametrize(('oil', 'temp'), [(s_oils[0], 333.0),
@@ -135,7 +145,8 @@ def test_bullwinkle():
     '''
 
     et = floating(substance=test_oil)
-    assert et.substance.bullwinkle == .303
+    assert np.isclose(et.substance.bullwinkle, 0.193724)
+
     et.substance.bullwinkle = .4
     assert et.substance.bullwinkle == .4
 

@@ -47,7 +47,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #
 
     print 'adding renderer'
-    model.outputters += Renderer(mapfile, images_dir, size=(800, 600))
+    model.outputters += Renderer(mapfile,
+                                 images_dir,
+                                 size=(800, 600),
+                                 )
+#                                 draw_back_to_fore=True)
 
     # print "adding netcdf output"
     # netcdf_output_file = os.path.join(base_dir,'mariana_output.nc')
@@ -99,6 +103,9 @@ if __name__ == '__main__':
     scripting.make_images_dir()
     model = make_model()
     for step in model:
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
-    # model.full_run(log=True)
+        #print "step: %.4i -- memuse: %fMB" % (step['step_num'],
+        #                                      utilities.get_mem_use())
+    	# model.full_run(log=True)
+        print step
+        print "memuse: %fMB" % (utilities.get_mem_use())
+    	#model.full_run(log=True)
