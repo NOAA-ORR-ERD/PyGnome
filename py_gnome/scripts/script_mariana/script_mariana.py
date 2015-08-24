@@ -72,7 +72,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # # this is HYCOM currents
     curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
-    model.movers += GridCurrentMover(curr_file, num_method = numerical_methods.euler);
+    model.movers += GridCurrentMover(curr_file,
+                                     num_method=numerical_methods.euler);
 
     # #
     # # Add some spills (sources of elements)
@@ -102,10 +103,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == '__main__':
     scripting.make_images_dir()
     model = make_model()
+
     for step in model:
-        #print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-        #                                      utilities.get_mem_use())
-    	# model.full_run(log=True)
-        print step
-        print "memuse: %fMB" % (utilities.get_mem_use())
-    	#model.full_run(log=True)
+        # print step
+        print "step: %.4i -- memuse: %fMB" % (step['Renderer']['step_num'],
+                                              utilities.get_mem_use())
