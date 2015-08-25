@@ -53,7 +53,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
                   duration=timedelta(days=1.75),
-                  time_step=15 * 60,
+                  time_step=60 * 60,
                   uncertain=True)
 
 #     mapfile = get_datafile(os.path.join(base_dir, './ak_arctic.bna'))
@@ -75,8 +75,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     netcdf_file = os.path.join(base_dir, 'script_weatherers.nc')
     scripting.remove_netcdf(netcdf_file)
-    #model.outputters += NetCDFOutput(netcdf_file, which_data='all',
-                                     #output_timestep=timedelta(hours=1))
+    model.outputters += NetCDFOutput(netcdf_file, which_data='all',
+                                     output_timestep=timedelta(hours=1))
 
     print 'adding a spill'
     # for now subsurface spill stays on initial layer
@@ -117,15 +117,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     skim1_start = start_time + timedelta(hours=15.58333)
     skim2_start = start_time + timedelta(hours=16)
     units = spill.units
-    skimmer1 = Skimmer(10, units=units, efficiency=0.36,
+    skimmer1 = Skimmer(80, units=units, efficiency=0.36,
                       active_start=skim1_start,
                       active_stop=skim1_start + timedelta(hours=8))
-    skimmer2 = Skimmer(10, units=units, efficiency=0.2,
+    skimmer2 = Skimmer(120, units=units, efficiency=0.2,
                       active_start=skim2_start,
                       active_stop=skim2_start + timedelta(hours=12))
 
     burn_start = start_time + timedelta(hours=36)
-    burn = Burn(1000., 10.0,
+    burn = Burn(1000., .1,
                 active_start=burn_start, efficiency=.2)
 
     chem_start = start_time + timedelta(hours=24)
@@ -148,4 +148,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
 if __name__ == "__main__":
+    scripting.make_images_dir()
     model = make_model()
+    model.full_run()

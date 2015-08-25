@@ -112,7 +112,8 @@ if __name__ == "__main__":
 
     model = make_model()
     model.duration = timedelta(hours=2)
-    model.full_run(log=True)
+    #model.full_run(log=True)
+    model.full_run()
 
     for sc in model.spills.items():
         print "sc:", sc

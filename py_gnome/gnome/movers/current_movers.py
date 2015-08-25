@@ -456,7 +456,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         self.mover.text_read(filename, topology_file)
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
-        self.mover.num_method=num_method
+        self.num_method=num_method
 
         super(GridCurrentMover, self).__init__(**kwargs)
 

@@ -72,7 +72,7 @@ cdef class CyCurrentCycleMover(cy_mover.CyMover):
 #             raise OSError("CurrentCycleMover_c.ExportTopology returned an error.")
 # 
     def __init__(self, current_scale=1, uncertain_duration=24*3600, uncertain_time_delay=0, 
-                 uncertain_along = .5, uncertain_cross = .25):
+                 uncertain_along = .5, uncertain_cross = .25, num_method = 0):
         """
         .. function:: __init__(self, current_scale=1, uncertain_duration=24*3600, uncertain_time_delay=0,
                  uncertain_along = .5, uncertain_cross = .25)
@@ -97,6 +97,7 @@ cdef class CyCurrentCycleMover(cy_mover.CyMover):
         self.current_cycle.fUpCurUncertainty = uncertain_along
         self.current_cycle.fLeftCurUncertainty = -1*uncertain_cross
         self.current_cycle.fRightCurUncertainty = uncertain_cross
+        self.current_cycle.num_method = num_method
         
         self.current_cycle.fIsOptimizedForStep = 0
 
@@ -166,6 +167,13 @@ cdef class CyCurrentCycleMover(cy_mover.CyMover):
         
         def __set__(self, value):
             self.current_cycle.SetTimeShift(value)
+
+    property num_method:
+        def __get__(self):
+            return self.current_cycle.num_method
+        
+        def __set__(self, value):
+            self.current_cycle.num_method = value
 
     def extrapolate_in_time(self, extrapolate):
         self.current_cycle.SetExtrapolationInTime(extrapolate)
