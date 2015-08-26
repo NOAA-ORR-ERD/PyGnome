@@ -27,16 +27,21 @@ to a larger region.
 
 ``script_boston``
 ------------------
-
+This script models the Boston & Vicinty location file which includes a component mover.
 
 ``script_long_island``
 -----------------------
-
+This script models the Long Island location file - a single cats pattern, wind, and diffusion.
 
 ``script_chesapeake_bay``
 --------------------------
-    
+This script uses a gridded time dependent current pattern for Chesapeake Bay.   
 
+``script_passamaquoddy``
+--------------------------
+This script uses the current cycle mover for Passamaquoddy Bay - a set of representative patterns
+driven by a tide.
+    
 ``script_mariana``
 -------------------           
 
@@ -46,8 +51,15 @@ to a larger region.
 ``script_mississippi_river``
 ----------------------------
 
+``script_sf_wind``
+----------------------------
+This script uses a gridded wind.
 
-
+``script_weatherers``
+----------------------------
+This script uses all weatherers and response options (as of 9/2015).
+Weatherers - evaporation, natural dispersion, sedimentation, and emulsification.
+Response options - skimmers, chemical dispersion, and burning.
 
 
 
