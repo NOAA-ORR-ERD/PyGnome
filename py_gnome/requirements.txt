@@ -1,6 +1,8 @@
 # Documents the packages required for PyGnome
 
 Cython
+numpy 
+
 pytest
 testfixtures
 psutil
@@ -21,7 +23,6 @@ gsw             # Thermodynamic Equations Of Seawater - density computation
 
 
 #setuptools>=2.1    # needed before pip can be installed anyway...
-numpy 
 netCDF4>=1.1.0            # requires netcdf-4 binaries 
 #matplotlib
 #
