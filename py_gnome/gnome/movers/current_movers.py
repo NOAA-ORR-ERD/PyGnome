@@ -353,7 +353,7 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
 
-        if json_ == 'webapi' and 'tide' in toserial:
+        if 'tide' in toserial:
             schema.add(environment.TideSchema(name='tide'))
 
         return schema.serialize(toserial)

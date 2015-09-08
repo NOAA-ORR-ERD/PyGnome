@@ -5,21 +5,13 @@ the Wind object defines the Wind conditions for the spill
 import string
 import os
 import copy
-import datetime
-
-import numpy
-np = numpy
 
 from colander import SchemaNode, String, Float, drop
 
 import gnome
-from gnome.basic_types import time_value_pair
 
 from .environment import Environment
-from gnome.persist import validators, base_schema
-from gnome.persist.extend_colander import (DefaultTupleSchema,
-                                           LocalDateTime,
-                                           DatetimeValue2dArraySchema)
+from gnome.persist import base_schema
 
 # TODO: The name 'convert' is doubly defined as
 #       unit_conversion.convert and...
@@ -27,46 +19,12 @@ from gnome.persist.extend_colander import (DefaultTupleSchema,
 #       This will inevitably cause namespace collisions.
 #       CHB-- I don't think that's a problem -- that's what namespaces are for!
 
-from gnome.utilities.time_utils import date_to_sec
-from gnome.utilities.convert import (to_time_value_pair,
-                                     to_datetime_value_2d,
-                                     tsformat)
+from gnome.utilities.convert import tsformat
 
 from gnome.utilities.serializable import Serializable, Field
 
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_shio_time import CyShioTime
-
-
-#==============================================================================
-# class UVTuple(DefaultTupleSchema):
-#     u = SchemaNode(Float())
-#     v = SchemaNode(Float())
-# 
-# 
-# class TimeSeriesTuple(DefaultTupleSchema):
-#     '''
-#     Schema for each tuple in WindTimeSeries list
-#     '''
-#     datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
-#                           default=base_schema.now,
-#                           validator=validators.convertible_to_seconds)
-#     uv = UVTuple()
-# 
-# 
-# class TimeSeriesSchema(DatetimeValue2dArraySchema):
-#     '''
-#     Schema for list of Wind tuples, to make the wind timeseries
-#     '''
-#     value = TimeSeriesTuple(default=(datetime.datetime.now(), 0, 0))
-# 
-#     def validator(self, node, cstruct):
-#         '''
-#         validate wind timeseries numpy array
-#         '''
-#         validators.no_duplicate_datetime(node, cstruct)
-#         validators.ascending_datetime(node, cstruct)
-#==============================================================================
 
 
 class TideSchema(base_schema.ObjType):
@@ -75,7 +33,6 @@ class TideSchema(base_schema.ObjType):
 
     scale_factor = SchemaNode(Float(), missing=drop)
 
-    #timeseries = TimeSeriesSchema(missing=drop)
     name = 'tide'
 
 

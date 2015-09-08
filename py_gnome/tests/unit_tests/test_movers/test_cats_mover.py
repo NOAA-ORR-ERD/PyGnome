@@ -181,15 +181,20 @@ def _uncertain_loop(pSpill, cats):
     return u_delta
 
 
-@pytest.mark.parametrize("tide", (None, td))
-def test_serialize_deserialize(tide):
+@pytest.mark.parametrize(('tide', 'json_'),
+                         [(None, 'save'),
+                          (td, 'save'),
+                          (None, 'webapi'),
+                          (td, 'webapi')])
+def test_serialize_deserialize(tide, json_):
     """
     test serialize/deserialize/update_from_dict doesn't raise errors
     """
-
     c_cats = CatsMover(curr_file, tide=tide)
-    toserial = c_cats.serialize('webapi')
+
+    toserial = c_cats.serialize(json_)
     dict_ = c_cats.deserialize(toserial)
+
     if tide:
         assert 'tide' in toserial
         dict_['tide'] = tide  # no longer updating properties of nested objects
