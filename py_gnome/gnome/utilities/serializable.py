@@ -57,6 +57,10 @@ class Field(object):  # ,serializable.Serializable):
             .. note:: save_reference currently is only used when the field is
                 stored with 'save' flag.
 
+        :param bool iscollection=True: bool with default value of True
+            If the property is a collection (list, tuple, ordered collection),
+            we will need to special-case treat it.
+
         :param bool test_for_eq=True: bool with default value of True
             when checking equality (__eq__()) of two gnome
             objects that are serializable, look for equality of attributes
@@ -114,6 +118,11 @@ class State(object):
         >>> s = State(update=['update_field'], field=[Field('field_name')]
 
         Args:
+        :param save: A list of strings which are properties that are
+                       required to create new object when JSON is read from
+                       save file.
+                       Only the create properties are saved to save file.
+        :type save:  A list of str
         :param update: A list of strings which are properties that can be
                        updated, so read/write capable
         :type update:  list containing str
@@ -121,11 +130,6 @@ class State(object):
                        info, so readonly. It is not required for creating
                        new object.
         :type read:    list containing str
-        :param save: A list of strings which are properties that are
-                       required to create new object when JSON is read from
-                       save file.
-                       Only the create properties are saved to save file.
-        :type save:  A list of str
         :param field:  A field object or a list of field objects that should
                        be added to the State for persistence.
         :type field:   Field object or list of Field objects.
@@ -236,6 +240,11 @@ class State(object):
         Also makes sure everything is a list.
 
         Arguments:
+        :param save: A tuple of strings which are properties that are required
+                     to create new object when JSON is read from save file.
+                     Only the save properties are saved to save file
+        :type save: A tuple of str
+
         :param update: A tuple of strings which are properties that can be
                        updated, so read/write capable
         :type update: Tuple containing str
@@ -243,15 +252,6 @@ class State(object):
         :param read: A tuple of strings which are properties that are for info,
                      so readonly. It is not required for creating new object.
         :type read: Tuple containing str
-
-        :param save: A tuple of strings which are properties that are required
-                     to create new object when JSON is read from save file.
-                     Only the save properties are saved to save file
-        :type save: A tuple of str
-
-        :param field: A field object or a tuple of field objects that should be
-                      added to the State for persistence
-        :type field: Field object or tuple of Field objects
 
         For 'update', 'read', 'save', a Field object is created for each
         property in the tuple
@@ -302,7 +302,6 @@ class State(object):
         l_names from the list.
         l_names is a list containing the names (string) of properties.
         """
-
         if isinstance(l_names, basestring):
             l_names = l_names,
 
@@ -477,49 +476,6 @@ class Serializable(GnomeId, Savable):
     _state = State(save=('obj_type', 'name'), read=('obj_type', 'id'),
                    update=('name',))
 
-    # =========================================================================
-    # @classmethod
-    # def add_state(cls, **kwargs):
-    #    """
-    #    Each class that mixes-in Serializable will contain a _state attribute
-    #    of type State.
-    #    The _state should be a static member for each subclass. It is static
-    #    because instances of the class will all have the same field names for
-    #    the _state.
-    #
-    #    In addition, the _state of the child class extends the _state of the
-    #    parent class.
-    #
-    #    As such, this classmethod is available and used by each subclass in
-    #    __init__ to extend the definition of the parent class _state attribute
-    #
-    #    It recursively looks for '_state' attribute in base classes
-    #    (cls.__bases__); gets the ('read','update','save') lists from each
-    #    base class and adds;
-    #    and creates a new State() object with its own lists and the lists of
-    #    the parents
-    #
-    #    NOTE: removes duplicates (repeated fields) from list. The lists in
-    #    State refer to attributes of the object. By default ['id'] in create
-    #    list will end up duplicated if one of the base classes of cls already
-    #    contained '_state' attribute
-    #    """
-    #    print "add_state"
-    #    update = kwargs.pop('update',[])
-    #    create = kwargs.pop('save',[])
-    #    read   = kwargs.pop('read',[])
-    #    for obj in cls.__bases__:
-    #        if '_state' in obj.__dict__:
-    #            update.extend( obj._state.get()['update'] )
-    #            create.extend( obj._state.get()['save'] )
-    #            read.extend( obj._state.get()['read'] )
-    #
-    #    update = list( set(update) )
-    #    create = list( set(create) )
-    #    read = list( set(read) )
-    #    cls._state = State(update=update, save=create, read=read)
-    # =========================================================================
-
     @classmethod
     def _restore_attr_from_save(cls, new_obj, dict_):
         '''
@@ -610,11 +566,6 @@ class Serializable(GnomeId, Savable):
 
         Note: any field in `list` that does not exist on the
         object and does not have a to_dict method will raise an AttributeError.
-
-        :param json_='webapi': return the attributes for json payload for
-                               webapi.
-                               The other option is 'save' corresponding with
-                               json for save files.
 
         NOTE: add the json_='webapi' key to be serialized so we know what the
         serialization is for
@@ -847,9 +798,10 @@ class Serializable(GnomeId, Savable):
 
     def to_serialize(self, json_='webapi'):
         '''
-        invoke to_dict() which converts all attributes defined in _state to
-        dict. If json_='save', it subselects the Fields with save=True. If
-        json_='webapi', it subselects Fields with (update=True, read=True)
+        Invoke to_dict() which converts all attributes defined in _state to
+        dict.
+        If json_='save', it subselects the Fields with save=True.
+        If json_='webapi', it subselects Fields with (update=True, read=True)
         '''
         dict_ = self.to_dict()
         if json_ == 'webapi':
@@ -884,18 +836,10 @@ class Serializable(GnomeId, Savable):
         It uses the modules_dict defined in gnome.persist to find the correct
         schema module.
 
-        1. adds 'obj_type' field to _state for 'save' attribute so it is
-                contained in serialized data. todo: check if this is needed
-        2. do serialization and return json
-
-        :param do: tells object where serialization is for update or for
-            creating a new object
+        :param json_: tells object whether serialization is for web content
+            or for generating a save file.
         :returns: json format of serialized data
 
-        Note: creating a new object versus 'update' or 'read' has a different
-            set of fields for serialization so 'do' is required.
-            todo: revisit this to see if it still makes sense to have different
-            attributes for different operations like 'update', 'save', 'read'
         """
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
