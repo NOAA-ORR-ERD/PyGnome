@@ -11,7 +11,7 @@ pip>=1.5.6
 
 #setuptools>=2.1    # needed before pip can be installed anyway...
 numpy>=1.9.0   
-#netCDF4            # requires netcdf-4 binaries 
+netCDF4>=1.1.0            # requires netcdf-4 binaries 
 #matplotlib
 #
 ## projections uses interpolate routine so most of py_gnome will work without this
@@ -26,7 +26,8 @@ pillow
 pyzmq
 
 ## Python only packages: can be pip installed ##
-Cython>=0.20.1
+# locked cython to 0.22.1 because 0.23.1 won't compile properly
+Cython==0.22.1
 pytest
 testfixtures
 psutil
