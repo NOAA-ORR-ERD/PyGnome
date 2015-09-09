@@ -818,8 +818,8 @@ class Serializable(GnomeId, Savable):
                 # if attribute is None, then dict_ does not contain it
                 if (hasattr(self, key) and
                         hasattr(getattr(self, key), 'to_serialize')):
-                    attr = getattr(self, key)
                     # recursively call for nested objects
+                    attr = getattr(self, key)
                     toserial[key] = attr.to_serialize(json_)
                 else:
                     # not a nested object

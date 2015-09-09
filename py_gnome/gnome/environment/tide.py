@@ -162,12 +162,10 @@ class Tide(Environment, Serializable):
                              'that can be read by OSSM or Shio to get '
                              'tide information')
 
-    def serialize(self, json_='webapi'):
-        '''
-        For the filename - need to make it the full path before saving
-        '''
-        serial = super(Tide, self).serialize(json_)
-        if json_ == 'save':
-            serial['filename'] = self.cy_obj.path_filename
+    def to_serialize(self, json_='webapi'):
+        toserial = super(Tide, self).to_serialize(json_)
 
-        return serial
+        if json_ == 'save':
+            toserial['filename'] = self.cy_obj.path_filename
+
+        return toserial
