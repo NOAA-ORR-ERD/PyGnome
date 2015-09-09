@@ -44,8 +44,6 @@ def test_dispersion(oil, temp, num_elems, on):
     disp.on = on
     disp.prepare_for_model_run(sc)
 
-    print "oil"
-    print oil
     disp.prepare_for_model_step(sc, time_step, model_time)
     disp.weather_elements(sc, time_step, model_time)
 
@@ -132,10 +130,9 @@ def test_full_run_disp_not_active(sample_model_fcn):
         '''
         assert 'natural_dispersion' not in step['WeatheringOutput']
         assert 'sedimentation' not in step['WeatheringOutput']
-        assert ('step_num' in step['WeatheringOutput'] and
-                'time_stamp' in step['WeatheringOutput'])
+        assert ('time_stamp' in step['WeatheringOutput'])
         print ("Completed step: {0}"
-               .format(step['WeatheringOutput']['step_num']))
+               .format(step['step_num']))
 
 
 def test_serialize_deseriailize():

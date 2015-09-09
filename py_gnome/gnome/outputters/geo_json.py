@@ -16,8 +16,7 @@ from colander import SchemaNode, String, drop, Int, Bool
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.serializable import Serializable, Field
 
-from gnome.persist import class_from_objtype, References
-from gnome.persist.base_schema import CollectionItemsList
+from gnome.persist import class_from_objtype
 
 from .outputter import Outputter, BaseSchema
 
@@ -121,8 +120,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         geojson = FeatureCollection(features)
         # default geojson should not output data to file
         # read data from file and send it to web client
-        output_info = {'step_num': step_num,
-                       'time_stamp': sc.current_time_stamp.isoformat(),
+        output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
                        'feature_collection': geojson
                        }
 
@@ -260,8 +258,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
 
         # default geojson should not output data to file
         # read data from file and send it to web client
-        output_info = {'step_num': step_num,
-                       'time_stamp': sc.current_time_stamp.isoformat(),
+        output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
                        'feature_collections': geojson
                        }
 
@@ -380,8 +377,7 @@ class IceGeoJsonOutput(Outputter, Serializable):
                                                            mover_triangles))
 
         # default geojson should not output data to file
-        output_info = {'step_num': step_num,
-                       'time_stamp': sc.current_time_stamp.isoformat(),
+        output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
                        'feature_collections': geojson
                        }
 

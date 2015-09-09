@@ -10,8 +10,7 @@ from math import ceil
 import pytest
 from pytest import raises
 
-import numpy
-np = numpy
+import numpy as np
 
 import netCDF4 as nc
 
@@ -91,7 +90,7 @@ def test_exceptions(output_filename):
 
     # begin tests
     netcdf = NetCDFOutput(output_filename, which_data='all')
-    netcdf.rewind() # delete temporary files
+    netcdf.rewind()  # delete temporary files
 
     with raises(TypeError):
         # need to pass in model start time
@@ -108,14 +107,17 @@ def test_exceptions(output_filename):
     with raises(ValueError):
         netcdf.which_data = 'some random string'
 
-    with raises(ValueError):
-        # raise error because file 'temp.nc' should exist after 1st call
-        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
-                                     spills=spill_pair,
-                                     num_time_steps=4)
-        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
-                                     spills=spill_pair,
-                                     num_time_steps=4)
+    # changed renderer and netcdf ouputter to delete old files in
+    # prepare_for_model_run() rather than rewind()
+    # -- rewind() was getting called a lot
+    # -- before there was time to change the ouput file names, etc.
+    # So for this unit test, there should be no exception if we do it twice.
+    netcdf.prepare_for_model_run(model_start_time=datetime.now(),
+                                 spills=spill_pair,
+                                 num_time_steps=4)
+    netcdf.prepare_for_model_run(model_start_time=datetime.now(),
+                                 spills=spill_pair,
+                                 num_time_steps=4)
 
     with raises(AttributeError):
         'cannot change after prepare_for_model_run has been called'
@@ -302,11 +304,11 @@ def test_write_output_all_data(model):
                         sc_arr = scp.LE(var_name, uncertain)
 
                     if len(sc_arr.shape) == 1:
-                        assert np.all(nc_var[idx[step]:idx[step + 1]]
-                                      == sc_arr)
+                        assert np.all(nc_var[idx[step]:idx[step + 1]] ==
+                                      sc_arr)
                     elif len(sc_arr.shape) == 2:
-                        assert np.all(nc_var[idx[step]:idx[step + 1], :]
-                                      == sc_arr)
+                        assert np.all(nc_var[idx[step]:idx[step + 1], :] ==
+                                      sc_arr)
                     else:
                         raise ValueError("haven't written a test "
                                          "for 3-d arrays")
@@ -395,20 +397,20 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
                 # check standard variables
                 assert np.allclose(scp.LE('positions', uncertain),
                                    nc_data['positions'], rtol, atol)
-                assert np.all(scp.LE('spill_num', uncertain)[:]
-                              == nc_data['spill_num'])
-                assert np.all(scp.LE('status_codes', uncertain)[:]
-                              == nc_data['status_codes'])
+                assert np.all(scp.LE('spill_num', uncertain)[:] ==
+                              nc_data['spill_num'])
+                assert np.all(scp.LE('status_codes', uncertain)[:] ==
+                              nc_data['status_codes'])
 
                 # flag variable is not currently set or checked
 
                 if 'mass' in scp.LE_data:
-                    assert np.all(scp.LE('mass', uncertain)[:]
-                                  == nc_data['mass'])
+                    assert np.all(scp.LE('mass', uncertain)[:] ==
+                                  nc_data['mass'])
 
                 if 'age' in scp.LE_data:
-                    assert np.all(scp.LE('age', uncertain)[:]
-                                  == nc_data['age'])
+                    assert np.all(scp.LE('age', uncertain)[:] ==
+                                  nc_data['age'])
 
                 if uncertain:
                     sc = scp.items()[1]
@@ -417,24 +419,26 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
 
                 assert sc.mass_balance == weathering_data
             else:
-                raise Exception("Assertions not tested since no data found in"
-                    " NetCDF file for timestamp: {0}".format(curr_time))
+                raise Exception('Assertions not tested since no data found '
+                                'in NetCDF file for timestamp: {0}'
+                                .format(curr_time))
 
         if _found_a_matching_time:
-            """ at least one matching time found """
-            print ('\ndata in model matches for output in \n{0} \nand'
-                   ' output_ts_factor: {1}'.format(file_, output_ts_factor))
+            print ('\n'
+                   'data in model matches for output in\n'
+                   '{0}\n'
+                   'and output_ts_factor: {1}'
+                   .format(file_, output_ts_factor))
 
         # 2nd time around, look at uncertain filename so toggle uncertain flag
-
         uncertain = True
 
 
 @pytest.mark.slow
 def test_read_all_arrays(model):
     """
-    tests the data returned by read_data is correct when `which_data` flag is
-    'all'.
+    tests the data returned by read_data is correct
+    when `which_data` flag is 'all'.
     """
     model.rewind()
 
@@ -471,8 +475,8 @@ def test_read_all_arrays(model):
                     elif key == 'mass_balance':
                         assert scp.LE(key, uncertain) == mb
                     else:
-                        #if key not in ['last_water_positions',
-                        #               'next_positions']:
+                        # if key not in ['last_water_positions',
+                        #                'next_positions']:
                         assert np.all(scp.LE(key, uncertain)[:] ==
                                       nc_data[key])
 
@@ -492,7 +496,7 @@ def test_write_output_post_run(model, output_ts_factor):
     test_write_output_standard already checks data is correctly written.
 
     Instead, make sure if output_timestep is not same as model.time_step,
-    then data is output at correct time stamps 
+    then data is output at correct time stamps
     """
     model.rewind()
 
@@ -524,10 +528,12 @@ def test_write_output_post_run(model, output_ts_factor):
     uncertain = False
     for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
         ix = 0  # index for grabbing record from NetCDF file
-        for step in range(0, model.num_time_steps, int(ceil(output_ts_factor))):
+        for step in range(0, model.num_time_steps,
+                          int(ceil(output_ts_factor))):
             print "step: {0}".format(step)
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
+
             (nc_data, mb) = NetCDFOutput.read_data(file_, curr_time)
             assert curr_time == nc_data['current_time_stamp'].item()
 
@@ -554,13 +560,14 @@ def test_write_output_post_run(model, output_ts_factor):
             (data_by_index, mb) = NetCDFOutput.read_data(file_, index=ix)
             assert curr_time == data_by_index['current_time_stamp'].item()
             assert scp.LE('mass_balance', uncertain) == mb
+
             with pytest.raises(IndexError):
                 # check that no more data exists in NetCDF
-                NetCDFOutput.read_data(file_, index=ix+1)
+                NetCDFOutput.read_data(file_, index=ix + 1)
 
         """ at least one matching time found """
-        print ('All expected timestamps in {0} for output_ts_factor: '
-               '{1}'.format(os.path.split(file_)[1], output_ts_factor))
+        print ('All expected timestamps in {0} for output_ts_factor: {1}'
+               .format(os.path.split(file_)[1], output_ts_factor))
 
         # 2nd time around, look at uncertain filename so toggle uncertain flag
         uncertain = True
@@ -586,11 +593,11 @@ def test_serialize_deserialize(json_, output_filename):
     model.outputters += o_put
     model.movers += RandomMover(diffusion_coef=100000)
 
-    #==========================================================================
+    # ==========================================================================
     # o_put = [model.outputters[outputter.id]
     #          for outputter in model.outputters
     #          if isinstance(outputter, NetCDFOutput)][0]
-    #==========================================================================
+    # ==========================================================================
 
     model.rewind()
     print "step: {0}, _start_idx: {1}".format(-1, o_put._start_idx)
@@ -598,7 +605,6 @@ def test_serialize_deserialize(json_, output_filename):
         model.step()
         print "step: {0}, _start_idx: {1}".format(ix, o_put._start_idx)
 
-    #for json_ in ('save', 'webapi'):
     dict_ = o_put.deserialize(o_put.serialize(json_))
     o_put2 = NetCDFOutput.new_from_dict(dict_)
     if json_ == 'save':
@@ -626,6 +632,7 @@ def test_var_attr_spill_num(output_filename):
         m = Model()
         m.outputters += NetCDFOutput(nc_name)
         m.spills += spill
+
         _run_model(m)
         return m
 
@@ -639,10 +646,12 @@ def test_var_attr_spill_num(output_filename):
     spills = []
     model = []
     nc_name = []
+
     for ix in (0, 1):
         spills.append(Spill(Release(datetime.now()),
                             name='m{0}_spill'.format(ix)))
         nc_name.append(os.path.join(here, 'temp_m{0}.nc'.format(ix)))
+
         _del_nc_file(nc_name[ix])
         _make_run_model(spills[ix], nc_name[ix])
 
@@ -650,9 +659,11 @@ def test_var_attr_spill_num(output_filename):
     for ix, f_ in enumerate(nc_name):
         with nc.Dataset(f_) as data:
             assert (spills[ix].name in data.variables['spill_num'].spills_map)
+
             if ix == 0:
                 assert (spills[1].name not in
                         data.variables['spill_num'].spills_map)
+
             if ix == 1:
                 assert (spills[0].name not in
                         data.variables['spill_num'].spills_map)

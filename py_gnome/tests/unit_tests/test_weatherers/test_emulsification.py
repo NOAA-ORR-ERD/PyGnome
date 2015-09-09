@@ -122,10 +122,9 @@ def test_full_run_emul_not_active(sample_model_fcn):
         switch to WeatheringOutput
         '''
         assert 'water_content' not in step['WeatheringOutput']
-        assert ('step_num' in step['WeatheringOutput'] and
-                'time_stamp' in step['WeatheringOutput'])
-        print ("Completed step: {0}"
-               .format(step['WeatheringOutput']['step_num']))
+        assert ('time_stamp' in step['WeatheringOutput'])
+
+        print ("Completed step: {0}".format(step['step_num']))
 
 
 def test_bulltime():

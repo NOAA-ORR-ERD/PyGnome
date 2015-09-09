@@ -6,19 +6,17 @@ NetCDF output writer
 import copy
 import os
 from datetime import datetime
-from collections import OrderedDict
 
 import netCDF4 as nc
 
-import numpy
-np = numpy
+import numpy as np
+
 from colander import SchemaNode, String, drop, Int, Bool
 
-from gnome import __version__, array_types
+from gnome import __version__
 from gnome.basic_types import oil_status, world_point_type
 
 from gnome.utilities.serializable import Serializable, Field
-from gnome.utilities.time_utils import round_time
 
 from . import Outputter, BaseSchema
 
@@ -32,7 +30,7 @@ var_attributes = {
              'calendar': 'gregorian',
              'standard_name': 'time',
              'comment': 'unspecified time zone',
-             #units will get set based on data
+             # units will get set based on data
              },
     'particle_count': {'units': '1',
                        'long_name': 'number of particles in a given timestep',
@@ -69,7 +67,7 @@ var_attributes = {
            },
     'droplet_diameter': {'long_name': 'diameter of oil droplet class',
                          'units': 'meters'
-                        },
+                         },
     'rise_vel': {'long_name': 'rise velocity of oil droplet class',
                               'units': 'm s-1'},
     'next_positions': {},
@@ -149,7 +147,7 @@ class NetCDFOutput(Outputter, Serializable):
                      'conventions': 'CF-1.6',
                      }
 
-    ## the set of arrays we usually output -- i.e. the default
+    # the set of arrays we usually output -- i.e. the default
     standard_arrays = ['latitude',
                        'longitude',  # pulled from the 'positions' array
                        'depth',
@@ -160,9 +158,9 @@ class NetCDFOutput(Outputter, Serializable):
                        'age',
                        ]
 
-    ## the list of arrays that we usually don't want -- i.e. for internal use
-    ## these will get skipped if "most" is asked for
-    ## "all" will output everything.
+    # the list of arrays that we usually don't want -- i.e. for internal use
+    # these will get skipped if "most" is asked for
+    # "all" will output everything.
     usually_skipped_arrays = ['next_positions',
                               'last_water_positions',
                               'windages',
@@ -178,12 +176,12 @@ class NetCDFOutput(Outputter, Serializable):
     # data file should not be moved to save file location!
     _state.add_field([Field('netcdf_filename', save=True, update=True,
                             test_for_eq=False),
-                     Field('which_data', save=True, update=True),
-                     #Field('netcdf_format', save=True, update=True),
-                     Field('compress', save=True, update=True),
-                     Field('_start_idx', save=True),
-                     Field('_middle_of_run', save=True),
-                     ])
+                      Field('which_data', save=True, update=True),
+                      # Field('netcdf_format', save=True, update=True),
+                      Field('compress', save=True, update=True),
+                      Field('_start_idx', save=True),
+                      Field('_middle_of_run', save=True),
+                      ])
     _schema = NetCDFOutputSchema
 
     def __init__(self, netcdf_filename, which_data='standard', compress=True,
@@ -246,14 +244,13 @@ class NetCDFOutput(Outputter, Serializable):
 
         # this is only updated in prepare_for_model_run if which_data is
         # 'all' or 'most'
-        #self.arr_types = None
+        # self.arr_types = None
         self._format = 'NETCDF4'
 
         if compress in self.compress_lu:
             self._compress = compress
         else:
             raise ValueError('compress must be one of: {True, False}')
-
 
         # 1k is about right for 1000LEs and one time step.
         # up to 0.5MB tested better for large datasets, but
@@ -388,7 +385,7 @@ class NetCDFOutput(Outputter, Serializable):
 
     def _initialize_rootgrp(self, rootgrp, sc):
         'create dimensions for root group and set cf_attributes'
-        ## fixme: why remove the "T" ??
+        # fixme: why remove the "T" ??
         rootgrp.setncatts(self.cf_attributes)   # class level attributes
         rootgrp.setncattr('creation_date',  # instance attribute
                           datetime.now().replace(microsecond=0).isoformat())
@@ -442,7 +439,8 @@ class NetCDFOutput(Outputter, Serializable):
                                             **kwargs)
 
         Write global attributes and define dimensions and variables for NetCDF
-        file. This must be done in prepare_for_model_run because if model _state
+        file.
+        This must be done in prepare_for_model_run because if model _state
         changes, it is rewound and re-run from the beginning.
 
         If there are existing output files, they are deleted here.
@@ -596,29 +594,31 @@ class NetCDFOutput(Outputter, Serializable):
             time_stamp = sc.current_time_stamp
 
             with nc.Dataset(file_, 'a') as rootgrp:
-                curr_idx = len(rootgrp.variables['time'])
-                rootgrp.variables['time'][curr_idx] = nc.date2num(time_stamp,
-                                                                  rootgrp.variables['time'].units,
-                                                                  rootgrp.variables['time'].calendar)
-                pc = rootgrp.variables['particle_count']
-                pc[curr_idx] = len(sc)
+                rg_vars = rootgrp.variables
+                idx = len(rg_vars['time'])
 
-                _end_idx = self._start_idx + pc[curr_idx]
+                rg_vars['time'][idx] = nc.date2num(time_stamp,
+                                                   rg_vars['time'].units,
+                                                   rg_vars['time'].calendar)
+                pc = rg_vars['particle_count']
+                pc[idx] = len(sc)
+
+                _end_idx = self._start_idx + pc[idx]
 
                 # add the data:
                 for var_name in self.arrays_to_output:
-                    ## special case positions:
+                    # special case positions:
                     if var_name == 'longitude':
-                        rootgrp.variables['longitude'][self._start_idx:_end_idx] = \
+                        rg_vars['longitude'][self._start_idx:_end_idx] = \
                                     sc['positions'][:, 0]
                     elif var_name == 'latitude':
-                        rootgrp.variables['latitude'][self._start_idx:_end_idx] = \
+                        rg_vars['latitude'][self._start_idx:_end_idx] = \
                                     sc['positions'][:, 1]
                     elif var_name == 'depth':
-                        rootgrp.variables['depth'][self._start_idx:_end_idx] = \
+                        rg_vars['depth'][self._start_idx:_end_idx] = \
                                     sc['positions'][:, 2]
                     else:
-                        rootgrp.variables[var_name][self._start_idx:_end_idx] = \
+                        rg_vars[var_name][self._start_idx:_end_idx] = \
                                     sc[var_name]
 
                 # write mass_balance data
@@ -629,12 +629,11 @@ class NetCDFOutput(Outputter, Serializable):
                             self._create_nc_var(grp,
                                                 key, 'float', ('time', ),
                                                 (self._chunksize,))
-                        grp.variables[key][curr_idx] = val
+                        grp.variables[key][idx] = val
 
         self._start_idx = _end_idx  # set _start_idx for the next timestep
 
-        return {'step_num': step_num,
-                'netcdf_filename': (self.netcdf_filename,
+        return {'netcdf_filename': (self.netcdf_filename,
                                     self._u_netcdf_filename),
                 'time_stamp': time_stamp}
 
@@ -642,7 +641,7 @@ class NetCDFOutput(Outputter, Serializable):
         '''
         deletes ouput files that may be around
 
-        called by prepare_for_model_run  
+        called by prepare_for_model_run
 
         here in case it needs to be called from elsewhere
         '''
@@ -653,10 +652,10 @@ class NetCDFOutput(Outputter, Serializable):
 
     def rewind(self):
         '''
-        reset a few parameter and call base class rewind to reset internal variables.
+        reset a few parameter and call base class rewind to reset
+        internal variables.
         '''
         super(NetCDFOutput, self).rewind()
-
 
         self._middle_of_run = False
         self._start_idx = 0
@@ -751,7 +750,7 @@ class NetCDFOutput(Outputter, Serializable):
 
             arrays_dict['current_time_stamp'] = np.array(c_time)
 
-            ## figure out what arrays to read in:
+            # figure out what arrays to read in:
             if which_data == 'standard':
                 data_arrays = set(klass.standard_arrays)
                 # swap out positions:
@@ -761,7 +760,7 @@ class NetCDFOutput(Outputter, Serializable):
             elif which_data == 'all':
                 # pull them from the nc file
                 data_arrays = set(data.variables.keys())
-                ## remove the irrelevant ones:
+                # remove the irrelevant ones:
                 [data_arrays.discard(x) for x in ('time',
                                                   'particle_count',
                                                   'latitude',

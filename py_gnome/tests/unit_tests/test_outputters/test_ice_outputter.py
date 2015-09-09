@@ -1,9 +1,6 @@
 '''
 tests for geojson outputter
 '''
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2, width=120)
-
 import time
 from datetime import datetime
 
@@ -77,8 +74,8 @@ def test_ice_geojson_output(model):
     for step in model:
         print '\n\ngot step at: ', time.time() - begin
 
+        assert 'step_num' in step
         assert 'IceGeoJsonOutput' in step
-        assert 'step_num' in step['IceGeoJsonOutput']
         assert 'time_stamp' in step['IceGeoJsonOutput']
         assert 'feature_collections' in step['IceGeoJsonOutput']
 
@@ -140,24 +137,3 @@ def test_ice_geojson_output(model):
                 assert len(geometry['coordinates']) > 0
 
         print 'checked step at: ', time.time() - begin
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
