@@ -14,35 +14,30 @@ import sys
 import numpy
 np = numpy
 
-from cy_gnome.cy_basic_types import *  # pull everything from the cython code
+# pull everything from the cython code
+from cy_gnome.cy_basic_types import *
 
 # Here we customize what a numpy 'long' type is....
 # We do this because numpy does different things with a long
 # that can mismatch what Cython does with the numpy ctypes.
 # on OSX 64:
 # - numpy identifies np.long as int64, which is a Cython ctype 'long'
-# - this is fine
 # on OSX 32:
 # - numpy identifies np.long as int64, which is a Cython ctype 'long long'
-# - this is a problem
 # on Win32:
 # - numpy identifies np.long as int64, which is a Cython ctype 'long long',
-# - ***this mismatches the ctype 'long'
 # on Win64:
 # - unknown what numpy does
 # - Presumably an int64 would be a ctype 'long' ???
-
 if sys.platform == 'win32':
     np_long = np.int
-elif sys.platform == 'darwin':
+elif sys.platform in ('darwin', 'linux2', 'linux'):
     if sys.maxint > 2147483647:
         np_long = np.long
     else:
         np_long = np.int
 else:
-
-    # untested platforms will just default
-
+    # untested platforms will just default to 64 bit
     np_long = np.long
 
 mover_type = np.float64
@@ -66,7 +61,6 @@ datetime_value_1d = np.dtype([('time', 'datetime64[s]'),
 
 wind_datasource = enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
 
-### WEATHERING STATUS ###
 # Define an enum for weathering status. The numpy array will contain np.uint8
 # datatype. Can still define 2 more flags as 2**6, 2**7
 # These are bit flags
@@ -75,43 +69,51 @@ fate = enum(non_weather=1,
             subsurf_weather=4,
             skim=8,
             burn=16,
-            disperse=32,        # marked for chemical_dispersion
+            disperse=32,  # marked for chemical_dispersion
             )
 
-numerical_methods= enum(euler=0,
-                        rk4=1)
-# ----------------------------------------------------------------
-# Mirror C++ structures, following are used by cython code to
-# access C++ methods/classes
+numerical_methods = enum(euler=0,
+                         rk4=1)
 
-world_point = np.dtype([('long', world_point_type), ('lat',
-                       world_point_type), ('z', world_point_type)],
+# ----------------------------------------------------------------
+# Mirror C++ structures, following are used by cython code
+# to access C++ methods/classes
+
+world_point = np.dtype([('long', world_point_type),
+                        ('lat', world_point_type),
+                        ('z', world_point_type)],
                        align=True)
-velocity_rec = np.dtype([('u', np.double), ('v', np.double)],
+velocity_rec = np.dtype([('u', np.double),
+                         ('v', np.double)],
                         align=True)
-time_value_pair = np.dtype([('time', seconds), ('value',
-                           velocity_rec)], align=True)
-ebb_flood_data = np.dtype([('time', seconds), ('speedInKnots',
-                          np.double), ('type', np.short)], align=True)
-tide_height_data = np.dtype([('time', seconds), ('height', np.double),
-                            ('type', np.int16)], align=True)
+time_value_pair = np.dtype([('time', seconds),
+                            ('value', velocity_rec)],
+                           align=True)
+ebb_flood_data = np.dtype([('time', seconds),
+                           ('speedInKnots', np.double),
+                           ('type', np.short)],
+                          align=True)
+tide_height_data = np.dtype([('time', seconds),
+                             ('height', np.double),
+                             ('type', np.int16)],
+                            align=True)
 
 # This 2D world point is just used by shio and Cats at present
+w_point_2d = np.dtype([('long', world_point_type),
+                       ('lat', world_point_type)])
 
-w_point_2d = np.dtype([('long', world_point_type), ('lat',
-                      world_point_type)])
+long_point = np.dtype([('long', np_long),
+                       ('lat', np_long)],
+                      align=True)
 
-long_point = np.dtype([('long', np_long), ('lat',
-                      np_long)], align=True)
+triangle_data = np.dtype([('v1', np_long), ('v2', np_long), ('v3', np_long),
+                          ('n1', np_long), ('n2', np_long), ('n3', np_long)],
+                         align=True)
 
-triangle_data = np.dtype([('v1', np_long), ('v2', np_long), 
-                       ('v3', np_long), ('n1', np_long),
-                       ('n2', np_long), ('n3', np_long)],
-                       align=True)
-
-cell_data = np.dtype([('cell_num', np_long), ('top_left', np_long), 
-                       ('top_right', np_long), ('bottom_left', np_long),
-                       ('bottom_right', np_long)], align=True)
+cell_data = np.dtype([('cell_num', np_long),
+                      ('top_left', np_long), ('top_right', np_long),
+                      ('bottom_left', np_long), ('bottom_right', np_long)],
+                     align=True)
 
 # In the C++ TypeDefs.h, the enum type for LEStatus is defined as a short
 # this is also consistent with the definition in type_defs.pxd ..
@@ -119,12 +121,11 @@ cell_data = np.dtype([('cell_num', np_long), ('top_left', np_long),
 
 status_code_type = np.int16
 
-# id_type is dtype for numpy array for 'spill_num'. This is NOT currently passed to C++
-
+# id_type is dtype for numpy array for 'spill_num'.
+# This is NOT currently passed to C++
 id_type = np.uint16
 
-
-#------------------------------------------------
+# ------------------------------------------------
 # NOTE: This is only used to test that the python time_utils
 # converts from date to sec and sec to date in the same way
 # as the C++ code. Currently, cy_helpers defines the CyDateTime
@@ -139,5 +140,3 @@ date_rec = np.dtype([
         ('second', np.short),
         ('dayOfWeek', np.short),
         ], align=True)
-
-

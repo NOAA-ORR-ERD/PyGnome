@@ -4,7 +4,7 @@ cython file used to store all the type info for GNOME.
 Pulled from type_defs.pxi -- i.e pulled from C++ headers, etc.
 
 """
-## pull stuff in from the C++ headers
+# pull stuff in from the C++ headers
 from type_defs cimport *
 
 
@@ -21,7 +21,8 @@ def enum(**enums):
       _attr - contains the list of keywords in the input
       _int - contains the list of int values for this enum
     These are in the same order, and can be helpful for error checking, etc
-    Make sure your enum name here is NOT THE SAME as in the C++ code or it will not build!
+    Make sure your enum name here is NOT THE SAME as in the C++ code or it
+    will not build!
     """
     # append keys and int to dict
     enums.update({'_attr': enums.keys(), '_int': enums.values()})
@@ -39,7 +40,7 @@ oil_status = enum(not_released=OILSTAT_NOTRELEASED,
                   to_be_removed=OILSTAT_TO_BE_REMOVED)
 
 numerical_methods = enum(euler=EULER,
-                  rk4=RK4)
+                         rk4=RK4)
 
 """
 disperse status as an enum type
@@ -67,7 +68,7 @@ read from datafile, by OSSMTimeValue.
 For instance, a standard wind file would contain magnitude and direction info
   ts_format.magnitude_direction = 5,
 
-'r-theta' is another alias for this so, 
+'r-theta' is another alias for this so,
   ts_format.r_theta = 5
 
 It could also contain uv info. Tides would contain uv with v == 0
