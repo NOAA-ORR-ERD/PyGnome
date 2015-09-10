@@ -7,12 +7,12 @@
 #  https://caremad.io/2013/07/setup-vs-requirement/
 #  but I'm not sure how this plays with conda...
 
-SQLAlchemy >= 0.9.1
-transaction
+SQLAlchemy
 zope.sqlalchemy
 awesome-slugify
 pytest
-numpy>=1.9.0
+repoze.lru
+numpy
 git+https://github.com/NOAA-ORR-ERD/PyNUCOS.git#egg=unit_conversion
 
 

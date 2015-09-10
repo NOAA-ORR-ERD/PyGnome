@@ -1,19 +1,25 @@
 # Documents the packages required for PyGnome
-#
-## BINARY dependencies: cannot be pip installed
+
+pytest
+testfixtures
+psutil
+sphinx
+progressbar
+six
+geojson
+repoze.lru 
+colander
+gsw             # Thermodynamic Equations Of Seawater - density computation
+OilLibrary
+
+##    BINARY dependencies: cannot be pip installed
 ##    Following packages requires something more than pip install
 ##    since they have binary dependencies. Following packages are commented
 ##    so pip does not try to install them. Please look at install directions
 ##    in README.md for instructions on installing for your OS.
 
-## making sure pip is up to date first
-pip>=1.5.6
+netCDF4>=1.1.0            # requires netcdf-4 binaries and hdf5
 
-#setuptools>=2.1    # needed before pip can be installed anyway...
-numpy>=1.9.0   
-netCDF4>=1.1.0            # requires netcdf-4 binaries 
-#matplotlib
-#
 ## projections uses interpolate routine so most of py_gnome will work without this
 #  gsw also uses scipy. Expect py_gnome users with a local install to have scipy
 scipy      
@@ -24,28 +30,8 @@ scipy
 # these have binary wheels for Windows and Mac at least...
 pillow
 pyzmq
+Cython
+numpy
 
 ## Python only packages: can be pip installed ##
-# locked cython to 0.22.1 because 0.23.1 won't compile properly
-Cython==0.22.1
-pytest
-testfixtures
-psutil
-sphinx
-progressbar
-six
-geojson
-repoze.lru 
-gsw             # Thermodynamic Equations Of Seawater - density computation
-
 git+https://github.com/NOAA-ORR-ERD/PyNUCOS.git#egg=unit_conversion
-
-# Use specified commit 
-# git+https://github.com/Pylons/colander.git@5816554a6f0c0f025922dd03d1518de361a9f0ed#egg=colander-dev
-# Latest colander is working with py_gnome
-git+https://github.com/Pylons/colander.git#egg=colander
-
-## Python package but included with PyGnome repo at present so run setup.py to install ##
-# Currently required to run setup.py from oil_library directory
-# for some reason I need to install in editable mode (-e) if pip installing from requirements file
--e ../oil_library

@@ -79,17 +79,6 @@ class remake_oil_db(Command):
         call("initialize_OilLibrary_db")
         print 'OilLibrary database successfully generated from file!'
 
-
-requires = [
-    'SQLAlchemy >= 0.9.1',
-    'transaction',
-    'zope.sqlalchemy',
-    'awesome-slugify',
-    'unit_conversion',
-    'pytest',
-    'numpy'
-    ]
-
 s = setup(name=pkg_name,
           version='0.1',
           description='OilLibrary',
@@ -100,8 +89,6 @@ s = setup(name=pkg_name,
           keywords='adios weathering oilspill modeling',
           packages=find_packages(),
           include_package_data=True,
-          install_requires=requires,
-          tests_require=requires,
           package_data={'oil_library': ['OilLib',
                                         'tests/*.py',
                                         'tests/sample_data/*']},
