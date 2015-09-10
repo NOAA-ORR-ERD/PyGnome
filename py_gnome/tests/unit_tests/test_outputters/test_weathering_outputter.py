@@ -93,6 +93,7 @@ def test_model_webapi_output(model, output_dir):
     # floating mass at beginning of step - though tests will only pass for
     # nominal values
     for step in model:
+        assert 'step_num' in step
         assert 'WeatheringOutput' in step
         sum_mass = 0.0
         for key in step['WeatheringOutput']:
@@ -111,7 +112,7 @@ def test_model_webapi_output(model, output_dir):
             np.isclose(sum_mass,
                        step['WeatheringOutput'][key]['amount_released'])
 
-        print 'Completed step: ', step['WeatheringOutput']['step_num']
+        print 'Completed step: ', step['step_num']
 
     # removed last test and do the assertion here itself instead of writing to
     # file again which takes awhile!

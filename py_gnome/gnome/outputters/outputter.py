@@ -172,7 +172,7 @@ class Outputter(Serializable):
         '''
         This method gets called by the model when after everything else is done
         in a time step. Put any code need for clean-up, etc.
-        The write_output method is called by Model after all processing. 
+        The write_output method is called by Model after all processing.
         '''
         pass
 

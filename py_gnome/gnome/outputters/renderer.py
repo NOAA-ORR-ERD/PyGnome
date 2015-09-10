@@ -5,7 +5,6 @@ renderer.py
 module to hold all the map rendering code.
 
 """
-
 import os
 import glob
 import copy
@@ -57,7 +56,7 @@ class Renderer(Outputter, MapCanvas):
     _state = copy.deepcopy(Outputter._state)
     _state.add(save=_create, update=_update)
     _state.add_field(Field('filename', isdatafile=True,
-                    save=True, read=True, test_for_eq=False))
+                           save=True, read=True, test_for_eq=False))
     _state += Field('images_dir', save=True, update=True, test_for_eq=False)
     _schema = RendererSchema
 
@@ -85,23 +84,27 @@ class Renderer(Outputter, MapCanvas):
         obj = super(Renderer, cls).new_from_dict(dict_)
         return obj
 
-    def __init__(
-        self,
-        filename=None,
-        images_dir='./',
-        image_size=(800, 600),
-        cache=None,
-        output_timestep=None,
-        output_zero_step=True,
-        output_last_step=True,
-        draw_ontop='forecast',
-        draw_back_to_fore=True,
-        **kwargs
-        ):
+    def __init__(self,
+                 filename=None,
+                 images_dir='./',
+                 image_size=(800, 600),
+                 cache=None,
+                 output_timestep=None,
+                 output_zero_step=True,
+                 output_last_step=True,
+                 draw_ontop='forecast',
+                 draw_back_to_fore=True,
+                 **kwargs):
         """
         Init the image renderer.
 
         Following args are passed to base class Outputter's init:
+
+        :param filename: the name of the image file
+
+        :param images_dir: the folder in which to write the image
+
+        :param image_size: the width and height of the image
 
         :param cache: sets the cache object from which to read data. The model
             will automatically set this param
@@ -124,7 +127,8 @@ class Renderer(Outputter, MapCanvas):
             is to draw 'forecast' LEs, which are in black on top
         :type draw_ontop: str
 
-        :param draw_back_to_fore=True: draw the background (map) to the foregound image when drawing Elements.
+        :param draw_back_to_fore=True: draw the background (map) to the
+            foregound image when drawing Elements.
         :type draw_ontop: boolean
 
         Remaining kwargs are passed onto baseclass's __init__ with a direct
@@ -147,6 +151,7 @@ class Renderer(Outputter, MapCanvas):
         # set up the canvas
 
         self._filename = filename
+
         if filename is not None:
             polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         else:
@@ -156,6 +161,7 @@ class Renderer(Outputter, MapCanvas):
         self.last_filename = ''
         self.draw_ontop = draw_ontop
         self.draw_back_to_fore = draw_back_to_fore
+
         Outputter.__init__(self,
                            cache,
                            kwargs.pop('on', True),
@@ -163,6 +169,7 @@ class Renderer(Outputter, MapCanvas):
                            output_zero_step,
                            output_last_step,
                            kwargs.pop('name', None))
+
         MapCanvas.__init__(self,
                            image_size,
                            land_polygons=polygons,
@@ -178,7 +185,7 @@ class Renderer(Outputter, MapCanvas):
     def draw_ontop(self, val):
         if val not in ['forecast', 'uncertain']:
             raise ValueError("'draw_ontop' must be either 'forecast' or"
-                            "'uncertain'. {0} is invalid.".format(val))
+                             "'uncertain'. {0} is invalid.".format(val))
         self._draw_ontop = val
 
     def images_dir_to_dict(self):
@@ -198,7 +205,6 @@ class Renderer(Outputter, MapCanvas):
         should be set.
 
         """
-
         super(Renderer, self).prepare_for_model_run(*args, **kwargs)
 
         self.clear_output_dir()
@@ -212,25 +218,17 @@ class Renderer(Outputter, MapCanvas):
         # clear out output dir:
         # don't need to do this -- it will get written over.
 
-        print "clear_output_dir called"
-
         try:
             os.remove(os.path.join(self.images_dir,
-                      self.background_map_name))
+                                   self.background_map_name))
         except OSError:
-                        # it's not there to delete..
+            # it's not there to delete..
             pass
 
         foreground_filenames = glob.glob(os.path.join(self.images_dir,
-                self.foreground_filename_glob))
+                                                      self.foreground_filename_glob))
         for name in foreground_filenames:
             os.remove(name)
-
-    # def rewind(self):
-    #     '''call parent class's rewind.
-    #     Call clear_output_dir to delete output files'''
-    #     super(Renderer, self).rewind()
-    #     self.clear_output_dir()
 
     def write_output(self, step_num, islast_step=False):
         """
@@ -278,7 +276,7 @@ class Renderer(Outputter, MapCanvas):
 
         self.last_filename = image_filename
 
-        return {'step_num': step_num, 'image_filename': image_filename,
+        return {'image_filename': image_filename,
                 'time_stamp': time_stamp}
 
     def _draw(self, step_num):
@@ -343,4 +341,5 @@ class Renderer(Outputter, MapCanvas):
         os.mkdir(os.path.join(saveloc, json_data['images_dir']))
         json_data['images_dir'] = os.path.join(saveloc,
                                                json_data['images_dir'])
+
         return super(Renderer, cls).loads(json_data, saveloc, references)

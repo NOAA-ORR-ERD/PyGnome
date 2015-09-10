@@ -1,15 +1,10 @@
 import os
 
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2)
-
 from datetime import datetime, timedelta
 
 from pytest import raises, mark
-import sys
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
@@ -28,6 +23,9 @@ from gnome.outputters import WeatheringOutput, TrajectoryGeoJsonOutput
 
 from gnome.multi_model_broadcast import ModelBroadcaster
 from conftest import testdata, test_oil
+
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2, width=120)
 
 pytestmark = mark.skipif("sys.platform=='win32'", reason="skip on windows")
 
@@ -173,7 +171,6 @@ def test_uncertainty_array_indexing():
     print '\nGetting time & spill values for just the (up, up) model:'
     res = model_broadcaster.cmd('get_wind_timeseries', {}, ('up', 'up'))
     print 'get_wind_timeseries:'
-    pp.pprint(res)
     assert np.allclose([r[0] for r in res], 20.166224)
 
     res = model_broadcaster.cmd('get_spill_amounts', {}, ('up', 'up'))
@@ -278,10 +275,10 @@ def test_weathering_output_only():
 
     assert len(res) == 9
 
-    # added a 'valid' flag to output
     assert [r.keys() for r in res
-            if len(r.keys()) == 2
-            and 'WeatheringOutput' in r]
+            if ('step_num' in r and
+                'valid' in r and
+                'WeatheringOutput' in r)]
 
     model_broadcaster.stop()
 
@@ -326,6 +323,3 @@ if __name__ == '__main__':
                ))
 
     model_broadcaster.stop()
-
-    # model.full_run(logger=True)
-    # post_run(model)

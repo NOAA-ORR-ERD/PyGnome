@@ -7,13 +7,12 @@ import os
 import shutil
 from datetime import datetime, timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 import pytest
 from pytest import raises
 
-from gnome.basic_types import datetime_value_2d, oil_status, fate as bt_fate
+from gnome.basic_types import datetime_value_2d
 from gnome.utilities import inf_datetime
 from gnome.persist import load
 
@@ -74,7 +73,7 @@ def model(sample_model_fcn, tmpdir):
     model.spills += Spill(release, substance=test_oil)
 
     # for weatherers and environment objects, make referenced to default
-    # wind/water/waves 
+    # wind/water/waves
     model.set_make_default_refs(True)
 
     return model
@@ -112,8 +111,8 @@ def test_model_time_and_current_time_in_sc():
         model.step()
 
         assert model.current_time_step == step
-        assert model.model_time == model.start_time + timedelta(seconds=step
-                                                            * model.time_step)
+        assert (model.model_time ==
+                model.start_time + timedelta(seconds=step * model.time_step))
 
         for sc in model.spills.items():
             assert model.model_time == sc.current_time_stamp
@@ -147,7 +146,7 @@ def test_release_end_of_step(duration):
             assert np.all(model.spills.LE('positions')[-new_particles:, :] ==
                           0)
             assert np.all(model.spills.LE('age')[-new_particles:] == 0)
-            #assert np.all(model.spills.LE('age')[-new_particles:] ==
+            # assert np.all(model.spills.LE('age')[-new_particles:] ==
             #            (model.model_time + timedelta(seconds=model.time_step)
             #             - model.start_time).seconds)
 
@@ -157,8 +156,8 @@ def test_release_end_of_step(duration):
 
         prev_rel = len(model.spills.LE('positions'))
 
-        print 'current_time_stamp: {0}'.format(
-                                        model.spills.LE('current_time_stamp'))
+        print ('current_time_stamp: {0}'
+               .format(model.spills.LE('current_time_stamp')))
         print 'particle ID: {0}'.format(model.spills.LE('id'))
         print 'positions: \n{0}'.format(model.spills.LE('positions'))
         print 'age: \n{0}'.format(model.spills.LE('age'))
@@ -199,7 +198,8 @@ def test_simple_run_rewind():
     assert len(model.movers) == 1
 
     spill = point_line_release_spill(num_elements=10,
-            start_position=(0., 0., 0.), release_time=start_time)
+                                     start_position=(0., 0., 0.),
+                                     release_time=start_time)
 
     model.spills += spill
     assert len(model.spills) == 1
@@ -287,8 +287,7 @@ def test_simple_run_with_image_output(tmpdir):
     model = Model(time_step=timedelta(minutes=15),
                   start_time=start_time, duration=timedelta(hours=1),
                   map=gnome_map,
-                  uncertain=False, cache_enabled=False,
-                  )
+                  uncertain=False, cache_enabled=False)
 
     model.outputters += renderer
     model.outputters += geo_json
@@ -361,7 +360,7 @@ def test_simple_run_with_image_output_uncertainty(tmpdir):
     # print start_points
 
     release = SpatialRelease(start_position=start_points,
-                           release_time=start_time)
+                             release_time=start_time)
 
     model.spills += Spill(release)
 
@@ -427,12 +426,12 @@ def test_mover_api():
 
     # test our add objectlist methods
     model.movers += [mover_3, mover_4]
-    assert [m for m in model.movers] == [mover_1, mover_2, mover_3,
-            mover_4]
+    assert [m for m in model.movers] == [mover_1, mover_2, mover_3, mover_4]
 
     # test our remove object methods
     del model.movers[mover_3.id]
     assert [m for m in model.movers] == [mover_1, mover_2, mover_4]
+
     with raises(KeyError):
         # our key should also be gone after the delete
         temp = model.movers[mover_3.id]
@@ -442,6 +441,7 @@ def test_mover_api():
     model.movers[mover_2.id] = mover_3
     assert [m for m in model.movers] == [mover_1, mover_3, mover_4]
     assert model.movers[mover_3.id] == mover_3
+
     with raises(KeyError):
         # our key should also be gone after the delete
         temp = model.movers[mover_2.id]
@@ -473,8 +473,8 @@ def test_all_movers(start_time, release_delay, duration):
 
     # a spill - release after 5 timesteps
 
-    release_time = start_time + timedelta(seconds=model.time_step
-            * release_delay)
+    release_time = (start_time +
+                    timedelta(seconds=model.time_step * release_delay))
     model.spills += point_line_release_spill(num_elements=10,
                                              start_position=start_loc,
                                              release_time=release_time)
@@ -510,8 +510,7 @@ def test_all_movers(start_time, release_delay, duration):
     # test release happens correctly for all cases
     if release_delay < duration:
         # at least one get_move has been called after release
-        assert np.all(model.spills.LE('positions')[:, :2]
-                      != start_loc[:2])
+        assert np.all(model.spills.LE('positions')[:, :2] != start_loc[:2])
     elif release_delay == duration:
         # particles are released after last step so no motion,
         # only initial _state
@@ -556,13 +555,16 @@ def test_linearity_of_wind_movers(wind_persist):
                        dtype=datetime_value_2d).reshape((1, ))
 
     num_LEs = 1000
+    element_type = floating(windage_persist=wind_persist)
+
     model1 = Model(name='model1')
     model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours=1)
     model1.start_time = start_time
     model1.spills += point_line_release_spill(num_elements=num_LEs,
-                        start_position=(1., 2., 0.), release_time=start_time,
-                        element_type=floating(windage_persist=wind_persist))
+                                              start_position=(1., 2., 0.),
+                                              release_time=start_time,
+                                              element_type=element_type)
 
     model1.movers += WindMover(Wind(timeseries=series1, units=units),
                                make_default_refs=False)
@@ -571,10 +573,10 @@ def test_linearity_of_wind_movers(wind_persist):
     model2.duration = timedelta(hours=10)
     model2.time_step = timedelta(hours=1)
     model2.start_time = start_time
-
     model2.spills += point_line_release_spill(num_elements=num_LEs,
-            start_position=(1., 2., 0.), release_time=start_time,
-            element_type=floating(windage_persist=wind_persist))
+                                              start_position=(1., 2., 0.),
+                                              release_time=start_time,
+                                              element_type=element_type)
 
     # todo: CHECK RANDOM SEED
     # model2.movers += WindMover(Wind(timeseries=series1, units=units))
@@ -611,8 +613,8 @@ def test_linearity_of_wind_movers(wind_persist):
     # Similarly look at absolute error in variance of position of m2
     # in the 2 norm.
 
-    rel_var_error = np.linalg.norm(np.var(model2.spills.LE('positions'), 0)
-                                   - np.var(model1.spills.LE('positions'), 0))
+    rel_var_error = np.linalg.norm(np.var(model2.spills.LE('positions'), 0) -
+                                   np.var(model1.spills.LE('positions'), 0))
     assert rel_var_error <= 0.0015
 
 
@@ -630,13 +632,16 @@ def test_model_release_after_start():
     # add a spill that starts after the run begins.
     release_time = start_time + timedelta(hours=1)
     model.spills += point_line_release_spill(num_elements=5,
-            start_position=(0, 0, 0), release_time=release_time)
+                                             start_position=(0, 0, 0),
+                                             release_time=release_time)
 
     # and another that starts later..
 
     model.spills += point_line_release_spill(num_elements=4,
-            start_position=(0, 0, 0), release_time=start_time
-            + timedelta(hours=2))
+                                             start_position=(0, 0, 0),
+                                             release_time=(start_time +
+                                                           timedelta(hours=2))
+                                             )
 
     # Add a Wind mover:
     series = np.array((start_time, (10, 45)),
@@ -673,10 +678,13 @@ def test_release_at_right_time():
 
     # add a spill that starts right when the run begins
 
-    model.spills += \
-        point_line_release_spill(num_elements=12,
-            start_position=(0, 0, 0), release_time=datetime(2013, 1, 1,
-            0), end_release_time=datetime(2013, 1, 1, 6))
+    model.spills += point_line_release_spill(num_elements=12,
+                                             start_position=(0, 0, 0),
+                                             release_time=datetime(2013,
+                                                                   1, 1, 0),
+                                             end_release_time=datetime(2013,
+                                                                       1, 1, 6)
+                                             )
 
     # before the run - no elements present since data_arrays get defined after
     # 1st step (prepare_for_model_run):
@@ -825,9 +833,7 @@ def test_simple_run_no_spills(model):
 
     for step in model:
         print 'just ran time step: %s' % model.current_time_step
-        assert step['Renderer']['step_num'] == model.current_time_step
-
-    assert True
+        assert step['step_num'] == model.current_time_step
 
 
 @pytest.mark.parametrize("add_langmuir", (False, True))
@@ -910,11 +916,12 @@ def test_contains_object(sample_model_fcn):
     disp_start = skim_start + timedelta(hours=1)
     dispersion = ChemicalDispersion(0.1,
                                     active_start=disp_start,
-                                    active_stop=disp_start + timedelta(hours=1))
+                                    active_stop=disp_start + timedelta(hours=1)
+                                    )
+
     model.weatherers += [evaporation, dispersion, burn, skimmer]
 
-    renderer = Renderer(images_dir='junk',
-                        size=(400, 300))
+    renderer = Renderer(images_dir='junk', size=(400, 300))
     model.outputters += renderer
 
     for o in (gnome_map, sp, rel, et,
@@ -936,7 +943,7 @@ def make_skimmer(spill, delay_hours=1, duration=2):
     skim_start = rel_time + timedelta(hours=delay_hours)
     amount = spill.amount
     units = spill.units
-    skimmer = Skimmer(.3*amount, units=units, efficiency=0.3,
+    skimmer = Skimmer(.3 * amount, units=units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=duration))
     return skimmer
@@ -948,12 +955,12 @@ def chemical_disperson_obj(spill, delay_hours=1, duration=1):
     '''
     rel_time = spill.get('release_time')
     disp_start = rel_time + timedelta(hours=delay_hours)
-    c_disp = \
-        ChemicalDispersion(.1,
-                           active_start=disp_start,
-                           active_stop=disp_start + timedelta(hours=duration),
-                           efficiency=0.3)
-    return c_disp
+
+    return ChemicalDispersion(.1,
+                              active_start=disp_start,
+                              active_stop=(disp_start +
+                                           timedelta(hours=duration)),
+                              efficiency=0.3)
 
 
 def burn_obj(spill, delay_hours=1.5):
@@ -962,8 +969,8 @@ def burn_obj(spill, delay_hours=1.5):
     volume = spill.get_mass()/spill.get('substance').get_density()
     thick = 1   # in meters
     area = (0.2 * volume)/thick
-    burn = Burn(area, thick, active_start=burn_start)
-    return burn
+
+    return Burn(area, thick, active_start=burn_start)
 
 
 @pytest.mark.parametrize("delay", [timedelta(hours=0),
@@ -1003,10 +1010,11 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     for spill in model.spills:
         exp_total_mass += spill.get_mass()
 
-    model.environment += [Water(), constant_wind(1., 0)]
     skimmer = make_skimmer(model.spills[0])
     burn = burn_obj(model.spills[0])
     c_disp = chemical_disperson_obj(model.spills[0], 4)
+
+    model.environment += [Water(), constant_wind(1., 0)]
     model.weatherers += [Evaporation(),
                          c_disp,
                          burn,
@@ -1023,6 +1031,13 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
             print "completed step {0}".format(step)
             # sum up all the weathered mass + mass of LEs marked for weathering
             # and ensure this equals the total amount released
+            print (sc.mass_balance['beached'],
+                   sc.mass_balance['burned'],
+                   sc.mass_balance['chem_dispersed'],
+                   sc.mass_balance['evaporated'],
+                   sc.mass_balance['floating'],
+                   sc.mass_balance['skimmed'],
+                   )
             sum_ = (sc.mass_balance['beached'] +
                     sc.mass_balance['burned'] +
                     sc.mass_balance['chem_dispersed'] +
@@ -1032,6 +1047,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
                     )
 
             assert abs(sum_ - sc.mass_balance['amount_released']) < 1.e-6
+
     assert sc.mass_balance['burned'] > 0
     assert sc.mass_balance['skimmed'] > 0
 
@@ -1080,12 +1096,11 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
         '''
         multiple substances will not work with Skimmer or Burn
         '''
-        skimmer = make_skimmer(model.spills[0], 2)
-        burn = burn_obj(model.spills[0], 2.5)
         c_disp = chemical_disperson_obj(model.spills[0], 3)
-        model.weatherers += [c_disp,
-                             burn,
-                             skimmer]
+        burn = burn_obj(model.spills[0], 2.5)
+        skimmer = make_skimmer(model.spills[0], 2)
+
+        model.weatherers += [c_disp, burn, skimmer]
 
     model.set_make_default_refs(True)
 
@@ -1121,9 +1136,10 @@ def test_weathering_data_attr():
     ts = 900
     s1_rel = datetime.now().replace(microsecond=0)
     s2_rel = s1_rel + timedelta(seconds=ts)
-    model = Model(time_step=ts, start_time=s1_rel)
     s = [point_line_release_spill(10, (0, 0, 0), s1_rel),
          point_line_release_spill(10, (0, 0, 0), s2_rel)]
+
+    model = Model(time_step=ts, start_time=s1_rel)
     model.spills += s
     model.step()
 
@@ -1141,6 +1157,7 @@ def test_weathering_data_attr():
     s[0].units = 'kg'
     model.rewind()
     model.step()
+
     for sc in model.spills.items():
         # since no substance is defined, all the LEs are marked as
         # nonweathering
@@ -1151,24 +1168,27 @@ def test_weathering_data_attr():
     s[1].units = 'kg'
     model.rewind()
     exp_rel = 0.0
+
     for ix in range(2):
         model.step()
         exp_rel += s[ix].amount
         for sc in model.spills.items():
             assert sc.mass_balance['non_weathering'] == sc['mass'].sum()
             assert sc.mass_balance['non_weathering'] == exp_rel
+
     model.rewind()
 
     assert sc.mass_balance == {}
 
     # weathering data is now empty for all steps
     del model.weatherers[0]
+
     for ix in xrange(2):
         model.step()
         for sc in model.spills.items():
             assert len(sc.mass_balance) == 2
-            assert (len(set(sc.mass_balance.keys()) - {'beached', 'off_maps'})
-                    == 0)
+            assert (len(set(sc.mass_balance.keys()) -
+                        {'beached', 'off_maps'}) == 0)
 
 
 def test_run_element_type_no_initializers(model):
@@ -1224,8 +1244,8 @@ class TestMergeModels:
         model.save(saveloc_, name='SampleSaveModel.zip')
         if os.path.exists(sample_save_file):
             model = load(sample_save_file)
-
             model.merge(m)
+
             for oc in m._oc_list:
                 for item in getattr(m, oc):
                     model_oc = getattr(model, oc)
@@ -1246,6 +1266,7 @@ def test_weatherer_sort():
     Model will likely not run
     '''
     model = Model()
+
     skimmer = Skimmer(100, 'kg', efficiency=0.3,
                       active_start=datetime(2014, 1, 1, 0, 0),
                       active_stop=datetime(2014, 1, 1, 0, 3))
@@ -1260,6 +1281,7 @@ def test_weatherer_sort():
                   burn,
                   c_disp,
                   skimmer]
+
     exp_order = [weatherers[ix] for ix in (2, 4, 3, 1, 0)]
 
     model.environment += [Water(), constant_wind(5, 0), Waves()]
@@ -1277,10 +1299,12 @@ def test_weatherer_sort():
     model.rewind()
     assert model.weatherers.values()[:len(exp_order)] == exp_order
 
-    # Burn, ChemicalDispersion are at same sorting level so appending another Burn to
-    # end of the list will sort it to be just after ChemicalDispersion so index 2
+    # Burn, ChemicalDispersion are at same sorting level so appending
+    # another Burn to the end of the list will sort it to be just after
+    # ChemicalDispersion so index 2
     burn = Burn(50, 1, active_start=datetime(2014, 1, 1, 0, 0))
     exp_order.insert(2, burn)
+
     model.weatherers += exp_order[2]  # add this and check sorting still works
     assert model.weatherers.values()[:len(exp_order)] != exp_order
 
@@ -1299,17 +1323,20 @@ class TestValidateModel():
         '''
         model = Model(start_time=self.start_time)
         (msgs, isvalid) = model.validate()
+
         assert len(msgs) == 1 and isvalid
         assert ('{0} contains no spills'.format(model.name) in msgs[0])
 
         model.spills += Spill(Release(self.start_time + timedelta(hours=1), 1))
         (msgs, isvalid) = model.validate()
+
         assert len(msgs) == 1 and isvalid
         assert ('Spill has release time after model start time' in msgs[0])
 
         model.spills[0].set('release_time',
                             self.start_time - timedelta(hours=1))
         (msgs, isvalid) = model.validate()
+
         assert len(msgs) == 1 and isvalid
         assert ('Spill has release time before model start time' in msgs[0])
 
@@ -1320,8 +1347,10 @@ class TestValidateModel():
         '''
         model = Model(start_time=self.start_time)
         model.spills += Spill(Release(self.start_time, 1))
+
         waves = Waves()
         model.environment += waves
+
         return (model, waves)
 
     @pytest.mark.parametrize("obj_make_default_refs", (False, True))
@@ -1340,6 +1369,7 @@ class TestValidateModel():
         waves.make_default_refs = obj_make_default_refs
         (msgs, isvalid) = model.validate()
         print msgs
+
         if obj_make_default_refs:
             assert not isvalid
             assert len(msgs) > 0
@@ -1359,6 +1389,7 @@ class TestValidateModel():
         '''
         (model, waves) = self.make_model_incomplete_waves()
         waves.make_default_refs = False
+
         model.environment += [Water(), constant_wind(5, 0)]
         (msgs, isvalid) = model.validate()
 
@@ -1372,6 +1403,7 @@ class TestValidateModel():
     def test_model_weatherer_off(self):
         model = Model(start_time=self.start_time)
         model.weatherers += Evaporation(on=False)
+
         print model.validate()
 
 

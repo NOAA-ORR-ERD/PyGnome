@@ -84,8 +84,11 @@ class ModelConsumer(mp.Process):
 
     def cleanup_inherited_files(self):
         proc = psutil.Process(os.getpid())
-        [os.close(c.fd) for c in proc.get_connections()]
-        # [os.close(f.fd) for f in proc.get_open_files()]
+        try:
+            [os.close(c.fd) for c in proc.connections()]
+        except:
+            # deprecated psutil API
+            [os.close(c.fd) for c in proc.get_connections()]
 
     def handle_cmd(self, msg):
         '''

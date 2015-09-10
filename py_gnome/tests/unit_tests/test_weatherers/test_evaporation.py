@@ -179,8 +179,8 @@ def assert_helper(sc, new_p):
             inwater = data['status_codes'][:old_le] == oil_status.in_water
             assert np.all(data['evap_decay_constant'][:old_le, :][inwater] <
                           0.0)
-            assert np.all(data['evap_decay_constant'][:old_le, :][~inwater]
-                          == 0.0)
+            assert np.all(data['evap_decay_constant'][:old_le, :][~inwater] ==
+                          0.0)
 
             assert np.allclose(np.sum(data['mass_components'], 1),
                                data['mass'])
@@ -242,10 +242,9 @@ def test_full_run_evap_not_active(sample_model_fcn):
         switch to WeatheringOutput
         '''
         assert 'evaporated' not in step['WeatheringOutput']
-        assert ('step_num' in step['WeatheringOutput'] and
-                'time_stamp' in step['WeatheringOutput'])
-        print ("Completed step: {0}"
-               .format(step['WeatheringOutput']['step_num']))
+        assert ('time_stamp' in step['WeatheringOutput'])
+
+        print ("Completed step: {0}".format(step['step_num']))
 
 
 def test_serialize_deseriailize():

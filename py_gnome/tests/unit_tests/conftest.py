@@ -11,8 +11,7 @@ from datetime import datetime, timedelta
 import copy
 import shutil
 
-import numpy
-np = numpy
+import numpy as np
 
 import pytest
 
@@ -69,7 +68,7 @@ def skip_serial(request):
     '''
     if (request.node.get_marker('serial') and
         getattr(request.config, 'slaveinput', {}).get('slaveid', 'local') !=
-        'local'):
+            'local'):
         # under xdist and serial so skip the test
         pytest.skip('serial')
 
@@ -207,8 +206,10 @@ def get_testdata():
          'curr_reg': get_datafile(os.path.join(curr_dir, 'test.cdf')),
          'curr_curv': get_datafile(os.path.join(curr_dir, 'ny_cg.nc')),
          'top_curv': get_datafile(os.path.join(curr_dir, 'NYTopology.dat')),
-         'ice_curr_curv': get_datafile(os.path.join(curr_dir, 'acnfs_example.nc')),
-         'ice_top_curv': get_datafile(os.path.join(curr_dir, 'acnfs_topo.dat')),
+         'ice_curr_curv': get_datafile(os.path.join(curr_dir,
+                                                    'acnfs_example.nc')),
+         'ice_top_curv': get_datafile(os.path.join(curr_dir,
+                                                   'acnfs_topo.dat')),
          'ptCur': get_datafile(os.path.join(curr_dir, 'ptCurNoMap.cur')),
          'grid_ts': get_datafile(os.path.join(curr_dir, 'gridcur_ts.cur')),
          'series_gridCur': get_datafile(os.path.join(curr_dir,
@@ -219,8 +220,10 @@ def get_testdata():
                                                  'HiROMSTopology.dat'))}
 
     data['IceMover'] = \
-        {'ice_curr_curv': get_datafile(os.path.join(curr_dir, 'acnfs_example.nc')),
-         'ice_top_curv': get_datafile(os.path.join(curr_dir, 'acnfs_topo.dat'))}
+        {'ice_curr_curv': get_datafile(os.path.join(curr_dir,
+                                                    'acnfs_example.nc')),
+         'ice_top_curv': get_datafile(os.path.join(curr_dir,
+                                                   'acnfs_topo.dat'))}
 
     # get netcdf stored in fileseries flist2.txt, gridcur_ts_hdr2
     get_datafile(os.path.join(curr_dir, 'file_series', 'hiog_file1.nc'))
@@ -244,7 +247,7 @@ def get_testdata():
             get_datafile(os.path.join(curr_dir, 'BigCombinedwMap.cur')),
          }
 
-    # following are not on server, they are part of git repo so just set the 
+    # following are not on server, they are part of git repo so just set the
     # path correctly
     data['timeseries'] = \
         {'wind_ts': os.path.join(s_data, 'WindDataFromGnome.WND'),
@@ -255,8 +258,7 @@ def get_testdata():
                                         'WindDataFromGnome_BadUnits.WND'),
          'wind_cardinal': os.path.join(s_data,
                                        'WindDataFromGnomeCardinal.WND'),
-         'wind_kph': os.path.join(s_data,
-                                       'WindDataFromGnomeKPH.WND'),
+         'wind_kph': os.path.join(s_data, 'WindDataFromGnomeKPH.WND'),
          'tide_shio': get_datafile(os.path.join(tide_dir, 'CLISShio.txt')),
          'tide_ossm': get_datafile(os.path.join(tide_dir, 'TideHdr.FINAL'))
          }
@@ -307,14 +309,13 @@ def invalid_rq():
 
 # use this for wind and current deterministic (r,theta)
 
-rq = np.array([
-    (1, 0),
-    (1, 45),
-    (1, 90),
-    (1, 120),
-    (1, 180),
-    (1, 270),
-    ], dtype=np.float64)
+rq = np.array([(1, 0),
+               (1, 45),
+               (1, 90),
+               (1, 120),
+               (1, 180),
+               (1, 270),
+               ], dtype=np.float64)
 
 
 @pytest.fixture(scope='module')
@@ -326,14 +327,14 @@ def rq_wind():
         values and the corresponding (u,v)
     """
 
-    uv = np.array([
-        (0, -1),
-        (-1. / np.sqrt(2), -1. / np.sqrt(2)),
-        (-1, 0),
-        (-np.sqrt(3) / 2, .5),
-        (0, 1),
-        (1, 0),
-        ], dtype=np.float64)
+    uv = np.array([(0, -1),
+                   (-1. / np.sqrt(2), -1. / np.sqrt(2)),
+                   (-1, 0),
+                   (-np.sqrt(3) / 2, .5),
+                   (0, 1),
+                   (1, 0),
+                   ], dtype=np.float64)
+
     return {'rq': rq, 'uv': uv}
 
 
@@ -346,14 +347,14 @@ def rq_curr():
         values and the corresponding (u,v)
     """
 
-    uv = np.array([
-        (0, 1),
-        (1. / np.sqrt(2), 1. / np.sqrt(2)),
-        (1, 0),
-        (np.sqrt(3) / 2, -.5),
-        (0, -1),
-        (-1, 0),
-        ], dtype=np.float64)
+    uv = np.array([(0, 1),
+                   (1. / np.sqrt(2), 1. / np.sqrt(2)),
+                   (1, 0),
+                   (np.sqrt(3) / 2, -.5),
+                   (0, -1),
+                   (-1, 0),
+                   ], dtype=np.float64)
+
     return {'rq': rq, 'uv': uv}
 
 
@@ -373,8 +374,8 @@ def rq_rand():
     # cannot be 0 magnitude vector - let's just make it from 0.5
 
     rq[:, 0] = np.random.uniform(.5, len(rq), len(rq))
-
     rq[:, 1] = np.random.uniform(0, 360, len(rq))
+
     return {'rq': rq}
 
 
@@ -395,15 +396,11 @@ def sample_graph():
 def wind_timeseries(rq_wind):
     dtv_rq = np.zeros((len(rq_wind['rq']), ),
                       dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv_rq.time = [datetime(
-        2012,
-        11,
-        06,
-        20,
-        10 + i,
-        0,
-        ) for i in range(len(dtv_rq))]
+    dtv_rq.time = [datetime(2012, 11, 06,
+                            20, 10 + i, 0)
+                   for i in range(len(dtv_rq))]
     dtv_rq.value = rq_wind['rq']
+
     dtv_uv = np.zeros((len(dtv_rq), ),
                       dtype=datetime_value_2d).view(dtype=np.recarray)
     dtv_uv.time = dtv_rq.time
@@ -431,6 +428,7 @@ def wind_circ(wind_timeseries):
     dtv_rq = wind_timeseries['rq']
     wm = environment.Wind(timeseries=dtv_rq, format='r-theta',
                           units='meter per second')
+
     return {'wind': wm, 'rq': dtv_rq, 'uv': wind_timeseries['uv']}
 
 
@@ -449,8 +447,10 @@ def sample_spatial_release_spill():
                        (28.0, -75.0, 0.),
                        (-15, 12, 4.0),
                        (80, -80, 100.0))
+
     rel = SpatialRelease(datetime(2012, 1, 1, 1), start_positions)
     sp = gnome.spill.Spill(release=rel)
+
     return (sp, start_positions)
 
 
@@ -464,11 +464,10 @@ def sample_vertical_plume_spill():
 
     release_time = datetime.now()
     vps = VerticalPlumeRelease(num_elements=200,
-                              start_position=(28, -78, 0.),
-                              release_time=release_time,
-                              end_release_time=release_time + timedelta(hours=24),
-                              plume_data=get_plume_data(),
-                              )
+                               start_position=(28, -78, 0.),
+                               release_time=release_time,
+                               end_release_time=release_time + timedelta(hours=24),
+                               plume_data=get_plume_data())
 
     vps.plume_gen.time_step_delta = timedelta(hours=1).total_seconds()
     return Spill(vps)
@@ -497,12 +496,14 @@ def sample_sc_no_uncertainty():
     end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
     spills = [gnome.spill.point_line_release_spill(num_elements,
-                              start_position, release_time,
-                              amount=10, units='l'),
+                                                   start_position,
+                                                   release_time,
+                                                   amount=10, units='l'),
               gnome.spill.point_line_release_spill(num_elements,
-                              start_position,
-                              release_time + timedelta(hours=1),
-                              end_position, end_release_time),
+                                                   start_position,
+                                                   release_time + timedelta(hours=1),
+                                                   end_position,
+                                                   end_release_time),
               ]
     sc.spills.add(spills)
     return sc
@@ -593,7 +594,8 @@ def sample_model2():
 
     # the image output map
 
-    mapfile = os.path.join(os.path.dirname(__file__), './sample_data/long_island_sound',
+    mapfile = os.path.join(os.path.dirname(__file__),
+                           './sample_data/long_island_sound',
                            'LongIslandSoundMap.BNA')
 
     # the land-water map
@@ -608,9 +610,9 @@ def sample_model2():
                   cache_enabled=False,
                   )
 
-    #model.movers += SimpleMover(velocity=(1., -1., 0.0))
+    # model.movers += SimpleMover(velocity=(1., -1., 0.0))
 
-    #model.uncertain = True
+    # model.uncertain = True
 
     start_points = np.zeros((3, ), dtype=np.float64)
     end_points = np.zeros((3, ), dtype=np.float64)
@@ -620,6 +622,7 @@ def sample_model2():
 
     return {'model': model, 'release_start_pos': start_points,
             'release_end_pos': end_points}
+
 
 @pytest.fixture(scope='function')
 def sample_model_fcn():
@@ -639,9 +642,11 @@ def sample_model_weathering(sample_model_fcn,
                             num_les=10):
     model = sample_model_fcn['model']
     rel_pos = sample_model_fcn['release_start_pos']
-    'update model the same way for multiple tests'
+
+    # update model the same way for multiple tests
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=4)
+
     et = gnome.spill.elements.floating(substance=oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step*3)
@@ -656,15 +661,18 @@ def sample_model_weathering(sample_model_fcn,
 
     # define environment objects that weatherers require
     model.environment += [constant_wind(1, 0), Water(), Waves()]
+
     return model
 
 
 def sample_model_weathering2(sample_model_fcn2, oil, temp=311.16):
     model = sample_model_fcn2['model']
     rel_pos = sample_model_fcn2['release_start_pos']
-    'update model the same way for multiple tests'
+
+    # update model the same way for multiple tests
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=24)
+
     et = gnome.spill.elements.floating(substance=oil)
     start_time = model.start_time
     end_time = start_time
@@ -676,6 +684,7 @@ def sample_model_weathering2(sample_model_fcn2, oil, temp=311.16):
                                                  amount=10000,
                                                  units='kg')
     model.spills += spill
+
     return model
 
 
@@ -705,4 +714,5 @@ def CyCurrentMover_props():
                     ('down_cur_uncertain', -0.3),
                     ('right_cur_uncertain', 0.1),
                     ('left_cur_uncertain', -0.1))
+
     return default_prop

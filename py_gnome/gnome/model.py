@@ -788,7 +788,7 @@ class Model(Serializable):
             sc['age'][:] = sc['age'][:] + self.time_step
 
     def write_output(self, valid, messages=None):
-        output_info = {}
+        output_info = {'step_num': self.current_time_step}
 
         for outputter in self.outputters:
             if self.current_time_step == self.num_time_steps - 1:
@@ -799,11 +799,9 @@ class Model(Serializable):
             if output is not None:
                 output_info[outputter.__class__.__name__] = output
 
-        if not output_info:
-            return {'step_num': self.current_time_step}
-
-        # append 'valid' flag to output
-        output_info['valid'] = valid
+        if len(output_info) > 1:
+            # append 'valid' flag to output
+            output_info['valid'] = valid
 
         return output_info
 
@@ -825,8 +823,8 @@ class Model(Serializable):
 
             # let each object raise appropriate error if obj is incomplete
             # validate and send validation flag if model is invalid
-            #(msgs, isvalid) = self.validate()
-            #if not isvalid:
+            # (msgs, isvalid) = self.validate()
+            # if not isvalid:
             #    raise StopIteration("Setup model run complete but model "
             #                        "is invalid", msgs)
 
