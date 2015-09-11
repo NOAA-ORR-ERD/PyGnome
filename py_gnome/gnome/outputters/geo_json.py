@@ -488,20 +488,12 @@ class IceGeoJsonOutput(Outputter, Serializable):
         'remove previously written files'
         super(IceGeoJsonOutput, self).rewind()
 
-    def serialize(self, json_='webapi'):
-        """
-            Serialize our current velocities outputter to JSON
-        """
-        dict_ = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        json_out = schema.serialize(dict_)
-
-        json_out['ice_movers'] = []
-
-        for cm in self.ice_movers:
-            json_out['ice_movers'].append(cm.serialize(json_))
-
-        return json_out
+    def ice_movers_to_dict(self):
+        '''
+        a dict containing 'obj_type' and 'id' for each object in
+        list/collection
+        '''
+        return self._collection_to_dict(self.ice_movers)
 
     @classmethod
     def deserialize(cls, json_):

@@ -97,7 +97,27 @@ class ElementType(Serializable):
         database links. Then output the JSON from the unlinked object.
         '''
         if self._substance is not None:
-            return self._substance.tojson()
+            return self._prune_substance(self._substance.tojson())
+
+    def _prune_substance(self, substance_json):
+        '''
+            Whether saving to a savefile or outputting to the web client,
+            the id of the substance objects is not necessary, and in fact
+            not even wanted.
+        '''
+        del substance_json['id']
+        del substance_json['imported_record_id']
+        del substance_json['estimated_id']
+
+        for attr in ('kvis', 'densities', 'cuts',
+                     'molecular_weights',
+                     'sara_densities', 'sara_fractions'):
+            for item in substance_json[attr]:
+                for sub_item in ('id', 'oil_id', 'imported_record_id'):
+                    if sub_item in item:
+                        del item[sub_item]
+
+        return substance_json
 
     @property
     def substance(self):
