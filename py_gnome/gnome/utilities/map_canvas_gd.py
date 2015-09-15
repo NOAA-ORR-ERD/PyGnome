@@ -350,7 +350,7 @@ class MapCanvas(object):
 
         self.fore_image.save(filename, file_type = file_type)
 
-## GRidlines code borrowed from MapRoom
+## Gridlines code borrowed from MapRoom
 import bisect
 class GridLines(object):
     """
@@ -404,9 +404,10 @@ class DegreeMinuteGridLines(GridLines):
 class DecimalDegreeGridLines(GridLines):
     ## could this be done with logic???
     ##   a bit hard, cause wnat to do somethign different according to scale
+    ##   and we know the range of values we need apriori anyway.
 
     ## any reason to make these np types?
-    DEGREE = np.float64(1.0)
+    DEGREE = 1.0
     TENTH = DEGREE / 10.0
     HUNDREDTH = DEGREE / 100.0
     THOUSANDTH = DEGREE / 1000.0
