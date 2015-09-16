@@ -265,7 +265,7 @@ def GetNextBNAPolygon(f, dtype=np.float):
     else:
         points = np.zeros((num_points, 2), dtype)
         for i in range(num_points):
-            points[i, :] = np.fromfile(f, count=2, sep=',', dtype=dtype)
+            points[i,:] = [float(j) for j in f.readline().split(',')]
 
     if poly_type == 'polygon':  # first and last points are the same in BNA,
                                 # but we don't want the duplicate point.

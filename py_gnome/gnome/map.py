@@ -623,8 +623,7 @@ class MapFromBNA(RasterMap):
                            read=True, test_for_eq=False))
     _schema = MapFromBNASchema
 
-    def __init__(self, filename, raster_size=1024 * 1024,
-                 **kwargs):
+    def __init__(self, filename, raster_size=1024 * 1024, **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a bna file.
         It is expected that you will get the spillable area and map bounds
@@ -711,7 +710,8 @@ class MapFromBNA(RasterMap):
         # __init__ the  RasterMap
 
         # hours
-        RasterMap.__init__(self, bitmap_array,
+        RasterMap.__init__(self,
+                           bitmap_array,
                            canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,

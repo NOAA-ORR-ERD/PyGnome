@@ -16,22 +16,23 @@ int filescan(FILE *infile, int NNums, double *array){
     int c;
 
     for (i=0; i<NNums; i++){
-	while ( (j = fscanf(infile, "%lg", &N)) == 0 ){
-	    c = fgetc(infile);
-	}
-	if (j == EOF) {
-	    return(i);
-	}
+	    while ( (j = fscanf(infile, "%lg", &N)) == 0 ){
+	       c = fgetc(infile);
+	   }
+        printf("got the value: %g\n", j)
+    	if (j == EOF) {
+	       return(i);
+	   }
 	array[i] = N;
     }
     // Go to the end of any whitespace:
     while ( isspace(c = fgetc(infile)) ){
-	//printf("skipping a whitespace character: %i\n", c);
-	//printf("I'm at position %i in the file\n",ftell(infile));
+	    //printf("skipping a whitespace character: %i\n", c);
+	    //printf("I'm at position %i in the file\n",ftell(infile));
     }
      if (c > -1){
-	 // not EOF, rewind the file one byte.
-	 fseek(infile, -1, SEEK_CUR);
+	   // not EOF, rewind the file one byte.
+	   fseek(infile, -1, SEEK_CUR);
      }
     return(i);
 }
@@ -53,7 +54,7 @@ static PyObject * FileScanner_FileScanN(PyObject *self, PyObject *args)
     PyFileObject *File;
     PyArrayObject *Array;
     npy_intp length;
-    
+
     double *Data;
     int i;
 
@@ -61,7 +62,7 @@ static PyObject * FileScanner_FileScanN(PyObject *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "O!i", &PyFile_Type, &File, &length) ) {
 	return NULL;
-    }  
+    }
 
     Data = calloc(length, sizeof(double) );
 
@@ -71,9 +72,9 @@ static PyObject * FileScanner_FileScanN(PyObject *self, PyObject *args)
 	    free(Data);
 	    return NULL;
     }
-    
+
     Array = (PyArrayObject *) PyArray_SimpleNew(1, &length, PyArray_DOUBLE);
-  
+
     for (i = 0; i< length ; i++){
 	*(double *)(Array->data + (i * Array->strides[0] ) ) = Data[i];
     }
@@ -111,7 +112,7 @@ static PyObject * FileScanner_FileScan(PyObject *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "O!", &PyFile_Type, &File) ) {
 	return NULL;
-    }  
+    }
     infile = PyFile_AsFile( (PyObject*)File );
 
     P_array = (double**) calloc(BufferSize, sizeof(void*) );
@@ -122,7 +123,7 @@ static PyObject * FileScanner_FileScan(PyObject *self, PyObject *args)
 	    i = filescan(infile, BUFFERSIZE1, P_array[j]);
 	    if (i) {
 		ScanCount += i;
-		//for (k=0; k<BUFFERSIZE1; k++){ 
+		//for (k=0; k<BUFFERSIZE1; k++){
 		//    printf("%.14g\n", P_array[j][k]);
 		//}
 	    }
@@ -139,7 +140,7 @@ static PyObject * FileScanner_FileScan(PyObject *self, PyObject *args)
 	StartOfBuffer += BUFFERSIZE2;
 	Old_P_array = P_array;
 	P_array = (double**) calloc(BufferSize, sizeof(void*) );
-	
+
 	for (j=0; j < OldBufferSize; j++){
 	    P_array[j] = Old_P_array[j];
 	}

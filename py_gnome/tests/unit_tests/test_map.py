@@ -29,61 +29,6 @@ testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna'
                        )
 
 
-##fixme: these two should maybe be in their own test file
-##       -- for testing map_canvas.
-
-### tests of depricated code -- port to new map code?
-# def test_map_in_water():
-#    '''
-#    Test whether the location of a particle on the map
-#    -- in or out of water
-#    -- is determined correctly.
-#    '''
-#    # Create a 500x500 pixel map, with an LE refloat half-life of 2 hours
-#    # (specified here in seconds).
-#    m = gnome.map.lw_map([500,500],
-#                         "../sample_data/MapBounds_Island.bna",
-#                         2.*60.*60.,"1")
-#
-#    #Coordinate of a point within the water area of MapBounds_Island.bna.
-#    LatInWater=48.1647
-#    LonInWater=-126.78709
-#
-#    #Throw an error if the know in-water location returns false.
-#    assert(m.in_water((LonInWater,LatInWater)))
-#
-#
-# def test_map_on_land():
-#    '''
-#    Test whether the location of a particle on the map
-#    (off or on land) is determined correctly.
-#    '''
-#    # Create a 500x500 pixel map, with an LE refloat half-life of 2 hours
-#    # (specified here in seconds).
-#    m = gnome.map.lw_map((500,500),
-#                         "../sample_data/MapBounds_Island.bna",
-#                         2.*60.*60.,
-#                         color_mode = "1")
-#
-#    #Coordinate of a point on the island of MapBounds_Island.bna.  This point
-#    #passes the test.  [Commented-out in favor of coordinate below.]
-#    #OnLand = (-126.78709, 47.833333)
-#
-#    #Coordinate of a point that is outside of the "Map Bounds" polygon.
-#    #Barker:  this should be failing! that's not on land == but it is
-#              on the map.
-#    Zelenke:  This point falls outside of the "Map Bounds" polygon.
-#    OnLand = (-127, 47.4)
-#
-#    # Coordinate of a point in water that is within both the "Map Bounds" and
-#    # "SpillableArea" polygons of of MapBounds_Island.bna.
-#    # InWater = (-127, 47.7)
-#    # This should fail.  Commented out in lieu of line below.
-#    #assert(m.on_land( InWater ))
-#
-#    # Throw an error if the known on-land location returns false.
-#    assert(m.on_land( OnLand ))
-
 def test_in_water_resolution():
     '''
     Test the limits of the precision, to within an order of magnitude,
@@ -631,7 +576,7 @@ class Test_full_move:
                 dtype=status_code_type)
 
         gmap.beach_elements(spill)
-        
+
         ## next position gets set to land location
         assert np.array_equal(spill['next_positions'][0], (10.0, 5.0, 0.))
         assert np.array_equal(spill['last_water_positions'][0], (10.0, 5.0, 0.))

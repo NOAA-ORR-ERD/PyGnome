@@ -3,7 +3,7 @@
 """
 tests for the polygon module, part of the geometry package
 
-designed to be run with nose
+designed to be run with py.test
 """
 
 from gnome.utilities.geometry.polygons import Polygon, PolygonSet
@@ -12,6 +12,7 @@ import numpy as np
 
 p1 = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
 p2 = p1 * 5
+p3 = p1 * 3
 
 
 class Test_Polygon:
@@ -59,7 +60,7 @@ class Test_Polygon:
     def test_slice(self):
         P = Polygon([(1, 2), (3, 4), (5, 6)])
         print P[:2]
-        assert P[:2] == Polygon([(1, 2), (3, 4)])     
+        assert P[:2] == Polygon([(1, 2), (3, 4)])
 
     def test_metadata(self):
         m = {'name': 'a polygon', 'type': 'polyline'}
@@ -105,6 +106,8 @@ class Test_PolygonSet:
         poly_set = PolygonSet()
         poly_set.append(p1)
         poly_set.append(p2)
+        poly_set.append(p3)
+
 
     def test_bbox(self):
         poly_set = PolygonSet()
