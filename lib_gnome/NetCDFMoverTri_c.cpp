@@ -471,15 +471,15 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 						topDepth = INDEXH(fDepthsH,depthIndex1);	
 						bottomDepth = INDEXH(fDepthsH,depthIndex2);
 						depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-						scaledPatVelocity.u = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u
-						+ (1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).u;
-						scaledPatVelocity.v = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v
-						+ (1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).v;
+						scaledPatVelocity.u = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).u)
+						+ (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).u);
+						scaledPatVelocity.v = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).v)
+						+ (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).v);
 					}
 					else 
 					{		
-						scaledPatVelocity.u = INDEXH(fStartData.dataHdl,triIndex).u; 
-						scaledPatVelocity.v = INDEXH(fStartData.dataHdl,triIndex).v; 
+						scaledPatVelocity.u = timeAlpha*INDEXH(fStartData.dataHdl,triIndex).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).u; 
+						scaledPatVelocity.v = timeAlpha*INDEXH(fStartData.dataHdl,triIndex).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).v; 
 					}
 				}
 			}

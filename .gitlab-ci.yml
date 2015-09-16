@@ -1,0 +1,17 @@
+before_script: 
+  - cd ./py_gnome
+  - pip install -r requirements.txt
+  - python ./setup.py cleandev
+  - python ./setup.py develop
+
+master: 
+  script:
+    - py.test -runslow
+  only: 
+    - master
+
+develop:
+  script:
+    - py.test
+  only:
+    - develop
