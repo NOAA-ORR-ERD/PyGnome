@@ -76,8 +76,12 @@ class remake_oil_db(Command):
                 raise
 
         print "Deleting {0} ..".format(to_rm)
-        call("initialize_OilLibrary_db")
-        print 'OilLibrary database successfully generated from file!'
+        ret = call("initialize_OilLibrary_db")
+
+        if ret == 0:
+            print 'OilLibrary database successfully generated from file!'
+        else:
+            print 'OilLibrary database generation returned: ', ret
 
 s = setup(name=pkg_name,
           version='0.1',
@@ -98,6 +102,9 @@ s = setup(name=pkg_name,
           entry_points={'console_scripts': [('initialize_OilLibrary_db = '
                                              'oil_library.initializedb'
                                              ':make_db'),
+                                            ('diff_import_files = '
+                                             'oil_library.scripts.oil_import'
+                                             ':diff_import_files_cmd'),
                                             ],
                         },
           zip_safe=False,
