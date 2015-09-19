@@ -13,7 +13,7 @@ pyzmq
 cython
 pytest
 testfixtures
-psutil
+psutil>=2.0
 sphinx
 progressbar
 six
