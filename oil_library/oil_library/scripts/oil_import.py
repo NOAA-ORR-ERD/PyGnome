@@ -5,9 +5,6 @@ import numpy as np
 
 from ..oil_library_parse import OilLibraryFile
 
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2, width=120)
-
 
 def usage(argv):
     cmd = os.path.basename(argv[0])
@@ -17,17 +14,12 @@ def usage(argv):
 
 
 def diff_import_files(file1, file2):
-    # 1. we need to open our first import file
     print 'opening file: {0} ...'.format(file1)
     fd1 = OilLibraryFile(file1, ignore_version=True)
-    print 'file version:', fd1.__version__
 
-    # 2. we need to open our second import file
     print 'opening file: {0} ...'.format(file2)
     fd2 = OilLibraryFile(file2, ignore_version=True)
-    print 'file version:', fd2.__version__
 
-    # 3. diff our files
     lines1, lines2 = list(fd1.readlines()), list(fd2.readlines())
     print 'line lengths = ', (len(lines1), len(lines2))
     print 'matching slices for these files:'
@@ -52,6 +44,7 @@ def get_diffs(a, b, field_names):
                              b, 0, len(b),
                              matching_lines)
     slices.append((len(a), len(b), 0))
+    print
     for sa, sb, n in slices:
         print (ia, sa), (ib, sb), n
         sa_len, sb_len = sa - ia, sb - ib
@@ -69,8 +62,11 @@ def get_diffs(a, b, field_names):
                 # display sb but not sa
                 print '+ {0}'.format(b[ib + idx][:2])
 
-        for line in a[sa:sa+n]:
-            print "  {0}".format(line[:2])
+        for line in a[sa:sa + min(n, 4)]:
+            print '  {0}'.format(line[:2])
+
+        if n > 4:
+            print '  ...'
 
         ia = sa + n
         ib = sb + n
