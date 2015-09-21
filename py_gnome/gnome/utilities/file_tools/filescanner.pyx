@@ -94,6 +94,9 @@ def scan(infile, num_to_read=None):
     else:
         out_arr = np.zeros((N,), dtype= np.float64)
 
+    # view onto output array, so that out_arr can be re-sized
+    cdef double[:] arr_view = out_arr
+
     num_read = 1
     while num_read <= N:
         ## try to read a number
@@ -108,13 +111,13 @@ def scan(infile, num_to_read=None):
             break
         if num_read > out_arr.shape[0]: # need to make the array bigger
             # NOTE: ndarray.resize does not work in Cython
-            # out_arr.resize( ( <int> out_arr.shape[0]*1.2, ), refcheck=False)
-            temp = np.zeros( (num_read+<int> out_arr.shape[0]*1.5) )
-            temp[:num_read-1] = out_arr
-            out_arr = temp
-        out_arr[num_read-1] = value
+            out_arr.resize( ( <int> out_arr.shape[0]*1.2, ), refcheck=False)
+            arr_view = out_arr
+            #temp = np.zeros( (num_read+<int> out_arr.shape[0]*1.5) )
+            #temp[:num_read-1] = out_arr
+            #out_arr = temp
+        arr_view[num_read-1] = value
         num_read += 1
-
     num_read -= 1 # remove the extra tacked on at the end
 
     if N != UINT32_MAX and num_read < N:
@@ -131,7 +134,7 @@ def scan(infile, num_to_read=None):
 
     # resize to fit:
     if out_arr.shape[0] > num_read:
-        # resize can work if you don't need cython to access the data
+        # resize can work if you don't need cython to access the data later
         out_arr.resize( (num_read, ), refcheck=False )
     return out_arr
 

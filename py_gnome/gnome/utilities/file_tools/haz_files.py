@@ -12,7 +12,7 @@ import numpy as np
 try:
     from .filescanner import scan
     FILESCANNER = True
-    print 'running with File Scanner'
+    #print 'running with File Scanner'
 except:
     FILESCANNER = False
 
