@@ -76,19 +76,12 @@ class remake_oil_db(Command):
                 raise
 
         print "Deleting {0} ..".format(to_rm)
-        call("initialize_OilLibrary_db")
-        print 'OilLibrary database successfully generated from file!'
+        ret = call("initialize_OilLibrary_db")
 
-
-requires = [
-    'SQLAlchemy >= 0.9.1',
-    'transaction',
-    'zope.sqlalchemy',
-    'awesome-slugify',
-    'unit_conversion',
-    'pytest',
-    'numpy'
-    ]
+        if ret == 0:
+            print 'OilLibrary database successfully generated from file!'
+        else:
+            print 'OilLibrary database generation returned: ', ret
 
 s = setup(name=pkg_name,
           version='0.1',
@@ -100,8 +93,6 @@ s = setup(name=pkg_name,
           keywords='adios weathering oilspill modeling',
           packages=find_packages(),
           include_package_data=True,
-          install_requires=requires,
-          tests_require=requires,
           package_data={'oil_library': ['OilLib',
                                         'tests/*.py',
                                         'tests/sample_data/*']},
@@ -111,6 +102,9 @@ s = setup(name=pkg_name,
           entry_points={'console_scripts': [('initialize_OilLibrary_db = '
                                              'oil_library.initializedb'
                                              ':make_db'),
+                                            ('diff_import_files = '
+                                             'oil_library.scripts.oil_import'
+                                             ':diff_import_files_cmd'),
                                             ],
                         },
           zip_safe=False,

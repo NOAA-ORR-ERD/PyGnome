@@ -1,9 +1,6 @@
 '''
 tests for geojson outputter
 '''
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2, width=120)
-
 from datetime import datetime
 
 import numpy as np
@@ -18,7 +15,6 @@ from gnome.movers import CatsMover
 from gnome.outputters import CurrentGeoJsonOutput
 
 from ..conftest import testdata
-
 
 td = Tide(filename=testdata['CatsMover']['tide'])
 c_cats = CatsMover(testdata['CatsMover']['curr'], tide=td)
@@ -79,8 +75,8 @@ def test_current_grid_geojson_output(model):
     model.rewind()
 
     for step in model:
+        assert 'step_num' in step
         assert 'CurrentGeoJsonOutput' in step
-        assert 'step_num' in step['CurrentGeoJsonOutput']
         assert 'time_stamp' in step['CurrentGeoJsonOutput']
         assert 'feature_collections' in step['CurrentGeoJsonOutput']
 

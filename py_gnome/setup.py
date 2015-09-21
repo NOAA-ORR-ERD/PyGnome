@@ -201,11 +201,10 @@ elif sys.platform == "win32":
     libfile = '{0}.lib'  # windows static library filename format
 
 
-##
 ## setup our third party libraries environment - for Win32/Mac OSX
 ## Linux does not use the libraries in third_party_lib. It links against
 ## netcdf shared objects installed by apt-get
-##
+
 if sys.platform is "darwin" or "win32":
     third_party_dir = os.path.join('..', 'third_party_lib')
 
@@ -505,7 +504,14 @@ extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                             extra_link_args=link_args,
                             )
                   )
-
+extensions.append(Extension("gnome.utilities.file_tools.filescanner",
+                            sources = [os.path.join('gnome',
+                                                    'utilities',
+                                                    'file_tools',
+                                                    'filescanner.pyx')],
+                            include_dirs = [np.get_include()],
+                            language = "c",
+                            ))
 
 setup(name='pyGnome',
       version=__version__,

@@ -90,6 +90,7 @@ cdef extern from "GridCurrentMover_c.h":
         TimeGridVel_c    *timeGrid
         Boolean fIsOptimizedForStep
         Boolean fAllowVerticalExtrapolationOfCurrents
+        int num_method
 
         GridCurrentMover_c ()
         WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)

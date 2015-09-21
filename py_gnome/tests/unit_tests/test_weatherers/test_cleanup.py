@@ -147,11 +147,14 @@ class TestCleanUpBase:
         curr_val = .4
         self.base.efficiency = curr_val
 
-        self.base.efficiency = 0
+        self.base.efficiency = -0.1
         assert self.base.efficiency == curr_val
 
         self.base.efficiency = 1.1
         assert self.base.efficiency == curr_val
+
+        self.base.efficiency = 0.0
+        assert self.base.efficiency == 0.0
 
         self.base.efficiency = 1.0
         assert self.base.efficiency == 1.0
@@ -171,8 +174,9 @@ class TestSkimmer(ObjForTests):
         self.skimmer.prepare_for_model_run(self.sc)
         assert self.sc.mass_balance['skimmed'] == 0.
         assert (self.skimmer._rate ==
-                self.skimmer.amount/(self.skimmer.active_stop -
-                                     self.skimmer.active_start).total_seconds())
+                (self.skimmer.amount /
+                 (self.skimmer.active_stop -
+                  self.skimmer.active_start).total_seconds()))
 
     @mark.parametrize(("model_time", "active", "ts"),
                       [(active_start, True, time_step),
@@ -347,7 +351,7 @@ class TestBurn(ObjForTests):
             self.step(burn, time_step, model_time)
             dt = timedelta(seconds=time_step)
             if (model_time + dt <= burn.active_start or
-                model_time >= burn.active_stop):
+                    model_time >= burn.active_stop):
                 # if model_time + dt == burn.active_start, then start the burn
                 # in next step
                 assert not burn.active
@@ -411,10 +415,10 @@ class TestBurn(ObjForTests):
 
         # given LEs are discrete elements, we cannot add a fraction of an LE
         mass_per_le = self.sc['init_mass'][mask][0]
-        exp_init_oil_mass = (burn.area * thick_si * (1 - avg_frac_water)
-                             * self.op.get_density())
-        assert (self.sc['init_mass'][mask].sum() - exp_init_oil_mass
-                < mass_per_le and
+        exp_init_oil_mass = (burn.area * thick_si * (1 - avg_frac_water) *
+                             self.op.get_density())
+        assert (self.sc['init_mass'][mask].sum() - exp_init_oil_mass <
+                mass_per_le and
                 self.sc['init_mass'][mask].sum() - exp_init_oil_mass >= 0.0)
 
         exp_mass_remain = (burn._oilwater_thickness * (1 - avg_frac_water) *
@@ -453,13 +457,14 @@ class TestBurn(ObjForTests):
 
     def test_efficiency(self):
         '''
-        tests efficiency. If burn1 efficiency is 0.7 and it is 1.0 for burn2,
-        then burn1_amount/burn2_amount = 0.7
-        Also checks the burn duration is not effected by efficiency
+            tests efficiency.
+            - If burn2 efficiency is 0.7 and burn1 efficiency is 1.0,
+              then burn2_amount/burn1_amount = 0.7
+            - Also checks the burn duration is not effected by efficiency
 
-        The burn duration for both will be the same since efficiency only
-        effects the amount of oil burned. The rate at which the oil/water
-        mixture goes down to 2mm only depends on fractional water content.
+            The burn duration for both will be the same since efficiency only
+            effects the amount of oil burned. The rate at which the oil/water
+            mixture goes down to 2mm only depends on fractional water content.
         '''
         self.spill.set('num_elements', 500)
         area = (0.5 * self.volume)/1.
@@ -470,6 +475,35 @@ class TestBurn(ObjForTests):
         self._weather_elements_helper(burn1)
         amount_burn1 = self.sc.mass_balance['burned']
         self._weather_elements_helper(burn2)
+        amount_burn2 = self.sc.mass_balance['burned']
+
+        assert np.isclose(amount_burn2/amount_burn1, eff)
+        assert burn1.active_start == burn2.active_start
+        assert burn1.active_stop == burn2.active_stop
+
+    def test_zero_efficiency(self):
+        '''
+            tests efficiency.
+            - If burn2 efficiency is 0.0 and burn1 efficiency is 1.0,
+              then burn2_amount/burn1_amount = 0.0
+            - Also checks the burn duration is not effected by efficiency
+
+            The burn duration for both will be the same since efficiency only
+            effects the amount of oil burned. The rate at which the oil/water
+            mixture goes down to 2mm only depends on fractional water content.
+        '''
+        self.spill.set('num_elements', 500)
+        area = (0.5 * self.volume)/1.
+        eff = 0.0
+        burn1 = Burn(area, 1., active_start, efficiency=1.0)
+        burn2 = Burn(area, 1., active_start, efficiency=eff)
+
+        self._weather_elements_helper(burn1)
+        amount_burn1 = self.sc.mass_balance['burned']
+
+        with raises(Exception):
+            self._weather_elements_helper(burn2)
+
         amount_burn2 = self.sc.mass_balance['burned']
 
         assert np.isclose(amount_burn2/amount_burn1, eff)

@@ -6,8 +6,8 @@ import copy
 import inspect
 import zipfile
 
-import numpy
-np = numpy
+import numpy as np
+
 from colander import (SchemaNode,
                       Float, Int, Bool, drop)
 
@@ -34,6 +34,9 @@ from gnome.persist import (extend_colander,
 from gnome.persist.base_schema import (ObjType,
                                        CollectionItemsList)
 from gnome.exceptions import ReferencedObjectNotSet
+from select import select
+from sqlalchemy.sql.selectable import Select
+# from aifc import data
 
 
 class ModelSchema(ObjType):
@@ -785,7 +788,7 @@ class Model(Serializable):
             sc['age'][:] = sc['age'][:] + self.time_step
 
     def write_output(self, valid, messages=None):
-        output_info = {}
+        output_info = {'step_num': self.current_time_step}
 
         for outputter in self.outputters:
             if self.current_time_step == self.num_time_steps - 1:
@@ -796,11 +799,9 @@ class Model(Serializable):
             if output is not None:
                 output_info[outputter.__class__.__name__] = output
 
-        if not output_info:
-            return {'step_num': self.current_time_step}
-
-        # append 'valid' flag to output
-        output_info['valid'] = valid
+        if len(output_info) > 1:
+            # append 'valid' flag to output
+            output_info['valid'] = valid
 
         return output_info
 
@@ -822,8 +823,8 @@ class Model(Serializable):
 
             # let each object raise appropriate error if obj is incomplete
             # validate and send validation flag if model is invalid
-            #(msgs, isvalid) = self.validate()
-            #if not isvalid:
+            # (msgs, isvalid) = self.validate()
+            # if not isvalid:
             #    raise StopIteration("Setup model run complete but model "
             #                        "is invalid", msgs)
 
@@ -1198,6 +1199,7 @@ class Model(Serializable):
         '''
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema(json_)
+
         o_json_ = schema.serialize(toserial)
         o_json_['map'] = self.map.serialize(json_)
 
@@ -1223,9 +1225,10 @@ class Model(Serializable):
         '''
         schema = cls._schema(json_['json_'])
         deserial = schema.deserialize(json_)
+
         if 'map' in json_:
-            #d_item = cls._deserialize_nested_obj(json_['map'])
-            #deserial['map'] = d_item
+            # d_item = cls._deserialize_nested_obj(json_['map'])
+            # deserial['map'] = d_item
             # map will be deserialized later - no need to do it twice
             # todo: clean this up
             deserial['map'] = json_['map']
@@ -1424,3 +1427,82 @@ class Model(Serializable):
             oc = getattr(self, attr)
             for item in oc:
                 item.make_default_refs = value
+
+    def get_spill_property(self, prop_name, ucert=0):
+        '''
+        Convenience method to allow user to look up properties of a spill.
+        User can specify ucert as 'ucert' or 1
+        '''
+        if ucert == 'ucert':
+            ucert = 1
+        return self.spills.items()[ucert][prop_name]
+
+    def get_spill_data(self, target_properties, conditions, ucert=0):
+        '''
+        Convenience method to allow user to write an expression to filter
+        raw spill data
+        Example case:
+        get_spill_data('position && mass',
+                       'position > 50 && spill_num == 1 || status_codes == 1')
+
+        WARNING: EXPENSIVE! USE AT YOUR OWN RISK ON LARGE num_elements!
+
+        Example spill element properties are below. This list may not contain
+        all properties tracked by the model.
+        'positions', 'next_positions', 'last_water_positions', 'status_codes',
+        'spill_num', 'id', 'mass', 'age'
+        '''
+        if ucert == 'ucert':
+            ucert = 1
+
+        def elem_val(prop, index):
+            '''
+            Gets the column containing the information on one element
+            '''
+            val = self.spills.items()[ucert].data_arrays[prop][index]
+            return val
+
+        def test_phrase(phrase):
+            for sub_cond in phrase:
+                    cond = sub_cond.rsplit()
+                    prop_val = elem_val(cond[0], i)
+                    op = cond[1]
+                    test_num = cond[2]
+                    if test(prop_val, op, test_num):
+                        return True
+
+            return False
+
+        def test(elem_value, op, test_val):
+            if op in {'<', '<=', '>', '>=', '=='}:
+                return eval(str(int(elem_value))+op+test_val)
+
+        def num(s):
+            try:
+                return int(s)
+            except ValueError:
+                return float(s)
+
+        conditions = conditions.rsplit('&&')
+        conditions = [str(cond).rsplit('||') for cond in conditions]
+
+        sc = self.spills.items()[ucert]
+        result = {}
+
+        for t in target_properties:
+            result[t] = []
+
+        for i in range(0, len(sc)):
+            test_result = True
+
+            for phrase in conditions:
+                if not test_phrase(phrase):
+                    test_result = False
+                    break
+
+            if test_result:
+                for k in result.keys():
+                    n = elem_val(k, i)
+                    result[k].append(n)
+
+        return result

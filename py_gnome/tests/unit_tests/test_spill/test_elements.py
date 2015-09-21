@@ -10,8 +10,7 @@ import os
 import pytest
 from pytest import raises
 
-import numpy
-np = numpy
+import numpy as np
 
 import unit_conversion as uc
 import gnome
@@ -33,17 +32,16 @@ from gnome.persist import load
 
 from ..conftest import mock_sc_array_types, mock_append_data_arrays, test_oil
 
-
 """ Helper functions """
 # first key in windages array must be 'windages' because test function:
 # test_element_type_serialize_deserialize assumes this is the case
 windages = mock_sc_array_types(['windages',
-                                 'windage_range',
-                                 'windage_persist'])
+                                'windage_range',
+                                'windage_persist'])
 mass_array = mock_sc_array_types(['mass'])
 rise_vel_array = mock_sc_array_types(['rise_vel'])
 rise_vel_diameter_array = mock_sc_array_types(['rise_vel',
-                                                'droplet_diameter'])
+                                               'droplet_diameter'])
 
 num_elems = 10
 oil = test_oil

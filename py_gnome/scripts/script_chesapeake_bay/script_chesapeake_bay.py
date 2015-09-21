@@ -7,8 +7,7 @@ Eventually update to use Grid Map rather than BNA
 import os
 from datetime import datetime, timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
@@ -41,7 +40,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   time_step=30 * 60,
                   uncertain=True)
 
-    mapfile = get_datafile(os.path.join(base_dir, './ChesapeakeBay.bna'))
+    mapfile = get_datafile(os.path.join(base_dir, 'ChesapeakeBay.bna'))
 
     print 'adding the map'
     model.map = MapFromBNA(mapfile, refloat_halflife=1)  # seconds
@@ -69,7 +68,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - start_position = (-76.126872, 37.680952, 5.0),
     spill = point_line_release_spill(num_elements=1000,
                                      start_position=(-76.126872,
-                                                     37.680952, 0.0),
+                                                     37.680952,
+                                                     0.0),
                                      release_time=start_time)
 
     model.spills += spill
@@ -90,15 +90,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += w_mover
 
     print 'adding a current mover:'
-    curr_file = get_datafile(os.path.join(base_dir, r"./ChesapeakeBay.nc"))
-    topology_file = get_datafile(os.path.join(base_dir,
-                                              r"./ChesapeakeBay.dat"))
+    curr_file = get_datafile(os.path.join(base_dir, 'ChesapeakeBay.nc'))
+    topology_file = get_datafile(os.path.join(base_dir, 'ChesapeakeBay.dat'))
 
     # uncertain_time_delay in hours
     c_mover = GridCurrentMover(curr_file, topology_file,
                                uncertain_time_delay=3)
     c_mover.uncertain_along = 0  # default is .5
-    #c_mover.uncertain_cross = 0  # default is .25
+    # c_mover.uncertain_cross = 0  # default is .25
+
     model.movers += c_mover
 
     return model
@@ -106,7 +106,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 if __name__ == "__main__":
     scripting.make_images_dir()
+<<<<<<< HEAD
 
+=======
+    model = make_model()
+    model.full_run()
+
+if __name__ == "__main__":
+>>>>>>> develop
     model = make_model()
 
     model.full_run()

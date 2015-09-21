@@ -117,6 +117,10 @@ cdef extern from "TypeDefs.h":
         OILSTAT_EVAPORATED = 10
         OILSTAT_TO_BE_REMOVED = 12
     
+    ctypedef enum NUM_METHOD:
+        EULER = 0
+        RK4 = 1
+    
     # In C++, this information is defined for each LE
     # However, it is the same for all LEs in a spill.
     # In PyGnome, this is called spill_type and is a property 
@@ -170,4 +174,3 @@ cdef extern from "DagTree.h":
 
     ctypedef DAG **DAGHdl
 
-       

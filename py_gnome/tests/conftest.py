@@ -37,11 +37,11 @@ def pytest_runtest_setup(item):
     So the code in here is executed before each test.
     '''
     if ('slow' in item.keywords and
-        not item.config.getoption('--runslow')):
+            not item.config.getoption('--runslow')):
         pytest.skip('need --runslow option to run')
 
     if (item.config.getoption('--serial') and
-        'serial' not in item.keywords):
+            'serial' not in item.keywords):
         pytest.skip('only run tests marked as serial')
 
     # set random seed:

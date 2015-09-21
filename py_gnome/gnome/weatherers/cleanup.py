@@ -115,17 +115,20 @@ class CleanUpBase(RemoveMass, Weatherer):
     @efficiency.setter
     def efficiency(self, value):
         '''
-        update efficiency.
+            Update efficiency.
 
-        It must be greater than 0 and less than or equal to 1.0. It can also be
-        None since that means use wind to compute efficiency.
+            - Efficiency can be None since it indicates that we use wind
+              to compute efficiency.
+            - If efficiency is not None, it must be a number greater than
+              or equal to 0.0 and less than or equal to 1.0.
         '''
-        if value is None or (value > 0 and value <= 1):
+        if value is None:
             self._efficiency = value
-
-        elif value <= 0 or value > 1.0:
-            msg = "efficiency must be > 0 and <= 1.0"
-            self.logger.warning(msg)
+        elif value >= 0.0 and value <= 1.0:
+            self._efficiency = value
+        else:
+            self.logger.warning('Efficiency must be either None or a number '
+                                'between 0 and 1.0')
 
     def _get_substance(self, sc):
         '''
@@ -182,11 +185,12 @@ class CleanUpBase(RemoveMass, Weatherer):
         # (1 - frac_water) * mass_to_remove
         if mass_to_remove >= curr_mass.sum():
             data['fate_status'][:] = new_status
-            msg = "insufficient mass released for cleanup"
-            self.logger.warning(self._pid + msg)
-            self.logger.warning(self._pid + "marked ALL ({0}) LEs, total mass:"
-                                " {1}".format(len(data['fate_status']),
-                                              data['mass'].sum()))
+            self.logger.warning('{0} insufficient mass released for cleanup'
+                                .format(self._pid))
+            self.logger.warning('{0} marked ALL ({1}) LEs, total mass: {2}'
+                                .format(self._pid,
+                                        len(data['fate_status']),
+                                        data['mass'].sum()))
         else:
             # sum up mass until threshold is reached, find index where
             # total_mass_removed is reached or exceeded
@@ -204,8 +208,16 @@ class CleanUpBase(RemoveMass, Weatherer):
         find weighted average of frac_water array, return (1 - avg_frac_water)
         since we want the average fraction of oil in this data
         '''
-        avg_frac_water = ((data['mass'] * data['frac_water']).
-                          sum()/data['mass'].sum())
+        if data['mass'].sum() > 0:
+            avg_frac_water = ((data['mass'] * data['frac_water']).
+                              sum())/data['mass'].sum()
+        else:
+            avg_frac_water = 0
+            self.logger.warning('{0} set avg_frac_water = ({1}), '
+                                'total mass: {2}'
+                                .format(self._pid,
+                                        avg_frac_water,
+                                        data['mass'].sum()))
         return (1 - avg_frac_water)
 
 
@@ -551,7 +563,7 @@ class Burn(CleanUpBase, Serializable):
            that are released together will be burned together since they would
            be closer to each other in position.
            Assumes: there is more mass in water than amount of mass to be
-           skimmed. The LEs marked for Burning are marked only once -
+           burned. The LEs marked for Burning are marked only once -
            during the very first step that the object becomes active
         '''
         super(Burn, self).prepare_for_model_step(sc, time_step, model_time)

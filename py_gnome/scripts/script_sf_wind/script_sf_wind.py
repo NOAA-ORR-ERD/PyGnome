@@ -6,9 +6,6 @@ Script to test GNOME with san francisco bay data (NWS wind data)
 import os
 from datetime import datetime, timedelta
 
-import numpy
-np = numpy
-
 from gnome import scripting
 from gnome.spill.elements import floating
 
@@ -34,7 +31,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   uncertain=True)
 
     print 'adding the map'
-    mapfile = get_datafile(os.path.join(base_dir, './coastSF.bna'))
+    mapfile = get_datafile(os.path.join(base_dir, 'coastSF.bna'))
     model.map = MapFromBNA(mapfile, refloat_halflife=1)  # seconds
 
     renderer = Renderer(mapfile, images_dir, size=(800, 600),
@@ -64,14 +61,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # model.movers += r_mover
 
     print 'adding a grid wind mover:'
-    wind_file = get_datafile(os.path.join(base_dir, r"./WindSpeedDirSubset.nc")
-                             )
+    wind_file = get_datafile(os.path.join(base_dir, 'WindSpeedDirSubset.nc'))
     topology_file = get_datafile(os.path.join(base_dir,
-                                              r"./WindSpeedDirSubsetTop.dat"))
+                                              'WindSpeedDirSubsetTop.dat'))
     w_mover = GridWindMover(wind_file, topology_file)
 
-    #w_mover.uncertain_time_delay = 6
-    #w_mover.uncertain_duration = 6
+    # w_mover.uncertain_time_delay = 6
+    # w_mover.uncertain_duration = 6
     w_mover.uncertain_speed_scale = 1
     w_mover.uncertain_angle_scale = 0.2  # default is .4
     w_mover.wind_scale = 2
@@ -80,6 +76,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     return model
 
+<<<<<<< HEAD
 if __name__ == '__main__':
     scripting.make_images_dir()
 
@@ -87,3 +84,10 @@ if __name__ == '__main__':
 
     model.full_run()
 
+=======
+
+if __name__ == "__main__":
+    scripting.make_images_dir()
+    model = make_model()
+    model.full_run()
+>>>>>>> develop

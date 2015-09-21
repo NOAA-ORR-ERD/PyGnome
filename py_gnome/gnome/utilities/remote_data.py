@@ -6,11 +6,11 @@ import os
 import urllib2
 from urlparse import urljoin
 
-from progressbar import ProgressBar, Percentage, FileTransferSpeed, \
-    ETA, Bar
+from progressbar import (ProgressBar, Percentage, FileTransferSpeed,
+                         ETA, Bar)
 
 data_server = 'http://gnome.orr.noaa.gov/py_gnome_testdata/'
-CHUNKSIZE = 1024 * 1024  # read 1 MB at a time
+CHUNKSIZE = 1024 * 1024
 
 
 def get_datafile(file_):
@@ -46,36 +46,32 @@ def get_datafile(file_):
         try:
             resp = urllib2.urlopen(urljoin(data_server, fname))
         except urllib2.HTTPError, ex:
-            ex.msg = \
-                "{0}. '{1}' not found on server or server is down".format(ex.msg,
-                    fname)
+            ex.msg = ("{0}. '{1}' not found on server or server is down"
+                      .format(ex.msg, fname))
             raise ex
 
         # progress bar
+        widgets = [fname + ':      ',
+                   Percentage(),
+                   ' ',
+                   Bar(),
+                   ' ',
+                   ETA(),
+                   ' ',
+                   FileTransferSpeed(),
+                   ]
 
-        widgets = [
-            fname + ':      ',
-            Percentage(),
-            ' ',
-            Bar(),
-            ' ',
-            ETA(),
-            ' ',
-            FileTransferSpeed(),
-            ]
         pbar = ProgressBar(widgets=widgets,
-                           maxval=int(resp.info().getheader('Content-Length'
-                           ))).start()
+                           maxval=int(resp.info().getheader('Content-Length'))
+                           ).start()
 
         if not os.path.exists(path_):
             os.makedirs(path_)
 
         sz_read = 0
         with open(file_, 'wb') as fh:
-
             # while sz_read < resp.info().getheader('Content-Length')
             # goes into infinite recursion so break loop for len(data) == 0
-
             while True:
                 data = resp.read(CHUNKSIZE)
 
@@ -84,10 +80,9 @@ def get_datafile(file_):
                 else:
                     fh.write(data)
                     sz_read += len(data)
+
                     if sz_read >= CHUNKSIZE:
                         pbar.update(CHUNKSIZE)
 
         pbar.finish()
         return file_
-
-

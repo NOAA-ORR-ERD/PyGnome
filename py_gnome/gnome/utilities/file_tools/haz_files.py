@@ -10,9 +10,9 @@ import os
 import numpy as np
 
 try:
-    import file_scanner
+    from .filescanner import scan
     FILESCANNER = True
-    print 'running with File Scanner'
+    #print 'running with File Scanner'
 except:
     FILESCANNER = False
 
@@ -199,7 +199,7 @@ def WriteVerdatFile(filename, PointData, Boundaries):
     fd.close()
 
 
-def GetNextBNAPolygon(f, dtype=np.float):
+def GetNextBNAPolygon(f, dtype=np.float64):
     """
     Utility function that returns the next polygon from a BNA file
 
@@ -229,7 +229,6 @@ def GetNextBNAPolygon(f, dtype=np.float):
 
     while header and not header.strip():  # skip blank lines
         header = f.readline()
-
     try:
         # #find the quotes:
         # quote2 = header.find('"', 1)
@@ -260,12 +259,13 @@ def GetNextBNAPolygon(f, dtype=np.float):
                        .format(name))
 
     if FILESCANNER:
-        points = (file_scanner.FileScanN(f, num_points * 2)
-                  .astype(dtype).reshape((-1, 2)))
+            points = scan(f, num_points * 2)
+            points = np.asarray(points, dtype=dtype)
+            points.shape = (-1, 2)
     else:
         points = np.zeros((num_points, 2), dtype)
         for i in range(num_points):
-            points[i, :] = np.fromfile(f, count=2, sep=',', dtype=dtype)
+            points[i,:] = [float(j) for j in f.readline().split(',')]
 
     if poly_type == 'polygon':  # first and last points are the same in BNA,
                                 # but we don't want the duplicate point.

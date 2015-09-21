@@ -13,8 +13,7 @@ This one uses:
 import os
 from datetime import datetime, timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
@@ -43,8 +42,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # create the maps:
 
     print 'creating the maps'
-    mapfile = get_datafile(os.path.join(base_dir, './SanJuanMap.bna'))
-    gnome_map = MapFromBNA(mapfile, refloat_halflife=1, raster_size= 1024 * 1024)  # hours
+    mapfile = get_datafile(os.path.join(base_dir, 'SanJuanMap.bna'))
+    gnome_map = MapFromBNA(mapfile, refloat_halflife=1,
+                           raster_size=1024 * 1024)
 
     renderer = Renderer(mapfile,
                         images_dir,
@@ -84,29 +84,29 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a cats shio mover:'
 
-	#need to add the scale_factor for the tide heights file
-    curr_file = get_datafile(os.path.join(base_dir, r"./EbbTides.cur"))
-    tide_file = get_datafile(os.path.join(base_dir, r"./EbbTidesShioHt.txt"))
+    # need to add the scale_factor for the tide heights file
+    curr_file = get_datafile(os.path.join(base_dir, 'EbbTides.cur'))
+    tide_file = get_datafile(os.path.join(base_dir, 'EbbTidesShioHt.txt'))
 
-    c_mover = CatsMover(curr_file, tide=Tide(tide_file,scale_factor=.15))
+    c_mover = CatsMover(curr_file, tide=Tide(tide_file, scale_factor=.15))
 
     # this is the value in the file (default)
-    c_mover.scale_refpoint = (-66.116667,18.458333)
+    c_mover.scale_refpoint = (-66.116667, 18.458333)
     c_mover.scale = True
     c_mover.scale_value = 1.0
-    #c_mover.tide.scale_factor = 0.15
+    # c_mover.tide.scale_factor = 0.15
 
     model.movers += c_mover
 
     print 'adding a cats mover:'
 
-    curr_file = get_datafile(os.path.join(base_dir, r"./Offshore.cur"))
+    curr_file = get_datafile(os.path.join(base_dir, 'Offshore.cur'))
 
     c_mover = CatsMover(curr_file)
 
     # this is the value in the file (default)
-    c_mover.scale_refpoint = (-66.084333333,18.46966667)
-    #c_mover.scale_refpoint = (-66.082836,18.469334)
+    # c_mover.scale_refpoint = (-66.082836, 18.469334)
+    c_mover.scale_refpoint = (-66.084333333, 18.46966667)
     c_mover.scale = True
     c_mover.scale_value = 0.1
 
@@ -116,17 +116,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     end_time = start_time + timedelta(hours=12)
     spill = point_line_release_spill(num_elements=1000,
+                                     release_time=start_time,
                                      start_position=(-66.16374,
-                                     #start_position=(-66.129099,
                                                      18.468054, 0.0),
-                                                     #18.465332, 0.0),
-                                     release_time=start_time)
-                                     #end_release_time=end_time)
+                                     # start_position=(-66.129099,
+                                     #                 18.465332, 0.0),
+                                     # end_release_time=end_time,
+                                     )
 
     model.spills += spill
 
     return model
 
+<<<<<<< HEAD
 if __name__ == '__main__':
     scripting.make_images_dir()
 
@@ -134,3 +136,10 @@ if __name__ == '__main__':
 
     model.full_run()
 
+=======
+
+if __name__ == "__main__":
+    scripting.make_images_dir()
+    model = make_model()
+    model.full_run()
+>>>>>>> develop

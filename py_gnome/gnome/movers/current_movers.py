@@ -2,6 +2,7 @@
 Movers using currents and tides as forcing functions
 '''
 import os
+from os.path import basename
 import copy
 
 import numpy as np
@@ -112,7 +113,7 @@ class CurrentMoversBase(CyMover):
 #         centers = (raw_cells[:, 0, :] +
 #                    #(raw_cells[:, 3, :] - raw_cells[:, 0, :]) / 2.)
 #                    (raw_cells[:, 2, :] - raw_cells[:, 0, :]) / 2.)
-# 
+#
 #         return centers
 
     def get_points(self):
@@ -196,7 +197,9 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
             raise ValueError('Path for Cats filename does not exist: {0}'
                              .format(filename))
 
-        self.filename = filename  # check if this is stored with cy_cats_mover?
+        self._filename = filename
+
+        # check if this is stored with cy_cats_mover?
         self.mover = CyCatsMover()
         self.mover.text_read(filename)
         self.name = os.path.split(filename)[1]
@@ -234,6 +237,9 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
         return 'CatsMover(filename={0})'.format(self.filename)
 
     # Properties
+    filename = property(lambda self: basename(self._filename),
+                        lambda self, val: setattr(self, '_filename', val))
+
     scale = property(lambda self: bool(self.mover.scale_type),
                      lambda self, val: setattr(self.mover,
                                                'scale_type',
@@ -353,7 +359,10 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
 
-        if json_ == 'webapi' and 'tide' in toserial:
+        if json_ == 'save':
+            toserial['filename'] = self._filename
+
+        if 'tide' in toserial:
             schema.add(environment.TideSchema(name='tide'))
 
         return schema.serialize(toserial)
@@ -404,6 +413,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                  current_scale=1,
                  uncertain_along=0.5,
                  uncertain_across=0.25,
+                 num_method=basic_types.numerical_methods.euler,
                  **kwargs):
         """
         Initialize a GridCurrentMover
@@ -424,6 +434,9 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         :param extrapolate: Allow current data to be extrapolated
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
+        :param num_method: Numerical method for calculating movement delta.
+                           Default Euler
+                           option: Runga-Kutta 4 (RK4)
 
         uses super, super(GridCurrentMover,self).__init__(\*\*kwargs)
         """
@@ -453,6 +466,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         self.mover.text_read(filename, topology_file)
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
+        self.num_method = num_method
 
         super(GridCurrentMover, self).__init__(**kwargs)
 
@@ -503,6 +517,10 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                            lambda self, val: setattr(self.mover,
                                                      'time_offset',
                                                      val * 3600.))
+    num_method = property(lambda self: self.mover.num_method,
+                          lambda self, val: setattr(self.mover,
+                                                    'num_method',
+                                                    val))
 
     def get_grid_data(self):
         """
@@ -518,7 +536,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
             if self.mover._is_data_on_cells():
                 return self.get_triangle_center_points()
             else:
-                return self.get_points()            
+                return self.get_points()
         else:
             return self.get_cell_center_points()
 
@@ -573,6 +591,9 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                               (hours).
         """
         return (self.mover.get_offset_time()) / 3600.
+
+    def get_num_method(self):
+        return self.mover.num_method
 
 
 class IceMoverSchema(CurrentMoversBaseSchema):

@@ -1,7 +1,7 @@
 '''
 Utility functions
 '''
-from math import exp, log
+from math import log
 
 import numpy as np
 
@@ -56,33 +56,7 @@ def get_density(oil, temp, out=None):
     return (out, out[0])[len(out) == 1]
 
 
-def get_v_max(oil, k_v2=5000.0):
-    '''
-    return oil.pour_point_max_k or oil.pour_point_min_k if pour_point_max_k is
-    None.
-
-    todo: ask what is k_v2? It was hard coded in previous implementation
-    '''
-    # first get our v_max
-    pour_point = (oil.pour_point_max_k
-                  if oil.pour_point_max_k is not None
-                  else oil.pour_point_min_k)
-    v_max = None
-    if pour_point:
-        # Note: All oils seem to have either a pour_point_max_k or
-        # pour_point_min_k but leave check in here for now
-        visc = sorted([(v, abs(v.ref_temp_k - pour_point))
-                       for v in oil.kvis
-                       if v is not None],
-                      key=lambda v: v[1])[0][0]
-        v_ref = visc.m_2_s
-        t_ref = visc.ref_temp_k
-        v_max = v_ref * exp(k_v2 / t_ref - k_v2 / pour_point)
-
-    return v_max
-
-
-def get_viscosity(oil, temp, out=None):
+def get_viscosity(oil, temp, out=None, clip_to_vmax=True):
     '''
         The Oil object has a list of kinematic viscosities at empirically
         measured temperatures.  We need to use the ones closest to our
@@ -94,7 +68,6 @@ def get_viscosity(oil, temp, out=None):
         return None
 
     k_v2 = 5000.0
-    v_max = get_v_max(oil, k_v2)
 
     # convert to numpy array if it isn't already one
     temp = np.asarray(temp, dtype=float)
@@ -129,12 +102,19 @@ def get_viscosity(oil, temp, out=None):
     # now the actual computation
     out[:] = v_ref[near_idx] * np.exp(k_v2 / temp - k_v2 / ref_temp[near_idx])
 
-    if v_max:
-        mask = v_max > out
-        if np.any(mask):
-            out[mask] = v_max
+    if clip_to_vmax:
+        pour_point = get_pour_point(oil)
+        v_max = get_viscosity(oil, pour_point, clip_to_vmax=False)
+
+        out[np.where(temp < pour_point)] = v_max
 
     return (out, out[0])[len(out) == 1]
+
+
+def get_pour_point(oil):
+    return (oil.pour_point_max_k
+            if oil.pour_point_max_k is not None
+            else oil.pour_point_min_k)
 
 
 def get_boiling_points_from_cuts(oil):

@@ -7,7 +7,7 @@ import pytest
 from oil_library import get_oil
 from oil_library.utilities import (get_density,
                                    get_viscosity,
-                                   get_v_max,
+                                   get_pour_point,
                                    get_boiling_points_from_api)
 
 
@@ -58,12 +58,16 @@ def test_get_density(temps, exp_value, use_out):
 # kvis at 0th index for a few more values:
 #    viscosity_tests = [d.ref_temp_k for d in oil_.densities]
 #    viscosity_tests.append(oil_.densities[0].ref_temp_k)
-v_max = get_v_max(oil_)
+v_max = get_viscosity(oil_, get_pour_point(oil_), clip_to_vmax=False)
+
 viscosity_tests = [oil_.kvis[ix].ref_temp_k if ix < len(oil_.kvis)
                    else oil_.kvis[0].ref_temp_k
                    for ix in range(0, len(oil_.kvis) + 3)]
-viscosity_exp = [(d.m_2_s, v_max)[v_max > d.m_2_s] for temp in viscosity_tests
-                 for d in oil_.kvis if abs(d.ref_temp_k - temp) == 0]
+
+viscosity_exp = [(d.m_2_s, v_max)[v_max < d.m_2_s]
+                 for temp in viscosity_tests
+                 for d in oil_.kvis
+                 if abs(d.ref_temp_k - temp) == 0]
 
 
 @pytest.mark.parametrize(("temps", "exp_value", "use_out"),
@@ -86,8 +90,8 @@ def test_get_viscosity(temps, exp_value, use_out):
         get_viscosity(oil_, temps, out)
     else:
         out = get_viscosity(oil_, temps)
-    assert np.all(out == exp_value)   # so it works for scalar + arrays
 
+    assert np.all(out == exp_value)   # so it works for scalar + arrays
 
 
 @pytest.mark.parametrize("max_cuts", (1, 2, 3, 4, 5))

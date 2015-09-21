@@ -34,8 +34,8 @@ class Base(object):
 
     def relationships(self, direction):
         return sorted([p.key for p in self.__mapper__.iterate_properties
-                       if (isinstance(p, RelationshipProperty)
-                           and p.direction == direction)])
+                       if (isinstance(p, RelationshipProperty) and
+                           p.direction == direction)])
 
     @property
     def one_to_many_relationships(self):

@@ -3,16 +3,11 @@
 Script to test GNOME with HYCOM data in Mariana Islands region.
 """
 
-NUM_ELEMENTS = 1e6
-
 import os
-import shutil
 from datetime import datetime, timedelta
 
-import numpy
-np = numpy
+from gnome import basic_types
 
-import gnome
 from gnome import scripting
 from gnome import utilities
 from gnome.utilities.remote_data import get_datafile
@@ -20,11 +15,15 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.model import Model
 
 from gnome.map import MapFromBNA
-from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
-from gnome.outputters import Renderer
+from gnome.outputters import (Renderer,
+                              # NetCDFOutput
+                              )
+from gnome.basic_types import numerical_methods
+
+NUM_ELEMENTS = 1e5
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -36,9 +35,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     start_time = datetime(2013, 5, 18, 0)
 
     model = Model(start_time=start_time, duration=timedelta(days=8),
-                  time_step=1 * 3600, uncertain=False)
+                  time_step=4 * 3600, uncertain=False)
 
-    mapfile = get_datafile(os.path.join(base_dir, './mariana_island.bna'))
+    mapfile = get_datafile(os.path.join(base_dir, 'mariana_island.bna'))
 
     print 'adding the map'
     model.map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
@@ -57,12 +56,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # print "adding netcdf output"
     # netcdf_output_file = os.path.join(base_dir,'mariana_output.nc')
     # scripting.remove_netcdf(netcdf_output_file)
-    # model.outputters += gnome.netcdf_outputter.NetCDFOutput(netcdf_output_file,
-    #                                                         which_data='all')
+    # model.outputters += NetCDFOutput(netcdf_output_file, which_data='all')
 
-    # #
-    # # Set up the movers:
-    # #
+    #
+    # Set up the movers:
+    #
 
     print 'adding a RandomMover:'
     model.movers += RandomMover(diffusion_coef=10000)
@@ -73,8 +71,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a current mover:'
 
     # # this is HYCOM currents
-    curr_file = get_datafile(os.path.join(base_dir, r"./HYCOM.nc"))
-    model.movers += GridCurrentMover(curr_file)
+    curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
+    model.movers += GridCurrentMover(curr_file,
+                                     num_method=numerical_methods.euler);
 
     # #
     # # Add some spills (sources of elements)
@@ -104,7 +103,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == '__main__':
     scripting.make_images_dir()
     model = make_model()
+
     for step in model:
-        print step
-        print "memuse: %fMB" % (utilities.get_mem_use())
-    #model.full_run(log=True)
+        # print step
+        print "step: %.4i -- memuse: %fMB" % (step['Renderer']['step_num'],
+                                              utilities.get_mem_use())

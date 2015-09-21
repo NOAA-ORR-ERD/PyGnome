@@ -15,8 +15,7 @@ This one uses:
 import os
 from datetime import datetime, timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
@@ -99,8 +98,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a cats ossm mover:'
 
-    #ossm_file = get_datafile(os.path.join(base_dir,
-    #                         r"./MerrimackMassCoastOSSM.txt"))
+    # ossm_file = get_datafile(os.path.join(base_dir,
+    #                          r"./MerrimackMassCoastOSSM.txt"))
     curr_file = get_datafile(os.path.join(base_dir,
                              r"./MerrimackMassCoast.cur"))
     tide_file = get_datafile(os.path.join(base_dir,
@@ -130,16 +129,25 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.movers += c_mover
 
-# pat1Angle 315; pat1Speed 19.44; pat1SpeedUnits knots; pat1ScaleToValue 0.138855
-# pat2Angle 225; pat2Speed 19.44; pat2SpeedUnits knots; pat2ScaleToValue 0.05121
-# scaleBy WindStress
+    # pat1Angle 315;
+    # pat1Speed 19.44; pat1SpeedUnits knots;
+    # pat1ScaleToValue 0.138855
+    #
+    # pat2Angle 225;
+    # pat2Speed 19.44; pat2SpeedUnits knots;
+    # pat2ScaleToValue 0.05121
+    #
+    # scaleBy WindStress
 
     print "adding a component mover:"
     component_file1 = get_datafile(os.path.join(base_dir, r"./WAC10msNW.cur"))
     component_file2 = get_datafile(os.path.join(base_dir, r"./WAC10msSW.cur"))
     comp_mover = ComponentMover(component_file1, component_file2, w_mover.wind)
-    #todo: callback did not work correctly below - fix!
-    #comp_mover = ComponentMover(component_file1,component_file2,Wind(timeseries=series, units='m/s'))
+
+    # todo: callback did not work correctly below - fix!
+    # comp_mover = ComponentMover(component_file1,
+    #                             component_file2,
+    #                             Wind(timeseries=series, units='m/s'))
 
     comp_mover.scale_refpoint = (-70.855, 42.275)
     comp_mover.pat1_angle = 315
@@ -166,6 +174,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     return model
 
+<<<<<<< HEAD
 if __name__ == "__main__":
 
     # run outside of the script runner
@@ -177,3 +186,10 @@ if __name__ == "__main__":
 
 
 
+=======
+
+if __name__ == "__main__":
+    scripting.make_images_dir()
+    model = make_model()
+    model.full_run()
+>>>>>>> develop

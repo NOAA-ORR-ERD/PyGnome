@@ -7,7 +7,6 @@ module to hold all the map rendering code.
 This one used the new map_canvas_gd, which uses the gd rendering lib.
 
 """
-
 import os
 import glob
 import copy
@@ -72,8 +71,8 @@ class Renderer(Outputter, MapCanvas):
     _create.extend(_update)
     _state = copy.deepcopy(Outputter._state)
     _state.add(save=_create, update=_update)
-    _state.add_field(Field('map_filename', isdatafile=True,
-                    save=True, read=True, test_for_eq=False))
+    _state.add_field(Field('filename', isdatafile=True,
+                           save=True, read=True, test_for_eq=False))
     _state += Field('output_dir', save=True, update=True, test_for_eq=False)
     _schema = RendererSchema
 
@@ -142,6 +141,12 @@ class Renderer(Outputter, MapCanvas):
 
         Following args are passed to base class Outputter's init:
 
+        :param filename: the name of the image file
+
+        :param output_dir: the folder in which to write the image
+
+        :param image_size: the width and height of the image
+
         :param cache: sets the cache object from which to read data. The model
             will automatically set this param
 
@@ -174,7 +179,6 @@ class Renderer(Outputter, MapCanvas):
         """
 
         # set up the canvas
-
         self._map_filename = map_filename
         if map_filename is not None:
             self.land_polygons = haz_files.ReadBNA(map_filename, 'PolygonSet')
@@ -247,7 +251,6 @@ class Renderer(Outputter, MapCanvas):
         images. If you want to save the previous images, a new output dir
         should be set.
         """
-
         super(Renderer, self).prepare_for_model_run(*args, **kwargs)
 
         self.clean_output_files()
@@ -257,12 +260,11 @@ class Renderer(Outputter, MapCanvas):
                                           self.background_map_name)
                              )
 
-    def clean_output_files(self):
-        """
-        Clean files from the output dir
+    def clear_output_dir(self):
 
-        Tries to clean only those that it wrote...
-        """
+        # clear out output dir:
+        # don't need to do this -- it will get written over.
+
         try:
             os.remove(os.path.join(self.output_dir,
                                    self.background_map_name))
@@ -402,7 +404,7 @@ class Renderer(Outputter, MapCanvas):
         self.save_foreground(image_filename)
         self.last_filename = image_filename
 
-        return {'step_num': step_num, 'image_filename': image_filename,
+        return {'image_filename': image_filename,
                 'time_stamp': time_stamp}
 
     def _draw(self, step_num):
@@ -463,4 +465,5 @@ class Renderer(Outputter, MapCanvas):
         os.mkdir(os.path.join(saveloc, json_data['output_dir']))
         json_data['output_dir'] = os.path.join(saveloc,
                                                json_data['output_dir'])
+
         return super(Renderer, cls).loads(json_data, saveloc, references)

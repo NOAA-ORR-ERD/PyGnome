@@ -1,9 +1,9 @@
 '''
 Test all operations for cats mover work
 '''
-
 import datetime
 import os
+from os.path import basename
 
 import numpy as np
 import pytest
@@ -13,7 +13,6 @@ from gnome.environment import Tide
 from gnome.utilities import time_utils
 
 from ..conftest import sample_sc_release, testdata
-
 
 curr_file = testdata['CatsMover']['curr']
 td = Tide(filename=testdata['CatsMover']['tide'])
@@ -181,18 +180,37 @@ def _uncertain_loop(pSpill, cats):
     return u_delta
 
 
-@pytest.mark.parametrize("tide", (None, td))
-def test_serialize_deserialize(tide):
+@pytest.mark.parametrize(('tide', 'json_'),
+                         [(None, 'save'),
+                          (td, 'save'),
+                          (None, 'webapi'),
+                          (td, 'webapi')])
+def test_serialize_deserialize(tide, json_):
     """
     test serialize/deserialize/update_from_dict doesn't raise errors
     """
-
     c_cats = CatsMover(curr_file, tide=tide)
-    toserial = c_cats.serialize('webapi')
+
+    toserial = c_cats.serialize(json_)
     dict_ = c_cats.deserialize(toserial)
+
+    # check our CatsMover attributes
+    if json_ == 'webapi':
+        assert toserial['filename'] == basename(toserial['filename'])
+    else:
+        # in save context, we expect a full path to file
+        assert toserial['filename'] != basename(toserial['filename'])
+
     if tide:
         assert 'tide' in toserial
         dict_['tide'] = tide  # no longer updating properties of nested objects
         assert c_cats.tide is tide
+
+        if json_ == 'webapi':
+            assert (toserial['tide']['filename'] ==
+                    basename(toserial['tide']['filename']))
+        else:
+            assert (toserial['tide']['filename'] !=
+                    basename(toserial['tide']['filename']))
 
     c_cats.update_from_dict(dict_)

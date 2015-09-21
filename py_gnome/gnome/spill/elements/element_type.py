@@ -16,8 +16,8 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromPlume)
-from oil_library import get_oil_props, get_oil
-
+from oil_library import get_oil_props
+from oil_library import build_oil_props
 from gnome.persist import base_schema, class_from_objtype
 import unit_conversion as uc
 
@@ -97,7 +97,27 @@ class ElementType(Serializable):
         database links. Then output the JSON from the unlinked object.
         '''
         if self._substance is not None:
-            return self._substance.tojson()
+            return self._prune_substance(self._substance.tojson())
+
+    def _prune_substance(self, substance_json):
+        '''
+            Whether saving to a savefile or outputting to the web client,
+            the id of the substance objects is not necessary, and in fact
+            not even wanted.
+        '''
+        del substance_json['id']
+        del substance_json['imported_record_id']
+        del substance_json['estimated_id']
+
+        for attr in ('kvis', 'densities', 'cuts',
+                     'molecular_weights',
+                     'sara_densities', 'sara_fractions'):
+            for item in substance_json[attr]:
+                for sub_item in ('id', 'oil_id', 'imported_record_id'):
+                    if sub_item in item:
+                        del item[sub_item]
+
+        return substance_json
 
     @property
     def substance(self):
@@ -265,6 +285,8 @@ def plume(distribution_type='droplet_size',
     initializer with user specified parameters for distribution.
 
     See below docs for details on the parameters.
+    
+    NOTE: substance_name or density must be provided 
 
     :param str distribution_type: default 'droplet_size' available options:
 
@@ -285,11 +307,18 @@ def plume(distribution_type='droplet_size',
     if density is not None:
         # Assume density is at 15 K - convert density to api
         api = uc.convert('density', density_units, 'API', density)
-        substance = get_oil_props({'name': substance_name,
-                                   'api': api}, 2)
-    else:
+        if substance_name is not None:
+            substance = build_oil_props({'name':substance_name, 'api': api}, 2)
+        else:
+            substance = build_oil_props({'api': api}, 2)
+    elif substance_name is not None:
         # model 2 cuts if fake oil
         substance = get_oil_props(substance_name, 2)
+    else:
+        ex = ValueError()
+        ex.message = ("plume substance density and/or name must be provided")
+        raise ex
+        
 
     if distribution_type == 'droplet_size':
         return ElementType([InitRiseVelFromDropletSizeFromDist(
