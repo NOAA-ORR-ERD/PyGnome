@@ -612,9 +612,11 @@ class RasterMap(GnomeMap):
         return self.projection.to_pixel(coords)
 
 
-class MapFromBNA(RasterMap):
+class MapFromPolyFile(RasterMap):
     """
-    A raster land-water map, created from a BNA file
+    A raster land-water map, created from file with polygons in it.
+
+    Currently only support BNA, but could be shape, or ???
     """
     _state = copy.deepcopy(RasterMap._state)
     _state.update(['map_bounds', 'spillable_area'], save=False)
@@ -719,6 +721,8 @@ class MapFromBNA(RasterMap):
 
         return None
 
+# for backward compatibility
+MapFromBNA = MapFromPolyFile
 
 def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
 
