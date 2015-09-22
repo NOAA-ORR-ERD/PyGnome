@@ -98,11 +98,5 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 if __name__ == '__main__':
     scripting.make_images_dir()
-
     model = make_model()
-
-<<<<<<< HEAD
     model.full_run()
-=======
-    model.full_run(rewind=True)
->>>>>>> develop

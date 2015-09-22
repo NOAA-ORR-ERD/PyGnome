@@ -174,22 +174,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     return model
 
-<<<<<<< HEAD
 if __name__ == "__main__":
-
     # run outside of the script runner
-
-    scripting.make_images_dir()
-
-    model = make_model()
-    model.full_run()
-
-
-
-=======
-
-if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
     model.full_run()
->>>>>>> develop

@@ -111,14 +111,7 @@ if __name__ == "__main__":
     scripting.make_images_dir()
 
     model = make_model()
-<<<<<<< HEAD
     for step in model:
         print step
-=======
-    model.duration = timedelta(hours=2)
-    #model.full_run(log=True)
-    model.full_run()
 
-    for sc in model.spills.items():
-        print "sc:", sc
->>>>>>> develop
+    model.full_run()

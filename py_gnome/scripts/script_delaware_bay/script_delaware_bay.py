@@ -112,13 +112,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     c_mover.scale_refpoint = (-74.7483333, 38.898333)
     c_mover.scale_value = .03
     model.movers += c_mover
-<<<<<<< HEAD
-#
-# pat1Angle 315; pat1Speed 30; pat1SpeedUnits knots; pat1ScaleToValue 0.314426 # these are from windows they don't match Mac values...
-# pat2Angle 225; pat2Speed 30; pat2SpeedUnits knots; pat2ScaleToValue 0.032882
-# scaleBy WindStress
-=======
-
     #
     # these are from windows they don't match Mac values...
     # pat1Angle 315;
@@ -129,7 +122,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # pat2Speed 30; pat2SpeedUnits knots;
     # pat2ScaleToValue 0.032882
     # scaleBy WindStress
->>>>>>> develop
 
     print 'adding a component mover:'
 
@@ -176,18 +168,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     return model
 
-<<<<<<< HEAD
-if __name__ == '__main__':
-    scripting.make_images_dir()
-
-    model = make_model()
-
-    model.full_run()
-
-=======
 
 if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
     model.full_run()
->>>>>>> develop

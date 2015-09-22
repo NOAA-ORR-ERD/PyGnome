@@ -71,8 +71,11 @@ class Renderer(Outputter, MapCanvas):
     _create.extend(_update)
     _state = copy.deepcopy(Outputter._state)
     _state.add(save=_create, update=_update)
-    _state.add_field(Field('filename', isdatafile=True,
-                           save=True, read=True, test_for_eq=False))
+    _state.add_field(Field('map_filename',
+                           isdatafile=True,
+                           save=True,
+                           read=True,
+                           test_for_eq=False))
     _state += Field('output_dir', save=True, update=True, test_for_eq=False)
     _schema = RendererSchema
 
@@ -110,12 +113,12 @@ class Renderer(Outputter, MapCanvas):
         projection = projections.FlatEarthProjection(),
         viewport=None,
         map_BB=None,
+        draw_back_to_fore=True,
         cache=None,
         output_timestep=None,
         output_zero_step=True,
         output_last_step=True,
         draw_ontop='forecast',
-        draw_back_to_fore=True,
         name=None,
         on=True,
         **kwargs
@@ -124,10 +127,13 @@ class Renderer(Outputter, MapCanvas):
         Init the image renderer.
 
         :param map_filename=None: name of file for basemap (BNA)
+        :type map_filename: string
 
         :param output_dir='./': directory to output the images
+        :type output_dir: string
 
         :param image_size=(800, 600): size of images to output
+        :type image_size: 2-tuple of integers
 
         :param projection = projections.FlatEarthProjection(): projection to use
         :type projection: a gnome.utilities.projection.Projection instance
@@ -139,13 +145,12 @@ class Renderer(Outputter, MapCanvas):
         :param map_BB=None: bounding box of map if None, it will use teh
                             bounding box of the mapfile.
 
+        :param draw_back_to_fore=True: draw the background (map) to the
+                                       foregound image when outputting the images
+                                       each time step.
+        :type draw_back_to_fore: boolean
+
         Following args are passed to base class Outputter's init:
-
-        :param filename: the name of the image file
-
-        :param output_dir: the folder in which to write the image
-
-        :param image_size: the width and height of the image
 
         :param cache: sets the cache object from which to read data. The model
             will automatically set this param
@@ -168,10 +173,6 @@ class Renderer(Outputter, MapCanvas):
             is to draw 'forecast' LEs, which are in black on top
         :type draw_ontop: str
 
-        :param draw_back_to_fore=True: draw the background (map) to the
-                                       foregound image when outputting the images
-                                       each time step.
-        :type draw_back_to_fore: boolean
 
         Remaining kwargs are passed onto baseclass's __init__ with a direct
         call: Outputter.__init__(..)
@@ -260,11 +261,9 @@ class Renderer(Outputter, MapCanvas):
                                           self.background_map_name)
                              )
 
-    def clear_output_dir(self):
+    def clean_output_files(self):
 
-        # clear out output dir:
-        # don't need to do this -- it will get written over.
-
+        # clear out the output dir:
         try:
             os.remove(os.path.join(self.output_dir,
                                    self.background_map_name))

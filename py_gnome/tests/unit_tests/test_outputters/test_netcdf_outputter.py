@@ -108,18 +108,6 @@ def test_exceptions(output_filename):
     with raises(ValueError):
         netcdf.which_data = 'some random string'
 
-<<<<<<< HEAD
-    ## no longer relevent -- teh model no longer deltetes on rewind,
-    ##   but rather in prepare_for_model_run
-    # with raises(ValueError):
-    #     # raise error because file 'temp.nc' should exist after 1st call
-    #     netcdf.prepare_for_model_run(model_start_time=datetime.now(),
-    #                                  spills=spill_pair,
-    #                                  num_time_steps=4)
-    #     netcdf.prepare_for_model_run(model_start_time=datetime.now(),
-    #                                  spills=spill_pair,
-    #                                  num_time_steps=4)
-=======
     # changed renderer and netcdf ouputter to delete old files in
     # prepare_for_model_run() rather than rewind()
     # -- rewind() was getting called a lot
@@ -131,7 +119,6 @@ def test_exceptions(output_filename):
     netcdf.prepare_for_model_run(model_start_time=datetime.now(),
                                  spills=spill_pair,
                                  num_time_steps=4)
->>>>>>> develop
 
     with raises(AttributeError):
         'cannot change after prepare_for_model_run has been called'

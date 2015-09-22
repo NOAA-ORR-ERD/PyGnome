@@ -723,7 +723,7 @@ def test_full_run(model, dump, traj_only):
 
     # check if the images are there:
     # (1 extra for background image)
-    num_images = len(os.listdir(model.outputters[-1].images_dir))
+    num_images = len(os.listdir(model.outputters[-1].output_dir))
     assert num_images == model.num_time_steps + 1
 
 

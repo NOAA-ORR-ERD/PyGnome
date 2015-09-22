@@ -109,10 +109,7 @@ def test_rewind(output_dir):
     assert files == [r.background_map_name]
 
     r.rewind()
-<<<<<<< HEAD
 
-    assert r._model_start_time is None  # check superclass rewind is called
-=======
     # check super is called correctly
     assert r._model_start_time is None
     assert r._dt_since_lastoutput is None
@@ -125,7 +122,6 @@ def test_rewind(output_dir):
     # So for this unit test, there should only be a background image now.
     files = os.listdir(output_dir)
     assert files == ['background_map.png']
->>>>>>> develop
 
 def test_render_basemap(output_dir):
     """

@@ -223,7 +223,7 @@ class Outputter(Serializable):
 
         This should be implemented by subclasses that dump files.
 
-        but each oututter type dumps different types of files, and this should
+        but each outputter type dumps different types of files, and this should
         only clear out those. So it has to be custom implemented
         '''
         raise NotImplementedError("This Outputter does not suport clearing out files")
