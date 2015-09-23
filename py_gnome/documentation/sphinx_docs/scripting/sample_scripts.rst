@@ -1,7 +1,7 @@
-.. _scripts_tutorial:
+.. _sample_scripts:
 
-Sample Scripts
-=====================
+Sample Scripts Included with PyGNOME
+====================================
 
 A good way to learn to use PyGNOME is to find an example script that uses similar components 
 to what you need, and use that as a starting point. the Sample scripts can be found in 
