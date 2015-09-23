@@ -102,20 +102,40 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
 
         # one feature per element client; replaced with multipoint
         # because client performance is much more stable with one
-        # feature per step rather than (n) features per step.
-        features = []
+        # feature per step rather than (n) features per step.features = []
+        features = [];
         for sc in self.cache.load_timestep(step_num).items():
+            time = date_to_sec(sc.current_time_stamp)
+            position = self._dataarray_p_types(sc['positions'])
+            status = self._dataarray_p_types(sc['status_codes'])
             sc_type = 'uncertain' if sc.uncertain else 'forecast'
 
-            # only display lat/long for now
-            lat_long = self._dataarray_p_types(sc['positions'][:, :2])
-            feature = Feature(geometry=MultiPoint(lat_long),
-                              id="1",
-                              properties={'sc_type': sc_type})
-            if sc.uncertain:
-                features.insert(0, feature)
-            else:
-                features.append(feature)
+            # break elements into multipoint features based on their status code
+            # evaporated : 10
+            # in_water : 2
+            # not_released : 0
+            # off_maps : 7
+            # on_land : 3
+            # to_be_removed : 12
+            points = {};
+            for ix, pos in enumerate(position):
+                st_code = status[ix]
+
+                if st_code not in points:
+                    points[st_code] = []
+
+                points[st_code].append(pos[:2])
+
+            for k in points:
+                feature = Feature(geometry=MultiPoint(points[k]),
+                                  properties={
+                                    'sc_type': sc_type,
+                                    'status_code': k
+                                  })
+                if sc.uncertain:
+                    features.insert(0, feature)
+                else:
+                    features.append(feature)
 
         geojson = FeatureCollection(features)
         # default geojson should not output data to file
