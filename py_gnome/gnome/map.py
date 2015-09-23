@@ -36,7 +36,7 @@ from gnome.persist import base_schema
 
 import gnome.map
 
-from gnome.utilities.map_canvas import BW_MapCanvas
+from gnome.utilities.map_canvas_gd import MapCanvas
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
 
@@ -337,6 +337,10 @@ class RasterMap(GnomeMap):
 
 
         :param bitmap_array: A numpy array that stores the land-water map
+                             0 is water. 1 is land. In theory, other values
+                             could be used for other purposes. If the array
+                             is not C-contiguous, it will be copied to a
+                             C-contiguus array.
         :type bitmap_array: a (W,H) numpy array of type uint8
 
         :param projection: A Projection object -- used to convert from
@@ -366,7 +370,7 @@ class RasterMap(GnomeMap):
         refloat_halflife = kwargs.pop('refloat_halflife', 1)
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
-        self.bitmap = bitmap_array
+        self.bitmap = np.ascontiguousarray(bitmap_array)
         self.projection = projection
 
         GnomeMap.__init__(self, **kwargs)
@@ -389,7 +393,7 @@ class RasterMap(GnomeMap):
 
         bitmap = self.bitmap.copy()
 
-        #change anyting not zero to 255 - to get black and white
+        #change anything not zero to 255 - to get black and white
         np.putmask(bitmap, self.bitmap > 0, 255)
         im = Image.fromarray(bitmap, mode='L')
 
@@ -398,6 +402,20 @@ class RasterMap(GnomeMap):
         im = im.transpose(Image.FLIP_TOP_BOTTOM)
 
         im.save(filename, format='PNG')
+
+    def _off_bitmap(self, coord):
+        """
+        are these pixel coordinates on the bitmap
+
+        We can't just use an IndexError, as negative
+        indexes can be legal with numpy, but aren't expected here.
+        """
+        shape = self.bitmap.shape
+        return (coord[0] < 0 or
+                coord[1] < 0 or
+                coord[0] >= shape[0] or
+                coord[1] >= shape[1]
+                )
 
     def _on_land_pixel(self, coord):
         """
@@ -409,16 +427,16 @@ class RasterMap(GnomeMap):
         .. note:: Only used internally or for testing -- no need for external
                   API to use pixel coordinates.
         """
-        try:
-            return self.bitmap[coord[0], coord[1]] & self.land_flag
-        except IndexError:
-            # not on land if outside the land raster. (Might be off the map!)
+        # if pixel coords are negative, then off the bitmap, so can't be on land
+        if self._off_bitmap(coord):
             return False
+        else:
+            return self.bitmap[coord[0], coord[1]] & self.land_flag
 
     def on_land(self, coord):
         """
         :param coord: (long, lat, depth) location -- depth is ignored here.
-        :type coord: 3-tyuple of floats -- (long, lat, depth)
+        :type coord: 3-tuple of floats -- (long, lat, depth)
 
         :return:
          - 1 if point on land
@@ -426,11 +444,11 @@ class RasterMap(GnomeMap):
 
         .. note:: to_pixel() converts to array of points...
         """
-        return self._on_land_pixel(self.projection.to_pixel(coord)[0])
+        return self._on_land_pixel(self.projection.to_pixel(coord, asint=True)[0])
 
     def _on_land_pixel_array(self, coords):
         """
-        determines which LEs are on lond
+        determines which LEs are on land
 
         :param coords:  Nx2 numpy int array of pixel coords matching the bitmap
         :type coords:  Nx2 numpy int array of pixel coords matching the bitmap
@@ -446,13 +464,13 @@ class RasterMap(GnomeMap):
         return chrmgph
 
     def _in_water_pixel(self, coord):
-        try:
-            return not self.bitmap[coord[0], coord[1]] & self.land_flag
-        except IndexError:
-            # Note: this could be off map, which may be a different thing
-            #       than on land....but off the map should have been tested
-            #       first
+
+        # if  off the bitmap, so must be in water,
+        # unless not on map, which should have already been checked.
+        if not self._off_bitmap:
             return True
+        else:
+            return not self.bitmap[coord[0], coord[1]] & self.land_flag
 
     def in_water(self, coord):
         """
@@ -463,6 +481,7 @@ class RasterMap(GnomeMap):
 
         :return: true if the point given by coord is in the water
         """
+
         if not self.on_map(coord):
             return False
         else:
@@ -571,13 +590,16 @@ class RasterMap(GnomeMap):
     def _check_land(self, raster_map, positions, end_positions,
                     status_codes, last_water_positions):
         """
-        Do the actual land-checking.  This method calls a Cython version:
+        Do the actual land-checking.  This method simply calls a Cython version:
             gnome.cy_gnome.cy_land_check.check_land()
 
         The arguments 'status_codes', 'positions' and 'last_water_positions'
         are altered in place.
         """
-        check_land(raster_map, positions, end_positions, status_codes,
+        check_land(raster_map,
+                   positions,
+                   end_positions,
+                   status_codes,
                    last_water_positions)
 
     def allowable_spill_position(self, coord):
@@ -612,43 +634,53 @@ class RasterMap(GnomeMap):
         return self.projection.to_pixel(coords)
 
 
-class MapFromPolyFile(RasterMap):
+class MapFromBNA(RasterMap):
     """
     A raster land-water map, created from file with polygons in it.
 
-    Currently only support BNA, but could be shape, or ???
+    Currently only support BNA, but could be shapefile, or ???
     """
     _state = copy.deepcopy(RasterMap._state)
     _state.update(['map_bounds', 'spillable_area'], save=False)
     _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
-    _state.add_field(Field('filename', isdatafile=True, save=True,
-                           read=True, test_for_eq=False))
+    _state.add_field(Field('filename',
+                           isdatafile=True,
+                           save=True,
+                           read=True,
+                           test_for_eq=False))
     _schema = MapFromBNASchema
 
     def __init__(self, filename, raster_size=1024 * 1024, **kwargs):
         """
-        Creates a GnomeMap (specifically a RasterMap) from a bna file.
+        Creates a GnomeMap (specifically a RasterMap) from a data file.
         It is expected that you will get the spillable area and map bounds
-        from the BNA -- if they exist
+        from the data file -- if they exist
 
         Required arguments:
 
-        :param bna_file: full path to a bna file
+        :param filename: full path to the data file
+
         :param refloat_halflife: the half-life (in hours) for the re-floating.
+
         :param raster_size: the total number of pixels (bytes) to make the
                             raster -- the actual size will match the
                             aspect ratio of the bounding box of the land
+        :type raster_size: integer
 
         Optional arguments (kwargs):
 
         :param map_bounds: The polygon bounding the map -- could be larger or
                            smaller than the land raster
+
         :param spillable_area: The polygon bounding the spillable_area
+
         :param id: unique ID of the object. Using UUID as a string.
                    This is only used when loading object from save file.
         :type id: string
         """
+
         self.filename = filename
+        ## fixme: do some file type checking here.
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
         self.name = kwargs.pop('name', os.path.split(filename)[1])
@@ -689,6 +721,7 @@ class MapFromPolyFile(RasterMap):
         # versus what the user entered. if this is within spillable_area for
         # BNA, then include it? else ignore
         #spillable_area = kwargs.pop('spillable_area', spillable_area)
+
         spillable_area = kwargs.pop('spillable_area', spillable_area)
         map_bounds = kwargs.pop('map_bounds', map_bounds)
 
@@ -697,32 +730,51 @@ class MapFromPolyFile(RasterMap):
 
         aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
                         (BB.Width / BB.Height))
+
         w = int(np.sqrt(raster_size * aspect_ratio))
         h = int(raster_size / w)
 
-        canvas = BW_MapCanvas((w, h), land_polygons=just_land)
-        canvas.draw_background()
+        canvas = MapCanvas(image_size=(w, h),
+                           preset_colors=None,
+                           background_color='water',
+                           viewport=BB,
+                           )
+        canvas.add_colors( ( ('water', (  0, 255, 255)), # aqua -- color doesn't matter here, only index
+                             ('land',  (255, 204, 153)), # brown
+                            ))
+        canvas.clear_background()
 
-        # canvas.save_background("raster_map_test.png")
+        ## draw the land to the background
+        for poly in just_land:
+            if poly.metadata[2] == '1': ##fixme -- this should be something like "land"
+                canvas.draw_polygon(poly,
+                                    line_color='land',
+                                    fill_color='land',
+                                    line_width=1,
+                                    background=True)
+            elif poly.metadata[2] == '2': ##fixme -- this should be something like "lake"
+                # this is a lake, draw as water
+                canvas.draw_polygon(poly,
+                                    line_color='water',
+                                    fill_color='water',
+                                    line_width=1,
+                                    background=True)
+
+        # just for testing
+        #canvas.save_background("raster_map_test.png")
 
         # # get the bitmap as a numpy array:
 
-        bitmap_array = canvas.as_array()
+        bitmap_array = canvas.back_asarray()
 
-        # __init__ the  RasterMap
-
-        # hours
         RasterMap.__init__(self,
                            bitmap_array,
                            canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,
                            **kwargs)
-
         return None
 
-# for backward compatibility
-MapFromBNA = MapFromPolyFile
 
 def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
 

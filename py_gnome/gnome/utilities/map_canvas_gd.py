@@ -41,35 +41,34 @@ class MapCanvas(object):
 
     def __init__(self,
                  image_size,
-                 projection = projections.FlatEarthProjection(),
+                 projection = None,
                  viewport=None,
                  preset_colors = 'BW',
                  background_color = 'transparent',
                  colordepth = 8,
                  ):
         """
-        create a new map image from scratch -- specifying the size:
-        Only the "Palette" image mode to used for drawing image.
+        create a new map image from scratch -- specifying the size
 
         :param image_size: (width, height) tuple of the image size in pixels
 
-        Optional parameters (kwargs)
-        :param projection: gnome.utilities.projections object to use.
-                           Default is
-                           gnome.utilities.projections.FlatEarthProjection()
+        Optional parameters
+
+        :param projection=None: gnome.utilities.projections object to use.
+                                if None, it defaults to FlatEarthProjection()
 
         :param viewport: viewport of map -- what gets drawn and on what
                          scale. Default is full globe: (((-180, -90), (180, 90)))
 
         :param preset_colors='BW': color set to preset. Options are:
 
-                                      'BW' - transparent, black, and white: transparent background
+                                   'BW' - transparent, black, and white: transparent background
 
-                                      'web' - the basic named colors for the web: transparent background
+                                   'web' - the basic named colors for the web: transparent background
 
-                                      'transparent' - transparent background, no other colors set
+                                   'transparent' - transparent background, no other colors set
 
-                                      None - no pre-allocated colors -- the first one you allocate will
+                                   None - no pre-allocated colors -- the first one you allocate will
                                              be the background color
 
         :param background_color = 'transparent': color for the background -- must be a color that exists.
@@ -77,10 +76,13 @@ class MapCanvas(object):
         :param colordepth=8: only 8 bit color supported for now
                              maybe someday, 32 bit will be an option
         """
+
+        projection = projections.FlatEarthProjection() if projection is None else projection
         self._image_size = image_size
 
         if colordepth != 8:
             raise NotImplementedError("only 8 bit color currently implemented")
+
         self.background_color = background_color
         self.create_images(preset_colors)
 
@@ -154,8 +156,22 @@ class MapCanvas(object):
         self.back_image = py_gd.Image(width=self.image_size[0],
                                       height=self.image_size[1],
                                       preset_colors=preset_colors)
-        self.clear_background()
-        self.clear_foreground()
+        if preset_colors is not None:
+            "can't clear image if there are no colors"
+            self.clear_background()
+            self.clear_foreground()
+
+    def back_asarray(self):
+        """
+        return the background image as a numpy array
+        """
+        return np.asarray(self.back_image)
+
+    def fore_asarray(self):
+        """
+        return the foreground image as a numpy array
+        """
+        return np.asarray(self.fore_image)
 
     def clear_background(self):
         self.back_image.clear(self.background_color)
