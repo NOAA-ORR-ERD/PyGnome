@@ -11,6 +11,7 @@ import os
 import glob
 import copy
 import zipfile
+import numpy as np
 
 from colander import SchemaNode, String, drop
 
@@ -49,6 +50,8 @@ class Renderer(Outputter, MapCanvas):
 
     """
 
+    # This defines the colors used for the map
+    #   -- they can then be referenced by name in the rest of the code.
     map_colors = [('background', (255, 255, 255)), # white
                   ('lake', (255, 255, 255)), # white
                   ('land', (255, 204, 153)), # brown
@@ -56,7 +59,7 @@ class Renderer(Outputter, MapCanvas):
                   ('uncert_LE', (255, 0, 0)), # red
                   ('map_bounds', (175, 175, 175)), # grey
                   ('spillable_area', (255, 0, 0)), #  red
-                  ('raster_map', (175, 175, 175)), # grey
+                  ('raster_map', (51, 102, 0)), # dark green
                   ('raster_map_outline', (0, 0, 0)), # black
                   ]
 
@@ -65,6 +68,7 @@ class Renderer(Outputter, MapCanvas):
     foreground_filename_glob = 'foreground_?????.png'
 
     # todo: how should output_dir be saved? Absolute? Currently, it is relative
+    # no, it's not.... see issue:
     _update = ['viewport', 'map_BB', 'image_size', 'draw_ontop']
     _create = ['image_size', 'projection', 'draw_ontop']
 
@@ -110,10 +114,12 @@ class Renderer(Outputter, MapCanvas):
         map_filename=None,
         output_dir='./',
         image_size=(800, 600),
-        projection = projections.FlatEarthProjection(),
+        projection=None,
         viewport=None,
         map_BB=None,
         draw_back_to_fore=True,
+        draw_map_bounds=False,
+        draw_spillable_area=False,
         cache=None,
         output_timestep=None,
         output_zero_step=True,
@@ -178,7 +184,7 @@ class Renderer(Outputter, MapCanvas):
         call: Outputter.__init__(..)
 
         """
-
+        projection = projections.FlatEarthProjection() if projection is None else projection
         # set up the canvas
         self._map_filename = map_filename
         if map_filename is not None:
@@ -209,12 +215,12 @@ class Renderer(Outputter, MapCanvas):
 
         MapCanvas.__init__(self,
                            image_size,
-                           projection = projection,
+                           projection=projection,
                            viewport=self.map_BB)
 
         # assorted rendering flags:
-        self.draw_map_bounds = True
-        self.draw_spillable_area = True
+        self.draw_map_bounds=draw_map_bounds
+        self.draw_spillable_area=draw_spillable_area
         self.raster_map = None
         self.raster_map_fill=True
         self.raster_map_outline=False
@@ -292,7 +298,6 @@ class Renderer(Outputter, MapCanvas):
         """
         Draws the land map to the internal background image.
         """
-        # TODO: should we make sure to draw the lakes after the land???
 
         for poly in self.land_polygons:
             if poly.metadata[1].strip().lower() == 'map bounds':
@@ -348,6 +353,37 @@ class Renderer(Outputter, MapCanvas):
                              diameter=2,
                              color=color,
                              shape="round")
+
+    def draw_raster_map(self):
+        """
+        draws the raster map used for beaching to the image.
+
+        draws a grid for the pixels
+
+        this is pretty slow, but only used for diagnostics.
+        (not bad for just the lines)
+        """
+        if self.raster_map is not None:
+            raster_map = self.raster_map
+            w, h = raster_map.bitmap.shape
+            if self.raster_map_outline:
+                # vertical lines
+                for i in range(w):
+                    coords = raster_map.projection.to_lonlat( np.array( ( (i, 0.0), (i, h) ), dtype=np.float64) )
+                    self.draw_polyline(coords, background=True, line_color='raster_map_outline')
+                # horizontal lines
+                for i in range(h):
+                    coords = raster_map.projection.to_lonlat( np.array( ( (0.0, i), (w, i) ), dtype=np.float64) )
+                    self.draw_polyline(coords, background=True, line_color='raster_map_outline')
+
+            if self.raster_map_fill:
+                print "drawing filled rects..."
+                for i in range(w):
+                    for j in range(h):
+                        if raster_map.bitmap[i,j] == 1:
+                            rect = raster_map.projection.to_lonlat( np.array( ( (i, j), (i+1, j), (i+1, j+1), (i, j+1)), dtype=np.float64) )
+                            self.draw_polygon(rect, fill_color='raster_map', background=True)
+
 
     def write_output(self, step_num, islast_step=False):
         """

@@ -20,7 +20,6 @@ import numpy as np
 
 
 class NoProjection(object):
-
     """
     This is do-nothing projection class -- returns what it gets.
 
@@ -114,6 +113,22 @@ class GeoProjection(object):
         self.image_size = (600,600) if image_size is None else image_size
         bounding_box = ((-180, -90), (180, 90)) if bounding_box is None else bounding_box
         self.set_scale(bounding_box, image_size)
+
+    def __eq__(self, other):
+        """
+        provide an equality check for checking
+        saved state of renderers, etc
+        """
+        if type(self) is not type(other): return False
+        elif not np.allclose(self.center, other.center): return False
+        elif not np.allclose(self.offset, other.offset): return False
+        elif self.scale != other.scale:   return False
+        elif self.image_size != other.image_size: return False
+        else: return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
     def set_scale(self, bounding_box, image_size=None):
         """

@@ -50,8 +50,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # default is 'forecast' LEs draw on top
     renderer = Renderer(mapfile, images_dir, size=(800, 600),
                         output_timestep=timedelta(hours=2),
-                        draw_ontop='uncertain')
+                        draw_ontop='forecast')
+    # set the viewport to zoom in on the map:
     renderer.viewport = ((-76.5, 37.), (-75.8, 38.))
+    # add the raster map, so we can see it...
+    # note: this is really slow, so only use for diagnostics
+    # renderer.raster_map = model.map
 
     print 'adding outputters'
     model.outputters += renderer
@@ -107,5 +111,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
+    print "running the model"
     model.full_run()
 

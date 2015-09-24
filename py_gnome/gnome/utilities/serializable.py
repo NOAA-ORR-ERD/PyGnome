@@ -161,7 +161,9 @@ class State(object):
         return new_
 
     def __eq__(self, other):
-        'check for equality'
+        """
+        check for equality
+        """
         return self.__dict__ == other.__dict__
 
     def __ne__(self, other):
@@ -786,6 +788,8 @@ class Serializable(GnomeId, Savable):
                     if abs(self_attr - other_attr) > 1e-10:
                         return False
                 elif self_attr != other_attr:
+                    #print self_attr, other_attr
+                    #print "failpoint2"
                     return False
             else:
                 if not np.allclose(self_attr, other_attr):

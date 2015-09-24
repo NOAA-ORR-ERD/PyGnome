@@ -324,7 +324,28 @@ def test_set_viewport(output_dir):
     r.draw_background()
     r.save_background(os.path.join(output_dir, 'star_upper_left.png'))
 
+def test_draw_raster_map(output_dir):
+    """
+    tests drawing the raster map
 
+    Note: you need to look at the output to know if it did it right...
+
+    """
+    import gnome
+
+    r = Renderer(bna_sample, image_size=(1000, 1000))
+    r.viewport = ((-127.47,48.10),(-127.22, 48.24))
+
+    r.draw_background()
+
+    # make a raster map out of the BNA:
+    r.raster_map = gnome.map.MapFromBNA(bna_sample,
+                                        raster_size=10000)
+
+    r.raster_map_outline = True
+    r.draw_raster_map()
+
+    r.save_background(os.path.join(output_dir, 'raster_map_render.png'))
 
 @pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 def test_serialize_deserialize(json_, output_dir):
