@@ -104,8 +104,10 @@ def test_geojson_multipoint_output(model):
             else:
                 uncertain = False
 
-            print feature['geometry']['coordinates']
-            np.allclose(model.spills.LE('positions', uncertain)[:, :2],
+            mask = np.where(model.spills.LE('status_codes', uncertain) ==
+                            feature['properties']['status_code'])
+
+            np.allclose(model.spills.LE('positions', uncertain)[mask, :2],
                         feature['geometry']['coordinates'],
                         atol=10 ** -round_to)
 
