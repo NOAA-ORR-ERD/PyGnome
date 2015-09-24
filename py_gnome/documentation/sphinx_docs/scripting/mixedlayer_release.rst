@@ -1,5 +1,7 @@
+.. _mixedlayer:
+
 A subsurface (mixed layer) release
-=====================
+==================================
 This is a script to look at vertical diffusion mover in the mixed layer
 with and without a rise velocity. 
 
@@ -82,9 +84,6 @@ with and without a rise velocity.
     
 
 
-.. image:: MixLayer_VerticalDiffusionExamples_files%5CMixLayer_VerticalDiffusionExamples_3_1.png
-
-
 .. code:: python
 
     # No rise velocity
@@ -107,7 +106,5 @@ with and without a rise velocity.
     adding spill
     
 
-
-.. image:: MixLayer_VerticalDiffusionExamples_files%5CMixLayer_VerticalDiffusionExamples_4_1.png
 
 

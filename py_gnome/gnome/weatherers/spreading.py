@@ -50,7 +50,7 @@ class FayGravityViscous(Weatherer, Serializable):
         self.water = water
         self.array_types.update({'fay_area', 'area', 'spill_num',
                                  'bulk_init_volume', 'age', 'density'})
-        # relative_bouyancy - use density at release time. For now
+        # relative_buoyancy - use density at release time. For now
         # temperature is fixed so just compute once and store. When temperature
         # varies over time, may want to do something different
         self._init_relative_buoyancy = None
@@ -59,7 +59,7 @@ class FayGravityViscous(Weatherer, Serializable):
     @lru_cache(4)
     def _gravity_spreading_t0(self,
                               water_viscosity,
-                              relative_bouyancy,
+                              relative_buoyancy,
                               blob_init_vol):
         '''
         time for the initial transient phase of spreading to complete. This
@@ -69,7 +69,7 @@ class FayGravityViscous(Weatherer, Serializable):
         # time to reach a0
         t0 = ((self.spreading_const[1]/self.spreading_const[0]) ** 4.0 *
               (blob_init_vol/(water_viscosity * constants.gravity *
-                              relative_bouyancy))**(1./3))
+                              relative_buoyancy))**(1./3))
         return t0
 
     def _time_to_reach_max_area(self,
@@ -89,27 +89,27 @@ class FayGravityViscous(Weatherer, Serializable):
 
     def init_area(self,
                   water_viscosity,
-                  relative_bouyancy,
+                  relative_buoyancy,
                   blob_init_vol):
         '''
         This takes scalars inputs since water_viscosity, init_volume and
-        relative_bouyancy for a bunch of LEs released together will be the same
+        relative_buoyancy for a bunch of LEs released together will be the same
         It
 
         :param water_viscosity: viscosity of water
         :type water_viscosity: float
         :param init_volume: total initial volume of all LEs released together
         :type init_volume: float
-        :param relative_bouyancy: relative bouyance of oil wrt water:
+        :param relative_buoyancy: relative buoyancy of oil wrt water:
             (rho_water - rho_oil)/rho_water where rho defines density
-        :type relative_bouyancy: float
+        :type relative_buoyancy: float
 
         Equation for gravity spreading:
         ::
             A0 = np.pi*(k2**4/k1**2)*((V0**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
         '''
         a0 = (np.pi*(self.spreading_const[1]**4/self.spreading_const[0]**2)
-              * (((blob_init_vol)**5*constants.gravity*relative_bouyancy) /
+              * (((blob_init_vol)**5*constants.gravity*relative_buoyancy) /
                  (water_viscosity**2))**(1./6.))
 
         # highly unlikely to reach max_area, min_thickness during
@@ -123,31 +123,31 @@ class FayGravityViscous(Weatherer, Serializable):
 
         return a0
 
-    def _update_blob_area(self, water_viscosity, relative_bouyancy,
+    def _update_blob_area(self, water_viscosity, relative_buoyancy,
                           blob_init_volume, age):
         area = (np.pi * self.spreading_const[1]**2 *
-                (blob_init_volume**2 * constants.gravity * relative_bouyancy /
+                (blob_init_volume**2 * constants.gravity * relative_buoyancy /
                  np.sqrt(water_viscosity)) ** (1./3) * np.sqrt(age))
 
         return area
 
     def update_area(self,
                     water_viscosity,
-                    relative_bouyancy,
+                    relative_buoyancy,
                     blob_init_volume,
                     area,
                     age):
         '''
         update area array in place, also return area array
         each blob is defined by its age. This updates the area of each blob,
-        as such, use the mean relative_bouyancy for each blob. Still check
-        and ensure relative bouyancy is > 0 for all LEs
+        as such, use the mean relative_buoyancy for each blob. Still check
+        and ensure relative buoyancy is > 0 for all LEs
 
         :param water_viscosity: viscosity of water
         :type water_viscosity: float
-        :param relative_bouyancy: relative bouyancy of oil wrt water at release
+        :param relative_buoyancy: relative buoyancy of oil wrt water at release
             time. This does not change over time.
-        :type relative_bouyancy: float
+        :type relative_buoyancy: float
         :param blob_init_volume: numpy array of floats containing initial
             release volume of blob. This is the same for all LEs released
             together.
@@ -184,7 +184,7 @@ class FayGravityViscous(Weatherer, Serializable):
             # within each age blob_init_volume should also be the same
             m_age = b_age == age
             t0 = self._gravity_spreading_t0(water_viscosity,
-                                            relative_bouyancy,
+                                            relative_buoyancy,
                                             blob_init_volume[m_age][0])
 
             if b_age <= t0:
@@ -202,7 +202,7 @@ class FayGravityViscous(Weatherer, Serializable):
                 # update area
                 blob_area = \
                     self._update_blob_area(water_viscosity,
-                                           relative_bouyancy,
+                                           relative_buoyancy,
                                            blob_init_volume[m_age][0],
                                            age[m_age][0])
                 if blob_area >= max_area:
@@ -265,7 +265,7 @@ class FayGravityViscous(Weatherer, Serializable):
         # maybe weathering_data should catch error below?
         # todo: write and raise appropriate exception
         if np.any(rho_h2o < rho_oil):
-            msg = ("Found particles with relative_bouyancy < 0. "
+            msg = ("Found particles with relative_buoyancy < 0. "
                    "Oil is a sinker")
             raise GnomeRuntimeError(msg)
 

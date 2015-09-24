@@ -53,8 +53,8 @@ useful:
    `'beach_LEs` method, which determines which particles have hit land in the
    last time step, and sets those particles to "beached".
 
-Class Reference:
--------------------
+Class Reference
+---------------
 
 .. include:: model.rst
 ------------------------

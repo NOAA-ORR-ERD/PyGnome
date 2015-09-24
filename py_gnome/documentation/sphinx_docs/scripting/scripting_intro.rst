@@ -1,7 +1,5 @@
-.. _tutorial-1:
-
-Introduction to Scripting pyGNOME
-=====================
+Introduction
+============
 To run simulations using the pyGNOME scripting environment the first step is to create a model object. 
 This model object will have attributes like the model start time and the run duration. 
 
@@ -10,7 +8,6 @@ Movers, spills, and outputters are then added to the model. Then we can run the 
 For a first introduction to scripting pyGNOME, we will set up and run the very simplest model possible. We 
 will not load any external data, but create a simple map and movers manually. The "spill" will be a conservative
 substance, i.e. it will not represent oil which has changing properties over time due to weathering processes.
-
 
 Initialize the Model
 --------------------
@@ -25,7 +22,7 @@ We initialize the model to begin on New Years Day 2015 and run for 3 days::
                   )
 
 Create and Add a Map
------------------
+--------------------
 Create a very simple map: all water with a polygon of latitude/longitude
 points to specify the map bounds::
 
@@ -33,7 +30,7 @@ points to specify the map bounds::
     model.map = GnomeMap(map_bounds=((-145,48), (-145,49), (-143,49), (-143,48)))
 
 Create and Add a Mover
------------------
+----------------------
 Now we will create a simple mover (in this case a 0.5 m/s northward current) and add it to the model::
 
     from gnome.movers import SimpleMover, RandomMover
@@ -45,7 +42,7 @@ Now we will create a simple mover (in this case a 0.5 m/s northward current) and
     model.movers += random_mover
     
 Create and Add a Spill
------------------
+----------------------
 Spills in GNOME contain a release object which specifies the details of the release 
 (e.g. where, when, how many elements). They also contain an element_type object which
 provides information on the type of substance spilled. For a conservative substance (i.e. one with 
@@ -62,7 +59,7 @@ occur at a single point, or over a line.
     
     
 Create and Add an Outputter
--------------------
+---------------------------
 Outputters allow us to save our model run results. Options include saving images at specified model time steps
 or saving all the particle information into a netCDF file for further analysis.
 
@@ -75,7 +72,7 @@ The default is to save files into the working directory::
     model.outputters += renderer
 
 Run the model
-------------------
+-------------
 The model can be run by stepping through individual timesteps (e.g. if we want to see results along the way) or we
 can do a full run::
 

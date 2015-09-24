@@ -344,7 +344,7 @@ class WeatheringData(Weatherer, Serializable):
         This depends on initial mass fractions, initial density and fixed
         component densities
         '''
-        # update density/viscosity/relative_bouyance/area for previously
+        # update density/viscosity/relative_buoyancy/area for previously
         # released elements
         rho0 = substance.get_density(self.water.get('temperature', 'K'))
 
