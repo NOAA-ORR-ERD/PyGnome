@@ -127,10 +127,10 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                 points[st_code].append(pos[:2])
 
             for k in points:
-                feature = Feature(geometry=MultiPoint(points[k]),
+                feature = Feature(geometry=MultiPoint(points[k]), id="1",
                                   properties={
                                     'sc_type': sc_type,
-                                    'status_code': k
+                                    'status_code': k,
                                   })
                 if sc.uncertain:
                     features.insert(0, feature)
