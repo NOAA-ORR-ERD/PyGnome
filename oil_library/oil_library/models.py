@@ -416,9 +416,23 @@ class Oil(Base):
     bullwinkle_time = Column(Float(53))
     bullwinkle_fraction = Column(Float(53))
     adhesion_kg_m_2 = Column(Float(53))
-    sulphur_fraction = Column(Float(53))
     soluability = Column(Float(53))
     k0y = Column(Float(53))
+
+    nickel_ppm = Column(Float(53))
+    vanadium_ppm = Column(Float(53))
+
+    saturates_fraction = Column(Float(53))
+    aromatics_fraction = Column(Float(53))
+    resins_fraction = Column(Float(53))
+    asphaltenes_fraction = Column(Float(53))
+
+    polars_fraction = Column(Float(53))
+    benzene_fraction = Column(Float(53))
+    sulphur_fraction = Column(Float(53))
+    paraffins_fraction = Column(Float(53))
+    wax_content_fraction = Column(Float(53))
+    naphthenes_fraction = Column(Float(53))
 
     categories = relationship('Category', secondary=oil_to_category,
                               backref='oils')
