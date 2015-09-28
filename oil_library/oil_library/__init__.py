@@ -1,6 +1,7 @@
 import os
 from itertools import chain
 from collections import namedtuple
+from pkg_resources import get_distribution
 
 from sqlalchemy import create_engine
 from sqlalchemy.exc import UnboundExecutionError
@@ -12,6 +13,10 @@ from oil_library.models import Oil, Density, DBSession
 from oil_library.mock_oil import sample_oil_to_mock_oil
 from oil_library.oil_props import OilProps
 
+try:
+    __version__ = get_distribution('OilLibrary').version
+except:
+    __version__ = 'not_found'
 
 # Some standard oils - scope is module level, non-public
 # create mock_oil objects instead of dict - we always want the same instance
