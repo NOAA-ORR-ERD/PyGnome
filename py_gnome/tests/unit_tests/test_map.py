@@ -19,14 +19,15 @@ import gnome.map
 from gnome.basic_types import oil_status, status_code_type
 from gnome.utilities.projections import NoProjection
 
-from gnome.map import MapFromBNA, RasterMap
+from gnome.map import MapFromBNA, RasterMap, MapFromUGrid
 
 from conftest import sample_sc_release
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, "../sample_data")
-testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna'
-                       )
+testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
+test_tri_grid = os.path.join(basedir, '../sample_data', 'small_trigrid_example.nc')
+
 
 
 def test_in_water_resolution():
@@ -808,6 +809,10 @@ def test_resurface_airborne_elements():
     m.resurface_airborne_elements(spill)
 
     assert spill['next_positions'][:, 2].min() == 0.
+
+class TestMapFromUGrid(object):
+
+    map = MapFromUGrid(test_tri_grid)
 
 
 if __name__ == '__main__':

@@ -59,6 +59,10 @@ class MapFromBNASchema(GnomeMapSchema):
     filename = SchemaNode(String())
     refloat_halflife = SchemaNode(Float(), missing=drop)
 
+class MapFromUGridSchema(GnomeMapSchema):
+    filename = SchemaNode(String())
+    refloat_halflife = SchemaNode(Float(), missing=drop)
+
 
 class GnomeMap(Serializable):
     """
@@ -774,6 +778,153 @@ class MapFromBNA(RasterMap):
                            spillable_area=spillable_area,
                            **kwargs)
         return None
+
+class MapFromUGrid(RasterMap):
+    """
+    A raster land-water map, created from netcdf File of a UGrid
+    """
+    _state = copy.deepcopy(RasterMap._state)
+    _state.update(['map_bounds', 'spillable_area'], save=False)
+    _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
+    _state.add_field(Field('filename',
+                           isdatafile=True,
+                           save=True,
+                           read=True,
+                           test_for_eq=False))
+    _schema = MapFromUGridSchema
+
+    def __init__(self,
+                 filename,
+                 raster_size=1024 * 1024, **kwargs):
+        """
+        Creates a GnomeMap (specifically a RasterMap) from a netcdf
+        data file with a traingular mesh grid in it.
+        The spillable area and map bounds need to be supplied -- there is
+        currenty no way to exprtes that in a netcdf file.
+
+        Required arguments:
+
+        :param filename: full path to the data file
+
+        :param refloat_halflife: the half-life (in hours) for the re-floating.
+
+        :param raster_size: the total number of pixels (bytes) to make the
+                            raster -- the actual size will match the
+                            aspect ratio of the bounding box of the land
+        :type raster_size: integer
+
+        Optional arguments (kwargs):
+
+        :param map_bounds: The polygon bounding the map -- could be larger or
+                           smaller than the land raster
+
+        :param spillable_area: The polygon bounding the spillable_area
+
+        :param id: unique ID of the object. Using UUID as a string.
+                   This is only used when loading object from save file.
+        :type id: string
+        """
+
+        self.filename = filename
+
+        import pyugrid
+        grid = pyugrid.UGrid.from_ncfile(filename)
+
+
+        polygons = haz_files.ReadBNA(filename, 'PolygonSet')
+        map_bounds = None
+        self.name = kwargs.pop('name', os.path.split(filename)[1])
+
+        # find the spillable area and map bounds:
+        # and create a new polygonset without them
+        #  fixme -- adding a "pop" method to PolygonSet might be better
+        #      or a gnome_map_data object...
+
+        just_land = PolygonSet()  # and lakes....
+        spillable_area = PolygonSet()
+
+        for p in polygons:
+            if p.metadata[1].lower() == 'spillablearea':
+                spillable_area.append(p)
+
+            elif p.metadata[1].lower() == 'map bounds':
+                map_bounds = p
+            else:
+                just_land.append(p)
+
+        # now draw the raster map with a map_canvas:
+        # determine the size:
+
+        BB = just_land.bounding_box
+
+        # create spillable area and  bounds if they weren't in the BNA
+        if map_bounds is None:
+            map_bounds = BB.AsPoly()
+
+        if len(spillable_area) == 0:
+            spillable_area.append(map_bounds)
+
+        # user defined spillable_area, map_bounds overrides data obtained
+        # from polygons
+
+        # todo: should there be a check between spillable_area read from BNA
+        # versus what the user entered. if this is within spillable_area for
+        # BNA, then include it? else ignore
+        #spillable_area = kwargs.pop('spillable_area', spillable_area)
+
+        spillable_area = kwargs.pop('spillable_area', spillable_area)
+        map_bounds = kwargs.pop('map_bounds', map_bounds)
+
+        # stretch the bounding box, to get approximate aspect ratio in
+        # projected coords.
+
+        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
+                        (BB.Width / BB.Height))
+
+        w = int(np.sqrt(raster_size * aspect_ratio))
+        h = int(raster_size / w)
+
+        canvas = MapCanvas(image_size=(w, h),
+                           preset_colors=None,
+                           background_color='water',
+                           viewport=BB,
+                           )
+        canvas.add_colors( ( ('water', (  0, 255, 255)), # aqua -- color doesn't matter here, only index
+                             ('land',  (255, 204, 153)), # brown
+                            ))
+        canvas.clear_background()
+
+        ## draw the land to the background
+        for poly in just_land:
+            if poly.metadata[2] == '1': ##fixme -- this should be something like "land"
+                canvas.draw_polygon(poly,
+                                    line_color='land',
+                                    fill_color='land',
+                                    line_width=1,
+                                    background=True)
+            elif poly.metadata[2] == '2': ##fixme -- this should be something like "lake"
+                # this is a lake, draw as water
+                canvas.draw_polygon(poly,
+                                    line_color='water',
+                                    fill_color='water',
+                                    line_width=1,
+                                    background=True)
+
+        # just for testing
+        #canvas.save_background("raster_map_test.png")
+
+        # # get the bitmap as a numpy array:
+
+        bitmap_array = canvas.back_asarray()
+
+        RasterMap.__init__(self,
+                           bitmap_array,
+                           canvas.projection,
+                           map_bounds=map_bounds,
+                           spillable_area=spillable_area,
+                           **kwargs)
+        return None
+
 
 
 def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
