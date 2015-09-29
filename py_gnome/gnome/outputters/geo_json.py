@@ -5,6 +5,7 @@ Does not contain a schema for persistence yet
 import copy
 import os
 from glob import glob
+from collections import defaultdict
 
 import numpy as np
 
@@ -258,20 +259,23 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
 
         geojson = {}
         for cm in self.current_movers:
-            features = []
             centers = cm.get_center_points()
+
             velocities = cm.get_scaled_velocities(model_time)
+            velocities = self.get_rounded_velocities(velocities)
 
-            current_vals = np.hstack((centers.view(dtype='<f8')
-                                      .reshape(-1, 2),
-                                      velocities.view(dtype='<f8')
-                                      .reshape(-1, 2)
-                                      )).reshape(-1, 2, 2)
+            velocity_dict = defaultdict(list)
+            for k, v in zip(velocities, centers):
+                k = tuple(k)
+                v = list(v)
+                velocity_dict[k].append(v)
 
-            for c, v in current_vals:
-                feature = Feature(geometry=Point(list(c)),
+            features = []
+            for v, cps in velocity_dict.items():
+                print 'cps = ', cps
+                feature = Feature(geometry=MultiPoint(cps),
                                   id="1",
-                                  properties={'velocity': list(v)})
+                                  properties={'velocity': v})
                 features.append(feature)
 
             geojson[cm.id] = FeatureCollection(features)
