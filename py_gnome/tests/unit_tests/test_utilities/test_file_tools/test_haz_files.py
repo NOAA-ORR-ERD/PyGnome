@@ -38,6 +38,7 @@ file(os.path.join(basedir, 'test.bna'), 'w'
 -81.522010803223,31.121685028076
 -81.522254943848,31.121658325195
 -81.522483825684,31.121797561646
+
 "A name with, a comma","1", 9
 -81.523277282715,31.122261047363
 -81.522987365723,31.121982574463
@@ -65,7 +66,10 @@ file(os.path.join(basedir, 'test.bna'), 'w'
 -81.524009704590,31.121944427490
 -81.523925781250,31.122068405151
 -81.523277282715,31.122261047363
+
+
 ''')
+## blank lines on the end to make sure.
 
 test_bna = os.path.join(basedir, 'test.bna')
 
@@ -167,5 +171,17 @@ class Test_bna_polygonset:
                                   dtype=np.float32)
         for p in polys:
             assert p.dtype == np.float32
+
+def test_without_filescanner():
+
+    state = haz_files.FILESCANNER
+    haz_files.FILESCANNER = False
+    polys = haz_files.ReadBNA(test_bna, 'PolygonSet')
+    haz_files.FILESCANNER = state # reset, 'cause global state
+
+    assert len(polys) == 6
+    assert  polys[1].metadata[0] == 'polygon'
+    assert  polys[1].metadata[1] == "A third 'name'"
+    assert  polys[1].metadata[2] == '6'
 
 
