@@ -272,7 +272,6 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
 
             features = []
             for v, cps in velocity_dict.items():
-                print 'cps = ', cps
                 feature = Feature(geometry=MultiPoint(cps),
                                   id="1",
                                   properties={'velocity': v})
