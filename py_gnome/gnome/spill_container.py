@@ -151,8 +151,8 @@ class FateDataView(AddLogger):
         # and let it be recreated when the next weatherer asks for data.
         reset_view = False
         if ('fate_status' in d_to_sync and
-            np.any(sc['fate_status'][w_mask] != d_to_sync['fate_status'])):
-                reset_view = True
+                np.any(sc['fate_status'][w_mask] != d_to_sync['fate_status'])):
+            reset_view = True
         elif ('mass' in d_to_sync and
               np.any(np.isclose(d_to_sync['mass'], 0))):
             # probably need a threshold close to 0.0 as opposed to equality
@@ -317,7 +317,8 @@ class SpillContainerData(object):
                                            self._array_allclose_atol):
                             return False
                     except TypeError:
-                        # not implemented for this dtype, so just check equality
+                        # not implemented for this dtype,
+                        # so just check equality
                         if not np.all(val == other_val):
                             return False
                 else:
@@ -477,7 +478,7 @@ class SpillContainer(AddLogger, SpillContainerData):
                 # components? -- *not* being used right now, but make it so
                 # it works correctly for testing multiple substances
                 if (hasattr(new_subs, 'num_components') and
-                    new_subs.num_components > self._oil_comp_array_len):
+                        new_subs.num_components > self._oil_comp_array_len):
                     self._oil_comp_array_len = new_subs.num_components
 
         # let's reorder subs so None is in the end:
@@ -1043,8 +1044,9 @@ class SpillContainerPairData(object):
         To act on both:
             for sc in spill_container_pair.items():
                 do_something_with(sc)
+
+        NOTE: cache code counts on the uncertain SpillContainer being last
         """
-        ## NOTE: cache code counts on the uncertain SpillContainer being last
         if self.uncertain:
             return (self._spill_container, self._u_spill_container)
         else:
@@ -1173,8 +1175,8 @@ class SpillContainerPair(SpillContainerPairData):
         Add spill to spill_container and make copy in u_spill_container
         if uncertainty is on
 
-        Note: Method can take either a list, tuple, or list of tuples with following
-        assumptions:
+        Note: Method can take either a list, tuple, or list of tuples
+              with following assumptions:
 
         1. spills = Spill()    # A spill object, if uncertainty is on, make a
         copy for uncertain_spill_container.

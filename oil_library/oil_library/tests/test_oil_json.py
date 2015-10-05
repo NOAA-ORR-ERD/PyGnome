@@ -15,7 +15,6 @@ def test_get_oil_from_json():
     oil_from_json = Oil.from_json(oil_from_db.tojson())
 
     # Do we want to fill in these properties???
-    assert oil_from_json.categories == []
     assert oil_from_json.imported is None
     assert oil_from_json.estimated is None
 
@@ -67,3 +66,9 @@ def test_get_oil_from_json():
                                 oil_from_json.sara_fractions):
         for attr in ('fraction', 'ref_temp_k', 'sara_type'):
             assert getattr(db_obj, attr) == getattr(json_obj, attr)
+
+    for db_obj, json_obj in zip(oil_from_db.categories,
+                                oil_from_json.categories):
+        assert getattr(db_obj, 'name') == getattr(json_obj, 'name')
+        assert (getattr(db_obj.parent, 'name') ==
+                getattr(json_obj.parent, 'name'))

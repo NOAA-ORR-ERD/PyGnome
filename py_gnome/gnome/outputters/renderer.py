@@ -6,6 +6,7 @@ module to hold all the map rendering code.
 
 """
 import os
+from os.path import basename
 import glob
 import copy
 import zipfile
@@ -66,6 +67,7 @@ class Renderer(Outputter, MapCanvas):
         change projection_type from string to correct type for loading from
         save file
         """
+        viewport = dict_.pop('viewport')
         if 'projection_class' in dict_:
             '''
             assume dict_ is from a save file since only the save file stores
@@ -75,13 +77,15 @@ class Renderer(Outputter, MapCanvas):
             revisit this and see if we can make it consistent with nested
             objects .. but this works!
             '''
-            proj = class_from_objtype(dict_.pop('projection_class'))
-            viewport = dict_.pop('viewport')
+            proj_cls = class_from_objtype(dict_.pop('projection_class'))
+            proj_obj = cls(projection_class=proj_cls, **dict_)
 
-            obj = cls(projection_class=proj, **dict_)
+            proj_obj.viewport = viewport
+            obj = super(Renderer, cls).new_from_dict(dict_)
+        else:
+            obj = super(Renderer, cls).new_from_dict(dict_)
             obj.viewport = viewport
 
-        obj = super(Renderer, cls).new_from_dict(dict_)
         return obj
 
     def __init__(self,
@@ -175,7 +179,8 @@ class Renderer(Outputter, MapCanvas):
                            land_polygons=polygons,
                            **kwargs)
 
-    filename = property(lambda self: self._filename)
+    filename = property(lambda self: basename(self._filename),
+                        lambda self, val: setattr(self, '_filename', val))
 
     @property
     def draw_ontop(self):
@@ -313,6 +318,15 @@ class Renderer(Outputter, MapCanvas):
 
         return '{0}.{1}'.format(self.projection.__module__,
                                 self.projection.__class__.__name__)
+
+    def serialize(self, json_='webapi'):
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+
+        if json_ == 'save':
+            toserial['filename'] = self._filename
+
+        return schema.serialize(toserial)
 
     def save(self, saveloc, references=None, name=None):
         '''
