@@ -628,7 +628,39 @@ class Spill(serializable.Serializable):
 
 """ Helper functions """
 
+def surface_point_line_spill(num_elements,
+                             start_position,
+                             release_time,
+                             end_position=None,
+                             end_release_time=None,
+                             substance=None,
+                             on=True,
+                             amount=None,
+                             units=None,
+                             windage_range=(.01, .04),
+                             windage_persist=900,
+                             name='Surface Point/Line Release'):
+    '''
+    Helper function returns a Spill object containing a surface point or line release
+    and appropriate element type
+    '''
+    release = PointLineRelease(release_time=release_time,
+                               start_position=start_position,
+                               num_elements=num_elements,
+                               end_position=end_position,
+                               end_release_time=end_release_time)
+                               
+    element_type = elements.floating(windage_range=windage_range,
+                                     windage_persist=windage_persist,
+                                     substance=substance)
 
+    return Spill(release,
+                 element_type,
+                 on,
+                 amount,
+                 units,
+                 name=name)
+                 
 def point_line_release_spill(num_elements,
                              start_position,
                              release_time,

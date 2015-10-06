@@ -31,7 +31,9 @@ points to specify the map bounds::
 
 Create and Add a Mover
 ----------------------
-Now we will create a simple mover (in this case a 0.5 m/s northward current) and add it to the model::
+Now we will create some simple movers and add them to the model.
+We use the SimpleMover class to specify a 0.5 m/s eastward current and
+also the RandomMover class to simulate spreading due to turbulent motions::
 
     from gnome.movers import SimpleMover, RandomMover
     velocity = (.5,0,0) #(u,v,w) in m/s
