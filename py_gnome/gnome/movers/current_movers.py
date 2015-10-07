@@ -823,11 +823,11 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
 class CurrentCycleMoverSchema(ObjType, ProcessSchema):
     filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
-    current_scale = SchemaNode(Float(), default=1)
-    uncertain_duration = SchemaNode(Float(), default=24)
-    uncertain_time_delay = SchemaNode(Float(), default=0)
-    uncertain_along = SchemaNode(Float(), default=.5)
-    uncertain_cross = SchemaNode(Float(), default=.25)
+    current_scale = SchemaNode(Float(), default=1, missing=drop)
+    uncertain_duration = SchemaNode(Float(), default=24, missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), default=0, missing=drop)
+    uncertain_along = SchemaNode(Float(), default=.5, missing=drop)
+    uncertain_cross = SchemaNode(Float(), default=.25, missing=drop)
 
 
 class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
