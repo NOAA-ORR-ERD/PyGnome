@@ -4,6 +4,7 @@ node_modules
 *.so
 *.pyc
 cy_*.c
+*filescanner.c
 *~
 *.idea
 *.ropeproject
@@ -35,8 +36,15 @@ web/gnome/webgnome/data
 # ignore dowloaded sample data for tests
 py_gnome/tests/unit_tests/sample_data/*
 py_gnome/tests/unit_tests/dump/
+py_gnome/foreground1.png
+py_gnome/junk.txt
+py_gnome/junk_large.txt
+py_gnome/junk_tiny.txt
+py_gnome/tests/unit_tests/test_utilities/test_file_tools/test.bna
+py_gnome/tests/unit_tests/test_utilities/test_file_tools/test_bad.bna
 
 # ignore generated oildb
 oil_library/oil_library/OilLib.db
 oil_library/temp.txt
+*OilLibrary.db
 
