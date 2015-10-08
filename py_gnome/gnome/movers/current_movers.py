@@ -99,12 +99,12 @@ class CurrentMoversBase(CyMover):
 
     def get_cell_center_points(self):
         '''
-            Right now the cython mover only gets the triangular center points,
-            so we need to calculate centers based on the cells themselves.
+        Right now the cython mover only gets the triangular center points,
+        so we need to calculate centers based on the cells themselves.
 
-            Cells will have the format (tl, tr, bl, br)
-            We need to get the rectangular centers
-             - center will be (tl + ((br - tl) / 2.))
+        Cells will have the format (tl, tr, bl, br)
+        We need to get the rectangular centers
+        Center will be: (tl + ((br - tl) / 2.))
         '''
         return self.mover._get_center_points().view(dtype='<f8').reshape(-1, 2)
 

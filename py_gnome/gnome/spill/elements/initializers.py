@@ -243,27 +243,28 @@ class InitRiseVelFromDist(DistributionBase):
         """
         Set the rise velocity parameters to be sampled from a distribution.
 
-        Use distribution to define rise_vel
-
         :param distribution: An object capable of generating a probability
                              distribution.
-        :type distribution: Right now, we have:
-                              - UniformDistribution
-                              - NormalDistribution
-                              - LogNormalDistribution
-                              - WeibullDistribution
-                            New distribution classes could be made.  The only
-                            requirement is they need to have a set_values()
-                            method which accepts a NumPy array.
-                            (presumably, this function will also modify
-                             the array in some way)
+        :type distribution: 
+            Right now, we have:
+             * UniformDistribution
+             * NormalDistribution
+             * LogNormalDistribution
+             * WeibullDistribution
+            New distribution classes could be made.  The only
+            requirement is they need to have a set_values()
+            method which accepts a NumPy array.
+            (presumably, this function will also modify
+             the array in some way)
+             
         """
         super(InitRiseVelFromDist, self).__init__(**kwargs)
 
         if distribution:
             self.distribution = distribution
         else:
-            self.distribution = UniformDistribution()
+            raise TypeError('InitRiseVelFromDist requires a distribution for rise velocities')
+            #self.distribution = UniformDistribution()
 
         self.array_types.add('rise_vel')
         self.name = 'rise_vel'
@@ -288,21 +289,19 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         changing over time, it is still stored in data array, as it can be
         useful for post-processing (called 'droplet_diameter')
 
-        Use distribution to define rise_vel
-
         :param distribution: An object capable of generating a probability
                              distribution.
-        :type distribution: Right now, we have:
-                              - UniformDistribution
-                              - NormalDistribution
-                              - LogNormalDistribution
-                              - WeibullDistribution
-                            New distribution classes could be made.  The only
-                            requirement is they need to have a set_values()
-                            method which accepts a NumPy array.
-                            (presumably, this function will also modify
-                             the array in some way)
-
+        :type distribution: 
+        Right now, we have:
+         * UniformDistribution
+         * NormalDistribution
+         * LogNormalDistribution
+         * WeibullDistribution
+        New distribution classes could be made.  The only
+        requirement is they need to have a set_values()
+        method which accepts a NumPy array.
+        (presumably, this function will also modify
+         the array in some way)
         :param water_density: 1020.0 [kg/m3]
         :type water_density: float
         :param water_viscosity: 1.0e-6 [m^2/s]
@@ -313,7 +312,8 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         if distribution:
             self.distribution = distribution
         else:
-            self.distribution = UniformDistribution()
+            raise TypeError('InitRiseVelFromDropletSizeFromDist requires a distribution for droplet sizes')
+            #self.distribution = UniformDistribution()
 
         self.water_viscosity = water_viscosity
         self.water_density = water_density

@@ -11,7 +11,11 @@ import shutil
 
 
 def make_images_dir(images_dir=None):
+    """
+    Create output directory for rendered images.
+    If it already exists, delete all old output files
 
+    """
     if images_dir is None:
         images_dir = os.path.join(os.getcwd(), 'images')
 

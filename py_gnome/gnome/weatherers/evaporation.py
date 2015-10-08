@@ -123,39 +123,40 @@ class Evaporation(Weatherer, Serializable):
           this as we add more weatherers and perhaps density gets set elsewhere
 
         Following diff eq models rate of change each pseudocomponent of oil::
-        dm(t)/dt = -(1 - fw) * A/B * m(t)
+        
+            dm(t)/dt = -(1 - fw) * A/B * m(t)
 
         Over a time-step, A, B, C are assumed constant. m(t) is the component
-        mass at beginning of timestep; m(t + Dt) is mass at end of timestep:
-        ::
-           m(t + Dt) = m(t) * exp(-L * Dt)
-           L := (1 - fw) * A/B
+        mass at beginning of timestep; m(t + Dt) is mass at end of timestep::
+        
+            m(t + Dt) = m(t) * exp(-L * Dt)
+            L := (1 - fw) * A/B
 
-        Define properties for each pseudocomponent of oil and constants:
-        ::
+        Define properties for each pseudocomponent of oil and constants::
+        
             vp: vapor pressure
             mw: molecular weight
 
         The following quantities are defined for a given blob of oil. The
         thickness of the blob is same for all LEs regardless of how many LEs
-        are used to model the blob:
-        ::
+        are used to model the blob::
+        
             area: area computed from fay spreading
             m_i: mass of component 'i'
             sum_m_mw: sum(m_i/mw_i) over all components
 
-        effect of wind - mass transport coefficient:
-        ::
+        effect of wind - mass transport coefficient::
+        
             K: See _mass_transport_coeff()
 
-        Finally, Evaporation of component 'i' for blob of oil:
-        ::
+        Finally, Evaporation of component 'i' for blob of oil::
+        
             A = area * K * vp
             B = gas_constant * water_temp * sum_m_mw
 
-        L becomes:
-        ::
+        L becomes::
             L = (1 - fw) * area * K * vp/(gas_constant * water_temp * sum_m_mw)
+            
         '''
         if not self.active:
             return

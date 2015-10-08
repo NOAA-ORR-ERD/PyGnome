@@ -10,8 +10,8 @@ The pygnome scripting interface allows users to customize the model setup.
    scripting/utilities
    scripting/maps
    scripting/spills
-   scripting/weatherers
    scripting/movers
+   scripting/weatherers
    scripting/outputters
    scripting/scripting_examples
 
