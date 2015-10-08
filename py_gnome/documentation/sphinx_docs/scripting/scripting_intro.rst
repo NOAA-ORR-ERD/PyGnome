@@ -1,5 +1,5 @@
-Introduction
-============
+Overview
+========
 To run simulations using the pyGNOME scripting environment the first step is to create a model object. 
 This model object will have attributes like the model start time and the run duration. 
 
@@ -15,8 +15,8 @@ We initialize the model to begin on New Years Day 2015 and run for 3 days::
 
     from gnome.model import Model
     from datetime import datetime, timedelta
-    model_start = datetime(2015, 1, 1, 0, 0)
-    model = Model(start_time=model_start,
+    start_time = datetime(2015, 1, 1, 0, 0)
+    model = Model(start_time=start_time,
                   duration=timedelta(days=3),
                   time_step=60 * 15, #seconds
                   )
@@ -53,7 +53,7 @@ occur at a single point, or over a line.
 (Here we set a instantaneous spill at a point in the middle of the map)::
 
     from gnome.spill import PointLineRelease, Spill
-    release = PointLineRelease(release_time=model_start,start_position=(-144,48.5,0),num_elements=1000)
+    release = PointLineRelease(release_time=start_time,start_position=(-144,48.5,0),num_elements=1000)
     spill = Spill(release)
     model.spills += spill
     
@@ -63,11 +63,11 @@ Create and Add an Outputter
 Outputters allow us to save our model run results. Options include saving images at specified model time steps
 or saving all the particle information into a netCDF file for further analysis.
 
-Here we use the Renderer class to save an image every 6 hours. 
-The default is to save files into the working directory::
+Here we use the Renderer class to save an image every 6 hours. We specify the bounding box of the rendered map to 
+be the same as those specified when we created the map object. The default is to save files into the working directory::
  
     from gnome.outputters import Renderer
-    renderer = Renderer(output_timestep=timedelta(hours=1))
+    renderer = Renderer(output_timestep=timedelta(hours=6),map_BB=((-145,48), (-145,49), (-143,49), (-143,48)))
                         
     model.outputters += renderer
 
@@ -80,6 +80,9 @@ can do a full run::
 
 View the results
 ----------------
+The renderer that we added was  png images every 6 hours. Since we did not specify an output directory for these images, 
+they will have been saved in the same directory that the script was executed from. The sequence of images should show a cloud
+of particles moving east and spreading.
 
 
 

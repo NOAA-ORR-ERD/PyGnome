@@ -12,6 +12,8 @@ NOTE: some of these only really test if the code crashes
 """
 
 import os
+from os.path import basename
+
 from datetime import datetime
 
 import pytest
@@ -23,7 +25,6 @@ from gnome.outputters.renderer import Renderer
 from gnome.utilities.projections import GeoProjection
 
 from ..conftest import sample_sc_release, testdata
-
 
 bna_sample = testdata['Renderer']['bna_sample']
 bna_star = testdata['Renderer']['bna_star']
@@ -350,9 +351,22 @@ def test_draw_raster_map(output_dir):
 @pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 def test_serialize_deserialize(json_, output_dir):
     r = Renderer(bna_sample, output_dir)
-    r2 = Renderer.new_from_dict(r.deserialize(r.serialize(json_)))
-    if json_ == 'save':
-        assert r == r2
+    toserial = r.serialize(json_)
+    dict_ = r.deserialize(toserial)
+
+    # check our Renderer attributes
+    if json_ == 'webapi':
+        assert toserial['map_filename'] == basename(toserial['map_filename'])
+    else:
+        # in save context, we expect a full path to file
+        assert toserial['map_filename'] != basename(toserial['map_filename'])
+
+    assert toserial['map_filename'] == dict_['map_filename']
+    dict_['map_filename'] = bna_sample  # put our full filename back in
+
+    r2 = Renderer.new_from_dict(dict_)
+
+    assert r == r2
 
 
 # # if __name__ == '__main__':

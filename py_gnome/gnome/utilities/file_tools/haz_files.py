@@ -12,7 +12,6 @@ import numpy as np
 try:
     from .filescanner import scan
     FILESCANNER = True
-    #print 'running with File Scanner'
 except:
     FILESCANNER = False
 
@@ -222,28 +221,22 @@ def GetNextBNAPolygon(f, dtype=np.float64):
           simply split on the commas
           (or march through the line looking for the quotes -- regex?)
     """
-    header = f.readline()
-
-    if not header:  # end of file
-        return None
-
-    while header and not header.strip():  # skip blank lines
+    while True: # skip blank lines
         header = f.readline()
+        if not header: # end of file
+            return None
+        if header.strip(): # found a header
+            break
+        else:
+            continue
     try:
-        # #find the quotes:
-        # quote2 = header.find('"', 1)
-        # quote3 = header.find('"', quote2+1)
-        # quote4 = header.find('"', quote3+1)
-        # name = header[1:quote2]
-        # sname = header[quote3+1:quote4]
-        # num_points = int(header[quote4+1:].strip()[1:])
         fields = header.split('"')
         name = fields[1]
         sname = fields[3]
         num_points = int(fields[4].strip()[1:])
         #header = header.replace('", "', '","') # some bnas have an extra space
         #name, rest = header.strip().split('","')
-    except ValueError:
+    except ValueError, IndexError:
         raise ValueError('something wrong with header line: {0}'
                          .format(header))
 

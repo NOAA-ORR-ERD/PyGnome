@@ -767,6 +767,8 @@ class Serializable(GnomeId, Savable):
         NOTE: super is not used.
         """
 
+        print "calling __eq__"
+
         if not self._check_type(other):
             return False
 

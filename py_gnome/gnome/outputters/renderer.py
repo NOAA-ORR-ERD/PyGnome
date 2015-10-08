@@ -8,6 +8,7 @@ This one used the new map_canvas_gd, which uses the gd rendering lib.
 
 """
 import os
+from os.path import basename
 import glob
 import copy
 import zipfile
@@ -89,24 +90,23 @@ class Renderer(Outputter, MapCanvas):
         change projection_type from string to correct type for loading from
         save file
         """
+        viewport = dict_.pop('viewport')
         if 'projection' in dict_:
-            '''
-            assume dict_ is from a save file since only the save file stores
-            the 'projection'
-            todo:
-            The 'projection' isn't stored as a nested object - should
-            revisit this and see if we can make it consistent with nested
-            objects .. but this works!
-            '''
+            # assume dict_ is from a save file since only the save file stores
+            # the 'projection' (why does this matter??)
+            # todo:
+            # The 'projection' isn't stored as a nested object - should
+            # revisit this and see if we can make it consistent with nested
+            # objects .. but this works!
+
             # creates an instance of the projection class
             proj = class_from_objtype(dict_.pop('projection'))()
-            viewport = dict_.pop('viewport')
-
             # then creates the object
             obj = cls(projection=proj, **dict_)
             obj.viewport = viewport
-
-        obj = super(Renderer, cls).new_from_dict(dict_)
+        else:
+            obj = super(Renderer, cls).new_from_dict(dict_)
+            obj.viewport = viewport
         return obj
 
     def __init__(
@@ -148,7 +148,7 @@ class Renderer(Outputter, MapCanvas):
                          scale. Default is full globe: (((-180, -90), (180, 90)))
         :type viewport: pair of (lon, lat) tuples ( lower_left, upper right )
 
-        :param map_BB=None: bounding box of map if None, it will use teh
+        :param map_BB=None: bounding box of map if None, it will use the
                             bounding box of the mapfile.
 
         :param draw_back_to_fore=True: draw the background (map) to the
@@ -186,7 +186,8 @@ class Renderer(Outputter, MapCanvas):
         """
         projection = projections.FlatEarthProjection() if projection is None else projection
         # set up the canvas
-        self._map_filename = map_filename
+        self.map_filename = map_filename
+
         if map_filename is not None:
             self.land_polygons = haz_files.ReadBNA(map_filename, 'PolygonSet')
         else:
@@ -229,12 +230,17 @@ class Renderer(Outputter, MapCanvas):
         self.add_colors(self.map_colors)
         self.background_color='background'
 
-    map_filename = property(lambda self: self._map_filename)
+
+    @property
+    def map_filename(self):
+        return basename(self._filename)
+    @map_filename.setter
+    def map_filename(self, name):
+        self._filename = name
 
     @property
     def draw_ontop(self):
         return self._draw_ontop
-
     @draw_ontop.setter
     def draw_ontop(self, val):
         if val not in ['forecast', 'uncertain']:
@@ -472,6 +478,15 @@ class Renderer(Outputter, MapCanvas):
         """
         return '{0}.{1}'.format(self.projection.__module__,
                                 self.projection.__class__.__name__)
+
+    def serialize(self, json_='webapi'):
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+
+        if json_ == 'save':
+            toserial['map_filename'] = self._filename
+
+        return schema.serialize(toserial)
 
     def save(self, saveloc, references=None, name=None):
         '''

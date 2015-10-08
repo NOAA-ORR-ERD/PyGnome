@@ -81,6 +81,10 @@ def add_oil(record):
     add_flash_point(record, oil)
     add_emulsion_water_fraction_max(record, oil)
 
+    add_metals(record, oil)
+    add_imported_sara_fractions(record, oil)
+    add_misc_fractions(record, oil)
+
     add_resin_fractions(record, oil)
     add_asphaltene_fractions(record, oil)
 
@@ -419,6 +423,26 @@ def add_emulsion_water_fraction_max(imported_rec, oil):
         oil.emulsion_water_fraction_max = 0.0
 
     oil.estimated.emulsion_water_fraction_max = True
+
+
+def add_metals(record, oil):
+    oil.nickel_ppm = record.nickel
+    oil.vanadium_ppm = record.vanadium
+
+
+def add_misc_fractions(record, oil):
+    oil.polars_fraction = record.polars
+    oil.benzene_fraction = record.benzene
+    oil.sulphur_fraction = record.sulphur
+    oil.paraffins_fraction = record.paraffins
+    oil.wax_content_fraction = record.wax_content
+
+
+def add_imported_sara_fractions(record, oil):
+    oil.saturates_fraction = record.saturates
+    oil.aromatics_fraction = record.aromatics
+    oil.resins_fraction = record.resins
+    oil.asphaltenes_fraction = record.asphaltenes
 
 
 def add_resin_fractions(imported_rec, oil):
