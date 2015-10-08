@@ -312,8 +312,8 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         return output_info
 
     def get_rounded_velocities(self, velocities):
-        return np.vstack((velocities['u'].round(decimals=1),
-                          velocities['v'].round(decimals=1))).T
+        return np.vstack((velocities['u'].round(decimals=2),
+                          velocities['v'].round(decimals=2))).T
 
     def get_unique_velocities(self, velocities):
         '''
