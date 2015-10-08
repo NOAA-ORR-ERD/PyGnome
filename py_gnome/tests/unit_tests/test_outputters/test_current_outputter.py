@@ -107,7 +107,7 @@ def test_current_grid_geojson_output(model):
 
                 geometry = feature['geometry']
                 assert 'type' in geometry
-                assert geometry['type'] == 'Point'
+                assert geometry['type'] == 'MultiPoint'
 
                 assert 'coordinates' in geometry
                 assert len(geometry['coordinates']) > 0
