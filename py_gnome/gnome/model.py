@@ -1431,12 +1431,12 @@ class Model(Serializable):
         return self.spills.items()[ucert][prop_name]
 
     def get_spill_data(self, target_properties, conditions, ucert=0):
-        '''
+        """
         Convenience method to allow user to write an expression to filter
         raw spill data
         Example case:
         get_spill_data('position && mass',
-                       'position > 50 && spill_num == 1 || status_codes == 1')
+        'position > 50 && spill_num == 1 || status_codes == 1')
 
         WARNING: EXPENSIVE! USE AT YOUR OWN RISK ON LARGE num_elements!
 
@@ -1444,7 +1444,7 @@ class Model(Serializable):
         all properties tracked by the model.
         'positions', 'next_positions', 'last_water_positions', 'status_codes',
         'spill_num', 'id', 'mass', 'age'
-        '''
+        """
         if ucert == 'ucert':
             ucert = 1
 

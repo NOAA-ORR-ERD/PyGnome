@@ -38,6 +38,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
     associated properties. Following is the format for a particle - the
     data in <> are the results for each element.
     ::
+    
         {
         "type": "FeatureCollection",
         "features": [
@@ -205,6 +206,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
     Following is the output format - the data in <> are the results
     for each element.
     ::
+    
         {
          "time_stamp": <TIME IN ISO FORMAT>,
          "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
@@ -335,6 +337,7 @@ class IceGeoJsonOutput(Outputter, Serializable):
     Following is the output format - the data in <> are the results
     for each element.
     ::
+    
         {
          "time_stamp": <TIME IN ISO FORMAT>,
          "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,

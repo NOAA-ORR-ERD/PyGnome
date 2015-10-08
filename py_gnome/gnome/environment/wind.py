@@ -505,8 +505,9 @@ def constant_wind(speed, direction, units='m/s'):
     :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s",
                        "cm/s", etc.
 
-    .. note:: The time for a constant wind timeseries is irrelevant. This
-    function simply sets it to datetime.now() accurate to hours.
+    .. note:: 
+        The time for a constant wind timeseries is irrelevant. This
+        function simply sets it to datetime.now() accurate to hours.
     """
     wind_vel = np.zeros((1, ), dtype=basic_types.datetime_value_2d)
 

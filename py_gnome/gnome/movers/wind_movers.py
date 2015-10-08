@@ -316,8 +316,9 @@ def constant_wind_mover(speed, direction, units='m/s'):
 
     :return: returns a gnome.movers.WindMover object all set up.
 
-    .. note:: The time for a constant wind timeseries is irrelevant. This
-    function simply sets it to datetime.now() accurate to hours.
+    .. note::
+        The time for a constant wind timeseries is irrelevant. 
+        This function simply sets it to datetime.now() accurate to hours.   
     """
 
     series = np.zeros((1, ), dtype=datetime_value_2d)

@@ -2,4 +2,18 @@ Utilities and helper functions
 ==============================
 
 GNOME has a scripting module where many utilties and helper functions can be accessed to simplify
-common tasks. See :mod:`gnome.scripting` for more information.
+common tasks. These include helper functions for easier creation of certain types of spills and movers.
+To use these functions import gnome.scripting
+
+``gnome.scripting``
+-------------------
+
+.. automodule:: gnome.scripting
+    :members: constant_wind, constant_wind_mover, wind_mover_from_file, make_images_dir,
+              surface_point_line_spill, subsurface_plume_spill
+
+
+
+
+      
+      

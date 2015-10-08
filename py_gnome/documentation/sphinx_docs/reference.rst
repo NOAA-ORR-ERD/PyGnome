@@ -82,7 +82,7 @@ model run and in subsequent steps the model moves and weathers elements.
    :members:
    :inherited-members:
 .. autofunction:: floating
-.. autofunction:: plume
+.. autofunction:: plume 
 
 ``gnome.movers`` -- PyGnome mover classes
 ---------------------------------------------------
