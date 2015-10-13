@@ -98,6 +98,7 @@ class Renderer(Outputter, MapCanvas):
                  output_last_step=True,
                  draw_ontop='forecast',
                  draw_back_to_fore=True,
+                 land_polygons=None,
                  **kwargs):
         """
         Init the image renderer.
@@ -159,7 +160,7 @@ class Renderer(Outputter, MapCanvas):
         if filename is not None:
             polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         else:
-            polygons = None
+            polygons = land_polygons
 
         self.images_dir = images_dir
         self.last_filename = ''
