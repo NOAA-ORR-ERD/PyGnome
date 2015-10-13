@@ -62,6 +62,7 @@ cdef extern from "ComponentMover_c.h":
         double          pat2ScaleToValue
         Boolean         bUseAveragedWinds
         Boolean         bExtrapolateWinds
+        Boolean         bUseMainDialogScaleFactor
         double          fScaleFactorAveragedWinds
         double          fPowerFactorAveragedWinds
         long            fPastHoursToAverage

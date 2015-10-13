@@ -144,6 +144,13 @@ void ComponentMover_c::ModelStepIsDone()
 OSErr ComponentMover_c::PrepareForModelRun()
 {
 	this -> fOptimize.isFirstStep = true;
+#ifndef pyGNOME
+	if (fAveragedWindsHdl)
+	{	// should recalculate every time in case winds change
+		DisposeHandle((Handle)fAveragedWindsHdl);
+		fAveragedWindsHdl = 0;
+	}
+#endif
 	return CurrentMover_c::PrepareForModelRun();
 }
 
@@ -869,11 +876,13 @@ OSErr ComponentMover_c::GetAveragedWindValue(Seconds time, const Seconds& time_s
 {
 	long index, numValuesInHdl;
 	VelocityRec avWindValue = {0.,0.};
-	Seconds avTime;
+	Seconds avTime, elapsed_time;
 	
 	*avValue = avWindValue;
 	
-	index = (long)((time - fModelStartTime)/time_step);
+	elapsed_time = time - fModelStartTime;
+	index = (elapsed_time) / time_step;
+	//index = (long)((time - fModelStartTime)/time_step);
 	numValuesInHdl = _GetHandleSize((Handle)fAveragedWindsHdl)/sizeof(**fAveragedWindsHdl);
 	if (index<0 || index >= numValuesInHdl) {return -1;}	// may want to recalculate
 	avTime = INDEXH(fAveragedWindsHdl, index).time;

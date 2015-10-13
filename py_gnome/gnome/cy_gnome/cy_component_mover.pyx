@@ -163,6 +163,48 @@ cdef class CyComponentMover(CyCurrentMover):
         def __set__(self,value):
             self.component.scaleBy = value    
     
+    property extrapolate:
+        def __get__(self):
+            return self.component.bExtrapolateWinds
+
+        def __set__(self, value):
+            self.component.bExtrapolateWinds=value
+
+    property use_averaged_winds:
+        def __get__(self):
+            return self.component.bUseAveragedWinds
+
+        def __set__(self, value):
+            self.component.bUseAveragedWinds=value
+
+    property wind_power_factor:
+        def __get__(self):
+            return self.component.fPowerFactorAveragedWinds
+
+        def __set__(self, value):
+            self.component.fPowerFactorAveragedWinds=value
+
+    property past_hours_to_average:
+        def __get__(self):
+            return self.component.fPastHoursToAverage
+
+        def __set__(self, value):
+            self.component.fPastHoursToAverage=value
+
+    property scale_factor_averaged_winds:
+        def __get__(self):
+            return self.component.fScaleFactorAveragedWinds
+
+        def __set__(self, value):
+            self.component.fScaleFactorAveragedWinds=value
+
+    property use_original_scale_factor:
+        def __get__(self):
+            return self.component.bUseMainDialogScaleFactor
+
+        def __set__(self, value):
+            self.component.bUseMainDialogScaleFactor=value
+
     property ref_point:
         def __get__(self):
             """

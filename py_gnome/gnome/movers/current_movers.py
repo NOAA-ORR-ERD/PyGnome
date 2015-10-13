@@ -1100,6 +1100,36 @@ class ComponentMover(CyMover, serializable.Serializable):
     scale_by = property(lambda self: self.mover.scale_by,
                         lambda self, val: setattr(self.mover, 'scale_by', val))
 
+    extrapolate = property(lambda self: self.mover.extrapolate,
+                           lambda self, val: setattr(self.mover,
+                                                     'extrapolate',
+                                                     val))
+
+    use_averaged_winds = property(lambda self: self.mover.use_averaged_winds,
+                           lambda self, val: setattr(self.mover,
+                                                     'use_averaged_winds',
+                                                     val))
+
+    wind_power_factor = property(lambda self: self.mover.wind_power_factor,
+                           lambda self, val: setattr(self.mover,
+                                                     'wind_power_factor',
+                                                     val))
+
+    past_hours_to_average = property(lambda self: self.mover.past_hours_to_average,
+                           lambda self, val: setattr(self.mover,
+                                                     'past_hours_to_average',
+                                                     val))
+
+    scale_factor_averaged_winds = property(lambda self: self.mover.scale_factor_averaged_winds,
+                           lambda self, val: setattr(self.mover,
+                                                     'scale_factor_averaged_winds',
+                                                     val))
+
+    use_original_scale_factor = property(lambda self: self.mover.use_original_scale_factor,
+                           lambda self, val: setattr(self.mover,
+                                                     'use_original_scale_factor',
+                                                     val))
+
     @property
     def scale_refpoint(self):
         return self.mover.ref_point
