@@ -263,7 +263,7 @@ def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
                 positions[i, 1] = end_positions[i, 1]
         return None
 
-def get_landings(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not None,
+def do_landings(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not None,
                  cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] end_positions not None,
                  cnp.ndarray[int16_t, ndim=1, mode='c'] status_codes not None,
                  cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] last_water_positions not None,
