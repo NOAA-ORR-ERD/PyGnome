@@ -132,10 +132,11 @@ class MapCanvas(object):
         self.raster_map = None
         self.raster_map_fill=True
         self.raster_map_outline=False
-        # self._viewport = kwargs.pop('viewport',None)
+        self._viewport = Viewport(kwargs.pop('viewport',None))
 
-        # if self._viewport is None:
-        #     self.viewport = self.map_BB
+        #initial viewport is of the entire map
+        if self._viewport is None:
+            self._viewport = Viewport(self.map_BB)
 
 # USE DEFAULT CONSTRUCTOR FOR CREATING EMPTY_MAP
 # =============================================================================
@@ -164,6 +165,8 @@ class MapCanvas(object):
 #        return mc
 # =============================================================================
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        
     def viewport_to_dict(self):
         '''
         convert numpy arrays to list of tuples
@@ -178,25 +181,48 @@ class MapCanvas(object):
         returns the current value of viewport of map:
         the bounding box of the image
         """
-        return self.projection.to_lonlat(((0, self.image_size[1]),
-                (self.image_size[0], 0)))
+        return self._viewport.BB
 
     @viewport.setter
-    def viewport(self, viewport_BB):
+    def viewport(self, center = None, width = None, height = None, BB = None):
         """
-        Sets the viewport of the map: what gets drawn at what scale
+        Function to allow the user to set properties of the viewport in meters, or by bounding box
+        :param center: The point around which the viewport is centered
+        :type a tuple containing an x/y coordinate
 
-        :param viewport_BB: the new viewport, as a BBox object, or in the form:
-                            ( (min_long, min_lat),
-                              (max_long, max_lat) )
+        :param width: Width of the viewport in meters
+
+        :param height: height of the viewport in meters
+
+        :param BB: Bounding box of the viewport (overrides all previous parameters)
+        :type a list of tuples containing of the lower left and top right coordinates
+        
         """
-        #print "resetting viewport"
-        self.projection.set_scale(viewport_BB, self.image_size)
+        if BB is None:
+            self._viewport.center = center
+            distances = self.projection.meters_to_lonlat((width, height, 0), (center[0], center[1],0))
+            self._viewport.width = distances[0]
+            self._viewport.height = distances[1]
+        else:
+            self._viewport.BB = BB
+            
+        self.rescale()
+
+    def zoom(self, multiplier):
+        self._viewport.scale(multiplier)
+        self.rescale()
+
+    def rescale(self):
+        """
+        Rescales the projection to the viewport bounding box. Should be called whenever the viewport changes
+        """
+        self.projection.set_scale(self._viewport.BB, self.image_size)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     @property
     def land_polygons(self):
         return self._land_polygons
-
     def draw_background(self):
         """
         Draws the background image -- just land for now
@@ -482,3 +508,112 @@ class BW_MapCanvas(MapCanvas):
 #    bna_filename = sys.argv[1]
 #    png_filename = bna_filename.rsplit(".")[0] + ".png"
 #    bna = make_map(bna_filename, png_filename)
+
+"""
+viewport.py
+
+A viewport that defines a viewable area on a map.
+
+""" 
+
+class Viewport(object):
+    
+    """
+    Viewport
+
+    class that defines and manages attribues for a viewport onto a flat 2D map. All points and measurements are in lon/lat
+    
+
+    """
+    def __init__(self, center=None, width = None, height = None, BB = None):
+        """
+        Init the viewport. Can initialize with center/width/height, and/or with bounding box. 
+        NOTE: Bounding box takes precedence over any previous parameters
+
+        :param center: The point around which the viewport is centered
+        :type a tuple containing an x/y coordinate
+
+        :param width: Width of the viewport
+
+        :param height: height of the viewport
+
+        :param BB: Bounding box of the viewport (overrides previous parameters)
+        :type a list of tuples containing of the lower left and top right coordinates
+        """
+        self._BB = None
+        self._center = None
+        self._width = None
+        self._height = None
+        if BB is None:
+            if center is None:
+                raise ValueError("Center is unspecified")
+            if width is None:
+                raise ValueError("Width is unspecified")
+            if height is None:
+                raise ValueError("Height is unspecified")
+    
+            self._center = center
+            self._width = width
+            self._height = height
+            self.recompute_BB()
+        else:
+            self._BB = BB
+            self.recompute_dim()
+                
+    def scale(self, multiplier=1.0):
+        self.width *= multiplier
+        self.height *= multiplier
+        self.recompute_BB()
+        
+    def recompute_dim(self):
+        self.width = self.BB[1][0] - self.BB[0][0]
+        self.height = self.BB[1][1] - self.BB[0][1] 
+        self.center = (self.BB[1][0] - self.width/2.0,
+                       self.BB[1][1] - self.height/2.0)
+        
+        
+    def recompute_BB(self):
+        halfx = self.width/2.0
+        halfy = self.height/2.0
+        self._BB = ((self.center[0] - halfx, self.center[0] - halfy),
+                     (self.center[1] + halfx, self.center[1] + halfy)) 
+        
+    @property
+    def BB(self):
+        return self._BB
+    
+    @BB.setter
+    def BB(self, BB):
+        if BB is not None:
+            self._BB = BB
+            self.recompute_dim()
+        
+    @property
+    def center(self):
+        return self._center
+    
+    @center.setter
+    def center(self, center):
+        if center is not None:
+            self._center = center
+            self.recompute_BB()
+        
+    @property
+    def width(self):
+        return self._width
+    
+    @width.setter
+    def width(self, width):
+        if width is not None:
+            self._width = width
+            self.recompute_BB()
+        
+    @property
+    def height(self):
+        return self._height
+    
+    @height.setter
+    def height(self, height):
+        if height is not None:
+            self._height = height
+            self.recompute_BB()
