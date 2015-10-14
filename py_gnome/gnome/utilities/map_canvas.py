@@ -132,11 +132,7 @@ class MapCanvas(object):
         self.raster_map = None
         self.raster_map_fill=True
         self.raster_map_outline=False
-        self._viewport = Viewport(kwargs.pop('viewport',None))
-
-        #initial viewport is of the entire map
-        if self._viewport is None:
-            self._viewport = Viewport(self.map_BB)
+        self._viewport = Viewport(self.map_BB)
 
 # USE DEFAULT CONSTRUCTOR FOR CREATING EMPTY_MAP
 # =============================================================================
