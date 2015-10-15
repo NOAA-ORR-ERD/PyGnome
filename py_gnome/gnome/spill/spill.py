@@ -700,7 +700,6 @@ def subsurface_plume_spill(num_elements,
                            units=None,
                            windage_range=(.01, .04),
                            windage_persist=900,
-
                            name='Subsurface plume'):
     '''
     Helper function returns a Spill object 
@@ -742,7 +741,6 @@ def subsurface_plume_spill(num_elements,
     release = PointLineRelease(release_time=release_time,
                                start_position=start_position,
                                num_elements=num_elements,
-                               end_position=end_position,
                                end_release_time=end_release_time)
     
     #This helper function is just passing parameters thru to the plume helper function which will do the work

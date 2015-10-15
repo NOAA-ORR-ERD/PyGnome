@@ -140,13 +140,13 @@ model run and in subsequent steps the model moves and weathers elements.
 ``gnome.outputter`` -- PyGnome outputters module
 ---------------------------------------------------
 .. automodule:: gnome.outputters
-.. :autoclass:: Outputter
+.. autoclass:: Outputter
     :members:
     :show-inheritance:
-.. :autoclass:: Renderer
+.. autoclass:: Renderer
     :members:
     :show-inheritance:
-.. :autoclass:: NetCDFOutput
+.. autoclass:: NetCDFOutput
     :members:
     :show-inheritance:
 .. autoclass:: TrajectoryGeoJsonOutput
@@ -162,10 +162,12 @@ model run and in subsequent steps the model moves and weathers elements.
 ``gnome.utilities`` -- PyGnome utilities module
 ---------------------------------------------------
 
+.. automodule:: gnome.utilities.distributions
+    :members:
+    :show-inheritance:
 .. automodule:: gnome.utilities.serializable
     :members:
     :show-inheritance:
-
 .. automodule:: gnome.utilities.orderedcollection
     :members:
     :show-inheritance:
