@@ -292,6 +292,6 @@ def do_landings(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not None,
                 y = y1 + u * (y2-y1)
                 end_positions[i,0] = x
                 end_positions[i,1] = y
-                last_water_positions[i,0] = end_positions[i,0] - ( p1[0] - x )*0.99999
-                last_water_positions[i,1] = end_positions[i,1] - ( p1[1] - y )*0.99999
+                last_water_positions[i,0] = p1[0] - ( x - p1[0])*0.99999
+                last_water_positions[i,1] = p1[1] - ( y - p1[1])*0.99999
                 status_codes[i] = type_defs.OILSTAT_ONLAND
