@@ -289,8 +289,11 @@ OSErr ComponentMover_c::CalculateAveragedWindsVelocity(const Seconds& model_time
 	averageDir = averageDir / averageTimeSteps;
 	//avValue.u = averageSpeed*sin(averageDir/*+PI*/);	// not sure about the pi
 	//avValue.v = averageSpeed*cos(averageDir/*+PI*/);
-	avValue.u = averageSpeed;	// not sure about the pi
-	avValue.v = 0;	// not sure about the pi
+	//avValue.u = averageSpeed;	// not sure about the pi
+	//avValue.v = 0;	// not sure about the pi
+	fAveragedWindVelocity.u = averageSpeed;	// not sure about the pi
+	fAveragedWindVelocity.v = 0;	// not sure about the pi
+	return err;
 }
 #else
 OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
