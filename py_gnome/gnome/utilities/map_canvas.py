@@ -180,7 +180,14 @@ class MapCanvas(object):
         return self._viewport.BB
 
     @viewport.setter
-    def viewport(self, center = None, width = None, height = None, BB = None):
+    def viewport(self, BB):
+        """
+        viewport setter for bounding box only...allows map_canvas.viewport = ((x1,y1),(x2,y2))
+        """
+        self._viewport.BB = BB if BB else self._viewport.BB
+        self.rescale()
+        
+    def set_viewport(self, center = None, width = None, height = None, BB = None):
         """
         Function to allow the user to set properties of the viewport in meters, or by bounding box
         :param center: The point around which the viewport is centered
@@ -527,14 +534,14 @@ class Viewport(object):
         NOTE: Bounding box takes precedence over any previous parameters
 
         :param center: The point around which the viewport is centered
-        :type a tuple containing an x/y coordinate
+        :type a tuple containing an lon/lat coordinate
 
-        :param width: Width of the viewport
+        :param width: Width of the viewport (lon)
 
-        :param height: height of the viewport
+        :param height: height of the viewport (lat)
 
         :param BB: Bounding box of the viewport (overrides previous parameters)
-        :type a list of tuples containing of the lower left and top right coordinates
+        :type a list of lon/lat tuples containing of the lower left and top right coordinates
         """
         self._BB = None
         self._center = None
@@ -580,9 +587,8 @@ class Viewport(object):
     
     @BB.setter
     def BB(self, BB):
-        if BB is not None:
-            self._BB = BB
-            self.recompute_dim()
+        self._BB = BB if BB else self._BB
+        self.recompute_dim()
         
     @property
     def center(self):
@@ -590,9 +596,8 @@ class Viewport(object):
     
     @center.setter
     def center(self, center):
-        if center is not None:
-            self._center = center
-            self.recompute_BB()
+        self._center = center if center else self._center
+        self.recompute_BB()
         
     @property
     def width(self):
@@ -600,9 +605,8 @@ class Viewport(object):
     
     @width.setter
     def width(self, width):
-        if width is not None:
-            self._width = width
-            self.recompute_BB()
+        self._width = width if width else self._width
+        self.recompute_BB()
         
     @property
     def height(self):
@@ -610,6 +614,5 @@ class Viewport(object):
     
     @height.setter
     def height(self, height):
-        if height is not None:
-            self._height = height
-            self.recompute_BB()
+        self._height = height if height else self._height
+        self.recompute_BB()
