@@ -322,12 +322,16 @@ class Param_Map(GnomeMap):
         rot_matrix = [(np.cos(ang), np.sin(ang)),(-np.sin(ang),np.cos(ang))]
         self.land_points = np.dot(init_points, rot_matrix)
         self.land_points = np.array([(x + center[0], y + center[1]) for (x,y) in self.land_points])
-        self.map_bounds = np.array(((center[0] - 3*d, center[1] + 3*d),
+        land_polys = PolygonSet(self.land_points)
+        map_bounds = np.array(((center[0] - 3*d, center[1] + 3*d),
                                         (center[0] + 3*d, center[1] + 3*d),
                                         (center[0] + 3*d, center[1] - 3*d),
                                         (center[0] - 3*d, center[1] - 3*d)),
                                        dtype=np.float64)
         self._refloat_halflife = 0.5
+        
+        
+        GnomeMap.__init__(self, land_polys=land_polys, map_bounds=map_bounds)
     
     def get_map_bounds(self):
         return (self.map_bounds[1], self.map_bounds[3])
