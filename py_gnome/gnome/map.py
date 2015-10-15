@@ -80,7 +80,7 @@ class GnomeMap(Serializable):
 
     refloat_halflife = None  # note -- no land, so never used
 
-    def __init__(self, map_bounds=None, spillable_area=None, name=None):
+    def __init__(self, map_bounds=None, spillable_area=None, land_polys=None, name=None):
         """
         This __init__ will be different for other implementations
 
@@ -91,6 +91,11 @@ class GnomeMap(Serializable):
 
         :param spillable_area: The PolygonSet bounding the spillable_area.
         :type spillable_area: Either a PolygonSet object or a list of lists
+            from which a polygon set can be created. Each element in the list
+            is a list of points defining a polygon.
+        
+        :param land_polys: The PolygonSet holding the land polygons
+        :type land_polys: Either a PolygonSet object or a list of lists
             from which a polygon set can be created. Each element in the list
             is a list of points defining a polygon.
 
@@ -119,7 +124,19 @@ class GnomeMap(Serializable):
                 spillable_area = self._polygon_set_from_points(spillable_area)
 
             self.spillable_area = spillable_area
+            
+        if land_polys is None:
+            #empty set, no land
+            self.land_polys = PolygonSet()
+        else:
+            self.land_polys = land_polys
 
+    def get_polygons(self):
+        polys = {}
+        polys['spillable_area'] = self.spillable_area
+        polys['map_bounds'] = self.map_bounds
+        polys['land_polys'] = self.land_polys
+    
     def _polygon_set_from_points(self, poly):
         '''
         create PolygonSet() object from list of polygons which in turn is a
@@ -694,7 +711,7 @@ class MapFromBNA(RasterMap):
         #  fixme -- adding a "pop" method to PolygonSet might be better
         #      or a gnome_map_data object...
 
-        just_land = PolygonSet()  # and lakes....
+        land_polys = PolygonSet()  # and lakes....
         spillable_area = PolygonSet()
 
         for p in polygons:
@@ -704,12 +721,12 @@ class MapFromBNA(RasterMap):
             elif p.metadata[1].lower() == 'map bounds':
                 map_bounds = p
             else:
-                just_land.append(p)
+                land_polys.append(p)
 
         # now draw the raster map with a map_canvas:
         # determine the size:
 
-        BB = just_land.bounding_box
+        BB = land_polys.bounding_box
 
         # create spillable area and  bounds if they weren't in the BNA
         if map_bounds is None:
@@ -749,7 +766,7 @@ class MapFromBNA(RasterMap):
         canvas.clear_background()
 
         ## draw the land to the background
-        for poly in just_land:
+        for poly in land_polys:
             if poly.metadata[2] == '1': ##fixme -- this should be something like "land"
                 canvas.draw_polygon(poly,
                                     line_color='land',
@@ -776,6 +793,7 @@ class MapFromBNA(RasterMap):
                            canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,
+                           land_polys=land_polys,
                            **kwargs)
         return None
 
@@ -840,7 +858,7 @@ class MapFromUGrid(RasterMap):
         #  fixme -- adding a "pop" method to PolygonSet might be better
         #      or a gnome_map_data object...
 
-        just_land = PolygonSet()  # and lakes....
+        land_polys = PolygonSet()  # and lakes....
         spillable_area = PolygonSet()
 
         for p in polygons:
@@ -850,12 +868,12 @@ class MapFromUGrid(RasterMap):
             elif p.metadata[1].lower() == 'map bounds':
                 map_bounds = p
             else:
-                just_land.append(p)
+                land_polys.append(p)
 
         # now draw the raster map with a map_canvas:
         # determine the size:
 
-        BB = just_land.bounding_box
+        BB = land_polys.bounding_box
 
         # create spillable area and  bounds if they weren't in the BNA
         if map_bounds is None:
@@ -895,7 +913,7 @@ class MapFromUGrid(RasterMap):
         canvas.clear_background()
 
         ## draw the land to the background
-        for poly in just_land:
+        for poly in land_polys:
             if poly.metadata[2] == '1': ##fixme -- this should be something like "land"
                 canvas.draw_polygon(poly,
                                     line_color='land',
@@ -922,6 +940,7 @@ class MapFromUGrid(RasterMap):
                            canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,
+                           land_polys=land_polys
                            **kwargs)
         return None
 
