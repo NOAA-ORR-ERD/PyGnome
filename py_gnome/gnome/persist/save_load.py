@@ -133,20 +133,32 @@ def load(saveloc, fname='Model.json', references=None):
         this fails, it checks if saveloc is a file and loads this assuming its
         json for a gnome object. If none of these work, it just returns None.
     '''
-    # is a directory, look for Model.json in directory
+    if zipfile.is_zipfile(saveloc):
+        with zipfile.ZipFile(saveloc, 'r') as z:
+            saveloc_dir = os.path.dirname(saveloc)
+            folders = zipfile_folders(z)
+
+            if len(folders) == 1:
+                # we allow our model content to be in a single top-level folder
+                prefix = folders[0]
+                extract_zipfile(z, saveloc_dir, prefix)
+            elif len(folders) == 0:
+                # all datafiles are at the top-level, which is fine
+                extract_zipfile(z, saveloc_dir)
+            else:
+                # nothing to do, zipfile does not have a good structure
+                return
+
+            saveloc = saveloc_dir
+
     if os.path.isdir(saveloc):
+        # is a directory, look for our fname in directory
         fd = open(os.path.join(saveloc, fname), 'r')
-
-    elif zipfile.is_zipfile(saveloc):
-        z = zipfile.ZipFile(saveloc)
-        fd = z.open(fname, 'r')
-
     elif os.path.isfile(saveloc):
         fd = open(saveloc, 'r')
         saveloc, fname = os.path.split(saveloc)
-
     else:
-        # nothing to do, saveloc is not zipfile or a directory
+        # nothing to do, saveloc is not a file or a directory
         return
 
     # load json data from file descriptor
@@ -376,13 +388,6 @@ class Savable(object):
         if len(datafiles) == 0:
             return
 
-        iszip = False
-
-        if zipfile.is_zipfile(saveloc):
-            iszip = True
-            z = zipfile.ZipFile(saveloc, 'r')
-            saveloc = os.path.split(saveloc)[0]
-
         # fix datafiles path from relative to absolute so we can load datafiles
         for field in datafiles:
             if field.name in json_data:
@@ -393,13 +398,8 @@ class Savable(object):
                 # For zip files coming from the web, is_savezip_valid() tests
                 # filenames in archive do not contain paths with '..'
                 # In here, we just extract datafile to saveloc/.
-                if iszip:
-                    z.extract(json_data[field.name], saveloc)
-
                 json_data[field.name] = os.path.join(saveloc,
                                                      json_data[field.name])
-        if iszip:
-            z.close()
 
     @classmethod
     def loads(cls, json_data, saveloc=None, references=None):
@@ -490,7 +490,7 @@ class Savable(object):
 # max json filesize is 1MegaByte
 # max compression ratio: uncompressed/compressed = 3
 _max_json_filesize = 1024 * 1024
-_max_compress_ratio = 3
+_max_compress_ratio = 16
 
 
 def is_savezip_valid(savezip):
@@ -531,35 +531,52 @@ def is_savezip_valid(savezip):
 
         for zi in z.filelist:
             if (os.path.splitext(zi.filename)[1] == '.json' and
-                zi.file_size > _max_json_filesize):
+                    zi.file_size > _max_json_filesize):
                 # 3) Found a *.json with size > _max_json_filesize. Rejecting.
-                msg = ("Filesize of {0} is {1}. It must be less than "
-                       "_max_json_filesize: {2}. "
-                       "Rejecting zipfile.".format(zi.filename, zi.file_size,
-                                                   _max_json_filesize))
+                msg = ("Filesize of {0} is {1}. It must be less than {2}. "
+                       "Rejecting zipfile."
+                       .format(zi.filename, zi.file_size, _max_json_filesize))
                 log.warning(msg)
                 return False
 
-        # integer division - it will floor
-        if zi.file_size/zi.compress_size > _max_compress_ratio:
-            # 4) Found a file with
-            #    uncompressed_size/compressed_size > _max_compress_ratio.
-            #    Rejecting.
-            msg = ("uncompressed filesize is {0} time compressed filesize."
-                   "_max_compress_ratio must be less than {1}. "
-                   "Rejecting zipfile".format(zi.file_size/zi.compress_size,
-                                              _max_compress_ratio))
-            log.warning(msg)
-            return False
+            # integer division - it will floor
+            if (zi.compress_size > 0 and
+                    zi.file_size / zi.compress_size > _max_compress_ratio):
+                # 4) Found a file with
+                #    uncompressed_size/compressed_size > _max_compress_ratio.
+                #    Rejecting.
+                msg = ("file compression ratio is {0}. "
+                       "maximum must be less than {1}. "
+                       "Rejecting zipfile"
+                       .format(zi.file_size / zi.compress_size,
+                               _max_compress_ratio))
+                log.warning(msg)
+                return False
 
-        if '..' in zi.filename:
-            # 5) reject zipfile if it contains .. anywhere in filename.
-            #    currently, all datafiles stored at same level in saveloc,
-            #    no subdirectories. Even if we start using subdirectories,
-            #    there should never be a need to do '..'
-            msg = ("Found '..' in {0}. Rejecting zipfile".format(zi.filename))
-            log.warning(msg)
-            return False
+            if '..' in zi.filename:
+                # 5) reject zipfile if it contains .. anywhere in filename.
+                #    currently, all datafiles stored at same level in saveloc,
+                #    no subdirectories. Even if we start using subdirectories,
+                #    there should never be a need to do '..'
+                msg = ("Found '..' in {0}. Rejecting zipfile"
+                       .format(zi.filename))
+                log.warning(msg)
+                return False
 
     # all checks pass - so we can load zipfile
     return True
+
+
+def zipfile_folders(zip_file):
+    return [name for name in zip_file.namelist()
+            if name.endswith('/')]
+
+
+def extract_zipfile(zip_file, to_folder='.', prefix=''):
+    for name in zip_file.namelist():
+        if (prefix and name.find(prefix) != 0) or name.endswith('/'):
+            pass
+        else:
+            target = os.path.join(to_folder, os.path.basename(name))
+            with open(target, 'wb') as f:
+                f.write(zip_file.read(name))
