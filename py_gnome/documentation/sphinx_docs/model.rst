@@ -1,5 +1,5 @@
 Model
-======
+-----
 
 This is the main class that contains objects used to model trajectory and
 weathering processes. It runs the loop through time, etc.

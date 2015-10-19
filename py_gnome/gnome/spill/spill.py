@@ -93,6 +93,8 @@ class Spill(serializable.Serializable):
         self.release = release
         if element_type is None:
             element_type = elements.floating(substance=substance)
+        elif substance is not None:
+            raise ValueError('Substance and element_type cannot both be specified')
 
         self.element_type = element_type
 

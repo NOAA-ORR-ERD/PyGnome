@@ -5764,8 +5764,8 @@ OSErr TimeGridVelIce_c::CheckAndScanFile(char *errmsg, const Seconds& model_time
 				DisposeLoadedEndData();
 				strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum-1].pathName);
 				err = this->ReadTimeData(GetNumTimesInFile() - 1, &fStartData.dataHdl, errmsg);
-				//err = this->ReadTimeDataIce(GetNumTimesInFile() - 1, &fStartDataIce.dataHdl, errmsg);
-				//err = this->ReadTimeDataFields(GetNumTimesInFile() - 1, &fStartDataThickness.dataHdl,  &fStartDataFraction.dataHdl, errmsg);
+				err = this->ReadTimeDataIce(GetNumTimesInFile() - 1, &fStartDataIce.dataHdl, errmsg);
+				err = this->ReadTimeDataFields(GetNumTimesInFile() - 1, &fStartDataThickness.dataHdl,  &fStartDataFraction.dataHdl, errmsg);
 				if (err)
 					return err;
 			}
@@ -5779,8 +5779,8 @@ OSErr TimeGridVelIce_c::CheckAndScanFile(char *errmsg, const Seconds& model_time
 			
 			strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
-			//err = this -> ReadTimeDataIce(0,&fEndDataIce.dataHdl,errmsg);
-			//err = this -> ReadTimeDataFields(0,&fEndDataThickness.dataHdl,&fEndDataFraction.dataHdl,errmsg);
+			err = this -> ReadTimeDataIce(0,&fEndDataIce.dataHdl,errmsg);
+			err = this -> ReadTimeDataFields(0,&fEndDataThickness.dataHdl,&fEndDataFraction.dataHdl,errmsg);
 			if(err) return err;
 			fEndData.timeIndex = 0;
 			fEndDataIce.timeIndex = 0;
@@ -5809,8 +5809,8 @@ OSErr TimeGridVelIce_c::CheckAndScanFile(char *errmsg, const Seconds& model_time
 				DisposeLoadedEndData();
 				strcpy(fVar.pathName,(*fInputFilesHdl)[i-1].pathName);
 				err = this->ReadTimeData(GetNumTimesInFile() - 1, &fStartData.dataHdl, errmsg);
-				//err = this->ReadTimeDataIce(GetNumTimesInFile() - 1, &fStartDataIce.dataHdl, errmsg);
-				//err = this->ReadTimeDataFields(GetNumTimesInFile() - 1, &fStartDataThickness.dataHdl, &fStartDataFraction.dataHdl, errmsg);
+				err = this->ReadTimeDataIce(GetNumTimesInFile() - 1, &fStartDataIce.dataHdl, errmsg);
+				err = this->ReadTimeDataFields(GetNumTimesInFile() - 1, &fStartDataThickness.dataHdl, &fStartDataFraction.dataHdl, errmsg);
 				if (err)
 					return err;
 			}
@@ -5824,8 +5824,8 @@ OSErr TimeGridVelIce_c::CheckAndScanFile(char *errmsg, const Seconds& model_time
 			
 			strcpy(fVar.pathName,(*fInputFilesHdl)[i].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
-			//err = this -> ReadTimeDataIce(0,&fEndDataIce.dataHdl,errmsg);
-			//err = this -> ReadTimeDataFields(0,&fEndDataThickness.dataHdl,&fEndDataFraction.dataHdl,errmsg);
+			err = this -> ReadTimeDataIce(0,&fEndDataIce.dataHdl,errmsg);
+			err = this -> ReadTimeDataFields(0,&fEndDataThickness.dataHdl,&fEndDataFraction.dataHdl,errmsg);
 			if(err) return err;
 			fEndData.timeIndex = 0;
 			fEndDataIce.timeIndex = 0;

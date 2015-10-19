@@ -5,6 +5,7 @@ Does not contain a schema for persistence yet
 import copy
 import os
 from glob import glob
+from collections import defaultdict
 
 import numpy as np
 
@@ -148,10 +149,10 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                 points[st_code].append(pos[:2])
 
             for k in points:
-                feature = Feature(geometry=MultiPoint(points[k]),
+                feature = Feature(geometry=MultiPoint(points[k]), id="1",
                                   properties={
                                     'sc_type': sc_type,
-                                    'status_code': k
+                                    'status_code': k,
                                   })
                 if sc.uncertain:
                     features.insert(0, feature)
@@ -282,20 +283,22 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
 
         geojson = {}
         for cm in self.current_movers:
-            features = []
             centers = cm.get_center_points()
+
             velocities = cm.get_scaled_velocities(model_time)
+            velocities = self.get_rounded_velocities(velocities)
 
-            current_vals = np.hstack((centers.view(dtype='<f8')
-                                      .reshape(-1, 2),
-                                      velocities.view(dtype='<f8')
-                                      .reshape(-1, 2)
-                                      )).reshape(-1, 2, 2)
+            velocity_dict = defaultdict(list)
+            for k, v in zip(velocities, centers):
+                k = tuple(k)
+                v = list(v)
+                velocity_dict[k].append(v)
 
-            for c, v in current_vals:
-                feature = Feature(geometry=Point(list(c)),
+            features = []
+            for v, cps in velocity_dict.items():
+                feature = Feature(geometry=MultiPoint(cps),
                                   id="1",
-                                  properties={'velocity': list(v)})
+                                  properties={'velocity': v})
                 features.append(feature)
 
             geojson[cm.id] = FeatureCollection(features)
@@ -309,8 +312,8 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         return output_info
 
     def get_rounded_velocities(self, velocities):
-        return np.vstack((velocities['u'].round(decimals=1),
-                          velocities['v'].round(decimals=1))).T
+        return np.vstack((velocities['u'].round(decimals=2),
+                          velocities['v'].round(decimals=2))).T
 
     def get_unique_velocities(self, velocities):
         '''
