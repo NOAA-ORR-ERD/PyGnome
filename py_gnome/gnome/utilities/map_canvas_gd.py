@@ -85,12 +85,11 @@ class MapCanvas(object):
 
         self.background_color = background_color
         self.create_images(preset_colors)
+        self.projection = projection
 
         if viewport is None:
-            viewport = ((-180, -90), (180, 90))
-
-        projection.set_scale(viewport, self.image_size)
-        self.projection = projection
+            self._viewport = ((-180, -90), (180, 90))
+        else: self._viewport = viewport
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
@@ -100,7 +99,7 @@ class MapCanvas(object):
         todo: this happens in multiple places so maybe worthwhile to define
         custom serialize/deserialize -- but do this for now
         '''
-        return map(tuple, self.viewport.tolist())
+        return map(tuple, self._viewport.tolist())
 
     @property
     def viewport(self):
@@ -115,10 +114,14 @@ class MapCanvas(object):
         """
         viewport setter for bounding box only...allows map_canvas.viewport = ((x1,y1),(x2,y2))
         """
-        self._viewport.BB = BB if BB else self._viewport.BB
-        self.rescale()
+        if '_viewport' in self.__dict__:
+            self._viewport.BB = BB if BB else self._viewport.BB
+            self.rescale()
+        else:
+            self._viewport = Viewport(BB)
+            self.rescale()
         
-    def set_viewport(self, center = None, width = None, height = None, BB = None):
+    def set_viewport(self, BB = None, center = None, width = None, height = None):
         """
         Function to allow the user to set properties of the viewport in meters, or by bounding box
         :param center: The point around which the viewport is centered
@@ -513,7 +516,7 @@ class Viewport(object):
     
 
     """
-    def __init__(self, center=None, width = None, height = None, BB = None):
+    def __init__(self, BB = None, center=None, width = None, height = None):
         """
         Init the viewport. Can initialize with center/width/height, and/or with bounding box. 
         NOTE: Bounding box takes precedence over any previous parameters
@@ -549,14 +552,14 @@ class Viewport(object):
             self.recompute_dim()
                 
     def scale(self, multiplier=1.0):
-        self.width *= multiplier
-        self.height *= multiplier
+        self._width *= multiplier
+        self._height *= multiplier
         self.recompute_BB()
         
     def recompute_dim(self):
-        self.width = self.BB[1][0] - self.BB[0][0]
-        self.height = self.BB[1][1] - self.BB[0][1] 
-        self.center = (self.BB[1][0] - self.width/2.0,
+        self._width = self.BB[1][0] - self.BB[0][0]
+        self._height = self.BB[1][1] - self.BB[0][1] 
+        self._center = (self.BB[1][0] - self.width/2.0,
                        self.BB[1][1] - self.height/2.0)
         
         
