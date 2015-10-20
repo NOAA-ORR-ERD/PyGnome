@@ -23,7 +23,7 @@ from gnome.outputters import (Renderer,
                               )
 from gnome.basic_types import numerical_methods
 
-NUM_ELEMENTS = 1e6
+NUM_ELEMENTS = 1e4
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -34,13 +34,13 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
 
     start_time = datetime(2013, 5, 18, 0)
 
-    model = Model(start_time=start_time, duration=timedelta(days=8),
+    model = Model(start_time=start_time, duration=timedelta(days=3),
                   time_step=3600, uncertain=False)
 
     mapfile = get_datafile(os.path.join(base_dir, 'mariana_island.bna'))
 
     print 'adding the map'
-    p_map = model.map = Param_Map(center = (145.25,15.0), distance=10000, bearing = 90 )  # hours
+    p_map = model.map = Param_Map(center = (145.25,15.0), distance=20000, bearing = 35 )  # hours
 
     #
     # Add the outputters -- render to images, and save out as netCDF

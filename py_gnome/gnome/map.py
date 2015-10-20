@@ -331,7 +331,7 @@ class Param_Map(GnomeMap):
         self._refloat_halflife = 0.5
         
         
-        GnomeMap.__init__(self, land_polys=land_polys, map_bounds=map_bounds)
+        GnomeMap.__init__(self, map_bounds=map_bounds)
     
     def get_map_bounds(self):
         return (self.map_bounds[1], self.map_bounds[3])
