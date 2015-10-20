@@ -114,12 +114,7 @@ class MapCanvas(object):
         """
         viewport setter for bounding box only...allows map_canvas.viewport = ((x1,y1),(x2,y2))
         """
-        if '_viewport' in self.__dict__:
-            self._viewport.BB = BB if BB else self._viewport.BB
-            self.rescale()
-        else:
-            self._viewport = Viewport(BB)
-            self.rescale()
+        self._viewport.BB = BB if BB else self._viewport.BB
         
     def set_viewport(self, BB = None, center = None, width = None, height = None):
         """
@@ -340,6 +335,32 @@ class MapCanvas(object):
         delta_lon = d_lon / (self.image_size[0]/ppg)
         delta_lat = d_lat / (self.image_size[1]/ppg)
 
+'''
+ """
+        Draws a lat/long grid onto the background. WHY does it spit out a blank image?
+        """
+        self.grid_image = Image.new(self.image_mode, self.image_size, color=self.colors['transparent'])
+        self.grid_image.putpalette(self.palette)
+        grid_pen = ImageDraw.Draw(self.grid_image)
+        max_lat = self.map_BB[1][1]
+        min_lat = self.map_BB[0][1]
+        max_long = self.map_BB[1][0]
+        min_long = self.map_BB[0][0]
+        delta_lat = (max_lat - min_lat)/self.grid_lines
+        delta_long = (max_long - min_long)/self.grid_lines
+        cur_x = 0
+        cur_y = 0
+        for i in range(0,self.grid_lines):
+            #grid_pen.line([(min_long,min_lat+delta_lat*i),(max_long,min_lat+delta_lat*i)], width=1)
+            #grid_pen.line([(min_long+delta_long*i,min_lat),(min_long+delta_long*i,max_lat)], width=1)
+            grid_pen.line([cur_x, 0, cur_x, self.image_size[1]], width=1)
+            grid_pen.line([0, cur_y, self.image_size[0], cur_y], width=1)
+            cur_x += self.image_size[0]/self.grid_lines
+            cur_y += self.image_size[1]/self.grid_lines
+            
+        return None
+'''
+
     @staticmethod
     def _find_graticule_locations(image_size, viewport,  units="decimal_degrees"):
         """
@@ -405,26 +426,11 @@ class MapCanvas(object):
 ## Gridlines code borrowed from MapRoom
 import bisect
 class GridLines(object):
-    """
-    class to hold logic for determining where the gridlines should be
-    for the graticule
-    """
-    def get_step_size(self, reference_size):
-        """
-        get the steps required given a reference_size
-
-        :param reference_size: the approximate size you want
-        """
-        return self.STEPS[min( bisect.bisect(self.STEPS, abs(reference_size)),
-                               self.STEP_COUNT - 1,)
-                         ]
-
-class DegreeMinuteGridLines(GridLines):
     DEGREE = np.float64(1.0)
     MINUTE = DEGREE / 60.0
     SECOND = MINUTE / 60.0
 
-    STEPS = (
+    DMS_STEPS = (
         MINUTE,
         MINUTE * 2,
         MINUTE * 3,
@@ -445,27 +451,15 @@ class DegreeMinuteGridLines(GridLines):
         DEGREE * 30,
         DEGREE * 40,
     )
-    STEP_COUNT = len(STEPS)
-
-    def format_lat_line_label(self, latitude):
-        return coordinates.format_lat_line_label(latitude)
-
-    def format_lon_line_label(self, longitude):
-        return coordinates.format_lon_line_label(longitude)
-
-class DecimalDegreeGridLines(GridLines):
-    ## could this be done with logic???
-    ##   a bit hard, cause wnat to do somethign different according to scale
-    ##   and we know the range of values we need apriori anyway.
-
-    ## any reason to make these np types?
-    DEGREE = 1.0
+    DMS_COUNT = len(DMS_STEPS)
+    
+    DEGREE = np.float64(1.0)
     TENTH = DEGREE / 10.0
     HUNDREDTH = DEGREE / 100.0
     THOUSANDTH = DEGREE / 1000.0
 
 
-    STEPS = (
+    DEG_STEPS = (
         THOUSANDTH,
         THOUSANDTH * 2,
         THOUSANDTH * 5,
@@ -486,7 +480,65 @@ class DecimalDegreeGridLines(GridLines):
         DEGREE * 30,
         DEGREE * 40,
     )
-    STEP_COUNT = len(STEPS)
+    DEG_COUNT = len(DEG_STEPS)
+    
+    def __init__(self, viewport=None, line_range=(8,8), DegMinSec=False):
+        """
+        Creates a GridLines instance that does the logic for and describes the current graticule
+
+        :param viewport: bounding box of the viewport in question. 
+        :type viewport: tuple of lon/lat
+
+        :param line_range: How many lines to be displayed on the longest dimension of the viewport. Graticule will scale up
+        or down only when the number of lines in the viewport falls outside the range.
+        :type line_range: tuple of integers
+
+        :param DegMinSec: Whether measurement is in Degrees/Minute/Seconds, or decimal lon/lat
+        :type bool
+        """
+        self.viewport = Viewport()
+        if viewport not None:
+            self.viewport = viewport
+            
+        self.type = type
+        if DegMinSec :
+            self.STEPS = DMS_STEPS
+            self.STEP_COUNT = DMS_COUNT:
+        else:
+            self.STEPS = DEG_STEPS
+            self.STEP_COUNT = DEG_COUNT:
+        
+        self.num_drawn = line_avg = (line_range[1] + line_range[0])//2
+        self.ref_dim = 'w' if viewport.width >= viewport.height) else 'h'
+        self.ref_len = self.viewport.width if self.ref_dim is 'w' else self.viewport.height
+        self.current_interval = get_step_size(ref_dim)
+        
+    """
+    class to hold logic for determining where the gridlines should be
+    for the graticule
+    """
+    def get_step_size(self, reference_size):
+        """
+        get the steps required given a reference_size
+
+        :param reference_size: the approximate size you want
+        """
+        return self.STEPS[min( bisect.bisect(self.STEPS, abs(reference_size)),
+                               self.STEP_COUNT - 1,)
+                         ]
+    
+    def get_lines(self):
+        min = self.viewport.BB[0,0] if self.ref_dim is 'w' else self.viewport.BB[0,1]
+        max = self.viewport.BB[1,0] if self.ref_dim is 'w' else self.viewport.BB[1,1]
+        start = (min//self.current_interval) * self.current_interval
+        end = (max // self.current_interval + 1) * self.current_interval
+        lines = [((x1,y1),(x2,y2)) ] 
+        
+    def format_lat_line_label(self, latitude):
+        return coordinates.format_lat_line_label(latitude)
+
+    def format_lon_line_label(self, longitude):
+        return coordinates.format_lon_line_label(longitude)
 
     def format_lat_line_label(self, latitude):
         ( degrees, direction ) = \
@@ -500,12 +552,15 @@ class DecimalDegreeGridLines(GridLines):
 
         return u" %.2f° %s " % (degrees, direction)
 
-"""
-viewport.py
-
-A viewport that defines a viewable area on a map.
-
-""" 
+class GridScale(object):
+    """
+    A GridScale class controls what the graticule looks like. It manages and serves a list of lines, that when printed, form the graticule.
+    The list of lines is based on the size of the viewport. If the viewport changes, it should refresh this class, which will then 
+    recompute new lines based on the new dimensions.
+    
+    
+    """
+    def __init__(self, image_size=None, viewport=None, delta_lonlat = None, lines_per_dim = None):
 
 class Viewport(object):
     

@@ -75,6 +75,7 @@ class MapCanvas(object):
     def __init__(self,
                  image_size,
                  land_polygons=None,
+                 viewport=None,
                  **kwargs):
         """
         create a new map image from scratch -- specifying the size:
@@ -187,7 +188,7 @@ class MapCanvas(object):
         self._viewport.BB = BB if BB else self._viewport.BB
         self.rescale()
         
-    def set_viewport(self, center = None, width = None, height = None, BB = None):
+    def set_viewport(self, BB = None, center = None, width = None, height = None):
         """
         Function to allow the user to set properties of the viewport in meters, or by bounding box
         :param center: The point around which the viewport is centered
@@ -540,7 +541,7 @@ class Viewport(object):
     
 
     """
-    def __init__(self, center=None, width = None, height = None, BB = None):
+    def __init__(self, BB = None, center=None, width = None, height = None, ):
         """
         Init the viewport. Can initialize with center/width/height, and/or with bounding box. 
         NOTE: Bounding box takes precedence over any previous parameters
@@ -581,9 +582,9 @@ class Viewport(object):
         self.recompute_BB()
         
     def recompute_dim(self):
-        self.width = self.BB[1][0] - self.BB[0][0]
-        self.height = self.BB[1][1] - self.BB[0][1] 
-        self.center = (self.BB[1][0] - self.width/2.0,
+        self._width = self.BB[1][0] - self.BB[0][0]
+        self._height = self.BB[1][1] - self.BB[0][1] 
+        self._center = (self.BB[1][0] - self.width/2.0,
                        self.BB[1][1] - self.height/2.0)
         
         
