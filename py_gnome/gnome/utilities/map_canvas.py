@@ -591,8 +591,8 @@ class Viewport(object):
     def recompute_BB(self):
         halfx = self.width/2.0
         halfy = self.height/2.0
-        self._BB = ((self.center[0] - halfx, self.center[0] - halfy),
-                     (self.center[1] + halfx, self.center[1] + halfy)) 
+        self._BB = ((self.center[0] - halfx, self.center[1] - halfy),
+                     (self.center[0] + halfx, self.center[1] + halfy)) 
         
     @property
     def BB(self):

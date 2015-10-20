@@ -86,10 +86,10 @@ class MapCanvas(object):
         self.background_color = background_color
         self.create_images(preset_colors)
         self.projection = projection
+        self._viewport = Viewport(((-180, -90), (180, 90))) 
 
-        if viewport is None:
-            self._viewport = ((-180, -90), (180, 90))
-        else: self._viewport = viewport
+        if viewport is not None:
+            self.viewport = viewport
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
@@ -114,7 +114,8 @@ class MapCanvas(object):
         """
         viewport setter for bounding box only...allows map_canvas.viewport = ((x1,y1),(x2,y2))
         """
-        self._viewport.BB = BB if BB else self._viewport.BB
+        self._viewport.BB = BB if BB is not None else self.viewport.BB
+        self.rescale()
         
     def set_viewport(self, BB = None, center = None, width = None, height = None):
         """
@@ -148,9 +149,8 @@ class MapCanvas(object):
         """
         Rescales the projection to the viewport bounding box. Should be called whenever the viewport changes
         """
-        self.projection.set_scale(self._viewport.BB, self.image_size)
-        self.back_image.clear()
-        self.fore_image.clear()
+        self.projection.set_scale(self.viewport, self.image_size)
+        
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -335,32 +335,6 @@ class MapCanvas(object):
         delta_lon = d_lon / (self.image_size[0]/ppg)
         delta_lat = d_lat / (self.image_size[1]/ppg)
 
-'''
- """
-        Draws a lat/long grid onto the background. WHY does it spit out a blank image?
-        """
-        self.grid_image = Image.new(self.image_mode, self.image_size, color=self.colors['transparent'])
-        self.grid_image.putpalette(self.palette)
-        grid_pen = ImageDraw.Draw(self.grid_image)
-        max_lat = self.map_BB[1][1]
-        min_lat = self.map_BB[0][1]
-        max_long = self.map_BB[1][0]
-        min_long = self.map_BB[0][0]
-        delta_lat = (max_lat - min_lat)/self.grid_lines
-        delta_long = (max_long - min_long)/self.grid_lines
-        cur_x = 0
-        cur_y = 0
-        for i in range(0,self.grid_lines):
-            #grid_pen.line([(min_long,min_lat+delta_lat*i),(max_long,min_lat+delta_lat*i)], width=1)
-            #grid_pen.line([(min_long+delta_long*i,min_lat),(min_long+delta_long*i,max_lat)], width=1)
-            grid_pen.line([cur_x, 0, cur_x, self.image_size[1]], width=1)
-            grid_pen.line([0, cur_y, self.image_size[0], cur_y], width=1)
-            cur_x += self.image_size[0]/self.grid_lines
-            cur_y += self.image_size[1]/self.grid_lines
-            
-        return None
-'''
-
     @staticmethod
     def _find_graticule_locations(image_size, viewport,  units="decimal_degrees"):
         """
@@ -497,21 +471,21 @@ class GridLines(object):
         :type bool
         """
         self.viewport = Viewport()
-        if viewport not None:
+        if viewport is not None:
             self.viewport = viewport
             
         self.type = type
         if DegMinSec :
-            self.STEPS = DMS_STEPS
-            self.STEP_COUNT = DMS_COUNT:
+            self.STEPS = self.DMS_STEPS
+            self.STEP_COUNT = self.DMS_COUNT
         else:
-            self.STEPS = DEG_STEPS
-            self.STEP_COUNT = DEG_COUNT:
+            self.STEPS = self.DEG_STEPS
+            self.STEP_COUNT = self.DEG_COUNT
         
         self.num_drawn = line_avg = (line_range[1] + line_range[0])//2
-        self.ref_dim = 'w' if viewport.width >= viewport.height) else 'h'
+        self.ref_dim = 'w' if viewport.width >= viewport.height else 'h'
         self.ref_len = self.viewport.width if self.ref_dim is 'w' else self.viewport.height
-        self.current_interval = get_step_size(ref_dim)
+        self.current_interval = self.get_step_size(self.ref_dim)
         
     """
     class to hold logic for determining where the gridlines should be
@@ -528,10 +502,12 @@ class GridLines(object):
                          ]
     
     def get_lines(self):
-        min = self.viewport.BB[0,0] if self.ref_dim is 'w' else self.viewport.BB[0,1]
-        max = self.viewport.BB[1,0] if self.ref_dim is 'w' else self.viewport.BB[1,1]
-        start = (min//self.current_interval) * self.current_interval
-        end = (max // self.current_interval + 1) * self.current_interval
+        ((minlon,minlat),(maxlon,maxlat))  = self.viewport.BB
+        vertical_lines = np.array([((x*self.current_interval, 0)(x*self.current_interval, maxlat*1.5)) for x in range(0,self.num_drawn+2)])
+        horizontal_lines = np.array([((0 ,y*self.current_interval)(maxlon*1.5, y*self.current_interval, )) for y in range(0,self.num_drawn+2)])
+        vertical_lines += minlon // self.current_interval
+        horizontal_lines += minlat // self.current_interval
+        
         lines = [((x1,y1),(x2,y2)) ] 
         
     def format_lat_line_label(self, latitude):
@@ -552,15 +528,6 @@ class GridLines(object):
 
         return u" %.2f° %s " % (degrees, direction)
 
-class GridScale(object):
-    """
-    A GridScale class controls what the graticule looks like. It manages and serves a list of lines, that when printed, form the graticule.
-    The list of lines is based on the size of the viewport. If the viewport changes, it should refresh this class, which will then 
-    recompute new lines based on the new dimensions.
-    
-    
-    """
-    def __init__(self, image_size=None, viewport=None, delta_lonlat = None, lines_per_dim = None):
 
 class Viewport(object):
     
@@ -621,8 +588,8 @@ class Viewport(object):
     def recompute_BB(self):
         halfx = self.width/2.0
         halfy = self.height/2.0
-        self._BB = ((self.center[0] - halfx, self.center[0] - halfy),
-                     (self.center[1] + halfx, self.center[1] + halfy)) 
+        self._BB = ((self.center[0] - halfx, self.center[1] - halfy),
+                     (self.center[0] + halfx, self.center[1] + halfy)) 
         
     @property
     def BB(self):
@@ -630,7 +597,7 @@ class Viewport(object):
     
     @BB.setter
     def BB(self, BB):
-        self._BB = BB if BB else self._BB
+        self._BB = BB if BB is not None else self._BB
         self.recompute_dim()
         
     @property
