@@ -594,6 +594,7 @@ class Viewport(object):
         self._BB = ((self.center[0] - halfx, self.center[1] - halfy),
                      (self.center[0] + halfx, self.center[1] + halfy)) 
         
+    
     @property
     def BB(self):
         return self._BB

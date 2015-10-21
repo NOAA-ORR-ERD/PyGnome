@@ -108,11 +108,12 @@ if __name__ == '__main__':
     model = make_model()
     for step in model:
         rend = model.outputters[0]
-        if step['step_num'] == 35:
-            rend.zoom(2)
-        if step['step_num'] == 25:
-            rend._viewport.center = (rend._viewport.center[0] + 0.3, rend._viewport.center[1])
-            rend.rescale()
+        if step['step_num'] < 25:
+            rend.zoom(1.1)
+            rend.shift_viewport((0.02,0))
+        if step['step_num'] > 25:
+            rend.zoom(0.91)
+            rend.shift_viewport((-0.02,0.01))
             
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())

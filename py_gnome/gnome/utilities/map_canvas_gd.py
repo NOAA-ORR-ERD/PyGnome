@@ -89,7 +89,9 @@ class MapCanvas(object):
         self._viewport = Viewport(((-180, -90), (180, 90))) 
 
         if viewport is not None:
-            self.viewport = viewport
+            self._viewport.BB = viewport
+            self.projection.set_scale(self.viewport, self.image_size)
+        self.graticule = GridLines(self._viewport)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
@@ -144,12 +146,19 @@ class MapCanvas(object):
     def zoom(self, multiplier):
         self._viewport.scale(multiplier)
         self.rescale()
-
+    
+    def shift_viewport(self, delta):
+        self._viewport.center = (self._viewport.center[0] + delta[0],self._viewport.center[1] + delta[1])
+        self.rescale() 
+    
     def rescale(self):
         """
         Rescales the projection to the viewport bounding box. Should be called whenever the viewport changes
         """
         self.projection.set_scale(self.viewport, self.image_size)
+        self.clear_background()
+        self.draw_background()
+        self.graticule.refresh_scale()
         
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -217,7 +226,6 @@ class MapCanvas(object):
         note: this will write over anything on the foreground image
         """
         self.fore_image.copy(self.back_image, (0,0), (0,0), self.back_image.size)
-
 
     def draw_points(self,
                     points,
@@ -318,22 +326,57 @@ class MapCanvas(object):
                          line_width=line_width,
                          )
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# code from renderer 
+    def draw_background(self):
+        """
+        Draws the background image -- just land for now
+
+        This should be called whenever the scale changes
+        """
+        # create a new background image
+        self.clear_background()
+        self.draw_land()
+        if self.raster_map is not None:
+            self.draw_raster_map()
+
+    def draw_land(self):
+        """
+        Draws the land map to the internal background image.
+        """
+
+        for poly in self.land_polygons:
+            if poly.metadata[1].strip().lower() == 'map bounds':
+                if self.draw_map_bounds:
+                    self.draw_polygon(poly,
+                                       line_color='map_bounds',
+                                       fill_color=None,
+                                       line_width=2,
+                                       background=True)
+            elif poly.metadata[1].strip().lower().replace(' ','') == 'spillablearea':
+                if self.draw_spillable_area:
+                    self.draw_polygon(poly,
+                                       line_color='spillable_area',
+                                       fill_color=None,
+                                       line_width=2,
+                                       background=True)
+
+            elif poly.metadata[2] == '2':
+                # this is a lake
+                self.draw_polygon(poly, fill_color='lake', background=True)
+            else:
+                self.draw_polygon(poly,
+                                  fill_color='land', background=True)
+        return None
+
     def draw_graticule(self, background=False):
         """
         draw a graticule (grid lines) on the map
 
         only supports decimal degrees for now...
         """
-        ( (min_lat, min_lon), (max_lat, max_lon) ) = self.viewport
-
-        d_lat = max_lat - min_lat
-        d_lon = max_lon - min_lon
-
-        # Want about one grid line per 100 pixels
-        ppg = 100.0 # a float!
-
-        delta_lon = d_lon / (self.image_size[0]/ppg)
-        delta_lat = d_lat / (self.image_size[1]/ppg)
+        for line in self.graticule.get_lines():
+            self.draw_polyline(line, 'black', 1)
 
     @staticmethod
     def _find_graticule_locations(image_size, viewport,  units="decimal_degrees"):
@@ -456,7 +499,7 @@ class GridLines(object):
     )
     DEG_COUNT = len(DEG_STEPS)
     
-    def __init__(self, viewport=None, line_range=(8,8), DegMinSec=False):
+    def __init__(self, viewport=None, line_range=(10,6), DegMinSec=False, mapBB=((-180,-90),(180,90)) ):
         """
         Creates a GridLines instance that does the logic for and describes the current graticule
 
@@ -465,14 +508,14 @@ class GridLines(object):
 
         :param line_range: How many lines to be displayed on the longest dimension of the viewport. Graticule will scale up
         or down only when the number of lines in the viewport falls outside the range.
-        :type line_range: tuple of integers
+        :type line_range: tuple of integers, (max, min)
 
         :param DegMinSec: Whether measurement is in Degrees/Minute/Seconds, or decimal lon/lat
         :type bool
         """
-        self.viewport = Viewport()
-        if viewport is not None:
-            self.viewport = viewport
+        if viewport is None:
+            raise ValueError("Viewport needs to be provided to generate grid lines")
+        self.viewport = viewport
             
         self.type = type
         if DegMinSec :
@@ -482,10 +525,9 @@ class GridLines(object):
             self.STEPS = self.DEG_STEPS
             self.STEP_COUNT = self.DEG_COUNT
         
-        self.num_drawn = line_avg = (line_range[1] + line_range[0])//2
-        self.ref_dim = 'w' if viewport.width >= viewport.height else 'h'
-        self.ref_len = self.viewport.width if self.ref_dim is 'w' else self.viewport.height
-        self.current_interval = self.get_step_size(self.ref_dim)
+        #need to just use refresh_scale for this...
+        self.line_range = line_range
+        self.refresh_scale()
         
     """
     class to hold logic for determining where the gridlines should be
@@ -502,32 +544,41 @@ class GridLines(object):
                          ]
     
     def get_lines(self):
-        ((minlon,minlat),(maxlon,maxlat))  = self.viewport.BB
-        vertical_lines = np.array([((x*self.current_interval, 0)(x*self.current_interval, maxlat*1.5)) for x in range(0,self.num_drawn+2)])
-        horizontal_lines = np.array([((0 ,y*self.current_interval)(maxlon*1.5, y*self.current_interval, )) for y in range(0,self.num_drawn+2)])
-        vertical_lines += minlon // self.current_interval
-        horizontal_lines += minlat // self.current_interval
+        (minlon,minlat) = self.viewport.BB[0]
         
-        lines = [((x1,y1),(x2,y2)) ] 
         
-    def format_lat_line_label(self, latitude):
-        return coordinates.format_lat_line_label(latitude)
-
-    def format_lon_line_label(self, longitude):
-        return coordinates.format_lon_line_label(longitude)
-
-    def format_lat_line_label(self, latitude):
-        ( degrees, direction ) = \
-            coordinates.float_to_degrees(latitude, directions=("N", "S"))
-
-        return u" %.2f° %s " % (degrees, direction)
-
-    def format_lon_line_label(self, longitude):
-        ( degrees, direction ) = \
-            coordinates.float_to_degrees(longitude, directions=("E", "W"))
-
-        return u" %.2f° %s " % (degrees, direction)
-
+        #create array of lines
+        top = ((self.lat_lines[0]+2) * self.current_interval) # top of lon lines
+        right = ((self.lon_lines[0]+2) * self.current_interval) # right end of lat lines
+        vertical_lines = np.array([( (x*self.current_interval, 0), (x*self.current_interval, top) ) 
+                                   for x in range(0,self.lon_lines[0]+2)])
+        horizontal_lines = np.array([((0, y*self.current_interval), (right, y*self.current_interval) ) 
+                                     for y in range(0,self.lat_lines[0]+2)])
+        
+        #shift lines into position
+        delta = ((minlon // self.current_interval - 1) * self.current_interval , (minlat // self.current_interval - 1) * self.current_interval)
+        vertical_lines += delta
+        horizontal_lines += delta
+        
+        return np.vstack((vertical_lines, horizontal_lines))        
+    def refresh_scale(self):
+        ratio = self.viewport.aspect_ratio()
+        self.ref_dim = 'w' if self.viewport.width >= self.viewport.height else 'h'
+        self.ref_len = self.viewport.width if self.ref_dim is 'w' else self.viewport.height
+        self.current_interval = self.get_step_size(self.ref_len / self.line_range[0])
+        self.lon_lines = self.line_range if self.ref_dim is 'w' else None
+        self.lat_lines = self.line_range if self.ref_dim is 'h' else None
+        
+        if self.lon_lines is None:
+            self.lon_lines = (int(round(self.lat_lines[0] * ratio)), int(round(self.lat_lines[1] * ratio)))
+        if self.lat_lines is None:
+            self.lat_lines = (int(round(self.lon_lines[0] / ratio)), int(round(self.lon_lines[1] / ratio)))
+    
+    def set_line_range(self, line_range = None):
+        if line_range is not None:
+            self.line_range = line_range
+        self.refresh_scale()
+            
 
 class Viewport(object):
     
@@ -591,6 +642,9 @@ class Viewport(object):
         self._BB = ((self.center[0] - halfx, self.center[1] - halfy),
                      (self.center[0] + halfx, self.center[1] + halfy)) 
         
+    def aspect_ratio(self):
+        return self.width / self.height
+    
     @property
     def BB(self):
         return self._BB
