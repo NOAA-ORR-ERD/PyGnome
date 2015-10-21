@@ -377,6 +377,14 @@ class MapCanvas(object):
         """
         for line in self.graticule.get_lines():
             self.draw_polyline(line, 'black', 1)
+            
+    def draw_tags(self):
+        for tag in self.graticule.get_tags():
+            img = self.fore_image
+            point = (tag[1][0],tag[1][1],0)
+            point = self.projection.to_pixel(point, asint=True)[0]
+            img.draw_text(tag[0],point, 'small', 'black')
+        
 
     @staticmethod
     def _find_graticule_locations(image_size, viewport,  units="decimal_degrees"):
@@ -478,13 +486,13 @@ class GridLines(object):
 
     DEG_STEPS = (
         THOUSANDTH,
-        THOUSANDTH * 2,
+        THOUSANDTH * 2.5,
         THOUSANDTH * 5,
         HUNDREDTH,
-        HUNDREDTH * 2,
+        HUNDREDTH * 2.5,
         HUNDREDTH * 5,
         TENTH,
-        TENTH * 2,
+        TENTH * 2.5,
         TENTH * 5,
         DEGREE,
         DEGREE * 2,
@@ -499,18 +507,18 @@ class GridLines(object):
     )
     DEG_COUNT = len(DEG_STEPS)
     
-    def __init__(self, viewport=None, line_range=(10,6), DegMinSec=False, mapBB=((-180,-90),(180,90)) ):
+    def __init__(self, viewport=None, max_lines=10, DegMinSec=False):
         """
         Creates a GridLines instance that does the logic for and describes the current graticule
 
         :param viewport: bounding box of the viewport in question. 
         :type viewport: tuple of lon/lat
 
-        :param line_range: How many lines to be displayed on the longest dimension of the viewport. Graticule will scale up
+        :param max_lines: How many lines to be displayed on the longest dimension of the viewport. Graticule will scale up
         or down only when the number of lines in the viewport falls outside the range.
-        :type line_range: tuple of integers, (max, min)
+        :type max_lines: tuple of integers, (max, min)
 
-        :param DegMinSec: Whether measurement is in Degrees/Minute/Seconds, or decimal lon/lat
+        :param DegMinSec: Whether to scale by Degrees/Minute/Seconds, or decimal lon/lat
         :type bool
         """
         if viewport is None:
@@ -526,7 +534,7 @@ class GridLines(object):
             self.STEP_COUNT = self.DEG_COUNT
         
         #need to just use refresh_scale for this...
-        self.line_range = line_range
+        self.max_lines = max_lines
         self.refresh_scale()
         
     """
@@ -535,25 +543,30 @@ class GridLines(object):
     """
     def get_step_size(self, reference_size):
         """
-        get the steps required given a reference_size
+        Chooses the interval size for the graticule, based on where the reference size fits into the
+        STEPS table.
 
-        :param reference_size: the approximate size you want
+        :param reference_size: the approximate size you want in decimal degrees.
         """
         return self.STEPS[min( bisect.bisect(self.STEPS, abs(reference_size)),
                                self.STEP_COUNT - 1,)
                          ]
     
     def get_lines(self):
+        """
+        Computes, builds, and returns a list of lines that when drawn, creates the graticule. 
+        The list consists of self.lon_lines vertical lines, followed by self.lat_lines horizontal lines.
+        """
         (minlon,minlat) = self.viewport.BB[0]
         
         
         #create array of lines
-        top = ((self.lat_lines[0]+2) * self.current_interval) # top of lon lines
-        right = ((self.lon_lines[0]+2) * self.current_interval) # right end of lat lines
+        top = ((self.lat_lines+2) * self.current_interval) # top of lon lines
+        right = ((self.lon_lines+2) * self.current_interval) # right end of lat lines
         vertical_lines = np.array([( (x*self.current_interval, 0), (x*self.current_interval, top) ) 
-                                   for x in range(0,self.lon_lines[0]+2)])
+                                   for x in range(0,self.lon_lines+2)])
         horizontal_lines = np.array([((0, y*self.current_interval), (right, y*self.current_interval) ) 
-                                     for y in range(0,self.lat_lines[0]+2)])
+                                     for y in range(0,self.lat_lines+2)])
         
         #shift lines into position
         delta = ((minlon // self.current_interval - 1) * self.current_interval , (minlat // self.current_interval - 1) * self.current_interval)
@@ -561,24 +574,53 @@ class GridLines(object):
         horizontal_lines += delta
         
         return np.vstack((vertical_lines, horizontal_lines))        
+    
     def refresh_scale(self):
+        """
+        Recomputes the interval and number of lines in each dimension.
+        This should be called whenever the viewport changes.
+        """
         ratio = self.viewport.aspect_ratio()
         self.ref_dim = 'w' if self.viewport.width >= self.viewport.height else 'h'
         self.ref_len = self.viewport.width if self.ref_dim is 'w' else self.viewport.height
-        self.current_interval = self.get_step_size(self.ref_len / self.line_range[0])
-        self.lon_lines = self.line_range if self.ref_dim is 'w' else None
-        self.lat_lines = self.line_range if self.ref_dim is 'h' else None
+        self.current_interval = self.get_step_size(self.ref_len / self.max_lines)
+        self.lon_lines = self.max_lines if self.ref_dim is 'w' else None
+        self.lat_lines = self.max_lines if self.ref_dim is 'h' else None
         
         if self.lon_lines is None:
-            self.lon_lines = (int(round(self.lat_lines[0] * ratio)), int(round(self.lat_lines[1] * ratio)))
+            self.lon_lines = int(round(self.lat_lines * ratio))
         if self.lat_lines is None:
-            self.lat_lines = (int(round(self.lon_lines[0] / ratio)), int(round(self.lon_lines[1] / ratio)))
+            self.lat_lines = int(round(self.lon_lines / ratio))
     
-    def set_line_range(self, line_range = None):
-        if line_range is not None:
-            self.line_range = line_range
+    def set_max_lines(self, max_lines = None):
+        """
+        Alters the number of lines drawn.
+        
+        :param max_lines: the maximum number of lines drawn. Note: this is NOT the number of lines on the screen at any given time.
+        That is determined by the computed interval and the size/location of the viewport)
+        
+        :type max_lines: int
+        """
+        if max_lines is not None:
+            self.max_lines = max_lines
         self.refresh_scale()
-            
+    
+    def get_tags(self):
+        """
+        Returns a list of tags for each line (in the same order the lines are returned) and the position where the tag should be 
+        printed.
+        """
+        tags = []
+        for line in self.get_lines():
+            if line[0][0] == line[1][0]: #vertical line, so text at bottom of viewport
+                # line is ((x, 0),(x,top))
+                tags.append(((str(line[0][0])),(line[0][0], self.viewport.BB[0][1])))
+                continue
+            if line[0][1] == line[1][1]: #horizontal line, so text on left side
+                # line is ((0, y),(right,y))
+                tags.append(((str(line[0][1])), (self.viewport.BB[0][0], line[0][1])))
+                continue
+        return tags
 
 class Viewport(object):
     

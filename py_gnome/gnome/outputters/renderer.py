@@ -402,6 +402,7 @@ class Renderer(Outputter, MapCanvas):
 
         #draw graticule
         self.draw_graticule()
+        self.draw_tags()
         
         time_stamp = scp[0].current_time_stamp.isoformat()
         self.save_foreground(image_filename)
