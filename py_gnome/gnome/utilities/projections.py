@@ -124,15 +124,19 @@ class GeoProjection(object):
         saved state of renderers, etc
         """
         if type(self) is not type(other): return False
-        elif not np.allclose(self.center, other.center): return False
-        elif not np.allclose(self.offset, other.offset): return False
-        elif self.scale != other.scale:   return False
-        elif self.image_size != other.image_size: return False
-        else: return True
+        elif not np.allclose(self.center, other.center, rtol=1e-4, atol=1e-4):
+            return False
+        elif not np.array_equal(self.offset, other.offset):
+            return False
+        elif not np.allclose(self.scale, other.scale, rtol=1e-4, atol=1e-4):
+            return False
+        elif not np.array_equal(self.image_size,other.image_size):
+            return False
+        else:
+            return True
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
 
     def set_scale(self, bounding_box, image_size=None):
         """

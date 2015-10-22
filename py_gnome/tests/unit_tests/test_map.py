@@ -810,9 +810,10 @@ def test_resurface_airborne_elements():
 
     assert spill['next_positions'][:, 2].min() == 0.
 
-class TestMapFromUGrid(object):
+# ## not functional yet.
+# class TestMapFromUGrid(object):
 
-    map = MapFromUGrid(test_tri_grid)
+#     map = MapFromUGrid(test_tri_grid)
 
 
 if __name__ == '__main__':
