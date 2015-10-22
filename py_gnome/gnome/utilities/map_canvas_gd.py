@@ -19,6 +19,7 @@ from math import floor, log10
 import numpy as np
 
 import py_gd
+import unit_conversion
 
 from gnome.utilities import projections
 
@@ -325,6 +326,13 @@ class MapCanvas(object):
                          line_color=line_color,
                          line_width=line_width,
                          )
+    
+    def draw_text(self, text_list, background = False):
+        img = self.back_image if background else self.fore_image
+        for tag in text_list:
+            point = (tag[1][0], tag[1][1], 0)
+            point = self.projection.to_pixel(point, asint=True)[0]
+            img.draw_text(tag[0],point, 'small', 'black')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # code from renderer 
@@ -347,12 +355,9 @@ class MapCanvas(object):
             self.draw_polyline(line, 'black', 1, background)
             
     def draw_tags(self, background = True):
-        img = self.back_image if background else self.fore_image
-        for tag in self.graticule.get_tags():
-            point = (tag[1][0],tag[1][1],0)
-            point = self.projection.to_pixel(point, asint=True)[0]
-            img.draw_text(tag[0],point, 'small', 'black')
-
+        self.draw_text(self.graticule.get_tags(), True)
+    
+            
     def save_background(self, filename, file_type='png'):
         self.back_image.save(filename, file_type)
 
@@ -458,6 +463,8 @@ class GridLines(object):
             self.STEPS = self.DEG_STEPS
             self.STEP_COUNT = self.DEG_COUNT
         
+        self.DMS = DegMinSec
+        
         #need to just use refresh_scale for this...
         self.max_lines = max_lines
         self.refresh_scale()
@@ -482,6 +489,8 @@ class GridLines(object):
         Computes, builds, and returns a list of lines that when drawn, creates the graticule. 
         The list consists of self.lon_lines vertical lines, followed by self.lat_lines horizontal lines.
         """
+        if self.max_lines is 0:
+            return []
         (minlon,minlat) = self.viewport.BB[0]
         
         
@@ -505,6 +514,8 @@ class GridLines(object):
         Recomputes the interval and number of lines in each dimension.
         This should be called whenever the viewport changes.
         """
+        if self.max_lines is 0:
+            return
         ratio = self.viewport.aspect_ratio()
         self.ref_dim = 'w' if self.viewport.width >= self.viewport.height else 'h'
         self.ref_len = self.viewport.width if self.ref_dim is 'w' else self.viewport.height
@@ -529,6 +540,16 @@ class GridLines(object):
         if max_lines is not None:
             self.max_lines = max_lines
         self.refresh_scale()
+        
+    def set_DMS(self, DMS = False):
+        self.DMS = DMS
+        if self.DMS :
+            self.STEPS = self.DMS_STEPS
+            self.STEP_COUNT = self.DMS_COUNT
+        else:
+            self.STEPS = self.DEG_STEPS
+            self.STEP_COUNT = self.DEG_COUNT
+        self.refresh_scale()
     
     def get_tags(self):
         """
@@ -536,14 +557,21 @@ class GridLines(object):
         printed.
         """
         tags = []
+        if self.max_lines is 0:
+            return tags
         for line in self.get_lines():
             if line[0][0] == line[1][0]: #vertical line, so text at bottom of viewport
                 # line is ((x, 0),(x,top))
-                tags.append(((str(line[0][0])),(line[0][0], self.viewport.BB[0][1])))
+                
+                tag = (str(line[0][0])) if not self.DMS else unit_conversion.LatLongConverter.ToDegMin(line[0][0], ustring=True)
+                tag = tag.replace(u'\xb0', 'd')
+                tags.append((tag,(line[0][0], self.viewport.BB[0][1])))
                 continue
             if line[0][1] == line[1][1]: #horizontal line, so text on left side
                 # line is ((0, y),(right,y))
-                tags.append(((str(line[0][1])), (self.viewport.BB[0][0], line[0][1])))
+                tag = (str(line[0][1])) if not self.DMS else unit_conversion.LatLongConverter.ToDegMin(line[0][1], ustring=True)
+                tag = tag.replace(u'\xb0', 'd')
+                tags.append((tag, (self.viewport.BB[0][0], line[0][1])))
                 continue
         return tags
 

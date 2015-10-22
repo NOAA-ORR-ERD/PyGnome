@@ -108,11 +108,12 @@ if __name__ == '__main__':
     model = make_model()
     for step in model:
         rend = model.outputters[0]
+        rend.graticule.set_DMS(True)
         if step['step_num'] <= 24:
             rend.zoom(1.1)
             rend.shift_viewport((0.02,0))
         if step['step_num'] == 24:
-            rend.graticule.set_max_lines(20)
+            rend.graticule.set_max_lines(0)
         if step['step_num'] >24:
             rend.zoom(0.90)
             rend.shift_viewport((-0.02,0.01))
