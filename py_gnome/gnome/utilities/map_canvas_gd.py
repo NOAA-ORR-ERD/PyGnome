@@ -156,9 +156,9 @@ class MapCanvas(object):
         Rescales the projection to the viewport bounding box. Should be called whenever the viewport changes
         """
         self.projection.set_scale(self.viewport, self.image_size)
+        self.graticule.refresh_scale()
         self.clear_background()
         self.draw_background()
-        self.graticule.refresh_scale()
         
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -329,104 +329,29 @@ class MapCanvas(object):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # code from renderer 
     def draw_background(self):
-        """
-        Draws the background image -- just land for now
-
-        This should be called whenever the scale changes
-        """
-        # create a new background image
         self.clear_background()
-        self.draw_land()
-        if self.raster_map is not None:
-            self.draw_raster_map()
+        self.draw_graticule()
+        self.draw_tags()
 
     def draw_land(self):
-        """
-        Draws the land map to the internal background image.
-        """
-
-        for poly in self.land_polygons:
-            if poly.metadata[1].strip().lower() == 'map bounds':
-                if self.draw_map_bounds:
-                    self.draw_polygon(poly,
-                                       line_color='map_bounds',
-                                       fill_color=None,
-                                       line_width=2,
-                                       background=True)
-            elif poly.metadata[1].strip().lower().replace(' ','') == 'spillablearea':
-                if self.draw_spillable_area:
-                    self.draw_polygon(poly,
-                                       line_color='spillable_area',
-                                       fill_color=None,
-                                       line_width=2,
-                                       background=True)
-
-            elif poly.metadata[2] == '2':
-                # this is a lake
-                self.draw_polygon(poly, fill_color='lake', background=True)
-            else:
-                self.draw_polygon(poly,
-                                  fill_color='land', background=True)
+        
         return None
 
-    def draw_graticule(self, background=False):
+    def draw_graticule(self, background=True):
         """
         draw a graticule (grid lines) on the map
 
         only supports decimal degrees for now...
         """
         for line in self.graticule.get_lines():
-            self.draw_polyline(line, 'black', 1)
+            self.draw_polyline(line, 'black', 1, background)
             
-    def draw_tags(self):
+    def draw_tags(self, background = True):
+        img = self.back_image if background else self.fore_image
         for tag in self.graticule.get_tags():
-            img = self.fore_image
             point = (tag[1][0],tag[1][1],0)
             point = self.projection.to_pixel(point, asint=True)[0]
             img.draw_text(tag[0],point, 'small', 'black')
-        
-
-    @staticmethod
-    def _find_graticule_locations(image_size, viewport,  units="decimal_degrees"):
-        """
-        finds where we want the graticlue located.
-
-        intended to be used internally by the graticule printer
-
-        """
-        ( (min_lat, min_lon), (max_lat, max_lon) ) = viewport
-
-        d_lat = max_lat - min_lat
-        d_lon = max_lon - min_lon
-
-        # Want about one grid line per 100 pixels
-        ppg = 100.0 # a float!
-
-        delta_lon = d_lon / (image_size[0]/ppg)
-        delta_lat = d_lat / (image_size[1]/ppg)
-
-        # round to single digit
-
-        print delta_lon, delta_lat
-
-        delta_lon, delta_lat = MapCanvas._round_to_digit(delta_lon, 2), MapCanvas._round_to_digit(delta_lat, 2)
-
-
-
-    @staticmethod
-    def _round_to_digit(value, num_digits = 1):
-        """
-        rounds to teh number significatn figures requested
-        used by _find_graticule_locations
-
-        :param value: the value to round
-
-        :param num_digits: number of digits to preserve
-
-        """
-        mag = 10**floor( log10( value )-(num_digits-1))
-        return round(value / mag) * mag
-
 
     def save_background(self, filename, file_type='png'):
         self.back_image.save(filename, file_type)

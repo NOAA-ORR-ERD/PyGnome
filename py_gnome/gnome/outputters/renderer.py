@@ -288,6 +288,49 @@ class Renderer(Outputter, MapCanvas):
         for name in foreground_filenames:
             os.remove(name)
 
+    def draw_background(self):
+        """
+        Draws the background image -- just land for now
+
+        This should be called whenever the scale changes
+        """
+        # create a new background image
+        self.clear_background()
+        self.draw_land()
+        if self.raster_map is not None:
+            self.draw_raster_map()
+        self.draw_graticule()
+        self.draw_tags()
+
+    def draw_land(self):
+        """
+        Draws the land map to the internal background image.
+        """
+
+        for poly in self.land_polygons:
+            if poly.metadata[1].strip().lower() == 'map bounds':
+                if self.draw_map_bounds:
+                    self.draw_polygon(poly,
+                                       line_color='map_bounds',
+                                       fill_color=None,
+                                       line_width=2,
+                                       background=True)
+            elif poly.metadata[1].strip().lower().replace(' ','') == 'spillablearea':
+                if self.draw_spillable_area:
+                    self.draw_polygon(poly,
+                                       line_color='spillable_area',
+                                       fill_color=None,
+                                       line_width=2,
+                                       background=True)
+
+            elif poly.metadata[2] == '2':
+                # this is a lake
+                self.draw_polygon(poly, fill_color='lake', background=True)
+            else:
+                self.draw_polygon(poly,
+                                  fill_color='land', background=True)
+        return None
+
     def draw_elements(self, sc):
         """
         Draws the individual elements to a foreground image
@@ -400,9 +443,6 @@ class Renderer(Outputter, MapCanvas):
                 self.draw_elements(scp[0])
                 self.draw_elements(scp[1])
 
-        #draw graticule
-        self.draw_graticule()
-        self.draw_tags()
         
         time_stamp = scp[0].current_time_stamp.isoformat()
         self.save_foreground(image_filename)
