@@ -635,7 +635,8 @@ class Model(Serializable):
             outputter.prepare_for_model_run(model_start_time=self.start_time,
                                             cache=self._cache,
                                             uncertain=self.uncertain,
-                                            spills=self.spills)
+                                            spills=self.spills,
+                                            model_time_step = self.time_step)
         self.logger.debug("{0._pid} setup_model_run complete for: "
                           "{0.name}".format(self))
 

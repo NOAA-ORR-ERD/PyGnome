@@ -8,6 +8,7 @@ module to define classes for GNOME output:
   - saving to other formats ?
 
 """
+import os
 import copy
 from datetime import timedelta
 
@@ -70,10 +71,8 @@ class Outputter(Serializable):
         self.on = on
         self.output_zero_step = output_zero_step
         self.output_last_step = output_last_step
-        if output_timestep:
-            self._output_timestep = int(output_timestep.total_seconds())
-        else:
-            self._output_timestep = None
+        self.output_timestep = output_timestep
+
         self.sc_pair = None     # set in prepare_for_model_run
 
         if name:
@@ -104,6 +103,7 @@ class Outputter(Serializable):
     def prepare_for_model_run(self,
                               model_start_time=None,
                               spills=None,
+                              model_time_step=None,
                               **kwargs):
         """
         This method gets called by the model at the beginning of a new run.
@@ -112,8 +112,12 @@ class Outputter(Serializable):
         :param model_start_time: (Required) start time of the model run. NetCDF
             time units calculated with respect to this time.
         :type model_start_time: datetime.datetime object
+
         :param spills: (Required) model.spills object (SpillContainerPair)
         :type spills: gnome.spill_container.SpillContainerPair object
+
+        :param model_time_step: time step of the model -- used to set timespans for some outputters
+        :type model_time_step: float seconds
 
         Optional argument - in case cache needs to be updated
 
@@ -129,13 +133,23 @@ class Outputter(Serializable):
         multiple outputters need spills and netcdf needs model_start_time,
         so just set them here
         """
+        #check for required parameters -- they are None so that they can be out of order
+        # this breaks tests -- probably should fix the tests...
+        if model_start_time is None:
+            raise TypeError("model_start_time is a required parameter")
+        #if spills is None:
+        #    raise TypeError("spills is a required parameter")
+        # if model_time_step is None:
+        #     raise TypeError("model_time_step is a required parameter")
+
         self._model_start_time = model_start_time
+        self.model_timestep = model_time_step
         self.sc_pair = spills
         cache = kwargs.pop('cache', None)
         if cache is not None:
             self.cache = cache
 
-        if self._output_timestep is None:
+        if self.output_timestep is None:
             self._write_step = True
 
         self._dt_since_lastoutput = 0
@@ -265,3 +279,30 @@ class Outputter(Serializable):
             self.write_output(step_num, last_step)
             model_time = (self.cache.load_timestep(step_num).items()[0].
                           current_time_stamp)
+
+    # Some utilities for checking valid filenames, etc...
+    def _check_filename(self, filename):
+        'basic checks to make sure the filename is valid'
+        if os.path.isdir(filename):
+            raise ValueError('filename must be a file not a directory.')
+
+        if not os.path.exists(os.path.realpath(os.path.dirname(filename)
+                                               )):
+            raise ValueError('{0} does not appear to be a valid path'
+                             .format(os.path.dirname(filename)))
+    def _file_exists_error(self, file_):
+        """
+        invoked by prepare_for_model_run. If file already exists, it will raise
+        this error.
+
+        Do this in prepare_for_model_run, because user may want to define the
+        model and run it in batch mode. This will allow netcdf_outputter to be
+        created, but the first time it tries to write this file, it will check
+        and raise an error if file exists
+        """
+        if os.path.exists(file_):
+            raise ValueError('{0} file exists. Enter a filename that '
+                             'does not exist in which to save data.'
+                             .format(file_))
+
+

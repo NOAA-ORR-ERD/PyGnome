@@ -123,8 +123,6 @@ def test_exceptions(output_filename):
         'cannot change after prepare_for_model_run has been called'
         netcdf.which_data = 'most'
 
-    netcdf.rewind()     # delete datafiles
-
 
 def test_exceptions_middle_of_run(model):
     """

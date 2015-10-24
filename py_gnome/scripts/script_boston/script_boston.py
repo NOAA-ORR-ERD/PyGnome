@@ -10,6 +10,8 @@ This one uses:
   - cats shio mover
   - cats ossm mover
   - plain cats mover
+
+and netcdf and kml output
 """
 
 import os
@@ -31,8 +33,7 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 
 
-from gnome.outputters import Renderer
-from gnome.outputters import NetCDFOutput
+from gnome.outputters import Renderer, NetCDFOutput, KMZOutput
 
 # define base directory
 
@@ -55,9 +56,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # 15 minutes in seconds
     # Default to now, rounded to the nearest hour
-    model = Model(time_step=900, start_time=start_time,
+    model = Model(time_step=900,
+                  start_time=start_time,
                   duration=timedelta(days=1),
-                  map=gnome_map, uncertain=False)
+                  map=gnome_map,
+                  uncertain=True)
 
     print 'adding outputters'
     model.outputters += renderer
@@ -65,6 +68,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     netcdf_file = os.path.join(base_dir, 'script_boston.nc')
     scripting.remove_netcdf(netcdf_file)
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
+
+    model.outputters += KMZOutput(os.path.join(base_dir, 'script_boston.kml'))
 
     print 'adding a RandomMover:'
     model.movers += RandomMover(diffusion_coef=100000)
@@ -164,7 +169,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a spill'
 
     end_time = start_time + timedelta(hours=12)
-    spill = point_line_release_spill(num_elements=1000,
+    spill = point_line_release_spill(num_elements=100,
                                      start_position=(-70.911432,
                                                      42.369142, 0.0),
                                      release_time=start_time,
