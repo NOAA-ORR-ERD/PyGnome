@@ -132,7 +132,8 @@ def sample_sc_release(num_elements=10,
                       spill=None,
                       element_type=None,
                       current_time=None,
-                      arr_types=None):
+                      arr_types=None,
+                      windage_range=None):
     """
     Initialize a Spill of type 'spill', add it to a SpillContainer.
     Invoke release_elements on SpillContainer, then return the spill container
@@ -159,6 +160,9 @@ def sample_sc_release(num_elements=10,
     if arr_types is None:
         # default always has standard windage parameters required by wind_mover
         arr_types = {'windages', 'windage_range', 'windage_persist'}
+
+    if windage_range is not None:
+        spill.set('windage_range', windage_range)
 
     sc = SpillContainer(uncertain)
     sc.spills.add(spill)
@@ -223,7 +227,11 @@ def get_testdata():
         {'ice_curr_curv': get_datafile(os.path.join(curr_dir,
                                                     'acnfs_example.nc')),
          'ice_top_curv': get_datafile(os.path.join(curr_dir,
-                                                   'acnfs_topo.dat'))}
+                                                   'acnfs_topo.dat')),
+         'ice_wind_curv': get_datafile(os.path.join(curr_dir,
+                                                    'arctic_avg2_t0.nc')),
+         'ice_wind_top_curv': get_datafile(os.path.join(curr_dir,
+                                                   'arctic_avg2_topo.dat'))}
 
     # get netcdf stored in fileseries flist2.txt, gridcur_ts_hdr2
     get_datafile(os.path.join(curr_dir, 'file_series', 'hiog_file1.nc'))
@@ -237,7 +245,11 @@ def get_testdata():
          'top_curv': get_datafile(os.path.join(wind_dir,
                                                'WindSpeedDirSubsetTop.dat')),
          'wind_rect': get_datafile(os.path.join(wind_dir, 'test_wind.cdf')),
-         'grid_ts': get_datafile(os.path.join(wind_dir, 'gridwind_ts.wnd'))}
+         'grid_ts': get_datafile(os.path.join(wind_dir, 'gridwind_ts.wnd')),
+         'ice_wind_curv': get_datafile(os.path.join(curr_dir,
+                                                    'arctic_avg2_t0.nc')),
+         'ice_wind_top_curv': get_datafile(os.path.join(curr_dir,
+                                                   'arctic_avg2_topo.dat'))}
     data['MapFromBNA'] = {'testmap': testmap}
     data['Renderer'] = {'bna_sample': bna_sample,
                         'bna_star': os.path.join(s_data, 'Star.bna')}

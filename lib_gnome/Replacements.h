@@ -54,6 +54,7 @@
 #define TimeGridCurRect TimeGridCurRect_c
 #define TimeGridWindRect TimeGridWindRect_c
 #define TimeGridWindCurv TimeGridWindCurv_c
+#define TimeGridWindIce TimeGridWindIce_c
 
 #define TechError(a, b, c) printf("%s", a)
 #define printError(msg) printf("%s", msg)

@@ -87,4 +87,19 @@ cdef extern from "GridWindMover_c.h":
         bool 		    GetExtrapolationInTime()
         void 		    SetTimeShift(long timeShift)
         long 		    GetTimeShift()
+        long  GetNumTriangles()
+
+cdef extern from "IceWindMover_c.h":
+
+    cdef cppclass IceWindMover_c(GridWindMover_c):
+
+        IceWindMover_c ()
+        WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
+#         LongPointHdl  GetPointsHdl()
+#         TopologyHdl  GetTopologyHdl()
+#         WORLDPOINTH  GetTriangleCenters()
+#         long  GetNumTriangles()
+        OSErr  GetIceFields(Seconds time, double *fraction, double *thickness)
+        OSErr  GetIceVelocities(Seconds time, VelocityFRec *ice_velocity)
+        OSErr  GetMovementVelocities(Seconds time, VelocityFRec *ice_velocity)
 

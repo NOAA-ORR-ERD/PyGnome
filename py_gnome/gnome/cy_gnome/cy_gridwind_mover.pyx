@@ -19,7 +19,7 @@ cdef extern from *:
 
 cdef class CyGridWindMover(CyWindMoverBase):
 
-    cdef GridWindMover_c *grid_wind
+    #cdef GridWindMover_c *grid_wind
 
     def __cinit__(self):
         '''
@@ -171,3 +171,13 @@ cdef class CyGridWindMover(CyWindMoverBase):
             raise ValueError("The value for spill type can only be"
                              " 'forecast' or 'uncertainty' - you've chosen: "
                              + str(spill_type))
+
+    def get_num_triangles(self):
+        """
+            Invokes the GetNumTriangles method of TriGridVel_c object
+            to get the number of triangles
+        """
+        num_tri = self.grid_wind.GetNumTriangles()
+
+        return num_tri
+

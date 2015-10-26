@@ -761,6 +761,26 @@ OSErr ReadAdiosBudgetTable(char *path,AdiosInfoRecH *adiosData,char *oilType,flo
 						bAllRemovalOptionsSelected = true;
 				}
 			}
+			// add this check for ADIOS2 Windows that doesn't include blank line in header
+			if (i==lastHeaderLineBeforeBlank-1) {
+				if (!strstr(s,"Dispersed")) 
+				{	// may want to allow adios evaporation only, or burning/skimming
+					//
+					
+				}
+				else 
+				{
+					numHeaderLines-=1;
+					lastHeaderLineBeforeBlank-=1;
+					
+					if (strstr(s,"Burned") || strstr(s,"Skimmed")) 
+					{	// may want to allow adios evaporation only
+						bRemovalOptionSelected = true;
+						if (strstr(s,"Burned") && strstr(s,"Skimmed")) 
+							bAllRemovalOptionsSelected = true;
+					}
+				}
+			}
 			continue; // skip any header lines
 		}
 		if(i%200 == 0) MySpinCursor(); 
@@ -913,6 +933,35 @@ OSErr ReadAdiosBudgetTableWithRemovalOptions(char *path,AdiosInfoRecH *adiosData
 					numItemsInLine++;
 					if (strstr(s,"Burned") && strstr(s,"Skimmed")) 
 						{bAllRemovalOptionsSelected = true; numItemsInLine++;}
+				}
+			}
+			// add this check for ADIOS2 Windows that doesn't include blank line in header
+			if (i==lastHeaderLineBeforeBlank-1) {
+				if (!strstr(s,"Dispersed")) 
+				{	// may want to allow adios evaporation only, or burning/skimming
+					//
+					
+				}
+				else 
+				{
+					numHeaderLines-=1;
+					lastHeaderLineBeforeBlank-=1;
+					numItemsInLine++;
+					
+					if (strstr(s,"Beached")) // an error or just ignore the column?
+					{	// may want to allow adios evaporation only, or burning/skimming
+						printError("GNOME does not accept beaching from ADIOS"); 
+						//numItemsInLine++;
+						err=-1; goto done;
+					}
+					
+					if (strstr(s,"Burned") || strstr(s,"Skimmed")) 
+					{	// may want to allow adios evaporation only
+						bRemovalOptionSelected = true;
+						numItemsInLine++;
+						if (strstr(s,"Burned") && strstr(s,"Skimmed")) 
+						{bAllRemovalOptionsSelected = true; numItemsInLine++;}
+					}
 				}
 			}
 			continue; // skip any header lines
