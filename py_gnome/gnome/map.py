@@ -1,3 +1,6 @@
+from gnome.utilities.projections import FlatEarthProjection
+from numpy import sin, deg2rad
+from sympy.geometry.util import intersection
 
 ###fixme:
 ### needs some refactoring -- more clear distinction between public and
@@ -44,6 +47,7 @@ from gnome.utilities import projections
 
 from gnome.basic_types import oil_status, world_point_type
 from gnome.cy_gnome.cy_land_check import check_land
+from gnome.cy_gnome.cy_land_check import do_landings
 
 from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
                                                           point_in_poly)
@@ -306,8 +310,215 @@ class GnomeMap(Serializable):
         return None
 
 
+class Param_Map(GnomeMap):
+    
+    def __init__(self, center = (0,0), distance = 30000, bearing = 90):
+        #basically, direction vector to shore
+        center = (center[0], center[1], 0)
+        distance = (distance, 0, 0)
+        d = FlatEarthProjection.meters_to_lonlat(distance, center)[0][0]
+        init_points = [(720,720),(720,-720),(d,-720),(d,720)]
+        ang = deg2rad(90 - bearing)
+        rot_matrix = [(np.cos(ang), np.sin(ang)),(-np.sin(ang),np.cos(ang))]
+        self.land_points = np.dot(init_points, rot_matrix)
+        self.land_points = np.array([(x + center[0], y + center[1]) for (x,y) in self.land_points])
+        land_polys = PolygonSet(self.land_points)
+        map_bounds = np.array(((center[0] - 3*d, center[1] + 3*d),
+                                        (center[0] + 3*d, center[1] + 3*d),
+                                        (center[0] + 3*d, center[1] - 3*d),
+                                        (center[0] - 3*d, center[1] - 3*d)),
+                                       dtype=np.float64)
+        self._refloat_halflife = 0.5
+        
+        
+        GnomeMap.__init__(self, map_bounds=map_bounds)
+    
+    def get_map_bounds(self):
+        return (self.map_bounds[1], self.map_bounds[3])
+    
+    def get_land_polygon(self):
+        poly = PolygonSet((self.land_points,[0,4],[]))
+        poly._MetaDataList = [('polygon','1','1')]
+        return poly
+
+
+    def on_map(self, coords):
+        """
+        :param coords: location for test.
+        :type coords: 3-tuple of floats: (long, lat, depth)
+
+        :return: bool array: True if the location is on the map,
+                             False otherwise
+
+        Note:
+          coord is 3-d, but the concept of "on the map" is 2-d in this context,
+          so depth is ignored.
+        """
+        return points_in_poly(self.map_bounds, coords)
+
+    def on_land(self, coords):
+        """
+        :param coord: location for test.
+        :type coords: 3-tuple of floats: (long, lat, depth) or Nx3 numpy array
+
+        :return:
+         - Always returns False-- no land in this implementation
+        """
+        return  self.on_map(coords) * points_in_poly(self.land_points, coords)
+
+    def in_water(self, coords):
+        """
+        :param coords: location for test.
+        :type coords: 3-tuple of floats: (long, lat, depth)
+
+        :returns:
+         - True if the point is in the water,
+         - False if the point is on land (or off map?)
+
+         This implementation has no land, so always True in on the map.
+        """
+        return self.on_map(coords) and not self.on_land(coords)
+
+    def allowable_spill_position(self, coord):
+        """
+        :param coord: location for test.
+        :type coord: 3-tuple of floats: (long, lat, depth)
+
+        :return:
+         - True if the point is an allowable spill position
+         - False if the point is not an allowable spill position
+
+        .. note:: it could be either off the map, or in a location that
+                  spills aren't allowed
+        """
+        if (coord == self.center):
+            return True
+        else:
+            print "Only allowable location for spill is the center this map was built with"
+            return False
+    
+    def _set_off_map_status(self, spill):
+        """
+        Determines which LEs moved off the map
+
+        Called by beach_elements after checking for land-hits
+
+        :param spill: current SpillContainer
+        :type spill:  :class:`gnome.spill_container.SpillContainer`
+        """
+        next_positions = spill['next_positions']
+        status_codes = spill['status_codes']
+        off_map = np.logical_not(self.on_map(next_positions))
+
+        # let model decide if we want to remove elements marked as off-map
+        status_codes[off_map] = oil_status.off_maps
+    
+    #line intersection on each numpy element 
+    def find_land_intersection(self, starts, ends):
+        lines = np.array(zip(starts, ends)) #each index is (x1,y1,x2,y2)
+        sl = [self.land_points[2], self.land_points[3]]
+        [x1, y1], [x2, y2] = sl[0], sl[1]
+        a = sl[1] - sl[0]
+        
+        inters = np.ndarray((ends.shape[0],3), dtype = np.float64)
+        for i in range(0,lines.shape[0]):
+            p1 = lines[i][0]
+            p2 = lines[i][1]
+            [x3,y3],[x4,y4] = p1[0:2],p2[0:2]
+            b = p2[0:2] - p1[0:2]
+            den = a[0]*b[1] - b[0]*a[1]
+            if (den is 0):
+                raise ValueError("den is 0")
+            u = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3))/den
+            v = y1 + u * (y2-y1)
+            inters[i] = [u,v,0]
+        
+        return inters
+    
+    def find_last_water_pos(self,starts, ends):
+        return starts + (ends-starts) * 0.000001
+    
+    def beach_elements(self, sc):
+        """
+        Determines which LEs were or weren't beached or moved off_map.
+        status_code is changed to oil_status.off_maps if off the map.
+
+        Called by the model in the main time loop, after all movers have acted.
+
+        :param sc: current SpillContainer
+        :type sc:  :class:`gnome.spill_container.SpillContainer`
+
+        This map class has no land, so only the map check and
+        resurface_airborn elements is done: noting else changes.
+
+        subclasses that override this probably want to make sure that:
+
+        self.resurface_airborne_elements(sc)
+        self._set_off_map_status(sc)
+
+        are called.
+        """
+        self.resurface_airborne_elements(sc)
+        self._set_off_map_status(sc)
+        
+        start_pos = sc['positions']
+        next_pos = sc['next_positions']
+        status_codes = sc['status_codes']
+        last_water_positions = sc['last_water_positions']
+        
+        
+        # beached = 1xN numpy array of bool, elem is true if on water and next pos is on land
+        new_beached = ((status_codes == oil_status.in_water) * self.on_land(next_pos))
+        land = np.array((self.land_points[2], self.land_points[3]))
+        do_landings(start_pos, next_pos, status_codes, last_water_positions, new_beached, land)
+        #status_codes[new_beached] = oil_status.on_land
+         
+#         next_pos[new_beached] = self.find_land_intersection(start_pos[new_beached], next_pos[new_beached])
+#         last_water_positions[new_beached] = self.find_last_water_pos(start_pos[new_beached], next_pos[new_beached])
+        
+    def refloat_elements(self, spill_container, time_step):
+        """
+        This method performs the re-float logic -- changing the element
+        status flag, and moving the element to the last known water position
+
+        :param spill_container: the current spill container
+        :type spill_container:  :class:`gnome.spill_container.SpillContainer`
+        """
+        # index into array of particles on_land
+
+        r_idx = np.where(spill_container['status_codes']
+                         == oil_status.on_land)[0]
+
+        if r_idx.size == 0:  # no particles on land
+            return
+
+        if self._refloat_halflife > 0.0:
+            #if 0.0, then r_idx is all of them -- they will all refloat.
+            # refloat particles based on probability
+
+            refloat_probability = 1.0 - 0.5 ** (float(time_step)
+                                                / self._refloat_halflife)
+            rnd = np.random.uniform(0, 1, len(r_idx))
+
+            # subset of indices that will refloat
+            # maybe we should rename refloat_probability since
+            # rnd <= refloat_probability to
+            # refloat, maybe call it stay_on_land_probability
+            r_idx = r_idx[np.where(rnd <= refloat_probability)[0]]
+        elif self._refloat_halflife < 0.0:
+            # fake for nothing gets refloated.
+            r_idx = np.array((), np.bool)
+
+        if r_idx.size > 0:
+            # check is not required, but why do this operation if no particles
+            # need to be refloated
+            spill_container['positions'][r_idx] = \
+                spill_container['last_water_positions'][r_idx]
+            spill_container['status_codes'][r_idx] = oil_status.in_water
+
+
 class RasterMap(GnomeMap):
-    """
+    """01
     A land water map implemented as a raster
 
     This one uses a numpy array of uint8, so there are 8 bits to choose from...

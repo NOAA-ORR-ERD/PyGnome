@@ -8,6 +8,7 @@ have crossed land on the raster map
 import cython
 
 import numpy as np
+# from gnome.cy_gnome import type_defs
 cimport numpy as cnp
 from libc.stdint cimport int16_t, int32_t, uint8_t, uint32_t
 from libcpp cimport bool
@@ -262,4 +263,35 @@ def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
                 positions[i, 1] = end_positions[i, 1]
         return None
 
-
+def do_landings(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not None,
+                 cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] end_positions not None,
+                 cnp.ndarray[int16_t, ndim=1, mode='c'] status_codes not None,
+                 cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] last_water_positions not None,
+                 cnp.ndarray[uint8_t, ndim=1, mode='c', cast=True] new_beached not None,
+                 cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] shoreline not None):
+    
+        cdef cnp.float64_t x1,y1,x2,y2, x3, y3, x4, y4, a1, a2, b1, b2
+        [x1, y1], [x2, y2] = shoreline[0], shoreline[1]
+        [a1,a2] = shoreline[1] - shoreline[0]
+        
+        for i in range(positions.shape[0]):
+            if new_beached[i]:
+                p1, p2 = positions[i][0:2], end_positions[i][0:2]
+                [b1,b2] = p2 - p1
+                [x3, y3], [x4, y4] = p1, p2
+                den = a1 * b2 - b1 * a2
+#                 den = a[0]*b[1] - b[0]*a[1]
+                if (den == 0):
+                    print a1
+                    print a2
+                    print b1
+                    print b2
+                    raise ValueError("den is 0")
+                u = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3))/den
+                x = x1 + u * (x2-x1)
+                y = y1 + u * (y2-y1)
+                end_positions[i,0] = x
+                end_positions[i,1] = y
+                last_water_positions[i,0] = p1[0] - ( x - p1[0])*0.99999
+                last_water_positions[i,1] = p1[1] - ( y - p1[1])*0.99999
+                status_codes[i] = type_defs.OILSTAT_ONLAND
