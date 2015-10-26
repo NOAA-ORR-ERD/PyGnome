@@ -531,7 +531,7 @@ el0 = ElementType([InitWindages((0.02, 0.02), -1),
                    ], substance=test_oil)
 
 el1 = ElementType([InitWindages(),
-                   InitRiseVelFromDist()], substance=test_oil)
+                   InitRiseVelFromDist(distribution=UniformDistribution())], substance=test_oil)
 
 arr_types = {'windages', 'windage_range', 'windage_persist', 'rise_vel'}
 
@@ -1007,7 +1007,7 @@ def test_SpillContainer_add_array_types():
     '''
     sc = SpillContainer()
     s = Spill(Release(datetime(2014, 1, 1, 12, 0), 0))
-    s.set_initializer(InitRiseVelFromDropletSizeFromDist())
+    s.set_initializer(InitRiseVelFromDropletSizeFromDist(distribution = UniformDistribution()))
     sc.spills += s
     assert 'rise_vel' not in sc.array_types
     assert 'droplet_diameter' not in sc.array_types

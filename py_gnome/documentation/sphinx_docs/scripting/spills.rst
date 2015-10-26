@@ -4,15 +4,17 @@ Spills
 Using helper functions
 ----------------------
 
-Setting up the spill class can be tricky because they require both a release object and an element_type. More
+Setting up the spill class can be tricky because it requires both a release object and an element_type. More
 details on setting up the Spill object can be found below, but for a lot of typical use cases helper functions in 
 the scripting package can be utilized. Examples include:
 
-A surface spill 
-~~~~~~~~~~~~~~~
-We use the surface_point_line_spill helper function to inialize a release along a line that occurs over one day.
-The oil type is specified as an Alaskan Crude from the ADIOS database with a spill volume of 5000 barrels. Here we change 
-the default windage range to be 1-2% with an infinite persistence (particles keep the same windage value for all time).
+Surface spill 
+~~~~~~~~~~~~~
+
+We use the :func:`gnome.scripting.surface_point_line_spill` helper function to inialize a release along a line 
+that occurs over one day. The oil type is specified as an Alaskan Crude from the ADIOS database with a spill volume 
+of 5000 barrels. Here we change the default windage range to be 1-2% with an infinite persistence (particles keep 
+the same windage value for all time).
 ::
 
     from gnome.model import Model
@@ -24,7 +26,7 @@ the default windage range to be 1-2% with an infinite persistence (particles kee
               time_step=60 * 15, #seconds
               )
     spill = surface_point_line_spill(num_elements=1000,
-                                 start_position=(-144,48.5, 0.0),
+                                 start_position=(-144,48.5, -1000.0),
                                  release_time=start_time,
                                  end_position=(-144,48.6, 0.0),
                                  end_release_time= start_time + timedelta(days=1),
@@ -40,17 +42,25 @@ the default windage range to be 1-2% with an infinite persistence (particles kee
     
     model.full_run()
     
+.. _subsurface_plume:
 
-A subsurface plume
-~~~~~~~~~~~~~~~~~~
+Subsurface plume
+~~~~~~~~~~~~~~~~
 
-::
-
+For initialization of a subsurface plume, we can use the subsurface_plume_spill helper function.
+Required parameters in this case also include a specification of the droplet size distribution 
+or of the rise velocities. The :mod:`gnome.utilities.distributions` module includes methods for 
+specifying different types of distributions. In this case we specify a uniform distribution of
+droplets ranging from 10-300 microns::
+    
     from gnome.scripting import subsurface_plume_spill
+    from gnome.utilities.distributions import UniformDistribution
+    ud = UniformDistribution(10e-6,300e-6) #droplets in the range 10-300 microns
     spill = subsurface_plume_spill(num_elements=1000,
                                    start_position=(-144,48.5, 0.0),
                                    release_time=start_time,
-                                   end_position=(-144,48.6, 0.0),
+                                   distribution=ud,
+                                   distribution_type='droplet_size',
                                    end_release_time= start_time + timedelta(days=1),
                                    amount=5000,
                                    substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
@@ -58,6 +68,7 @@ A subsurface plume
                                    windage_range=(0.01,0.02),
                                    windage_persist=-1,
                                    name='My spill')
+                                   
     
 The Spill Class
 ---------------
@@ -91,35 +102,9 @@ To specify the spill to represent a specific oil from the ADIOS database and spe
     spill = Spill(release,element_type=element_type,amount=5000,units='bbls')
     model.spills += spill
     
-But what about this??::
+Or even simpler::
 
     spill = Spill(release,substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE)',amount=5000,units='bbls')
+
+In this last case, the Spill class instantiates the element_type based on the specified substance.
     
-
-                                 
-Special cases
--------------
-
-Subsurface release
-~~~~~~~~~~~~~~~~~~
-Example subsurface release::
-
-    from gnome.spill import point_line_release_spill
-    from gnome.spill.elements import plume
-    spill = point_line_release_spill(num_elements=1000,
-                                     amount=90,  
-                                     units='m^3',
-                                     start_position=(-144,48.5, 0.0),
-                                     release_time=start_time,
-                                     element_type=plume(distribution=ud,substance_name='ALASKA NORTH SLOPE (MIDDLE PIPELINE)')
-                                     )
-                                     
-Conservative particle, specified windage range
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Here the windage parameters are set to be in the range 0-1% and have infinite persistence 
-(once the windage value is assigned to an LE is keeps that value for all time)::
-
-    spill = gnome.spill.point_line_release_spill(num_elements=5000,
-            start_position=(-144,48.5, 0.0),
-            release_time=start_time,
-            element_type=floating(windage_range=(0,1),windage_persist=-1))

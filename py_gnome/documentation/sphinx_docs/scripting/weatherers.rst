@@ -6,7 +6,7 @@ For example, evaporation reduces the mass of LEs that remain floating on the wat
 while increasing their density and viscosity. 
 
 Weathering processes modeled in GNOME include: evaporation, dispersion, dissolution, 
-sedimentation, emulsification, and biodegredation. (Note: as of September 2015 many
+sedimentation, emulsification, and biodegredation. (Note: as of October 2015 many
 of these algorithms are still being implemented and refined -- please contact GNOME developers for 
 current status).
 
@@ -30,7 +30,7 @@ For example, to create a simple Wind object (for a constant in time wind)::
     series[0] = (datetime(2015,1,1,0), (10, 0))
     wind = Wind(timeseries=series,units='knots')
     
-More simply, we can use the helper function for creating a constant wind::
+More simply, we can use the helper function in :mod: `gnome.scripting` for creating a constant wind::
 
     from gnome.environment.wind import constant_wind
     wind = constant_wind(10,0,'knots')
