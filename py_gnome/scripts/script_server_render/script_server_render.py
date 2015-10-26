@@ -50,6 +50,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     rend =  Renderer(mapfile,
                                  images_dir,
                                  size=(800, 600),
+                                 draw_map_bounds=True
                                  )
     model.outputters += rend
 #                                 draw_back_to_fore=True)

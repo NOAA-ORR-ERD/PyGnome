@@ -16,7 +16,7 @@
 #  - internally, raster is a numpy array
 #  - land raster is only as big as the land -- if the map bounds are bigger,
 #    extra space is not in the land map
-#  Question: what if map-bounds is smaller than land? wasted bitmap space?
+#  Question: what if map-bounds is smaller than land? wasted basebitmap space?
 #            (though it should work)
 
 """
@@ -326,7 +326,6 @@ class GnomeMap(Serializable):
         np.maximum(next_positions[:, 2], 0.0, out=next_positions[:, 2])
         return None
 
-
 class RasterMap(GnomeMap):
     """
     A land water map implemented as a raster
@@ -344,7 +343,7 @@ class RasterMap(GnomeMap):
     #       if map is smaller than land polygons, no need for raster to be
     #       larger than map -- but no impimented yet.
 
-    # flags for what's in the bitmap
+    # flags for what's in the basebitmap
     # in theory -- it could be used for other data:
     #  refloat, other properties?
     # note the BW map_canvas only does 1, though.
@@ -391,7 +390,7 @@ class RasterMap(GnomeMap):
         refloat_halflife = kwargs.pop('refloat_halflife', 1)
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
-        self.bitmap = np.ascontiguousarray(bitmap_array)
+        self.basebitmap = np.ascontiguousarray(bitmap_array)
         self.projection = projection
 
         GnomeMap.__init__(self, **kwargs)
@@ -412,10 +411,10 @@ class RasterMap(GnomeMap):
         '''
         from PIL import Image
 
-        bitmap = self.bitmap.copy()
+        bitmap = self.basebitmap.copy()
 
         #change anything not zero to 255 - to get black and white
-        np.putmask(bitmap, self.bitmap > 0, 255)
+        np.putmask(bitmap, self.basebitmap > 0, 255)
         im = Image.fromarray(bitmap, mode='L')
 
         # to get it oriented right...
@@ -426,12 +425,12 @@ class RasterMap(GnomeMap):
 
     def _off_bitmap(self, coord):
         """
-        are these pixel coordinates on the bitmap
+        are these pixel coordinates on the basebitmap
 
         We can't just use an IndexError, as negative
         indexes can be legal with numpy, but aren't expected here.
         """
-        shape = self.bitmap.shape
+        shape = self.basebitmap.shape
         return (coord[0] < 0 or
                 coord[1] < 0 or
                 coord[0] >= shape[0] or
@@ -448,11 +447,11 @@ class RasterMap(GnomeMap):
         .. note:: Only used internally or for testing -- no need for external
                   API to use pixel coordinates.
         """
-        # if pixel coords are negative, then off the bitmap, so can't be on land
+        # if pixel coords are negative, then off the basebitmap, so can't be on land
         if self._off_bitmap(coord):
             return False
         else:
-            return self.bitmap[coord[0], coord[1]] & self.land_flag
+            return self.basebitmap[coord[0], coord[1]] & self.land_flag
 
     def on_land(self, coord):
         """
@@ -471,14 +470,14 @@ class RasterMap(GnomeMap):
         """
         determines which LEs are on land
 
-        :param coords:  Nx2 numpy int array of pixel coords matching the bitmap
-        :type coords:  Nx2 numpy int array of pixel coords matching the bitmap
+        :param coords:  Nx2 numpy int array of pixel coords matching the basebitmap
+        :type coords:  Nx2 numpy int array of pixel coords matching the basebitmap
 
         returns: a (N,) array of bools - true for particles that are on land
         """
         mask = map(point_in_poly, [self.map_bounds] * len(coords), coords)
         racpy = np.copy(coords)[mask]
-        mskgph = self.bitmap[racpy[:, 0], racpy[:, 1]]
+        mskgph = self.basebitmap[racpy[:, 0], racpy[:, 1]]
         chrmgph = np.array([0] * len(coords))
         chrmgph[np.array(mask)] = mskgph
 
@@ -486,12 +485,12 @@ class RasterMap(GnomeMap):
 
     def _in_water_pixel(self, coord):
 
-        # if  off the bitmap, so must be in water,
+        # if  off the basebitmap, so must be in water,
         # unless not on map, which should have already been checked.
         if not self._off_bitmap:
             return True
         else:
-            return not self.bitmap[coord[0], coord[1]] & self.land_flag
+            return not self.basebitmap[coord[0], coord[1]] & self.land_flag
 
     def in_water(self, coord):
         """
@@ -548,7 +547,7 @@ class RasterMap(GnomeMap):
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
         # only check the ones that aren't already beached?
-        self._check_land(self.bitmap, start_pos_pixel, next_pos_pixel,
+        self._check_land(self.basebitmap, start_pos_pixel, next_pos_pixel,
                          status_codes, last_water_pos_pixel)
 
         # transform the points back to lat-long.
@@ -645,7 +644,7 @@ class RasterMap(GnomeMap):
 
     def to_pixel_array(self, coords):
         """
-        Projects an array of (lon, lat) tuples onto the bitmap,
+        Projects an array of (lon, lat) tuples onto the basebitmap,
         and modifies it in place to hold the corresponding projected values.
 
         :param coords:  a numpy array of (lon, lat, depth) points
@@ -784,7 +783,7 @@ class MapFromBNA(RasterMap):
         # just for testing
         #canvas.save_background("raster_map_test.png")
 
-        # # get the bitmap as a numpy array:
+        # # get the basebitmap as a numpy array:
 
         bitmap_array = canvas.back_asarray()
 
@@ -931,7 +930,7 @@ class MapFromUGrid(RasterMap):
         # just for testing
         #canvas.save_background("raster_map_test.png")
 
-        # # get the bitmap as a numpy array:
+        # # get the basebitmap as a numpy array:
 
         bitmap_array = canvas.back_asarray()
 
@@ -1107,3 +1106,360 @@ def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=6,
                                proj,
                                refloat_halflife=refloat_halflife,
                                )
+    
+    
+    
+    
+    
+    
+    
+    
+    
+class MultiRasterMap(GnomeMap):
+    """
+    A land water map implemented as a raster. This version can use several different scales to aid computation.
+
+    This one uses a numpy array of uint8, so there are 8 bits to choose from...
+
+    It requires a constant refloat half-life in hours
+
+    This will usually be initialized in a sub-class (from a BNA, etc)
+    NOTE: Nothing new added to _state attribute for serialization
+    """
+    # NOTE: spillable area can be both larger and smaller than land raster:
+    #       map bounds can also be larger or smaller:
+    #            both are done with a point in polygon check
+    #       if map is smaller than land polygons, no need for raster to be
+    #       larger than map -- but no impimented yet.
+
+    # flags for what's in the basebitmap
+    # in theory -- it could be used for other data:
+    #  refloat, other properties?
+    # note the BW map_canvas only does 1, though.
+    seconds_in_hour = 60 * 60
+
+    land_flag = 1
+
+    def __init__(self, bitmap_array, projection, **kwargs):
+        """
+        create a new RasterMap
+
+
+        :param bitmap_array: A numpy array that stores the land-water map
+                             0 is water. 1 is land. In theory, other values
+                             could be used for other purposes. If the array
+                             is not C-contiguous, it will be copied to a
+                             C-contiguus array.
+        :type bitmap_array: a (W,H) numpy array of type uint8
+
+        :param projection: A Projection object -- used to convert from
+                           lat-long to pixels in the array
+        :type projection: :class:`gnome.map_canvas.Projection`
+
+        Optional arguments (kwargs)
+
+        :param refloat_halflife: The halflife for refloating off land
+                                 -- assumed to be the same for all land.
+                                 0.0 means all refloat every time step
+                                 < 0.0 means never re-float.
+        :type refloat_halflife: float. Units are hours
+
+        :param map_bounds: The polygon bounding the map -- could be larger
+                           or smaller than the land raster
+        :type map_bounds: (N,2) numpy array of floats
+
+        :param spillable_area: The polygon bounding the spillable_area
+        :type spillable_area: (N,2) numpy array of floats
+
+        :param id: unique ID of the object. Using UUID as a string.
+                   This is only used when loading object from save file.
+
+        :type id: string
+        """
+        refloat_halflife = kwargs.pop('refloat_halflife', 1)
+        self._refloat_halflife = refloat_halflife * self.seconds_in_hour
+
+        self.basebitmap = np.ascontiguousarray(bitmap_array)
+        self.build_coarser_bitmaps()
+        self.projection = projection
+
+        GnomeMap.__init__(self, **kwargs)
+
+    def build_coarser_bitmaps(self):
+        """
+        A list will contain the different bitmaps. 
+        Scale -> bitmap
+        example for base map of 1024 x 1024:
+        0 -> 1/16th bitmap 64:1
+        1 -> 1/32nd bitmap 32:1
+        2 -> 1/64th bitmap 16:1
+        3 -> 1/128th bitmap 8:1
+        4 -> 1/256th bitmap 4:1
+        5 -> 1/512th bitmap 2:1
+        6 -> 1/1024th bitmap (base map 1:1)
+        
+        The general idea is that the particle position (an int) can quickly be mapped into any scale and the path can
+        begin from there. For example, if your path begins offshore and ends in a narrow inlet, your scale might begin
+        on the 32:1 map, but as soon as the path crosses into the (32:1) raster cell containing the inlet (which will
+        register as a land cell on that raster), the scale will decrease to 4:1, when the cell is completely water. In the end, if the
+        scale decreases to 1:1 and there's still a land hit, then land was hit.
+        """
+        self.raster_dict = {}
+
+    @property
+    def refloat_halflife(self):
+        return self._refloat_halflife / self.seconds_in_hour
+
+    @refloat_halflife.setter
+    def refloat_halflife(self, value):
+        self._refloat_halflife = value * self.seconds_in_hour
+
+    def save_as_image(self, filename):
+        '''
+        Save the land-water raster as a PNG save_as_image
+
+        :param filename: the name of the file to save to.
+        '''
+        from PIL import Image
+
+        bitmap = self.basebitmap.copy()
+
+        #change anything not zero to 255 - to get black and white
+        np.putmask(bitmap, self.basebitmap > 0, 255)
+        im = Image.fromarray(bitmap, mode='L')
+
+        # to get it oriented right...
+        im = im.transpose(Image.ROTATE_90)
+        im = im.transpose(Image.FLIP_TOP_BOTTOM)
+
+        im.save(filename, format='PNG')
+
+    def _off_bitmap(self, coord):
+        """
+        are these pixel coordinates on the basebitmap
+
+        We can't just use an IndexError, as negative
+        indexes can be legal with numpy, but aren't expected here.
+        """
+        shape = self.basebitmap.shape
+        return (coord[0] < 0 or
+                coord[1] < 0 or
+                coord[0] >= shape[0] or
+                coord[1] >= shape[1]
+                )
+
+    def _on_land_pixel(self, coord):
+        """
+        returns 1 if the point is on land, 0 otherwise
+
+        :param coord: pixel coordinates of point of interest
+        :type coord: tuple: (row, col)
+
+        .. note:: Only used internally or for testing -- no need for external
+                  API to use pixel coordinates.
+        """
+        # if pixel coords are negative, then off the basebitmap, so can't be on land
+        if self._off_bitmap(coord):
+            return False
+        else:
+            return self.basebitmap[coord[0], coord[1]] & self.land_flag
+
+    def on_land(self, coord):
+        """
+        :param coord: (long, lat, depth) location -- depth is ignored here.
+        :type coord: 3-tuple of floats -- (long, lat, depth)
+
+        :return:
+         - 1 if point on land
+         - 0 if not on land
+
+        .. note:: to_pixel() converts to array of points...
+        """
+        return self._on_land_pixel(self.projection.to_pixel(coord, asint=True)[0])
+
+    def _on_land_pixel_array(self, coords):
+        """
+        determines which LEs are on land
+
+        :param coords:  Nx2 numpy int array of pixel coords matching the basebitmap
+        :type coords:  Nx2 numpy int array of pixel coords matching the basebitmap
+
+        returns: a (N,) array of bools - true for particles that are on land
+        """
+        mask = map(point_in_poly, [self.map_bounds] * len(coords), coords)
+        racpy = np.copy(coords)[mask]
+        mskgph = self.basebitmap[racpy[:, 0], racpy[:, 1]]
+        chrmgph = np.array([0] * len(coords))
+        chrmgph[np.array(mask)] = mskgph
+
+        return chrmgph
+
+    def _in_water_pixel(self, coord):
+
+        # if  off the basebitmap, so must be in water,
+        # unless not on map, which should have already been checked.
+        if not self._off_bitmap:
+            return True
+        else:
+            return not self.basebitmap[coord[0], coord[1]] & self.land_flag
+
+    def in_water(self, coord):
+        """
+        checks if it's on the map, first.
+            (depth is ignored in this version)
+
+        :param coord: (lon, lat, depth) coordinate
+
+        :return: true if the point given by coord is in the water
+        """
+
+        if not self.on_map(coord):
+            return False
+        else:
+            # to_pixel makes a NX2 array
+            return self._in_water_pixel(self.projection.to_pixel(coord,
+                                                                 asint=True)[0]
+                                        )
+
+    def beach_elements(self, sc):
+        """
+        Determines which elements were or weren't beached.
+
+        Any that are beached have the beached flag set, and a
+        "last known water position" (lkwp) is computed
+
+        This version uses a modified Bresenham algorithm to find out
+        which pixels the LE may have crossed.
+
+        :param sc: the current spill container
+        :type sc:  :class:`gnome.spill_container.SpillContainer`
+            It must have the following data arrays:
+            ('prev_position', 'positions', 'last_water_pt', 'status_code')
+        """
+        self.resurface_airborne_elements(sc)
+
+        # pull the data from the sc
+        # Is the last water point the same as the previous position? why not??
+        # If beached, it won't move, if not, then we can use it?
+
+        start_pos = sc['positions']
+        next_pos = sc['next_positions']
+        status_codes = sc['status_codes']
+        last_water_positions = sc['last_water_positions']
+
+        # transform to pixel coords:
+        # NOTE: must be integers!
+
+        start_pos_pixel = self.projection.to_pixel(start_pos, asint=True)
+        next_pos_pixel = self.projection.to_pixel(next_pos, asint=True)
+        last_water_pos_pixel = self.projection.to_pixel(last_water_positions,
+                                                        asint=True)
+
+        # call the actual hit code:
+        # the status_code and last_water_point arrays are altered in-place
+        # only check the ones that aren't already beached?
+        self._check_land(self.basebitmap, start_pos_pixel, next_pos_pixel,
+                         status_codes, last_water_pos_pixel)
+
+        # transform the points back to lat-long.
+        beached = status_codes == oil_status.on_land
+        next_pos[beached, :2] = \
+            self.projection.to_lonlat(next_pos_pixel[beached])
+        last_water_positions[beached, :2] = \
+            self.projection.to_lonlat(last_water_pos_pixel[beached, :2])
+
+        self._set_off_map_status(sc)
+
+        # todo: need a prepare_for_model_run() so map adds these keys to
+        #     mass_balance as opposed to SpillContainer
+        # update 'off_maps'/'beached' in mass_balance
+        sc.mass_balance['beached'] = \
+            sc['mass'][sc['status_codes'] == oil_status.on_land].sum()
+        sc.mass_balance['off_maps'] += \
+            sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
+
+    def refloat_elements(self, spill_container, time_step):
+        """
+        This method performs the re-float logic -- changing the element
+        status flag, and moving the element to the last known water position
+
+        :param spill_container: the current spill container
+        :type spill_container:  :class:`gnome.spill_container.SpillContainer`
+        """
+        # index into array of particles on_land
+
+        r_idx = np.where(spill_container['status_codes']
+                         == oil_status.on_land)[0]
+
+        if r_idx.size == 0:  # no particles on land
+            return
+
+        if self._refloat_halflife > 0.0:
+            #if 0.0, then r_idx is all of them -- they will all refloat.
+            # refloat particles based on probability
+
+            refloat_probability = 1.0 - 0.5 ** (float(time_step)
+                                                / self._refloat_halflife)
+            rnd = np.random.uniform(0, 1, len(r_idx))
+
+            # subset of indices that will refloat
+            # maybe we should rename refloat_probability since
+            # rnd <= refloat_probability to
+            # refloat, maybe call it stay_on_land_probability
+            r_idx = r_idx[np.where(rnd <= refloat_probability)[0]]
+        elif self._refloat_halflife < 0.0:
+            # fake for nothing gets refloated.
+            r_idx = np.array((), np.bool)
+
+        if r_idx.size > 0:
+            # check is not required, but why do this operation if no particles
+            # need to be refloated
+            spill_container['positions'][r_idx] = \
+                spill_container['last_water_positions'][r_idx]
+            spill_container['status_codes'][r_idx] = oil_status.in_water
+
+    def _check_land(self, raster_map, positions, end_positions,
+                    status_codes, last_water_positions):
+        """
+        Do the actual land-checking.  This method simply calls a Cython version:
+            gnome.cy_gnome.cy_land_check.check_land()
+
+        The arguments 'status_codes', 'positions' and 'last_water_positions'
+        are altered in place.
+        """
+        check_land(raster_map,
+                   positions,
+                   end_positions,
+                   status_codes,
+                   last_water_positions)
+
+    def allowable_spill_position(self, coord):
+        """
+        Returns true is the spill position is in the allowable spill area
+
+        .. note::
+            This may not be the same as in_water!
+
+        :param coord: (lon, lat, depth) coordinate
+        """
+        if self.on_map(coord):
+            if not self.on_land(coord):
+                if self.spillable_area is None:
+                    return True
+                else:
+                    return super(RasterMap, self).allowable_spill_position(coord)
+            else:
+                return False
+        else:
+            return False
+
+    def to_pixel_array(self, coords):
+        """
+        Projects an array of (lon, lat) tuples onto the basebitmap,
+        and modifies it in place to hold the corresponding projected values.
+
+        :param coords:  a numpy array of (lon, lat, depth) points
+
+        :return: a numpy array of (x, y) pixel values
+        """
+        return self.projection.to_pixel(coords)

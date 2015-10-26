@@ -293,7 +293,7 @@ class MapCanvas(object):
         if self.raster_map is not None:
             raster_map = self.raster_map
             drawer = ImageDraw.Draw(self.back_image)
-            w, h = raster_map.bitmap.shape
+            w, h = raster_map.basebitmap.shape
 
             if self.raster_map_outline:
                 # vertical lines
@@ -314,7 +314,7 @@ class MapCanvas(object):
             if self.raster_map_fill:
                 for i in range(w):
                     for j in range(h):
-                        if raster_map.bitmap[i, j]:
+                        if raster_map.basebitmap[i, j]:
                             # float, so we don't get pixel-rounding
                             i, j = float(i), float(j)
                             rect = raster_map.projection.to_lonlat(((i, j),

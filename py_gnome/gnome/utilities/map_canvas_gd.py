@@ -555,24 +555,40 @@ class GridLines(object):
         """
         Returns a list of tags for each line (in the same order the lines are returned) and the position where the tag should be 
         printed.
+        
+        Line labels are anchored at the intersection between the line and the edge of the viewport. This may cause the longitude labels to
+        disappear if the aspect ratio of the image and viewport are identical.        
         """
-        tags = []
         if self.max_lines is 0:
-            return tags
+            return []
+        tags = []
         for line in self.get_lines():
-            if line[0][0] == line[1][0]: #vertical line, so text at bottom of viewport
-                # line is ((x, 0),(x,top))
+            value = 0
+            if line[0][0] == line[1][0]:
+                value = line[0][0]
+                hemi = 'E' if value > 0 else 'W'
+            else:
+                value = line[0][1]
+                hemi = 'N' if value > 0 else 'S'
                 
-                tag = (str(line[0][0])) if not self.DMS else unit_conversion.LatLongConverter.ToDegMin(line[0][0], ustring=True)
-                tag = tag.replace(u'\xb0', 'd')
-                tags.append((tag,(line[0][0], self.viewport.BB[0][1])))
-                continue
-            if line[0][1] == line[1][1]: #horizontal line, so text on left side
-                # line is ((0, y),(right,y))
-                tag = (str(line[0][1])) if not self.DMS else unit_conversion.LatLongConverter.ToDegMin(line[0][1], ustring=True)
-                tag = tag.replace(u'\xb0', 'd')
-                tags.append((tag, (self.viewport.BB[0][0], line[0][1])))
-                continue
+            tag = (str(value) if not self.DMS else unit_conversion.LatLongConverter.ToDegMinSec(value, ustring=False))
+                
+            if self.DMS:
+                degrees = int(abs(tag[0]))
+                minutes = int(tag[1]) 
+                seconds = int(round(tag[2]))
+                if seconds == 60:
+                    minutes += 1
+                    seconds = 0
+                if seconds != 0:
+                    tag = u"%id%i'%i\"%c" %  (degrees, minutes, seconds, hemi)
+                elif minutes != 0:
+                    tag = u"%id%i'%c" %  (degrees, minutes, hemi)
+                else:
+                    tag = u"%id%c" %  (degrees, hemi)
+            anchor = (value, self.viewport.BB[0][1])  if hemi is 'E' or hemi is 'W' else (self.viewport.BB[0][0], value)
+            tags.append((tag, anchor))
+            
         return tags
 
 class Viewport(object):

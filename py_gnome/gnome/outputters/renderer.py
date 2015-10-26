@@ -373,7 +373,7 @@ class Renderer(Outputter, MapCanvas):
         """
         if self.raster_map is not None:
             raster_map = self.raster_map
-            w, h = raster_map.bitmap.shape
+            w, h = raster_map.basebitmap.shape
             if self.raster_map_outline:
                 # vertical lines
                 for i in range(w):
@@ -388,7 +388,7 @@ class Renderer(Outputter, MapCanvas):
                 print "drawing filled rects..."
                 for i in range(w):
                     for j in range(h):
-                        if raster_map.bitmap[i,j] == 1:
+                        if raster_map.basebitmap[i,j] == 1:
                             rect = raster_map.projection.to_lonlat( np.array( ( (i, j), (i+1, j), (i+1, j+1), (i, j+1)), dtype=np.float64) )
                             self.draw_polygon(rect, fill_color='raster_map', background=True)
 
