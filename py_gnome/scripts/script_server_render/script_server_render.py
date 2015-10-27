@@ -23,7 +23,7 @@ from gnome.outputters import (Renderer,
                               )
 from gnome.basic_types import numerical_methods
 
-NUM_ELEMENTS = 1e5
+NUM_ELEMENTS = 1e1
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -108,16 +108,16 @@ if __name__ == '__main__':
     scripting.make_images_dir()
     model = make_model()
     for step in model:
-        rend = model.outputters[0]
-        rend.graticule.set_DMS(True)
-        if step['step_num'] <= 24:
-            rend.zoom(1.1)
-            rend.shift_viewport((0.02,0))
-        if step['step_num'] == 24:
-            rend.graticule.set_max_lines(0)
-        if step['step_num'] >24:
-            rend.zoom(0.90)
-            rend.shift_viewport((-0.02,0.01))
+#         rend = model.outputters[0]
+#         rend.graticule.set_DMS(True)
+#         if step['step_num'] <= 24:
+#             rend.zoom(1.1)
+#             rend.shift_viewport((0.02,0))
+#         if step['step_num'] == 24:
+#             rend.graticule.set_max_lines(0)
+#         if step['step_num'] >24:
+#             rend.zoom(0.90)
+#             rend.shift_viewport((-0.02,0.01))
             
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())

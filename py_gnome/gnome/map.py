@@ -27,6 +27,7 @@ This is a re-write of the C++ raster map approach
 
 import copy
 import os
+import math
 
 import numpy
 np = numpy
@@ -44,6 +45,7 @@ from gnome.utilities import projections
 
 from gnome.basic_types import oil_status, world_point_type
 from gnome.cy_gnome.cy_land_check import check_land
+from gnome.cy_gnome.cy_land_check import check_land_layers
 
 from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
                                                           point_in_poly)
@@ -391,9 +393,43 @@ class RasterMap(GnomeMap):
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
         self.basebitmap = np.ascontiguousarray(bitmap_array)
+        self.ratios = (64,16,4,1)
+        self.build_coarser_bitmaps()
         self.projection = projection
 
         GnomeMap.__init__(self, **kwargs)
+
+    def build_coarser_bitmaps(self):
+        """
+        A list will contain the different bitmaps. 
+        Scale -> bitmap
+        example for base map of 1024 x 1024:
+        0 -> 1/16th bitmap 64:1
+        1 -> 1/32nd bitmap 32:1
+        2 -> 1/64th bitmap 16:1
+        3 -> 1/128th bitmap 8:1
+        4 -> 1/256th bitmap 4:1
+        5 -> 1/512th bitmap 2:1
+        6 -> 1/1024th bitmap (base map 1:1)
+        
+        The general idea is that the particle position (an int) can quickly be mapped into any scale and the path can
+        begin from there. For example, if your path begins offshore and ends in a narrow inlet, your scale might begin
+        on the 32:1 map, but as soon as the path crosses into the (32:1) raster cell containing the inlet (which will
+        register as a land cell on that raster), the scale will decrease to 4:1, when the cell is completely water. In the end, if the
+        scale decreases to 1:1 and there's still a land hit, then land was hit.
+        """
+        self.layers = []
+        base_w = self.basebitmap.shape[1]
+        base_h = self.basebitmap.shape[0]
+        
+        for ratio in self.ratios[:-1]:
+            genned_layer = np.zeros((math.ceil(float(base_w) / ratio), math.ceil(float(base_h) / ratio)), dtype=np.uint8)
+            for i in range(0, genned_layer.shape[0] ):
+                for j in range(0, genned_layer.shape[1] ):
+                    genned_layer[i,j] = np.max(self.basebitmap[j*ratio:(j+1)*ratio,i*ratio:(i+1)*ratio])
+            
+            self.layers.append(genned_layer)
+        self.layers.append(self.basebitmap)
 
     @property
     def refloat_halflife(self):
@@ -547,7 +583,7 @@ class RasterMap(GnomeMap):
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
         # only check the ones that aren't already beached?
-        self._check_land(self.basebitmap, start_pos_pixel, next_pos_pixel,
+        self._check_land(self.layers, self.ratios, start_pos_pixel, next_pos_pixel,
                          status_codes, last_water_pos_pixel)
 
         # transform the points back to lat-long.
@@ -607,7 +643,7 @@ class RasterMap(GnomeMap):
                 spill_container['last_water_positions'][r_idx]
             spill_container['status_codes'][r_idx] = oil_status.in_water
 
-    def _check_land(self, raster_map, positions, end_positions,
+    def _check_land(self, raster_map_layers, ratios, positions, end_positions,
                     status_codes, last_water_positions):
         """
         Do the actual land-checking.  This method simply calls a Cython version:
@@ -616,11 +652,12 @@ class RasterMap(GnomeMap):
         The arguments 'status_codes', 'positions' and 'last_water_positions'
         are altered in place.
         """
-        check_land(raster_map,
-                   positions,
-                   end_positions,
-                   status_codes,
-                   last_water_positions)
+        check_land_layers(raster_map_layers,
+                          ratios,
+                          positions,
+                          end_positions,
+                          status_codes,
+                          last_water_positions)
 
     def allowable_spill_position(self, coord):
         """
@@ -1204,7 +1241,22 @@ class MultiRasterMap(GnomeMap):
         register as a land cell on that raster), the scale will decrease to 4:1, when the cell is completely water. In the end, if the
         scale decreases to 1:1 and there's still a land hit, then land was hit.
         """
-        self.raster_dict = {}
+        self.layers = []
+        self.layers.append(self.basebitmap)
+        base_w = self.basebitmap.shape[0]
+        base_h = self.basebitmap.shape[1]
+        
+        for ratio in [4,16,64]:
+            genned_layer = np.zeros((base_w / ratio, base_h / ratio), dtype=np.bool)
+            for i in genned_layer.shape[0] - 1:
+                for j in genned_layer.shape[1] - 1:
+                    genned_layer[i,j] = max(self.basebitmap[i*ratio:(i+1)*ratio, j*ratio:(j+1)*ratio])
+            
+            self.layers.insert(0,genned_layer)
+                    
+            
+            
+        
 
     @property
     def refloat_halflife(self):

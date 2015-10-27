@@ -91,7 +91,7 @@ class MapCanvas(object):
 
         if viewport is not None:
             self._viewport.BB = viewport
-            self.projection.set_scale(self.viewport, self.image_size)
+        self.projection.set_scale(self.viewport, self.image_size)
         self.graticule = GridLines(self._viewport)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

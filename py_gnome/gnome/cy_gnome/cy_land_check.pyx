@@ -77,6 +77,7 @@ cdef bool c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2, mode="c"] grid,
 
     # check if totally off the grid
     if not c_overlap_grid(m, n, x0, y0, x1, y1):
+        print "off grid!"
         return False
 
     #pixels = []
@@ -129,6 +130,13 @@ cdef bool c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2, mode="c"] grid,
                 hit_x[0] = x0
                 hit_y[0] = y0
                 # return (*prev_x, *prev_y), (*hit_x, *hit_y)
+                print "hit!"
+                print m
+                print n
+                print x0
+                print y0
+                print x1
+                print y1
                 return True
             else:
                 if (e2 > -dy) and (e2 < dx): # there is a diagonal move -- test adjacent points also
@@ -149,6 +157,13 @@ cdef bool c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2, mode="c"] grid,
                         pass
 
     # if we get here, no hit
+    print "miss!"
+    print m
+    print n
+    print x0
+    print y0
+    print x1
+    print y1
     return False
 
 
@@ -262,4 +277,106 @@ def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
                 positions[i, 1] = end_positions[i, 1]
         return None
 
+## called by a method in gnome.map.RasterMap class
+from gnome.basic_types import world_point_type, oil_status
+@cython.boundscheck(False)
+def check_land_layers(grid_layers,
+                grid_ratios,
+                cnp.ndarray[int32_t, ndim=2, mode='c'] positions not None,
+                cnp.ndarray[int32_t, ndim=2, mode='c'] end_positions not None,
+                cnp.ndarray[int16_t, ndim=1, mode='c'] status_codes not None,
+                cnp.ndarray[int32_t, ndim=2, mode='c'] last_water_positions not None):
+        """
+        do the actual land-checking
+                
+        status_codes, positions and last_water_positions are altered in place.
+        
+        NOTE: these are the integer versions -- having already have been projected to the raster coordinates
 
+        """
+        cdef int32_t  prev_x, prev_y, hit_x, hit_y  
+        cdef uint32_t i, num_le
+        cdef int32_t m, n
+        cdef bool did_hit
+
+        num_le = positions.shape[0]
+        
+        for i in range(num_le):
+            print "NEW PARTICLE"
+            print "ABSOLUTE POS: %s" % (positions[i])
+            print "ABSOLUTE END: %s" % (end_positions[i])
+            coarse_pos = positions[i] // grid_ratios[0]
+            coarse_end = end_positions[i] // grid_ratios[0]
+            
+            #if the LE is on land, or if it starts and ends in the same water-only square on the coarsest grid, skip this LE
+            if status_codes[i] == type_defs.OILSTAT_ONLAND \
+            or (coarse_pos[0] == coarse_end[0]) \
+            and (coarse_pos[0] == coarse_end[0]) \
+            and (grid_layers[0][coarse_pos[1],coarse_pos[0]] == 0):
+                continue
+
+            layer = 0                
+            #begin the walk. If a hit is registered on the current grid, drop down one level and restart the walk.
+            #If a hit is registered on the lowest level, then LE has landed.
+            while True:
+                #If start location is on land, drop down layers until it's not                
+                while grid_layers[layer][coarse_pos[0],coarse_pos[1]] == 1:
+                    print "current layer: %d" % layer
+                    print  grid_layers[layer][coarse_pos[0],coarse_pos[1]]
+                    if layer == len(grid_layers):
+                        raise IndexError("LE start position is on land, and not beached! Unacceptable!")
+                    layer += 1
+                    coarse_pos = positions[i] // grid_ratios[layer]
+                    coarse_end = end_positions[i] // grid_ratios[layer]
+                
+                cur_grid = grid_layers[layer]
+                cur_ratio = grid_ratios[layer]
+                m = cur_grid.shape[0]
+                n = cur_grid.shape[1]
+                print layer
+                print grid_layers[3].shape
+                print cur_grid.shape
+                print coarse_pos
+                print coarse_end
+                print prev_x
+                print prev_y
+                print hit_x
+                print hit_y
+                did_hit = c_find_first_pixel(cur_grid,
+                                         m,
+                                         n,
+                                         coarse_pos[0],
+                                         coarse_pos[1],
+                                         coarse_end[0],
+                                         coarse_end[1],
+                                         &prev_x,
+                                         &prev_y,
+                                         &hit_x,
+                                         &hit_y,
+                                         )
+                if did_hit:
+                    print "hit on layer:" + str(layer)
+                    # hit on the lowest layer (confirmed land hit)
+                    if layer == len(grid_ratios) - 1:
+                        last_water_positions[i, 0] = prev_x
+                        last_water_positions[i, 1] = prev_y
+                        end_positions[i,0] = hit_x
+                        end_positions[i,1] = hit_y
+                        status_codes[i] = type_defs.OILSTAT_ONLAND
+                        print "OIL LANDED!"
+                        return
+                    # possible hit, go down a layer and try again
+                    else:
+                        layer += 1
+                        coarse_pos = positions[i] // grid_ratios[layer]
+                        coarse_end = end_positions[i] // grid_ratios[layer]
+                        print"possible hit"
+                        print layer
+                        print coarse_pos
+                        print coarse_end
+                        print"possible hit!!!!!!!!"
+                else:
+                    # didn't hit land -- can move the LE
+                    positions[i, 0] = end_positions[i, 0]
+                    positions[i, 1] = end_positions[i, 1]
+                    return
