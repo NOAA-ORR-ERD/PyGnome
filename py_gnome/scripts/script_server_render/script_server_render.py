@@ -23,7 +23,7 @@ from gnome.outputters import (Renderer,
                               )
 from gnome.basic_types import numerical_methods
 
-NUM_ELEMENTS = 1e1
+NUM_ELEMENTS = 1e5
 
 # define base directory
 base_dir = os.path.dirname(__file__)

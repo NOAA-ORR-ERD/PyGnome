@@ -423,10 +423,10 @@ class RasterMap(GnomeMap):
         base_h = self.basebitmap.shape[0]
         
         for ratio in self.ratios[:-1]:
-            genned_layer = np.zeros((math.ceil(float(base_w) / ratio), math.ceil(float(base_h) / ratio)), dtype=np.uint8)
+            genned_layer = np.zeros((math.ceil(float(base_h) / ratio), math.ceil(float(base_w) / ratio)), dtype=np.uint8)
             for i in range(0, genned_layer.shape[0] ):
                 for j in range(0, genned_layer.shape[1] ):
-                    genned_layer[i,j] = np.max(self.basebitmap[j*ratio:(j+1)*ratio,i*ratio:(i+1)*ratio])
+                    genned_layer[i,j] = np.max(self.basebitmap[i*ratio:(i+1)*ratio, j*ratio:(j+1)*ratio])
             
             self.layers.append(genned_layer)
         self.layers.append(self.basebitmap)
