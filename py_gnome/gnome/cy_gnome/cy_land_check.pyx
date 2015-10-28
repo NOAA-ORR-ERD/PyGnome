@@ -10,7 +10,9 @@ import cython
 import numpy as np
 from astropy.modeling.functional_models import Scale
 cimport numpy as cnp
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from libc.stdint cimport int16_t, int32_t, uint8_t, uint32_t
+from libc.stdlib cimport abs, div, div_t
 from libcpp cimport bool
 
 cimport type_defs
@@ -75,7 +77,8 @@ cdef bool c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2, mode="c"] grid,
 
     cdef int32_t dx, dy, sx, sy, err, e2,
     cdef int32_t pt1_x, pt1_y, pt2_x, pt2_y
-
+    m = grid.shape[0]
+    n = grid.shape[1]
     # check if totally off the grid
     if not c_overlap_grid(m, n, x0, y0, x1, y1):
         return False
@@ -277,15 +280,23 @@ def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
                 positions[i, 1] = end_positions[i, 1]
         return None
 
+# def check_land_layers(cnp.ndarray[dtype=object, ndim=1] grid_layers,
+#                 cnp.ndarray[int32_t, ndim=1, mode='c'] grid_ratios,
+#                 cnp.ndarray[int32_t, ndim=2, mode='c'] positions,
+#                 cnp.ndarray[int32_t, ndim=2, mode='c'] end_positions,
+#                 cnp.ndarray[int16_t, ndim=1, mode='c'] status_codes,
+#                 cnp.ndarray[int32_t, ndim=2, mode='c'] last_water_positions):
+#     c_check_land_layers(grid_layers, grid_ratios, positions, end_positions, status_codes, last_water_positions)
+
 ## called by a method in gnome.map.RasterMap class
-from gnome.basic_types import world_point_type, oil_status
 @cython.boundscheck(False)
+@cython.wraparound(False)
 def check_land_layers(grid_layers,
-                grid_ratios,
-                cnp.ndarray[int32_t, ndim=2, mode='c'] positions not None,
-                cnp.ndarray[int32_t, ndim=2, mode='c'] end_positions not None,
-                cnp.ndarray[int16_t, ndim=1, mode='c'] status_codes not None,
-                cnp.ndarray[int32_t, ndim=2, mode='c'] last_water_positions not None):
+                cnp.ndarray[int32_t, ndim=1, mode='c'] grid_ratios,
+                cnp.ndarray[int32_t, ndim=2, mode='c'] positions,
+                cnp.ndarray[int32_t, ndim=2, mode='c'] end_positions,
+                cnp.ndarray[int16_t, ndim=1, mode='c'] status_codes,
+                cnp.ndarray[int32_t, ndim=2, mode='c'] last_water_positions):
         """
         do the actual land-checking
                 
@@ -294,43 +305,44 @@ def check_land_layers(grid_layers,
         NOTE: these are the integer versions -- having already have been projected to the raster coordinates
 
         """
-        cdef int32_t  prev_x, prev_y, hit_x, hit_y  
+        cdef int32_t  prev_x, prev_y, hit_x, hit_y, cur_ratio, layer, coarse_pos_x, num_ratios
         cdef uint32_t i, num_le
         cdef int32_t m, n
         cdef bool did_hit
+        cdef int32_t* coarse_pos = <int32_t*> PyMem_Malloc (2*sizeof(int32_t))
+        cdef int32_t* coarse_end = <int32_t*> PyMem_Malloc (2*sizeof(int32_t))
 
+        num_ratios = grid_ratios.shape[0]
+        cdef int32_t* shapes = <int32_t*> PyMem_Malloc(2*num_ratios*sizeof(int32_t))
+        for i in range(num_ratios):
+            layer = grid_layers[i]
+            shapes[2*i] = layer.shape[0]
+            shapes[2*i+1] = layer.shape[1]
+            
         num_le = positions.shape[0]
         
         for i in range(num_le):
 #             print "PARTICLE %d" % i
 #             print "ABSOLUTE POS: %s" % (positions[i])
 #             print "ABSOLUTE END: %s" % (end_positions[i])
-            coarse_pos = positions[i] // grid_ratios[0]
-            coarse_end = end_positions[i] // grid_ratios[0]
-            
             #if the LE is on land, or if it starts and ends in the same water-only square on the coarsest grid, skip this LE
             if status_codes[i] == type_defs.OILSTAT_ONLAND:
                 continue
 
             layer = 0                
-            #begin the walk. If a hit is registered on the current grid, drop down one level and restart the walk.
+            #begin the walk. If a hit is registered on the current grid, drop down one level and continue the walk.
             #If a hit is registered on the lowest level, then LE has landed.
             while True:
-                cur_grid = grid_layers[layer]
+                coarse_pos[0] = div(positions[i,0], grid_ratios[layer]).quot
+                coarse_pos[1] = div(positions[i,1], grid_ratios[layer]).quot
+                coarse_end[0] = div(end_positions[i,0], grid_ratios[layer]).quot
+                coarse_end[1] = div(end_positions[i,1], grid_ratios[layer]).quot
                 cur_ratio = grid_ratios[layer]
-                m = cur_grid.shape[0]
-                n = cur_grid.shape[1]
-#                 print layer
-#                 print cur_grid.shape
-#                 print coarse_pos
-#                 print coarse_end
-#                 print prev_x
-#                 print prev_y
-#                 print hit_x
-#                 print hit_y
-                did_hit = c_find_first_pixel(cur_grid,
-                                         m,
-                                         n,
+#                 m = cur_grid.shape[0]
+#                 n = cur_grid.shape[1]
+                did_hit = c_find_first_pixel(&grid_layers[layer][0,0],
+                                         shapes[layer][0],
+                                         shapes[layer][1],
                                          coarse_pos[0],
                                          coarse_pos[1],
                                          coarse_end[0],
@@ -342,28 +354,23 @@ def check_land_layers(grid_layers,
                                          )
                 if did_hit:
                     # hit on the lowest layer (confirmed land hit)
-                    if layer == len(grid_ratios) - 1:
+                    if layer == num_ratios - 1:
                         last_water_positions[i, 0] = prev_x
                         last_water_positions[i, 1] = prev_y
                         end_positions[i,0] = hit_x
                         end_positions[i,1] = hit_y
                         status_codes[i] = type_defs.OILSTAT_ONLAND
-#                         print "OIL LANDED!"
                         break
                     # possible hit, go down a layer and try again
                     else:
                         layer += 1
-                        coarse_pos = positions[i] // grid_ratios[layer]
-                        coarse_end = end_positions[i] // grid_ratios[layer]
-#                         print"possible hit"
-#                         print layer
-#                         print coarse_pos
-#                         print coarse_end
-#                         print"possible hit!!!!!!!!"
+                        coarse_pos[0] = div(positions[i,0], grid_ratios[layer]).quot
+                        coarse_pos[1] = div(positions[i,1], grid_ratios[layer]).quot
+                        coarse_end[0] = div(end_positions[i,0], grid_ratios[layer]).quot
+                        coarse_end[1] = div(end_positions[i,1], grid_ratios[layer]).quot
                 else:
                     # didn't hit land -- can move the LE
                     positions[i, 0] = end_positions[i, 0]
                     positions[i, 1] = end_positions[i, 1]
                     break
                 
-            

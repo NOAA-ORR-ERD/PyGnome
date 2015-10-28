@@ -393,7 +393,7 @@ class RasterMap(GnomeMap):
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
         self.basebitmap = np.ascontiguousarray(bitmap_array)
-        self.ratios = (64,16,4,1)
+        self.ratios = np.array((16,4,1))
         self.build_coarser_bitmaps()
         self.projection = projection
 
@@ -430,6 +430,7 @@ class RasterMap(GnomeMap):
             
             self.layers.append(genned_layer)
         self.layers.append(self.basebitmap)
+        self.layers = np.array(self.layers)
 
     @property
     def refloat_halflife(self):
@@ -583,7 +584,7 @@ class RasterMap(GnomeMap):
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
         # only check the ones that aren't already beached?
-        self._check_land(self.layers, self.ratios, start_pos_pixel, next_pos_pixel,
+        self._check_land_layers(self.layers, self.ratios, start_pos_pixel, next_pos_pixel,
                          status_codes, last_water_pos_pixel)
 
         # transform the points back to lat-long.
@@ -644,6 +645,21 @@ class RasterMap(GnomeMap):
             spill_container['status_codes'][r_idx] = oil_status.in_water
 
     def _check_land(self, raster_map_layers, ratios, positions, end_positions,
+                    status_codes, last_water_positions):
+        """
+        Do the actual land-checking.  This method simply calls a Cython version:
+            gnome.cy_gnome.cy_land_check.check_land()
+
+        The arguments 'status_codes', 'positions' and 'last_water_positions'
+        are altered in place.
+        """
+        check_land(self.basebitmap,
+                          positions,
+                          end_positions,
+                          status_codes,
+                          last_water_positions)
+        
+    def _check_land_layers(self, raster_map_layers, ratios, positions, end_positions,
                     status_codes, last_water_positions):
         """
         Do the actual land-checking.  This method simply calls a Cython version:
