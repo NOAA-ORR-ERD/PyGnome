@@ -396,9 +396,9 @@ class RasterMap(GnomeMap):
         if self.basebitmap.size > 16000000:
             self.ratios = np.array((256,32,1,))
         elif self.basebitmap.size > 1000000:
-            self.ratios = np.array(64,8,1,)
+            self.ratios = np.array((64,8,1,))
         else :
-            self.ratios = np.array(32,1)
+            self.ratios = np.array((32,1,))
         self.build_coarser_bitmaps()
         self.projection = projection
 

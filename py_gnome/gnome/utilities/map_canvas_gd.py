@@ -92,7 +92,7 @@ class MapCanvas(object):
         if viewport is not None:
             self._viewport.BB = viewport
         self.projection.set_scale(self.viewport, self.image_size)
-        self.graticule = GridLines(self._viewport)
+        self.graticule = GridLines(self.projection)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
@@ -386,6 +386,8 @@ class GridLines(object):
     SECOND = MINUTE / 60.0
 
     DMS_STEPS = (
+        SECOND * 15,
+        SECOND * 30,
         MINUTE,
         MINUTE * 2,
         MINUTE * 3,
@@ -437,7 +439,7 @@ class GridLines(object):
     )
     DEG_COUNT = len(DEG_STEPS)
     
-    def __init__(self, viewport=None, max_lines=10, DegMinSec=False):
+    def __init__(self, projection=None, max_lines=10, DegMinSec=False):
         """
         Creates a GridLines instance that does the logic for and describes the current graticule
 
@@ -451,9 +453,9 @@ class GridLines(object):
         :param DegMinSec: Whether to scale by Degrees/Minute/Seconds, or decimal lon/lat
         :type bool
         """
-        if viewport is None:
-            raise ValueError("Viewport needs to be provided to generate grid lines")
-        self.viewport = viewport
+        if projection is None:
+            raise ValueError("Projection needs to be provided to generate grid lines")
+        self.projection = projection
             
         self.type = type
         if DegMinSec :
@@ -491,7 +493,7 @@ class GridLines(object):
         """
         if self.max_lines is 0:
             return []
-        (minlon,minlat) = self.viewport.BB[0]
+        (minlon,minlat) = self.projection.image_box[0]
         
         
         #create array of lines
@@ -516,9 +518,15 @@ class GridLines(object):
         """
         if self.max_lines is 0:
             return
-        ratio = self.viewport.aspect_ratio()
-        self.ref_dim = 'w' if self.viewport.width >= self.viewport.height else 'h'
-        self.ref_len = self.viewport.width if self.ref_dim is 'w' else self.viewport.height
+        img_width = float(self.projection.image_size[0])
+        img_height = float(self.projection.image_size[1])
+        ratio = img_width / img_height
+        self.ref_dim = 'w' if img_width >= img_height else 'h'
+        
+        width = self.projection.image_box[1][0] - self.projection.image_box[0][0]
+        height = self.projection.image_box[1][1] - self.projection.image_box[0][1]
+                 
+        self.ref_len = width if self.ref_dim is 'w' else height
         self.current_interval = self.get_step_size(self.ref_len / self.max_lines)
         self.lon_lines = self.max_lines if self.ref_dim is 'w' else None
         self.lat_lines = self.max_lines if self.ref_dim is 'h' else None
@@ -586,7 +594,10 @@ class GridLines(object):
                     tag = u"%id%i'%c" %  (degrees, minutes, hemi)
                 else:
                     tag = u"%id%c" %  (degrees, hemi)
-            anchor = (value, self.viewport.BB[1][1])  if hemi is 'E' or hemi is 'W' else (self.viewport.BB[0][0], value)
+            
+            top = self.projection.image_box[1][1]
+            left = self.projection.image_box[0][0]
+            anchor = (value, top)  if hemi is 'E' or hemi is 'W' else (left, value)
             tags.append((tag, anchor))
             
         return tags

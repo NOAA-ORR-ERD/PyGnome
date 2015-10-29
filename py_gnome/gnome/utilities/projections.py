@@ -116,6 +116,7 @@ class GeoProjection(object):
         self.scale = None
         self.image_size = (600,600) if image_size is None else image_size
         bounding_box = ((-180, -90), (180, 90)) if bounding_box is None else bounding_box
+        self.image_box = bounding_box
         self.set_scale(bounding_box, image_size)
 
     def __eq__(self, other):
@@ -171,6 +172,7 @@ class GeoProjection(object):
 
         # doing this at the end, in case there is a problem with the input.
 
+        self.image_box = (self.to_lonlat((0,image_size[1])), self.to_lonlat((image_size[0], 0)))
         self.image_size = image_size
 
     def to_pixel(self, coords, asint=False):
@@ -460,6 +462,7 @@ class FlatEarthProjection(GeoProjection):
             self.scale = (s * lon_scale, -s)
 
         # doing this at the end, in case there is a problem with the input.
+        self.image_box = (self.to_lonlat((0,image_size[1])), self.to_lonlat((image_size[0], 0)))
         self.image_size = image_size
 
 

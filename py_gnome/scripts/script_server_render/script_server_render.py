@@ -52,6 +52,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                  size=(800, 600),
                                  draw_map_bounds=True
                                  )
+    rend.draw_raster_map()
     model.outputters += rend
 #                                 draw_back_to_fore=True)
 
@@ -108,8 +109,8 @@ if __name__ == '__main__':
     scripting.make_images_dir()
     model = make_model()
     for step in model:
-#         rend = model.outputters[0]
-#         rend.graticule.set_DMS(True)
+        rend = model.outputters[0]
+        rend.graticule.set_DMS(True)
 #         if step['step_num'] <= 24:
 #             rend.zoom(1.1)
 #             rend.shift_viewport((0.02,0))
