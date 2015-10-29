@@ -586,7 +586,7 @@ class GridLines(object):
                     tag = u"%id%i'%c" %  (degrees, minutes, hemi)
                 else:
                     tag = u"%id%c" %  (degrees, hemi)
-            anchor = (value, self.viewport.BB[0][1])  if hemi is 'E' or hemi is 'W' else (self.viewport.BB[0][0], value)
+            anchor = (value, self.viewport.BB[1][1])  if hemi is 'E' or hemi is 'W' else (self.viewport.BB[0][0], value)
             tags.append((tag, anchor))
             
         return tags

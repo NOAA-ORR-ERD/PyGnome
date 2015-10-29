@@ -393,7 +393,7 @@ class RasterMap(GnomeMap):
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
         self.basebitmap = np.ascontiguousarray(bitmap_array)
-        self.ratios = np.array((128,16,1,))
+        self.ratios = np.array((128,32,1,))
         self.build_coarser_bitmaps()
         self.projection = projection
 
