@@ -393,7 +393,7 @@ class RasterMap(GnomeMap):
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
         self.basebitmap = np.ascontiguousarray(bitmap_array)
-        self.ratios = np.array((16,4,1))
+        self.ratios = np.array((128,16,1,))
         self.build_coarser_bitmaps()
         self.projection = projection
 
@@ -419,14 +419,15 @@ class RasterMap(GnomeMap):
         scale decreases to 1:1 and there's still a land hit, then land was hit.
         """
         self.layers = []
-        base_w = self.basebitmap.shape[1]
-        base_h = self.basebitmap.shape[0]
+        base_w = self.basebitmap.shape[0]
+        base_h = self.basebitmap.shape[1]
         
         for ratio in self.ratios[:-1]:
-            genned_layer = np.zeros((math.ceil(float(base_h) / ratio), math.ceil(float(base_w) / ratio)), dtype=np.uint8)
-            for i in range(0, genned_layer.shape[0] ):
-                for j in range(0, genned_layer.shape[1] ):
-                    genned_layer[i,j] = np.max(self.basebitmap[i*ratio:(i+1)*ratio, j*ratio:(j+1)*ratio])
+            genned_layer = np.zeros((math.ceil(float(base_w) / ratio), math.ceil(float(base_h) / ratio)), dtype=np.uint8, order='C')
+            print genned_layer.shape
+            for j in range(0, genned_layer.shape[1]):
+                for i in range(0, genned_layer.shape[0]):
+                    genned_layer[i,j] = np.any(self.basebitmap[i*ratio:(i+1)*ratio, j*ratio:(j+1)*ratio])
             
             self.layers.append(genned_layer)
         self.layers.append(self.basebitmap)
@@ -723,7 +724,7 @@ class MapFromBNA(RasterMap):
                            test_for_eq=False))
     _schema = MapFromBNASchema
 
-    def __init__(self, filename, raster_size=1024 * 1024, **kwargs):
+    def __init__(self, filename, raster_size=4096 * 4096, **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a data file.
         It is expected that you will get the spillable area and map bounds

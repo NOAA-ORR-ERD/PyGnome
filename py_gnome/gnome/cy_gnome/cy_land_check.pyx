@@ -62,7 +62,7 @@ cdef int32_t c_overlap_grid(int32_t m,
 
 
 @cython.boundscheck(False)
-cdef bool c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2, mode="c"] grid,
+cdef bool c_find_first_pixel( uint8_t* grid,
                              int32_t m,
                              int32_t n,
                              int32_t x0,
@@ -77,8 +77,6 @@ cdef bool c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2, mode="c"] grid,
 
     cdef int32_t dx, dy, sx, sy, err, e2,
     cdef int32_t pt1_x, pt1_y, pt2_x, pt2_y
-    m = grid.shape[0]
-    n = grid.shape[1]
     # check if totally off the grid
     if not c_overlap_grid(m, n, x0, y0, x1, y1):
         return False
@@ -102,7 +100,7 @@ cdef bool c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2, mode="c"] grid,
     if not (x0 < 0 or x0 >= m or y0 < 0 or y0 >= n):#  is the point off the grid? if so, it's not land!
         ##fixme: we should never be starting on land! 
         ## should this raise an Error instead ?
-        if grid[x0, y0] == 1: #we've hit "land"
+        if grid[x0 * n + y0] == 1: #we've hit "land"
             prev_x[0] = x0
             prev_y[0] = y0
             hit_x[0] = x0
@@ -129,7 +127,7 @@ cdef bool c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2, mode="c"] grid,
             ## fixme -- if we've moved off the grid for good, no need to keep going.
             continue                             # note: a diagonal movement, off the grid wouldn't be a hit either
         else:
-            if grid[x0, y0] == 1:
+            if grid[x0 * n + y0] == 1:
                 hit_x[0] = x0
                 hit_y[0] = y0
                 # return (*prev_x, *prev_y), (*hit_x, *hit_y)
@@ -149,8 +147,8 @@ cdef bool c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2, mode="c"] grid,
                     pt2_x = x0-sx
                     pt2_y = y0
                     try: # replace with real check???
-                        if ( (grid[pt1_x, pt1_y] == 1) and #is the y-adjacent point on land? 
-                             (grid[pt2_x, pt2_y] == 1)     #is the x-adjacent point on land?
+                        if ( (grid[pt1_x * n + pt1_y] == 1) and #is the y-adjacent point on land? 
+                             (grid[pt2_x * n + pt2_y] == 1)     #is the x-adjacent point on land?
                             ): 
                             hit_x[0] = pt1_x # we have to pick one -- this is arbitrary
                             hit_y[0] = pt1_y # we have to pick one -- this is arbitrary
@@ -209,7 +207,7 @@ def find_first_pixel(grid, pt1, pt2):
     prev_x = x1
     prev_y = y1
 
-    result = c_find_first_pixel(grid,
+    result = c_find_first_pixel(grid.data,
                                 m,
                                 n,
                                 x1,
@@ -256,18 +254,18 @@ def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
             if status_codes[i] == type_defs.OILSTAT_ONLAND:
                 continue
             
-            did_hit = c_find_first_pixel(grid,
-                                         m,
-                                         n,
-                                         positions[i, 0],
-                                         positions[i, 1],
-                                         end_positions[i, 0],
-                                         end_positions[i, 1],
-                                         &prev_x,
-                                         &prev_y,
-                                         &hit_x,
-                                         &hit_y,
-                                         )
+#             did_hit = c_find_first_pixel(grid.data,
+#                                          m,
+#                                          n,
+#                                          positions[i, 0],
+#                                          positions[i, 1],
+#                                          end_positions[i, 0],
+#                                          end_positions[i, 1],
+#                                          &prev_x,
+#                                          &prev_y,
+#                                          &hit_x,
+#                                          &hit_y,
+#                                          )
             if did_hit:
                 last_water_positions[i, 0] = prev_x
                 last_water_positions[i, 1] = prev_y
@@ -313,11 +311,16 @@ def check_land_layers(grid_layers,
         cdef int32_t* coarse_end = <int32_t*> PyMem_Malloc (2*sizeof(int32_t))
 
         num_ratios = grid_ratios.shape[0]
-        cdef int32_t* shapes = <int32_t*> PyMem_Malloc(2*num_ratios*sizeof(int32_t))
+        cdef uint8_t** dataptrs = <uint8_t**> PyMem_Malloc(num_ratios*sizeof(uint8_t *))
+        cdef int32_t* widths = <int32_t*> PyMem_Malloc(num_ratios*sizeof(int32_t))
+        cdef int32_t* heights = <int32_t*> PyMem_Malloc(num_ratios*sizeof(int32_t))
+        
+        cdef cnp.ndarray[uint8_t, ndim=2, mode="c"] grid_arr 
         for i in range(num_ratios):
-            layer = grid_layers[i]
-            shapes[2*i] = layer.shape[0]
-            shapes[2*i+1] = layer.shape[1]
+            grid_arr = grid_layers[i]
+            widths[i] = grid_layers[i].shape[0]
+            heights[i] = grid_layers[i].shape[1]
+            dataptrs[i] = &grid_arr[0,0]
             
         num_le = positions.shape[0]
         
@@ -340,9 +343,9 @@ def check_land_layers(grid_layers,
                 cur_ratio = grid_ratios[layer]
 #                 m = cur_grid.shape[0]
 #                 n = cur_grid.shape[1]
-                did_hit = c_find_first_pixel(&grid_layers[layer][0,0],
-                                         shapes[layer][0],
-                                         shapes[layer][1],
+                did_hit = c_find_first_pixel(dataptrs[layer],
+                                         widths[layer],
+                                         heights[layer],
                                          coarse_pos[0],
                                          coarse_pos[1],
                                          coarse_end[0],
@@ -374,3 +377,8 @@ def check_land_layers(grid_layers,
                     positions[i, 1] = end_positions[i, 1]
                     break
                 
+        PyMem_Free(coarse_pos)
+        PyMem_Free(coarse_end)
+        PyMem_Free(dataptrs)
+        PyMem_Free(widths)
+        PyMem_Free(heights)

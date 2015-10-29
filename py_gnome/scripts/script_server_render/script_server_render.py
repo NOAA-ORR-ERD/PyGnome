@@ -23,7 +23,7 @@ from gnome.outputters import (Renderer,
                               )
 from gnome.basic_types import numerical_methods
 
-NUM_ELEMENTS = 1e5
+NUM_ELEMENTS = 1e6
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -70,14 +70,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += RandomMover(diffusion_coef=10000)
 
     print 'adding a simple wind mover:'
-    model.movers += constant_wind_mover(5, 315, units='m/s')
+    model.movers += constant_wind_mover(7, 90, units='m/s')
 
     print 'adding a current mover:'
 
-    # # this is HYCOM currents
-    curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
-    model.movers += GridCurrentMover(curr_file,
-                                     num_method=numerical_methods.euler);
+#     # # this is HYCOM currents
+#     curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
+#     model.movers += GridCurrentMover(curr_file,
+#                                      num_method=numerical_methods.euler);
 
     # #
     # # Add some spills (sources of elements)
@@ -85,19 +85,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding four spill'
     model.spills += point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
-                                             start_position=(145.25, 15.0,
+                                             start_position=(146, 15.25,
                                                              0.0),
                                              release_time=start_time)
     model.spills += point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
-                                             start_position=(146.25, 15.0,
+                                             start_position=(146, 15.125,
                                                              0.0),
                                              release_time=start_time)
     model.spills += point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
-                                             start_position=(145.75, 15.25,
+                                             start_position=(146, 15.0,
                                                              0.0),
                                              release_time=start_time)
     model.spills += point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
-                                             start_position=(145.75, 14.75,
+                                             start_position=(146, 14.875,
                                                              0.0),
                                              release_time=start_time)
 
