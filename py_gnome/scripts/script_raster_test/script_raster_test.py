@@ -59,7 +59,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
     spill = point_line_release_spill(num_elements=500000,
-                                     start_position=(-123.75,
+                                     start_position=(-123.5,
                                                      48.25,
                                                      0.0),
                                      release_time=start_time)
@@ -71,7 +71,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a wind mover:'
    
-    model.movers += constant_wind_mover(10, 270, units='m/s')
+    model.movers += constant_wind_mover(13, 270, units='m/s')
 
     print 'adding a current mover:'
     #curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
