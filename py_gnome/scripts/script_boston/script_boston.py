@@ -46,7 +46,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'creating the maps'
     mapfile = get_datafile(os.path.join(base_dir, './MassBayMap.bna'))
-    gnome_map = MapFromBNA(mapfile, refloat_halflife=1)  # hours
+    gnome_map = MapFromBNA(mapfile,
+                           refloat_halflife=1, # hours
+                           raster_size=2048*2048 # about 4 MB
+                           )
 
     renderer = Renderer(mapfile, images_dir, size=(800, 800),
                         projection_class=GeoProjection)
@@ -182,5 +185,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 if __name__ == "__main__":
     scripting.make_images_dir()
+    print "setting up the model"
     model = make_model()
+    print "running the model"
     model.full_run()

@@ -2,17 +2,19 @@
 templates for the kmz  outputter
 """
 
+caveat = "This trajectory was produced by GNOME (General NOAA Operational Modeling Environment), and should be used for educational and planning purposes only--not for a real response. In the event of an oil or chemical spill in U.S. waters, contact the U.S. Coast Guard National Response Center at 1-800-424-8802."
+
+
 ### The kml templates:
 header_template="""<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>KML_GNOME_Sample.kml</name>
+    <name>{kml_name}</name>
     <open>1</open>
-    <description><![CDATA[<b>Valid for:</b> 11:00, 10/23/15<br>
-<b>Issued:</b> 11:08, 10/23/15
-<br>
-This trajectory was produced by GNOME (General NOAA Operational Modeling Environment), and should be used for educational and planning purposes only--not for a real response. In the event of an oil or chemical spill in U.S. waters, contact the U.S. Coast Guard National Response Center at 1-800-424-8802. ]]></description>
-
+    <description><![CDATA[<b>Valid for:</b> {valid_timestring}<br>
+                          <b>Issued:</b>{issued_timestring} <br>
+                          {caveat}]]>
+    </description>
 
     <Style id="RedDotIcon">
       <IconStyle>
@@ -48,7 +50,7 @@ This trajectory was produced by GNOME (General NOAA Operational Modeling Environ
          <Icon>
             <href>dot.png</href>
          </Icon>
-         <color>ff00efef</color>
+         <color>ff00ffff</color>
          <hotSpot x="0.5"  y="0.5" xunits="fraction" yunits="fraction"/>
       </IconStyle>
       <LabelStyle>
@@ -90,7 +92,7 @@ This trajectory was produced by GNOME (General NOAA Operational Modeling Environ
          <Icon>
             <href>x.png</href>
          </Icon>
-         <color>ff00efef</color>
+         <color>ff00ffff</color>
          <hotSpot x="0.5"  y="0.5" xunits="fraction" yunits="fraction"/>
       </IconStyle>
       <LabelStyle>
@@ -98,6 +100,8 @@ This trajectory was produced by GNOME (General NOAA Operational Modeling Environ
       </LabelStyle>
     </Style>
 """
+
+
 point_template="""             <Point>
                      <altitudeMode>relativeToGround</altitudeMode>
                      <coordinates>{:.6f},{:.6f},1.000000</coordinates>
@@ -141,7 +145,7 @@ def build_one_timestep(floating_positions,
 
     for status, positions in [('Floating',floating_positions),
                               ('Beached',beached_positions)]:
-        color = "Yellow" if uncertain else "Red"
+        color = "Red" if uncertain else "Yellow"
         data['style'] = "#"+color+"DotIcon" if status == "Floating" else "#"+color+"XIcon"
 
         data['status'] = status

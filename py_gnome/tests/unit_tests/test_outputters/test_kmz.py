@@ -122,7 +122,7 @@ def test_exceptions(output_filename):
     #     'cannot change after prepare_for_model_run has been called'
     #     kmz.which_data = 'most'
 
-def test_one_timestep(model):
+def test_timesteps(model):
     filename = os.path.join(local_dirname(), "multi_timesteps.kml")
 
     kmz = KMZOutput(filename)
