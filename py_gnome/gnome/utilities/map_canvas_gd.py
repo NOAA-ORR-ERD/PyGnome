@@ -90,9 +90,9 @@ class MapCanvas(object):
         self._viewport = Viewport(((-180, -90), (180, 90))) 
 
         if viewport is not None:
-            self._viewport.BB = viewport
+            self._viewport.BB = tuple(map(tuple,viewport))
         self.projection.set_scale(self.viewport, self.image_size)
-        self.graticule = GridLines(self.projection)
+        self.graticule = GridLines(self._viewport, self.projection)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
@@ -439,7 +439,7 @@ class GridLines(object):
     )
     DEG_COUNT = len(DEG_STEPS)
     
-    def __init__(self, projection=None, max_lines=10, DegMinSec=False):
+    def __init__(self, viewport=None, projection=None, max_lines=10, DegMinSec=False):
         """
         Creates a GridLines instance that does the logic for and describes the current graticule
 
@@ -453,6 +453,10 @@ class GridLines(object):
         :param DegMinSec: Whether to scale by Degrees/Minute/Seconds, or decimal lon/lat
         :type bool
         """
+        if viewport is None:
+            raise ValueError("Viewport needs to be provided to generate grid lines")
+        self.viewport = viewport
+        
         if projection is None:
             raise ValueError("Projection needs to be provided to generate grid lines")
         self.projection = projection
@@ -526,7 +530,7 @@ class GridLines(object):
         width = self.projection.image_box[1][0] - self.projection.image_box[0][0]
         height = self.projection.image_box[1][1] - self.projection.image_box[0][1]
                  
-        self.ref_len = width if self.ref_dim is 'w' else height
+        self.ref_len = self.viewport.width if self.ref_dim is 'w' else self.viewport.height
         self.current_interval = self.get_step_size(self.ref_len / self.max_lines)
         self.lon_lines = self.max_lines if self.ref_dim is 'w' else None
         self.lat_lines = self.max_lines if self.ref_dim is 'h' else None
