@@ -1,6 +1,5 @@
 from gnome.utilities.projections import FlatEarthProjection
 from numpy import sin, deg2rad
-from sympy.geometry.util import intersection
 
 ###fixme:
 ### needs some refactoring -- more clear distinction between public and
@@ -311,7 +310,7 @@ class GnomeMap(Serializable):
 
 
 class Param_Map(GnomeMap):
-    
+
     def __init__(self, center = (0,0), distance = 30000, bearing = 90):
         #basically, direction vector to shore
         center = (center[0], center[1], 0)
@@ -329,13 +328,13 @@ class Param_Map(GnomeMap):
                                         (center[0] - 3*d, center[1] - 3*d)),
                                        dtype=np.float64)
         self._refloat_halflife = 0.5
-        
-        
+
+
         GnomeMap.__init__(self, map_bounds=map_bounds)
-    
+
     def get_map_bounds(self):
         return (self.map_bounds[1], self.map_bounds[3])
-    
+
     def get_land_polygon(self):
         poly = PolygonSet((self.land_points,[0,4],[]))
         poly._MetaDataList = [('polygon','1','1')]
@@ -396,7 +395,7 @@ class Param_Map(GnomeMap):
         else:
             print "Only allowable location for spill is the center this map was built with"
             return False
-    
+
     def _set_off_map_status(self, spill):
         """
         Determines which LEs moved off the map
@@ -412,14 +411,14 @@ class Param_Map(GnomeMap):
 
         # let model decide if we want to remove elements marked as off-map
         status_codes[off_map] = oil_status.off_maps
-    
-    #line intersection on each numpy element 
+
+    #line intersection on each numpy element
     def find_land_intersection(self, starts, ends):
         lines = np.array(zip(starts, ends)) #each index is (x1,y1,x2,y2)
         sl = [self.land_points[2], self.land_points[3]]
         [x1, y1], [x2, y2] = sl[0], sl[1]
         a = sl[1] - sl[0]
-        
+
         inters = np.ndarray((ends.shape[0],3), dtype = np.float64)
         for i in range(0,lines.shape[0]):
             p1 = lines[i][0]
@@ -432,12 +431,12 @@ class Param_Map(GnomeMap):
             u = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3))/den
             v = y1 + u * (y2-y1)
             inters[i] = [u,v,0]
-        
+
         return inters
-    
+
     def find_last_water_pos(self,starts, ends):
         return starts + (ends-starts) * 0.000001
-    
+
     def beach_elements(self, sc):
         """
         Determines which LEs were or weren't beached or moved off_map.
@@ -460,22 +459,22 @@ class Param_Map(GnomeMap):
         """
         self.resurface_airborne_elements(sc)
         self._set_off_map_status(sc)
-        
+
         start_pos = sc['positions']
         next_pos = sc['next_positions']
         status_codes = sc['status_codes']
         last_water_positions = sc['last_water_positions']
-        
-        
+
+
         # beached = 1xN numpy array of bool, elem is true if on water and next pos is on land
         new_beached = ((status_codes == oil_status.in_water) * self.on_land(next_pos))
         land = np.array((self.land_points[2], self.land_points[3]))
         do_landings(start_pos, next_pos, status_codes, last_water_positions, new_beached, land)
         #status_codes[new_beached] = oil_status.on_land
-         
+
 #         next_pos[new_beached] = self.find_land_intersection(start_pos[new_beached], next_pos[new_beached])
 #         last_water_positions[new_beached] = self.find_last_water_pos(start_pos[new_beached], next_pos[new_beached])
-        
+
     def refloat_elements(self, spill_container, time_step):
         """
         This method performs the re-float logic -- changing the element
