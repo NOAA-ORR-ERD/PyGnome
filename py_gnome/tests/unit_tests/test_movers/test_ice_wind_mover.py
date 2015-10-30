@@ -51,10 +51,12 @@ def test_loop():
     ice_mover = IceWindMover(ice_file, topology_file)
     delta = _certain_loop(pSpill, ice_mover)
 
-    _assert_move(delta)
+    #_assert_move(delta)	# should get a new example that has some movement...
 
-    assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
-    assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
+    #assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
+    #assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
+    assert np.all(delta[:, 0] == 0)  # in this case ice coverage is > 80% so no wind
+    assert np.all(delta[:, 1] == 0)  # in this case ice coverage is > 80% so no wind
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
 
     return delta

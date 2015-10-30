@@ -137,6 +137,7 @@ public:
 
 	virtual	bool 		IsTriangleGrid(){return false;}
 	virtual	bool 		IsDataOnCells(){return true;}
+	virtual OSErr 		get_values(int n, Seconds model_time, short* LE_status, WorldPoint3D* ref, VelocityRec* vels) {return 0;}
 };
 
 
@@ -463,6 +464,7 @@ public:
 	virtual OSErr ExportTopology(char* path);
 
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
+	virtual OSErr get_values(int n, Seconds model_time, short* LE_status, WorldPoint3D* ref, VelocityRec* vels);
 };
 
 

@@ -604,6 +604,42 @@ LongPoint TimeGridWindCurv_c::GetVelocityIndices(WorldPoint wp)
 	return indices;
 }
 
+OSErr TimeGridWindCurv_c::get_values(int n, Seconds model_time, short* LE_status, WorldPoint3D* ref, VelocityRec* vels) {
+
+	if(!ref || !vels) {
+		//cout << "worldpoints array not provided! returning.\n";
+		return 1;
+	}
+	
+	
+	WorldPoint3D rec;
+	
+	VelocityRec zero_vel ={0.,0.};
+	
+	for (int i = 0; i < n; i++) {
+		
+		// only operate on LE if the status is in water
+		if( LE_status[i] != OILSTAT_INWATER)
+		{
+			vels[i] = zero_vel;
+			continue;
+		}
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
+		
+		// let's do the multiply by 1000000 here - this is what gnome expects
+		rec.p.pLat *= 1000000;	
+		rec.p.pLong*= 1000000;
+
+		vels[i] = GetScaledPatValue(model_time, rec);
+		
+		//delta[i].p.pLat /= 1000000;
+		//delta[i].p.pLong /= 1000000;
+	}
+	
+	return noErr;
+}
+
 VelocityRec TimeGridWindCurv_c::GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint)
 {
 	double timeAlpha;
