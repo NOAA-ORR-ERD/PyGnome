@@ -117,6 +117,7 @@ class Renderer(Outputter, MapCanvas):
         projection=None,
         viewport=None,
         map_BB=None,
+        land_polygons=None,
         draw_back_to_fore=True,
         draw_map_bounds=False,
         draw_spillable_area=False,
