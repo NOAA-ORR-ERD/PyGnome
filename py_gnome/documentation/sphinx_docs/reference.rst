@@ -17,40 +17,40 @@ you aren't doing a full-on oil spill model. The model contains:
 * its own attributes
 
 In pseudocode, the model loop is defined below. In the first step, it sets up the
-model run and in subsequent steps the model moves and weathers elements. 
+model run and in subsequent steps the model moves and weathers elements.
 
 .. code-block:: python
 
     start_at_step_num = -1
-    
+
     if step_num == -1
         setup_model_run()
-    
+
     else:
         setup_time_step()
         move()
         weather()
         step_is_done()
-    
+
     step_num += 1
-    
+
     for sc in self.spills.items():
         num = sc.release_elements()     # initialize mover data arrays
-        
+
         if num > 0:
             for w in weatherers:
                 w.initialize_data()     # initialize weatherer data arrays
-    
+
     o = write_output()
-    
+
     return o
-    
+
 .. automodule:: gnome.model
 .. autoclass:: Model
    :members:
    :undoc-members:
    :show-inheritance:
-      
+
 ``gnome.map`` -- the PyGnome map class
 ---------------------------------------------------
 .. automodule:: gnome.map
@@ -82,7 +82,7 @@ model run and in subsequent steps the model moves and weathers elements.
    :members:
    :inherited-members:
 .. autofunction:: floating
-.. autofunction:: plume 
+.. autofunction:: plume
 
 ``gnome.movers`` -- PyGnome mover classes
 ---------------------------------------------------
@@ -149,6 +149,9 @@ model run and in subsequent steps the model moves and weathers elements.
 .. autoclass:: NetCDFOutput
     :members:
     :show-inheritance:
+.. autoclass:: KMZOutput
+    :members:
+    :show-inheritance:
 .. autoclass:: TrajectoryGeoJsonOutput
     :members:
     :show-inheritance:
@@ -171,6 +174,19 @@ model run and in subsequent steps the model moves and weathers elements.
 .. automodule:: gnome.utilities.orderedcollection
     :members:
     :show-inheritance:
+.. automodule:: gnome.utilities.map_canvas
+    :members:
+    :show-inheritance:
+.. automodule:: gnome.utilities.projections
+    :members:
+    :show-inheritance:
+.. automodule:: gnome.utilities.inf_datetime
+    :members:
+    :show-inheritance:
+.. automodule:: gnome.utilities.cache
+    :members:
+    :show-inheritance:
+
 
 
 ``gnome.persist`` -- PyGnome persistance classes

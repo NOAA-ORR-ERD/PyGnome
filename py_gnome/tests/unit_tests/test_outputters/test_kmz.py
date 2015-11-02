@@ -155,14 +155,13 @@ def test_on_timestep_kml():
     ]
 
     kml = kmz_templates.build_one_timestep(floating_positions,
-                                     beached_positions,
-                                     '2015-10-23T14:00:00',
-                                     '2015-10-23T15:00:00',
-                                     uncertain=True,
-                                     )
-
-    #print kml
+                                           beached_positions,
+                                           '2015-10-23T14:00:00',
+                                           '2015-10-23T15:00:00',
+                                           uncertain=True,
+                                           )
     assert True
+
 
 
 

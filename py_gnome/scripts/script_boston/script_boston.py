@@ -51,7 +51,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                            raster_size=2048*2048 # about 4 MB
                            )
 
-    renderer = Renderer(mapfile, images_dir, size=(800, 800),
+    renderer = Renderer(mapfile,
+                        images_dir,
+                        size=(800, 800),
                         projection_class=GeoProjection)
 
     print 'initializing the model'
@@ -72,7 +74,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     scripting.remove_netcdf(netcdf_file)
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
-    model.outputters += KMZOutput(os.path.join(base_dir, 'script_boston.kml'))
+    model.outputters += KMZOutput(os.path.join(base_dir, 'script_boston.kmz'))
 
     print 'adding a RandomMover:'
     model.movers += RandomMover(diffusion_coef=100000)
