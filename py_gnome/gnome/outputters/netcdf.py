@@ -194,11 +194,15 @@ class NetCDFOutput(Outputter, Serializable):
             store the NetCDF data.
         :type netcdf_filename: str. or unicode
 
-        :param which_data: If 'all', write all data to NetCDF.
+        :param which_data='standard':
             If 'standard', write only standard data.
-            Not sure what 'most' means.
+            If 'most' means, write everything except the attributes we know are
+            for internal model use.
+            If 'all', write all data to NetCDF -- usually only for diagnostics.
             Default is 'standard'.
-        :type which_data: {'standard', 'most', 'all'}
+            These are defined in the standard_arrays and usually_skipped_arrays
+            attributes
+        :type which_data: string -- one of {'standard', 'most', 'all'}
 
         Optional arguments passed on to base class (kwargs):
 
@@ -221,7 +225,7 @@ class NetCDFOutput(Outputter, Serializable):
 
         use super to pass optional kwargs to base class __init__ method
         """
-        self._check_netcdf_filename(netcdf_filename)
+        self._check_filename(netcdf_filename)
         self._netcdf_filename = netcdf_filename
 
         # uncertain file is only written out if model is uncertain
@@ -348,30 +352,6 @@ class NetCDFOutput(Outputter, Serializable):
     def netcdf_format(self):
         return self._format
 
-    def _check_netcdf_filename(self, netcdf_filename):
-        'basic checks to make sure the netcdf_filename is valid'
-        if os.path.isdir(netcdf_filename):
-            raise ValueError('netcdf_filename must be a file not a directory.')
-
-        if not os.path.exists(os.path.realpath(os.path.dirname(netcdf_filename)
-                                               )):
-            raise ValueError('{0} does not appear to be a valid path'
-                             .format(os.path.dirname(netcdf_filename)))
-
-    def _nc_file_exists_error(self, file_):
-        """
-        invoked by prepare_for_model_run. If file already exists, it will raise
-        this error.
-
-        Do this in prepare_for_model_run, because user may want to define the
-        model and run it in batch mode. This will allow netcdf_outputter to be
-        created, but the first time it tries to write this file, it will check
-        and raise an error if file exists
-        """
-        if os.path.exists(file_):
-            raise ValueError('{0} file exists. Enter a filename that '
-                             'does not exist in which to save data.'
-                             .format(file_))
 
     def _update_var_attributes(self, spills):
         '''
@@ -487,7 +467,7 @@ class NetCDFOutput(Outputter, Serializable):
             else:
                 file_ = self.netcdf_filename
 
-            self._nc_file_exists_error(file_)
+            self._file_exists_error(file_)
 
             # create the netcdf files and write the standard stuff:
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
@@ -645,10 +625,14 @@ class NetCDFOutput(Outputter, Serializable):
 
         here in case it needs to be called from elsewhere
         '''
-        if os.path.exists(self.netcdf_filename):
-            os.remove(self.netcdf_filename)
-        if (os.path.exists(self._u_netcdf_filename)):
+        try:
+          os.remove(self.netcdf_filename)
+        except OSError:
+            pass # it must not be there
+        try:
             os.remove(self._u_netcdf_filename)
+        except OSError:
+            pass # it must not be there
 
     def rewind(self):
         '''

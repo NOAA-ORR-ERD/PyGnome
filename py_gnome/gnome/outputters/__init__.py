@@ -6,6 +6,7 @@ from weathering import WeatheringOutput
 from geo_json import (TrajectoryGeoJsonOutput,
                       CurrentGeoJsonOutput,
                       IceGeoJsonOutput)
+from kmz import KMZOutput
 
 __all__ = [BaseSchema,
            Outputter,
@@ -16,4 +17,6 @@ __all__ = [BaseSchema,
            WeatheringOutput,
            TrajectoryGeoJsonOutput,
            CurrentGeoJsonOutput,
-           IceGeoJsonOutput]
+           IceGeoJsonOutput,
+           KMZOutput,
+           ]
