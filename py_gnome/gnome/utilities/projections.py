@@ -105,13 +105,16 @@ class GeoProjection(object):
 
         Projection(bounding_box, image_size)
 
-        :param bounding_box: the bounding box of the map:
-           ( (min_long, min_lat),
-             (max_lon,  max_lat) )
+        :param bounding_box: the bounding box of the map, in the
+                             form::
+
+                                ( (min_long, min_lat),
+                                  (max_lon,  max_lat) )
 
         (or a BoundingBox Object)
 
         :param image_size: the size of the map image -- (width, height)
+
         """
 
         self.center = None
@@ -128,8 +131,11 @@ class GeoProjection(object):
         or the size of the image is changed
 
         :param bounding_box: bounding box of the visual portion of the map
-                             in the form:  ( (min_long, min_lat),
-                                             (max_long, max_lat) )
+                             in the form::
+
+                               ( (min_long, min_lat),
+                                 (max_long, max_lat) )
+
         :param image_size=None: the size of the image that will be drawn to.
                                 if not given, the previous size will be used.
         """
@@ -161,20 +167,21 @@ class GeoProjection(object):
 
     def to_pixel(self, coords, asint=False):
         """
-
         converts input coordinates to pixel coords
 
-        param: coords --  an array of coordinates:
-          NX3: ( (long1, lat1, z1),
-                 (long2, lat2, z2),
-                 (long3, lat3, z3),
-                 .....
-                )
+        param: coords --  an array of coordinates -- NX3::
+
+                 ( (long1, lat1, z1),
+                   (long2, lat2, z2),
+                   (long3, lat3, z3),
+                    ...
+                 )
+
         (z is ignored, and there is no z in the returned array)
 
         returns:  the pixel coords as a similar Nx2 array of integer
-                  x,y coordinates
-                  (using the y = 0 at the top, and y increasing down)
+                  x, y coordinates (using the y = 0 at the top, and y
+                  increasing down)
 
         NOTE: the values between the minimum of a pixel value to less than the
               max of a pixel range are in that pixel, so  a point exactly at
@@ -235,12 +242,15 @@ class GeoProjection(object):
         """
         converts pixel coords to long-lat coords
 
-        param: coords  - an array of pixel coordinates (usually integer type)
-           NX2: ( (long1, lat1),
-                  (long2, lat2),
-                  (long3, lat3),
-                 .....
-                )
+        :param coords:  an array of pixel coordinates (usually integer type)
+                 NX2::
+
+                     ( (long1, lat1),
+                       (long2, lat2),
+                       (long3, lat3),
+                        ...
+                      )
+
          (as produced by to_pixel)
 
         NOTE: there is not depth in input -- pixels are always 2-d!
@@ -248,9 +258,9 @@ class GeoProjection(object):
         Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.
         If the input is integers, a 0.5 is added to "shift" the location to
         mid-pixel.
-        returns:  the pixel coords as a similar Nx2 array of floating point
-                  x,y coordinates
-                  (using the y = 0 at the top, and y increasing down)
+
+        :returns:  the pixel coords as a similar Nx2 array of floating point
+                   x,y coordinates (using the y = 0 at the top, and y increasing down)
         """
         coords = np.asarray(coords)
         if np.issubdtype(coords.dtype, int):
@@ -405,8 +415,11 @@ class FlatEarthProjection(GeoProjection):
         or the size of the image is changed
 
         :param bounding_box: bounding box of the visual portion of the map
-                             in the form:  ( (min_long, min_lat),
-                                             (max_long, max_lat) )
+                             in the form::
+
+                                 ( (min_long, min_lat),
+                                   (max_long, max_lat) )
+
         :param image_size=None: the size of the image that will be drawn to.
                                 if not given, the previous size will be used.
         """
@@ -441,7 +454,7 @@ class FlatEarthProjection(GeoProjection):
 
 class RectangularGridProjection(NoProjection):
     """
-    projection for lat-lon to pixel and back for a recatngular but not regular
+    projection for lat-lon to pixel and back for a rectangular but not regular
     grid.
 
     i.e a rectangular grid that can be defined by a single vector each of
@@ -515,7 +528,7 @@ class RectangularGridProjection(NoProjection):
 
     def to_pixel(self, coords, asint=False):
         """
-        returns the pixel coordintes in the gird for teh given lat-lon location
+        returns the pixel coordinates in the grid for the given lat-lon location
 
         :param coords: -- the coords to project
                           (Nx3 numpy array or compatible sequence)
@@ -570,22 +583,25 @@ class RectangularGridProjection(NoProjection):
         """
         converts pixel coords to long-lat coords
 
-        param: coords  - an array of pixel coordinates (usually integer type)
-           NX2: ( (long1, lat1),
-                  (long2, lat2),
-                  (long3, lat3),
-                 .....
-                )
-         (as produced by to_pixel)
+        :param coords:  an array of pixel coordinates (usually integer type)
+                        NX2::
 
-        NOTE: there is not depth in input -- pixels are always 2-d!
+                            ( (long1, lat1),
+                              (long2, lat2),
+                              (long3, lat3),
+                               ...
+                            )
+
+                        (as produced by to_pixel)
+
+        NOTE: there is no depth in input -- pixels are always 2-d!
 
         Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.
         If the input is integers, a 0.5 is added to "shift" the location
         to mid-pixel.
-        returns: the pixel coords as a similar Nx2 array of floating point
-                 x,y coordinates
-                 (using the y = 0 at the top, and y increasing down)
+
+        :returns: the pixel coords as a similar Nx2 array of floating point
+                  x,y coordinates (using the y = 0 at the top, and y increasing down)
          """
         coords = np.asarray(coords).reshape((-1, 2))
 
@@ -625,8 +641,11 @@ class RegularGridProjection(GeoProjection):
         or the size of the image is changed
 
         :param bounding_box: bounding box of the visual portion of the map
-                             in the form:  ( (min_long, min_lat),
-                                             (max_long, max_lat) )
+                             in the form::
+
+                                 ( (min_long, min_lat),
+                                   (max_long, max_lat) )
+
         :param image_size=None: the size of the image that will be drawn to.
                                 if not given, the previous size will be used.
         """

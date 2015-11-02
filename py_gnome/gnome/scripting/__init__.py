@@ -1,6 +1,9 @@
 """
-Scripting package for GNOME with assorted utilities that make it easier to write scripts.
-Helper functions are imported from various py_gnome modules (spill, environment, movers etc).
+Scripting package for GNOME with assorted utilities that make it easier to
+write scripts.
+
+Helper functions are imported from various py_gnome modules
+(spill, environment, movers etc).
 
 """
 from .utilities import *

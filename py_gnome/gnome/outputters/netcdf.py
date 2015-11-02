@@ -1,6 +1,5 @@
 '''
-NetCDF outputter - follows the interface defined by gnome.Outputter for a
-NetCDF output writer
+NetCDF outputter - write the nc_particles netcdf file format
 '''
 
 import copy
@@ -117,11 +116,12 @@ class NetCDFOutput(Outputter, Serializable):
                 os.path.join(base_dir,'sample_model.nc'), which_data='most')
 
     `which_data` flag is used to set which data to add to the netcdf file:
+
     'standard' : the basic stuff most people would want
-    'most': everything the model is tracking except the internal-use-only
-        arrays
-    'all': everything tracked by the model (mostly used for diagnostics of
-        save files)
+
+    'most': everything the model is tracking except the internal-use-only arrays
+
+    'all': everything tracked by the model (mostly used for diagnostics of save files)
 
 
     .. note::
@@ -131,7 +131,7 @@ class NetCDFOutput(Outputter, Serializable):
        The attribute: `.arrays_to_output` is a set of the data arrays that
        will be added to the netcdf file. array names may be added to or removed
        from this set before a model run to customize what gets output:
-            `the_netcdf_outputter.arrays_to_output.add['rise_vel']`
+       `the_netcdf_outputter.arrays_to_output.add['rise_vel']`
 
        Since some of the names of the netcdf variables are different from the
        names in the SpillContainer data_arrays, this list uses the netcdf names
@@ -449,7 +449,7 @@ class NetCDFOutput(Outputter, Serializable):
 
         .. note::
             Does not take any other input arguments; however, to keep the
-            interface the same for all outputters, define kwargs in case
+            interface the same for all outputters, define ``**kwargs`` in case
             future outputters require different arguments.
 
         use super to pass model_start_time, cache=None and

@@ -33,8 +33,9 @@ class NormalDistributionSchema(ObjType):
 class LogNormalDistributionSchema(NormalDistributionSchema):
     '''
         Same parameters as Normal
-        - keep in its own class since serialize/deserialize automatically
-          looks for this class name. Helps keep things consistent.
+
+        keep in its own class since serialize/deserialize automatically
+        looks for this class name. Helps keep things consistent.
     '''
     name = 'lognormal'
 

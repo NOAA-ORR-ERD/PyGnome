@@ -110,7 +110,7 @@ class Outputter(Serializable):
         Do what you need to do to prepare.
 
         :param model_start_time: (Required) start time of the model run. NetCDF
-            time units calculated with respect to this time.
+                                 time units calculated with respect to this time.
         :type model_start_time: datetime.datetime object
 
         :param spills: (Required) model.spills object (SpillContainerPair)
@@ -122,16 +122,17 @@ class Outputter(Serializable):
         Optional argument - in case cache needs to be updated
 
         :param cache=None: Sets the cache object to be used for the data.
-            If None, it will use the one already set up.
+                           If None, it will use the one already set up.
         :type cache: As defined in cache module (gnome.utilities.cache).
-            Currently only ElementCache is defined/used.
+                     Currently only ElementCache is defined/used.
 
-        also added **kwargs since a derived class like NetCDFOutput could
+        also added ``**kwargs`` since a derived class like NetCDFOutput could
         require additional variables.
 
         .. note:: base class doesn't use model_start_time or spills, but
-        multiple outputters need spills and netcdf needs model_start_time,
-        so just set them here
+            multiple outputters need spills and netcdf needs model_start_time,
+            so just set them here
+
         """
         #check for required parameters -- they are None so that they can be out of order
         # this breaks tests -- probably should fix the tests...
@@ -160,7 +161,8 @@ class Outputter(Serializable):
         Do what you need to do to prepare for a new model step
 
         base class method checks to see if data for model_time should be output
-        Set self._write_step flag to true if:
+        Set self._write_step flag to true if::
+
             model_time < self._dt_since_lastoutput <= model_time + time_step
 
         It also updates the _dt_since_lastoutput internal variable if the data
@@ -170,8 +172,8 @@ class Outputter(Serializable):
         :param model_time: current model time as datetime object
 
         .. note:: The write_output() method will be called after the Model
-        calls model_step_is_done(). Let's set the _write_step flag here and
-        update the _dt_since_lastoutput variable
+           calls model_step_is_done(). Let's set the _write_step flag here and
+           update the _dt_since_lastoutput variable
 
         """
         if self._output_timestep is not None:
@@ -242,8 +244,8 @@ class Outputter(Serializable):
 
         Optional argument - depending on the outputter, the following maybe
         required. For instance, the 'spills' are required by NetCDFOutput,
-        GeoJson, but not Renderer in prepare_for_model_run(). The **kwargs here
-        are those required by prepare_for_model_run() for an outputter
+        GeoJson, but not Renderer in prepare_for_model_run(). The ``**kwargs``
+        here are those required by prepare_for_model_run() for an outputter
 
         :param cache=None: Sets the cache object to be used for the data.
             If None, it will use the one already set up.

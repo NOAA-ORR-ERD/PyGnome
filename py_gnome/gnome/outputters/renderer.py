@@ -204,7 +204,7 @@ class Renderer(Outputter, MapCanvas):
         Parameters passed to base class (use super): model_start_time, cache
 
         Does not take any other input arguments; however, to keep the interface
-        the same for all outputters, define **kwargs and pass into base class
+        the same for all outputters, define ``**kwargs`` and pass into base class
 
         In this case, it draws the background image and clears the previous
         images. If you want to save the previous images, a new output dir
@@ -331,7 +331,7 @@ class Renderer(Outputter, MapCanvas):
 
     def save(self, saveloc, references=None, name=None):
         '''
-        update the 'images_dir' key in the json_ to point to directory
+        update the ``images_dir`` key in the ``json_`` to point to directory
         inside saveloc, then save the json - do not copy image files or
         image directory over
         '''

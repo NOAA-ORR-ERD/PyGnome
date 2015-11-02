@@ -25,11 +25,7 @@ def make_map(bna_filename, png_filename, image_size=(500, 500)):
     param: bna_filename -- file name of BNA file to draw map from
     param: png_filename -- file name of PNG file to write out
     param: image_size=(500,500) -- size of image (width, height) tuple
-    param: format='RGB' -- format of image.
-                           Options are:
-                           - 'RGB'
-                           - 'palette'
-                           - 'B&W'
+    param: format='RGB' -- format of image. Options are: 'RGB','palette','B&W'
     """
     # print "Reading input BNA"
 
@@ -52,7 +48,7 @@ class MapCanvas(object):
 
     This version uses a paletted image
 
-    Note: For now - this is not serializable. Change if required in the future
+    .. note: For now - this is not serializable. Change if required in the future
     """
 
     # a bunch of constants -- maybe they should be settable, but...
@@ -82,27 +78,24 @@ class MapCanvas(object):
 
         :param image_size: (width, height) tuple of the image size in pixels
 
-        Optional parameter:
-        :param land_polygons: a PolygonSet
-                             (gnome.utilities.geometry.polygons.PolygonSet)
-                             used to define the map.
-                             If this is None, MapCanvas has no land.
-                             Set during object creation.
+        :param land_polygons: a PolygonSet (gnome.utilities.geometry.polygons.PolygonSet)
+                used to define the map. If this is None, MapCanvas has no land. Set
+                during object creation.
 
         Optional parameters (kwargs)
+
         :param projection_class: gnome.utilities.projections class to use.
-                                 Default is
-                                 gnome.utilities.projections.FlatEarthProjection
-        :param map_BB: map bounding box.
-                       Default is to use land_polygons.bounding_box.
+                                 Default is gnome.utilities.projections.FlatEarthProjection
+
+        :param map_BB: map bounding box. Default is to use land_polygons.bounding_box.
                        If land_polygons is None, then this is the whole world,
                        defined by ((-180,-90),(180, 90))
-        ## :param viewport: viewport of map -- what gets drawn and on what
-                            scale. Default is to set viewport = map_BB
-        :param image_mode: Image mode ('P' for palette or 'L' for
-                           Black and White image)
-                           BW_MapCanvas inherits from MapCanvas and sets the
-                           mode to 'L'
+
+        :param viewport: viewport of map -- what gets drawn and on what
+                         scale. Default is to set viewport = map_BB
+
+        :param image_mode: Image mode ('P' for palette or 'L' for Black and White image)
+                           BW_MapCanvas inherits from MapCanvas and sets the mode to 'L'
                            Default image_mode is 'P'.
         """
         self.image_size = image_size
