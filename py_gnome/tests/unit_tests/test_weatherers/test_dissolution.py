@@ -45,7 +45,7 @@ def test_sort_order():
     waves = Waves(wind, Water())
     d = Dissolution(waves)
 
-    assert weatherer_sort(d) == 6
+    assert weatherer_sort(d) == 8
 
 
 @pytest.mark.xfail
