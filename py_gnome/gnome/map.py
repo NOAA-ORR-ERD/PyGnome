@@ -1,3 +1,5 @@
+from gnome.utilities.projections import FlatEarthProjection
+from numpy import deg2rad
 
 ###fixme:
 ### needs some refactoring -- more clear distinction between public and
@@ -110,10 +112,10 @@ class GnomeMap(Serializable):
                     dtype=np.float64).reshape(-1, 2)
         else:
             # using -360 to 360 to allow stuff to cross the dateline..
-            self.map_bounds = np.array(((-360, 90),
+            self.map_bounds = np.array(((-360, -90),
+                                        (-360, 90),
                                         (360, 90),
-                                        (360, -90),
-                                        (-360, -90)),
+                                        (360, -90)),
                                        dtype=np.float64)
 
         if spillable_area is None:
@@ -137,6 +139,7 @@ class GnomeMap(Serializable):
         polys['spillable_area'] = self.spillable_area
         polys['map_bounds'] = self.map_bounds
         polys['land_polys'] = self.land_polys
+        return polys
     
     def _polygon_set_from_points(self, poly):
         '''
@@ -334,24 +337,32 @@ class Param_Map(GnomeMap):
         center = (center[0], center[1], 0)
         distance = (distance, 0, 0)
         d = FlatEarthProjection.meters_to_lonlat(distance, center)[0][0]
-        init_points = [(720,720),(720,-720),(d,-720),(d,720)]
+        init_points = [(d,-720),(d,720),(720,720),(720,-720)]
+#         init_points = [(d,-20),(d,20),(20,20),(20,-20)]
         ang = deg2rad(90 - bearing)
         rot_matrix = [(np.cos(ang), np.sin(ang)),(-np.sin(ang),np.cos(ang))]
         self.land_points = np.dot(init_points, rot_matrix)
         self.land_points = np.array([(x + center[0], y + center[1]) for (x,y) in self.land_points])
-        land_polys = PolygonSet(self.land_points)
-        map_bounds = np.array(((center[0] - 3*d, center[1] + 3*d),
-                                        (center[0] + 3*d, center[1] + 3*d),
-                                        (center[0] + 3*d, center[1] - 3*d),
-                                        (center[0] - 3*d, center[1] - 3*d)),
+        land_polys = PolygonSet((self.land_points,[0,4],[]))
+        land_polys._MetaDataList = [('polygon','1','1')]
+        map_bounds = np.array(((-360, -90),
+                                        (-360, 90),
+                                        (360, 90),
+                                        (360, -90)),
                                        dtype=np.float64)
+
+#         map_bounds = np.array(((center[0] - 3*d, center[1] + 3*d),
+#                                         (center[0] + 3*d, center[1] + 3*d),
+#                                         (center[0] + 3*d, center[1] - 3*d),
+#                                         (center[0] - 3*d, center[1] - 3*d)),
+#                                        dtype=np.float64)
         self._refloat_halflife = 0.5
         
         
-        GnomeMap.__init__(self, map_bounds=map_bounds)
+        GnomeMap.__init__(self, map_bounds=map_bounds, land_polys=land_polys)
     
     def get_map_bounds(self):
-        return (self.map_bounds[1], self.map_bounds[3])
+        return (self.map_bounds[0], self.map_bounds[2])
     
     def get_land_polygon(self):
         poly = PolygonSet((self.land_points,[0,4],[]))
@@ -430,28 +441,6 @@ class Param_Map(GnomeMap):
         # let model decide if we want to remove elements marked as off-map
         status_codes[off_map] = oil_status.off_maps
     
-    #line intersection on each numpy element 
-    def find_land_intersection(self, starts, ends):
-        lines = np.array(zip(starts, ends)) #each index is (x1,y1,x2,y2)
-        sl = [self.land_points[2], self.land_points[3]]
-        [x1, y1], [x2, y2] = sl[0], sl[1]
-        a = sl[1] - sl[0]
-        
-        inters = np.ndarray((ends.shape[0],3), dtype = np.float64)
-        for i in range(0,lines.shape[0]):
-            p1 = lines[i][0]
-            p2 = lines[i][1]
-            [x3,y3],[x4,y4] = p1[0:2],p2[0:2]
-            b = p2[0:2] - p1[0:2]
-            den = a[0]*b[1] - b[0]*a[1]
-            if (den is 0):
-                raise ValueError("den is 0")
-            u = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3))/den
-            v = y1 + u * (y2-y1)
-            inters[i] = [u,v,0]
-        
-        return inters
-    
     def find_last_water_pos(self,starts, ends):
         return starts + (ends-starts) * 0.000001
     
@@ -486,7 +475,7 @@ class Param_Map(GnomeMap):
         
         # beached = 1xN numpy array of bool, elem is true if on water and next pos is on land
         new_beached = ((status_codes == oil_status.in_water) * self.on_land(next_pos))
-        land = np.array((self.land_points[2], self.land_points[3]))
+        land = np.array((self.land_points[0], self.land_points[1]))
         do_landings(start_pos, next_pos, status_codes, last_water_positions, new_beached, land)
         #status_codes[new_beached] = oil_status.on_land
          
@@ -600,11 +589,11 @@ class RasterMap(GnomeMap):
 
         self.basebitmap = np.ascontiguousarray(bitmap_array)
         if self.basebitmap.size > 16000000:
-            self.ratios = np.array((256,32,1,))
+            self.ratios = np.array((256,32,1,), dtype=np.int32)
         elif self.basebitmap.size > 1000000:
-            self.ratios = np.array((64,8,1,))
+            self.ratios = np.array((64,8,1,), dtype=np.int32)
         else :
-            self.ratios = np.array((32,1,))
+            self.ratios = np.array((32,1,), dtype=np.int32)
         self.build_coarser_bitmaps()
         self.projection = projection
 

@@ -137,8 +137,8 @@ class MapCanvas(object):
         if BB is None:
             self._viewport.center = center
             distances = self.projection.meters_to_lonlat((width, height, 0), (center[0], center[1],0))
-            self._viewport.width = distances[0]
-            self._viewport.height = distances[1]
+            self._viewport.width = distances[0][0]
+            self._viewport.height = distances[0][1]
         else:
             self._viewport.BB = BB
             
@@ -290,7 +290,7 @@ class MapCanvas(object):
         """
         points = self.projection.to_pixel_2D(points, asint=True)
         img = self.back_image if background else self.fore_image
-
+#         print points
         img.draw_polygon(points,
                          line_color=line_color,
                          fill_color=fill_color,

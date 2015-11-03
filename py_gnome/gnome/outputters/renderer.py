@@ -188,9 +188,12 @@ class Renderer(Outputter, MapCanvas):
         projection = projections.FlatEarthProjection() if projection is None else projection
         # set up the canvas
         self.map_filename = map_filename
+        self.output_dir=output_dir
 
-        if map_filename is not None:
+        if map_filename is not None and land_polygons is None:
             self.land_polygons = haz_files.ReadBNA(map_filename, 'PolygonSet')
+        elif land_polygons is not None:
+            self.land_polygons = land_polygons
         else:
             self.land_polygons = [] # empty list so we can loop thru it
 

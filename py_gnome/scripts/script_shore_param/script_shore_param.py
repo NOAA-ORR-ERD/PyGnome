@@ -37,21 +37,23 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
     model = Model(start_time=start_time, duration=timedelta(days=3),
                   time_step=3600, uncertain=False)
 
-    mapfile = get_datafile(os.path.join(base_dir, 'mariana_island.bna'))
 
     print 'adding the map'
-    p_map = model.map = Param_Map(center = (145.25,15.0), distance=20000, bearing = 35 )  # hours
+    p_map = model.map = Param_Map(center = (0,0), distance=20000, bearing = 20 )  # hours
 
     #
     # Add the outputters -- render to images, and save out as netCDF
     #
 
     print 'adding renderer'
-    model.outputters += Renderer( images_dir=img_dir,
-                                 size=(800, 600),
+    rend = Renderer( output_dir=img_dir,
+                                 image_size=(800, 600),
                                  map_BB=p_map.get_map_bounds(),
-                                 land_polygons=p_map.get_land_polygon()
+                                 land_polygons=p_map.get_land_polygon(),
                                  )
+    
+    rend.graticule.set_DMS(True)
+    model.outputters += rend
 #                                 draw_back_to_fore=True)
 
     # print "adding netcdf output"
@@ -67,14 +69,14 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
     model.movers += RandomMover(diffusion_coef=10000)
 
     print 'adding a simple wind mover:'
-    model.movers += constant_wind_mover(5, 315, units='m/s')
+    model.movers += constant_wind_mover(15, 225, units='m/s')
 
     print 'adding a current mover:'
 
-    # # this is HYCOM currents
-    curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
-    model.movers += GridCurrentMover(curr_file,
-                                     num_method=numerical_methods.euler);
+#     # # this is HYCOM currents
+#     curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
+#     model.movers += GridCurrentMover(curr_file,
+#                                      num_method=numerical_methods.euler);
 
     # #
     # # Add some spills (sources of elements)
@@ -82,7 +84,7 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
 
     print 'adding four spill'
     model.spills += point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
-                                             start_position=(145.25, 15.0,
+                                             start_position=(0.0,0.0,
                                                              0.0),
                                              release_time=start_time)
 
@@ -92,7 +94,9 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
 if __name__ == '__main__':
     scripting.make_images_dir()
     model = make_model()
+    rend = model.outputters[0]
     for step in model:
+        rend.zoom(0.9)
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     # model.full_run(log=True)
