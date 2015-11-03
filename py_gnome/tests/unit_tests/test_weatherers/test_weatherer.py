@@ -6,8 +6,7 @@ Unit tests for the Weatherer classes
 
 from datetime import datetime
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome.utilities.inf_datetime import InfDateTime
 

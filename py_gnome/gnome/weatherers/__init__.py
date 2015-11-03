@@ -6,6 +6,7 @@ from weathering_data import WeatheringData
 from cleanup import Skimmer, Burn, ChemicalDispersion
 from manual_beaching import Beaching
 from spreading import Langmuir, FayGravityViscous, ConstantArea
+from dissolution import Dissolution
 
 __all__ = [Weatherer,
            HalfLifeWeatherer,
@@ -19,7 +20,8 @@ __all__ = [Weatherer,
            WeatheringData,
            FayGravityViscous,
            ConstantArea,
-           Langmuir]
+           Langmuir,
+           Dissolution]
 
 
 def weatherer_sort(weatherer):
@@ -67,6 +69,9 @@ def weatherer_sort(weatherer):
 
     if isinstance(weatherer, (NaturalDispersion,)):
         return 4
+
+    if isinstance(weatherer, (Dissolution,)):
+        return 6
 
     if isinstance(weatherer, (Emulsification,)):
         return 8
