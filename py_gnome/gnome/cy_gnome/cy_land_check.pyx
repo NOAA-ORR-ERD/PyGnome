@@ -20,7 +20,7 @@ def overlap_grid(int32_t m, int32_t n, pt1, pt2):
     """
     check if the line segment from pt1 to pt could overlap the grid of
     size (m,n).
-    
+
     returns True is both points are all the way to the left, right top or bottom of the grid
 
     This version calls the cdef version -- jsut so we do'nt ahve to do teh tuple unpacking
@@ -44,16 +44,16 @@ cdef int32_t c_overlap_grid(int32_t m,
     """
     check if the line segment from pt1 to pt could overlap the grid of
     size (m,n).
-    
+
     returns True is both points are all the way to the left, right top or bottom of the grid
 
     """
     if x1 < 0 and x2 < 0: # both left
         return 0
-    elif y1 < 0 and y2 < 0: # both below 
+    elif y1 < 0 and y2 < 0: # both below
         return 0
     elif x1 >= m and x2 >= m: # both right
-        return 0 
+        return 0
     elif y1 >= n and y2 >= n: # both above
         return 0
     else:
@@ -85,7 +85,7 @@ cdef bool c_find_first_pixel( uint8_t* grid,
     #Set it up to march in the right direction depending on slope.
 
     dx = abs(x1-x0)
-    dy = abs(y1-y0) 
+    dy = abs(y1-y0)
     if x0 < x1:
         sx = 1
     else:
@@ -97,7 +97,7 @@ cdef bool c_find_first_pixel( uint8_t* grid,
     err = dx-dy
     # check the first point
     if not (x0 < 0 or x0 >= m or y0 < 0 or y0 >= n):#  is the point off the grid? if so, it's not land!
-        ##fixme: we should never be starting on land! 
+        ##fixme: we should never be starting on land!
         ## should this raise an Error instead ?
         if grid[x0 * n + y0] == 1: #we've hit "land"
             prev_x[0] = x0
@@ -106,7 +106,7 @@ cdef bool c_find_first_pixel( uint8_t* grid,
             hit_y[0] = y0
             return True
             #return (x0, y0), (x0, y0)
-    
+
     while True: #keep going till hit land or the final point
         if x0 == x1 and y0 == y1:
             break
@@ -146,9 +146,9 @@ cdef bool c_find_first_pixel( uint8_t* grid,
                     pt2_x = x0-sx
                     pt2_y = y0
                     try: # replace with real check???
-                        if ( (grid[pt1_x * n + pt1_y] == 1) and #is the y-adjacent point on land? 
+                        if ( (grid[pt1_x * n + pt1_y] == 1) and #is the y-adjacent point on land?
                              (grid[pt2_x * n + pt2_y] == 1)     #is the x-adjacent point on land?
-                            ): 
+                            ):
                             hit_x[0] = pt1_x # we have to pick one -- this is arbitrary
                             hit_y[0] = pt1_y # we have to pick one -- this is arbitrary
                             #return (*prev_x, *prev_y), (*hit_x, *hit_y)
@@ -172,30 +172,30 @@ def find_first_pixel(grid, pt1, pt2):
     """
     This finds the first non-zero pixel that is is encountered when followoing
     a line from pt1 to pt2.
-    
+
     param: grid  -- a numpy integer array -- the raster were'e working with
            zero eveywhere there is not considered a "hit"
-    param: pt1 -- the start point -- an integer (i,j) tuple     
+    param: pt1 -- the start point -- an integer (i,j) tuple
     param: pt2 -- the end point   -- an integer (i,j) tuple
-    
+
     return: None if land is not hit
             (previous_pt, hit_point) if land is hit
-    
+
     This is an adaptation of "Bresenham's line algorithm":
-    
+
    (http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm)
-    
+
     Usually used for drawing lines in graphics.  It's been adapted to do an
     extra check when the algorythm puts two points diagonal to each-other, so
     as to avoid an exact match with a diagonal line of land skipping thorough.
     If _both_ the points diagonal to the move are land, it is considered a hit.
-    
+
     """
 
     cdef int32_t m, n
     m, n = grid.shape
 
-    cdef int32_t  prev_x, prev_y, hit_x, hit_y  
+    cdef int32_t  prev_x, prev_y, hit_x, hit_y
 
     cdef int32_t x1 = pt1[0]
     cdef int32_t y1 = pt1[1]
@@ -234,13 +234,13 @@ def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
                cnp.ndarray[int32_t, ndim=2, mode='c'] last_water_positions not None):
         """
         do the actual land-checking
-                
+
         status_codes, positions and last_water_positions are altered in place.
-        
+
         NOTE: these are the integer versions -- having already have been projected to the raster coordinates
 
         """
-        cdef int32_t  prev_x, prev_y, hit_x, hit_y  
+        cdef int32_t  prev_x, prev_y, hit_x, hit_y
         cdef uint32_t i, num_le
         cdef int32_t m, n
         cdef bool did_hit
@@ -252,7 +252,7 @@ def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
         for i in range(num_le):
             if status_codes[i] == type_defs.OILSTAT_ONLAND:
                 continue
-            
+
 #             did_hit = c_find_first_pixel(grid.data,
 #                                          m,
 #                                          n,
@@ -288,9 +288,9 @@ def check_land_layers(grid_layers,
                 cnp.ndarray[int32_t, ndim=2, mode='c'] last_water_positions):
         """
         do the actual land-checking
-                
+
         status_codes, positions and last_water_positions are altered in place.
-        
+
         NOTE: these are the integer versions -- having already have been projected to the raster coordinates
 
         """
@@ -305,16 +305,16 @@ def check_land_layers(grid_layers,
         cdef uint8_t** dataptrs = <uint8_t**> PyMem_Malloc(num_ratios*sizeof(uint8_t *))
         cdef int32_t* widths = <int32_t*> PyMem_Malloc(num_ratios*sizeof(int32_t))
         cdef int32_t* heights = <int32_t*> PyMem_Malloc(num_ratios*sizeof(int32_t))
-        
-        cdef cnp.ndarray[uint8_t, ndim=2, mode="c"] grid_arr 
+
+        cdef cnp.ndarray[uint8_t, ndim=2, mode="c"] grid_arr
         for i in range(num_ratios):
             grid_arr = grid_layers[i]
             widths[i] = grid_layers[i].shape[0]
             heights[i] = grid_layers[i].shape[1]
             dataptrs[i] = &grid_arr[0,0]
-            
+
         num_le = positions.shape[0]
-        
+
         for i in range(num_le):
 #             print "PARTICLE %d" % i
 #             print "ABSOLUTE POS: %s" % (positions[i])
@@ -323,7 +323,7 @@ def check_land_layers(grid_layers,
             if status_codes[i] == type_defs.OILSTAT_ONLAND:
                 continue
 
-            layer = 0                
+            layer = 0
             #begin the walk. If a hit is registered on the current grid, drop down one level and continue the walk.
             #If a hit is registered on the lowest level, then LE has landed.
             while True:
@@ -367,7 +367,7 @@ def check_land_layers(grid_layers,
                     positions[i, 0] = end_positions[i, 0]
                     positions[i, 1] = end_positions[i, 1]
                     break
-                
+
         PyMem_Free(coarse_pos)
         PyMem_Free(coarse_end)
         PyMem_Free(dataptrs)
