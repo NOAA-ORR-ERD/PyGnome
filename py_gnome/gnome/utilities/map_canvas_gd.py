@@ -102,7 +102,7 @@ class MapCanvas(object):
         todo: this happens in multiple places so maybe worthwhile to define
         custom serialize/deserialize -- but do this for now
         '''
-        return map(tuple, self._viewport.tolist())
+        return map(tuple, self._viewport.BB)
 
     @property
     def viewport(self):
