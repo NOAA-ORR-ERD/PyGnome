@@ -431,7 +431,7 @@ class Renderer(Outputter, MapCanvas):
                                       self.foreground_filename_format
                                       .format(step_num))
 
-        self.clear_foreground
+        self.clear_foreground()
         if self.draw_back_to_fore:
             self.copy_back_to_fore()
 

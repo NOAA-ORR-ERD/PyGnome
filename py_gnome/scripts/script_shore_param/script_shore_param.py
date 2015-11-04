@@ -14,7 +14,7 @@ from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 
-from gnome.map import Param_Map
+from gnome.map import ParamMap
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
@@ -39,7 +39,7 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
 
 
     print 'adding the map'
-    p_map = model.map = Param_Map(center = (0,0), distance=20000, bearing = 20 )  # hours
+    p_map = model.map = ParamMap(center = (0,0), distance=20000, bearing = 20 )  # hours
 
     #
     # Add the outputters -- render to images, and save out as netCDF
@@ -97,6 +97,9 @@ if __name__ == '__main__':
     rend = model.outputters[0]
     for step in model:
         rend.zoom(0.9)
+        if (step['step_num'] == 33):
+            pass
+        
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     # model.full_run(log=True)

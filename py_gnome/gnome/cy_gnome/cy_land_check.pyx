@@ -130,13 +130,6 @@ cdef bool c_find_first_pixel( uint8_t* grid,
                 hit_x[0] = x0
                 hit_y[0] = y0
                 # return (*prev_x, *prev_y), (*hit_x, *hit_y)
-#                 print "hit!"
-#                 print m
-#                 print n
-#                 print x0
-#                 print y0
-#                 print x1
-#                 print y1
                 return True
             else:
                 if (e2 > -dy) and (e2 < dx): # there is a diagonal move -- test adjacent points also
@@ -157,13 +150,6 @@ cdef bool c_find_first_pixel( uint8_t* grid,
                         pass
 
     # if we get here, no hit
-#     print "miss!"
-#     print m
-#     print n
-#     print x0
-#     print y0
-#     print x1
-#     print y1
     return False
 
 
@@ -292,6 +278,8 @@ def check_land_layers(grid_layers,
         status_codes, positions and last_water_positions are altered in place.
 
         NOTE: these are the integer versions -- having already have been projected to the raster coordinates
+        
+        This version will look through multiple layers of raster map
 
         """
         cdef int32_t  prev_x, prev_y, hit_x, hit_y, cur_ratio, layer, coarse_pos_x, num_ratios
@@ -316,9 +304,6 @@ def check_land_layers(grid_layers,
         num_le = positions.shape[0]
 
         for i in range(num_le):
-#             print "PARTICLE %d" % i
-#             print "ABSOLUTE POS: %s" % (positions[i])
-#             print "ABSOLUTE END: %s" % (end_positions[i])
             #if the LE is on land, or if it starts and ends in the same water-only square on the coarsest grid, skip this LE
             if status_codes[i] == type_defs.OILSTAT_ONLAND:
                 continue
@@ -332,8 +317,6 @@ def check_land_layers(grid_layers,
                 coarse_end[0] = div(end_positions[i,0], grid_ratios[layer]).quot
                 coarse_end[1] = div(end_positions[i,1], grid_ratios[layer]).quot
                 cur_ratio = grid_ratios[layer]
-#                 m = cur_grid.shape[0]
-#                 n = cur_grid.shape[1]
                 did_hit = c_find_first_pixel(dataptrs[layer],
                                          widths[layer],
                                          heights[layer],
@@ -347,16 +330,16 @@ def check_land_layers(grid_layers,
                                          &hit_y,
                                          )
                 if did_hit:
-                    # hit on the lowest layer (confirmed land hit)
                     if layer == num_ratios - 1:
+                        # hit on the lowest layer (confirmed land hit)
                         last_water_positions[i, 0] = prev_x
                         last_water_positions[i, 1] = prev_y
                         end_positions[i,0] = hit_x
                         end_positions[i,1] = hit_y
                         status_codes[i] = type_defs.OILSTAT_ONLAND
                         break
-                    # possible hit, go down a layer and try again
                     else:
+                        # possible hit, go down a layer and try again
                         layer += 1
                         coarse_pos[0] = div(positions[i,0], grid_ratios[layer]).quot
                         coarse_pos[1] = div(positions[i,1], grid_ratios[layer]).quot
@@ -381,6 +364,11 @@ def do_landings(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not None,
                  cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] last_water_positions not None,
                  cnp.ndarray[uint8_t, ndim=1, mode='c', cast=True] new_beached not None,
                  cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] shoreline not None):
+    
+    """
+        This land checking algorithm is for use with the parameterized map, a long, straight shoreline.
+
+        """
     
     cdef cnp.float64_t x1,y1,x2,y2, x3, y3, x4, y4, a1, a2, b1, b2
     [x1, y1], [x2, y2] = shoreline[0], shoreline[1]

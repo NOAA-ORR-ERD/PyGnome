@@ -330,14 +330,28 @@ class GnomeMap(Serializable):
         np.maximum(next_positions[:, 2], 0.0, out=next_positions[:, 2])
         return None
 
-class Param_Map(GnomeMap):
+class ParamMap(GnomeMap):
     
-    def __init__(self, center = (0,0), distance = 30000, bearing = 90):
+    def __init__(self, center = (0.0,0.0), distance = 30000, bearing = 90):
+        """
+        Creates a parameratized map, essentially a straight shoreline set a certain
+        distance and bearing from a location, usually a spill.
+        It is up to the user to put the spill and the map center in the same location.
+
+        Required arguments:
+
+        :param center: tuple of coordinates describing the center point of the map
+
+        :param distance: The distance in meters the closest point on the shoreline is from the center
+
+        :param bearing: The bearing the closest point on the shoreline is from the center.
+
+        """
         #basically, direction vector to shore
         center = (center[0], center[1], 0)
-        distance = (distance, 0, 0)
+        distance = (distance, 0.0, 0)
         d = FlatEarthProjection.meters_to_lonlat(distance, center)[0][0]
-        init_points = [(d,-720),(d,720),(720,720),(720,-720)]
+        init_points = [(d,-8*d),(d,8*d),(8*d,8*d),(8*d,-8*d)]
 #         init_points = [(d,-20),(d,20),(20,20),(20,-20)]
         ang = deg2rad(90 - bearing)
         rot_matrix = [(np.cos(ang), np.sin(ang)),(-np.sin(ang),np.cos(ang))]
@@ -345,11 +359,11 @@ class Param_Map(GnomeMap):
         self.land_points = np.array([(x + center[0], y + center[1]) for (x,y) in self.land_points])
         land_polys = PolygonSet((self.land_points,[0,4],[]))
         land_polys._MetaDataList = [('polygon','1','1')]
-        map_bounds = np.array(((-360, -90),
-                                        (-360, 90),
-                                        (360, 90),
-                                        (360, -90)),
-                                       dtype=np.float64)
+        map_bounds = np.array(((-4*d, -2*d),
+                                        (-4*d, 2*d),
+                                        (4*d, 2*d),
+                                        (4*d, -2*d)),
+                                       dtype=np.float64) + (center[0], center[1])
 
 #         map_bounds = np.array(((center[0] - 3*d, center[1] + 3*d),
 #                                         (center[0] + 3*d, center[1] + 3*d),
@@ -454,15 +468,8 @@ class Param_Map(GnomeMap):
         :param sc: current SpillContainer
         :type sc:  :class:`gnome.spill_container.SpillContainer`
 
-        This map class has no land, so only the map check and
-        resurface_airborn elements is done: noting else changes.
-
-        subclasses that override this probably want to make sure that:
-
-        self.resurface_airborne_elements(sc)
-        self._set_off_map_status(sc)
-
-        are called.
+        This map class does not use a raster map for collision detection. Since
+        the land is so simple the collisions are detected via intersection.
         """
         self.resurface_airborne_elements(sc)
         self._set_off_map_status(sc)
@@ -601,16 +608,16 @@ class RasterMap(GnomeMap):
 
     def build_coarser_bitmaps(self):
         """
-        A list will contain the different bitmaps. 
+        Builds the list which contains the different resolution raster maps. 
         Scale -> bitmap
         example for base map of 1024 x 1024:
-        0 -> 1/16th bitmap 64:1
+        0 -> 1/16th bitmap 64 base cells per cell
         1 -> 1/32nd bitmap 32:1
         2 -> 1/64th bitmap 16:1
         3 -> 1/128th bitmap 8:1
         4 -> 1/256th bitmap 4:1
         5 -> 1/512th bitmap 2:1
-        6 -> 1/1024th bitmap (base map 1:1)
+        6 -> 1/1024th bitmap (== base map 1:1)
         
         The general idea is that the particle position (an int) can quickly be mapped into any scale and the path can
         begin from there. For example, if your path begins offshore and ends in a narrow inlet, your scale might begin
