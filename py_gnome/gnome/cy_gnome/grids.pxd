@@ -55,7 +55,7 @@ cdef extern from "TimeGridVel_c.h":
         OSErr       ReadInputFileNames(char *fileNamesPath)
         OSErr       SetInterval(char *errmsg, const Seconds& model_time)
         VelocityRec GetScaledPatValue(Seconds& time, WorldPoint3D p)
-        OSErr 		get_values(int n, Seconds model_time, short* LE_status, WorldPoint3D* ref, VelocityRec* vels)
+        OSErr 		get_values(int n, Seconds model_time, WorldPoint3D* ref, VelocityRec* vels)
 
     cdef cppclass TimeGridWindRect_c(TimeGridVel_c):
         pass

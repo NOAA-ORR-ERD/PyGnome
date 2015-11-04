@@ -15,7 +15,8 @@ from gnome.utilities import projections
 from gnome.basic_types import (velocity_rec,
                                world_point,
                                world_point_type,
-                               status_code_type)
+                               status_code_type,
+                               oil_status)
 
 from gnome.utilities import serializable, rand
 
@@ -207,24 +208,20 @@ class ShipDriftMover(Mover, serializable.Serializable):
         """
         self.prepare_data_for_get_move(sc, model_time_datetime)
         #will need to override get_move using grid's get_values
-        #then (u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (startPoint.p.pLat)
-        #and (v / METERSPERDEGREELAT) * timeStep)
-        #where LongToLatRatio3 = cos(((float)baseLat / 1000000.0) * 3.14159 / 180); (remove 1e6 here)
-        #and multiply by windages
 
         vels = np.zeros(len(self.positions), dtype=velocity_rec)
+        in_water_mask = self.status_codes == oil_status.in_water
 
         if self.active and len(self.positions) > 0:
-            #self.grid.get_values(self.model_time, self.positions, vels)
-            #vel = self.grid.get_value(self.model_time, (-122.934656, 38.27594))
-            self.grid.grid.get_values(self.model_time, self.status_codes, self.positions, vels)
+            self.grid.get_values(self.model_time, self.positions, vels)
+            #self.grid.grid.get_values(self.model_time, self.positions, vels)
             vel = self.grid.get_value(self.model_time, (-123.57152, 37.369436))
 
-            self.delta['lat'] = vels['v'] * time_step
-            self.delta['long'] = vels['u'] * time_step
+            self.delta['lat'][in_water_mask] = vels['v'] * time_step
+            self.delta['long'][in_water_mask] = vels['u'] * time_step
 
-            self.delta['lat'] *= sc['windages']
-            self.delta['long'] *= sc['windages']
+            self.delta['lat'][in_water_mask] *= sc['windages']
+            self.delta['long'][in_water_mask] *= sc['windages']
 
             self.delta = projections.FlatEarthProjection.meters_to_lonlat(self.delta.view(dtype=np.float64).reshape(-1,3), self.positions.view(dtype=np.float64).reshape(-1,3))
 

@@ -604,13 +604,12 @@ LongPoint TimeGridWindCurv_c::GetVelocityIndices(WorldPoint wp)
 	return indices;
 }
 
-OSErr TimeGridWindCurv_c::get_values(int n, Seconds model_time, short* LE_status, WorldPoint3D* ref, VelocityRec* vels) {
+OSErr TimeGridWindCurv_c::get_values(int n, Seconds model_time, WorldPoint3D* ref, VelocityRec* vels) {
 
 	if(!ref || !vels) {
 		//cout << "worldpoints array not provided! returning.\n";
 		return 1;
-	}
-	
+	}	
 	
 	WorldPoint3D rec;
 	
@@ -618,12 +617,7 @@ OSErr TimeGridWindCurv_c::get_values(int n, Seconds model_time, short* LE_status
 	
 	for (int i = 0; i < n; i++) {
 		
-		// only operate on LE if the status is in water
-		if( LE_status[i] != OILSTAT_INWATER)
-		{
-			vels[i] = zero_vel;
-			continue;
-		}
+		// will get all values and let movers figure out which ones to use
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
 		
