@@ -32,7 +32,7 @@ import os
 import math
 
 import numpy as np
-from colander import SchemaNode, String, Float, drop
+from colander import SchemaNode, String, Float, drop, Tuple, Integer
 
 from gnome.persist import base_schema
 
@@ -57,6 +57,11 @@ class GnomeMapSchema(base_schema.ObjType):
     map_bounds = base_schema.LongLatBounds(missing=drop)
     spillable_area = base_schema.PolygonSet(missing=drop)
 
+class ParamMapSchema(GnomeMapSchema):
+    center = base_schema.WorldPoint(missing=drop)
+    distance = SchemaNode(Integer(), missing=drop)
+    bearing = SchemaNode(Integer(), missing=drop)
+    
 
 class MapFromBNASchema(GnomeMapSchema):
     filename = SchemaNode(String())
@@ -330,9 +335,54 @@ class GnomeMap(Serializable):
         np.maximum(next_positions[:, 2], 0.0, out=next_positions[:, 2])
         return None
 
+
 class ParamMap(GnomeMap):
     
-    def __init__(self, center = (0.0,0.0), distance = 30000, bearing = 90):
+#     _update = ['map_bounds', 'spillable_area']
+#     _create = []
+#     _create.extend(_update)
+#     _state = copy.deepcopy(Serializable._state)
+#     _state.add(save=_create, update=_update)
+#     _schema = GnomeMapSchema
+#     
+#     _state.update(['map_bounds', 'spillable_area'], save=False)
+#     _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
+#     _state.add_field(Field('filename',
+#                            isdatafile=True,
+#                            save=True,
+#                            read=True,
+#                            test_for_eq=False))
+#     _schema = MapFromBNASchema
+
+#     _state = copy.deepcopy(RasterMap._state)
+#     _state.add_field(Field('filename',
+#                            isdatafile=True,
+#                            save=True,
+#                            read=True,
+#                            test_for_eq=False))
+#     _schema = MapFromBNASchema
+
+    _state = copy.deepcopy(GnomeMap._state)
+    _state.update(['map_bounds', 'spillable_area'], save=False)
+    _state.add(save=['center', 'distance', 'bearing'], update=['center', 'distance', 'bearing'])
+#     _state.add_field(Field('center',
+#                            isdatafile=False,
+#                            save=True,
+#                            read=True,
+#                            test_for_eq=False))
+#     _state.add_field(Field('distance',
+#                            isdatafile=False,
+#                            save=True,
+#                            read=True,
+#                            test_for_eq=False))
+#     _state.add_field(Field('bearing',
+#                            isdatafile=False,
+#                            save=True,
+#                            read=True,
+#                            test_for_eq=False))
+    _schema = ParamMapSchema
+    
+    def __init__(self, center = (0.0,0.0), distance = 30000, bearing = 90, **kwargs):
         """
         Creates a parameratized map, essentially a straight shoreline set a certain
         distance and bearing from a location, usually a spill.
@@ -347,10 +397,17 @@ class ParamMap(GnomeMap):
         :param bearing: The bearing the closest point on the shoreline is from the center.
 
         """
+        if distance < 30:
+            raise ValueError("Distance must cover at least 1 second arc")
+        if abs(center[0]) > 360 or abs(center[1]) > 90:
+            raise ValueError("Center must be within (-360,-90) to (360,90)")
+        
         #basically, direction vector to shore
-        center = (center[0], center[1], 0)
-        distance = (distance, 0.0, 0)
-        d = FlatEarthProjection.meters_to_lonlat(distance, center)[0][0]
+        self.center = center = (center[0], center[1], 0)
+        self.distance = distance
+        map_dist = (distance, 0.0, 0)
+        self.bearing = bearing
+        d = FlatEarthProjection.meters_to_lonlat(map_dist, center)[0][0]
         init_points = [(d,-8*d),(d,8*d),(8*d,8*d),(8*d,-8*d)]
 #         init_points = [(d,-20),(d,20),(20,20),(20,-20)]
         ang = deg2rad(90 - bearing)
@@ -384,10 +441,10 @@ class ParamMap(GnomeMap):
         return poly
 
 
-    def on_map(self, coords):
+    def on_map(self, coord):
         """
-        :param coords: location for test.
-        :type coords: 3-tuple of floats: (long, lat, depth)
+        :param coord: location for test.
+        :type coord: 3-tuple of floats: (long, lat, depth)
 
         :return: bool array: True if the location is on the map,
                              False otherwise
@@ -396,22 +453,22 @@ class ParamMap(GnomeMap):
           coord is 3-d, but the concept of "on the map" is 2-d in this context,
           so depth is ignored.
         """
-        return points_in_poly(self.map_bounds, coords)
+        return points_in_poly(self.map_bounds, coord)
 
-    def on_land(self, coords):
+    def on_land(self, coord):
         """
         :param coord: location for test.
-        :type coords: 3-tuple of floats: (long, lat, depth) or Nx3 numpy array
+        :type coord: 3-tuple of floats: (long, lat, depth) or Nx3 numpy array
 
         :return:
          - Always returns False-- no land in this implementation
         """
-        return  self.on_map(coords) * points_in_poly(self.land_points, coords)
+        return  self.on_map(coord) and points_in_poly(self.land_points, coord)
 
-    def in_water(self, coords):
+    def in_water(self, coord):
         """
-        :param coords: location for test.
-        :type coords: 3-tuple of floats: (long, lat, depth)
+        :param coord: location for test.
+        :type coord: 3-tuple of floats: (long, lat, depth)
 
         :returns:
          - True if the point is in the water,
@@ -419,7 +476,7 @@ class ParamMap(GnomeMap):
 
          This implementation has no land, so always True in on the map.
         """
-        return self.on_map(coords) and not self.on_land(coords)
+        return self.on_map(coord) and not self.on_land(coord)
 
     def allowable_spill_position(self, coord):
         """

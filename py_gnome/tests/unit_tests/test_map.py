@@ -159,6 +159,46 @@ class Test_GnomeMap:
             assert u_json_[key] == json_[key]
 
 
+class Test_ParamMap:
+    
+    '''
+    WIP
+    
+    Not sure where to go with these.
+    '''
+    
+    def test_on_map(self):
+        pmap = gnome.map.ParamMap((0,0),10000,90)
+        assert pmap.on_map((0,0,0))
+        assert pmap.on_map((15,0,0)) is False
+    
+    def test_on_land(self):
+        pmap = gnome.map.ParamMap((0,0),10000,90)
+        assert pmap.on_land((0.3,0,0)) is True
+        assert pmap.on_land((-0.3,0,0)) is False
+        
+    def test_in_water(self):
+        pmap = gnome.map.ParamMap((0,0),10000,90)
+        assert pmap.in_water((-0.3,0,0)) is True
+        assert pmap.in_water((0.3,0,0)) is False
+        
+    def test_land_generation(self):
+        pmap1 = gnome.map.ParamMap((0,0),10000,90)
+        print pmap1.land_points
+        
+        
+@pytest.mark.parametrize("json_", ('save', 'webapi'))
+def test_serialize_deserialize_param(json_):
+    """
+    test create new object from to_dict
+    """
+    gmap = gnome.map.ParamMap((5,5),12000,40)
+    serial = gmap.serialize(json_)
+    dict_ = gnome.map.ParamMap.deserialize(serial)
+    map2 = gmap.new_from_dict(dict_)
+    assert gmap == map2
+
+
 class Test_RasterMap:
 
     """
@@ -448,7 +488,7 @@ class Test_MapfromBNA:
         # Throw an error if the known on-land location returns false.
         OnLand = (-127, 47.8, 0.)
         print "on land:", self.bna_map.on_land(OnLand)
-        print self.bna_map.bitmap
+        print self.bna_map.basebitmap
 
         assert self.bna_map.on_land(OnLand)
 
@@ -810,22 +850,22 @@ def test_resurface_airborne_elements():
 
     assert spill['next_positions'][:, 2].min() == 0.
 
-class TestMapFromUGrid(object):
-
-    map = MapFromUGrid(test_tri_grid)
-
-
-if __name__ == '__main__':
-    tester = Test_MapfromBNA()
-    print "running test"
-    #tester.test_map_on_land()
-    tester.test_map_spillable_lake()
-
-
-#    tester = Test_GnomeMap()
-#    tester.test_on_map()
-#    tester.test_on_map_array()
-#    tester.test_allowable_spill_position()
-
-#    tester = Test_full_move()
-#    tester.test_some_off_map()
+# class TestMapFromUGrid(object):
+# 
+#     map = MapFromUGrid(test_tri_grid)
+# 
+# 
+# if __name__ == '__main__':
+#     tester = Test_MapfromBNA()
+#     print "running test"
+#     #tester.test_map_on_land()
+#     tester.test_map_spillable_lake()
+# 
+# 
+# #    tester = Test_GnomeMap()
+# #    tester.test_on_map()
+# #    tester.test_on_map_array()
+# #    tester.test_allowable_spill_position()
+# 
+# #    tester = Test_full_move()
+# #    tester.test_some_off_map()
