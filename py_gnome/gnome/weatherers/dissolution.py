@@ -13,9 +13,7 @@ from gnome import constants
 # from gnome.cy_gnome.cy_weatherers import disperse_oil
 from gnome.array_types import (viscosity,
                                mass,
-                               density,
-                               fay_area,
-                               frac_water)
+                               density)
 
 from gnome.utilities.serializable import Serializable, Field
 
@@ -49,22 +47,17 @@ class Dissolution(Weatherer, Serializable):
         self.array_types.update({'viscosity': viscosity,
                                  'mass':  mass,
                                  'density': density,
-                                 'fay_area': fay_area,
-                                 'frac_water': frac_water,
                                  })
 
     def prepare_for_model_run(self, sc):
         '''
-        add dispersion and sedimentation keys to mass_balance
-        Assumes all spills have the same type of oil
+            Add dissolution key to mass_balance if it doesn't exist.
+            - Assumes all spills have the same type of oil
+            - let's only define this the first time
         '''
-        # create 'natural_dispersion' and 'sedimentation keys
-        # if they doesn't exist
-        # let's only define this the first time
         if self.on:
             super(Dissolution, self).prepare_for_model_run(sc)
-            sc.mass_balance['natural_dispersion'] = 0.0
-            sc.mass_balance['sedimentation'] = 0.0
+            sc.mass_balance['dissolution'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''

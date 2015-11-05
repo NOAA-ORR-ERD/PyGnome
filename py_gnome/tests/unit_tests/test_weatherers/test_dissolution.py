@@ -48,6 +48,22 @@ def test_sort_order():
     assert weatherer_sort(d) == 8
 
 
+def test_prepare_for_model_run():
+    'test sort order for Dissolution weatherer'
+    et = floating(substance='ABU SAFAH')
+    diss = Dissolution(waves, water)
+
+    (sc, time_step) = weathering_data_arrays(diss.array_types,
+                                             water,
+                                             element_type=et)[:2]
+
+    assert 'dissolution' not in sc.mass_balance
+
+    diss.prepare_for_model_run(sc)
+
+    assert 'dissolution' in sc.mass_balance
+
+
 @pytest.mark.xfail
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
                          [('ABU SAFAH', 311.15, 3, True),
@@ -73,15 +89,11 @@ def test_dissolution(oil, temp, num_elems, on):
     diss.weather_elements(sc, time_step, model_time)
 
     if on:
-        assert sc.mass_balance['natural_dispersion'] > 0
-        assert sc.mass_balance['sedimentation'] > 0
-        print "sc.mass_balance['natural_dispersion']"
-        print sc.mass_balance['natural_dispersion']
-        print "sc.mass_balance['sedimentation']"
-        print sc.mass_balance['sedimentation']
+        assert sc.mass_balance['dissolution'] > 0
+        print "sc.mass_balance['dissolution']"
+        print sc.mass_balance['dissolution']
     else:
-        assert 'natural_dispersion' not in sc.mass_balance
-        assert 'sedimentation' not in sc.mass_balance
+        assert 'dissolution' not in sc.mass_balance
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems'),
@@ -108,8 +120,7 @@ def test_dissolution_not_active(oil, temp, num_elems):
     diss.prepare_for_model_step(sc, time_step, model_time)
     diss.weather_elements(sc, time_step, model_time)
 
-    assert np.all(sc.mass_balance['natural_dispersion'] == 0)
-    assert np.all(sc.mass_balance['sedimentation'] == 0)
+    assert np.all(sc.mass_balance['dissolution'] == 0)
 
 
 @pytest.mark.xfail
