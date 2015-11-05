@@ -72,14 +72,12 @@ cdef class CyTimeGridVel(object):
 
     def get_values(self,
                  int model_time,
-                 cnp.ndarray[short] LE_status,
                  cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
                  cnp.ndarray[VelocityRec] vels):
         """
         .. function:: get_move(self,
                  model_time,
                  cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
-                 cnp.ndarray[short] LE_status,
                  cnp.ndarray[VelocityRec] vels)
 
         Invokes the underlying C++ TimeGridVel_c.get_values(...)
@@ -89,15 +87,13 @@ cdef class CyTimeGridVel(object):
         :type ref_points: numpy array of WorldPoint3D
         :param vels: the velocity at the position of each particle
         :type vels: numpy array of VelocityRec
-        :param le_status: Status of each particle - movement is only on
-                          particles in water
         :returns: none
         """
         cdef OSErr err
 
         N = len(ref_points)
 
-        err = self.timegrid.get_values(N, model_time, &LE_status[0],
+        err = self.timegrid.get_values(N, model_time,
                                  &ref_points[0], &vels[0])
 
         if err == 1:

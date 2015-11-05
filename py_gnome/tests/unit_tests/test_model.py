@@ -1282,7 +1282,8 @@ def test_weatherer_sort():
                   c_disp,
                   skimmer]
 
-    exp_order = [weatherers[ix] for ix in (2, 4, 3, 1, 0)]
+    #exp_order = [weatherers[ix] for ix in (2, 4, 3, 1, 0)]
+    exp_order = [weatherers[ix] for ix in (4, 2, 3, 1, 0)]
 
     model.environment += [Water(), constant_wind(5, 0), Waves()]
     model.weatherers += weatherers

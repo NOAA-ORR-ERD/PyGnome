@@ -71,7 +71,10 @@ class Outputter(Serializable):
         self.on = on
         self.output_zero_step = output_zero_step
         self.output_last_step = output_last_step
-        self.output_timestep = output_timestep
+        if output_timestep:
+            self._output_timestep = int(output_timestep.total_seconds())
+        else:
+            self._output_timestep = None
 
         self.sc_pair = None     # set in prepare_for_model_run
 
@@ -150,7 +153,7 @@ class Outputter(Serializable):
         if cache is not None:
             self.cache = cache
 
-        if self.output_timestep is None:
+        if self._output_timestep is None:
             self._write_step = True
 
         self._dt_since_lastoutput = 0

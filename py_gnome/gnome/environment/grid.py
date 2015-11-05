@@ -124,12 +124,12 @@ class Grid(Environment, Serializable):
 
         return data
 
-    def get_values(self, model_time, status_codes, positions, velocities):
+    def get_values(self, model_time, positions, velocities):
         '''
         Return the values for the given positions
 
         '''
-        data = self.grid.get_values(model_time, status_codes, positions, velocities)
+        data = self.grid.get_values(model_time, positions, velocities)
 
         return data
 
