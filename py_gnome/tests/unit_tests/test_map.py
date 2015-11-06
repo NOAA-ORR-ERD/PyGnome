@@ -190,7 +190,7 @@ class Test_ParamMap:
 @pytest.mark.parametrize("json_", ('save', 'webapi'))
 def test_serialize_deserialize_param(json_):
     """
-    test create new object from to_dict
+    test create new ParamMap from deserialized dict
     """
     gmap = gnome.map.ParamMap((5,5),12000,40)
     serial = gmap.serialize(json_)
