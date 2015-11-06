@@ -188,11 +188,13 @@ def find_first_pixel(grid, pt1, pt2):
     cdef int32_t x2 = pt2[0]
     cdef int32_t y2 = pt2[1]
 
+    cdef cnp.ndarray[uint8_t, ndim=2, mode="c"] grid_arr = grid
+    cdef uint8_t* dataptr = &grid_arr[0,0]
     #initialize prev_x, prev y in case point starts on land.
     prev_x = x1
     prev_y = y1
 
-    result = c_find_first_pixel(grid.data,
+    result = c_find_first_pixel(dataptr,
                                 m,
                                 n,
                                 x1,
@@ -235,22 +237,24 @@ def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
         m = grid.shape[0]
         n = grid.shape[1]
 
+        cdef cnp.ndarray[uint8_t, ndim=2, mode="c"] grid_arr = grid
+        cdef uint8_t* dataptr = &grid_arr[0,0]
         for i in range(num_le):
             if status_codes[i] == type_defs.OILSTAT_ONLAND:
                 continue
 
-#             did_hit = c_find_first_pixel(grid.data,
-#                                          m,
-#                                          n,
-#                                          positions[i, 0],
-#                                          positions[i, 1],
-#                                          end_positions[i, 0],
-#                                          end_positions[i, 1],
-#                                          &prev_x,
-#                                          &prev_y,
-#                                          &hit_x,
-#                                          &hit_y,
-#                                          )
+            did_hit = c_find_first_pixel(dataptr,
+                                         m,
+                                         n,
+                                         positions[i, 0],
+                                         positions[i, 1],
+                                         end_positions[i, 0],
+                                         end_positions[i, 1],
+                                         &prev_x,
+                                         &prev_y,
+                                         &hit_x,
+                                         &hit_y,
+                                         )
             if did_hit:
                 last_water_positions[i, 0] = prev_x
                 last_water_positions[i, 1] = prev_y

@@ -80,7 +80,7 @@ class Renderer(Outputter, MapCanvas):
                            save=True,
                            read=True,
                            test_for_eq=False))
-    _state += Field('output_dir', save=True, update=True, test_for_eq=False)
+    _state.add_field( Field('output_dir', save=True, update=True, test_for_eq=False))
     _schema = RendererSchema
 
     @classmethod

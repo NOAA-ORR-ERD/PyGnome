@@ -174,34 +174,6 @@ def test_projection(output_dir):
 
     mc.save_foreground(os.path.join(output_dir, "image_projection_south.png"))
 
-def test_find_grat_locations():
-
-    image_size = (1000, 1000)
-    viewport =  ((0,0),(35,55))
-    locations = MapCanvas._find_graticule_locations(image_size, viewport)
-
-#    assert False
-
-
-## NOTE: needs more tests!!
-@pytest.mark.parametrize( ("ref", "expected"), [(  0.0021,      0.002),
-                                                (  0.02,       0.02),
-                                                (   0.2,     0.2),
-                                                (   2.0,     2.0),
-                                                (    20,     20.0),
-                                               ]
-                         )
-
-def test_DecimalDegreeGridLines(ref, expected):
-    gl = map_canvas_gd.DecimalDegreeGridLines()
-
-    result = gl.get_step_size(ref)
-
-    print ref, result
-
-
-
-
 @pytest.mark.parametrize( ("val","exp","num_digits"), [(    1.1,     1.0,      1 ),
                                                        ( 0.0011,     0.001,    1 ),
                                                        (  1100.,     1000.0,   1 ),
