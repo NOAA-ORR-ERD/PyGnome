@@ -68,8 +68,7 @@ class Renderer(Outputter, MapCanvas):
     foreground_filename_format = 'foreground_{0:05d}.png'
     foreground_filename_glob = 'foreground_?????.png'
 
-    # todo: how should output_dir be saved? Absolute? Currently, it is relative
-    # no, it's not.... see issue:
+    ## Serialization info:
     _update = ['viewport', 'map_BB', 'image_size', 'draw_ontop']
     _create = ['image_size', 'projection', 'draw_ontop']
 
@@ -92,22 +91,19 @@ class Renderer(Outputter, MapCanvas):
         """
         viewport = dict_.pop('viewport')
         if 'projection' in dict_:
-            # assume dict_ is from a save file since only the save file stores
-            # the 'projection' (why does this matter??)
             # todo:
             # The 'projection' isn't stored as a nested object - should
             # revisit this and see if we can make it consistent with nested
-            # objects .. but this works!
-
+            # objects ... but this works!
             # creates an instance of the projection class
-            proj = class_from_objtype(dict_.pop('projection'))()
+            proj_inst = class_from_objtype(dict_.pop('projection'))()
             # then creates the object
-            obj = cls(projection=proj, **dict_)
-            obj.viewport = viewport
+            obj = cls(projection=proj_inst, **dict_)
         else:
             obj = super(Renderer, cls).new_from_dict(dict_)
-            obj.viewport = viewport
+        obj.viewport = viewport
         return obj
+
 
     def __init__(
         self,
@@ -142,7 +138,8 @@ class Renderer(Outputter, MapCanvas):
         :param image_size=(800, 600): size of images to output
         :type image_size: 2-tuple of integers
 
-        :param projection = projections.FlatEarthProjection(): projection to use
+        :param projection=None: projection instance to use:
+                                if None, set to projections.FlatEarthProjection()
         :type projection: a gnome.utilities.projection.Projection instance
 
         :param viewport: viewport of map -- what gets drawn and on what
@@ -389,7 +386,6 @@ class Renderer(Outputter, MapCanvas):
                     self.draw_polyline(coords, background=True, line_color='raster_map_outline')
 
             if self.raster_map_fill:
-                print "drawing filled rects..."
                 for i in range(w):
                     for j in range(h):
                         if raster_map.basebitmap[i,j] == 1:

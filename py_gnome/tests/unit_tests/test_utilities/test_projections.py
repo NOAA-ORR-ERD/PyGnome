@@ -568,4 +568,3 @@ class Test_rectangular_grid_projection(object):
                                               ((4, 0),)
                                             )
 
-

@@ -850,22 +850,17 @@ def test_resurface_airborne_elements():
 
     assert spill['next_positions'][:, 2].min() == 0.
 
-# class TestMapFromUGrid(object):
-# 
-#     map = MapFromUGrid(test_tri_grid)
-# 
-# 
-# if __name__ == '__main__':
-#     tester = Test_MapfromBNA()
-#     print "running test"
-#     #tester.test_map_on_land()
-#     tester.test_map_spillable_lake()
-# 
-# 
-# #    tester = Test_GnomeMap()
-# #    tester.test_on_map()
-# #    tester.test_on_map_array()
-# #    tester.test_allowable_spill_position()
-# 
-# #    tester = Test_full_move()
-# #    tester.test_some_off_map()
+if __name__ == '__main__':
+    tester = Test_MapfromBNA()
+    print "running test"
+    #tester.test_map_on_land()
+    tester.test_map_spillable_lake()
+
+
+#    tester = Test_GnomeMap()
+#    tester.test_on_map()
+#    tester.test_on_map_array()
+#    tester.test_allowable_spill_position()
+
+#    tester = Test_full_move()
+#    tester.test_some_off_map()

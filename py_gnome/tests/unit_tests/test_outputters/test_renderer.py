@@ -350,7 +350,14 @@ def test_draw_raster_map(output_dir):
 
 @pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 def test_serialize_deserialize(json_, output_dir):
-    r = Renderer(bna_sample, output_dir)
+    ## non-defaults to check properly..
+    r = Renderer(map_filename=bna_sample,
+                 output_dir=output_dir,
+                 image_size=(1000, 800),
+                 viewport=((-126.5, 47.5),
+                           (-126.0, 48.0)),
+                 )
+
     toserial = r.serialize(json_)
     dict_ = r.deserialize(toserial)
 

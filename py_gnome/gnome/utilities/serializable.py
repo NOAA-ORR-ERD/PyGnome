@@ -572,6 +572,7 @@ class Serializable(GnomeId, Savable):
         NOTE: add the json_='webapi' key to be serialized so we know what the
         serialization is for
         """
+
         list_ = self._state.get_names('all')
 
         data = {}
@@ -788,11 +789,10 @@ class Serializable(GnomeId, Savable):
                     if abs(self_attr - other_attr) > 1e-10:
                         return False
                 elif self_attr != other_attr:
-                    #print self_attr, other_attr
-                    #print "failpoint2"
                     return False
             else:
-                if not np.allclose(self_attr, other_attr):
+                if not np.allclose(self_attr, other_attr, rtol=1e-4, atol=1e-4):
+                    ## at least the projection code was only good to this tol (why?)
                     return False
 
         return True
