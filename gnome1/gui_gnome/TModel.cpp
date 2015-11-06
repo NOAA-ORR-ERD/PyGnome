@@ -3060,8 +3060,7 @@ OSErr TModel::FinishKmlFile ()
 		if(p) *p = 0;
 	}
 	//strcpy(kmz_path, target_path);
-	//strcat(kmz_path,".kmz");
-	
+	//strcat(kmz_path,".kmz");	
 	//sprintf(cmd,"/usr/bin/zip -r kmz_path target_path\n");
 	//sprintf(cmd,"zip -r kmz_path target_path");
 	//status = system(cmd);

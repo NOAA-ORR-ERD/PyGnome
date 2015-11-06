@@ -161,7 +161,9 @@ class State(object):
         return new_
 
     def __eq__(self, other):
-        'check for equality'
+        """
+        check for equality
+        """
         return self.__dict__ == other.__dict__
 
     def __ne__(self, other):
@@ -570,6 +572,7 @@ class Serializable(GnomeId, Savable):
         NOTE: add the json_='webapi' key to be serialized so we know what the
         serialization is for
         """
+
         list_ = self._state.get_names('all')
 
         data = {}
@@ -788,7 +791,8 @@ class Serializable(GnomeId, Savable):
                 elif self_attr != other_attr:
                     return False
             else:
-                if not np.allclose(self_attr, other_attr):
+                if not np.allclose(self_attr, other_attr, rtol=1e-4, atol=1e-4):
+                    ## at least the projection code was only good to this tol (why?)
                     return False
 
         return True

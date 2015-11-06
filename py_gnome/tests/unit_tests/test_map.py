@@ -19,14 +19,15 @@ import gnome.map
 from gnome.basic_types import oil_status, status_code_type
 from gnome.utilities.projections import NoProjection
 
-from gnome.map import MapFromBNA, RasterMap
+from gnome.map import MapFromBNA, RasterMap, MapFromUGrid
 
 from conftest import sample_sc_release
 
 basedir = os.path.dirname(__file__)
-datadir = os.path.join(basedir, r"sample_data")
-testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna'
-                       )
+datadir = os.path.join(basedir, "../sample_data")
+testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
+test_tri_grid = os.path.join(basedir, '../sample_data', 'small_trigrid_example.nc')
+
 
 
 def test_in_water_resolution():
@@ -158,6 +159,46 @@ class Test_GnomeMap:
             assert u_json_[key] == json_[key]
 
 
+class Test_ParamMap:
+    
+    '''
+    WIP
+    
+    Not sure where to go with these.
+    '''
+    
+    def test_on_map(self):
+        pmap = gnome.map.ParamMap((0,0),10000,90)
+        assert pmap.on_map((0,0,0))
+        assert pmap.on_map((15,0,0)) is False
+    
+    def test_on_land(self):
+        pmap = gnome.map.ParamMap((0,0),10000,90)
+        assert pmap.on_land((0.3,0,0)) is True
+        assert pmap.on_land((-0.3,0,0)) is False
+        
+    def test_in_water(self):
+        pmap = gnome.map.ParamMap((0,0),10000,90)
+        assert pmap.in_water((-0.3,0,0)) is True
+        assert pmap.in_water((0.3,0,0)) is False
+        
+    def test_land_generation(self):
+        pmap1 = gnome.map.ParamMap((0,0),10000,90)
+        print pmap1.land_points
+        
+        
+@pytest.mark.parametrize("json_", ('save', 'webapi'))
+def test_serialize_deserialize_param(json_):
+    """
+    test create new ParamMap from deserialized dict
+    """
+    gmap = gnome.map.ParamMap((5,5),12000,40)
+    serial = gmap.serialize(json_)
+    dict_ = gnome.map.ParamMap.deserialize(serial)
+    map2 = gmap.new_from_dict(dict_)
+    assert gmap == map2
+
+
 class Test_RasterMap:
 
     """
@@ -172,6 +213,32 @@ class Test_RasterMap:
     # set some land in middle:
 
     raster[6:13, 4:8] = 1
+
+    def test__off_bitmap(self):
+        """
+        test the _on_bitmap method
+        """
+        #overkill for jsut the bitmap..
+        rmap = RasterMap(refloat_halflife=6,
+                         bitmap_array=self.raster,
+                         map_bounds=((-50, -30), (-50, 30), (50, 30),(50, -30)),
+                         projection=NoProjection())
+        # the corners
+        assert not rmap._off_bitmap( (0,0) )
+        assert not rmap._off_bitmap( (19,0) )
+        assert not rmap._off_bitmap( (19,11) )
+        assert not rmap._off_bitmap( (0,11) )
+        # in the middle somewhere
+        assert not rmap._off_bitmap( (10,6) )
+        # just off the edges
+        assert rmap._off_bitmap( (-1,0) )
+        assert rmap._off_bitmap( (19,-1) )
+        assert rmap._off_bitmap( (20,11) )
+        assert rmap._off_bitmap( (0,12) )
+        # way off -- just for the heck of it.
+        assert rmap._off_bitmap( (-1000,-2000) )
+        assert rmap._off_bitmap( (1000,2000) )
+
 
     def test_save_as_image(self, dump):
         """
@@ -384,6 +451,8 @@ class TestRefloat:
 
 class Test_MapfromBNA:
 
+    print "instaniating map:", testmap
+    # NOTE: this is a pretty course map -- for testing
     bna_map = MapFromBNA(testmap, refloat_halflife=6, raster_size=1000)
 
     def test_map_in_water(self):
@@ -400,15 +469,15 @@ class Test_MapfromBNA:
         assert self.bna_map.in_water(InWater)
         assert not self.bna_map.on_land(InWater)
 
-    def test_map_in_water2(self):
+    # def test_map_in_water2(self):
 
-        # in water, but inside land Bounding box
+    #     # in water, but inside land Bounding box
 
-        InWater = (-126.971456, 47.935608, 0.)
+    #     InWater = (-126.971456, 47.935608, 0.)
 
-        # Throw an error if the know in-water location returns false.
+    #     # Throw an error if the know in-water location returns false.
 
-        assert self.bna_map.in_water(InWater)
+    #     assert self.bna_map.in_water(InWater)
 
     def test_map_on_land(self):
         '''
@@ -416,9 +485,11 @@ class Test_MapfromBNA:
         correctly.
         '''
 
-        # Throw an error if the know on-land location returns false.
-
+        # Throw an error if the known on-land location returns false.
         OnLand = (-127, 47.8, 0.)
+        print "on land:", self.bna_map.on_land(OnLand)
+        print self.bna_map.basebitmap
+
         assert self.bna_map.on_land(OnLand)
 
         # Throw an error if the know on-land location returns false.
@@ -779,13 +850,17 @@ def test_resurface_airborne_elements():
 
     assert spill['next_positions'][:, 2].min() == 0.
 
-
 if __name__ == '__main__':
+    tester = Test_MapfromBNA()
+    print "running test"
+    #tester.test_map_on_land()
+    tester.test_map_spillable_lake()
+
 
 #    tester = Test_GnomeMap()
 #    tester.test_on_map()
 #    tester.test_on_map_array()
 #    tester.test_allowable_spill_position()
 
-    tester = Test_full_move()
-    tester.test_some_off_map()
+#    tester = Test_full_move()
+#    tester.test_some_off_map()

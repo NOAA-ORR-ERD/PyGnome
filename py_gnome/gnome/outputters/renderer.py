@@ -1,8 +1,10 @@
 
 """
-renderer.py
+renderer_gd.py
 
 module to hold all the map rendering code.
+
+This one used the new map_canvas_gd, which uses the gd rendering lib.
 
 """
 import os
@@ -10,15 +12,19 @@ from os.path import basename
 import glob
 import copy
 import zipfile
+import numpy as np
 
 from colander import SchemaNode, String, drop
 
 from gnome.persist import base_schema, class_from_objtype
 
 from . import Outputter, BaseSchema
-from gnome.utilities.map_canvas import MapCanvas
+from gnome.utilities.map_canvas_gd import MapCanvas
 from gnome.utilities.serializable import Field
 from gnome.utilities.file_tools import haz_files
+from gnome.utilities import projections
+
+from gnome.basic_types import oil_status
 
 
 class RendererSchema(BaseSchema):
@@ -28,10 +34,10 @@ class RendererSchema(BaseSchema):
 
     # following are only used when creating objects, not updating -
     # so missing=drop
-    filename = SchemaNode(String(), missing=drop)
-    projection_class = SchemaNode(String(), missing=drop)
+    map_filename = SchemaNode(String(), missing=drop)
+    projection = SchemaNode(String(), missing=drop)
     image_size = base_schema.ImageSize(missing=drop)
-    images_dir = SchemaNode(String())
+    output_dir = SchemaNode(String())
     draw_ontop = SchemaNode(String())
 
 
@@ -45,20 +51,36 @@ class Renderer(Outputter, MapCanvas):
 
     """
 
+    # This defines the colors used for the map
+    #   -- they can then be referenced by name in the rest of the code.
+    map_colors = [('background', (255, 255, 255)), # white
+                  ('lake', (255, 255, 255)), # white
+                  ('land', (255, 204, 153)), # brown
+                  ('LE', (0, 0, 0)), # black
+                  ('uncert_LE', (255, 0, 0)), # red
+                  ('map_bounds', (175, 175, 175)), # grey
+                  ('spillable_area', (255, 0, 0)), #  red
+                  ('raster_map', (51, 102, 0)), # dark green
+                  ('raster_map_outline', (0, 0, 0)), # black
+                  ]
+
     background_map_name = 'background_map.png'
     foreground_filename_format = 'foreground_{0:05d}.png'
     foreground_filename_glob = 'foreground_?????.png'
 
-    # todo: how should images_dir be saved? Absolute? Currently, it is relative
+    ## Serialization info:
     _update = ['viewport', 'map_BB', 'image_size', 'draw_ontop']
-    _create = ['image_size', 'projection_class', 'draw_ontop']
+    _create = ['image_size', 'projection', 'draw_ontop']
 
     _create.extend(_update)
     _state = copy.deepcopy(Outputter._state)
     _state.add(save=_create, update=_update)
-    _state.add_field(Field('filename', isdatafile=True,
-                           save=True, read=True, test_for_eq=False))
-    _state += Field('images_dir', save=True, update=True, test_for_eq=False)
+    _state.add_field(Field('map_filename',
+                           isdatafile=True,
+                           save=True,
+                           read=True,
+                           test_for_eq=False))
+    _state.add_field( Field('output_dir', save=True, update=True, test_for_eq=False))
     _schema = RendererSchema
 
     @classmethod
@@ -68,48 +90,71 @@ class Renderer(Outputter, MapCanvas):
         save file
         """
         viewport = dict_.pop('viewport')
-        if 'projection_class' in dict_:
-            '''
-            assume dict_ is from a save file since only the save file stores
-            the 'projection_class'
-            todo:
-            The 'projection_class' isn't stored as a nested object - should
-            revisit this and see if we can make it consistent with nested
-            objects .. but this works!
-            '''
-            proj_cls = class_from_objtype(dict_.pop('projection_class'))
-            proj_obj = cls(projection_class=proj_cls, **dict_)
-
-            proj_obj.viewport = viewport
-            obj = super(Renderer, cls).new_from_dict(dict_)
+        if 'projection' in dict_:
+            # todo:
+            # The 'projection' isn't stored as a nested object - should
+            # revisit this and see if we can make it consistent with nested
+            # objects ... but this works!
+            # creates an instance of the projection class
+            proj_inst = class_from_objtype(dict_.pop('projection'))()
+            # then creates the object
+            obj = cls(projection=proj_inst, **dict_)
         else:
             obj = super(Renderer, cls).new_from_dict(dict_)
-            obj.viewport = viewport
-
+        obj.viewport = viewport
         return obj
 
-    def __init__(self,
-                 filename=None,
-                 images_dir='./',
-                 image_size=(800, 600),
-                 cache=None,
-                 output_timestep=None,
-                 output_zero_step=True,
-                 output_last_step=True,
-                 draw_ontop='forecast',
-                 draw_back_to_fore=True,
-                 land_polygons=None,
-                 **kwargs):
+
+    def __init__(
+        self,
+        map_filename=None,
+        output_dir='./',
+        image_size=(800, 600),
+        projection=None,
+        viewport=None,
+        map_BB=None,
+        land_polygons=None,
+        draw_back_to_fore=True,
+        draw_map_bounds=False,
+        draw_spillable_area=False,
+        cache=None,
+        output_timestep=None,
+        output_zero_step=True,
+        output_last_step=True,
+        draw_ontop='forecast',
+        name=None,
+        on=True,
+        **kwargs
+        ):
         """
         Init the image renderer.
 
+        :param map_filename=None: name of file for basemap (BNA)
+        :type map_filename: string
+
+        :param output_dir='./': directory to output the images
+        :type output_dir: string
+
+        :param image_size=(800, 600): size of images to output
+        :type image_size: 2-tuple of integers
+
+        :param projection=None: projection instance to use:
+                                if None, set to projections.FlatEarthProjection()
+        :type projection: a gnome.utilities.projection.Projection instance
+
+        :param viewport: viewport of map -- what gets drawn and on what
+                         scale. Default is full globe: (((-180, -90), (180, 90)))
+        :type viewport: pair of (lon, lat) tuples ( lower_left, upper right )
+
+        :param map_BB=None: bounding box of map if None, it will use the
+                            bounding box of the mapfile.
+
+        :param draw_back_to_fore=True: draw the background (map) to the
+                                       foregound image when outputting the images
+                                       each time step.
+        :type draw_back_to_fore: boolean
+
         Following args are passed to base class Outputter's init:
-
-        :param filename: the name of the image file
-
-        :param images_dir: the folder in which to write the image
-
-        :param image_size: the width and height of the image
 
         :param cache: sets the cache object from which to read data. The model
             will automatically set this param
@@ -132,61 +177,71 @@ class Renderer(Outputter, MapCanvas):
             is to draw 'forecast' LEs, which are in black on top
         :type draw_ontop: str
 
-        :param draw_back_to_fore=True: draw the background (map) to the
-            foregound image when drawing Elements.
-        :type draw_ontop: boolean
 
         Remaining kwargs are passed onto baseclass's __init__ with a direct
-        call: MapCanvas.__init__(..)
+        call: Outputter.__init__(..)
 
-        Optional parameters (kwargs)
-
-        :param projection_class: gnome.utilities.projections class to use.
-            Default is gnome.utilities.projections.FlatEarthProjection
-        :param map_BB:  map bounding box. Default is to use
-            land_polygons.bounding_box. If land_polygons is None, then this is
-            the whole world, defined by ((-180,-90),(180, 90))
-        :param viewport: viewport of map -- what gets drawn and on what scale.
-            Default is to set viewport = map_BB
-        :param image_mode: Image mode ('P' for palette or 'L' for Black and
-            White image). BW_MapCanvas inherits from MapCanvas and sets the
-            mode to 'L'. Default image_mode is 'P'.
         """
-
+        projection = projections.FlatEarthProjection() if projection is None else projection
         # set up the canvas
+        self.map_filename = map_filename
+        self.output_dir=output_dir
 
-        self._filename = filename
-
-        if filename is not None:
-            polygons = haz_files.ReadBNA(filename, 'PolygonSet')
+        if map_filename is not None and land_polygons is None:
+            self.land_polygons = haz_files.ReadBNA(map_filename, 'PolygonSet')
+        elif land_polygons is not None:
+            self.land_polygons = land_polygons
         else:
-            polygons = land_polygons
+            self.land_polygons = [] # empty list so we can loop thru it
 
-        self.images_dir = images_dir
         self.last_filename = ''
         self.draw_ontop = draw_ontop
         self.draw_back_to_fore = draw_back_to_fore
 
         Outputter.__init__(self,
                            cache,
-                           kwargs.pop('on', True),
+                           on,
                            output_timestep,
                            output_zero_step,
                            output_last_step,
-                           kwargs.pop('name', None))
+                           name,
+                           output_dir
+                           )
+
+        if map_BB is None:
+            if not self.land_polygons:
+                map_BB = ((-180, -90), (180, 90))
+            else:
+                map_BB = self.land_polygons.bounding_box
+        self.map_BB = map_BB
 
         MapCanvas.__init__(self,
                            image_size,
-                           land_polygons=polygons,
-                           **kwargs)
+                           projection=projection,
+                           viewport=self.map_BB)
 
-    filename = property(lambda self: basename(self._filename),
-                        lambda self, val: setattr(self, '_filename', val))
+        # assorted rendering flags:
+        self.draw_map_bounds=draw_map_bounds
+        self.draw_spillable_area=draw_spillable_area
+        self.raster_map = None
+        self.raster_map_fill=True
+        self.raster_map_outline=False
+
+        # initilize the images:
+        self.add_colors(self.map_colors)
+        self.background_color='background'
+
+
+    @property
+    def map_filename(self):
+        return basename(self._filename)
+    @map_filename.setter
+    def map_filename(self, name):
+        self._filename = name
 
     @property
     def draw_ontop(self):
         return self._draw_ontop
-
     @draw_ontop.setter
     def draw_ontop(self, val):
         if val not in ['forecast', 'uncertain']:
@@ -194,8 +249,8 @@ class Renderer(Outputter, MapCanvas):
                              "'uncertain'. {0} is invalid.".format(val))
         self._draw_ontop = val
 
-    def images_dir_to_dict(self):
-        return os.path.abspath(self.images_dir)
+    def output_dir_to_dict(self):
+        return os.path.abspath(self.output_dir)
 
     def prepare_for_model_run(self, *args, **kwargs):
         """
@@ -209,32 +264,134 @@ class Renderer(Outputter, MapCanvas):
         In this case, it draws the background image and clears the previous
         images. If you want to save the previous images, a new output dir
         should be set.
-
         """
         super(Renderer, self).prepare_for_model_run(*args, **kwargs)
 
-        self.clear_output_dir()
+        self.clean_output_files()
 
         self.draw_background()
-        self.save_background(os.path.join(self.images_dir,
-                             self.background_map_name))
+        self.save_background(os.path.join(self.output_dir,
+                                          self.background_map_name)
+                             )
 
-    def clear_output_dir(self):
+    def clean_output_files(self):
 
-        # clear out output dir:
-        # don't need to do this -- it will get written over.
-
+        # clear out the output dir:
         try:
-            os.remove(os.path.join(self.images_dir,
+            os.remove(os.path.join(self.output_dir,
                                    self.background_map_name))
         except OSError:
             # it's not there to delete..
             pass
 
-        foreground_filenames = glob.glob(os.path.join(self.images_dir,
-                                                      self.foreground_filename_glob))
+        foreground_filenames = glob.glob(os.path.join(self.output_dir,
+                self.foreground_filename_glob))
         for name in foreground_filenames:
             os.remove(name)
+
+    def draw_background(self):
+        """
+        Draws the background image -- just land for now
+
+        This should be called whenever the scale changes
+        """
+        # create a new background image
+        self.clear_background()
+        self.draw_land()
+        if self.raster_map is not None:
+            self.draw_raster_map()
+        self.draw_graticule()
+        self.draw_tags()
+
+    def draw_land(self):
+        """
+        Draws the land map to the internal background image.
+        """
+
+        for poly in self.land_polygons:
+            if poly.metadata[1].strip().lower() == 'map bounds':
+                if self.draw_map_bounds:
+                    self.draw_polygon(poly,
+                                       line_color='map_bounds',
+                                       fill_color=None,
+                                       line_width=2,
+                                       background=True)
+            elif poly.metadata[1].strip().lower().replace(' ','') == 'spillablearea':
+                if self.draw_spillable_area:
+                    self.draw_polygon(poly,
+                                       line_color='spillable_area',
+                                       fill_color=None,
+                                       line_width=2,
+                                       background=True)
+
+            elif poly.metadata[2] == '2':
+                # this is a lake
+                self.draw_polygon(poly, fill_color='lake', background=True)
+            else:
+                self.draw_polygon(poly,
+                                  fill_color='land', background=True)
+        return None
+
+    def draw_elements(self, sc):
+        """
+        Draws the individual elements to a foreground image
+
+        :param sc: a SpillContainer object to draw
+
+        """
+        # TODO: add checks for the other status flags!
+
+        if sc.num_released > 0:  # nothing to draw if no elements
+            if sc.uncertain:
+                color = 'uncert_LE'
+            else:
+                color = 'LE'
+
+            positions = sc['positions']
+
+            # which ones are on land?
+            on_land = sc['status_codes'] == oil_status.on_land
+            self.draw_points(positions[on_land],
+                             diameter=2,
+                             color='black',
+                             #color=color,
+                             shape="x")
+            # draw the four pixels for the elements not on land and
+            # not off the map
+            self.draw_points(positions[~on_land],
+                             diameter=2,
+                             color=color,
+                             shape="round")
+
+    def draw_raster_map(self):
+        """
+        draws the raster map used for beaching to the image.
+
+        draws a grid for the pixels
+
+        this is pretty slow, but only used for diagnostics.
+        (not bad for just the lines)
+        """
+        if self.raster_map is not None:
+            raster_map = self.raster_map
+            w, h = raster_map.basebitmap.shape
+            if self.raster_map_outline:
+                # vertical lines
+                for i in range(w):
+                    coords = raster_map.projection.to_lonlat( np.array( ( (i, 0.0), (i, h) ), dtype=np.float64) )
+                    self.draw_polyline(coords, background=True, line_color='raster_map_outline')
+                # horizontal lines
+                for i in range(h):
+                    coords = raster_map.projection.to_lonlat( np.array( ( (0.0, i), (w, i) ), dtype=np.float64) )
+                    self.draw_polyline(coords, background=True, line_color='raster_map_outline')
+
+            if self.raster_map_fill:
+                for i in range(w):
+                    for j in range(h):
+                        if raster_map.basebitmap[i,j] == 1:
+                            rect = raster_map.projection.to_lonlat( np.array( ( (i, j), (i+1, j), (i+1, j+1), (i, j+1)), dtype=np.float64) )
+                            self.draw_polygon(rect, fill_color='raster_map', background=True)
+
 
     def write_output(self, step_num, islast_step=False):
         """
@@ -266,20 +423,29 @@ class Renderer(Outputter, MapCanvas):
         if not self._write_step:
             return None
 
-        image_filename = os.path.join(self.images_dir,
+        image_filename = os.path.join(self.output_dir,
                                       self.foreground_filename_format
                                       .format(step_num))
 
-        self.create_foreground_image()
+        self.clear_foreground()
+        if self.draw_back_to_fore:
+            self.copy_back_to_fore()
 
-        # do a function call so data arrays get garbage collected after
-        # function exists
-        current_time_stamp = self._draw(step_num)
+        # draw data for self.draw_ontop second so it draws on top
+        scp = self.cache.load_timestep(step_num).items()
+        if len(scp) == 1:
+            self.draw_elements(scp[0])
+        else:
+            if self.draw_ontop == 'forecast':
+                self.draw_elements(scp[1])
+                self.draw_elements(scp[0])
+            else:
+                self.draw_elements(scp[0])
+                self.draw_elements(scp[1])
 
-        # get the timestamp:
-        time_stamp = current_time_stamp.isoformat()
+        
+        time_stamp = scp[0].current_time_stamp.isoformat()
         self.save_foreground(image_filename)
-
         self.last_filename = image_filename
 
         return {'image_filename': image_filename,
@@ -293,9 +459,6 @@ class Renderer(Outputter, MapCanvas):
 
         # draw data for self.draw_ontop second so it draws on top
         scp = self.cache.load_timestep(step_num).items()
-        if self.draw_back_to_fore:
-            self.add_back_to_fore()
-
         if len(scp) == 1:
             self.draw_elements(scp[0])
         else:
@@ -308,7 +471,7 @@ class Renderer(Outputter, MapCanvas):
 
         return scp[0].current_time_stamp
 
-    def projection_class_to_dict(self):
+    def projection_to_dict(self):
         """
         store projection class as a string for now since that is all that
         is required for persisting
@@ -316,7 +479,6 @@ class Renderer(Outputter, MapCanvas):
         simple for now so we don't have to make the projection classes
         serializable
         """
-
         return '{0}.{1}'.format(self.projection.__module__,
                                 self.projection.__class__.__name__)
 
@@ -325,20 +487,20 @@ class Renderer(Outputter, MapCanvas):
         schema = self.__class__._schema()
 
         if json_ == 'save':
-            toserial['filename'] = self._filename
+            toserial['map_filename'] = self._filename
 
         return schema.serialize(toserial)
 
     def save(self, saveloc, references=None, name=None):
         '''
-        update the ``images_dir`` key in the ``json_`` to point to directory
+        update the 'output_dir' key in the json_ to point to directory
         inside saveloc, then save the json - do not copy image files or
         image directory over
         '''
         json_ = self.serialize('save')
-        out_dir = os.path.split(json_['images_dir'])[1]
-        # store images_dir relative to saveloc
-        json_['images_dir'] = os.path.join('./', out_dir)
+        out_dir = os.path.split(json_['output_dir'])[1]
+        # store output_dir relative to saveloc
+        json_['output_dir'] = os.path.join('./', out_dir)
 
         return self._json_to_saveloc(json_, saveloc, references, name)
 
@@ -347,14 +509,14 @@ class Renderer(Outputter, MapCanvas):
         '''
         loads object from json_data
 
-        prepend saveloc path to 'images_dir' and create images_dir in saveloc,
+        prepend saveloc path to 'output_dir' and create output_dir in saveloc,
         then call super to load object
         '''
         if zipfile.is_zipfile(saveloc):
             saveloc = os.path.split(saveloc)[0]
 
-        os.mkdir(os.path.join(saveloc, json_data['images_dir']))
-        json_data['images_dir'] = os.path.join(saveloc,
-                                               json_data['images_dir'])
+        os.mkdir(os.path.join(saveloc, json_data['output_dir']))
+        json_data['output_dir'] = os.path.join(saveloc,
+                                               json_data['output_dir'])
 
         return super(Renderer, cls).loads(json_data, saveloc, references)

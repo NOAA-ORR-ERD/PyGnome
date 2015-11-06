@@ -184,7 +184,10 @@ class NetCDFOutput(Outputter, Serializable):
                       ])
     _schema = NetCDFOutputSchema
 
-    def __init__(self, netcdf_filename, which_data='standard', compress=True,
+    def __init__(self,
+                 netcdf_filename,
+                 which_data='standard',
+                 compress=True,
                  **kwargs):
         """
         Constructor for Net_CDFOutput object. It reads data from cache and
@@ -408,7 +411,8 @@ class NetCDFOutput(Outputter, Serializable):
                 for var_name in self.usually_skipped_arrays:
                     self.arrays_to_output.discard(var_name)
 
-    def prepare_for_model_run(self, model_start_time,
+    def prepare_for_model_run(self,
+                              model_start_time,
                               spills,
                               **kwargs):
         """
@@ -457,7 +461,7 @@ class NetCDFOutput(Outputter, Serializable):
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         spills, **kwargs)
-        self.delete_output_files()
+        self.clean_output_files()
 
         self._update_var_attributes(spills)
 
@@ -617,9 +621,9 @@ class NetCDFOutput(Outputter, Serializable):
                                     self._u_netcdf_filename),
                 'time_stamp': time_stamp}
 
-    def delete_output_files(self):
+    def clean_output_files(self):
         '''
-        deletes ouput files that may be around
+        deletes output files that may be around
 
         called by prepare_for_model_run
 
@@ -645,7 +649,10 @@ class NetCDFOutput(Outputter, Serializable):
         self._start_idx = 0
 
     @classmethod
-    def read_data(klass, netcdf_file, time=None, index=None,
+    def read_data(klass,
+                  netcdf_file,
+                  time=None,
+                  index=None,
                   which_data='standard'):
         """
         Read and create standard data arrays for a netcdf file that was created

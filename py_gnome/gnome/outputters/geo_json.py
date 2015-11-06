@@ -74,7 +74,10 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                Field('output_dir', update=True, save=True)]
     _schema = TrajectoryGeoJsonSchema
 
-    def __init__(self, round_data=True, round_to=4, output_dir=None,
+    def __init__(self,
+                 round_data=True,
+                 round_to=4,
+                 output_dir=None,
                  **kwargs):
         '''
         :param bool round_data=True: if True, then round the numpy arrays
@@ -92,7 +95,25 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         self.round_to = round_to
         self.output_dir = output_dir
 
-        super(TrajectoryGeoJsonOutput, self).__init__(**kwargs)
+        super(TrajectoryGeoJsonOutput, self).__init__(output_dir=output_dir, **kwargs)
+
+    def prepare_for_model_run(self, *args, **kwargs):
+        """
+        prepares the outputter for a model run.
+
+        Parameters passed to base class (use super): model_start_time, cache
+
+        Does not take any other input arguments; however, to keep the interface
+        the same for all outputters, define **kwargs and pass into base class
+
+        In this case, it cleans out previous written data files
+
+        If you want to keep them, a new output_dir should be set
+        """
+
+        super(TrajectoryGeoJsonOutput, self).prepare_for_model_run(*args, **kwargs)
+        self.clean_output_files()
+
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
@@ -180,14 +201,17 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
             data = data_array.astype(p_type).tolist()
         return data
 
-    def rewind(self):
-        'remove previously written files'
-        super(TrajectoryGeoJsonOutput, self).rewind()
-        self.clean_output_files()
+    # def rewind(self):
+    #     'remove previously written files'
+    #     super(TrajectoryGeoJsonOutput, self).rewind()
+    #     self.clean_output_files()
 
     def clean_output_files(self):
+        print "in clean_output_files"
         if self.output_dir:
             files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
+            print "files are:"
+            print files
             for f in files:
                 os.remove(f)
 

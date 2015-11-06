@@ -111,6 +111,25 @@ class Test_GeoProjection:
         assert np.allclose(coords[:, :2], back_coords, rtol=1e-100,
                            atol=tol)
 
+    def test_equality(self):
+        proj1 = projections.GeoProjection(self.bounding_box, self.image_size)
+        proj2 = projections.GeoProjection(self.bounding_box, self.image_size)
+        print proj1
+        print proj2
+        assert proj1 == proj2
+        assert not proj1  != proj2
+
+
+    def test_not_equal(self):
+        proj1 = projections.GeoProjection(self.bounding_box, self.image_size)
+        proj2 = projections.GeoProjection(self.bounding_box, self.image_size)
+        proj2.image_size = (500,510)
+        proj2.set_scale(self.bounding_box)
+        assert proj1 != proj2
+        assert not proj1 == proj2
+
+
+
 
 class Test_FlatEarthProjection:
 
@@ -198,6 +217,22 @@ class Test_FlatEarthProjection:
 
         assert np.allclose(coords[:, :2], back_coords, rtol=1e-100,
                            atol=tol)
+
+    def test_equality(self):
+        proj1 = projections.FlatEarthProjection(self.bounding_box, self.image_size)
+        proj2 = projections.FlatEarthProjection(self.bounding_box, self.image_size)
+        print proj1
+        print proj2
+        assert proj1 == proj2
+        assert not proj1  != proj2
+
+    def test_not_equal(self):
+        proj1 = projections.FlatEarthProjection(self.bounding_box, self.image_size)
+        proj2 = projections.FlatEarthProjection(self.bounding_box, self.image_size)
+        proj2.image_size = (500,510)
+        proj2.set_scale(self.bounding_box)
+        assert proj1 != proj2
+        assert not proj1 == proj2
 
 
 ## tests for meters_to_lonlat
@@ -519,7 +554,7 @@ class Test_rectangular_grid_projection(object):
                                               ( (20, 14),
                                                 (34,  0),
                                               )
-                                            ) 
+                                            )
 
     def test_to_pixel_out_of_bounds(self):
 
@@ -532,5 +567,4 @@ class Test_rectangular_grid_projection(object):
         assert np.array_equal( proj.to_pixel( (35, 15, 0) ),
                                               ((4, 0),)
                                             )
-
 

@@ -46,7 +46,8 @@ class Outputter(Serializable):
                  output_timestep=None,
                  output_zero_step=True,
                  output_last_step=True,
-                 name=None):
+                 name='',
+                 output_dir=None):
         """
         sets attributes for all outputters, like output_timestep, cache
 
@@ -66,6 +67,12 @@ class Outputter(Serializable):
         :param output_last_step: default is True. If True then output for
             final step is written regardless of output_timestep
         :type output_last_step: boolean
+
+        :param name='': name for outputter
+
+        :param output_dir=None: directoyr to dump ouput in, if it needs to do this.
+        :type output_dir: string (path)
+
         """
         self.cache = cache
         self.on = on
@@ -78,8 +85,17 @@ class Outputter(Serializable):
 
         self.sc_pair = None     # set in prepare_for_model_run
 
-        if name:
-            self.name = name
+
+        self.name = name
+
+        # make sure the output_dir exits:
+        if output_dir is not None:
+            try:
+                os.mkdir(output_dir)
+            except OSError:
+                pass
+
+        self.output_dir = output_dir
 
         # reset internally used variables
         self.rewind()
@@ -219,6 +235,17 @@ class Outputter(Serializable):
             raise ValueError('cache object is not defined. It is required'
                              ' prior to calling write_output')
 
+    def clean_output_files(self):
+        '''
+        cleans out the output dir
+
+        This should be implemented by subclasses that dump files.
+
+        but each outputter type dumps different types of files, and this should
+        only clear out those. So it has to be custom implemented
+        '''
+        raise NotImplementedError("This Outputter does not suport clearing out files")
+
     def rewind(self):
         '''
         Called by model.rewind()
@@ -230,7 +257,9 @@ class Outputter(Serializable):
         self._dt_since_lastoutput = None
         self._write_step = True
 
-    def write_output_post_run(self, model_start_time, num_time_steps,
+    def write_output_post_run(self,
+                              model_start_time,
+                              num_time_steps,
                               **kwargs):
         """
         If the model has already been run and the data is cached, then use

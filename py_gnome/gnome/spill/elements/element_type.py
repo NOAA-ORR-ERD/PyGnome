@@ -305,7 +305,8 @@ def plume(distribution_type='droplet_size',
         the array in some way)
     :param windage_range=(.01, .04):
     :param windage_persist=900:
-    :param substance_name='oil_conservative':
+#    :param substance_name='oil_conservative':
+    :param substance_name=None:
     :param float density = None:
     :param str density_units='kg/m^3':
     
