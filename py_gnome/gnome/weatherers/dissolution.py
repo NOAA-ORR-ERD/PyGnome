@@ -33,7 +33,7 @@ class Dissolution(Weatherer, Serializable):
                  **kwargs):
         '''
         :param conditions: gnome.environment.Conditions object which contains
-            things like water temperature
+                           things like water temperature
         :param waves: waves object for obtaining wave_height, etc at given time
 
         TODO: we still need to validate all the inputs that this weatherer

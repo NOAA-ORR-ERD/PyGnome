@@ -23,6 +23,27 @@ wind = constant_wind(15., 270, 'knots')
 waves = Waves(wind, water)
 
 
+def test_init():
+    'test sort order for Dissolution weatherer'
+    wind = constant_wind(15., 0)
+    waves = Waves(wind, Water())
+    diss = Dissolution(waves)
+
+    print diss.array_types
+    assert all([(at in diss.array_types)
+                for at in ('mass', 'viscosity', 'density')])
+    raise
+
+
+def test_sort_order():
+    'test sort order for Dissolution weatherer'
+    wind = constant_wind(15., 0)
+    waves = Waves(wind, Water())
+    diss = Dissolution(waves)
+
+    assert weatherer_sort(diss) == 8
+
+
 def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'
     wind = constant_wind(15., 0)
@@ -37,15 +58,6 @@ def test_serialize_deseriailize():
     d_['waves'] = waves
     e.update_from_dict(d_)
     assert e.waves is waves
-
-
-def test_sort_order():
-    'test sort order for Dissolution weatherer'
-    wind = constant_wind(15., 0)
-    waves = Waves(wind, Water())
-    d = Dissolution(waves)
-
-    assert weatherer_sort(d) == 8
 
 
 def test_prepare_for_model_run():
