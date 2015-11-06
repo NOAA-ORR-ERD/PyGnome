@@ -8,6 +8,7 @@ have crossed land on the raster map
 import cython
 
 import numpy as np
+from gnome.utilities.geometry.cy_point_in_polygon import points_in_poly
 cimport numpy as cnp
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from libc.stdint cimport int16_t, int32_t, uint8_t, uint32_t
@@ -362,24 +363,30 @@ def check_land_layers(grid_layers,
         PyMem_Free(heights)
         
         
-def do_landings(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not None,
+def move_particles(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not None,
                  cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] end_positions not None,
                  cnp.ndarray[int16_t, ndim=1, mode='c'] status_codes not None,
                  cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] last_water_positions not None,
-                 cnp.ndarray[uint8_t, ndim=1, mode='c', cast=True] new_beached not None,
-                 cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] shoreline not None):
+                 cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] land_points not None):
     
     """
         This land checking algorithm is for use with the parameterized map, a long, straight shoreline.
 
         """
-    
-    cdef cnp.float64_t x1,y1,x2,y2, x3, y3, x4, y4, a1, a2, b1, b2
+    cdef cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] shoreline
+    shoreline = land_points[0:2]
+    cdef cnp.float64_t x1,y1,x2,y2, x3, y3, x4, y4, a1, a2, b1, b2, x, y, u
     [x1, y1], [x2, y2] = shoreline[0], shoreline[1]
     [a1,a2] = shoreline[1] - shoreline[0]
     
+    beaching = points_in_poly(land_points, end_positions)
+    
     for i in range(positions.shape[0]):
-        if new_beached[i]:
+        #skip if already landed
+        if (status_codes[i] == type_defs.OILSTAT_ONLAND):
+            print 'already landed'
+            continue
+        if (beaching[i]):
             p1, p2 = positions[i][0:2], end_positions[i][0:2]
             [b1,b2] = p2 - p1
             [x3, y3], [x4, y4] = p1, p2
@@ -398,4 +405,7 @@ def do_landings(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not None,
             last_water_positions[i,0] = p1[0] - ( x - p1[0])*0.99999
             last_water_positions[i,1] = p1[1] - ( y - p1[1])*0.99999
             status_codes[i] = type_defs.OILSTAT_ONLAND
+        else:
+            positions[i, 0] = end_positions[i, 0]
+            positions[i, 1] = end_positions[i, 1]
         

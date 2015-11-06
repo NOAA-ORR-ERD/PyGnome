@@ -30,7 +30,7 @@ base_dir = os.path.dirname(__file__)
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
-    start_time = datetime(2015, 9, 24, 3, 0)
+    start_time = datetime(2015, 9, 24, 1, 1)
 
     # 1 day of data in file
     # 1/2 hr in seconds

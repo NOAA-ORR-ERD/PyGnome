@@ -46,7 +46,7 @@ from gnome.utilities import projections
 
 from gnome.basic_types import oil_status, world_point_type
 from gnome.cy_gnome.cy_land_check import check_land_layers
-from gnome.cy_gnome.cy_land_check import do_landings
+from gnome.cy_gnome.cy_land_check import move_particles
 
 from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
                                                           point_in_poly)
@@ -536,11 +536,8 @@ class ParamMap(GnomeMap):
         status_codes = sc['status_codes']
         last_water_positions = sc['last_water_positions']
 
-
         # beached = 1xN numpy array of bool, elem is true if on water and next pos is on land
-        new_beached = ((status_codes == oil_status.in_water) * self.on_land(next_pos))
-        land = np.array((self.land_points[0], self.land_points[1]))
-        do_landings(start_pos, next_pos, status_codes, last_water_positions, new_beached, land)
+        move_particles(start_pos, next_pos, status_codes, last_water_positions, self.land_points)
         #status_codes[new_beached] = oil_status.on_land
 
 #         next_pos[new_beached] = self.find_land_intersection(start_pos[new_beached], next_pos[new_beached])

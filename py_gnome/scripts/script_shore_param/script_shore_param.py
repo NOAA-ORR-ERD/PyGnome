@@ -66,10 +66,10 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
     #
 
     print 'adding a RandomMover:'
-    model.movers += RandomMover(diffusion_coef=10000)
+    model.movers += RandomMover(diffusion_coef=100000)
 
     print 'adding a simple wind mover:'
-    model.movers += constant_wind_mover(15, 225, units='m/s')
+    model.movers += constant_wind_mover(10, 225, units='m/s')
 
     print 'adding a current mover:'
 
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     model = make_model()
     rend = model.outputters[0]
     for step in model:
-        rend.zoom(0.9)
+#         rend.zoom(0.9)
         if (step['step_num'] == 33):
             pass
         
