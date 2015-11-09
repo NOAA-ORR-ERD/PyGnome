@@ -10,6 +10,7 @@ import numpy as np
 
 from gnome import scripting
 from gnome import utilities
+from gnome.utilities import profiledeco as pd
 from gnome.basic_types import datetime_value_2d, numerical_methods
 
 from gnome.utilities.remote_data import get_datafile
@@ -38,10 +39,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   duration=timedelta(hours = 48),
                   time_step=3600)
 
-    mapfile = get_datafile(os.path.join(base_dir, 'PNW.bna'))
+    mapfile = get_datafile(os.path.join(base_dir, 'Perfland.bna'))
 
     print 'adding the map'
-    model.map = MapFromBNA(mapfile, refloat_halflife=1)  # seconds
+    model.map = MapFromBNA(mapfile, refloat_halflife=1, raster_size=1024*1024)  # seconds
 
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
@@ -59,27 +60,20 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = point_line_release_spill(num_elements=50000,
-                                     start_position=(-123.25,
-                                                     48.25,
+    spill1 = point_line_release_spill(num_elements=500000,
+                                     start_position=(0.0,
+                                                     0.0,
                                                      0.0),
                                      release_time=start_time)
     
-    spill2 = point_line_release_spill(num_elements=5000,
-                                     start_position=(-122.985,
-                                                     48.595,
-                                                     0.0),
-                                     release_time=start_time)
-
     model.spills += spill1
-    model.spills += spill2
 
     print 'adding a RandomMover:'
     model.movers += RandomMover(diffusion_coef=50000)
 
     print 'adding a wind mover:'
    
-    model.movers += constant_wind_mover(10, 90, units='m/s')
+    model.movers += constant_wind_mover(13, 270, units='m/s')
 
     print 'adding a current mover:'
 #     curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
@@ -99,16 +93,9 @@ if __name__ == "__main__":
     model = make_model()
     print "doing full run"
     rend = model.outputters[0]
-#     rend.graticule.set_DMS(True)
+    rend.graticule.set_DMS(True)
     for step in model:
-        if step['step_num'] == 12:
-#             rend.set_viewport(((-122.8, 48.4), (-122.6, 48.6)))
-            rend.set_viewport(((-123.25, 48.125), (-122.5, 48.75)))
-        if step['step_num'] == 18:
-            rend.set_viewport(((-123.1, 48.55), (-122.95, 48.65)))
-#         if step['step_num'] == 36:
-#             rend.set_viewport(((-122.725, 48.45), (-122.65, 48.5)))
-        # print step
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     print datetime.now() - startTime
+    pd.print_stats(5)

@@ -30,6 +30,7 @@ This is a re-write of the C++ raster map approach
 import copy
 import os
 import math
+import gnome.utilities.profiledeco as pd
 
 import numpy as np
 from colander import SchemaNode, String, Float, drop, Tuple, Integer
@@ -51,7 +52,6 @@ from gnome.cy_gnome.cy_land_check import move_particles
 from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
                                                           point_in_poly)
 from gnome.utilities.geometry.polygons import PolygonSet
-
 
 class GnomeMapSchema(base_schema.ObjType):
     map_bounds = base_schema.LongLatBounds(missing=drop)
@@ -650,9 +650,11 @@ class RasterMap(GnomeMap):
 
         self.basebitmap = np.ascontiguousarray(bitmap_array)
         if self.basebitmap.size > 16000000:
+#             self.ratios = np.array((256,32,1,), dtype=np.int32)
             self.ratios = np.array((256,32,1,), dtype=np.int32)
         elif self.basebitmap.size > 1000000:
-            self.ratios = np.array((64,8,1,), dtype=np.int32)
+#             self.ratios = np.array((64,8,1,), dtype=np.int32)
+            self.ratios = np.array((32,8,1,), dtype=np.int32)
         else :
             self.ratios = np.array((32,1,), dtype=np.int32)
         self.build_coarser_bitmaps()
@@ -660,6 +662,7 @@ class RasterMap(GnomeMap):
 
         GnomeMap.__init__(self, **kwargs)
 
+    @pd.profile
     def build_coarser_bitmaps(self):
         """
         Builds the list which contains the different resolution raster maps. 
@@ -809,6 +812,7 @@ class RasterMap(GnomeMap):
                                                                  asint=True)[0]
                                         )
 
+    @pd.profile
     def beach_elements(self, sc):
         """
         Determines which elements were or weren't beached.
