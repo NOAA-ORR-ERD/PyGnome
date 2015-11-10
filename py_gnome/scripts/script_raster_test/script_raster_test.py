@@ -94,6 +94,7 @@ if __name__ == "__main__":
     print "doing full run"
     rend = model.outputters[0]
     rend.graticule.set_DMS(True)
+    model.map.save_as_image('raster.bmp')
     for step in model:
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())

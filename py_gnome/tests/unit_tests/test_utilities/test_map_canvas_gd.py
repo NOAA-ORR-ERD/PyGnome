@@ -174,21 +174,21 @@ def test_projection(output_dir):
 
     mc.save_foreground(os.path.join(output_dir, "image_projection_south.png"))
 
-@pytest.mark.parametrize( ("val","exp","num_digits"), [(    1.1,     1.0,      1 ),
-                                                       ( 0.0011,     0.001,    1 ),
-                                                       (  1100.,     1000.0,   1 ),
-                                                       (  1900 ,     2000.0,   1 ),
-                                                       (  0.0000154, 0.00002,  1 ),
-                                                       (  0.0000154, 0.000015, 2 ),
-                                                       (  1234.56,   1200.0,   2 ),
-                                                       (  1234567,   1230000,      3 ),
-                                                      ]
-                         )
-def test_round_to_digit(val, exp, num_digits):
-
-    rounded = MapCanvas._round_to_digit(val, num_digits)
-
-    assert isclose(rounded, exp, rel_tol=1e-14)
+# @pytest.mark.parametrize( ("val","exp","num_digits"), [(    1.1,     1.0,      1 ),
+#                                                        ( 0.0011,     0.001,    1 ),
+#                                                        (  1100.,     1000.0,   1 ),
+#                                                        (  1900 ,     2000.0,   1 ),
+#                                                        (  0.0000154, 0.00002,  1 ),
+#                                                        (  0.0000154, 0.000015, 2 ),
+#                                                        (  1234.56,   1200.0,   2 ),
+#                                                        (  1234567,   1230000,      3 ),
+#                                                       ]
+#                          )
+# def test_round_to_digit(val, exp, num_digits):
+# 
+#     rounded = MapCanvas._round_to_digit(val, num_digits)
+# 
+#     assert isclose(rounded, exp, rel_tol=1e-14)
 
 
 
