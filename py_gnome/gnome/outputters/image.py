@@ -10,7 +10,7 @@ import os
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.time_utils import date_to_sec
 
-from gnome.utilities.map_canvas import MapCanvas
+from gnome.utilities.map_canvas_gd import MapCanvas
 
 from gnome.persist import class_from_objtype, References
 from gnome.persist.base_schema import CollectionItemsList

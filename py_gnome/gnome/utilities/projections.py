@@ -18,6 +18,7 @@ NOTE: all coordinates are takes as (lon, lat, depth)
 from __future__ import division
 
 import numpy as np
+import profiledeco as pd
 
 
 class NoProjection(object):

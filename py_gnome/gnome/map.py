@@ -711,19 +711,15 @@ class RasterMap(GnomeMap):
 
         :param filename: the name of the file to save to.
         '''
-        from PIL import Image
+        import py_gd
 
         bitmap = self.basebitmap.copy()
 
         #change anything not zero to 255 - to get black and white
-        np.putmask(bitmap, self.basebitmap > 0, 255)
-        im = Image.fromarray(bitmap, mode='L')
-
-        # to get it oriented right...
-        im = im.transpose(Image.ROTATE_90)
-        im = im.transpose(Image.FLIP_TOP_BOTTOM)
-
-        im.save(filename, format='PNG')
+        np.putmask(bitmap, self.basebitmap > 0, 2)
+        im = py_gd.from_array(bitmap)
+        print im.get_color_index('white');
+        im.save(filename,'bmp')
 
     def _off_bitmap(self, coord):
         """

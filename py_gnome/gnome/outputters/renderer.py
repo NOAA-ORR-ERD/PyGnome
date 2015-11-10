@@ -89,7 +89,6 @@ class Renderer(Outputter, MapCanvas):
         change projection_type from string to correct type for loading from
         save file
         """
-        viewport = dict_.pop('viewport')
         if 'projection' in dict_:
             # todo:
             # The 'projection' isn't stored as a nested object - should
@@ -101,7 +100,6 @@ class Renderer(Outputter, MapCanvas):
             obj = cls(projection=proj_inst, **dict_)
         else:
             obj = super(Renderer, cls).new_from_dict(dict_)
-        obj.viewport = viewport
         return obj
 
 

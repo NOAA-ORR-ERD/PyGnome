@@ -554,6 +554,12 @@ class GridLines(object):
         self.refresh_scale()
         
     def set_DMS(self, DMS = False):
+        '''
+        
+        :param DMS: Boolean value that specifies if Degrees/Minutes/Seconds tags are enabled.
+        
+        :type DMS: Bool
+        '''
         self.DMS = DMS
         if self.DMS :
             self.STEPS = self.DMS_STEPS
