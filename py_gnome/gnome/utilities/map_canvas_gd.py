@@ -501,12 +501,12 @@ class GridLines(object):
         
         
         #create array of lines
-        top = ((self.lat_lines+2) * self.current_interval) # top of lon lines
-        right = ((self.lon_lines+2) * self.current_interval) # right end of lat lines
+        top = ((self.lat_lines+4) * self.current_interval) # top of lon lines
+        right = ((self.lon_lines+4) * self.current_interval) # right end of lat lines
         vertical_lines = np.array([( (x*self.current_interval, 0), (x*self.current_interval, top) ) 
-                                   for x in range(0,self.lon_lines+2)])
+                                   for x in range(0,self.lon_lines+4)])
         horizontal_lines = np.array([((0, y*self.current_interval), (right, y*self.current_interval) ) 
-                                     for y in range(0,self.lat_lines+2)])
+                                     for y in range(0,self.lat_lines+4)])
         
         #shift lines into position
         delta = ((minlon // self.current_interval - 1) * self.current_interval , (minlat // self.current_interval - 1) * self.current_interval)
@@ -530,7 +530,7 @@ class GridLines(object):
         width = self.projection.image_box[1][0] - self.projection.image_box[0][0]
         height = self.projection.image_box[1][1] - self.projection.image_box[0][1]
                  
-        self.ref_len = self.viewport.width if self.ref_dim is 'w' else self.viewport.height
+        self.ref_len = width if self.ref_dim is 'w' else height
         self.current_interval = self.get_step_size(self.ref_len / self.max_lines)
         self.lon_lines = self.max_lines if self.ref_dim is 'w' else None
         self.lat_lines = self.max_lines if self.ref_dim is 'h' else None
