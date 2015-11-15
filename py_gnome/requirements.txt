@@ -32,7 +32,7 @@ pillow
 pyzmq
 Cython
 numpy
-py_gd
+git+https://github.com/NOAA-ORR-ERD/py_gd.git#egg=py_gd
 
 ## Python only packages: can be pip installed ##
 git+https://github.com/NOAA-ORR-ERD/PyNUCOS.git#egg=unit_conversion
