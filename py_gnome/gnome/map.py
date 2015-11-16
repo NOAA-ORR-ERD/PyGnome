@@ -56,7 +56,7 @@ from gnome.utilities.geometry.polygons import PolygonSet
 class GnomeMapSchema(base_schema.ObjType):
     map_bounds = base_schema.LongLatBounds(missing=drop)
     spillable_area = base_schema.PolygonSet(missing=drop)
-    land_polys = base_schema.PolygonSet(missing=drop)
+#     land_polys = base_schema.PolygonSet(missing=drop)
 
 class ParamMapSchema(GnomeMapSchema):
     center = base_schema.WorldPoint(missing=drop)
@@ -80,7 +80,7 @@ class GnomeMap(Serializable):
 
     This also serves as a description of the interface
     """
-    _update = ['map_bounds', 'spillable_area', 'land_polys']
+    _update = ['map_bounds', 'spillable_area']
     _create = []
     _create.extend(_update)
     _state = copy.deepcopy(Serializable._state)
