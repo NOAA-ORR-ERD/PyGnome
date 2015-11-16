@@ -72,7 +72,7 @@ def test_OilProps_sample_oil(oil, density, units):
     # assert abs(o.get_density() - d) < 1e-3
 
 
-@pytest.mark.parametrize(('oil', 'api'), [('LUCKENBACH FUEL OIL', 13.06)])
+@pytest.mark.parametrize(('oil', 'api'), [('LUCKENBACH FUEL OIL', 12.88)])
 def test_OilProps_DBquery(oil, api):
     """ test dbquery worked for an example like FUEL OIL NO.6 """
     o = get_oil_props(oil)
