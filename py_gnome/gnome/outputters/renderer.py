@@ -53,22 +53,22 @@ class Renderer(Outputter, MapCanvas):
 
     # This defines the colors used for the map
     #   -- they can then be referenced by name in the rest of the code.
-    map_colors = [('background', (255, 255, 255)), # white
-                  ('lake', (255, 255, 255)), # white
-                  ('land', (255, 204, 153)), # brown
-                  ('LE', (0, 0, 0)), # black
-                  ('uncert_LE', (255, 0, 0)), # red
-                  ('map_bounds', (175, 175, 175)), # grey
-                  ('spillable_area', (255, 0, 0)), #  red
-                  ('raster_map', (51, 102, 0)), # dark green
-                  ('raster_map_outline', (0, 0, 0)), # black
+    map_colors = [('background', (255, 255, 255)),  # white
+                  ('lake', (255, 255, 255)),  # white
+                  ('land', (255, 204, 153)),  # brown
+                  ('LE', (0, 0, 0)),  # black
+                  ('uncert_LE', (255, 0, 0)),  # red
+                  ('map_bounds', (175, 175, 175)),  # grey
+                  ('spillable_area', (255, 0, 0)),  # red
+                  ('raster_map', (51, 102, 0)),  # dark green
+                  ('raster_map_outline', (0, 0, 0)),  # black
                   ]
 
     background_map_name = 'background_map.png'
     foreground_filename_format = 'foreground_{0:05d}.png'
     foreground_filename_glob = 'foreground_?????.png'
 
-    ## Serialization info:
+    # Serialization info:
     _update = ['viewport', 'map_BB', 'image_size', 'draw_ontop']
     _create = ['image_size', 'projection', 'draw_ontop']
 
@@ -80,7 +80,8 @@ class Renderer(Outputter, MapCanvas):
                            save=True,
                            read=True,
                            test_for_eq=False))
-    _state.add_field( Field('output_dir', save=True, update=True, test_for_eq=False))
+    _state.add_field(Field('output_dir', save=True, update=True,
+                           test_for_eq=False))
     _schema = RendererSchema
 
     @classmethod
@@ -102,28 +103,26 @@ class Renderer(Outputter, MapCanvas):
             obj = super(Renderer, cls).new_from_dict(dict_)
         return obj
 
-
-    def __init__(
-        self,
-        map_filename=None,
-        output_dir='./',
-        image_size=(800, 600),
-        projection=None,
-        viewport=None,
-        map_BB=None,
-        land_polygons=None,
-        draw_back_to_fore=True,
-        draw_map_bounds=False,
-        draw_spillable_area=False,
-        cache=None,
-        output_timestep=None,
-        output_zero_step=True,
-        output_last_step=True,
-        draw_ontop='forecast',
-        name=None,
-        on=True,
-        **kwargs
-        ):
+    def __init__(self,
+                 map_filename=None,
+                 output_dir='./',
+                 image_size=(800, 600),
+                 projection=None,
+                 viewport=None,
+                 map_BB=None,
+                 land_polygons=None,
+                 draw_back_to_fore=True,
+                 draw_map_bounds=False,
+                 draw_spillable_area=False,
+                 cache=None,
+                 output_timestep=None,
+                 output_zero_step=True,
+                 output_last_step=True,
+                 draw_ontop='forecast',
+                 name=None,
+                 on=True,
+                 **kwargs
+                 ):
         """
         Init the image renderer.
 
@@ -137,19 +136,20 @@ class Renderer(Outputter, MapCanvas):
         :type image_size: 2-tuple of integers
 
         :param projection=None: projection instance to use:
-                                if None, set to projections.FlatEarthProjection()
+                                if None, set to
+                                projections.FlatEarthProjection()
         :type projection: a gnome.utilities.projection.Projection instance
 
-        :param viewport: viewport of map -- what gets drawn and on what
-                         scale. Default is full globe: (((-180, -90), (180, 90)))
+        :param viewport: viewport of map -- what gets drawn and on what scale.
+                         Default is full globe: (((-180, -90), (180, 90)))
         :type viewport: pair of (lon, lat) tuples ( lower_left, upper right )
 
         :param map_BB=None: bounding box of map if None, it will use the
                             bounding box of the mapfile.
 
         :param draw_back_to_fore=True: draw the background (map) to the
-                                       foregound image when outputting the images
-                                       each time step.
+                                       foregound image when outputting
+                                       the images each time step.
         :type draw_back_to_fore: boolean
 
         Following args are passed to base class Outputter's init:
@@ -180,17 +180,19 @@ class Renderer(Outputter, MapCanvas):
         call: Outputter.__init__(..)
 
         """
-        projection = projections.FlatEarthProjection() if projection is None else projection
+        projection = (projections.FlatEarthProjection()
+                      if projection is None
+                      else projection)
         # set up the canvas
         self.map_filename = map_filename
-        self.output_dir=output_dir
+        self.output_dir = output_dir
 
         if map_filename is not None and land_polygons is None:
             self.land_polygons = haz_files.ReadBNA(map_filename, 'PolygonSet')
         elif land_polygons is not None:
             self.land_polygons = land_polygons
         else:
-            self.land_polygons = [] # empty list so we can loop thru it
+            self.land_polygons = []  # empty list so we can loop thru it
 
         self.last_filename = ''
         self.draw_ontop = draw_ontop
@@ -219,20 +221,20 @@ class Renderer(Outputter, MapCanvas):
                            viewport=self.map_BB)
 
         # assorted rendering flags:
-        self.draw_map_bounds=draw_map_bounds
-        self.draw_spillable_area=draw_spillable_area
+        self.draw_map_bounds = draw_map_bounds
+        self.draw_spillable_area = draw_spillable_area
         self.raster_map = None
-        self.raster_map_fill=True
-        self.raster_map_outline=False
+        self.raster_map_fill = True
+        self.raster_map_outline = False
 
         # initilize the images:
         self.add_colors(self.map_colors)
-        self.background_color='background'
-
+        self.background_color = 'background'
 
     @property
     def map_filename(self):
         return basename(self._filename)
+
     @map_filename.setter
     def map_filename(self, name):
         self._filename = name
@@ -240,6 +242,7 @@ class Renderer(Outputter, MapCanvas):
     @property
     def draw_ontop(self):
         return self._draw_ontop
+
     @draw_ontop.setter
     def draw_ontop(self, val):
         if val not in ['forecast', 'uncertain']:
@@ -257,7 +260,8 @@ class Renderer(Outputter, MapCanvas):
         Parameters passed to base class (use super): model_start_time, cache
 
         Does not take any other input arguments; however, to keep the interface
-        the same for all outputters, define ``**kwargs`` and pass into base class
+        the same for all outputters, define ``**kwargs`` and pass into the
+        base class
 
         In this case, it draws the background image and clears the previous
         images. If you want to save the previous images, a new output dir
@@ -283,7 +287,7 @@ class Renderer(Outputter, MapCanvas):
             pass
 
         foreground_filenames = glob.glob(os.path.join(self.output_dir,
-                self.foreground_filename_glob))
+                                                      self.foreground_filename_glob))
         for name in foreground_filenames:
             os.remove(name)
 
@@ -310,17 +314,17 @@ class Renderer(Outputter, MapCanvas):
             if poly.metadata[1].strip().lower() == 'map bounds':
                 if self.draw_map_bounds:
                     self.draw_polygon(poly,
-                                       line_color='map_bounds',
-                                       fill_color=None,
-                                       line_width=2,
-                                       background=True)
-            elif poly.metadata[1].strip().lower().replace(' ','') == 'spillablearea':
+                                      line_color='map_bounds',
+                                      fill_color=None,
+                                      line_width=2,
+                                      background=True)
+            elif poly.metadata[1].strip().lower().replace(' ', '') == 'spillablearea':
                 if self.draw_spillable_area:
                     self.draw_polygon(poly,
-                                       line_color='spillable_area',
-                                       fill_color=None,
-                                       line_width=2,
-                                       background=True)
+                                      line_color='spillable_area',
+                                      fill_color=None,
+                                      line_width=2,
+                                      background=True)
 
             elif poly.metadata[2] == '2':
                 # this is a lake
@@ -352,7 +356,7 @@ class Renderer(Outputter, MapCanvas):
             self.draw_points(positions[on_land],
                              diameter=2,
                              color='black',
-                             #color=color,
+                             # color=color,
                              shape="x")
             # draw the four pixels for the elements not on land and
             # not off the map
@@ -376,20 +380,30 @@ class Renderer(Outputter, MapCanvas):
             if self.raster_map_outline:
                 # vertical lines
                 for i in range(w):
-                    coords = raster_map.projection.to_lonlat( np.array( ( (i, 0.0), (i, h) ), dtype=np.float64) )
-                    self.draw_polyline(coords, background=True, line_color='raster_map_outline')
+                    coords = raster_map.projection.to_lonlat(np.array(((i, 0.0),
+                                                                       (i, h)),
+                                                                      dtype=np.float64))
+                    self.draw_polyline(coords, background=True,
+                                       line_color='raster_map_outline')
                 # horizontal lines
                 for i in range(h):
-                    coords = raster_map.projection.to_lonlat( np.array( ( (0.0, i), (w, i) ), dtype=np.float64) )
-                    self.draw_polyline(coords, background=True, line_color='raster_map_outline')
+                    coords = raster_map.projection.to_lonlat(np.array(((0.0, i),
+                                                                       (w, i)),
+                                                                      dtype=np.float64))
+                    self.draw_polyline(coords, background=True,
+                                       line_color='raster_map_outline')
 
             if self.raster_map_fill:
                 for i in range(w):
                     for j in range(h):
-                        if raster_map.basebitmap[i,j] == 1:
-                            rect = raster_map.projection.to_lonlat( np.array( ( (i, j), (i+1, j), (i+1, j+1), (i, j+1)), dtype=np.float64) )
-                            self.draw_polygon(rect, fill_color='raster_map', background=True)
-
+                        if raster_map.basebitmap[i, j] == 1:
+                            rect = raster_map.projection.to_lonlat(np.array(((i, j),
+                                                                             (i + 1, j),
+                                                                             (i + 1, j + 1),
+                                                                             (i, j + 1)),
+                                                                            dtype=np.float64) )
+                            self.draw_polygon(rect, fill_color='raster_map',
+                                              background=True)
 
     def write_output(self, step_num, islast_step=False):
         """
@@ -441,7 +455,6 @@ class Renderer(Outputter, MapCanvas):
                 self.draw_elements(scp[0])
                 self.draw_elements(scp[1])
 
-        
         time_stamp = scp[0].current_time_stamp.isoformat()
         self.save_foreground(image_filename)
         self.last_filename = image_filename
