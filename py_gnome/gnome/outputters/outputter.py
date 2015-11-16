@@ -70,9 +70,9 @@ class Outputter(Serializable):
 
         :param name='': name for outputter
 
-        :param output_dir=None: directoyr to dump ouput in, if it needs to do this.
+        :param output_dir=None: directory to dump ouput in, if it needs to
+                                do this.
         :type output_dir: string (path)
-
         """
         self.cache = cache
         self.on = on
@@ -84,7 +84,6 @@ class Outputter(Serializable):
             self._output_timestep = None
 
         self.sc_pair = None     # set in prepare_for_model_run
-
 
         self.name = name
 
@@ -128,14 +127,16 @@ class Outputter(Serializable):
         This method gets called by the model at the beginning of a new run.
         Do what you need to do to prepare.
 
-        :param model_start_time: (Required) start time of the model run. NetCDF
-                                 time units calculated with respect to this time.
+        :param model_start_time: (Required) start time of the model run.
+                                 NetCDF time units calculated with respect
+                                 to this time.
         :type model_start_time: datetime.datetime object
 
         :param spills: (Required) model.spills object (SpillContainerPair)
         :type spills: gnome.spill_container.SpillContainerPair object
 
-        :param model_time_step: time step of the model -- used to set timespans for some outputters
+        :param model_time_step: time step of the model
+                                -- used to set timespans for some outputters
         :type model_time_step: float seconds
 
         Optional argument - in case cache needs to be updated
@@ -153,11 +154,12 @@ class Outputter(Serializable):
             so just set them here
 
         """
-        #check for required parameters -- they are None so that they can be out of order
+        # check for required parameters
+        # -- they are None so that they can be out of order
         # this breaks tests -- probably should fix the tests...
         if model_start_time is None:
             raise TypeError("model_start_time is a required parameter")
-        #if spills is None:
+        # if spills is None:
         #    raise TypeError("spills is a required parameter")
         # if model_time_step is None:
         #     raise TypeError("model_time_step is a required parameter")
@@ -244,7 +246,8 @@ class Outputter(Serializable):
         but each outputter type dumps different types of files, and this should
         only clear out those. So it has to be custom implemented
         '''
-        raise NotImplementedError("This Outputter does not suport clearing out files")
+        raise NotImplementedError('This Outputter does not suport '
+                                  'clearing out files')
 
     def rewind(self):
         '''
@@ -324,6 +327,7 @@ class Outputter(Serializable):
                                                )):
             raise ValueError('{0} does not appear to be a valid path'
                              .format(os.path.dirname(filename)))
+
     def _file_exists_error(self, file_):
         """
         invoked by prepare_for_model_run. If file already exists, it will raise
