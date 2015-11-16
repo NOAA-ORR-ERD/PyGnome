@@ -56,6 +56,7 @@ from gnome.utilities.geometry.polygons import PolygonSet
 class GnomeMapSchema(base_schema.ObjType):
     map_bounds = base_schema.LongLatBounds(missing=drop)
     spillable_area = base_schema.PolygonSet(missing=drop)
+    land_polys = base_schema.PolygonSet(missing=drop)
 
 class ParamMapSchema(GnomeMapSchema):
     center = base_schema.WorldPoint(missing=drop)
@@ -79,7 +80,7 @@ class GnomeMap(Serializable):
 
     This also serves as a description of the interface
     """
-    _update = ['map_bounds', 'spillable_area']
+    _update = ['map_bounds', 'spillable_area', 'land_polys']
     _create = []
     _create.extend(_update)
     _state = copy.deepcopy(Serializable._state)
@@ -338,48 +339,10 @@ class GnomeMap(Serializable):
 
 class ParamMap(GnomeMap):
     
-#     _update = ['map_bounds', 'spillable_area']
-#     _create = []
-#     _create.extend(_update)
-#     _state = copy.deepcopy(Serializable._state)
-#     _state.add(save=_create, update=_update)
-#     _schema = GnomeMapSchema
-#     
-#     _state.update(['map_bounds', 'spillable_area'], save=False)
-#     _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
-#     _state.add_field(Field('filename',
-#                            isdatafile=True,
-#                            save=True,
-#                            read=True,
-#                            test_for_eq=False))
-#     _schema = MapFromBNASchema
-
-#     _state = copy.deepcopy(RasterMap._state)
-#     _state.add_field(Field('filename',
-#                            isdatafile=True,
-#                            save=True,
-#                            read=True,
-#                            test_for_eq=False))
-#     _schema = MapFromBNASchema
-
     _state = copy.deepcopy(GnomeMap._state)
     _state.update(['map_bounds', 'spillable_area'], save=False)
     _state.add(save=['center', 'distance', 'bearing'], update=['center', 'distance', 'bearing'])
-#     _state.add_field(Field('center',
-#                            isdatafile=False,
-#                            save=True,
-#                            read=True,
-#                            test_for_eq=False))
-#     _state.add_field(Field('distance',
-#                            isdatafile=False,
-#                            save=True,
-#                            read=True,
-#                            test_for_eq=False))
-#     _state.add_field(Field('bearing',
-#                            isdatafile=False,
-#                            save=True,
-#                            read=True,
-#                            test_for_eq=False))
+
     _schema = ParamMapSchema
 
     def __init__(self, center = (0.0,0.0), distance = 30000, bearing = 90, **kwargs):
