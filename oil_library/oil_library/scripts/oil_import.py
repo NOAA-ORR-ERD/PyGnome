@@ -9,7 +9,7 @@ from ..oil_library_parse import OilLibraryFile
 def usage(argv):
     cmd = os.path.basename(argv[0])
     print('usage: {0} <import_file_1> <import_file_2>\n'
-          '(example: "{0} ADIOS2Export.txt OilLib")'.format(cmd))
+          '(example: "{0} OilLib ADIOS2Export.txt")'.format(cmd))
     sys.exit(1)
 
 
