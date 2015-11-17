@@ -32,7 +32,6 @@ def test_init():
     print diss.array_types
     assert all([(at in diss.array_types)
                 for at in ('mass', 'viscosity', 'density')])
-    raise
 
 
 def test_sort_order():

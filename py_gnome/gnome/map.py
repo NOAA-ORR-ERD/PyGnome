@@ -1,30 +1,22 @@
 from gnome.utilities.projections import FlatEarthProjection
 from numpy import sin, deg2rad
 
-###fixme:
-### needs some refactoring -- more clear distinction between public and
-###                           private API:
-
-# on_land, in_water, etc -- need that?
-
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
-#  - Do we want to treat lakes differently than regular water?
-
-# New features:
-#  - Map now handles spillable area and map bounds as polygons
-#  - raster is the same aspect ratio as the land
-#  - internally, raster is a numpy array
-#  - land raster is only as big as the land -- if the map bounds are bigger,
-#    extra space is not in the land map
-#  Question: what if map-bounds is smaller than land? wasted basebitmap space?
-#            (though it should work)
 
 """
 An implementation of the GNOME land-water map.
 
 This is a re-write of the C++ raster map approach
+
+Features:
+ - Map now handles spillable area and map bounds as polygons
+ - raster is the same aspect ratio as the land
+ - internally, raster is a numpy array
+ - land raster is only as big as the land -- if the map bounds are bigger,
+   extra space is not in the land map
+
 """
 
 import copy
@@ -39,7 +31,7 @@ from gnome.persist import base_schema
 
 import gnome.map
 
-from gnome.utilities.map_canvas_gd import MapCanvas
+from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
 
