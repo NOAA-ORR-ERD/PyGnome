@@ -193,26 +193,31 @@ class PolygonSet:
         polygon = np.asarray(polygon, dtype=self.dtype).reshape((-1, 2))
         # new method using resize() rather than concatanating
         # reduced test case run time from 10.3s to 1.85s !
-        #self._PointsArray = np.r_[self._PointsArray, polygon]
-        #self._IndexArray = np.r_[self._IndexArray,
+        # self._PointsArray = np.r_[self._PointsArray, polygon]
+        # self._IndexArray = np.r_[self._IndexArray,
         #                         (self._PointsArray.shape[0],)]
 
         old_length = self._PointsArray.shape[0]
 
         added_length = polygon.shape[0]
-        self._PointsArray.resize( (old_length+added_length, 2) )
-        self._PointsArray[-added_length:,:] = polygon
+        self._PointsArray.resize((old_length+added_length, 2))
+        self._PointsArray[-added_length:, :] = polygon
 
-        self._IndexArray.resize( (self._IndexArray.shape[0]+1) )
+        self._IndexArray.resize((self._IndexArray.shape[0]+1))
         self._IndexArray[-1] = self._PointsArray.shape[0]
         self._MetaDataList.append(metadata)
 
     def _get_bounding_box(self):
-        return BBox.fromPoints(self._PointsArray)
+        if len(self._PointsArray) > 0:
+            return BBox.fromPoints(self._PointsArray)
+        else:
+            return None
+
     bounding_box = property(_get_bounding_box)
 
     def _get_total_num_points(self):
         return len(self._PointsArray)
+
     total_num_points = property(_get_total_num_points)
 
     def GetPointsData(self):
