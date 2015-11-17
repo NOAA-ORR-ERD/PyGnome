@@ -46,12 +46,32 @@ class Polygon(np.ndarray):
         return arr
 
     def __array_finalize__(self, obj):
-        # I'm not entirely sure why this is required, but I copied it from:
-        #   http://www.scipy.org/Subclasses
+        '''
+            ndarray subclass instances can come about in three ways:
 
-        # We use the getattr method to set a defaults if 'obj' doesn't have
-        # the attributes
+            - explicit constructor call. This will call the usual sequence
+              of SubClass.__new__ then (if it exists) SubClass.__init__.
+            - View casting (e.g arr.view(SubClass))
+            - Creating new from template (e.g. arr[:3])
+
+            SubClass.__array_finalize__ gets called for all three methods
+            of object creation, so this is where our object creation
+            housekeeping usually goes.
+
+            I got this from:
+              http://www.scipy.org/Subclasses
+
+                which has been deprecated and changed to...
+
+              http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
+        '''
+        if obj is None:
+            return
+
         self.metadata = getattr(obj, 'metadata', {})
+
+    def __array_wrap__(self, out_arr, context=None):
+        return np.ndarray.__array_wrap__(self, out_arr, context)
 
     def __getitem__(self, index):
         """
@@ -151,8 +171,9 @@ class Polygon(np.ndarray):
         else:
             return Polygon((), metadata=orig_poly.metadata)
 
+
 class PolygonSet:
-    ## version that uses an Accumulator, rather than all that concatenating
+    # version that uses an Accumulator, rather than all that concatenating
     """
     A set of polygons (or polylines) stored as a single array of vertex data,
     and indexes into that array.
@@ -308,7 +329,8 @@ class PolygonSet:
             if index < -(len(self._IndexArray) - 1):
                 raise IndexError
             index = len(self._IndexArray) - 1 + index
-        poly = Polygon(self._PointsArray[self._IndexArray[index]:self._IndexArray[index+1]],
+        poly = Polygon(self._PointsArray[self._IndexArray[index]:
+                                         self._IndexArray[index + 1]],
                        metadata=self._MetaDataList[index],
                        dtype=self.dtype)
         return poly
