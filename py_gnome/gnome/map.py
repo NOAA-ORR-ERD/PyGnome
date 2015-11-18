@@ -605,14 +605,14 @@ class RasterMap(GnomeMap):
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
         self.basebitmap = np.ascontiguousarray(bitmap_array)
+
         if self.basebitmap.size > 16000000:
-#             self.ratios = np.array((256,32,1,), dtype=np.int32)
-            self.ratios = np.array((128,32,1,), dtype=np.int32)
+            self.ratios = np.array((128, 32, 1,), dtype=np.int32)
         elif self.basebitmap.size > 1000000:
-#             self.ratios = np.array((64,8,1,), dtype=np.int32)
-            self.ratios = np.array((32,1,), dtype=np.int32)
-        else :
-            self.ratios = np.array((16,1,), dtype=np.int32)
+            self.ratios = np.array((32, 1,), dtype=np.int32)
+        else:
+            self.ratios = np.array((16, 1,), dtype=np.int32)
+
         self.build_coarser_bitmaps()
         self.projection = projection
 
@@ -621,7 +621,7 @@ class RasterMap(GnomeMap):
     @pd.profile
     def build_coarser_bitmaps(self):
         """
-        Builds the list which contains the different resolution raster maps. 
+        Builds the list which contains the different resolution raster maps.
         Scale -> bitmap
         example for base map of 1024 x 1024:
         0 -> 1/16th bitmap 64 base cells per cell
@@ -631,25 +631,35 @@ class RasterMap(GnomeMap):
         4 -> 1/256th bitmap 4:1
         5 -> 1/512th bitmap 2:1
         6 -> 1/1024th bitmap (== base map 1:1)
-        
-        The general idea is that the particle position (an int) can quickly be mapped into any scale and the path can
-        begin from there. For example, if your path begins offshore and ends in a narrow inlet, your scale might begin
-        on the 32:1 map, but as soon as the path crosses into the (32:1) raster cell containing the inlet (which will
-        register as a land cell on that raster), the scale will decrease to 4:1, when the cell is completely water. In the end, if the
-        scale decreases to 1:1 and there's still a land hit, then land was hit.
+
+        The general idea is that the particle position (an int) can quickly
+        be mapped into any scale and the path can begin from there.
+        For example, if your path begins offshore and ends in a narrow inlet,
+        your scale might begin on the 32:1 map.
+        But as soon as the path crosses into the (32:1) raster cell containing
+        the inlet (which will register as a land cell on that raster),
+        the scale will decrease to 4:1, when the cell is completely water.
+        In the end, if the scale decreases to 1:1 and there's still a land hit,
+        then land was hit.
         """
         self.layers = []
         base_w = self.basebitmap.shape[0]
         base_h = self.basebitmap.shape[1]
-        
+
         for ratio in self.ratios[:-1]:
-            genned_layer = np.zeros((math.ceil(float(base_w) / ratio), math.ceil(float(base_h) / ratio)), dtype=np.uint8, order='C')
+            genned_layer = np.zeros((math.ceil(float(base_w) / ratio),
+                                     math.ceil(float(base_h) / ratio)),
+                                    dtype=np.uint8, order='C')
             print genned_layer.shape
+
             for j in range(0, genned_layer.shape[1]):
                 for i in range(0, genned_layer.shape[0]):
-                    genned_layer[i,j] = np.any(self.basebitmap[i*ratio:(i+1)*ratio, j*ratio:(j+1)*ratio])
-            
+                    genned_layer[i, j] = np.any(self.basebitmap[i * ratio:
+                                                                (i + 1) * ratio, j * ratio:
+                                                                (j + 1) * ratio])
+
             self.layers.append(genned_layer)
+
         self.layers.append(self.basebitmap)
         self.layers = np.array(self.layers)
 
@@ -671,11 +681,13 @@ class RasterMap(GnomeMap):
 
         bitmap = self.basebitmap.copy()
 
-        #change anything not zero to 255 - to get black and white
+        # change anything not zero to 255 - to get black and white
         np.putmask(bitmap, self.basebitmap > 0, 2)
+
         im = py_gd.from_array(bitmap)
-        print im.get_color_index('white');
-        im.save(filename,'bmp')
+        print im.get_color_index('white')
+
+        im.save(filename, 'bmp')
 
     def _off_bitmap(self, coord):
         """
@@ -701,7 +713,8 @@ class RasterMap(GnomeMap):
         .. note:: Only used internally or for testing -- no need for external
                   API to use pixel coordinates.
         """
-        # if pixel coords are negative, then off the basebitmap, so can't be on land
+        # if pixel coords are negative, then off the basebitmap,
+        # so can't be on land
         if self._off_bitmap(coord):
             return False
         else:
@@ -718,20 +731,22 @@ class RasterMap(GnomeMap):
 
         .. note:: to_pixel() converts to array of points...
         """
-        return self._on_land_pixel(self.projection.to_pixel(coord, asint=True)[0])
+        return self._on_land_pixel(self.projection.to_pixel(coord,
+                                                            asint=True)[0])
 
     def _on_land_pixel_array(self, coords):
         """
         determines which LEs are on land
 
-        :param coords:  Nx2 numpy int array of pixel coords matching the basebitmap
-        :type coords:  Nx2 numpy int array of pixel coords matching the basebitmap
+        :param coords:  pixel coords matching the basebitmap
+        :type coords:  Nx2 numpy int array
 
         returns: a (N,) array of bools - true for particles that are on land
         """
         mask = map(point_in_poly, [self.map_bounds] * len(coords), coords)
         racpy = np.copy(coords)[mask]
         mskgph = self.basebitmap[racpy[:, 0], racpy[:, 1]]
+
         chrmgph = np.array([0] * len(coords))
         chrmgph[np.array(mask)] = mskgph
 
@@ -802,8 +817,9 @@ class RasterMap(GnomeMap):
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
         # only check the ones that aren't already beached?
-        self._check_land_layers(self.layers, self.ratios, start_pos_pixel, next_pos_pixel,
-                         status_codes, last_water_pos_pixel)
+        self._check_land_layers(self.layers, self.ratios,
+                                start_pos_pixel, next_pos_pixel,
+                                status_codes, last_water_pos_pixel)
 
         # transform the points back to lat-long.
         beached = status_codes == oil_status.on_land
@@ -832,18 +848,18 @@ class RasterMap(GnomeMap):
         """
         # index into array of particles on_land
 
-        r_idx = np.where(spill_container['status_codes']
-                         == oil_status.on_land)[0]
+        r_idx = np.where(spill_container['status_codes'] ==
+                         oil_status.on_land)[0]
 
         if r_idx.size == 0:  # no particles on land
             return
 
         if self._refloat_halflife > 0.0:
-            #if 0.0, then r_idx is all of them -- they will all refloat.
+            # if 0.0, then r_idx is all of them -- they will all refloat.
             # refloat particles based on probability
 
-            refloat_probability = 1.0 - 0.5 ** (float(time_step)
-                                                / self._refloat_halflife)
+            refloat_probability = 1.0 - 0.5 ** (float(time_step) /
+                                                self._refloat_halflife)
             rnd = np.random.uniform(0, 1, len(r_idx))
 
             # subset of indices that will refloat
@@ -861,11 +877,13 @@ class RasterMap(GnomeMap):
             spill_container['positions'][r_idx] = \
                 spill_container['last_water_positions'][r_idx]
             spill_container['status_codes'][r_idx] = oil_status.in_water
-        
-    def _check_land_layers(self, raster_map_layers, ratios, positions, end_positions,
-                    status_codes, last_water_positions):
+
+    def _check_land_layers(self, raster_map_layers, ratios,
+                           positions, end_positions,
+                           status_codes, last_water_positions):
         """
-        Do the actual land-checking.  This method simply calls a Cython version:
+        Do the actual land-checking.
+        This method simply calls a Cython version:
             gnome.cy_gnome.cy_land_check.check_land()
 
         The arguments 'status_codes', 'positions' and 'last_water_positions'
@@ -892,7 +910,8 @@ class RasterMap(GnomeMap):
                 if self.spillable_area is None:
                     return True
                 else:
-                    return super(RasterMap, self).allowable_spill_position(coord)
+                    return (super(RasterMap, self)
+                            .allowable_spill_position(coord))
             else:
                 return False
         else:
