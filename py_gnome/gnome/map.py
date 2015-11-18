@@ -45,20 +45,23 @@ from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
                                                           point_in_poly)
 from gnome.utilities.geometry.polygons import PolygonSet
 
+
 class GnomeMapSchema(base_schema.ObjType):
     map_bounds = base_schema.LongLatBounds(missing=drop)
     spillable_area = base_schema.PolygonSet(missing=drop)
 #     land_polys = base_schema.PolygonSet(missing=drop)
 
+
 class ParamMapSchema(GnomeMapSchema):
     center = base_schema.WorldPoint(missing=drop)
     distance = SchemaNode(Integer(), missing=drop)
     bearing = SchemaNode(Integer(), missing=drop)
-    
+
 
 class MapFromBNASchema(GnomeMapSchema):
     filename = SchemaNode(String())
     refloat_halflife = SchemaNode(Float(), missing=drop)
+
 
 class MapFromUGridSchema(GnomeMapSchema):
     filename = SchemaNode(String())
@@ -81,7 +84,8 @@ class GnomeMap(Serializable):
 
     refloat_halflife = None  # note -- no land, so never used
 
-    def __init__(self, map_bounds=None, spillable_area=None, land_polys=None, name=None):
+    def __init__(self, map_bounds=None, spillable_area=None, land_polys=None,
+                 name=None):
         """
         This __init__ will be different for other implementations
 
@@ -94,7 +98,7 @@ class GnomeMap(Serializable):
         :type spillable_area: Either a PolygonSet object or a list of lists
             from which a polygon set can be created. Each element in the list
             is a list of points defining a polygon.
-        
+
         :param land_polys: The PolygonSet holding the land polygons
         :type land_polys: Either a PolygonSet object or a list of lists
             from which a polygon set can be created. Each element in the list
@@ -107,7 +111,7 @@ class GnomeMap(Serializable):
         """
         if map_bounds is not None:
             self.map_bounds = np.asarray(map_bounds,
-                    dtype=np.float64).reshape(-1, 2)
+                                         dtype=np.float64).reshape(-1, 2)
         else:
             # using -360 to 360 to allow stuff to cross the dateline..
             self.map_bounds = np.array(((-360, -90),
@@ -117,7 +121,6 @@ class GnomeMap(Serializable):
                                        dtype=np.float64)
 
         if spillable_area is None:
-            #self.spillable_area = self.map_bounds
             self.spillable_area = PolygonSet()
             self.spillable_area.append(self.map_bounds)
         else:
@@ -125,9 +128,9 @@ class GnomeMap(Serializable):
                 spillable_area = self._polygon_set_from_points(spillable_area)
 
             self.spillable_area = spillable_area
-            
+
         if land_polys is None:
-            #empty set, no land
+            # empty set, no land
             self.land_polys = PolygonSet()
         else:
             self.land_polys = land_polys
@@ -138,7 +141,7 @@ class GnomeMap(Serializable):
         polys['map_bounds'] = self.map_bounds
         polys['land_polys'] = self.land_polys
         return polys
-    
+
     def _polygon_set_from_points(self, poly):
         '''
         create PolygonSet() object from list of polygons which in turn is a
@@ -177,11 +180,7 @@ class GnomeMap(Serializable):
 
     def spillable_area_to_dict(self):
         'convert numpy array to a list for serializing'
-        #return self._attr_array_to_dict(self.spillable_area)
-        x = []
-        for poly in self.spillable_area:
-            x.append(poly.points.tolist())
-        return x
+        return [poly.points.tolist() for poly in self.spillable_area]
 
     def spillable_area_update_from_dict(self, poly_set):
         'convert list of tuples back to numpy array'
