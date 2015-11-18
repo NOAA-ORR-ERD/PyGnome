@@ -211,8 +211,8 @@ class GnomeMap(Serializable):
           so depth is ignored.
         """
         coords = np.asarray(coords, dtype=world_point_type)
-        on_map_mask = points_in_poly(self.map_bounds, coords)
-        return on_map_mask
+
+        return points_in_poly(self.map_bounds, coords)
 
     def on_land(self, coord):
         """
@@ -329,60 +329,66 @@ class GnomeMap(Serializable):
 
 
 class ParamMap(GnomeMap):
-    
     _state = copy.deepcopy(GnomeMap._state)
     _state.update(['map_bounds', 'spillable_area'], save=False)
-    _state.add(save=['center', 'distance', 'bearing'], update=['center', 'distance', 'bearing'])
+    _state.add(save=['center', 'distance', 'bearing'],
+               update=['center', 'distance', 'bearing'])
 
     _schema = ParamMapSchema
 
-    def __init__(self, center = (0.0,0.0), distance = 30000, bearing = 90, **kwargs):
+    def __init__(self, center=(0.0, 0.0), distance=30000, bearing=90,
+                 **kwargs):
         """
-        Creates a parameratized map, essentially a straight shoreline set a certain
-        distance and bearing from a location, usually a spill.
-        It is up to the user to put the spill and the map center in the same location.
+        Creates a parameratized map, essentially a straight shoreline set a
+        certain distance and bearing from a location, usually a spill.
+        It is up to the user to put the spill and the map center in the same
+        location.
 
         Required arguments:
 
-        :param center: tuple of coordinates describing the center point of the map
+        :param center: tuple of coordinates describing the center point
+                       of the map
 
-        :param distance: The distance in meters the closest point on the shoreline is from the center
+        :param distance: The distance in meters the closest point on the
+                         shoreline is from the center
 
-        :param bearing: The bearing the closest point on the shoreline is from the center.
-
+        :param bearing: The bearing the closest point on the shoreline is
+                        from the center.
         """
         if distance < 30:
             raise ValueError("Distance must cover at least 1 second arc")
+
         if abs(center[0]) > 360 or abs(center[1]) > 90:
             raise ValueError("Center must be within (-360,-90) to (360,90)")
-        
-        #basically, direction vector to shore
+
+        # basically, direction vector to shore
         self.center = center = (center[0], center[1], 0)
         self.distance = distance
-        map_dist = (distance, 0.0, 0)
         self.bearing = bearing
+
+        map_dist = (distance, 0.0, 0)
         d = FlatEarthProjection.meters_to_lonlat(map_dist, center)[0][0]
-        init_points = [(d,-8*d),(d,8*d),(8*d,8*d),(8*d,-8*d)]
-#         init_points = [(d,-20),(d,20),(20,20),(20,-20)]
+
+        init_points = [(d, -8 * d), (d, 8 * d),
+                       (8 * d, 8 * d), (8 * d, -8 * d)]
+
         ang = deg2rad(90 - bearing)
-        rot_matrix = [(np.cos(ang), np.sin(ang)),(-np.sin(ang),np.cos(ang))]
+        rot_matrix = [(np.cos(ang), np.sin(ang)), (-np.sin(ang), np.cos(ang))]
+
         self.land_points = np.dot(init_points, rot_matrix)
-        self.land_points = np.array([(x + center[0], y + center[1]) for (x,y) in self.land_points])
-        land_polys = PolygonSet((self.land_points,[0,4],[]))
-        land_polys._MetaDataList = [('polygon','1','1')]
+        self.land_points = np.array([(x + center[0], y + center[1])
+                                     for (x, y) in self.land_points])
+
+        land_polys = PolygonSet((self.land_points, [0, 4], []))
+        land_polys._MetaDataList = [('polygon', '1', '1')]
+
         map_bounds = np.array(((-4*d, -2*d),
-                                        (-4*d, 2*d),
-                                        (4*d, 2*d),
-                                        (4*d, -2*d)),
-                                       dtype=np.float64) + (center[0], center[1])
+                               (-4*d, 2*d),
+                               (4*d, 2*d),
+                               (4*d, -2*d)),
+                              dtype=np.float64) + (center[0], center[1])
 
-#         map_bounds = np.array(((center[0] - 3*d, center[1] + 3*d),
-#                                         (center[0] + 3*d, center[1] + 3*d),
-#                                         (center[0] + 3*d, center[1] - 3*d),
-#                                         (center[0] - 3*d, center[1] - 3*d)),
-#                                        dtype=np.float64)
         self._refloat_halflife = 0.5
-
 
         GnomeMap.__init__(self, map_bounds=map_bounds, land_polys=land_polys)
 
@@ -390,10 +396,10 @@ class ParamMap(GnomeMap):
         return (self.map_bounds[0], self.map_bounds[2])
 
     def get_land_polygon(self):
-        poly = PolygonSet((self.land_points,[0,4],[]))
-        poly._MetaDataList = [('polygon','1','1')]
-        return poly
+        poly = PolygonSet((self.land_points, [0, 4], []))
+        poly._MetaDataList = [('polygon', '1', '1')]
 
+        return poly
 
     def on_map(self, coord):
         """
@@ -417,7 +423,7 @@ class ParamMap(GnomeMap):
         :return:
          - Always returns False-- no land in this implementation
         """
-        return  self.on_map(coord) and points_in_poly(self.land_points, coord)
+        return self.on_map(coord) and points_in_poly(self.land_points, coord)
 
     def in_water(self, coord):
         """
@@ -447,7 +453,8 @@ class ParamMap(GnomeMap):
         if (coord == self.center):
             return True
         else:
-            print "Only allowable location for spill is the center this map was built with"
+            print ('Only allowable location for spill is the center '
+                   'that this map was built with')
             return False
 
     def _set_off_map_status(self, spill):
@@ -466,7 +473,7 @@ class ParamMap(GnomeMap):
         # let model decide if we want to remove elements marked as off-map
         status_codes[off_map] = oil_status.off_maps
 
-    def find_last_water_pos(self,starts, ends):
+    def find_last_water_pos(self, starts, ends):
         return starts + (ends-starts) * 0.000001
 
     def beach_elements(self, sc):
@@ -490,12 +497,10 @@ class ParamMap(GnomeMap):
         status_codes = sc['status_codes']
         last_water_positions = sc['last_water_positions']
 
-        # beached = 1xN numpy array of bool, elem is true if on water and next pos is on land
-        move_particles(start_pos, next_pos, status_codes, last_water_positions, self.land_points)
-        #status_codes[new_beached] = oil_status.on_land
-
-#         next_pos[new_beached] = self.find_land_intersection(start_pos[new_beached], next_pos[new_beached])
-#         last_water_positions[new_beached] = self.find_last_water_pos(start_pos[new_beached], next_pos[new_beached])
+        # beached = 1xN numpy array of bool, elem is true if on water
+        # and next pos is on land
+        move_particles(start_pos, next_pos, status_codes,
+                       last_water_positions, self.land_points)
 
     def refloat_elements(self, spill_container, time_step):
         """
@@ -505,20 +510,17 @@ class ParamMap(GnomeMap):
         :param spill_container: the current spill container
         :type spill_container:  :class:`gnome.spill_container.SpillContainer`
         """
-        # index into array of particles on_land
-
-        r_idx = np.where(spill_container['status_codes']
-                         == oil_status.on_land)[0]
+        r_idx = np.where(spill_container['status_codes'] ==
+                         oil_status.on_land)[0]
 
         if r_idx.size == 0:  # no particles on land
             return
 
         if self._refloat_halflife > 0.0:
-            #if 0.0, then r_idx is all of them -- they will all refloat.
+            # if 0.0, then r_idx is all of them -- they will all refloat.
             # refloat particles based on probability
-
-            refloat_probability = 1.0 - 0.5 ** (float(time_step)
-                                                / self._refloat_halflife)
+            refloat_probability = 1.0 - 0.5 ** (float(time_step) /
+                                                self._refloat_halflife)
             rnd = np.random.uniform(0, 1, len(r_idx))
 
             # subset of indices that will refloat
