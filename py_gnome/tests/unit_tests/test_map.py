@@ -17,7 +17,7 @@ import gnome.map
 from gnome.basic_types import oil_status, status_code_type
 from gnome.utilities.projections import NoProjection
 
-from gnome.map import MapFromBNA, RasterMap, MapFromUGrid
+from gnome.map import GnomeMap, MapFromBNA, RasterMap, MapFromUGrid
 
 from conftest import sample_sc_release
 
@@ -85,7 +85,7 @@ def test_in_water_resolution():
 class Test_GnomeMap:
 
     def test_on_map(self):
-        gmap = gnome.map.GnomeMap()
+        gmap = GnomeMap()
         assert gmap.on_map((0., 0., 0.)) is True
 
         # too big latitude
@@ -106,11 +106,11 @@ class Test_GnomeMap:
         assert gmap.on_map((0., -361.0, 0.)) is False
 
     def test_on_land(self):
-        gmap = gnome.map.GnomeMap()
+        gmap = GnomeMap()
         assert gmap.on_land((18.0, -87.0, 0.)) is False
 
     def test_in_water(self):
-        gmap = gnome.map.GnomeMap()
+        gmap = GnomeMap()
 
         assert gmap.in_water((18.0, -87.0, 0.))
 
@@ -126,7 +126,7 @@ class Test_GnomeMap:
 
         map_bounds = ((-40.0, 50.0), (-40.0, 58.0), (-30.0, 58.0),
                       (-35.0, 53.0), (-30.0, 50.0))
-        gmap = gnome.map.GnomeMap(map_bounds=map_bounds)
+        gmap = GnomeMap(map_bounds=map_bounds)
 
         points = ((-35, 55, 0.), (-45, 55, 0.))
 
@@ -136,14 +136,13 @@ class Test_GnomeMap:
         assert np.array_equal(result, (True, False))
 
     def test_allowable_spill_position(self):
-        gmap = gnome.map.GnomeMap()
+        gmap = GnomeMap()
 
         assert gmap.allowable_spill_position((18.0, -87.0, 0.)) is True
-
         assert gmap.allowable_spill_position((370.0, -87.0, 0.)) is False
 
-    def test_GnomeMap_from_dict(self):
-        gmap = gnome.map.GnomeMap()
+    def test_update_from_dict(self):
+        gmap = GnomeMap()
 
         json_ = gmap.serialize('save')
         json_['map_bounds'] = [(-10, 10), (10, 10),
@@ -153,6 +152,35 @@ class Test_GnomeMap:
 
         gmap.update_from_dict(dict_)
         u_json_ = gmap.serialize('save')
+
+        for key in json_:
+            assert u_json_[key] == json_[key]
+
+    @pytest.mark.parametrize("json_", (
+                                       {'name': u'GnomeMap',
+                                        'obj_type': u'gnome.map.GnomeMap',
+                                        'json_': u'save',
+                                        'map_bounds': [(-10.0, 10.0),
+                                                       (10.0, 10.0),
+                                                       (10.0, -10.0),
+                                                       (-10.0, -10.0)],
+                                        'spillable_area': [[(-360.0, -90.0),
+                                                            (-360.0, 90.0),
+                                                            (360.0, 90.0),
+                                                            (360.0, -90.0)]]
+                                        },
+                                       {'obj_type': u'gnome.map.GnomeMap',
+                                        'json_': u'webapi',
+                                        },
+                                       )
+                             )
+    def test_new_from_dict(self, json_):
+        context = json_['json_']
+
+        dict_ = GnomeMap.deserialize(json_)
+        gmap = GnomeMap.new_from_dict(dict_)
+
+        u_json_ = gmap.serialize(context)
 
         for key in json_:
             assert u_json_[key] == json_[key]
