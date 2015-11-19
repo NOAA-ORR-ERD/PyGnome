@@ -10,6 +10,7 @@ from colander import SchemaNode, String, drop
 from gnome.persist import base_schema, class_from_objtype
 
 from . import Renderer
+from py_gd import Animation
 from gnome.utilities.map_canvas_gd import MapCanvas
 from gnome.utilities.serializable import Field
 from gnome.utilities.file_tools import haz_files
@@ -19,8 +20,10 @@ from gnome.basic_types import oil_status
 
 
 class Animation(Renderer):
-    def __init__(self, *args, **kwargs):
-        Renderer.__init__(self, *args, **kwargs)
+    def __init__(self, delay=50, repeat=True, **kwargs):
+        self.repeat = repeat
+        self.delay = delay
+        Renderer.__init__(self, **kwargs)
 
     def clean_output_files(self):
         # clear out the output dir:
@@ -33,6 +36,11 @@ class Animation(Renderer):
 
         anim_file = os.path.join(self.output_dir, self.animation_filename)
         os.remove(anim_file)
+
+    def start_animation(self, filename):
+        self.animation = Animation(filename, self.delay)
+        l = 0 if self.repeat else -1
+        self.animation.begin_anim(filename, self.back_image, l)
 
     def prepare_for_model_run(self, *args, **kwargs):
         """
@@ -49,10 +57,23 @@ class Animation(Renderer):
         should be set.
         """
         super(Renderer, self).prepare_for_model_run(*args, **kwargs)
-
         self.clean_output_files()
-
         self.draw_background()
-        
-        self.save_background(os.path.join(self.output_dir,
-                                          self.background_map_name)
+        self.start_animation(self.filename)
+
+    def save_foreground_frame(self, animation, delay=50):
+        """
+        save the foreground image to the specified animation with the specified delay
+
+        :param animation: py_gd animation object to add the frame to
+        :type animation: py_gd.Animation
+
+        :param delay: delay after this frame in 1/100s
+        :type delay: integer > 0
+        """
+
+        self.animation.add_frame(self.fore_image, delay)
+
+
+    def write_output_post_run(self, **kwargs):
+        self.animation.close_anim()
