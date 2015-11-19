@@ -382,10 +382,10 @@ class ParamMap(GnomeMap):
         land_polys = PolygonSet((self.land_points, [0, 4], []))
         land_polys._MetaDataList = [('polygon', '1', '1')]
 
-        map_bounds = np.array(((-4*d, -2*d),
-                               (-4*d, 2*d),
-                               (4*d, 2*d),
-                               (4*d, -2*d)),
+        map_bounds = np.array(((-4 * d, -2 * d),
+                               (-4 * d, 2 * d),
+                               (4 * d, 2 * d),
+                               (4 * d, -2 * d)),
                               dtype=np.float64) + (center[0], center[1])
 
         self._refloat_halflife = 0.5
@@ -973,11 +973,12 @@ class MapFromBNA(RasterMap):
                    This is only used when loading object from save file.
         :type id: string
         """
-
         self.filename = filename
-        ## fixme: do some file type checking here.
+
+        # fixme: do some file type checking here.
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
+
         self.name = kwargs.pop('name', os.path.split(filename)[1])
 
         # find the spillable area and map bounds:
@@ -1015,14 +1016,11 @@ class MapFromBNA(RasterMap):
         # todo: should there be a check between spillable_area read from BNA
         # versus what the user entered. if this is within spillable_area for
         # BNA, then include it? else ignore
-        #spillable_area = kwargs.pop('spillable_area', spillable_area)
-
         spillable_area = kwargs.pop('spillable_area', spillable_area)
         map_bounds = kwargs.pop('map_bounds', map_bounds)
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-
         aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
                         (BB.Width / BB.Height))
 
@@ -1032,22 +1030,24 @@ class MapFromBNA(RasterMap):
         canvas = MapCanvas(image_size=(w, h),
                            preset_colors=None,
                            background_color='water',
-                           viewport=BB,
-                           )
-        canvas.add_colors( ( ('water', (  0, 255, 255)), # aqua -- color doesn't matter here, only index
-                             ('land',  (255, 204, 153)), # brown
-                            ))
+                           viewport=BB)
+        # -- color doesn't matter here, only index
+        canvas.add_colors((('water', (0, 255, 255)),  # aqua
+                           ('land',  (255, 204, 153)),  # brown
+                           ))
         canvas.clear_background()
 
-        ## draw the land to the background
+        # draw the land to the background
         for poly in land_polys:
-            if poly.metadata[2] == '1': ##fixme -- this should be something like "land"
+            # fixme -- this should be something like "land"
+            if poly.metadata[2] == '1':
                 canvas.draw_polygon(poly,
                                     line_color='land',
                                     fill_color='land',
                                     line_width=1,
                                     background=True)
-            elif poly.metadata[2] == '2': ##fixme -- this should be something like "lake"
+            # fixme -- this should be something like "lake"
+            elif poly.metadata[2] == '2':
                 # this is a lake, draw as water
                 canvas.draw_polygon(poly,
                                     line_color='water',
@@ -1056,10 +1056,9 @@ class MapFromBNA(RasterMap):
                                     background=True)
 
         # just for testing
-        #canvas.save_background("raster_map_test.png")
+        # canvas.save_background("raster_map_test.png")
 
-        # # get the basebitmap as a numpy array:
-
+        # get the basebitmap as a numpy array:
         bitmap_array = canvas.back_asarray()
 
         RasterMap.__init__(self,
@@ -1070,6 +1069,7 @@ class MapFromBNA(RasterMap):
                            land_polys=land_polys,
                            **kwargs)
         return None
+
 
 class MapFromUGrid(RasterMap):
     """
