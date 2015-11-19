@@ -565,6 +565,24 @@ class Test_MapfromBNA:
 
         assert not self.bna_map.on_map(point_off_map)
 
+    def test_to_geojson(self):
+        geo_json = self.bna_map.to_geojson()
+
+        assert geo_json['type'] == 'FeatureCollection'
+        assert 'features' in geo_json
+
+        for f in geo_json['features']:
+            assert 'type' in f
+            assert 'geometry' in f
+            assert 'coordinates' in f['geometry']
+            for coord_coll in f['geometry']['coordinates']:
+                assert len(coord_coll) == 1
+
+                # This is the level where the individual coordinates are
+                assert len(coord_coll[0]) > 1
+                for c in coord_coll[0]:
+                    assert len(c) == 2
+
 
 @pytest.mark.parametrize("json_", ('save', 'webapi'))
 def test_serialize_deserialize(json_):

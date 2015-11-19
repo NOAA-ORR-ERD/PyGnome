@@ -27,15 +27,20 @@ import gnome.utilities.profiledeco as pd
 import numpy as np
 from colander import SchemaNode, String, Float, drop, Tuple, Integer
 
+from geojson import FeatureCollection, Feature, MultiPolygon
+
 from gnome.persist import base_schema
 
 import gnome.map
 
+from gnome.utilities import projections
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
+from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file,
+                                                      ogr_layers,
+                                                      ogr_features)
 
-from gnome.utilities import projections
 
 from gnome.basic_types import oil_status, world_point_type
 from gnome.cy_gnome.cy_land_check import check_land_layers
@@ -1031,7 +1036,7 @@ class MapFromBNA(RasterMap):
                            preset_colors=None,
                            background_color='water',
                            viewport=BB)
-        # -- color doesn't matter here, only index
+        # color doesn't matter here, only index
         canvas.add_colors((('water', (0, 255, 255)),  # aqua
                            ('land',  (255, 204, 153)),  # brown
                            ))
@@ -1069,6 +1074,44 @@ class MapFromBNA(RasterMap):
                            land_polys=land_polys,
                            **kwargs)
         return None
+
+    def to_geojson(self):
+        map_file = ogr_open_file(self.filename)
+        shoreline_geo = []
+
+        for layer in ogr_layers(map_file):
+            for f in ogr_features(layer):
+                primary_id = f.GetFieldAsString('Primary ID')
+
+                # robust but slow solution ~ 1 second processing time
+                # if primary_id == 'SpillableArea':
+                #     spillarea_features.append(json.loads(f.ExportToJson()))
+                # elif primary_id == 'Map Bounds':
+                #     bounds_features.append(json.loads(f.ExportToJson()))
+                # else:
+                #     shoreline_features.append(json.loads(f.ExportToJson()))
+                #     shoreline_geo.append(json.loads(f.GetGeometryRef().ExportToJson())['coordinates'][0])
+
+                # only doing what we need at the moment
+                # in the future we might need the other layers
+                if primary_id not in ('SpillableArea', 'Map Bounds'):
+                    # apparently this is how you get to the actual
+                    # map coordinates using OGR.  It seems a bit brittle.
+                    # But this is much more efficient than exporting
+                    # to json.
+                    geom = f.GetGeometryRef()
+                    poly = geom.GetGeometryRef(0)
+                    ring = poly.GetGeometryRef(0)
+
+                    shoreline_geo.append([ring.GetPoints()])
+
+        shoreline = Feature(id="1",
+                            properties={'name': 'Shoreline'},
+                            geometry=MultiPolygon(coordinates=shoreline_geo
+                                                  )
+                            )
+
+        return FeatureCollection([shoreline])
 
 
 class MapFromUGrid(RasterMap):
