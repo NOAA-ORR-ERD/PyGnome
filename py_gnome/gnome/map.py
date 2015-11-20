@@ -544,6 +544,15 @@ class ParamMap(GnomeMap):
                 spill_container['last_water_positions'][r_idx]
             spill_container['status_codes'][r_idx] = oil_status.in_water
 
+    def to_geojson(self):
+        shoreline_geo = [p.points.tolist() for p in self.land_polys]
+
+        shoreline = Feature(id="1",
+                            properties={'name': 'Shoreline'},
+                            geometry=MultiPolygon(coordinates=[shoreline_geo]))
+
+        return FeatureCollection([shoreline])
+
 
 class RasterMap(GnomeMap):
     """
@@ -1107,9 +1116,7 @@ class MapFromBNA(RasterMap):
 
         shoreline = Feature(id="1",
                             properties={'name': 'Shoreline'},
-                            geometry=MultiPolygon(coordinates=shoreline_geo
-                                                  )
-                            )
+                            geometry=MultiPolygon(coordinates=shoreline_geo))
 
         return FeatureCollection([shoreline])
 

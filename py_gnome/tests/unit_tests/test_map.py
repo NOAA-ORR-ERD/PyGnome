@@ -6,7 +6,6 @@ Tests of the map code.
 
 Designed to be run with py.test
 """
-
 from __future__ import division
 import os
 
@@ -156,8 +155,7 @@ class Test_GnomeMap:
         for key in json_:
             assert u_json_[key] == json_[key]
 
-    @pytest.mark.parametrize("json_", (
-                                       {'name': u'GnomeMap',
+    @pytest.mark.parametrize("json_", ({'name': u'GnomeMap',
                                         'obj_type': u'gnome.map.GnomeMap',
                                         'json_': u'save',
                                         'map_bounds': [(-10.0, 10.0),
@@ -210,6 +208,25 @@ class Test_ParamMap:
     def test_land_generation(self):
         pmap1 = gnome.map.ParamMap((0, 0), 10000, 90)
         print pmap1.land_points
+
+    def test_to_geojson(self):
+        pmap = gnome.map.ParamMap((0, 0), 10000, 90)
+        geo_json = pmap.to_geojson()
+
+        assert geo_json['type'] == 'FeatureCollection'
+        assert 'features' in geo_json
+
+        for f in geo_json['features']:
+            assert 'type' in f
+            assert 'geometry' in f
+            assert 'coordinates' in f['geometry']
+            for coord_coll in f['geometry']['coordinates']:
+                assert len(coord_coll) == 1
+
+                # This is the level where the individual coordinates are
+                assert len(coord_coll[0]) > 1
+                for c in coord_coll[0]:
+                    assert len(c) == 2
 
 
 @pytest.mark.parametrize("json_", ('save', 'webapi'))
