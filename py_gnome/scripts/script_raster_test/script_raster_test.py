@@ -23,6 +23,7 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.outputters import Renderer
+from gnome.outputters.animated_gif import Animation
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -49,18 +50,23 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # default is 'forecast' LEs draw on top
     renderer = Renderer(mapfile, images_dir, size=(800, 600),
                         output_timestep=timedelta(hours=1))
+    animator = Animation(mapfile, images_dir, size=(800, 600),
+                        output_timestep=timedelta(hours=1), delay=20,
+                        timestamp_attrib={'size': 'medium'})
+    animator.graticule.set_DMS(True)
 #     renderer.viewport = ((-124.25, 47.5), (-122.0, 48.70))
     
 
     print 'adding outputters'
     model.outputters += renderer
+    model.outputters += animator
 
     print 'adding a spill'
     # for now subsurface spill stays on initial layer
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = point_line_release_spill(num_elements=500000,
+    spill1 = point_line_release_spill(num_elements=5000,
                                      start_position=(0.0,
                                                      0.0,
                                                      0.0),
@@ -96,6 +102,10 @@ if __name__ == "__main__":
     rend.graticule.set_DMS(True)
     model.map.save_as_image('raster.bmp')
     for step in model:
+        if step['step_num'] == 12:
+            rend.set_timestamp_attrib(on=False)
+        if step['step_num'] == 24:
+            rend.set_timestamp_attrib(on=True)
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     print datetime.now() - startTime

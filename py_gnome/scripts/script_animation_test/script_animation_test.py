@@ -95,7 +95,7 @@ if __name__ == "__main__":
     rend = model.outputters[0]
 #     rend.graticule.set_DMS(True)
     for step in model:
-        if step['step_num'] == 1:
+        if step['step_num'] == 3:
             rend.set_viewport(((-122.9, 45.6), (-122.6, 46.0)))
 #             rend.set_viewport(((-122.8, 48.4), (-122.6, 48.6)))
 #             rend.set_viewport(((-123.25, 48.125), (-122.5, 48.75)))

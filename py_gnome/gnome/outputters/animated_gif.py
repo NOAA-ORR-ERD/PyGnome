@@ -1,8 +1,5 @@
 import os
 from os.path import basename
-import glob
-import copy
-import zipfile
 import numpy as np
 
 from colander import SchemaNode, String, drop
@@ -28,7 +25,10 @@ class Animation(Renderer):
         if 'delay' in kwargs:
             self.delay = kwargs['delay']
         Renderer.__init__(self,*args, **kwargs)
-        self.anim_filename = '%s_anim.gif' % os.path.splitext(self._filename)[0]
+        if 'filename' in kwargs:
+            self.anim_filename = kwargs['filename']
+        else:
+            self.anim_filename = '%s_anim.gif' % os.path.splitext(self._filename)[0]
 
     def clean_output_files(self):
         # clear out the output dir:
@@ -45,7 +45,6 @@ class Animation(Renderer):
         except OSError:
             # it's not there to delete..
             pass
-        
 
     def start_animation(self, filename):
         self.animation = py_gd.Animation(filename, self.delay)
@@ -70,7 +69,7 @@ class Animation(Renderer):
         super(Renderer, self).prepare_for_model_run(*args, **kwargs)
         self.clean_output_files()
         self.draw_background()
-        self.start_animation(self.anim_filename)
+        self.start_animation(os.path.join(self.anim_filename))
 
     def save_foreground_frame(self, animation, delay=50):
         """
@@ -131,9 +130,10 @@ class Animation(Renderer):
                 self.draw_elements(scp[0])
                 self.draw_elements(scp[1])
 
-        time_stamp = scp[0].current_time_stamp.isoformat()
+        time_stamp = scp[0].current_time_stamp
+        self.draw_timestamp(time_stamp)
         self.save_foreground_frame(self.animation, self.delay)
-
+        
     def write_output_post_run(self, **kwargs):
         print 'closing animation'
         self.animation.close_anim()

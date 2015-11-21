@@ -121,6 +121,7 @@ class Renderer(Outputter, MapCanvas):
                  draw_ontop='forecast',
                  name=None,
                  on=True,
+                 timestamp_attrib={},
                  **kwargs
                  ):
         """
@@ -230,6 +231,7 @@ class Renderer(Outputter, MapCanvas):
         # initilize the images:
         self.add_colors(self.map_colors)
         self.background_color = 'background'
+        self.set_timestamp_attrib(timestamp_attrib)
 
     @property
     def map_filename(self):
@@ -275,6 +277,43 @@ class Renderer(Outputter, MapCanvas):
         self.save_background(os.path.join(self.output_dir,
                                           self.background_map_name)
                              )
+
+    def set_timestamp_attrib(self, *args, **kwargs):
+        """
+        Function to set details of the timestamp's appearance when printed. These details are stored as
+        d dict. The list of recognized options is documented in the draw_timestamp() function.
+        """
+        if len(args) > 0 and isinstance(args[0], dict):
+            #if dict is passed through args
+            kwargs = args[0]
+        d = kwargs
+        on = d['on'] if 'on' in d else True
+        dt_format = d['format'] if 'format' in d else '%c'
+        background = d['background'] if 'background' in d else 'white'
+        color = d['color'] if 'color' in d else 'black'
+        size = d['size'] if 'size' in d else ('small')
+        position = d['position'] if 'position' in d else self.projection.to_lonlat((self.fore_image.width/2, self.fore_image.height))
+        align = d['alignment'] if 'alignment' in d else 'cb'
+        
+        #save attributes to a field for reference
+        self.timestamp_attribs = {'on':on,
+                           'dt_format': dt_format,
+                           'background': background,
+                           'color': color,
+                           'size': size,
+                           'position': position,
+                           'align': align}
+
+        def gen_draw_timestamp(time):
+            if on:
+                self.draw_text([(time.strftime(dt_format), position)], size, color, align, background)
+            else:
+                pass
+
+        self.draw_timestamp = gen_draw_timestamp
+
+    def draw_timestamp(self, time): 
+        pass
 
     def clean_output_files(self):
 
@@ -455,7 +494,8 @@ class Renderer(Outputter, MapCanvas):
                 self.draw_elements(scp[0])
                 self.draw_elements(scp[1])
 
-        time_stamp = scp[0].current_time_stamp.isoformat()
+        time_stamp = scp[0].current_time_stamp
+        self.draw_timestamp(time_stamp)
         self.save_foreground(image_filename)
         self.last_filename = image_filename
 

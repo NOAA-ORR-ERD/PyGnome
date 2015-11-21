@@ -327,12 +327,27 @@ class MapCanvas(object):
                          line_width=line_width,
                          )
     
-    def draw_text(self, text_list, background = False):
-        img = self.back_image if background else self.fore_image
+    def draw_text(self, text_list, size='small', color='black', align='lt', background='none', draw_to_back=False):
+        """
+        Draw ascii text to the image
+
+        :param text_list: sequence of strings to be printed, and the locations they are to be located
+        :type text_list: ['string', (lon, lat)]
+
+        :param size: size of the text to be printed
+        :type size: one of the following strings: 'tiny', 'small', 'medium', 'large', 'giant'
+
+        :param color: color of the text to be printed
+        :type color: a valid color string in the py_gd Image color palettes
+        
+        :param align: sets the principal point of the text bounding box.
+        :type align: one of the following strings 'lt', 'ct', 'rt', 'r', 'rb', 'cb', 'lb', 'l'
+        """
+        img = self.back_image if draw_to_back else self.fore_image
         for tag in text_list:
             point = (tag[1][0], tag[1][1], 0)
             point = self.projection.to_pixel(point, asint=True)[0]
-            img.draw_text(tag[0],point, 'small', 'black')
+            img.draw_text(tag[0], point, size, color, align, background)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # code from renderer 
@@ -342,7 +357,6 @@ class MapCanvas(object):
         self.draw_tags()
 
     def draw_land(self):
-        
         return None
 
     def draw_graticule(self, background=True):
@@ -353,11 +367,10 @@ class MapCanvas(object):
         """
         for line in self.graticule.get_lines():
             self.draw_polyline(line, 'black', 1, background)
-            
-    def draw_tags(self, background = True):
-        self.draw_text(self.graticule.get_tags(), True)
-    
-            
+
+    def draw_tags(self, draw_to_back=True):
+        self.draw_text(self.graticule.get_tags(), draw_to_back=True)
+
     def save_background(self, filename, file_type='png'):
         self.back_image.save(filename, file_type)
 
@@ -409,12 +422,11 @@ class GridLines(object):
         DEGREE * 40,
     )
     DMS_COUNT = len(DMS_STEPS)
-    
+
     DEGREE = np.float64(1.0)
     TENTH = DEGREE / 10.0
     HUNDREDTH = DEGREE / 100.0
     THOUSANDTH = DEGREE / 1000.0
-
 
     DEG_STEPS = (
         THOUSANDTH,
