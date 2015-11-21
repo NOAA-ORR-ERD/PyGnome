@@ -52,7 +52,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         output_timestep=timedelta(hours=1))
     animator = Animation(mapfile, images_dir, size=(800, 600),
                         output_timestep=timedelta(hours=1), delay=20,
-                        timestamp_attrib={'size': 'medium'})
+                        preset_colors='web',
+                        timestamp_attrib={'size': 'medium', 'color':'uncert_LE'})
+    animator.set_timestamp_attrib(format='%a %c')
     animator.graticule.set_DMS(True)
 #     renderer.viewport = ((-124.25, 47.5), (-122.0, 48.70))
     

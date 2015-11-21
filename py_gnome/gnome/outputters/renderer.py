@@ -231,6 +231,7 @@ class Renderer(Outputter, MapCanvas):
         # initilize the images:
         self.add_colors(self.map_colors)
         self.background_color = 'background'
+        self.timestamp_attribs={}
         self.set_timestamp_attrib(timestamp_attrib)
 
     @property
@@ -285,35 +286,23 @@ class Renderer(Outputter, MapCanvas):
         """
         if len(args) > 0 and isinstance(args[0], dict):
             #if dict is passed through args
-            kwargs = args[0]
-        d = kwargs
+            kwargs.update(args[0])
+        self.timestamp_attribs.update(kwargs)
+
+    def draw_timestamp(self, time): 
+        d = self.timestamp_attribs
         on = d['on'] if 'on' in d else True
+        if not on:
+            return
         dt_format = d['format'] if 'format' in d else '%c'
         background = d['background'] if 'background' in d else 'white'
         color = d['color'] if 'color' in d else 'black'
-        size = d['size'] if 'size' in d else ('small')
+        size = d['size'] if 'size' in d else 'small'
         position = d['position'] if 'position' in d else self.projection.to_lonlat((self.fore_image.width/2, self.fore_image.height))
         align = d['alignment'] if 'alignment' in d else 'cb'
-        
-        #save attributes to a field for reference
-        self.timestamp_attribs = {'on':on,
-                           'dt_format': dt_format,
-                           'background': background,
-                           'color': color,
-                           'size': size,
-                           'position': position,
-                           'align': align}
 
-        def gen_draw_timestamp(time):
-            if on:
-                self.draw_text([(time.strftime(dt_format), position)], size, color, align, background)
-            else:
-                pass
+        self.draw_text([(time.strftime(dt_format), position)], size, color, align, background)
 
-        self.draw_timestamp = gen_draw_timestamp
-
-    def draw_timestamp(self, time): 
-        pass
 
     def clean_output_files(self):
 
