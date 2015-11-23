@@ -51,7 +51,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     renderer = Renderer(mapfile, images_dir, size=(800, 600),
                         output_timestep=timedelta(hours=1))
     animator = Animation(mapfile, images_dir, size=(800, 600),
-                        output_timestep=timedelta(hours=1), delay=20,
+                        output_timestep=timedelta(hours=1), 
+                        delay=20,
                         preset_colors='web',
                         timestamp_attrib={'size': 'medium', 'color':'uncert_LE'})
     animator.set_timestamp_attrib(format='%a %c')

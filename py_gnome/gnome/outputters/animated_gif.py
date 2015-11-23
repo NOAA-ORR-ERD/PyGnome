@@ -18,6 +18,19 @@ from gnome.basic_types import oil_status
 
 class Animation(Renderer):
     def __init__(self, *args, **kwargs):
+        '''
+        TODO: Recheck this!
+        Animation renderer. This creates .gif animations using py_gd. 
+        
+        :param repeat: Whether the animation will repeat or not
+        :type repeat: Boolean
+        
+        :param delay: The delay between frames in 1/100s of a second
+        :type delay: int
+        
+        :param filename: The name of the animation output file
+        :type filename: String
+        '''
         self.repeat=True
         self.delay=50
         if 'repeat' in kwargs:
