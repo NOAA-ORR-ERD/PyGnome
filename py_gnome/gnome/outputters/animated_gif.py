@@ -8,7 +8,7 @@ from gnome.persist import base_schema, class_from_objtype
 
 from . import Renderer
 import py_gd
-from gnome.utilities.map_canvas_gd import MapCanvas
+from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Field
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities import projections
@@ -21,23 +21,23 @@ class Animation(Renderer):
         '''
         TODO: Recheck this!
         Animation renderer. This creates .gif animations using py_gd. 
-        
+
         :param repeat: Whether the animation will repeat or not
         :type repeat: Boolean
-        
+
         :param delay: The delay between frames in 1/100s of a second
         :type delay: int
-        
+
         :param filename: The name of the animation output file
         :type filename: String
         '''
-        self.repeat=True
-        self.delay=50
+        self.repeat = True
+        self.delay = 50
         if 'repeat' in kwargs:
             self.repeat = kwargs['repeat']
         if 'delay' in kwargs:
             self.delay = kwargs['delay']
-        Renderer.__init__(self,*args, **kwargs)
+        Renderer.__init__(self, *args, **kwargs)
         if 'filename' in kwargs:
             self.anim_filename = kwargs['filename']
         else:
@@ -146,7 +146,7 @@ class Animation(Renderer):
         time_stamp = scp[0].current_time_stamp
         self.draw_timestamp(time_stamp)
         self.save_foreground_frame(self.animation, self.delay)
-        
+
     def write_output_post_run(self, **kwargs):
         print 'closing animation'
         self.animation.close_anim()

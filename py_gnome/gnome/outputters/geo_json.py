@@ -38,7 +38,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
     associated properties. Following is the format for a particle - the
     data in <> are the results for each element.
     ::
-    
+
         {
         "type": "FeatureCollection",
         "features": [
@@ -95,7 +95,8 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         self.round_to = round_to
         self.output_dir = output_dir
 
-        super(TrajectoryGeoJsonOutput, self).__init__(output_dir=output_dir, **kwargs)
+        super(TrajectoryGeoJsonOutput, self).__init__(output_dir=output_dir,
+                                                      **kwargs)
 
     def prepare_for_model_run(self, *args, **kwargs):
         """
@@ -111,9 +112,9 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         If you want to keep them, a new output_dir should be set
         """
 
-        super(TrajectoryGeoJsonOutput, self).prepare_for_model_run(*args, **kwargs)
+        super(TrajectoryGeoJsonOutput, self).prepare_for_model_run(*args,
+                                                                   **kwargs)
         self.clean_output_files()
-
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
@@ -126,21 +127,22 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         # one feature per element client; replaced with multipoint
         # because client performance is much more stable with one
         # feature per step rather than (n) features per step.features = []
-        features = [];
+        features = []
         for sc in self.cache.load_timestep(step_num).items():
             time = date_to_sec(sc.current_time_stamp)
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
             sc_type = 'uncertain' if sc.uncertain else 'forecast'
 
-            # break elements into multipoint features based on their status code
-            # evaporated : 10
-            # in_water : 2
-            # not_released : 0
-            # off_maps : 7
-            # on_land : 3
-            # to_be_removed : 12
-            points = {};
+            # break elements into multipoint features based on their
+            # status code
+            #   evaporated : 10
+            #   in_water : 2
+            #   not_released : 0
+            #   off_maps : 7
+            #   on_land : 3
+            #   to_be_removed : 12
+            points = {}
             for ix, pos in enumerate(position):
                 st_code = status[ix]
 
@@ -360,7 +362,7 @@ class IceGeoJsonOutput(Outputter, Serializable):
     Following is the output format - the data in <> are the results
     for each element.
     ::
-    
+
         {
          "time_stamp": <TIME IN ISO FORMAT>,
          "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,

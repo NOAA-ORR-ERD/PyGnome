@@ -1,30 +1,22 @@
 from gnome.utilities.projections import FlatEarthProjection
 from numpy import sin, deg2rad
 
-###fixme:
-### needs some refactoring -- more clear distinction between public and
-###                           private API:
-
-# on_land, in_water, etc -- need that?
-
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
-#  - Do we want to treat lakes differently than regular water?
-
-# New features:
-#  - Map now handles spillable area and map bounds as polygons
-#  - raster is the same aspect ratio as the land
-#  - internally, raster is a numpy array
-#  - land raster is only as big as the land -- if the map bounds are bigger,
-#    extra space is not in the land map
-#  Question: what if map-bounds is smaller than land? wasted basebitmap space?
-#            (though it should work)
 
 """
 An implementation of the GNOME land-water map.
 
 This is a re-write of the C++ raster map approach
+
+Features:
+ - Map now handles spillable area and map bounds as polygons
+ - raster is the same aspect ratio as the land
+ - internally, raster is a numpy array
+ - land raster is only as big as the land -- if the map bounds are bigger,
+   extra space is not in the land map
+
 """
 
 import copy
@@ -35,15 +27,20 @@ import gnome.utilities.profiledeco as pd
 import numpy as np
 from colander import SchemaNode, String, Float, drop, Tuple, Integer
 
+from geojson import FeatureCollection, Feature, MultiPolygon
+
 from gnome.persist import base_schema
 
 import gnome.map
 
-from gnome.utilities.map_canvas_gd import MapCanvas
+from gnome.utilities import projections
+from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
+from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file,
+                                                      ogr_layers,
+                                                      ogr_features)
 
-from gnome.utilities import projections
 
 from gnome.basic_types import oil_status, world_point_type
 from gnome.cy_gnome.cy_land_check import check_land_layers
@@ -53,20 +50,23 @@ from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
                                                           point_in_poly)
 from gnome.utilities.geometry.polygons import PolygonSet
 
+
 class GnomeMapSchema(base_schema.ObjType):
     map_bounds = base_schema.LongLatBounds(missing=drop)
     spillable_area = base_schema.PolygonSet(missing=drop)
 #     land_polys = base_schema.PolygonSet(missing=drop)
 
+
 class ParamMapSchema(GnomeMapSchema):
     center = base_schema.WorldPoint(missing=drop)
     distance = SchemaNode(Integer(), missing=drop)
     bearing = SchemaNode(Integer(), missing=drop)
-    
+
 
 class MapFromBNASchema(GnomeMapSchema):
     filename = SchemaNode(String())
     refloat_halflife = SchemaNode(Float(), missing=drop)
+
 
 class MapFromUGridSchema(GnomeMapSchema):
     filename = SchemaNode(String())
@@ -89,7 +89,8 @@ class GnomeMap(Serializable):
 
     refloat_halflife = None  # note -- no land, so never used
 
-    def __init__(self, map_bounds=None, spillable_area=None, land_polys=None, name=None):
+    def __init__(self, map_bounds=None, spillable_area=None, land_polys=None,
+                 name=None):
         """
         This __init__ will be different for other implementations
 
@@ -102,7 +103,7 @@ class GnomeMap(Serializable):
         :type spillable_area: Either a PolygonSet object or a list of lists
             from which a polygon set can be created. Each element in the list
             is a list of points defining a polygon.
-        
+
         :param land_polys: The PolygonSet holding the land polygons
         :type land_polys: Either a PolygonSet object or a list of lists
             from which a polygon set can be created. Each element in the list
@@ -115,7 +116,7 @@ class GnomeMap(Serializable):
         """
         if map_bounds is not None:
             self.map_bounds = np.asarray(map_bounds,
-                    dtype=np.float64).reshape(-1, 2)
+                                         dtype=np.float64).reshape(-1, 2)
         else:
             # using -360 to 360 to allow stuff to cross the dateline..
             self.map_bounds = np.array(((-360, -90),
@@ -125,7 +126,6 @@ class GnomeMap(Serializable):
                                        dtype=np.float64)
 
         if spillable_area is None:
-            #self.spillable_area = self.map_bounds
             self.spillable_area = PolygonSet()
             self.spillable_area.append(self.map_bounds)
         else:
@@ -133,9 +133,9 @@ class GnomeMap(Serializable):
                 spillable_area = self._polygon_set_from_points(spillable_area)
 
             self.spillable_area = spillable_area
-            
+
         if land_polys is None:
-            #empty set, no land
+            # empty set, no land
             self.land_polys = PolygonSet()
         else:
             self.land_polys = land_polys
@@ -146,7 +146,7 @@ class GnomeMap(Serializable):
         polys['map_bounds'] = self.map_bounds
         polys['land_polys'] = self.land_polys
         return polys
-    
+
     def _polygon_set_from_points(self, poly):
         '''
         create PolygonSet() object from list of polygons which in turn is a
@@ -185,11 +185,7 @@ class GnomeMap(Serializable):
 
     def spillable_area_to_dict(self):
         'convert numpy array to a list for serializing'
-        #return self._attr_array_to_dict(self.spillable_area)
-        x = []
-        for poly in self.spillable_area:
-            x.append(poly.points.tolist())
-        return x
+        return [poly.points.tolist() for poly in self.spillable_area]
 
     def spillable_area_update_from_dict(self, poly_set):
         'convert list of tuples back to numpy array'
@@ -220,8 +216,8 @@ class GnomeMap(Serializable):
           so depth is ignored.
         """
         coords = np.asarray(coords, dtype=world_point_type)
-        on_map_mask = points_in_poly(self.map_bounds, coords)
-        return on_map_mask
+
+        return points_in_poly(self.map_bounds, coords)
 
     def on_land(self, coord):
         """
@@ -338,60 +334,66 @@ class GnomeMap(Serializable):
 
 
 class ParamMap(GnomeMap):
-    
     _state = copy.deepcopy(GnomeMap._state)
     _state.update(['map_bounds', 'spillable_area'], save=False)
-    _state.add(save=['center', 'distance', 'bearing'], update=['center', 'distance', 'bearing'])
+    _state.add(save=['center', 'distance', 'bearing'],
+               update=['center', 'distance', 'bearing'])
 
     _schema = ParamMapSchema
 
-    def __init__(self, center = (0.0,0.0), distance = 30000, bearing = 90, **kwargs):
+    def __init__(self, center=(0.0, 0.0), distance=30000, bearing=90,
+                 **kwargs):
         """
-        Creates a parameratized map, essentially a straight shoreline set a certain
-        distance and bearing from a location, usually a spill.
-        It is up to the user to put the spill and the map center in the same location.
+        Creates a parameratized map, essentially a straight shoreline set a
+        certain distance and bearing from a location, usually a spill.
+        It is up to the user to put the spill and the map center in the same
+        location.
 
         Required arguments:
 
-        :param center: tuple of coordinates describing the center point of the map
+        :param center: tuple of coordinates describing the center point
+                       of the map
 
-        :param distance: The distance in meters the closest point on the shoreline is from the center
+        :param distance: The distance in meters the closest point on the
+                         shoreline is from the center
 
-        :param bearing: The bearing the closest point on the shoreline is from the center.
-
+        :param bearing: The bearing the closest point on the shoreline is
+                        from the center.
         """
         if distance < 30:
             raise ValueError("Distance must cover at least 1 second arc")
+
         if abs(center[0]) > 360 or abs(center[1]) > 90:
             raise ValueError("Center must be within (-360,-90) to (360,90)")
-        
-        #basically, direction vector to shore
+
+        # basically, direction vector to shore
         self.center = center = (center[0], center[1], 0)
         self.distance = distance
-        map_dist = (distance, 0.0, 0)
         self.bearing = bearing
+
+        map_dist = (distance, 0.0, 0)
         d = FlatEarthProjection.meters_to_lonlat(map_dist, center)[0][0]
-        init_points = [(d,-8*d),(d,8*d),(8*d,8*d),(8*d,-8*d)]
-#         init_points = [(d,-20),(d,20),(20,20),(20,-20)]
+
+        init_points = [(d, -8 * d), (d, 8 * d),
+                       (8 * d, 8 * d), (8 * d, -8 * d)]
+
         ang = deg2rad(90 - bearing)
-        rot_matrix = [(np.cos(ang), np.sin(ang)),(-np.sin(ang),np.cos(ang))]
+        rot_matrix = [(np.cos(ang), np.sin(ang)), (-np.sin(ang), np.cos(ang))]
+
         self.land_points = np.dot(init_points, rot_matrix)
-        self.land_points = np.array([(x + center[0], y + center[1]) for (x,y) in self.land_points])
-        land_polys = PolygonSet((self.land_points,[0,4],[]))
-        land_polys._MetaDataList = [('polygon','1','1')]
-        map_bounds = np.array(((-4*d, -2*d),
-                                        (-4*d, 2*d),
-                                        (4*d, 2*d),
-                                        (4*d, -2*d)),
-                                       dtype=np.float64) + (center[0], center[1])
+        self.land_points = np.array([(x + center[0], y + center[1])
+                                     for (x, y) in self.land_points])
 
-#         map_bounds = np.array(((center[0] - 3*d, center[1] + 3*d),
-#                                         (center[0] + 3*d, center[1] + 3*d),
-#                                         (center[0] + 3*d, center[1] - 3*d),
-#                                         (center[0] - 3*d, center[1] - 3*d)),
-#                                        dtype=np.float64)
+        land_polys = PolygonSet((self.land_points, [0, 4], []))
+        land_polys._MetaDataList = [('polygon', '1', '1')]
+
+        map_bounds = np.array(((-4 * d, -2 * d),
+                               (-4 * d, 2 * d),
+                               (4 * d, 2 * d),
+                               (4 * d, -2 * d)),
+                              dtype=np.float64) + (center[0], center[1])
+
         self._refloat_halflife = 0.5
-
 
         GnomeMap.__init__(self, map_bounds=map_bounds, land_polys=land_polys)
 
@@ -399,10 +401,10 @@ class ParamMap(GnomeMap):
         return (self.map_bounds[0], self.map_bounds[2])
 
     def get_land_polygon(self):
-        poly = PolygonSet((self.land_points,[0,4],[]))
-        poly._MetaDataList = [('polygon','1','1')]
-        return poly
+        poly = PolygonSet((self.land_points, [0, 4], []))
+        poly._MetaDataList = [('polygon', '1', '1')]
 
+        return poly
 
     def on_map(self, coord):
         """
@@ -426,7 +428,7 @@ class ParamMap(GnomeMap):
         :return:
          - Always returns False-- no land in this implementation
         """
-        return  self.on_map(coord) and points_in_poly(self.land_points, coord)
+        return self.on_map(coord) and points_in_poly(self.land_points, coord)
 
     def in_water(self, coord):
         """
@@ -456,7 +458,8 @@ class ParamMap(GnomeMap):
         if (coord == self.center):
             return True
         else:
-            print "Only allowable location for spill is the center this map was built with"
+            print ('Only allowable location for spill is the center '
+                   'that this map was built with')
             return False
 
     def _set_off_map_status(self, spill):
@@ -475,7 +478,7 @@ class ParamMap(GnomeMap):
         # let model decide if we want to remove elements marked as off-map
         status_codes[off_map] = oil_status.off_maps
 
-    def find_last_water_pos(self,starts, ends):
+    def find_last_water_pos(self, starts, ends):
         return starts + (ends-starts) * 0.000001
 
     def beach_elements(self, sc):
@@ -499,12 +502,10 @@ class ParamMap(GnomeMap):
         status_codes = sc['status_codes']
         last_water_positions = sc['last_water_positions']
 
-        # beached = 1xN numpy array of bool, elem is true if on water and next pos is on land
-        move_particles(start_pos, next_pos, status_codes, last_water_positions, self.land_points)
-        #status_codes[new_beached] = oil_status.on_land
-
-#         next_pos[new_beached] = self.find_land_intersection(start_pos[new_beached], next_pos[new_beached])
-#         last_water_positions[new_beached] = self.find_last_water_pos(start_pos[new_beached], next_pos[new_beached])
+        # beached = 1xN numpy array of bool, elem is true if on water
+        # and next pos is on land
+        move_particles(start_pos, next_pos, status_codes,
+                       last_water_positions, self.land_points)
 
     def refloat_elements(self, spill_container, time_step):
         """
@@ -514,20 +515,17 @@ class ParamMap(GnomeMap):
         :param spill_container: the current spill container
         :type spill_container:  :class:`gnome.spill_container.SpillContainer`
         """
-        # index into array of particles on_land
-
-        r_idx = np.where(spill_container['status_codes']
-                         == oil_status.on_land)[0]
+        r_idx = np.where(spill_container['status_codes'] ==
+                         oil_status.on_land)[0]
 
         if r_idx.size == 0:  # no particles on land
             return
 
         if self._refloat_halflife > 0.0:
-            #if 0.0, then r_idx is all of them -- they will all refloat.
+            # if 0.0, then r_idx is all of them -- they will all refloat.
             # refloat particles based on probability
-
-            refloat_probability = 1.0 - 0.5 ** (float(time_step)
-                                                / self._refloat_halflife)
+            refloat_probability = 1.0 - 0.5 ** (float(time_step) /
+                                                self._refloat_halflife)
             rnd = np.random.uniform(0, 1, len(r_idx))
 
             # subset of indices that will refloat
@@ -545,6 +543,15 @@ class ParamMap(GnomeMap):
             spill_container['positions'][r_idx] = \
                 spill_container['last_water_positions'][r_idx]
             spill_container['status_codes'][r_idx] = oil_status.in_water
+
+    def to_geojson(self):
+        shoreline_geo = [p.points.tolist() for p in self.land_polys]
+
+        shoreline = Feature(id="1",
+                            properties={'name': 'Shoreline'},
+                            geometry=MultiPolygon(coordinates=[shoreline_geo]))
+
+        return FeatureCollection([shoreline])
 
 
 class RasterMap(GnomeMap):
@@ -612,14 +619,14 @@ class RasterMap(GnomeMap):
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
         self.basebitmap = np.ascontiguousarray(bitmap_array)
+
         if self.basebitmap.size > 16000000:
-#             self.ratios = np.array((256,32,1,), dtype=np.int32)
-            self.ratios = np.array((128,32,1,), dtype=np.int32)
+            self.ratios = np.array((128, 32, 1,), dtype=np.int32)
         elif self.basebitmap.size > 1000000:
-#             self.ratios = np.array((64,8,1,), dtype=np.int32)
-            self.ratios = np.array((32,1,), dtype=np.int32)
-        else :
-            self.ratios = np.array((16,1,), dtype=np.int32)
+            self.ratios = np.array((32, 1,), dtype=np.int32)
+        else:
+            self.ratios = np.array((16, 1,), dtype=np.int32)
+
         self.build_coarser_bitmaps()
         self.projection = projection
 
@@ -628,7 +635,7 @@ class RasterMap(GnomeMap):
     @pd.profile
     def build_coarser_bitmaps(self):
         """
-        Builds the list which contains the different resolution raster maps. 
+        Builds the list which contains the different resolution raster maps.
         Scale -> bitmap
         example for base map of 1024 x 1024:
         0 -> 1/16th bitmap 64 base cells per cell
@@ -638,25 +645,35 @@ class RasterMap(GnomeMap):
         4 -> 1/256th bitmap 4:1
         5 -> 1/512th bitmap 2:1
         6 -> 1/1024th bitmap (== base map 1:1)
-        
-        The general idea is that the particle position (an int) can quickly be mapped into any scale and the path can
-        begin from there. For example, if your path begins offshore and ends in a narrow inlet, your scale might begin
-        on the 32:1 map, but as soon as the path crosses into the (32:1) raster cell containing the inlet (which will
-        register as a land cell on that raster), the scale will decrease to 4:1, when the cell is completely water. In the end, if the
-        scale decreases to 1:1 and there's still a land hit, then land was hit.
+
+        The general idea is that the particle position (an int) can quickly
+        be mapped into any scale and the path can begin from there.
+        For example, if your path begins offshore and ends in a narrow inlet,
+        your scale might begin on the 32:1 map.
+        But as soon as the path crosses into the (32:1) raster cell containing
+        the inlet (which will register as a land cell on that raster),
+        the scale will decrease to 4:1, when the cell is completely water.
+        In the end, if the scale decreases to 1:1 and there's still a land hit,
+        then land was hit.
         """
         self.layers = []
         base_w = self.basebitmap.shape[0]
         base_h = self.basebitmap.shape[1]
-        
+
         for ratio in self.ratios[:-1]:
-            genned_layer = np.zeros((math.ceil(float(base_w) / ratio), math.ceil(float(base_h) / ratio)), dtype=np.uint8, order='C')
+            genned_layer = np.zeros((math.ceil(float(base_w) / ratio),
+                                     math.ceil(float(base_h) / ratio)),
+                                    dtype=np.uint8, order='C')
             print genned_layer.shape
+
             for j in range(0, genned_layer.shape[1]):
                 for i in range(0, genned_layer.shape[0]):
-                    genned_layer[i,j] = np.any(self.basebitmap[i*ratio:(i+1)*ratio, j*ratio:(j+1)*ratio])
-            
+                    genned_layer[i, j] = np.any(self.basebitmap[i * ratio:
+                                                                (i + 1) * ratio, j * ratio:
+                                                                (j + 1) * ratio])
+
             self.layers.append(genned_layer)
+
         self.layers.append(self.basebitmap)
         self.layers = np.array(self.layers)
 
@@ -678,11 +695,13 @@ class RasterMap(GnomeMap):
 
         bitmap = self.basebitmap.copy()
 
-        #change anything not zero to 255 - to get black and white
+        # change anything not zero to 255 - to get black and white
         np.putmask(bitmap, self.basebitmap > 0, 2)
+
         im = py_gd.from_array(bitmap)
-        print im.get_color_index('white');
-        im.save(filename,'bmp')
+        print im.get_color_index('white')
+
+        im.save(filename, 'bmp')
 
     def _off_bitmap(self, coord):
         """
@@ -708,7 +727,8 @@ class RasterMap(GnomeMap):
         .. note:: Only used internally or for testing -- no need for external
                   API to use pixel coordinates.
         """
-        # if pixel coords are negative, then off the basebitmap, so can't be on land
+        # if pixel coords are negative, then off the basebitmap,
+        # so can't be on land
         if self._off_bitmap(coord):
             return False
         else:
@@ -725,20 +745,22 @@ class RasterMap(GnomeMap):
 
         .. note:: to_pixel() converts to array of points...
         """
-        return self._on_land_pixel(self.projection.to_pixel(coord, asint=True)[0])
+        return self._on_land_pixel(self.projection.to_pixel(coord,
+                                                            asint=True)[0])
 
     def _on_land_pixel_array(self, coords):
         """
         determines which LEs are on land
 
-        :param coords:  Nx2 numpy int array of pixel coords matching the basebitmap
-        :type coords:  Nx2 numpy int array of pixel coords matching the basebitmap
+        :param coords:  pixel coords matching the basebitmap
+        :type coords:  Nx2 numpy int array
 
         returns: a (N,) array of bools - true for particles that are on land
         """
         mask = map(point_in_poly, [self.map_bounds] * len(coords), coords)
         racpy = np.copy(coords)[mask]
         mskgph = self.basebitmap[racpy[:, 0], racpy[:, 1]]
+
         chrmgph = np.array([0] * len(coords))
         chrmgph[np.array(mask)] = mskgph
 
@@ -809,8 +831,9 @@ class RasterMap(GnomeMap):
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
         # only check the ones that aren't already beached?
-        self._check_land_layers(self.layers, self.ratios, start_pos_pixel, next_pos_pixel,
-                         status_codes, last_water_pos_pixel)
+        self._check_land_layers(self.layers, self.ratios,
+                                start_pos_pixel, next_pos_pixel,
+                                status_codes, last_water_pos_pixel)
 
         # transform the points back to lat-long.
         beached = status_codes == oil_status.on_land
@@ -839,18 +862,18 @@ class RasterMap(GnomeMap):
         """
         # index into array of particles on_land
 
-        r_idx = np.where(spill_container['status_codes']
-                         == oil_status.on_land)[0]
+        r_idx = np.where(spill_container['status_codes'] ==
+                         oil_status.on_land)[0]
 
         if r_idx.size == 0:  # no particles on land
             return
 
         if self._refloat_halflife > 0.0:
-            #if 0.0, then r_idx is all of them -- they will all refloat.
+            # if 0.0, then r_idx is all of them -- they will all refloat.
             # refloat particles based on probability
 
-            refloat_probability = 1.0 - 0.5 ** (float(time_step)
-                                                / self._refloat_halflife)
+            refloat_probability = 1.0 - 0.5 ** (float(time_step) /
+                                                self._refloat_halflife)
             rnd = np.random.uniform(0, 1, len(r_idx))
 
             # subset of indices that will refloat
@@ -868,11 +891,13 @@ class RasterMap(GnomeMap):
             spill_container['positions'][r_idx] = \
                 spill_container['last_water_positions'][r_idx]
             spill_container['status_codes'][r_idx] = oil_status.in_water
-        
-    def _check_land_layers(self, raster_map_layers, ratios, positions, end_positions,
-                    status_codes, last_water_positions):
+
+    def _check_land_layers(self, raster_map_layers, ratios,
+                           positions, end_positions,
+                           status_codes, last_water_positions):
         """
-        Do the actual land-checking.  This method simply calls a Cython version:
+        Do the actual land-checking.
+        This method simply calls a Cython version:
             gnome.cy_gnome.cy_land_check.check_land()
 
         The arguments 'status_codes', 'positions' and 'last_water_positions'
@@ -899,7 +924,8 @@ class RasterMap(GnomeMap):
                 if self.spillable_area is None:
                     return True
                 else:
-                    return super(RasterMap, self).allowable_spill_position(coord)
+                    return (super(RasterMap, self)
+                            .allowable_spill_position(coord))
             else:
                 return False
         else:
@@ -961,11 +987,12 @@ class MapFromBNA(RasterMap):
                    This is only used when loading object from save file.
         :type id: string
         """
-
         self.filename = filename
-        ## fixme: do some file type checking here.
+
+        # fixme: do some file type checking here.
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
+
         self.name = kwargs.pop('name', os.path.split(filename)[1])
 
         # find the spillable area and map bounds:
@@ -1003,14 +1030,11 @@ class MapFromBNA(RasterMap):
         # todo: should there be a check between spillable_area read from BNA
         # versus what the user entered. if this is within spillable_area for
         # BNA, then include it? else ignore
-        #spillable_area = kwargs.pop('spillable_area', spillable_area)
-
         spillable_area = kwargs.pop('spillable_area', spillable_area)
         map_bounds = kwargs.pop('map_bounds', map_bounds)
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-
         aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
                         (BB.Width / BB.Height))
 
@@ -1020,22 +1044,24 @@ class MapFromBNA(RasterMap):
         canvas = MapCanvas(image_size=(w, h),
                            preset_colors=None,
                            background_color='water',
-                           viewport=BB,
-                           )
-        canvas.add_colors( ( ('water', (  0, 255, 255)), # aqua -- color doesn't matter here, only index
-                             ('land',  (255, 204, 153)), # brown
-                            ))
+                           viewport=BB)
+        # color doesn't matter here, only index
+        canvas.add_colors((('water', (0, 255, 255)),  # aqua
+                           ('land',  (255, 204, 153)),  # brown
+                           ))
         canvas.clear_background()
 
-        ## draw the land to the background
+        # draw the land to the background
         for poly in land_polys:
-            if poly.metadata[2] == '1': ##fixme -- this should be something like "land"
+            # fixme -- this should be something like "land"
+            if poly.metadata[2] == '1':
                 canvas.draw_polygon(poly,
                                     line_color='land',
                                     fill_color='land',
                                     line_width=1,
                                     background=True)
-            elif poly.metadata[2] == '2': ##fixme -- this should be something like "lake"
+            # fixme -- this should be something like "lake"
+            elif poly.metadata[2] == '2':
                 # this is a lake, draw as water
                 canvas.draw_polygon(poly,
                                     line_color='water',
@@ -1044,10 +1070,9 @@ class MapFromBNA(RasterMap):
                                     background=True)
 
         # just for testing
-        #canvas.save_background("raster_map_test.png")
+        # canvas.save_background("raster_map_test.png")
 
-        # # get the basebitmap as a numpy array:
-
+        # get the basebitmap as a numpy array:
         bitmap_array = canvas.back_asarray()
 
         RasterMap.__init__(self,
@@ -1058,6 +1083,43 @@ class MapFromBNA(RasterMap):
                            land_polys=land_polys,
                            **kwargs)
         return None
+
+    def to_geojson(self):
+        map_file = ogr_open_file(self.filename)
+        shoreline_geo = []
+
+        for layer in ogr_layers(map_file):
+            for f in ogr_features(layer):
+                primary_id = f.GetFieldAsString('Primary ID')
+
+                # robust but slow solution ~ 1 second processing time
+                # if primary_id == 'SpillableArea':
+                #     spillarea_features.append(json.loads(f.ExportToJson()))
+                # elif primary_id == 'Map Bounds':
+                #     bounds_features.append(json.loads(f.ExportToJson()))
+                # else:
+                #     shoreline_features.append(json.loads(f.ExportToJson()))
+                #     shoreline_geo.append(json.loads(f.GetGeometryRef().ExportToJson())['coordinates'][0])
+
+                # only doing what we need at the moment
+                # in the future we might need the other layers
+                if primary_id not in ('SpillableArea', 'Map Bounds'):
+                    # apparently this is how you get to the actual
+                    # map coordinates using OGR.  It seems a bit brittle.
+                    # But this is much more efficient than exporting
+                    # to json.
+                    geom = f.GetGeometryRef()
+                    poly = geom.GetGeometryRef(0)
+                    ring = poly.GetGeometryRef(0)
+
+                    shoreline_geo.append([ring.GetPoints()])
+
+        shoreline = Feature(id="1",
+                            properties={'name': 'Shoreline'},
+                            geometry=MultiPolygon(coordinates=shoreline_geo))
+
+        return FeatureCollection([shoreline])
+
 
 class MapFromUGrid(RasterMap):
     """

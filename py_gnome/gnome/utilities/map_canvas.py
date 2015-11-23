@@ -1,160 +1,100 @@
 #!/usr/bin/env python
+# coding=utf8
 """
 Module to hold classes and suporting code for the map canvas for GNOME:
 
-The drawing code for the interactive core mapping window -- at least for
-the web version.
+The drawing code for rendering to images in scripting mode, and also for
+pushing some rendering to the server.
 
-This should have the basic drawing stuff. Specific rendering, like
-dealing with spill_containers, etc, should be in the rendere subclass.
+Also used for making raster maps.
+
+This should have the basic drawing stuff. Ideally nothig in here is
+GNOME-specific.
+
+This version used libgd and py_gd instead of PIL for the rendering
 """
+
+from math import floor, log10
+
 import numpy as np
 
-from PIL import Image, ImageDraw
+import py_gd
+import unit_conversion
 
-from gnome.basic_types import oil_status
-
-from gnome.utilities.file_tools import haz_files
 from gnome.utilities import projections
-
-
-def make_map(bna_filename, png_filename, image_size=(500, 500)):
-    """
-    utility function to draw a PNG map from a BNA file
-
-    param: bna_filename -- file name of BNA file to draw map from
-    param: png_filename -- file name of PNG file to write out
-    param: image_size=(500,500) -- size of image (width, height) tuple
-    param: format='RGB' -- format of image. Options are: 'RGB','palette','B&W'
-    """
-    # print "Reading input BNA"
-
-    polygons = haz_files.ReadBNA(bna_filename, 'PolygonSet')
-
-    canvas = MapCanvas(image_size, land_polygons=polygons)
-
-    canvas.draw_background()
-    canvas.save_background(png_filename, 'PNG')
-
 
 class MapCanvas(object):
     """
-    A class to hold and generate a map for GNOME
+    A class to draw maps, etc.
 
-    This will hold (or call) all the rendering code, etc.
+    This class provides the ability to set a projection, and then
+    change the viewport of the rendered map
 
-    This version uses PIL for the rendering, but it could be adapted to use
-    other rendering tools
+    All the drawing methods will project and scale and shift the points so the
+    rendered image is projected and shows only what is in the viewport.
 
-    This version uses a paletted image
+    In addition, it keeps two image buffers: background and foreground. These
+    can be rendered individually, and saved out either alone or composited.
 
-    .. note: For now - this is not serializable. Change if required in the future
+    This version uses a paletted (8 bit) image -- may be updated for RGB images
+    at some point.
     """
-
-    # a bunch of constants -- maybe they should be settable, but...
-
-    colors_rgb = [('transparent', (122, 122, 122)),
-                  ('background', (255, 255, 255)),
-                  ('lake', (255, 255, 255)),
-                  ('land', (255, 204, 153)),
-                  ('LE', (0, 0, 0)),
-                  ('uncert_LE', (255, 0, 0)),
-                  ('map_bounds', (175, 175, 175)),
-                  ('raster_map', (175, 175, 175)),
-                  ('raster_map_outline', (0, 0, 0)),
-                  ]
-
-    colors = dict([(i[1][0], i[0]) for i in enumerate(colors_rgb)])
-    palette = np.array([i[1] for i in colors_rgb],
-                       dtype=np.uint8).reshape((-1, ))
 
     def __init__(self,
                  image_size,
-                 land_polygons=None,
+                 projection = None,
                  viewport=None,
-                 **kwargs):
+                 preset_colors = 'BW',
+                 background_color = 'transparent',
+                 colordepth = 8,
+                 ):
         """
-        create a new map image from scratch -- specifying the size:
-        Only the "Palette" image mode to used for drawing image.
+        create a new map image from scratch -- specifying the size
 
         :param image_size: (width, height) tuple of the image size in pixels
 
-        :param land_polygons: a PolygonSet (gnome.utilities.geometry.polygons.PolygonSet)
-                used to define the map. If this is None, MapCanvas has no land. Set
-                during object creation.
+        Optional parameters
 
-        Optional parameters (kwargs)
-
-        :param projection_class: gnome.utilities.projections class to use.
-                                 Default is gnome.utilities.projections.FlatEarthProjection
-
-        :param map_BB: map bounding box. Default is to use land_polygons.bounding_box.
-                       If land_polygons is None, then this is the whole world,
-                       defined by ((-180,-90),(180, 90))
+        :param projection=None: gnome.utilities.projections object to use.
+                                if None, it defaults to FlatEarthProjection()
 
         :param viewport: viewport of map -- what gets drawn and on what
-                         scale. Default is to set viewport = map_BB
+                         scale. Default is full globe: (((-180, -90), (180, 90)))
 
-        :param image_mode: Image mode ('P' for palette or 'L' for Black and White image)
-                           BW_MapCanvas inherits from MapCanvas and sets the mode to 'L'
-                           Default image_mode is 'P'.
+        :param preset_colors='BW': color set to preset. Options are:
+
+                                   'BW' - transparent, black, and white: transparent background
+
+                                   'web' - the basic named colors for the web: transparent background
+
+                                   'transparent' - transparent background, no other colors set
+
+                                   None - no pre-allocated colors -- the first one you allocate will
+                                             be the background color
+
+        :param background_color = 'transparent': color for the background -- must be a color that exists.
+
+        :param colordepth=8: only 8 bit color supported for now
+                             maybe someday, 32 bit will be an option
         """
-        self.image_size = image_size
-        self.image_mode = kwargs.pop('image_mode', 'P')
 
-        self.back_image = None
+        projection = projections.FlatEarthProjection() if projection is None else projection
+        self._image_size = image_size
 
-        self._land_polygons = land_polygons
-        self.map_BB = kwargs.pop('map_BB', None)
+        if colordepth != 8:
+            raise NotImplementedError("only 8 bit color currently implemented")
 
-        if self.map_BB is None:
-            if self.land_polygons is None:
-                self.map_BB = ((-180, -90), (180, 90))
-            else:
-                self.map_BB = self.land_polygons.bounding_box
+        self.background_color = background_color
+        self.create_images(preset_colors)
+        self.projection = projection
+        self._viewport = Viewport(((-180, -90), (180, 90))) 
 
-        projection_class = kwargs.pop('projection_class',
-                                      projections.FlatEarthProjection)
-        # BB will be re-set
-        self.projection = projection_class(self.map_BB, self.image_size)
+        if viewport is not None:
+            self._viewport.BB = tuple(map(tuple,viewport))
+        self.projection.set_scale(self.viewport, self.image_size)
+        self.graticule = GridLines(self._viewport, self.projection)
 
-        # assorted status flags:
-
-        self.draw_map_bounds = True
-
-        self.raster_map = None
-        self.raster_map_fill = True
-        self.raster_map_outline = False
-        self._viewport = Viewport(self.map_BB)
-
-# USE DEFAULT CONSTRUCTOR FOR CREATING EMPTY_MAP
-# =============================================================================
-#    @classmethod
-#    def empty_map(cls, image_size, bounding_box):
-#        """
-#        Alternative constructor for a map_canvas with no land
-#
-#        :param image_size: the size of the image: (width, height) in pixels
-#
-#        :param bounding_box: the bounding box you want the map to cover,
-#                             in teh form:
-#                             ((min_lon, min_lat),
-#                              (max_lon, max_lat))
-#        """
-#        mc = cls.__new__(cls)
-#        mc.image_size = image_size
-#        mc.back_image = PIL.Image.new('P', image_size,
-#                                      color=cls.colors['background'])
-#        mc.back_image.putpalette(mc.palette)
-#        mc.projection = projections.FlatEarthProjection(bounding_box,
-#                                                        image_size)
-#        mc.map_BB = bounding_box
-#        mc._land_polygons=None
-#
-#        return mc
-# =============================================================================
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
     def viewport_to_dict(self):
         '''
@@ -162,7 +102,7 @@ class MapCanvas(object):
         todo: this happens in multiple places so maybe worthwhile to define
         custom serialize/deserialize -- but do this for now
         '''
-        return map(tuple, self.viewport.tolist())
+        return map(tuple, self._viewport.BB)
 
     @property
     def viewport(self):
@@ -170,7 +110,6 @@ class MapCanvas(object):
         returns the current value of viewport of map:
         the bounding box of the image
         """
-        print 'property viewport()...'
         return self._viewport.BB
 
     @viewport.setter
@@ -178,7 +117,7 @@ class MapCanvas(object):
         """
         viewport setter for bounding box only...allows map_canvas.viewport = ((x1,y1),(x2,y2))
         """
-        self._viewport.BB = BB if BB else self._viewport.BB
+        self._viewport.BB = BB if BB is not None else self.viewport.BB
         self.rescale()
         
     def set_viewport(self, BB = None, center = None, width = None, height = None):
@@ -198,8 +137,8 @@ class MapCanvas(object):
         if BB is None:
             self._viewport.center = center
             distances = self.projection.meters_to_lonlat((width, height, 0), (center[0], center[1],0))
-            self._viewport.width = distances[0]
-            self._viewport.height = distances[1]
+            self._viewport.width = distances[0][0]
+            self._viewport.height = distances[0][1]
         else:
             self._viewport.BB = BB
             
@@ -208,322 +147,482 @@ class MapCanvas(object):
     def zoom(self, multiplier):
         self._viewport.scale(multiplier)
         self.rescale()
-
+    
+    def shift_viewport(self, delta):
+        self._viewport.center = (self._viewport.center[0] + delta[0],self._viewport.center[1] + delta[1])
+        self.rescale() 
+    
     def rescale(self):
         """
         Rescales the projection to the viewport bounding box. Should be called whenever the viewport changes
         """
-        self.projection.set_scale(self._viewport.BB, self.image_size)
+        self.projection.set_scale(self.viewport, self.image_size)
+        self.graticule.refresh_scale()
+        self.clear_background()
+        self.draw_background()
+        
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     @property
-    def land_polygons(self):
-        return self._land_polygons
-    def draw_background(self):
+    def image_size(self):
         """
-        Draws the background image -- just land for now
+        makes it read-only
 
-        This should be called whenever the scale changes
+        or we can add a setter to re-size the images if we need that
         """
-        self.draw_land()
-        if self.raster_map is not None:
-            self.draw_raster_map()
+        return self._image_size
+
+    def add_colors(self, color_list):
+        """
+        Add a list of colors to the pallette
+
+        :param color_list: list of colors - each elemnt of the list is a 2-tuple:
+                           ('color_name', (r,g,b))
+        """
+        self.fore_image.add_colors(color_list)
+        self.back_image.add_colors(color_list)
+
+    def get_color_names(self):
+        """
+        returns all the names colors
+        """
+        return self.fore_image.get_color_names()
+
+    def create_images(self, preset_colors):
+        self.fore_image = py_gd.Image(width=self.image_size[0],
+                                      height=self.image_size[1],
+                                      preset_colors=preset_colors)
+
+        self.back_image = py_gd.Image(width=self.image_size[0],
+                                      height=self.image_size[1],
+                                      preset_colors=preset_colors)
+        if preset_colors is not None:
+            "can't clear image if there are no colors"
+            self.clear_background()
+            self.clear_foreground()
+
+    def back_asarray(self):
+        """
+        return the background image as a numpy array
+        """
+        return np.asarray(self.back_image)
+
+    def fore_asarray(self):
+        """
+        return the foreground image as a numpy array
+        """
+        return np.asarray(self.fore_image)
+
+    def clear_background(self):
+        self.back_image.clear(self.background_color)
+
+    def clear_foreground(self):
+        self.fore_image.clear('transparent')
+
+    def copy_back_to_fore(self):
+        """
+        copy the background to the foreground
+
+        note: this will write over anything on the foreground image
+        """
+        self.fore_image.copy(self.back_image, (0,0), (0,0), self.back_image.size)
+
+    def draw_points(self,
+                    points,
+                    diameter=1,
+                    color='black',
+                    shape="round",
+                    background=False):
+        """
+        Draws a set of individual points all in the same color
+
+        :param points: a Nx2 numpy array, or something that can be turned in to one
+
+        :param diameter=1: diameter of the points in pixels.
+        :type diameter: integer
+
+        :param color: a named color.
+        :type color: string
+
+        :param shape: what shape to draw, options are "round", "x".
+        :type shape: string
+
+        :param background=False: whether to draw to the background image.
+        :type background: bool
+        """
+        if shape not in ['round', 'x']:
+            raise ValueError('only "round" and "x" are supported shapes')
+
+        points = self.projection.to_pixel(points, asint=True)
+
+        img = self.back_image if background else self.fore_image
+        if shape == 'round':
+            img.draw_dots(points, diameter=diameter, color=color)
+        elif shape == 'x':
+            img.draw_xes(points, diameter=diameter, color=color)
+
+    def draw_polygon(self,
+                     points,
+                     line_color=None,
+                     fill_color=None,
+                     line_width=1,
+                     background=False):
+        """
+        Draw a polygon
+
+        :param points: sequence of points
+        :type points: Nx2 array of integers (or something that can be turned into one)
+
+        :param line_color=None: the color of the outline
+        :type line_color=None:  color name (string) or index (int)
+
+        :param fill_color=None: the color of the filled polygon
+        :type  fill_color: color name (string) or index (int)
+
+        :param line_width=1: width of line
+        :type line_width: integer
+
+        :param background=False: whether to draw to the background image.
+        :type background: bool
+
+
+        """
+        points = self.projection.to_pixel_2D(points, asint=True)
+        img = self.back_image if background else self.fore_image
+#         print points
+        img.draw_polygon(points,
+                         line_color=line_color,
+                         fill_color=fill_color,
+                         line_width=line_width,
+                         )
+
+    def draw_polyline(self,
+                      points,
+                      line_color,
+                      line_width=1,
+                      background=False):
+        """
+        Draw a polyline
+
+        :param points: sequence of points
+        :type points: Nx2 array of integers (or somethign that can be turned into one)
+
+        :param line_color: the color of the outline
+        :type line_color:  color name or index
+
+        :param line_width=1: width of line
+        :type line_width: integer
+
+        :param background=False: whether to draw to the background image.
+        :type background: bool
+
+
+        """
+        points = self.projection.to_pixel_2D(points, asint=True)
+        img = self.back_image if background else self.fore_image
+
+        img.draw_polyline(points,
+                         line_color=line_color,
+                         line_width=line_width,
+                         )
+    
+    def draw_text(self, text_list, size='small', color='black', align='lt', background='none', draw_to_back=False):
+        """
+        Draw ascii text to the image
+
+        :param text_list: sequence of strings to be printed, and the locations they are to be located
+        :type text_list: ['string', (lon, lat)]
+
+        :param size: size of the text to be printed
+        :type size: one of the following strings: 'tiny', 'small', 'medium', 'large', 'giant'
+
+        :param color: color of the text to be printed
+        :type color: a valid color string in the py_gd Image color palettes
+        
+        :param align: sets the principal point of the text bounding box.
+        :type align: one of the following strings 'lt', 'ct', 'rt', 'r', 'rb', 'cb', 'lb', 'l'
+        """
+        img = self.back_image if draw_to_back else self.fore_image
+        for tag in text_list:
+            point = (tag[1][0], tag[1][1], 0)
+            point = self.projection.to_pixel(point, asint=True)[0]
+            img.draw_text(tag[0], point, size, color, align, background)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# code from renderer 
+    def draw_background(self):
+        self.clear_background()
+        self.draw_graticule()
+        self.draw_tags()
 
     def draw_land(self):
-        """
-        Draws the land map to the internal background image.
-        """
-        back_image = Image.new(self.image_mode,
-                               self.image_size,
-                               color=self.colors['background'])
-        back_image.putpalette(self.palette)
-
-        # TODO: do we need to keep this around?
-
-        self.back_image = back_image
-
-        if self.land_polygons:  # is there any land to draw?
-
-            # project the data:
-            polygons = self.land_polygons.Copy()
-            polygons.TransformData(self.projection.to_pixel_2D)
-
-            drawer = ImageDraw.Draw(back_image)
-
-            # TODO: should we make sure to draw the lakes after the land???
-
-            for p in polygons:
-                if p.metadata[1].strip().lower() == 'map bounds':
-                    if self.draw_map_bounds:
-
-                        # Draw the map bounds polygon
-                        poly = (np.round(p)
-                                .astype(np.int32)
-                                .reshape((-1,))
-                                .tolist())
-                        drawer.polygon(poly, outline=self.colors['map_bounds'])
-                elif p.metadata[1].strip().lower() == 'spillablearea':
-                    # don't draw the spillable area polygon
-                    continue
-                elif p.metadata[2] == '2':
-                    # this is a lake
-                    poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                    drawer.polygon(poly, fill=self.colors['lake'])
-                else:
-                    poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                    drawer.polygon(poly, fill=self.colors['land'])
         return None
 
-    def draw_raster_map(self, fill=True, outline=False):
+    def draw_graticule(self, background=True):
         """
-        draws the raster map used for beaching to the image.
+        draw a graticule (grid lines) on the map
 
-        draws a grid for the pixels
-
-        this is pretty slow, but only used for diagnostics.
+        only supports decimal degrees for now...
         """
-        if self.raster_map is not None:
-            raster_map = self.raster_map
-            drawer = ImageDraw.Draw(self.back_image)
-            w, h = raster_map.basebitmap.shape
+        for line in self.graticule.get_lines():
+            self.draw_polyline(line, 'black', 1, background)
 
-            if self.raster_map_outline:
-                # vertical lines
-                for i in [float(i) for i in range(w)]:
-                    # float, so we don't get pixel-rounding
-                    coords = raster_map.projection.to_lonlat(((i, 0), (i, h)))
-                    coords = (self.projection.to_pixel_2D(coords)
-                              .reshape((-1,)).tolist())
-                    drawer.line(coords, fill=self.colors['raster_map_outline'])
-                # horizontal lines
-                for i in [float(i) for i in range(h)]:
-                    # float, so we don't get pixel-rounding
-                    coords = raster_map.projection.to_lonlat(((0, i), (w, i)))
-                    coords = (self.projection.to_pixel_2D(coords)
-                              .reshape((-1,)).tolist())
-                    drawer.line(coords, fill=self.colors['raster_map_outline'])
+    def draw_tags(self, draw_to_back=True):
+        self.draw_text(self.graticule.get_tags(), draw_to_back=True)
 
-            if self.raster_map_fill:
-                for i in range(w):
-                    for j in range(h):
-                        if raster_map.basebitmap[i, j]:
-                            # float, so we don't get pixel-rounding
-                            i, j = float(i), float(j)
-                            rect = raster_map.projection.to_lonlat(((i, j),
-                                                                    (i + 1, j),
-                                                                    (i+1, j+1),
-                                                                    (i, j+1)))
-                            rect = (self.projection.to_pixel_2D(rect)
-                                    .reshape((-1,)).tolist())
-                            drawer.polygon(rect,
-                                           fill=self.colors['raster_map'])
+    def save_background(self, filename, file_type='png'):
+        self.back_image.save(filename, file_type)
 
-    def create_foreground_image(self):
-        self.fore_image_array = np.zeros((self.image_size[1],
-                                          self.image_size[0]), np.uint8)
-        self.fore_image = Image.fromarray(self.fore_image_array, mode='P')
-        self.fore_image.putpalette(self.palette)
-
-    def add_back_to_fore(self):
+    def save_foreground(self, filename, file_type='png'):
         """
-        adds the background image to the foreground
-        this is optionally called if you want the
-        background on every image. i.e. don't want to
-        have to compose them later.
+        save the foreground image to the specified filename
+
+        :param filename: full path of file to be saved to
+        :type filename: string
+
+        :param draw_back_to_fore=True: whether to add the background image to the
+                                       foreground before saving.
+        :type draw_back_to_fore: bool
+
+        :param file_type: type of file to save: options are: 'png', 'gif', 'jpeg', 'bmp'
+        :type file_type: string
         """
-        if self.back_image is not None:
-            # compose the foreground and background
-            self.fore_image_array[:] = np.asarray(self.back_image)
 
-    def draw_elements(self, sc):
+        self.fore_image.save(filename, file_type = file_type)
+
+## Gridlines code borrowed from MapRoom
+import bisect
+class GridLines(object):
+    DEGREE = np.float64(1.0)
+    MINUTE = DEGREE / 60.0
+    SECOND = MINUTE / 60.0
+
+    DMS_STEPS = (
+        SECOND * 15,
+        SECOND * 30,
+        MINUTE,
+        MINUTE * 2,
+        MINUTE * 3,
+        MINUTE * 4,
+        MINUTE * 5,
+        MINUTE * 10,
+        MINUTE * 15,
+        MINUTE * 20,
+        MINUTE * 30,
+        DEGREE,
+        DEGREE * 2,
+        DEGREE * 3,
+        DEGREE * 4,
+        DEGREE * 5,
+        DEGREE * 10,
+        DEGREE * 15,
+        DEGREE * 20,
+        DEGREE * 30,
+        DEGREE * 40,
+    )
+    DMS_COUNT = len(DMS_STEPS)
+
+    DEGREE = np.float64(1.0)
+    TENTH = DEGREE / 10.0
+    HUNDREDTH = DEGREE / 100.0
+    THOUSANDTH = DEGREE / 1000.0
+
+    DEG_STEPS = (
+        THOUSANDTH,
+        THOUSANDTH * 2.5,
+        THOUSANDTH * 5,
+        HUNDREDTH,
+        HUNDREDTH * 2.5,
+        HUNDREDTH * 5,
+        TENTH,
+        TENTH * 2.5,
+        TENTH * 5,
+        DEGREE,
+        DEGREE * 2,
+        DEGREE * 3,
+        DEGREE * 4,
+        DEGREE * 5,
+        DEGREE * 10,
+        DEGREE * 15,
+        DEGREE * 20,
+        DEGREE * 30,
+        DEGREE * 40,
+    )
+    DEG_COUNT = len(DEG_STEPS)
+    
+    def __init__(self, viewport=None, projection=None, max_lines=10, DegMinSec=False):
         """
-        Draws the individual elements to a foreground image
+        Creates a GridLines instance that does the logic for and describes the current graticule
 
-        :param sc: a SpillContainer object to draw
+        :param viewport: bounding box of the viewport in question. 
+        :type viewport: tuple of lon/lat
 
+        :param max_lines: How many lines to be displayed on the longest dimension of the viewport. Graticule will scale up
+        or down only when the number of lines in the viewport falls outside the range.
+        :type max_lines: tuple of integers, (max, min)
+
+        :param DegMinSec: Whether to scale by Degrees/Minute/Seconds, or decimal lon/lat
+        :type bool
         """
-        # TODO: add checks for the other status flags!
+        if viewport is None:
+            raise ValueError("Viewport needs to be provided to generate grid lines")
+        self.viewport = viewport
+        
+        if projection is None:
+            raise ValueError("Projection needs to be provided to generate grid lines")
+        self.projection = projection
+            
+        self.type = type
+        if DegMinSec :
+            self.STEPS = self.DMS_STEPS
+            self.STEP_COUNT = self.DMS_COUNT
+        else:
+            self.STEPS = self.DEG_STEPS
+            self.STEP_COUNT = self.DEG_COUNT
+        
+        self.DMS = DegMinSec
+        
+        #need to just use refresh_scale for this...
+        self.max_lines = max_lines
+        self.refresh_scale()
+        
+    """
+    class to hold logic for determining where the gridlines should be
+    for the graticule
+    """
+    def get_step_size(self, reference_size):
+        """
+        Chooses the interval size for the graticule, based on where the reference size fits into the
+        STEPS table.
 
-        if sc.num_released > 0:  # nothing to draw if no elements
-            arr = self.fore_image_array
-            if sc.uncertain:
-                color = self.colors['uncert_LE']
+        :param reference_size: the approximate size you want in decimal degrees.
+        """
+        return self.STEPS[min( bisect.bisect(self.STEPS, abs(reference_size)),
+                               self.STEP_COUNT - 1,)
+                         ]
+    
+    def get_lines(self):
+        """
+        Computes, builds, and returns a list of lines that when drawn, creates the graticule. 
+        The list consists of self.lon_lines vertical lines, followed by self.lat_lines horizontal lines.
+        """
+        if self.max_lines is 0:
+            return []
+        (minlon,minlat) = self.projection.image_box[0]
+        
+        
+        #create array of lines
+        top = ((self.lat_lines+4) * self.current_interval) # top of lon lines
+        right = ((self.lon_lines+4) * self.current_interval) # right end of lat lines
+        vertical_lines = np.array([( (x*self.current_interval, 0), (x*self.current_interval, top) ) 
+                                   for x in range(0,self.lon_lines+4)])
+        horizontal_lines = np.array([((0, y*self.current_interval), (right, y*self.current_interval) ) 
+                                     for y in range(0,self.lat_lines+4)])
+        
+        #shift lines into position
+        delta = ((minlon // self.current_interval - 1) * self.current_interval , (minlat // self.current_interval - 1) * self.current_interval)
+        vertical_lines += delta
+        horizontal_lines += delta
+        
+        return np.vstack((vertical_lines, horizontal_lines))        
+    
+    def refresh_scale(self):
+        """
+        Recomputes the interval and number of lines in each dimension.
+        This should be called whenever the viewport changes.
+        """
+        if self.max_lines is 0:
+            return
+        img_width = float(self.projection.image_size[0])
+        img_height = float(self.projection.image_size[1])
+        ratio = img_width / img_height
+        self.ref_dim = 'w' if img_width >= img_height else 'h'
+        
+        width = self.projection.image_box[1][0] - self.projection.image_box[0][0]
+        height = self.projection.image_box[1][1] - self.projection.image_box[0][1]
+                 
+        self.ref_len = width if self.ref_dim is 'w' else height
+        self.current_interval = self.get_step_size(self.ref_len / self.max_lines)
+        self.lon_lines = self.max_lines if self.ref_dim is 'w' else None
+        self.lat_lines = self.max_lines if self.ref_dim is 'h' else None
+        
+        if self.lon_lines is None:
+            self.lon_lines = int(round(self.lat_lines * ratio))
+        if self.lat_lines is None:
+            self.lat_lines = int(round(self.lon_lines / ratio))
+    
+    def set_max_lines(self, max_lines = None):
+        """
+        Alters the number of lines drawn.
+        
+        :param max_lines: the maximum number of lines drawn. Note: this is NOT the number of lines on the screen at any given time.
+        That is determined by the computed interval and the size/location of the viewport)
+        
+        :type max_lines: int
+        """
+        if max_lines is not None:
+            self.max_lines = max_lines
+        self.refresh_scale()
+        
+    def set_DMS(self, DMS = False):
+        '''
+        
+        :param DMS: Boolean value that specifies if Degrees/Minutes/Seconds tags are enabled.
+        
+        :type DMS: Bool
+        '''
+        self.DMS = DMS
+        if self.DMS :
+            self.STEPS = self.DMS_STEPS
+            self.STEP_COUNT = self.DMS_COUNT
+        else:
+            self.STEPS = self.DEG_STEPS
+            self.STEP_COUNT = self.DEG_COUNT
+        self.refresh_scale()
+    
+    def get_tags(self):
+        """
+        Returns a list of tags for each line (in the same order the lines are returned) and the position where the tag should be 
+        printed.
+        
+        Line labels are anchored at the intersection between the line and the edge of the viewport. This may cause the longitude labels to
+        disappear if the aspect ratio of the image and viewport are identical.        
+        """
+        if self.max_lines is 0:
+            return []
+        tags = []
+        for line in self.get_lines():
+            value = 0
+            if line[0][0] == line[1][0]:
+                value = line[0][0]
+                hemi = 'E' if value > 0 else 'W'
             else:
-                color = self.colors['LE']
-
-            positions = sc['positions']
-
-            pixel_pos = self.projection.to_pixel(positions, asint=False)
-
-            # remove points that are off the view port
-            on_map = ((pixel_pos[:, 0] > 1) &
-                      (pixel_pos[:, 1] > 1) &
-                      (pixel_pos[:, 0] < self.image_size[0] - 2) &
-                      (pixel_pos[:, 1] < self.image_size[1] - 2))
-            pixel_pos = pixel_pos[on_map]
-
-            # which ones are on land?
-            on_land = sc['status_codes'][on_map] == oil_status.on_land
-
-            # draw the five "X" pixels for the on_land elements
-            arr[pixel_pos[on_land, 1].astype(np.int32),
-                pixel_pos[on_land, 0].astype(np.int32)] = color
-            arr[(pixel_pos[on_land, 1] - 1).astype(np.int32),
-                (pixel_pos[on_land, 0] - 1).astype(np.int32)] = color
-            arr[(pixel_pos[on_land, 1] - 1).astype(np.int32),
-                (pixel_pos[on_land, 0] + 1).astype(np.int32)] = color
-            arr[(pixel_pos[on_land, 1] + 1).astype(np.int32),
-                (pixel_pos[on_land, 0] - 1).astype(np.int32)] = color
-            arr[(pixel_pos[on_land, 1] + 1).astype(np.int32),
-                (pixel_pos[on_land, 0] + 1).astype(np.int32)] = color
-
-            # draw the four pixels for the elements not on land and
-            # not off the map
-            off_map = sc['status_codes'][on_map] == oil_status.off_maps
-            not_on_land = np.logical_and(~on_land, ~off_map)
-
-            # note: long-lat backwards for array (vs image)
-            arr[(pixel_pos[not_on_land, 1] - 0.5).astype(np.int32),
-                (pixel_pos[not_on_land, 0] - 0.5).astype(np.int32)] = color
-            arr[(pixel_pos[not_on_land, 1] - 0.5).astype(np.int32),
-                (pixel_pos[not_on_land, 0] + 0.5).astype(np.int32)] = color
-            arr[(pixel_pos[not_on_land, 1] + 0.5).astype(np.int32),
-                (pixel_pos[not_on_land, 0] - 0.5).astype(np.int32)] = color
-            arr[(pixel_pos[not_on_land, 1] + 0.5).astype(np.int32),
-                (pixel_pos[not_on_land, 0] + 0.5).astype(np.int32)] = color
-
-    def draw_cells(self, cells):
-        """
-        Draws the boundaries of the cells
-
-        :param cells: coordinates of all the cells
-        :type cells: NxMx2 numpy array of coordinate pairs.
-                     N is the number of cells.
-                     M is the numbre of vertices per cell
-                     (i.e 3 for triangles, 4 for quads)
-        """
-        ## create the PIL drawer
-        drawer = ImageDraw.Draw(self.fore_image)
-
-        for cell in cells:
-            coords = cell.flat()
-            drawer.line(coords, fill=self.colors['raster_map_outline'])
-
-
-    def save_background(self, filename, type_in='PNG'):
-        if self.back_image is None:
-            raise ValueError('There is no background image to save. '
-                             'You may want to call .draw_background() first')
-        self.back_image.save(filename, type_in)
-
-    def save_foreground(self, filename, type_in='PNG', add_background=True):
-        """
-        save the foreground image in a file
-
-        :param filename: name of file to save image to
-
-        :param type_in: format to use (not supported yet)
-
-        :param add_background=True: whether to render the background image
-                                    under the forground
-        """
-        if type_in != 'PNG':
-            raise NotImplementedError("only PNG is currently supported")
-
-        self.fore_image.save(filename,
-                             transparency=self.colors['transparent'])
-
-
-class BW_MapCanvas(MapCanvas):
-    """
-    a version of the map canvas that draws Black and White images
-    (Note -- hard to see -- water color is very, very dark grey!)
-    used to generate the raster maps
-    """
-    background_color = 0
-    land_color = 1
-    lake_color = 0  # same as background -- i.e. water.
-
-    # a bunch of constants -- maybe they should be settable, but...
-    # note:transparent not really supported
-    colors_BW = [('transparent', 0),
-                 ('background', 0),
-                 ('lake', 0),
-                 ('land', 1),
-                 ('LE', 255),
-                 ('uncert_LE', 255),
-                 ('map_bounds', 0),
-                 ]
-    colors = dict(colors_BW)
-
-    def __init__(self,
-                 image_size,
-                 land_polygons=None,
-                 projection_class=projections.FlatEarthProjection):
-        """
-        create a new B&W map image from scratch -- specifying the size:
-
-        :param image_size: (width, height) tuple of the image size
-        :param land_polygons: a PolygonSet
-                              (gnome.utilities.geometry.polygons.PolygonSet)
-                              used to define the map.
-                              If this is None, MapCanvas has no land.
-                              This can be read in from a BNA file.
-        :param projection_class: gnome.utilities.projections class to use.
-
-        See MapCanvas documentation for remaining valid kwargs.
-        It sets the image_mode = 'L' when calling MapCanvas.__init__
-        """
-
-        # =====================================================================
-        # self.image_size = image_size
-        # ##note: type "L" because type "1" didn't seem to give the right
-        #         numpy array
-        # self.back_image = PIL.Image.new('L', self.image_size,
-        #                                 color=self.colors['background'])
-        # #self.back_image = PIL.Image.new('L', self.image_size, 1)
-        # # BB will be re-set
-        # self.projection = projection_class(((-180,-85),(180, 85)),
-        #                                    self.image_size)
-        # self.map_BB = None
-        # =====================================================================
-
-        MapCanvas.__init__(self, image_size,
-                           land_polygons=land_polygons,
-                           projection_class=projections.FlatEarthProjection,
-                           image_mode='L')
-
-    def as_array(self):
-        """
-        returns a numpy array of the data in the background image
-
-        this version returns dtype: np.uint8
-        """
-        # makes sure the you get a c-contiguous array with width-height right
-        #   (PIL uses the reverse convention)
-        return np.ascontiguousarray(np.asarray(self.back_image,
-                                               dtype=np.uint8).T)
-
-
-# if __name__ == "__main__":
-#    # a small sample for testing:
-#    bb = np.array(((-30, 45), (-20, 55)), dtype=np.float64)
-#    im = (100, 200)
-#    proj = simple_projection(bounding_box=bb, image_size=im)
-#    print proj.ToPixel((-20, 45))
-#    print proj.ToLatLon(( 50., 100.))
-#
-#    bna_filename = sys.argv[1]
-#    png_filename = bna_filename.rsplit(".")[0] + ".png"
-#    bna = make_map(bna_filename, png_filename)
-
-"""
-viewport.py
-
-A viewport that defines a viewable area on a map.
-
-""" 
+                value = line[0][1]
+                hemi = 'N' if value > 0 else 'S'
+                
+            tag = (str(value) if not self.DMS else unit_conversion.LatLongConverter.ToDegMinSec(value, ustring=False))
+                
+            if self.DMS:
+                degrees = int(abs(tag[0]))
+                minutes = int(tag[1]) 
+                seconds = int(round(tag[2]))
+                if seconds == 60:
+                    minutes += 1
+                    seconds = 0
+                if seconds != 0:
+                    tag = u"%id%i'%i\"%c" %  (degrees, minutes, seconds, hemi)
+                elif minutes != 0:
+                    tag = u"%id%i'%c" %  (degrees, minutes, hemi)
+                else:
+                    tag = u"%id%c" %  (degrees, hemi)
+            
+            top = self.projection.image_box[1][1]
+            left = self.projection.image_box[0][0]
+            anchor = (value, top)  if hemi is 'E' or hemi is 'W' else (left, value)
+            tags.append((tag, anchor))
+            
+        return tags
 
 class Viewport(object):
     
@@ -534,7 +633,7 @@ class Viewport(object):
     
 
     """
-    def __init__(self, BB = None, center=None, width = None, height = None, ):
+    def __init__(self, BB = None, center=None, width = None, height = None):
         """
         Init the viewport. Can initialize with center/width/height, and/or with bounding box. 
         NOTE: Bounding box takes precedence over any previous parameters
@@ -570,8 +669,8 @@ class Viewport(object):
             self.recompute_dim()
                 
     def scale(self, multiplier=1.0):
-        self.width *= multiplier
-        self.height *= multiplier
+        self._width *= multiplier
+        self._height *= multiplier
         self.recompute_BB()
         
     def recompute_dim(self):
@@ -587,6 +686,8 @@ class Viewport(object):
         self._BB = ((self.center[0] - halfx, self.center[1] - halfy),
                      (self.center[0] + halfx, self.center[1] + halfy)) 
         
+    def aspect_ratio(self):
+        return self.width / self.height
     
     @property
     def BB(self):
@@ -594,7 +695,7 @@ class Viewport(object):
     
     @BB.setter
     def BB(self, BB):
-        self._BB = BB if BB else self._BB
+        self._BB = BB if BB is not None else self._BB
         self.recompute_dim()
         
     @property
@@ -623,3 +724,4 @@ class Viewport(object):
     def height(self, height):
         self._height = height if height else self._height
         self.recompute_BB()
+        

@@ -4,7 +4,7 @@ renderer_gd.py
 
 module to hold all the map rendering code.
 
-This one used the new map_canvas_gd, which uses the gd rendering lib.
+This one used the new map_canvas, which uses the gd rendering lib.
 
 """
 import os
@@ -19,7 +19,7 @@ from colander import SchemaNode, String, drop
 from gnome.persist import base_schema, class_from_objtype
 
 from . import Outputter, BaseSchema
-from gnome.utilities.map_canvas_gd import MapCanvas
+from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Field
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities import projections
