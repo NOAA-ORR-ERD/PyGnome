@@ -232,7 +232,7 @@ class Renderer(Outputter, MapCanvas):
         self.add_colors(self.map_colors)
         self.background_color = 'background'
         self.timestamp_attribs={}
-        self.set_timestamp_attrib(timestamp_attrib)
+        self.set_timestamp_attrib(**timestamp_attrib)
 
     @property
     def map_filename(self):
@@ -279,17 +279,44 @@ class Renderer(Outputter, MapCanvas):
                                           self.background_map_name)
                              )
 
-    def set_timestamp_attrib(self, *args, **kwargs):
+    def set_timestamp_attrib(self, **kwargs):
         """
         Function to set details of the timestamp's appearance when printed. These details are stored as
-        d dict. The list of recognized options is documented in the draw_timestamp() function.
+        d dict.
+
+        Recognized attributes:
+        :param on: turn the draw function on or off
+        :type on: Boolean
+
+        :param dt_format: format string for strftime to format the timestamp
+        :type dt_format: String
+
+        :param background: color of the text background. Color must be present in foreground palette
+        :type background: String
+
+        :param color: color of the font. Note that the color must be present in the foreground palette
+        :type color: String
+
+        :param size: size of the font ('tiny', 'small', 'medium', 'large', 'giant')
+        :type size: String
+
+        :param position: x, y pixel coordinates of where to draw the timestamp.
+        :type position :tuple
+
+        :param align: the reference point of the text bounding box. ('lt'(left top), 'ct', 'rt', 'r', 'rb', 'cb', 'lb', 'l')
+        :type align: String
+
         """
-        if len(args) > 0 and isinstance(args[0], dict):
-            #if dict is passed through args
-            kwargs.update(args[0])
         self.timestamp_attribs.update(kwargs)
 
     def draw_timestamp(self, time): 
+        """
+        Function that draws the timestamp to the foreground. Uses self.timestamp_attribs to
+        determine it's appearance.
+
+        :param time: the datetime object representing the timestamp
+        :type time: datetime 
+        """
         d = self.timestamp_attribs
         on = d['on'] if 'on' in d else True
         if not on:
@@ -298,11 +325,10 @@ class Renderer(Outputter, MapCanvas):
         background = d['background'] if 'background' in d else 'white'
         color = d['color'] if 'color' in d else 'black'
         size = d['size'] if 'size' in d else 'small'
-        position = d['position'] if 'position' in d else self.projection.to_lonlat((self.fore_image.width/2, self.fore_image.height))
+        position = d['position'] if 'position' in d else (self.fore_image.width/2, self.fore_image.height)
         align = d['alignment'] if 'alignment' in d else 'cb'
 
-        self.draw_text([(time.strftime(dt_format), position)], size, color, align, background)
-
+        self.fore_image.draw_text(time.strftime(dt_format), position, size, color, align, background)
 
     def clean_output_files(self):
 
