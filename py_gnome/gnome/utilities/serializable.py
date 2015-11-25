@@ -784,6 +784,9 @@ class Serializable(GnomeId, Savable):
                 self_attr = self.attr_to_dict(name)
                 other_attr = other.attr_to_dict(name)
 
+            if not isinstance(self_attr, type(other_attr)):
+                return False
+
             if not isinstance(self_attr, np.ndarray):
                 if isinstance(self_attr, float):
                     if abs(self_attr - other_attr) > 1e-10:
@@ -791,8 +794,8 @@ class Serializable(GnomeId, Savable):
                 elif self_attr != other_attr:
                     return False
             else:
-                if not np.allclose(self_attr, other_attr, rtol=1e-4, atol=1e-4):
-                    ## at least the projection code was only good to this tol (why?)
+                if not np.allclose(self_attr, other_attr,
+                                   rtol=1e-4, atol=1e-4):
                     return False
 
         return True
