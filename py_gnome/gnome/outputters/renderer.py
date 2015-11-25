@@ -236,8 +236,8 @@ class Renderer(Outputter, MapCanvas):
         # initilize the images:
         self.add_colors(self.map_colors)
         self.background_color = 'background'
-        fn = basename(self._filename) if self._filename is not None else ''
-        self.anim_filename = fn.join('_anim.gif')
+        fn = '%s_anim.gif' % os.path.splitext(self._filename)[0] if self._filename is not None else ''
+        self.anim_filename = os.path.join(self.output_dir, fn)
         self.formats = formats
         self.delay = 50
         self.repeat = True
@@ -376,9 +376,8 @@ class Renderer(Outputter, MapCanvas):
             # it's not there to delete..
             pass
 
-        anim_file = os.path.join(self.output_dir, self.anim_filename)
         try:
-            os.remove(anim_file)
+            os.remove(self.anim_filename)
         except OSError:
             # it's not there to delete..
             pass

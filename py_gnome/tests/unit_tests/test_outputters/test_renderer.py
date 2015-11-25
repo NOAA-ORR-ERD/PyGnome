@@ -192,7 +192,8 @@ def test_write_output(output_dir):
     r = Renderer(bna_star,
                  output_dir,
                  image_size=(600, 600),
-                 draw_back_to_fore=True)
+                 draw_back_to_fore=True,
+                 formats=['png'])
 
     r.draw_background()
 
