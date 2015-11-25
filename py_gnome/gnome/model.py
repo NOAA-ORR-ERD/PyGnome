@@ -210,7 +210,6 @@ class Model(Serializable):
         self.outputters.register_callback(self._callback_add_outputter,
                                           ('add', 'replace'))
 
-
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map, name):
         '''
@@ -636,7 +635,7 @@ class Model(Serializable):
                                             cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills,
-                                            model_time_step = self.time_step)
+                                            model_time_step=self.time_step)
         self.logger.debug("{0._pid} setup_model_run complete for: "
                           "{0.name}".format(self))
 
@@ -951,8 +950,6 @@ class Model(Serializable):
         'Callback after outputter has been added'
         # hook up the cache
         obj_added.cache = self._cache
-
-
 
     def _callback_add_weatherer_env(self, obj_added):
         '''
