@@ -236,8 +236,8 @@ class Renderer(Outputter, MapCanvas):
         # initilize the images:
         self.add_colors(self.map_colors)
         self.background_color = 'background'
-        fn = self._filename if self._filename is not None else ''
-        self.anim_filename = str.join(fn, '_anim.gif')
+        fn = basename(self._filename) if self._filename is not None else ''
+        self.anim_filename = fn.join('_anim.gif')
         self.formats = formats
         self.delay = 50
         self.repeat = True

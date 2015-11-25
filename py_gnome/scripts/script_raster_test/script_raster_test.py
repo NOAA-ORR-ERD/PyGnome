@@ -49,19 +49,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
     renderer = Renderer(mapfile, images_dir, size=(800, 600),
-                        output_timestep=timedelta(hours=1))
-    animator = Animation(mapfile, images_dir, size=(800, 600),
-                        output_timestep=timedelta(hours=1), delay=20,
-                        preset_colors='web',
+                        output_timestep=timedelta(hours=1),
                         timestamp_attrib={'size': 'medium', 'color':'uncert_LE'})
-    animator.set_timestamp_attrib(format='%a %c')
-    animator.graticule.set_DMS(True)
+    renderer.set_timestamp_attrib(format='%a %c')
+    renderer.graticule.set_DMS(True)
 #     renderer.viewport = ((-124.25, 47.5), (-122.0, 48.70))
     
 
     print 'adding outputters'
     model.outputters += renderer
-    model.outputters += animator
 
     print 'adding a spill'
     # for now subsurface spill stays on initial layer
