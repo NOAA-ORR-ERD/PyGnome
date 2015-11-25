@@ -13,6 +13,7 @@ import glob
 import copy
 import zipfile
 import numpy as np
+import py_gd
 
 from colander import SchemaNode, String, drop
 
@@ -121,6 +122,7 @@ class Renderer(Outputter, MapCanvas):
                  draw_ontop='forecast',
                  name=None,
                  on=True,
+                 formats=['png', 'gif'],
                  timestamp_attrib={},
                  **kwargs
                  ):
@@ -175,6 +177,9 @@ class Renderer(Outputter, MapCanvas):
         :param draw_ontop: draw 'forecast' or 'uncertain' LEs on top. Default
             is to draw 'forecast' LEs, which are in black on top
         :type draw_ontop: str
+        
+        :param formats: list of formats to output. Default is .png and animated .gif
+        :type formats: list of strings
 
 
         Remaining kwargs are passed onto baseclass's __init__ with a direct
@@ -231,8 +236,29 @@ class Renderer(Outputter, MapCanvas):
         # initilize the images:
         self.add_colors(self.map_colors)
         self.background_color = 'background'
-        self.timestamp_attribs={}
+        fn = self._filename if self._filename is not None else ''
+        self.anim_filename = str.join(fn, '_anim.gif')
+        self.formats = formats
+        self.delay = 50
+        self.repeat = True
+        self.timestamp_attribs = {}
         self.set_timestamp_attrib(**timestamp_attrib)
+
+    @property
+    def delay(self):
+        return self._delay if 'gif' in self.formats else -1
+
+    @delay.setter
+    def delay(self, d):
+        self._delay = d
+
+    @property
+    def repeat(self):
+        return self._repeat if 'gif' in self.formats else False
+
+    @repeat.setter
+    def repeat(self, r):
+        self._repeat = r
 
     @property
     def map_filename(self):
@@ -256,6 +282,12 @@ class Renderer(Outputter, MapCanvas):
     def output_dir_to_dict(self):
         return os.path.abspath(self.output_dir)
 
+    def start_animation(self, filename):
+            self.animation = py_gd.Animation(filename, self.delay)
+            l = 0 if self.repeat else -1
+            print 'Starting animation'
+            self.animation.begin_anim(self.back_image, l)
+
     def prepare_for_model_run(self, *args, **kwargs):
         """
         prepares the renderer for a model run.
@@ -275,9 +307,13 @@ class Renderer(Outputter, MapCanvas):
         self.clean_output_files()
 
         self.draw_background()
-        self.save_background(os.path.join(self.output_dir,
-                                          self.background_map_name)
-                             )
+        for ftype in self.formats:
+            if ftype == 'gif':
+                self.start_animation(os.path.join(self.anim_filename))
+            else:
+                self.save_background(os.path.join(self.output_dir,
+                                              self.background_map_name),
+                                              file_type = ftype)
 
     def set_timestamp_attrib(self, **kwargs):
         """
@@ -336,6 +372,13 @@ class Renderer(Outputter, MapCanvas):
         try:
             os.remove(os.path.join(self.output_dir,
                                    self.background_map_name))
+        except OSError:
+            # it's not there to delete..
+            pass
+
+        anim_file = os.path.join(self.output_dir, self.anim_filename)
+        try:
+            os.remove(anim_file)
         except OSError:
             # it's not there to delete..
             pass
@@ -511,11 +554,20 @@ class Renderer(Outputter, MapCanvas):
 
         time_stamp = scp[0].current_time_stamp
         self.draw_timestamp(time_stamp)
-        self.save_foreground(image_filename)
+        for ftype in self.formats:
+            if ftype == 'gif':
+                self.animation.add_frame(self.fore_image, self.delay)
+            else:
+                self.save_foreground(image_filename, file_type=ftype)
         self.last_filename = image_filename
 
         return {'image_filename': image_filename,
                 'time_stamp': time_stamp}
+
+    def write_output_post_run(self, **kwargs):
+        super(Renderer, **kwargs)
+        if '.gif' in self.formats:
+            self.animation.close_anim()
 
     def _draw(self, step_num):
         """
