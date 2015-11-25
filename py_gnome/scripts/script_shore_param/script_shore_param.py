@@ -39,7 +39,7 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
 
 
     print 'adding the map'
-    p_map = model.map = ParamMap(center = (0,0), distance=20000, bearing = 20 )  # hours
+    p_map = model.map = ParamMap(center = (0,0), distance=20, bearing = 20, units='km' )  # hours
 
     #
     # Add the outputters -- render to images, and save out as netCDF

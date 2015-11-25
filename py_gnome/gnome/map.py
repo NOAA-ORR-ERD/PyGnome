@@ -23,6 +23,7 @@ import copy
 import os
 import math
 import gnome.utilities.profiledeco as pd
+import unit_conversion as uc
 
 import numpy as np
 from colander import SchemaNode, String, Float, drop, Tuple, Integer
@@ -49,6 +50,7 @@ from gnome.cy_gnome.cy_land_check import move_particles
 from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
                                                           point_in_poly)
 from gnome.utilities.geometry.polygons import PolygonSet
+from gnome import _valid_units
 
 
 class GnomeMapSchema(base_schema.ObjType):
@@ -61,6 +63,7 @@ class ParamMapSchema(GnomeMapSchema):
     center = base_schema.WorldPoint(missing=drop)
     distance = SchemaNode(Integer(), missing=drop)
     bearing = SchemaNode(Integer(), missing=drop)
+    units = SchemaNode(String(), missing=drop)
 
 
 class MapFromBNASchema(GnomeMapSchema):
@@ -336,12 +339,14 @@ class GnomeMap(Serializable):
 class ParamMap(GnomeMap):
     _state = copy.deepcopy(GnomeMap._state)
     _state.update(['map_bounds', 'spillable_area'], save=False)
-    _state.add(save=['center', 'distance', 'bearing'],
-               update=['center', 'distance', 'bearing'])
+    _state.add(save=['center', 'distance', 'bearing', 'units'],
+               update=['center', 'distance', 'bearing', 'units'])
 
     _schema = ParamMapSchema
+    
+    _valid_dist_units = _valid_units("Length")
 
-    def __init__(self, center=(0.0, 0.0), distance=30000, bearing=90,
+    def __init__(self, center=(0.0, 0.0), distance=30000, bearing=90, units=None,
                  **kwargs):
         """
         Creates a parameratized map, essentially a straight shoreline set a
@@ -360,7 +365,14 @@ class ParamMap(GnomeMap):
         :param bearing: The bearing the closest point on the shoreline is
                         from the center.
         """
-        if distance < 30:
+        self.units = units if units is not None else 'm'
+        self._check_units(self.units)
+        if units is not 'm':
+            self._distance = uc.Convert("Length", self.units, 'm', distance)
+        else:
+            self._distance = distance
+
+        if self._distance < 30:
             raise ValueError("Distance must cover at least 1 second arc")
 
         if abs(center[0]) > 360 or abs(center[1]) > 90:
@@ -368,10 +380,9 @@ class ParamMap(GnomeMap):
 
         # basically, direction vector to shore
         self.center = center = (center[0], center[1], 0)
-        self.distance = distance
         self.bearing = bearing
 
-        map_dist = (distance, 0.0, 0)
+        map_dist = (self._distance, 0.0, 0)
         d = FlatEarthProjection.meters_to_lonlat(map_dist, center)[0][0]
 
         init_points = [(d, -8 * d), (d, 8 * d),
@@ -396,6 +407,24 @@ class ParamMap(GnomeMap):
         self._refloat_halflife = 0.5
 
         GnomeMap.__init__(self, map_bounds=map_bounds, land_polys=land_polys)
+
+    @property
+    def distance(self):
+        return uc.Convert('Length', 'm', self.units, self._distance)
+
+    def _check_units(self, units):
+        """
+        Checks the user provided units are in list of valid volume
+        or mass units
+        """
+
+        if units in self._valid_dist_units: 
+            return True
+        else:
+            msg = ('unit must be a valid unit of distance: {0}').format(self._valid_dist_units)
+            ex = uc.InvalidUnitError((units,'Length'))
+            self.logger.exception(ex, exc_info=True)
+            raise ex    # this should be raised since run will fail otherwise
 
     def get_map_bounds(self):
         return (self.map_bounds[0], self.map_bounds[2])
