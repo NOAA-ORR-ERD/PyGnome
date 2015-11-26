@@ -272,6 +272,7 @@ TimeGridWindCurv::TimeGridWindCurv () : TimeGridWindRect()
 {
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;
+	bVelocitiesOnNodes = false;
 }
 
 /*void TimeGridWindCurv::Dispose ()
@@ -369,6 +370,100 @@ done:
 }
 
 
+VelocityRec TimeGridWindCurv::GetInterpolatedValue(InterpolationValBilinear interpolationVal)
+{
+	long ptIndex1, ptIndex2, ptIndex3, ptIndex4;
+	double timeAlpha;
+	VelocityRec pt1interp = {0.,0.}, pt2interp = {0.,0.}, pt3interp = {0.,0.}, pt4interp = {0.,0.};
+	VelocityRec scaledPatVelocity = {0.,0.};
+	Seconds startTime, endTime;
+	Seconds model_time = model->GetModelTime();
+	
+	if (interpolationVal.ptIndex1 >= 0)  // if negative corresponds to negative ntri
+	{
+		// this is only section that's different from ptcur
+		ptIndex1 =  interpolationVal.ptIndex1;	
+		ptIndex2 =  interpolationVal.ptIndex2;
+		ptIndex3 =  interpolationVal.ptIndex3;
+		ptIndex4 =  interpolationVal.ptIndex4;
+		if (fVerdatToNetCDFH)
+		{
+			ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			ptIndex4 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex4];
+		}
+	}
+	else
+		return scaledPatVelocity;
+	
+	if ((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || 
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) || 
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+	{
+		if (ptIndex1!=-1)
+		{
+			pt1interp.u = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1).u); 
+			pt1interp.v = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1).v); 
+		}
+		
+		if (ptIndex2!=-1)
+		{
+			pt2interp.u = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2).u); 
+			pt2interp.v = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2).v);
+		}
+		
+		if (ptIndex3!=-1) 
+		{
+			pt3interp.u = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3).u); 
+			pt3interp.v = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3).v); 
+		}
+		if (ptIndex4!=-1) 
+		{
+			pt4interp.u = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4).u); 
+			pt4interp.v = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4).v); 
+		}
+	}
+	
+	else // time varying current 
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+		
+		if (ptIndex1!=-1)
+		{
+			pt1interp.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1).u); 
+			pt1interp.v = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1).v); 
+		}
+		
+		if (ptIndex2!=-1)
+		{
+			pt2interp.u = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2).u); 
+			pt2interp.v = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2).v); 
+		}
+		
+		if (ptIndex3!=-1) 
+		{
+			pt3interp.u = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3).u); 
+			pt3interp.v = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3).v); 
+		}
+		if (ptIndex4!=-1) 
+		{
+			pt4interp.u = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4).u); 
+			pt4interp.v = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4).v); 
+		}
+	}
+	scaledPatVelocity.u = pt1interp.u + pt2interp.u + pt3interp.u + pt4interp.u;
+	scaledPatVelocity.v = pt1interp.v + pt2interp.v + pt3interp.v + pt4interp.v;
+	
+	return scaledPatVelocity;
+}
+
 Boolean TimeGridWindCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth)
 {	
 	char uStr[32],sStr[32],errmsg[64];
@@ -382,16 +477,33 @@ Boolean TimeGridWindCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	LongPoint indices;
 	
 	long ptIndex1,ptIndex2,ptIndex3; 
-	InterpolationVal interpolationVal;
+	InterpolationValBilinear interpolationVal;
 	
 	if (fGrid) 
 	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		if (bVelocitiesOnNodes)
+		{
+			//code goes here, put in interpolation
+			interpolationVal = fGrid -> GetBilinearInterpolationValues(wp.p);
+			if (interpolationVal.ptIndex1<0) return false;
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+		}
+		else
+			index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 		if (index < 0) return 0;
 		indices = this->GetVelocityIndices(wp.p);
 	}
 	
+	if (bVelocitiesOnNodes>0 && interpolationVal.ptIndex1 >= 0) 
+	{
+		velocity = GetInterpolatedValue(interpolationVal);
+		goto scale;
+	}						
 	// Check for constant current 
 	if((GetNumTimesInFile()==1 /*&& !(GetNumFiles()>1)*/) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime)  || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
 		//if(GetNumTimesInFile()==1)
@@ -429,6 +541,7 @@ Boolean TimeGridWindCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 		}
 	}
 	
+scale:
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	//lengthS = this->fWindScale * lengthU;	// pass this in if there is a dialog scale factor
 	lengthS = lengthU * fVar.fileScaleFactor;	
@@ -527,6 +640,12 @@ void TimeGridWindCurv::Draw(Rect r, WorldRect view, double refScale, double arro
 				wp.pLat = pt.v;
 				wp.pLong = pt.h;
 				
+				if (bVelocitiesOnNodes) 
+				{
+					ptIndex = INDEXH(fVerdatToNetCDFH,i);
+				}
+				else
+				{
 				ptIndex = INDEXH(fVerdatToNetCDFH,i);
 				iIndex = ptIndex/(fNumCols+1);
 				jIndex = ptIndex%(fNumCols+1);
@@ -534,15 +653,22 @@ void TimeGridWindCurv::Draw(Rect r, WorldRect view, double refScale, double arro
 					ptIndex = (iIndex-1)*(fNumCols)+jIndex;
 				else
 					ptIndex = -1;
-				
+				}
 				// for now draw arrow at midpoint of diagonal of gridbox
 				// this will result in drawing some arrows more than once
-				if (GetLatLonFromIndex(iIndex-1,jIndex+1,&wp2)!=-1)	// may want to get all four points and interpolate
+				if (bVelocitiesOnNodes)
 				{
-					wp.pLat = (wp.pLat + wp2.pLat)/2.;
-					wp.pLong = (wp.pLong + wp2.pLong)/2.;
+					wp.pLat = (long)(1e6*INDEXH(fVertexPtsH,ptIndex).pLat);
+					wp.pLong = (long)(1e6*INDEXH(fVertexPtsH,ptIndex).pLong);
 				}
-				
+				else
+				{
+					if (GetLatLonFromIndex(iIndex-1,jIndex+1,&wp2)!=-1)	// may want to get all four points and interpolate
+					{
+						wp.pLat = (wp.pLat + wp2.pLat)/2.;
+						wp.pLong = (wp.pLong + wp2.pLong)/2.;
+					}
+				}
 				p = GetQuickDrawPt(wp.pLong, wp.pLat, &r, &offQuickDrawPlane);	// should put velocities in center of grid box
 				
 				// Should check vs fFillValue

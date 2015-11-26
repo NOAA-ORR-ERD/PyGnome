@@ -19,6 +19,7 @@ class NetCDFWindMoverCurv_c : virtual public NetCDFWindMover_c {
 public:
 	LONGH fVerdatToNetCDFH;	// for curvilinear
 	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
+	Boolean bIsCOOPSWaterMask;
 
 	NetCDFWindMoverCurv_c (TMap *owner, char *name);
 	NetCDFWindMoverCurv_c () {}
@@ -28,7 +29,9 @@ public:
 	LongPointHdl		GetPointsHdl();
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	VelocityRec 		GetInterpolatedMove(InterpolationValBilinear interpolationVal);
 	OSErr 				ReorderPoints(TMap **newMap, char* errmsg); 
+	OSErr 				ReorderPointsCOOPSNoMask(TMap **newMap, char* errmsg); 
 	Seconds 				GetTimeValue(long index);
 	virtual long 		GetVelocityIndex(WorldPoint wp);
 	virtual LongPoint 		GetVelocityIndices(WorldPoint wp);

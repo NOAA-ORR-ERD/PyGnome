@@ -23,6 +23,17 @@ struct InterpolationVal {
 	double alpha3;
 };
 
+struct InterpolationValBilinear {	
+	long ptIndex1;
+	long ptIndex2;
+	long ptIndex3;
+	long ptIndex4;
+	double alpha1;
+	double alpha2;
+	double alpha3;
+	double alpha4;
+};
+
 class GridVel_c {
 	
 protected:
@@ -35,6 +46,7 @@ public:
 	virtual VelocityRec GetSmoothVelocity(WorldPoint p)=0;
 	virtual void SetBounds(WorldRect bounds){fGridBounds = bounds;}	
 	virtual WorldRect GetBounds(){return fGridBounds;}	
+	virtual InterpolationValBilinear GetBilinearInterpolationValues(WorldPoint ref){InterpolationValBilinear ival; memset(&ival,0,sizeof(ival)); return ival;}
 	virtual InterpolationVal GetInterpolationValues(WorldPoint ref){InterpolationVal ival; memset(&ival,0,sizeof(ival)); return ival;}
 	virtual LongPointHdl GetPointsHdl(void){return 0;}
 	virtual TopologyHdl GetTopologyHdl(void){return 0;}

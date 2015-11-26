@@ -282,7 +282,51 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 				timeConversion = 24.*3600.;
 		}
 	} 
+	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
+	if (status != NC_NOERR) 
+	{	
+		status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto OLD;
+		}
+	}
+	bIsCOOPSWaterMask = true;
+	status = nc_inq_varid(ncid, "latc", &latid);
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_varid(ncid, "lat", &latid);
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
+	}
+	status = nc_inq_dimlen(ncid, latIndexid, &latLength);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	status = nc_inq_dimid(ncid, "xc", &lonIndexid);	
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
+	}
+	status = nc_inq_varid(ncid, "lonc", &lonid);	
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_varid(ncid, "lon", &lonid);
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
+	}
+	status = nc_inq_dimlen(ncid, lonIndexid, &lonLength);
+	if (status != NC_NOERR) {err = -1; goto done;}
 	
+OLD:
+	if (!bIsCOOPSWaterMask)	
+	{
 	if (fIsNavy)
 	{
 		status = nc_inq_dimid(ncid, "gridy", &latIndexid); //Navy
@@ -336,6 +380,7 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 			status = nc_inq_varid(ncid, "lon", &lonid);
 			if (status != NC_NOERR) {err = -1; goto done;}
 		}
+	}
 	}
 	
 	pt_count[0] = latLength;
@@ -554,11 +599,11 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	status = nc_inq_varid(ncid, "mask", &mask_id);
 	if (status != NC_NOERR)	{isLandMask = false;}
 
-	status = nc_inq_varid(ncid, "coops_mask", &mask_id);	// should only have one or the other
-	if (status != NC_NOERR)	{isCoopsMask = false;}
-	else {isCoopsMask = true; bIsCOOPSWaterMask = true;}
+	//status = nc_inq_varid(ncid, "coops_mask", &mask_id);	// should only have one or the other
+	//if (status != NC_NOERR)	{isCoopsMask = false;}
+	//else {isCoopsMask = true; bIsCOOPSWaterMask = true;}
 	
-	if (isLandMask || isCoopsMask)
+	if (isLandMask /*|| isCoopsMask*/)
 	{	// no need to bother with the handle here...
 		// maybe should store the mask? we are using it in ReadTimeValues, do we need to?
 		landmask = new double[latLength*lonLength]; 
@@ -621,8 +666,11 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 			if(err) goto done;*/
 			//err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
-			if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
-			else if (isCoopsMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+			//if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+			if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+			else if (bIsCOOPSWaterMask) err = ReorderPointsCOOPSNoMask(newMap,errmsg);
+			else if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
+			//else if (isCOOPSMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
 			else err = ReorderPointsNoMask(newMap,errmsg);
 			//else err = ReorderPointsNoMask(velocityH,newMap,errmsg);
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
@@ -648,8 +696,11 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 			if(err) goto done;*/
 			//err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
-			if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
-			else if (isCoopsMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+			if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+			else if (bIsCOOPSWaterMask) err = ReorderPointsCOOPSNoMask(newMap,errmsg);
+			else if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
+			//if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
+			//else if (isCoopsMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
 			else err = ReorderPointsNoMask(newMap,errmsg);
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	 		goto done;
@@ -677,8 +728,11 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 	if(err) goto done;*/
 	//if (isLandMask) err = ReorderPoints(velocityH,newMap,errmsg);
-	if (isLandMask) err = ReorderPoints(landmaskH,newMap,errmsg);
-	else if (isCoopsMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+	if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+	else if (bIsCOOPSWaterMask) err = ReorderPointsCOOPSNoMask(newMap,errmsg);
+	else if (isLandMask) err = ReorderPoints(landmaskH,newMap,errmsg);
+	//if (isLandMask) err = ReorderPoints(landmaskH,newMap,errmsg);
+	//else if (isCoopsMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
 	else err = ReorderPointsNoMask(newMap,errmsg);
 	//else err = ReorderPointsNoMask(velocityH,newMap,errmsg);
 	//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
@@ -848,22 +902,20 @@ depths:
 			ptIndex = INDEXH(fVerdatToNetCDFH,i);
 			if (bIsCOOPSWaterMask)
 			{
-				iIndex = ptIndex/(fNumCols);
-				jIndex = ptIndex%(fNumCols);
+				//iIndex = ptIndex/(fNumCols);
+				//jIndex = ptIndex%(fNumCols);
 			}
 			else {
 				iIndex = ptIndex/(fNumCols+1);
 				jIndex = ptIndex%(fNumCols+1);
-			}
+			//}
 
-			//iIndex = ptIndex/(fNumCols+1);
-			//jIndex = ptIndex%(fNumCols+1);
 			if (iIndex>0 && jIndex<fNumCols)
 			//if (iIndex>0 && jIndex<fNumCols)
 				ptIndex = (iIndex-1)*(fNumCols)+jIndex;
 			else
 				ptIndex = -1;
-			
+			}
 			//n = INDEXH(fVerdatToNetCDFH,i);
 			//if (n<0 || n>= fNumRows*fNumCols) {printError("indices messed up"); err=-1; goto done;}
 			//INDEXH(totalDepthsH,i) = depth_vals[n];
@@ -1413,23 +1465,29 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 				
 				if (bIsCOOPSWaterMask)
 				{
-				iIndex = ptIndex/(fNumCols);
-				jIndex = ptIndex%(fNumCols);
+					iIndex = ptIndex/(fNumCols);
+					jIndex = ptIndex%(fNumCols);
+					ptIndex = INDEXH(fVerdatToNetCDFH,i);
 				}
 				else
 				{
-				iIndex = ptIndex/(fNumCols+1);
-				jIndex = ptIndex%(fNumCols+1);
+					{
+					iIndex = ptIndex/(fNumCols+1);
+					jIndex = ptIndex%(fNumCols+1);
+					}
+					if (iIndex>0 && jIndex<fNumCols)
+						ptIndex = (iIndex-1)*(fNumCols)+jIndex;
+					else
+					{ptIndex = -1; continue;}
 				}
-				if (iIndex>0 && jIndex<fNumCols)
-					ptIndex = (iIndex-1)*(fNumCols)+jIndex;
-				else
-				{ptIndex = -1; continue;}
 				
-				if (bIsCOOPSWaterMask) ptIndex = INDEXH(fVerdatToNetCDFH,i);
+				//if (bIsCOOPSWaterMask) ptIndex = INDEXH(fVerdatToNetCDFH,i);
 	 			if (amtOfDepthData>0 && ptIndex>=0)
 				{
-					totalDepth = GetTotalDepth(wp,ptIndex);
+					if (bIsCOOPSWaterMask) 
+						totalDepth = GetInterpolatedTotalDepth(wp);
+					else
+						totalDepth = GetTotalDepth(wp,ptIndex);
 					if (totalDepth==-1)
 					{
 						depthIndex1 = -1; depthIndex2 = -1;

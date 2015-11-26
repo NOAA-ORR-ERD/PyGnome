@@ -576,6 +576,7 @@ TimeGridWindCurv_c::TimeGridWindCurv_c () : TimeGridWindRect_c()
 {
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;
+	bVelocitiesOnNodes = false;	// eventually switch to assuming all data is on nodes
 }
 
 void TimeGridWindCurv_c::Dispose ()
@@ -590,8 +591,13 @@ long TimeGridWindCurv_c::GetVelocityIndex(WorldPoint wp)
 {
 	long index = -1;
 	if (fGrid) 
+	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		if (bVelocitiesOnNodes)
+			index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(wp,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+		else
+			index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+	}
 	return index;
 }
 
@@ -599,9 +605,107 @@ LongPoint TimeGridWindCurv_c::GetVelocityIndices(WorldPoint wp)
 {
 	LongPoint indices={-1,-1};
 	if (fGrid) 
+	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		indices = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndicesFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		if (bVelocitiesOnNodes)
+			indices = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndicesFromTriIndex(wp,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+		else
+			indices = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndicesFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+	}
 	return indices;
+}
+
+VelocityRec TimeGridWindCurv_c::GetInterpolatedMove(const Seconds& model_time, InterpolationValBilinear interpolationVal)
+{
+	long ptIndex1, ptIndex2, ptIndex3, ptIndex4;
+	double timeAlpha;
+	VelocityRec pt1interp = {0.,0.}, pt2interp = {0.,0.}, pt3interp = {0.,0.}, pt4interp = {0.,0.};
+	VelocityRec scaledPatVelocity = {0.,0.};
+	Seconds startTime, endTime;
+	
+	if (interpolationVal.ptIndex1 >= 0)  // if negative corresponds to negative ntri
+	{
+		// this is only section that's different from ptcur
+		ptIndex1 =  interpolationVal.ptIndex1;	
+		ptIndex2 =  interpolationVal.ptIndex2;
+		ptIndex3 =  interpolationVal.ptIndex3;
+		ptIndex4 =  interpolationVal.ptIndex4;
+		if (fVerdatToNetCDFH)
+		{
+			ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			ptIndex4 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex4];
+		}
+	}
+	else
+		return scaledPatVelocity;
+	
+	if ((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || 
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) || 
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+	{
+		if (ptIndex1!=-1)
+		{
+			pt1interp.u = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1).u); 
+			pt1interp.v = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1).v); 
+		}
+		
+		if (ptIndex2!=-1)
+		{
+			pt2interp.u = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2).u); 
+			pt2interp.v = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2).v);
+		}
+		
+		if (ptIndex3!=-1) 
+		{
+			pt3interp.u = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3).u); 
+			pt3interp.v = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3).v); 
+		}
+		if (ptIndex4!=-1) 
+		{
+			pt4interp.u = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4).u); 
+			pt4interp.v = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4).v); 
+		}
+	}
+	
+	else // time varying current 
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+		
+		if (ptIndex1!=-1)
+		{
+			pt1interp.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1).u); 
+			pt1interp.v = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1).v); 
+		}
+		
+		if (ptIndex2!=-1)
+		{
+			pt2interp.u = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2).u); 
+			pt2interp.v = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2).v); 
+		}
+		
+		if (ptIndex3!=-1) 
+		{
+			pt3interp.u = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3).u); 
+			pt3interp.v = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3).v); 
+		}
+		if (ptIndex4!=-1) 
+		{
+			pt4interp.u = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4).u); 
+			pt4interp.v = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4).v); 
+		}
+	}
+	scaledPatVelocity.u = pt1interp.u + pt2interp.u + pt3interp.u + pt4interp.u;
+	scaledPatVelocity.v = pt1interp.v + pt2interp.v + pt3interp.v + pt4interp.v;
+	
+	return scaledPatVelocity;
 }
 
 OSErr TimeGridWindCurv_c::get_values(int n, Seconds model_time, WorldPoint3D* ref, VelocityRec* vels) {
@@ -640,12 +744,32 @@ VelocityRec TimeGridWindCurv_c::GetScaledPatValue(const Seconds& model_time, Wor
 	long index = -1; 
 	Seconds startTime,endTime;
 	VelocityRec windVelocity;
+	InterpolationValBilinear interpolationVal;
 	OSErr err = 0;
 	
 	if (fGrid) 
-		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			interpolationVal = fGrid -> GetBilinearInterpolationValues(refPoint.p);
+			if (interpolationVal.ptIndex1<0) return windVelocity;
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else
+			// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+	}
+	if (index < 0) return windVelocity;
 	
+	if (bVelocitiesOnNodes>0 && interpolationVal.ptIndex1 >= 0) 
+	{
+		windVelocity = GetInterpolatedMove(model_time,interpolationVal);
+		goto scale;
+	}						
 	// Check for constant wind 
 	if(GetNumTimesInFile()==1 || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime)  || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
 	{
@@ -723,7 +847,7 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 	WORLDPOINTFH vertexPtsH = 0;
 
 	// for now keep code around but probably don't need Navy curvilinear wind
-	Boolean bTopFile = false, fIsNavy = false;
+	Boolean bTopFile = false;
 
 	if (!path || !path[0])
 		return 0;
@@ -749,23 +873,7 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 	// check number of dimensions - 2D or 3D
 	status = nc_inq_ndims(ncid, &numdims);
 	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	status = nc_inq_attlen(ncid,NC_GLOBAL,"generating_model",&t_len2);
-	if (status != NC_NOERR) {fIsNavy = false; /*goto done;*/}	
-	else 
-	{
-		fIsNavy = true;
-		// may only need to see keyword is there, since already checked grid type
-		modelTypeStr = new char[t_len2+1];
-		status = nc_get_att_text(ncid, NC_GLOBAL, "generating_model", modelTypeStr);
-		if (status != NC_NOERR) {fIsNavy = false; goto done;}	
-		modelTypeStr[t_len2] = '\0';
 		
-		//strcpy(fFileName, modelTypeStr); 
-		strcpy(fVar.userName, modelTypeStr); 
-	}
-	
-	//if (fIsNavy)
 	{
 		status = nc_inq_dimid(ncid, "time", &recid); //Navy
 		if (status != NC_NOERR) {
@@ -777,7 +885,6 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 		}			
 	}
 
-	//if (fIsNavy)
 	status = nc_inq_varid(ncid, "time", &timeid); 
 	if (status != NC_NOERR) 
 	{	
@@ -785,14 +892,8 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 		if (status != NC_NOERR) {err = -1; goto done;}
 	}			
 	
-	//if (!fIsNavy)
-	//status = nc_inq_attlen(ncid, recid, "units", &t_len);	// recid is the dimension id not the variable id
-	//else	// LAS has them in order, and time is unlimited, but variable/dimension names keep changing so leave this way for now
 	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
 	if (status != NC_NOERR) {
-		//timeUnits = 0;	// files should always have this info
-		//timeConversion = 3600.;		// default is hours
-		//startTime2 = model->GetStartTime();	// default to model start time
 		err = -1;
 		goto done;
 	}
@@ -802,9 +903,6 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 		char unitStr[24], junk[10];
 
 		timeUnits = new char[t_len+1];
-		//if (!fIsNavy)
-		//status = nc_get_att_text(ncid, recid, "units", timeUnits);	// recid is the dimension id not the variable id
-		//else
 
 		status = nc_get_att_text(ncid, timeid, "units", timeUnits);
 		if (status != NC_NOERR) {
@@ -831,9 +929,6 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 			time.second = 0;
 		}
 		else if (numScanned < 8) {
-			//timeUnits = 0;	// files should always have this info
-			//timeConversion = 3600.;		// default is hours
-			//startTime2 = model->GetStartTime();	// default to model start time
 			err = -1;
 			TechError("TimeGridWindCurv_c::TextRead()", "sscanf() == 8", 0);
 			goto done;
@@ -857,40 +952,50 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 		}
 	} 
 	
-	if (fIsNavy) {
-		status = nc_inq_dimid(ncid, "gridy", &latIndexid); //Navy
-		if (status != NC_NOERR) {
-			err = -1;
-			goto done;
-		}
-		status = nc_inq_dimlen(ncid, latIndexid, &latLength);
-		if (status != NC_NOERR) {
-			err = -1;
-			goto done;
-		}
-		status = nc_inq_dimid(ncid, "gridx", &lonIndexid);	//Navy
-		if (status != NC_NOERR) {
-			err = -1;
-			goto done;
-		}
-		status = nc_inq_dimlen(ncid, lonIndexid, &lonLength);
-		if (status != NC_NOERR) {
-			err = -1;
-			goto done;
-		}
-		// option to use index values?
-		status = nc_inq_varid(ncid, "grid_lat", &latid);
-		if (status != NC_NOERR) {
-			err = -1;
-			goto done;
-		}
-		status = nc_inq_varid(ncid, "grid_lon", &lonid);
-		if (status != NC_NOERR) {
-			err = -1;
-			goto done;
+	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
+	if (status != NC_NOERR) 
+	{	
+		status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto OLD;
 		}
 	}
-	else
+	bVelocitiesOnNodes = true;
+	status = nc_inq_varid(ncid, "latc", &latid);
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_varid(ncid, "lat", &latid);
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
+	}
+	status = nc_inq_dimlen(ncid, latIndexid, &latLength);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	status = nc_inq_dimid(ncid, "xc", &lonIndexid);	
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
+	}
+	status = nc_inq_varid(ncid, "lonc", &lonid);	
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_varid(ncid, "lon", &lonid);
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
+	}
+	status = nc_inq_dimlen(ncid, lonIndexid, &lonLength);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	
+OLD:
+	if (!bVelocitiesOnNodes)	
 	{
 		for (i = 0; i < numdims; i++) {
 			if (i == recid)
@@ -950,7 +1055,7 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 			}
 		}
 	}
-	
+
 	pt_count[0] = latLength;
 	pt_count[1] = lonLength;
 	vertexPtsH = (WorldPointF**)_NewHandleClear(latLength * lonLength * sizeof(WorldPointF));
@@ -1014,10 +1119,6 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 		// possible units are, HOURS, MINUTES, SECONDS,...
 		timeIndex = i;
 
-		//if (!fIsNavy)
-		//status = nc_get_var1_float(ncid, recid, &timeIndex, &timeVal);	// recid is the dimension id not the variable id
-		//else
-
 		status = nc_get_var1_float(ncid, timeid, &timeIndex, &timeVal);
 		if (status != NC_NOERR) {
 			err = -1;
@@ -1048,7 +1149,10 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 		goto done;
 	}
 
-	err = ReorderPoints(errmsg);	
+	if (bVelocitiesOnNodes) 
+		err = ReorderPointsCOOPSNoMask(errmsg);	
+	else
+		err = ReorderPoints(errmsg);	
 	
 done:
 	if (err) {
@@ -1097,7 +1201,7 @@ OSErr TimeGridWindCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* e
 	long latlength = fNumRows;
 	long lonlength = fNumCols;
 	float scale_factor = 1.,angle = 0.,u_grid,v_grid;
-	Boolean bRotated = true, fIsNavy = false, bIsNWSSpeedDirData = false;
+	Boolean bRotated = true, bIsNWSSpeedDirData = false;
 	
 	errmsg[0]=0;
 	
@@ -1134,38 +1238,6 @@ OSErr TimeGridWindCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* e
 	angle_count[0] = latlength;
 	angle_count[1] = lonlength;
 	
-	//wind_count[0] = latlength;		// a fudge for the PWS format which has u(lat,lon) not u(time,lat,lon)
-	//wind_count[1] = lonlength;
-	
-	if (fIsNavy)
-	{
-		// need to check if type is float or short, if float no scale factor?
-		wind_uvals = new float[latlength*lonlength]; 
-		if(!wind_uvals) {TechError("TimeGridWindCurv_c::ReadTimeData()", "new[]", 0); err = memFullErr; goto done;}
-		wind_vvals = new float[latlength*lonlength]; 
-		if(!wind_vvals) {TechError("TimeGridWindCurv_c::ReadTimeData()", "new[]", 0); err = memFullErr; goto done;}
-		
-		angle_vals = new float[latlength*lonlength]; 
-		if(!angle_vals) {TechError("TimeGridWindCurv_c::ReadTimeData()", "new[]", 0); err = memFullErr; goto done;}
-		status = nc_inq_varid(ncid, "air_gridu", &wind_ucmp_id);
-		if (status != NC_NOERR) {err = -1; goto done;}
-		status = nc_inq_varid(ncid, "air_gridv", &wind_vcmp_id);	
-		if (status != NC_NOERR) {err = -1; goto done;}
-		
-		status = nc_get_vara_float(ncid, wind_ucmp_id, wind_index, wind_count, wind_uvals);
-		if (status != NC_NOERR) {err = -1; goto done;}
-		status = nc_get_vara_float(ncid, wind_vcmp_id, wind_index, wind_count, wind_vvals);
-		if (status != NC_NOERR) {err = -1; goto done;}
-		status = nc_get_att_float(ncid, wind_ucmp_id, "_FillValue", &fill_value);
-		//if (status != NC_NOERR) {err = -1; goto done;}
-		status = nc_get_att_float(ncid, wind_ucmp_id, "scale_factor", &scale_factor);
-		//if (status != NC_NOERR) {err = -1; goto done;}
-		status = nc_inq_varid(ncid, "grid_orient", &angle_id);
-		if (status != NC_NOERR) {err = -1; goto done;}
-		status = nc_get_vara_float(ncid, angle_id, angle_index, angle_count, angle_vals);
-		if (status != NC_NOERR) {/*err = -1; goto done;*/bRotated = false;}
-	}
-	else
 	{
 		wind_uvals = new float[latlength*lonlength]; 
 		if(!wind_uvals) {TechError("TimeGridWindCurv_c::ReadTimeData()", "new[]", 0); err = memFullErr; goto done;}
@@ -1267,15 +1339,8 @@ OSErr TimeGridWindCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* e
 				wind_uvals[(latlength-i-1)*lonlength+j]=0.;
 			if (isnan(wind_vvals[(latlength-i-1)*lonlength+j])) 
 				wind_vvals[(latlength-i-1)*lonlength+j]=0.;
-			if (fIsNavy)
-			{
-				u_grid = (float)wind_uvals[(latlength-i-1)*lonlength+j];
-				v_grid = (float)wind_vvals[(latlength-i-1)*lonlength+j];
-				if (bRotated) angle = angle_vals[(latlength-i-1)*lonlength+j];
-				INDEXH(velH,i*lonlength+j).u = u_grid*cos(angle*PI/180.)-v_grid*sin(angle*PI/180.);
-				INDEXH(velH,i*lonlength+j).v = u_grid*sin(angle*PI/180.)+v_grid*cos(angle*PI/180.);
-			}
-			else if (bIsNWSSpeedDirData)
+
+			if (bIsNWSSpeedDirData)
 			{
 				//INDEXH(velH,i*lonlength+j).u = KNOTSTOMETERSPERSEC * wind_uvals[(latlength-i-1)*lonlength+j] * sin ((PI/180.) * wind_vvals[(latlength-i-1)*lonlength+j]);	// need units
 				//INDEXH(velH,i*lonlength+j).v = KNOTSTOMETERSPERSEC * wind_uvals[(latlength-i-1)*lonlength+j] * cos ((PI/180.) * wind_vvals[(latlength-i-1)*lonlength+j]);
@@ -1831,6 +1896,299 @@ done:
 	return err;
 }
 
+
+OSErr TimeGridWindCurv_c::ReorderPointsCOOPSNoMask(char* errmsg) 
+{	// this should be combined with ReorderPointsCOOPSMask - they are the same since we don't use the mask
+	OSErr err = 0;
+	long i,j,k;
+	char *velUnits=0; 
+	long latlength = fNumRows, numtri = 0;
+	long lonlength = fNumCols;
+	float fDepth1, fLat1, fLong1;
+	long index1=0;
+	
+	errmsg[0]=0;
+	
+	long n, ntri, numVerdatPts=0;
+	long fNumRows_minus1 = fNumRows-1, fNumCols_minus1 = fNumCols-1;
+	long nv = fNumRows * fNumCols;
+	long nCells = fNumRows_minus1 * fNumCols_minus1;
+	long iIndex, jIndex, index; 
+	long triIndex1, triIndex2, waterCellNum=0;
+	long ptIndex = 0, cellNum = 0;
+	
+	LONGH landWaterInfo = (LONGH)_NewHandleClear(nCells * sizeof(long));
+	
+	LONGH ptIndexHdl = (LONGH)_NewHandleClear(nv * sizeof(**ptIndexHdl));
+	LONGH verdatPtsH = (LONGH)_NewHandleClear(nv * sizeof(**verdatPtsH));
+	GridCellInfoHdl gridCellInfo = (GridCellInfoHdl)_NewHandleClear(nCells * sizeof(**gridCellInfo));
+	
+	TopologyHdl topo=0;
+	LongPointHdl pts=0;
+	VelocityFH velH = 0;
+	DAGTreeStruct tree;
+	WorldRect triBounds;
+	
+	TTriGridVel *triGrid = nil;
+	tree.treeHdl = 0;
+	TDagTree *dagTree = 0;
+	
+	/////////////////////////////////////////////////
+	
+	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH /*|| !maskH2*/) {err = memFullErr; goto done;}
+	
+	index1 = 0;
+	for (i=0;i<fNumRows-1;i++)
+	{
+		for (j=0;j<fNumCols-1;j++)
+		{
+			/*if (INDEXH(landmaskH,i*fNumCols+j)==0)	// land point
+			{
+				INDEXH(landWaterInfo,i*fNumCols_minus1+j) = -1;	// may want to mark each separate island with a unique number
+			}
+			else*/
+			{
+				/*if (INDEXH(landmaskH,(i+1)*fNumCols+j)==0 || INDEXH(landmaskH,i*fNumCols+j+1)==0 || INDEXH(landmaskH,(i+1)*fNumCols+j+1)==0)
+				{
+					INDEXH(landWaterInfo,i*fNumCols_minus1+j) = -1;	// may want to mark each separate island with a unique number
+				}
+				else*/
+				{
+					INDEXH(landWaterInfo,i*fNumCols_minus1+j) = 1;
+					INDEXH(ptIndexHdl,i*fNumCols+j) = -2;	// water box
+					INDEXH(ptIndexHdl,i*fNumCols+j+1) = -2;
+					INDEXH(ptIndexHdl,(i+1)*fNumCols+j) = -2;
+					INDEXH(ptIndexHdl,(i+1)*fNumCols+j+1) = -2;
+				}
+			}
+		}
+	}
+	
+	for (i=0;i<fNumRows;i++)
+	{
+		for (j=0;j<fNumCols;j++)
+		{
+			if (INDEXH(ptIndexHdl,i*fNumCols+j) == -2)
+			{
+				INDEXH(ptIndexHdl,i*fNumCols+j) = ptIndex;	// count up grid points
+				ptIndex++;
+			}
+			else
+				INDEXH(ptIndexHdl,i*fNumCols+j) = -1;
+		}
+	}
+	
+	for (i=0;i<fNumRows-1;i++)
+	{
+		for (j=0;j<fNumCols-1;j++)
+		{
+			if (INDEXH(landWaterInfo,i*fNumCols_minus1+j)>0)
+			{
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).cellNum = cellNum;
+				cellNum++;
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).topLeft = INDEXH(ptIndexHdl,i*fNumCols+j);
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).topRight = INDEXH(ptIndexHdl,i*fNumCols+j+1);
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomLeft = INDEXH(ptIndexHdl,(i+1)*fNumCols+j);
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomRight = INDEXH(ptIndexHdl,(i+1)*fNumCols+j+1);
+			}
+			else INDEXH(gridCellInfo,i*fNumCols_minus1+j).cellNum = -1;
+		}
+	}
+	ntri = cellNum*2;	// each water cell is split into two triangles
+	if(!(topo = (TopologyHdl)_NewHandleClear(ntri * sizeof(Topology)))){err = memFullErr; goto done;}	
+	for (i=0;i<nv;i++)
+	{
+		if (INDEXH(ptIndexHdl,i) != -1)
+		{
+			INDEXH(verdatPtsH,numVerdatPts) = i;
+			numVerdatPts++;
+		}
+	}
+	_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(**verdatPtsH));
+	pts = (LongPointHdl)_NewHandle(sizeof(LongPoint)*(numVerdatPts));
+	if(pts == nil)
+	{
+		strcpy(errmsg,"Not enough memory to triangulate data.");
+		return -1;
+	}
+	
+	/////////////////////////////////////////////////
+	//index = 0;
+	for (i=0; i<=numVerdatPts; i++)	// make a list of grid points that will be used for triangles
+	{
+		float fLong, fLat, /*fDepth,*/ dLon, dLat, dLon1, dLon2, dLat1, dLat2;
+		double val, u=0., v=0.;
+		LongPoint vertex;
+		
+		if(i < numVerdatPts) 
+		{	// since velocities are defined at the lower left corner of each grid cell
+			// need to add an extra row/col at the top/right of the grid
+			// set lat/lon based on distance between previous two points 
+			// these are just for boundary/drawing purposes, velocities are set to zero
+			index = i+1;
+			n = INDEXH(verdatPtsH,i);
+			iIndex = n/fNumCols;
+			jIndex = n%fNumCols;
+			//fLat = INDEXH(fVertexPtsH,(iIndex-1)*fNumCols+jIndex).pLat;
+			//fLong = INDEXH(fVertexPtsH,(iIndex-1)*fNumCols+jIndex).pLong;
+			fLat = INDEXH(fVertexPtsH,(iIndex)*fNumCols+jIndex).pLat;
+			fLong = INDEXH(fVertexPtsH,(iIndex)*fNumCols+jIndex).pLong;
+
+			vertex.v = (long)(fLat*1e6);
+			vertex.h = (long)(fLong*1e6);
+			
+			//fDepth = 1.;
+			INDEXH(pts,i) = vertex;
+		}
+		else { // for outputting a verdat the last line should be all zeros
+			//index = 0;
+			//fLong = fLat = fDepth = 0.0;
+		}
+		/////////////////////////////////////////////////
+		
+	}
+	// figure out the bounds
+	triBounds = voidWorldRect;
+	if(pts) 
+	{
+		LongPoint	thisLPoint;
+		
+		if(numVerdatPts > 0)
+		{
+			WorldPoint  wp;
+			for(i=0;i<numVerdatPts;i++)
+			{
+				thisLPoint = INDEXH(pts,i);
+				wp.pLat = thisLPoint.v;
+				wp.pLong = thisLPoint.h;
+				AddWPointToWRect(wp.pLat, wp.pLong, &triBounds);
+			}
+		}
+	}
+	
+	DisplayMessage("NEXTMESSAGETEMP");
+	DisplayMessage("Making Triangles");
+	
+	/////////////////////////////////////////////////
+	for (i=0;i<fNumRows_minus1;i++)
+	{
+		for (j=0;j<fNumCols_minus1;j++)
+		{
+			if (INDEXH(landWaterInfo,i*fNumCols_minus1+j)==-1)
+				continue;
+			waterCellNum = INDEXH(gridCellInfo,i*fNumCols_minus1+j).cellNum;	// split each cell into 2 triangles
+			triIndex1 = 2*waterCellNum;
+			triIndex2 = 2*waterCellNum+1;
+			// top/left tri in rect
+			(*topo)[triIndex1].vertex1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).topRight;
+			(*topo)[triIndex1].vertex2 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).topLeft;
+			(*topo)[triIndex1].vertex3 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomLeft;
+			if (j==0 || INDEXH(gridCellInfo,i*fNumCols_minus1+j-1).cellNum == -1)
+				(*topo)[triIndex1].adjTri1 = -1;
+			else
+			{
+				(*topo)[triIndex1].adjTri1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j-1).cellNum * 2 + 1;
+			}
+			(*topo)[triIndex1].adjTri2 = triIndex2;
+			if (i==0 || INDEXH(gridCellInfo,(i-1)*fNumCols_minus1+j).cellNum==-1)
+				(*topo)[triIndex1].adjTri3 = -1;
+			else
+			{
+				(*topo)[triIndex1].adjTri3 = INDEXH(gridCellInfo,(i-1)*fNumCols_minus1+j).cellNum * 2 + 1;
+			}
+			// bottom/right tri in rect
+			(*topo)[triIndex2].vertex1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomLeft;
+			(*topo)[triIndex2].vertex2 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomRight;
+			(*topo)[triIndex2].vertex3 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).topRight;
+			if (j==fNumCols-2 || INDEXH(gridCellInfo,i*fNumCols_minus1+j+1).cellNum == -1)
+				(*topo)[triIndex2].adjTri1 = -1;
+			else
+			{
+				(*topo)[triIndex2].adjTri1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j+1).cellNum * 2;
+			}
+			(*topo)[triIndex2].adjTri2 = triIndex1;
+			if (i==fNumRows-2 || INDEXH(gridCellInfo,(i+1)*fNumCols_minus1+j).cellNum == -1)
+				(*topo)[triIndex2].adjTri3 = -1;
+			else
+			{
+				(*topo)[triIndex2].adjTri3 = INDEXH(gridCellInfo,(i+1)*fNumCols_minus1+j).cellNum * 2;
+			}
+		}
+	}
+	
+	DisplayMessage("NEXTMESSAGETEMP");
+	DisplayMessage("Making Dag Tree");
+	MySpinCursor(); // JLM 8/4/99
+	tree = MakeDagTree(topo, (LongPoint**)pts, errmsg); 
+	MySpinCursor(); // JLM 8/4/99
+	if (errmsg[0])	
+	{err = -1; goto done;} 
+	// sethandle size of the fTreeH to be tree.fNumBranches, the rest are zeros
+	_SetHandleSize((Handle)tree.treeHdl,tree.numBranches*sizeof(DAG));
+	/////////////////////////////////////////////////
+	
+	fVerdatToNetCDFH = verdatPtsH;
+		
+	/////////////////////////////////////////////////
+	
+	triGrid = new TTriGridVel;
+	if (!triGrid)
+	{		
+		err = true;
+		TechError("Error in TimeGridWindCurv_c::ReorderPointsCOOPSNoMask()","new TTriGridVel",err);
+		goto done;
+	}
+	
+	fGrid = (TTriGridVel*)triGrid;
+	
+	triGrid -> SetBounds(triBounds); 
+	this->SetGridBounds(triBounds);
+	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
+	if(!dagTree)
+	{
+		err = -1;
+		printError("Unable to create dag tree.");
+		goto done;
+	}
+	
+	triGrid -> SetDagTree(dagTree);
+	
+	pts = 0;	// because fGrid is now responsible for it
+	topo = 0; // because fGrid is now responsible for it
+	velH = 0; // because fGrid is now responsible for it
+	tree.treeHdl = 0; // because fGrid is now responsible for it
+	velH = 0; // because fGrid is now responsible for it
+	
+	/////////////////////////////////////////////////
+done:
+	if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
+	if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
+	if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
+	
+	if(err)
+	{
+		if(!errmsg[0])
+			strcpy(errmsg,"An error occurred in TimeGridWindCurv_c::ReorderPointsCOOPSNoMask");
+		printError(errmsg); 
+		if(pts) {DisposeHandle((Handle)pts); pts=0;}
+		if(topo) {DisposeHandle((Handle)topo); topo=0;}
+		if(velH) {DisposeHandle((Handle)velH); velH=0;}
+		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
+		
+		if(fGrid)
+		{
+			fGrid ->Dispose();
+			delete fGrid;
+			fGrid = 0;
+		}
+		if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
+		if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
+		if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
+		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
+	}
+	
+	return err;	
+}
 
 // import NetCDF curvilinear info so don't have to regenerate
 OSErr TimeGridWindCurv_c::ReadTopology(vector<string> &linesInFile)

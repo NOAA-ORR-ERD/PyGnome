@@ -92,6 +92,225 @@ LongPoint NetCDFMoverCurv_c::GetVelocityIndices(WorldPoint wp)
 	return indices;
 }
 
+VelocityRec NetCDFMoverCurv_c::GetInterpolatedValue(InterpolationValBilinear interpolationVal,float depth,float totalDepth)
+{
+	
+	long pt1depthIndex1, pt1depthIndex2, pt2depthIndex1, pt2depthIndex2, pt3depthIndex1, pt3depthIndex2, pt4depthIndex1, pt4depthIndex2;
+	long ptIndex1, ptIndex2, ptIndex3, ptIndex4, amtOfDepthData = 0;
+	double topDepth, bottomDepth, depthAlpha, timeAlpha;
+	VelocityRec pt1interp = {0.,0.}, pt2interp = {0.,0.}, pt3interp = {0.,0.}, pt4interp = {0.,0.};
+	VelocityRec interpolatedVelocity = {0.,0.};
+	Seconds startTime, endTime, relTime;
+	Seconds model_time = model->GetModelTime();
+	
+	if (interpolationVal.ptIndex1 >= 0)  // if negative corresponds to negative ntri
+	{
+		// this is only section that's different from ptcur
+		ptIndex1 =  interpolationVal.ptIndex1;	
+		ptIndex2 =  interpolationVal.ptIndex2;
+		ptIndex3 =  interpolationVal.ptIndex3;
+		ptIndex4 =  interpolationVal.ptIndex4;
+		if (fVerdatToNetCDFH)
+		{
+			ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			ptIndex4 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex4];
+		}
+	}
+	else
+		return interpolatedVelocity;
+	
+	if (fDepthDataInfo) amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
+ 	if (amtOfDepthData>0)
+ 	{
+		GetDepthIndices(ptIndex1,depth,totalDepth,&pt1depthIndex1,&pt1depthIndex2);	
+		GetDepthIndices(ptIndex2,depth,totalDepth,&pt2depthIndex1,&pt2depthIndex2);	
+		GetDepthIndices(ptIndex3,depth,totalDepth,&pt3depthIndex1,&pt3depthIndex2);	
+		GetDepthIndices(ptIndex4,depth,totalDepth,&pt4depthIndex1,&pt4depthIndex2);	
+	}
+ 	else
+ 	{	// old version that didn't use fDepthDataInfo, must be 2D
+ 		pt1depthIndex1 = ptIndex1;	pt1depthIndex2 = -1;
+ 		pt2depthIndex1 = ptIndex2;	pt2depthIndex2 = -1;
+ 		pt3depthIndex1 = ptIndex3;	pt3depthIndex2 = -1;
+ 		pt4depthIndex1 = ptIndex4;	pt4depthIndex2 = -1;
+ 	}
+
+ 	// the contributions from each point will default to zero if the depth indicies
+	// come back negative (ie the LE depth is out of bounds at the grid point)
+	if ((GetNumTimesInFile() == 1 && !(GetNumFiles() > 1)) ||
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) ||
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
+	{
+		if (pt1depthIndex1!=-1)
+		{
+			if (pt1depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt1depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt1depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex2).u));
+				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex2).v));
+			}
+			else
+			{
+				pt1interp.u = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).u); 
+				pt1interp.v = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).v); 
+			}
+		}
+		
+		if (pt2depthIndex1!=-1)
+		{
+			if (pt2depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt2depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt2depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex2).u));
+				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex2).v));
+			}
+			else
+			{
+				pt2interp.u = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).u); 
+				pt2interp.v = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).v);
+			}
+		}
+		
+		if (pt3depthIndex1!=-1) 
+		{
+			if (pt3depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt3depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt3depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex2).u));
+				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex2).v));
+			}
+			else
+			{
+				pt3interp.u = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).u); 
+				pt3interp.v = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).v); 
+			}
+		}
+		if (pt4depthIndex1!=-1) 
+		{
+			if (pt4depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt4depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt4depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex2).u));
+				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex2).v));
+			}
+			else
+			{
+				pt4interp.u = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).u); 
+				pt4interp.v = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).v); 
+			}
+		}
+	}
+	
+	else // time varying current 
+	{
+		// Calculate the time weight factor
+		if (dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		//startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+		
+		if (pt1depthIndex1!=-1)
+		{
+			if (pt1depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt1depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt1depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex2).u));
+				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex2).v));
+			}
+			else
+			{
+				pt1interp.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).u); 
+				pt1interp.v = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).v); 
+			}
+		}
+		
+		if (pt2depthIndex1!=-1)
+		{
+			if (pt2depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt2depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt2depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex2).u));
+				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex2).v));
+			}
+			else
+			{
+				pt2interp.u = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).u); 
+				pt2interp.v = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).v); 
+			}
+		}
+		
+		if (pt3depthIndex1!=-1) 
+		{
+			if (pt3depthIndex2!=-1)
+			{
+				topDepth = INDEXH(fDepthsH,pt3depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt3depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex2).u));
+				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex2).v));
+			}
+			else
+			{
+				pt3interp.u = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).u); 
+				pt3interp.v = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).v); 
+			}
+		}
+		if (pt4depthIndex1!=-1) 
+		{
+			if (pt4depthIndex2!=-1)
+			{
+				topDepth = INDEXH(fDepthsH,pt4depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt4depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex2).u));
+				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex2).v));
+			}
+			else
+			{
+				pt4interp.u = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).u); 
+				pt4interp.v = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).v); 
+			}
+		}
+	}
+	interpolatedVelocity.u = pt1interp.u + pt2interp.u + pt3interp.u + pt4interp.u;
+	interpolatedVelocity.v = pt1interp.v + pt2interp.v + pt3interp.v + pt4interp.v;
+	
+	return interpolatedVelocity;
+}
+
 Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 {	// code goes here, this is triangle code, not curvilinear
 	char uStr[32],vStr[32],sStr[32],depthStr[32],errmsg[64];
@@ -106,7 +325,7 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	LongPoint indices;
 	
 	long ptIndex1,ptIndex2,ptIndex3; 
-	InterpolationVal interpolationVal;
+	InterpolationValBilinear interpolationVal;
 	long depthIndex1,depthIndex2;	// default to -1?
 	
 	
@@ -124,7 +343,7 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 		if (bIsCOOPSWaterMask)
 		{
 			//code goes here, put in interpolation
-			interpolationVal = fGrid -> GetInterpolationValues(wp.p);
+			interpolationVal = fGrid -> GetBilinearInterpolationValues(wp.p);
 			if (interpolationVal.ptIndex1<0) return false;
 			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
 			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
@@ -138,7 +357,15 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 		indices = this->GetVelocityIndices(wp.p);
 	}
 	else return 0;
+
+	if (bIsCOOPSWaterMask>0 && interpolationVal.ptIndex1 >= 0) 
+	{
+		totalDepth = GetInterpolatedTotalDepth(wp.p);
+		velocity = GetInterpolatedValue(interpolationVal,fVar.arrowDepth,totalDepth);
+		goto scale;
+	}						
 	totalDepth = GetTotalDepth(wp.p,index);
+	
 	GetDepthIndices(index,fVar.arrowDepth,totalDepth,&depthIndex1,&depthIndex2);
 	if (depthIndex1==UNASSIGNEDINDEX && depthIndex2==UNASSIGNEDINDEX)
 		return false;	// no value for this point at chosen depth - should show as 0,0 or nothing?
@@ -224,6 +451,7 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 		}
 	}
 	
+scale:
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v) * fFileScaleFactor;
 	//lengthS = this->fWindScale * lengthU;
 	//lengthS = this->fVar.curScale * lengthU;
@@ -269,7 +497,7 @@ WorldPoint3D NetCDFMoverCurv_c::GetMove(const Seconds& model_time, Seconds timeS
 	Seconds time = model->GetModelTime();
 	VelocityRec scaledPatVelocity;
 	Boolean useEddyUncertainty = false;	
-	InterpolationVal interpolationVal;
+	InterpolationValBilinear interpolationVal;
 	OSErr err = 0;
 	char errmsg[256];
 	
@@ -286,7 +514,7 @@ WorldPoint3D NetCDFMoverCurv_c::GetMove(const Seconds& model_time, Seconds timeS
 		if (bIsCOOPSWaterMask)
 		{
 			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
-			interpolationVal = fGrid -> GetInterpolationValues(refPoint);
+			interpolationVal = fGrid -> GetBilinearInterpolationValues(refPoint);
 			if (interpolationVal.ptIndex1<0) return deltaPoint;
 			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
 			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
@@ -294,10 +522,18 @@ WorldPoint3D NetCDFMoverCurv_c::GetMove(const Seconds& model_time, Seconds timeS
 			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
 		}
 		else
-		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+			index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	}
 	if (index < 0) return deltaPoint;
 	
+	// code goes here, need interpolation in z if LE is below surface
+	// what kind of weird things can triangles do below the surface ??
+	if (bIsCOOPSWaterMask>0 && interpolationVal.ptIndex1 >= 0) 
+	{
+		totalDepth = GetInterpolatedTotalDepth(refPoint);
+		scaledPatVelocity = GetInterpolatedValue(interpolationVal,depth,totalDepth);
+		goto scale;
+	}						
 	totalDepth = GetTotalDepth(refPoint,index);
 	if (index>=0)
 		GetDepthIndices(index,depth,totalDepth,&depthIndex1,&depthIndex2);	// if not ?? point is off grid but not beached (map mismatch)
@@ -413,6 +649,228 @@ scale:
 }
 
 
+/*VelocityRec NetCDFMoverCurv_c::GetMove3D(InterpolationValBilinear interpolationVal,float depth,float totalDepth)
+{
+	// figure out which depth values the LE falls between
+	// will have to interpolate in lat/long for both levels first
+	// and some sort of check on the returned indices, what to do if one is below bottom?
+	// for sigma model might have different depth values at each point
+	// for multilayer they should be the same, so only one interpolation would be needed
+	// others don't have different velocities at different depths so no interpolation is needed
+	// in theory the surface case should be a subset of this case, may eventually combine
+	
+	long pt1depthIndex1, pt1depthIndex2, pt2depthIndex1, pt2depthIndex2, pt3depthIndex1, pt3depthIndex2, pt4depthIndex1, pt4depthIndex2;
+	long ptIndex1, ptIndex2, ptIndex3, ptIndex4, amtOfDepthData = 0;
+	double topDepth, bottomDepth, depthAlpha, timeAlpha;
+	VelocityRec pt1interp = {0.,0.}, pt2interp = {0.,0.}, pt3interp = {0.,0.}, pt4interp = {0.,0.};
+	VelocityRec scaledPatVelocity = {0.,0.};
+	Seconds startTime, endTime, time = model->GetModelTime();
+	
+	if (interpolationVal.ptIndex1 >= 0)  // if negative corresponds to negative ntri
+	{
+		// this is only section that's different from ptcur
+		ptIndex1 =  interpolationVal.ptIndex1;	
+		ptIndex2 =  interpolationVal.ptIndex2;
+		ptIndex3 =  interpolationVal.ptIndex3;
+		ptIndex4 =  interpolationVal.ptIndex4;
+		if (fVerdatToNetCDFH)
+		{
+			ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			ptIndex4 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex4];
+		}
+	}
+	else
+		return scaledPatVelocity;
+	
+	if (fDepthDataInfo) amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
+ 	if (amtOfDepthData>0)
+ 	{
+		GetDepthIndices(ptIndex1,depth,totalDepth,&pt1depthIndex1,&pt1depthIndex2);	
+		GetDepthIndices(ptIndex2,depth,totalDepth,&pt2depthIndex1,&pt2depthIndex2);	
+		GetDepthIndices(ptIndex3,depth,totalDepth,&pt3depthIndex1,&pt3depthIndex2);	
+		GetDepthIndices(ptIndex4,depth,totalDepth,&pt4depthIndex1,&pt4depthIndex2);	
+	}
+ 	else
+ 	{	// old version that didn't use fDepthDataInfo, must be 2D
+ 		pt1depthIndex1 = ptIndex1;	pt1depthIndex2 = -1;
+ 		pt2depthIndex1 = ptIndex2;	pt2depthIndex2 = -1;
+ 		pt3depthIndex1 = ptIndex3;	pt3depthIndex2 = -1;
+ 		pt4depthIndex1 = ptIndex4;	pt4depthIndex2 = -1;
+ 	}
+	
+ 	// the contributions from each point will default to zero if the depth indicies
+	// come back negative (ie the LE depth is out of bounds at the grid point)
+	if(dynamic_cast<NetCDFMoverCurv *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
+	{
+		if (pt1depthIndex1!=-1)
+		{
+			if (pt1depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt1depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt1depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex2).u));
+				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex2).v));
+			}
+			else
+			{
+				pt1interp.u = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).u); 
+				pt1interp.v = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).v); 
+			}
+		}
+		
+		if (pt2depthIndex1!=-1)
+		{
+			if (pt2depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt2depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt2depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex2).u));
+				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex2).v));
+			}
+			else
+			{
+				pt2interp.u = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).u); 
+				pt2interp.v = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).v);
+			}
+		}
+		
+		if (pt3depthIndex1!=-1) 
+		{
+			if (pt3depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt3depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt3depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex2).u));
+				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex2).v));
+			}
+			else
+			{
+				pt3interp.u = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).u); 
+				pt3interp.v = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).v); 
+			}
+		}
+		if (pt4depthIndex1!=-1) 
+		{
+			if (pt4depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt4depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt4depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex2).u));
+				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex2).v));
+			}
+			else
+			{
+				pt4interp.u = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).u); 
+				pt4interp.v = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).v); 
+			}
+		}
+	}
+	
+	else // time varying current 
+	{
+		// Calculate the time weight factor
+		if (dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+		timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		
+		if (pt1depthIndex1!=-1)
+		{
+			if (pt1depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt1depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt1depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex2).u));
+				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex2).v));
+			}
+			else
+			{
+				pt1interp.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).u); 
+				pt1interp.v = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).v); 
+			}
+		}
+		
+		if (pt2depthIndex1!=-1)
+		{
+			if (pt2depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt2depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt2depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex2).u));
+				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex2).v));
+			}
+			else
+			{
+				pt2interp.u = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).u); 
+				pt2interp.v = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).v); 
+			}
+		}
+		
+		if (pt3depthIndex1!=-1) 
+		{
+			if (pt3depthIndex2!=-1)
+			{
+				topDepth = INDEXH(fDepthsH,pt3depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt3depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex2).u));
+				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex2).v));
+			}
+			else
+			{
+				pt3interp.u = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).u); 
+				pt3interp.v = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).v); 
+			}
+		}
+		if (pt4depthIndex1!=-1) 
+		{
+			if (pt4depthIndex2!=-1)
+			{
+				topDepth = INDEXH(fDepthsH,pt4depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt4depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex2).u));
+				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex2).v));
+			}
+			else
+			{
+				pt4interp.u = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).u); 
+				pt4interp.v = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).v); 
+			}
+		}
+	}
+	scaledPatVelocity.u = pt1interp.u + pt2interp.u + pt3interp.u + pt4interp.u;
+	scaledPatVelocity.v = pt1interp.v + pt2interp.v + pt3interp.v + pt4interp.v;
+	
+	return scaledPatVelocity;
+}*/
+
 float NetCDFMoverCurv_c::GetTotalDepthFromTriIndex(long triNum)
 {
 	long index1, index2, index3, index4, numDepths;
@@ -464,6 +922,46 @@ float NetCDFMoverCurv_c::GetTotalDepth2(WorldPoint refPoint)
 			index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 		if (fDepthsH) totalDepth = INDEXH(fDepthsH,index);
 	}
+	return totalDepth;
+}
+
+float NetCDFMoverCurv_c::GetInterpolatedTotalDepth(WorldPoint refPoint)
+{
+	InterpolationValBilinear interpolationVal;
+	float totalDepth = 0;
+	long ptIndex1, ptIndex2, ptIndex3, ptIndex4;
+	
+	if (fGrid)
+		interpolationVal = ((TTriGridVel*)fGrid) -> GetBilinearInterpolationValues(refPoint);
+	else return totalDepth;
+
+	if (interpolationVal.ptIndex1 >= 0)  // if negative corresponds to negative ntri
+	{
+		ptIndex1 =  interpolationVal.ptIndex1;	
+		ptIndex2 =  interpolationVal.ptIndex2;
+		ptIndex3 =  interpolationVal.ptIndex3;
+		ptIndex4 =  interpolationVal.ptIndex4;
+		if (fVerdatToNetCDFH)
+		{
+			ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			ptIndex4 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex4];
+		}
+	}
+	else
+		return totalDepth;
+		
+	if (fDepthsH)
+	{
+		float debugDepth1, debugDepth2, debugDepth3, debugDepth4;
+		debugDepth1 = (*fDepthsH)[ptIndex1];
+		debugDepth2 = (*fDepthsH)[ptIndex2];
+		debugDepth3 = (*fDepthsH)[ptIndex3];
+		debugDepth4 = (*fDepthsH)[ptIndex4];
+		totalDepth = interpolationVal.alpha1*(*fDepthsH)[ptIndex1]+interpolationVal.alpha2*(*fDepthsH)[ptIndex2]+interpolationVal.alpha3*(*fDepthsH)[ptIndex3]+interpolationVal.alpha4*(*fDepthsH)[ptIndex4];
+	}
+
 	return totalDepth;
 }
 
@@ -2062,19 +2560,19 @@ OSErr NetCDFMoverCurv_c::ReorderPointsCOOPSMask(DOUBLEH landmaskH, TMap **newMap
 		{
 			//if (landmask[i*fNumCols_minus1+j]==0 && landmask[i*fNumCols_minus1+j]=0)	// land point
 			//if (mylandmask[i*fNumCols+j]==0)	// land point
-			if (INDEXH(landmaskH,i*fNumCols+j)==0)	// land point
+			/*if (INDEXH(landmaskH,i*fNumCols+j)==0)	// land point
 			{
 				INDEXH(landWaterInfo,i*fNumCols_minus1+j) = -1;	// may want to mark each separate island with a unique number
 			}
-			else
+			else*/
 			{
 				//if (landmask[(latlength-i)*fNumCols+j]==0 || landmask[(latlength-i-1)*fNumCols+j+1]==0 || landmask[(latlength-i)*fNumCols+j+1]==0)
 				//if (mylandmask[(i+1)*fNumCols+j]==0 || mylandmask[i*fNumCols+j+1]==0 || mylandmask[(i+1)*fNumCols+j+1]==0)
-				if (INDEXH(landmaskH,(i+1)*fNumCols+j)==0 || INDEXH(landmaskH,i*fNumCols+j+1)==0 || INDEXH(landmaskH,(i+1)*fNumCols+j+1)==0)
+				/*if (INDEXH(landmaskH,(i+1)*fNumCols+j)==0 || INDEXH(landmaskH,i*fNumCols+j+1)==0 || INDEXH(landmaskH,(i+1)*fNumCols+j+1)==0)
 				{
 					INDEXH(landWaterInfo,i*fNumCols_minus1+j) = -1;	// may want to mark each separate island with a unique number
 				}
-				else
+				else*/
 				{
 					INDEXH(landWaterInfo,i*fNumCols_minus1+j) = 1;
 					INDEXH(ptIndexHdl,i*fNumCols+j) = -2;	// water box
@@ -2547,6 +3045,384 @@ done:
 		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
 		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
 		if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH = 0;}
+	}
+
+	
+
+
+	return err;	
+}
+
+OSErr NetCDFMoverCurv_c::ReorderPointsCOOPSNoMask(TMap **newMap, char* errmsg) 
+{
+	OSErr err = 0;
+	long i,j,k;
+	char path[256], outPath[256];
+	char *velUnits=0; 
+	int status, ncid, numdims;
+	int mask_id, uv_ndims;
+	long latlength = fNumRows, numtri = 0;
+	long lonlength = fNumCols;
+	Boolean isLandMask = true;
+	float fDepth1, fLat1, fLong1;
+	long index1=0;
+	
+	errmsg[0]=0;
+	*newMap = 0;
+
+	long n, ntri, numVerdatPts=0;
+	long fNumRows_minus1 = fNumRows-1, fNumCols_minus1 = fNumCols-1;
+	long nv = fNumRows * fNumCols;
+	long nCells = fNumRows_minus1 * fNumCols_minus1;
+	long iIndex, jIndex, index; 
+	long triIndex1, triIndex2, waterCellNum=0;
+	long ptIndex = 0, cellNum = 0;
+
+	LONGH landWaterInfo = (LONGH)_NewHandleClear(nCells * sizeof(long));
+	
+	LONGH ptIndexHdl = (LONGH)_NewHandleClear(nv * sizeof(**ptIndexHdl));
+	LONGH verdatPtsH = (LONGH)_NewHandleClear(nv * sizeof(**verdatPtsH));
+	GridCellInfoHdl gridCellInfo = (GridCellInfoHdl)_NewHandleClear(nCells * sizeof(**gridCellInfo));
+	
+	TopologyHdl topo=0;
+	LongPointHdl pts=0;
+	VelocityFH velH = 0;
+	DAGTreeStruct tree;
+	WorldRect triBounds;
+	
+	//TTriGridVel *triGrid = nil;
+	TTriGridVel3D *triGrid = nil;
+	tree.treeHdl = 0;
+	TDagTree *dagTree = 0;
+	
+	// write out verdat file for debugging
+	/* FILE *outfile = 0;
+	 char name[32], verdatpath[256],m[300];
+	 strcpy(name,"NewVerdat.dat");
+	 errmsg[0]=0;
+	 
+	 err = AskUserForSaveFilename(name,verdatpath,".dat",true);
+	 if(err) return USERCANCEL; 
+	 
+	 SetWatchCursor();
+	 sprintf(m, "Exporting VERDAT to %s...",verdatpath);
+	 DisplayMessage("NEXTMESSAGETEMP");
+	 DisplayMessage(m);*/
+	/////////////////////////////////////////////////
+	
+	
+	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH) {err = memFullErr; goto done;}
+	
+	/*outfile=fopen(verdatpath,"w");
+	if (!outfile) {err = -1; printError("Unable to open file for writing"); goto done;}
+	fprintf(outfile,"DOGS\tMETERS\n");*/
+
+						
+	/*for (i=0;i<fNumRows;i++)
+	{
+		for (j=0;j<fNumCols;j++)
+		{
+			debug_mask = landmask[(latlength-i-1)*lonlength+j];
+			//if (debug_mask == 1.1) numtri++;
+			if (debug_mask > 0) 
+			{
+				numtri++;
+			}
+			// eventually will need to have a land mask, for now assume fillValue represents land
+			if (landmask[(latlength-i-1)*fNumCols+j]==0)	// land point
+			{
+			}
+			else
+			{
+				index1++;
+				//fLat1 = INDEXH(fVertexPtsH,(iIndex)*fNumCols+jIndex).pLat;
+				//fLong1 = INDEXH(fVertexPtsH,(iIndex)*fNumCols+jIndex).pLong;
+				fLat1 = INDEXH(fVertexPtsH,(i)*fNumCols+j).pLat;
+				fLong1 = INDEXH(fVertexPtsH,(i)*fNumCols+j).pLong;
+			
+			fDepth1 = 1.;				
+			//fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", index1, fLong1, fLat1, fDepth1);	
+			}
+
+		}
+	}*/
+	//fclose(outfile);
+	/*for (i=0;i<fNumRows;i++)
+	{
+		for (j=0;j<fNumCols;j++)
+		{
+			mylandmask[i*lonlength+j] = landmask[(latlength-i-1)*lonlength+j];
+		}
+	}*/
+	index1 = 0;
+	for (i=0;i<fNumRows-1;i++)
+	{
+		for (j=0;j<fNumCols-1;j++)
+		{
+			//if (landmask[i*fNumCols_minus1+j]==0 && landmask[i*fNumCols_minus1+j]=0)	// land point
+			//if (mylandmask[i*fNumCols+j]==0)	// land point
+			/*if (INDEXH(landmaskH,i*fNumCols+j)==0)	// land point
+			{
+				INDEXH(landWaterInfo,i*fNumCols_minus1+j) = -1;	// may want to mark each separate island with a unique number
+			}
+			else*/
+			{
+				//if (landmask[(latlength-i)*fNumCols+j]==0 || landmask[(latlength-i-1)*fNumCols+j+1]==0 || landmask[(latlength-i)*fNumCols+j+1]==0)
+				//if (mylandmask[(i+1)*fNumCols+j]==0 || mylandmask[i*fNumCols+j+1]==0 || mylandmask[(i+1)*fNumCols+j+1]==0)
+				/*if (INDEXH(landmaskH,(i+1)*fNumCols+j)==0 || INDEXH(landmaskH,i*fNumCols+j+1)==0 || INDEXH(landmaskH,(i+1)*fNumCols+j+1)==0)
+				{
+					INDEXH(landWaterInfo,i*fNumCols_minus1+j) = -1;	// may want to mark each separate island with a unique number
+				}
+				else*/
+				{
+					INDEXH(landWaterInfo,i*fNumCols_minus1+j) = 1;
+					INDEXH(ptIndexHdl,i*fNumCols+j) = -2;	// water box
+					INDEXH(ptIndexHdl,i*fNumCols+j+1) = -2;
+					INDEXH(ptIndexHdl,(i+1)*fNumCols+j) = -2;
+					INDEXH(ptIndexHdl,(i+1)*fNumCols+j+1) = -2;
+				}
+			}
+		}
+	}
+	
+	for (i=0;i<fNumRows;i++)
+	{
+		for (j=0;j<fNumCols;j++)
+		{
+			if (INDEXH(ptIndexHdl,i*fNumCols+j) == -2)
+			{
+				INDEXH(ptIndexHdl,i*fNumCols+j) = ptIndex;	// count up grid points
+				ptIndex++;
+			}
+			else
+				INDEXH(ptIndexHdl,i*fNumCols+j) = -1;
+		}
+	}
+	
+	for (i=0;i<fNumRows-1;i++)
+	{
+		for (j=0;j<fNumCols-1;j++)
+		{
+			if (INDEXH(landWaterInfo,i*fNumCols_minus1+j)>0)
+			{
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).cellNum = cellNum;
+				cellNum++;
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).topLeft = INDEXH(ptIndexHdl,i*fNumCols+j);
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).topRight = INDEXH(ptIndexHdl,i*fNumCols+j+1);
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomLeft = INDEXH(ptIndexHdl,(i+1)*fNumCols+j);
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomRight = INDEXH(ptIndexHdl,(i+1)*fNumCols+j+1);
+			}
+			else INDEXH(gridCellInfo,i*fNumCols_minus1+j).cellNum = -1;
+		}
+	}
+	ntri = cellNum*2;	// each water cell is split into two triangles
+	if(!(topo = (TopologyHdl)_NewHandleClear(ntri * sizeof(Topology)))){err = memFullErr; goto done;}	
+	for (i=0;i<nv;i++)
+	{
+		if (INDEXH(ptIndexHdl,i) != -1)
+		{
+			INDEXH(verdatPtsH,numVerdatPts) = i;
+			numVerdatPts++;
+		}
+	}
+	_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(**verdatPtsH));
+	pts = (LongPointHdl)_NewHandle(sizeof(LongPoint)*(numVerdatPts));
+	if(pts == nil)
+	{
+		strcpy(errmsg,"Not enough memory to triangulate data.");
+		return -1;
+	}
+	
+	/////////////////////////////////////////////////
+	// write out the file
+	/////////////////////////////////////////////////
+	/*outfile=fopen(verdatpath,"w");
+	if (!outfile) {err = -1; printError("Unable to open file for writing"); goto done;}
+	fprintf(outfile,"DOGS\tMETERS\n");*/
+	index = 0;
+	for (i=0; i<=numVerdatPts; i++)	// make a list of grid points that will be used for triangles
+	{
+		float fLong, fLat, fDepth, dLon, dLat, dLon1, dLon2, dLat1, dLat2;
+		double val, u=0., v=0.;
+		LongPoint vertex;
+		
+		if(i < numVerdatPts) 
+		{	// since velocities are defined at the lower left corner of each grid cell
+			// need to add an extra row/col at the top/right of the grid
+			// set lat/lon based on distance between previous two points 
+			// these are just for boundary/drawing purposes, velocities are set to zero
+			index = i+1;
+			n = INDEXH(verdatPtsH,i);
+			iIndex = n/fNumCols;
+			jIndex = n%fNumCols;
+			//fLat = INDEXH(fVertexPtsH,(iIndex-1)*fNumCols+jIndex).pLat;
+			//fLong = INDEXH(fVertexPtsH,(iIndex-1)*fNumCols+jIndex).pLong;
+			fLat = INDEXH(fVertexPtsH,(iIndex)*fNumCols+jIndex).pLat;
+			fLong = INDEXH(fVertexPtsH,(iIndex)*fNumCols+jIndex).pLong;
+			/*if (landmask[(latlength-iIndex-1)*fNumCols+jIndex]==0)	// land point
+			{
+				//index1++;
+				u = INDEXH(velocityH,(iIndex)*fNumCols+jIndex).u;
+				v = INDEXH(velocityH,(iIndex)*fNumCols+jIndex).v;
+			}*/
+			vertex.v = (long)(fLat*1e6);
+			vertex.h = (long)(fLong*1e6);
+			
+			fDepth = 1.;
+			INDEXH(pts,i) = vertex;
+		}
+		else { // for outputting a verdat the last line should be all zeros
+			index = 0;
+			fLong = fLat = fDepth = 0.0;
+		}
+		//fprintf(outfile, "%ld,%.6f,%.6f,%.6f,%.6f,%.6f\n", index, fLong, fLat, fDepth, u, v);	
+		//fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", index, fLong, fLat, fDepth);	
+		//if (u!=0. && v!=0.) {index=index+1; fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", index, fLong, fLat, fDepth);}	
+		/////////////////////////////////////////////////
+		
+	}
+	//fclose(outfile);
+	// figure out the bounds
+	triBounds = voidWorldRect;
+	if(pts) 
+	{
+		LongPoint	thisLPoint;
+		
+		if(numVerdatPts > 0)
+		{
+			WorldPoint  wp;
+			for(i=0;i<numVerdatPts;i++)
+			{
+				thisLPoint = INDEXH(pts,i);
+				wp.pLat = thisLPoint.v;
+				wp.pLong = thisLPoint.h;
+				AddWPointToWRect(wp.pLat, wp.pLong, &triBounds);
+			}
+		}
+	}
+	
+	DisplayMessage("NEXTMESSAGETEMP");
+	DisplayMessage("Making Triangles");
+	
+	/////////////////////////////////////////////////
+	for (i=0;i<fNumRows_minus1;i++)
+	{
+		for (j=0;j<fNumCols_minus1;j++)
+		{
+			if (INDEXH(landWaterInfo,i*fNumCols_minus1+j)==-1)
+				continue;
+			waterCellNum = INDEXH(gridCellInfo,i*fNumCols_minus1+j).cellNum;	// split each cell into 2 triangles
+			triIndex1 = 2*waterCellNum;
+			triIndex2 = 2*waterCellNum+1;
+			// top/left tri in rect
+			(*topo)[triIndex1].vertex1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).topRight;
+			(*topo)[triIndex1].vertex2 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).topLeft;
+			(*topo)[triIndex1].vertex3 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomLeft;
+			if (j==0 || INDEXH(gridCellInfo,i*fNumCols_minus1+j-1).cellNum == -1)
+				(*topo)[triIndex1].adjTri1 = -1;
+			else
+			{
+				(*topo)[triIndex1].adjTri1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j-1).cellNum * 2 + 1;
+			}
+			(*topo)[triIndex1].adjTri2 = triIndex2;
+			if (i==0 || INDEXH(gridCellInfo,(i-1)*fNumCols_minus1+j).cellNum==-1)
+				(*topo)[triIndex1].adjTri3 = -1;
+			else
+			{
+				(*topo)[triIndex1].adjTri3 = INDEXH(gridCellInfo,(i-1)*fNumCols_minus1+j).cellNum * 2 + 1;
+			}
+			// bottom/right tri in rect
+			(*topo)[triIndex2].vertex1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomLeft;
+			(*topo)[triIndex2].vertex2 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomRight;
+			(*topo)[triIndex2].vertex3 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).topRight;
+			if (j==fNumCols-2 || INDEXH(gridCellInfo,i*fNumCols_minus1+j+1).cellNum == -1)
+				(*topo)[triIndex2].adjTri1 = -1;
+			else
+			{
+				(*topo)[triIndex2].adjTri1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j+1).cellNum * 2;
+			}
+			(*topo)[triIndex2].adjTri2 = triIndex1;
+			if (i==fNumRows-2 || INDEXH(gridCellInfo,(i+1)*fNumCols_minus1+j).cellNum == -1)
+				(*topo)[triIndex2].adjTri3 = -1;
+			else
+			{
+				(*topo)[triIndex2].adjTri3 = INDEXH(gridCellInfo,(i+1)*fNumCols_minus1+j).cellNum * 2;
+			}
+		}
+	}
+	
+	DisplayMessage("NEXTMESSAGETEMP");
+	DisplayMessage("Making Dag Tree");
+	MySpinCursor(); // JLM 8/4/99
+	tree = MakeDagTree(topo, (LongPoint**)pts, errmsg); 
+	MySpinCursor(); // JLM 8/4/99
+	if (errmsg[0])	
+	{err = -1; goto done;} 
+	// sethandle size of the fTreeH to be tree.fNumBranches, the rest are zeros
+	_SetHandleSize((Handle)tree.treeHdl,tree.numBranches*sizeof(DAG));
+	/////////////////////////////////////////////////
+	
+	
+	fVerdatToNetCDFH = verdatPtsH;
+	
+	//fVerdatToNetCDFH = verdatPtsH;
+	
+	/////////////////////////////////////////////////
+	
+	triGrid = new TTriGridVel3D;
+	if (!triGrid)
+	{		
+		err = true;
+		TechError("Error in NetCDFMoverCurv::ReorderPointsCOOPSMask()","new TTriGridVel",err);
+		goto done;
+	}
+	
+	fGrid = (TTriGridVel3D*)triGrid;
+	
+	triGrid -> SetBounds(triBounds); 
+	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
+	if(!dagTree)
+	{
+		err = -1;
+		printError("Unable to create dag tree.");
+		goto done;
+	}
+	
+	triGrid -> SetDagTree(dagTree);
+	//triGrid -> SetDepths(totalDepthH);	// used by PtCurMap to check vertical movement
+		
+	pts = 0;	// because fGrid is now responsible for it
+	topo = 0; // because fGrid is now responsible for it
+	velH = 0; // because fGrid is now responsible for it
+	tree.treeHdl = 0; // because fGrid is now responsible for it
+	velH = 0; // because fGrid is now responsible for it
+	
+	/////////////////////////////////////////////////
+done:
+	if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
+	if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
+	if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
+	
+	if(err)
+	{
+		if(!errmsg[0])
+			strcpy(errmsg,"An error occurred in NetCDFMoverCurv::ReorderPointsCOOPSMask");
+		printError(errmsg); 
+		if(pts) {DisposeHandle((Handle)pts); pts=0;}
+		if(topo) {DisposeHandle((Handle)topo); topo=0;}
+		if(velH) {DisposeHandle((Handle)velH); velH=0;}
+		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
+		
+		if(fGrid)
+		{
+			fGrid ->Dispose();
+			delete fGrid;
+			fGrid = 0;
+		}
+		if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
+		if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
+		if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
+		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
 	}
 
 	
