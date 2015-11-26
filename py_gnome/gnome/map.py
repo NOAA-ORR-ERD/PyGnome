@@ -1,6 +1,3 @@
-from gnome.utilities.projections import FlatEarthProjection
-from numpy import sin, deg2rad
-
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
@@ -18,23 +15,28 @@ Features:
    extra space is not in the land map
 
 """
-
 import copy
 import os
 import math
-import gnome.utilities.profiledeco as pd
-import unit_conversion as uc
+
+import py_gd
+import pyugrid
 
 import numpy as np
-from colander import SchemaNode, String, Float, drop, Tuple, Integer
 
-from geojson import FeatureCollection, Feature, MultiPolygon
+from colander import SchemaNode, String, Float, drop, Integer
 
-from gnome.persist import base_schema
+from geojson import FeatureCollection, Feature, MultiPolygon, MultiLineString
 
-import gnome.map
+import unit_conversion as uc
 
-from gnome.utilities import projections
+from gnome import _valid_units
+from gnome.basic_types import oil_status, world_point_type
+
+import gnome.utilities.profiledeco as pd
+from gnome.utilities.projections import (FlatEarthProjection,
+                                         RectangularGridProjection,
+                                         RegularGridProjection)
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
@@ -42,21 +44,21 @@ from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file,
                                                       ogr_layers,
                                                       ogr_features)
 
-
-from gnome.basic_types import oil_status, world_point_type
-from gnome.cy_gnome.cy_land_check import check_land_layers
-from gnome.cy_gnome.cy_land_check import move_particles
-
+from gnome.utilities.geometry.polygons import PolygonSet
 from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
                                                           point_in_poly)
-from gnome.utilities.geometry.polygons import PolygonSet
-from gnome import _valid_units
+
+from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
+
+
+import gnome.map
+from gnome.persist import base_schema
 
 
 class GnomeMapSchema(base_schema.ObjType):
     map_bounds = base_schema.LongLatBounds(missing=drop)
     spillable_area = base_schema.PolygonSet(missing=drop)
-#     land_polys = base_schema.PolygonSet(missing=drop)
+    # land_polys = base_schema.PolygonSet(missing=drop)
 
 
 class ParamMapSchema(GnomeMapSchema):
@@ -122,10 +124,8 @@ class GnomeMap(Serializable):
                                          dtype=np.float64).reshape(-1, 2)
         else:
             # using -360 to 360 to allow stuff to cross the dateline..
-            self.map_bounds = np.array(((-360, -90),
-                                        (-360, 90),
-                                        (360, 90),
-                                        (360, -90)),
+            self.map_bounds = np.array(((-360, -90), (-360, 90),
+                                        (360, 90), (360, -90)),
                                        dtype=np.float64)
 
         if spillable_area is None:
@@ -180,6 +180,7 @@ class GnomeMap(Serializable):
     def map_bounds_update_from_dict(self, val):
         'convert list of tuples back to numpy array'
         new_arr = self._attr_from_list_to_array(val)
+
         if np.any(self.map_bounds != new_arr):
             self.map_bounds = new_arr
             return True
@@ -343,11 +344,11 @@ class ParamMap(GnomeMap):
                update=['center', 'distance', 'bearing', 'units'])
 
     _schema = ParamMapSchema
-    
+
     _valid_dist_units = _valid_units("Length")
 
-    def __init__(self, center=(0.0, 0.0), distance=30000, bearing=90, units=None,
-                 **kwargs):
+    def __init__(self, center=(0.0, 0.0), distance=30000, bearing=90,
+                 units=None, **kwargs):
         """
         Creates a parameratized map, essentially a straight shoreline set a
         certain distance and bearing from a location, usually a spill.
@@ -388,7 +389,7 @@ class ParamMap(GnomeMap):
         init_points = [(d, -8 * d), (d, 8 * d),
                        (8 * d, 8 * d), (8 * d, -8 * d)]
 
-        ang = deg2rad(90 - bearing)
+        ang = np.deg2rad(90 - bearing)
         rot_matrix = [(np.cos(ang), np.sin(ang)), (-np.sin(ang), np.cos(ang))]
 
         self.land_points = np.dot(init_points, rot_matrix)
@@ -398,10 +399,8 @@ class ParamMap(GnomeMap):
         land_polys = PolygonSet((self.land_points, [0, 4], []))
         land_polys._MetaDataList = [('polygon', '1', '1')]
 
-        map_bounds = np.array(((-4 * d, -2 * d),
-                               (-4 * d, 2 * d),
-                               (4 * d, 2 * d),
-                               (4 * d, -2 * d)),
+        map_bounds = np.array(((-4 * d, -2 * d), (-4 * d, 2 * d),
+                               (4 * d, 2 * d), (4 * d, -2 * d)),
                               dtype=np.float64) + (center[0], center[1])
 
         self._refloat_halflife = 0.5
@@ -418,13 +417,12 @@ class ParamMap(GnomeMap):
         or mass units
         """
 
-        if units in self._valid_dist_units: 
+        if units in self._valid_dist_units:
             return True
         else:
-            msg = ('unit must be a valid unit of distance: {0}').format(self._valid_dist_units)
-            ex = uc.InvalidUnitError((units,'Length'))
+            ex = uc.InvalidUnitError((units, 'Length'))
             self.logger.exception(ex, exc_info=True)
-            raise ex    # this should be raised since run will fail otherwise
+            raise ex  # this should be raised since run will fail otherwise
 
     def get_map_bounds(self):
         return (self.map_bounds[0], self.map_bounds[2])
@@ -508,7 +506,7 @@ class ParamMap(GnomeMap):
         status_codes[off_map] = oil_status.off_maps
 
     def find_last_water_pos(self, starts, ends):
-        return starts + (ends-starts) * 0.000001
+        return starts + (ends - starts) * 0.000001
 
     def beach_elements(self, sc):
         """
@@ -577,7 +575,7 @@ class ParamMap(GnomeMap):
         shoreline_geo = [p.points.tolist() for p in self.land_polys]
 
         shoreline = Feature(id="1",
-                            properties={'name': 'Shoreline'},
+                            properties={'name': 'Shoreline Polys'},
                             geometry=MultiPolygon(coordinates=[shoreline_geo]))
 
         return FeatureCollection([shoreline])
@@ -611,7 +609,6 @@ class RasterMap(GnomeMap):
     def __init__(self, bitmap_array, projection, **kwargs):
         """
         create a new RasterMap
-
 
         :param bitmap_array: A numpy array that stores the land-water map
                              0 is water. 1 is land. In theory, other values
@@ -720,8 +717,6 @@ class RasterMap(GnomeMap):
 
         :param filename: the name of the file to save to.
         '''
-        import py_gd
-
         bitmap = self.basebitmap.copy()
 
         # change anything not zero to 255 - to get black and white
@@ -743,8 +738,7 @@ class RasterMap(GnomeMap):
         return (coord[0] < 0 or
                 coord[1] < 0 or
                 coord[0] >= shape[0] or
-                coord[1] >= shape[1]
-                )
+                coord[1] >= shape[1])
 
     def _on_land_pixel(self, coord):
         """
@@ -796,7 +790,6 @@ class RasterMap(GnomeMap):
         return chrmgph
 
     def _in_water_pixel(self, coord):
-
         # if  off the basebitmap, so must be in water,
         # unless not on map, which should have already been checked.
         if not self._off_bitmap:
@@ -813,7 +806,6 @@ class RasterMap(GnomeMap):
 
         :return: true if the point given by coord is in the water
         """
-
         if not self.on_map(coord):
             return False
         else:
@@ -932,12 +924,9 @@ class RasterMap(GnomeMap):
         The arguments 'status_codes', 'positions' and 'last_water_positions'
         are altered in place.
         """
-        check_land_layers(raster_map_layers,
-                          ratios,
-                          positions,
-                          end_positions,
-                          status_codes,
-                          last_water_positions)
+        check_land_layers(raster_map_layers, ratios,
+                          positions, end_positions,
+                          status_codes, last_water_positions)
 
     def allowable_spill_position(self, coord):
         """
@@ -981,10 +970,7 @@ class MapFromBNA(RasterMap):
     _state = copy.deepcopy(RasterMap._state)
     _state.update(['map_bounds', 'spillable_area'], save=False)
     _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
-    _state.add_field(Field('filename',
-                           isdatafile=True,
-                           save=True,
-                           read=True,
+    _state.add_field(Field('filename', isdatafile=True, save=True, read=True,
                            test_for_eq=False))
     _schema = MapFromBNASchema
 
@@ -1104,9 +1090,7 @@ class MapFromBNA(RasterMap):
         # get the basebitmap as a numpy array:
         bitmap_array = canvas.back_asarray()
 
-        RasterMap.__init__(self,
-                           bitmap_array,
-                           canvas.projection,
+        RasterMap.__init__(self, bitmap_array, canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,
                            land_polys=land_polys,
@@ -1115,7 +1099,8 @@ class MapFromBNA(RasterMap):
 
     def to_geojson(self):
         map_file = ogr_open_file(self.filename)
-        shoreline_geo = []
+        polys = []
+        line_strings = []
 
         for layer in ogr_layers(map_file):
             for f in ogr_features(layer):
@@ -1138,16 +1123,28 @@ class MapFromBNA(RasterMap):
                     # But this is much more efficient than exporting
                     # to json.
                     geom = f.GetGeometryRef()
-                    poly = geom.GetGeometryRef(0)
-                    ring = poly.GetGeometryRef(0)
+                    geo_type = geom.GetGeometryName()
 
-                    shoreline_geo.append([ring.GetPoints()])
+                    if geo_type == 'MULTIPOLYGON':
+                        poly = geom.GetGeometryRef(0)
+                        ring = poly.GetGeometryRef(0)
 
-        shoreline = Feature(id="1",
-                            properties={'name': 'Shoreline'},
-                            geometry=MultiPolygon(coordinates=shoreline_geo))
+                        polys.append([ring.GetPoints()])
+                    elif geo_type == 'LINESTRING':
+                        line_strings.append([geom.GetPoints()])
+                    else:
+                        print 'unknown type: ', geo_type
 
-        return FeatureCollection([shoreline])
+        shoreline = [Feature(id="1",
+                             properties={'name': 'Shoreline Polys'},
+                             geometry=MultiPolygon(coordinates=polys)),
+                     Feature(id="2",
+                             properties={'name': 'Shoreline Lines'},
+                             geometry=MultiLineString(coordinates=line_strings)
+                             ),
+                     ]
+
+        return FeatureCollection(shoreline)
 
 
 class MapFromUGrid(RasterMap):
@@ -1157,16 +1154,11 @@ class MapFromUGrid(RasterMap):
     _state = copy.deepcopy(RasterMap._state)
     _state.update(['map_bounds', 'spillable_area'], save=False)
     _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
-    _state.add_field(Field('filename',
-                           isdatafile=True,
-                           save=True,
-                           read=True,
+    _state.add_field(Field('filename', isdatafile=True, save=True, read=True,
                            test_for_eq=False))
     _schema = MapFromUGridSchema
 
-    def __init__(self,
-                 filename,
-                 raster_size=1024 * 1024, **kwargs):
+    def __init__(self, filename, raster_size=1024 * 1024, **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a netcdf
         data file with a traingular mesh grid in it.
@@ -1195,12 +1187,9 @@ class MapFromUGrid(RasterMap):
                    This is only used when loading object from save file.
         :type id: string
         """
-
         self.filename = filename
 
-        import pyugrid
         grid = pyugrid.UGrid.from_ncfile(filename)
-
 
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
@@ -1217,7 +1206,6 @@ class MapFromUGrid(RasterMap):
         for p in polygons:
             if p.metadata[1].lower() == 'spillablearea':
                 spillable_area.append(p)
-
             elif p.metadata[1].lower() == 'map bounds':
                 map_bounds = p
             else:
@@ -1241,14 +1229,12 @@ class MapFromUGrid(RasterMap):
         # todo: should there be a check between spillable_area read from BNA
         # versus what the user entered. if this is within spillable_area for
         # BNA, then include it? else ignore
-        #spillable_area = kwargs.pop('spillable_area', spillable_area)
-
         spillable_area = kwargs.pop('spillable_area', spillable_area)
+
         map_bounds = kwargs.pop('map_bounds', map_bounds)
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-
         aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
                         (BB.Width / BB.Height))
 
@@ -1258,22 +1244,23 @@ class MapFromUGrid(RasterMap):
         canvas = MapCanvas(image_size=(w, h),
                            preset_colors=None,
                            background_color='water',
-                           viewport=BB,
-                           )
-        canvas.add_colors( ( ('water', (  0, 255, 255)), # aqua -- color doesn't matter here, only index
-                             ('land',  (255, 204, 153)), # brown
-                            ))
+                           viewport=BB)
+        canvas.add_colors((('water', (0, 255, 255)),  # aqua
+                           ('land',  (255, 204, 153)),  # brown
+                           ))
         canvas.clear_background()
 
-        ## draw the land to the background
+        # draw the land to the background
         for poly in land_polys:
-            if poly.metadata[2] == '1': ##fixme -- this should be something like "land"
+            # fixme -- this should be something like "land"
+            if poly.metadata[2] == '1':
                 canvas.draw_polygon(poly,
                                     line_color='land',
                                     fill_color='land',
                                     line_width=1,
                                     background=True)
-            elif poly.metadata[2] == '2': ##fixme -- this should be something like "lake"
+            # fixme -- this should be something like "lake"
+            elif poly.metadata[2] == '2':
                 # this is a lake, draw as water
                 canvas.draw_polygon(poly,
                                     line_color='water',
@@ -1282,25 +1269,21 @@ class MapFromUGrid(RasterMap):
                                     background=True)
 
         # just for testing
-        #canvas.save_background("raster_map_test.png")
+        # canvas.save_background("raster_map_test.png")
 
-        # # get the basebitmap as a numpy array:
-
+        # get the basebitmap as a numpy array:
         bitmap_array = canvas.back_asarray()
 
-        RasterMap.__init__(self,
-                           bitmap_array,
-                           canvas.projection,
+        RasterMap.__init__(self, bitmap_array, canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,
-                           land_polys=land_polys
+                           land_polys=land_polys,
                            **kwargs)
+
         return None
 
 
-
 def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
-
     """
     Suitable for a rectangular, but not fully regular, grid
 
@@ -1313,13 +1296,11 @@ def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
     :param lon: latitude array
 
     :param refine=1: amount to refine grid -- 4 will give 4 times the
-        resolution
+                     resolution
     :type refine: integer
 
     :param kwargs: Other keyword arguments are passed on to RasterMap
-
     """
-
     # expand the grid mask
     grid = np.repeat(mask, refine, axis=0)
     grid = np.repeat(grid, refine, axis=1)
@@ -1330,17 +1311,14 @@ def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
 
     nlon, nlat = grid.shape
 
-    map_bounds = np.array(((lon[0], lat[0]),
-                           (lon[-1], lat[0]),
-                           (lon[-1], lat[-1]),
-                           (lon[0], lat[-1]),
-                           ), dtype=np.float)
+    map_bounds = np.array(((lon[0], lat[0]), (lon[-1], lat[0]),
+                           (lon[-1], lat[-1]), (lon[0], lat[-1])),
+                          dtype=np.float)
 
     # generating projection for raster map
-    proj = projections.RectangularGridProjection(lon, lat)
+    proj = RectangularGridProjection(lon, lat)
 
-    return gnome.map.RasterMap(grid,
-                               proj,
+    return gnome.map.RasterMap(grid, proj,
                                map_bounds=map_bounds,
                                **kwargs)
 
@@ -1380,8 +1358,8 @@ def grid_from_nc(filename):
     # note: values can be variable, so not *quite* right
     lon = lon_var[0, :]
     lat = lat_var[:, 0]
-    lon = np.r_[lon, [2*lon[-1] - lon[-2]]]
-    lat = np.r_[lat, [2*lat[-1] - lat[-2]]]
+    lon = np.r_[lon, [2 * lon[-1] - lon[-2]]]
+    lat = np.r_[lat, [2 * lat[-1] - lat[-2]]]
 
     return mask, lon, lat
 
@@ -1401,9 +1379,7 @@ def map_from_rectangular_grid_nc_file(filename, refine=1, **kwargs):
 
     :param kwargs: other key word arguemnts -- passed on to RasterMap class
         constructor
-
     """
-
     grid, lon, lat = grid_from_nc(filename)
     map_ = map_from_rectangular_grid(grid, lon, lat, refine, **kwargs)
 
@@ -1421,10 +1397,12 @@ def refine_axis(old_axis, refine):
     :type refine: integer
     """
     refine = int(refine)
+
     axis = old_axis.reshape((-1, 1))
     axis = ((axis[1:] - axis[:-1]) / refine) * np.arange(refine) + axis[:-1]
     axis.shape = (-1,)
     axis = np.r_[axis, old_axis[-1]]
+
     return axis
 
 
@@ -1435,14 +1413,15 @@ def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=6,
 
     makes a raster map from a regular grid: i.e delta_lon and delta-lat are
     constant.
-
     """
     nlon, nlat = grid_mask.shape
-    dlon = (lon[-1] - lon[0]) / (len(lon)-1)
-    dlat = (lat[-1] - lat[0]) / (len(lat)-1)
+    dlon = (lon[-1] - lon[0]) / (len(lon) - 1)
+    dlat = (lat[-1] - lat[0]) / (len(lat) - 1)
 
     # create the raster
-    bitmap_array = np.zeros((nlon*resolution, nlat*resolution), dtype=np.uint8)
+    bitmap_array = np.zeros((nlon * resolution, nlat * resolution),
+                            dtype=np.uint8)
+
     # add the land to the raster
     for i in range(resolution):
         for j in range(resolution):
@@ -1450,14 +1429,11 @@ def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=6,
 
     # compute projection
     bounding_box = np.array(((lon[0], lat[0]),
-                             (lon[-1]+dlon, lat[-1]+dlat),
-                             ), dtype=np.float64)  # adjust for last grid cell
-    proj = RegularGridProjection(bounding_box,
-                                 image_size=bitmap_array.shape,
-                                 )
+                             (lon[-1]+dlon, lat[-1]+dlat)),
+                            dtype=np.float64)  # adjust for last grid cell
 
-    return gnome.map.RasterMap(bitmap_array,
-                               proj,
-                               refloat_halflife=refloat_halflife,
-                               )
-    
+    proj = RegularGridProjection(bounding_box,
+                                 image_size=bitmap_array.shape)
+
+    return gnome.map.RasterMap(bitmap_array, proj,
+                               refloat_halflife=refloat_halflife)
