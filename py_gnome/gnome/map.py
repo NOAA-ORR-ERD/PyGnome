@@ -1131,7 +1131,7 @@ class MapFromBNA(RasterMap):
 
                         polys.append([ring.GetPoints()])
                     elif geo_type == 'LINESTRING':
-                        line_strings.append([geom.GetPoints()])
+                        line_strings.append(geom.GetPoints())
                     else:
                         print 'unknown type: ', geo_type
 
