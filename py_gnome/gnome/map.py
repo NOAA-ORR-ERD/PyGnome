@@ -571,6 +571,10 @@ class ParamMap(GnomeMap):
                 spill_container['last_water_positions'][r_idx]
             spill_container['status_codes'][r_idx] = oil_status.in_water
 
+    def update_from_dict(self, data):
+        raise ValueError(
+            "Do not update param maps. They should only be constructed")
+
     def to_geojson(self):
         shoreline_geo = [p.points.tolist() for p in self.land_polys]
 
@@ -1429,7 +1433,7 @@ def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=6,
 
     # compute projection
     bounding_box = np.array(((lon[0], lat[0]),
-                             (lon[-1]+dlon, lat[-1]+dlat)),
+                             (lon[-1] + dlon, lat[-1] + dlat)),
                             dtype=np.float64)  # adjust for last grid cell
 
     proj = RegularGridProjection(bounding_box,
