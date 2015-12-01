@@ -1139,16 +1139,19 @@ class MapFromBNA(RasterMap):
                     else:
                         print 'unknown type: ', geo_type
 
-        shoreline = [Feature(id="1",
-                             properties={'name': 'Shoreline Polys'},
-                             geometry=MultiPolygon(coordinates=polys)),
-                     Feature(id="2",
-                             properties={'name': 'Shoreline Lines'},
-                             geometry=MultiLineString(coordinates=line_strings)
-                             ),
-                     ]
+        features = []
+        if polys:
+            f = Feature(id="1",
+                        properties={'name': 'Shoreline Polys'},
+                        geometry=MultiPolygon(coordinates=polys))
+            features.append(f)
+        if line_strings:
+            f = Feature(id="2",
+                        properties={'name': 'Shoreline Lines'},
+                        geometry=MultiLineString(coordinates=line_strings))
+            features.append(f)
 
-        return FeatureCollection(shoreline)
+        return FeatureCollection(features)
 
 
 class MapFromUGrid(RasterMap):
