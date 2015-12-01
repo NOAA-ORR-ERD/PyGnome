@@ -39,3 +39,21 @@ class Adios2(object):
         # fixme -- this really depends on water depth -- should take that
         #          into account?
         return Hrms if Hrms < 30.0 else 30.0
+
+    @classmethod
+    def wind_speed_from_height(cls, H):
+        """
+        Compute the wind speed to use for the whitecap fraction
+        This is the reverse of wave_height()
+        - Used if the wave height is specified.
+        - Unlimited fetch is assumed:
+
+        :param H: given wave height.
+        """
+        # U_h = 2.0286 * g * sqrt(H / g) # Bill's version
+        U_h = np.sqrt(g * H / 0.243)
+
+        if U_h < 4.433049525859078:  # check if low wind case
+            U_h = (U_h / 0.71) ** 0.813008
+
+        return U_h

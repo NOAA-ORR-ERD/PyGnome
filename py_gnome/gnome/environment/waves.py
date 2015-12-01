@@ -118,7 +118,7 @@ class Waves(Environment, serializable.Serializable):
             H = self.compute_H(U)
         else:  # user specified a wave height
             H = wave_height
-            U = self.comp_psuedo_wind(H)
+            U = self.comp_pseudo_wind(H)
         Wf = self.comp_whitecap_fraction(U)
         T = self.comp_period(U)
 
@@ -149,7 +149,7 @@ class Waves(Environment, serializable.Serializable):
         if wave_height is None:
             return U
         else:  # user specified a wave height
-            return max(U, self.comp_psuedo_wind(wave_height))
+            return max(U, self.comp_pseudo_wind(wave_height))
 
     # def get_pseudo_wind(self, time):
     #     wave_height = self.water.wave_height
@@ -165,21 +165,8 @@ class Waves(Environment, serializable.Serializable):
     def compute_H(self, U):
         return Adios2.wave_height(U, self.water.fetch)
 
-    def comp_psuedo_wind(self, H):
-        """
-        Compute the wind speed to use for the whitecap fraction
-        - Used if the wave height is specified.
-        - Unlimited fetch is assumed: this is the reverse of compute_H
-
-        :param H: given wave height.
-        """
-        # U_h = 2.0286 * g * sqrt(H / g) # Bill's version
-        U_h = sqrt(g * H / 0.243)
-
-        if U_h < 4.433049525859078:  # check if low wind case
-            U_h = (U_h / 0.71) ** 0.813008
-
-        return U_h
+    def comp_pseudo_wind(self, H):
+        return Adios2.wind_speed_from_height(H)
 
     def comp_whitecap_fraction(self, U):
         """
