@@ -31,6 +31,7 @@ scipy
 pillow
 pyzmq
 Cython
+pyugrid
 numpy
 git+https://github.com/NOAA-ORR-ERD/py_gd.git#egg=py_gd
 gdal
