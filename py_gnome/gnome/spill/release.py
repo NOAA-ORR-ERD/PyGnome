@@ -5,8 +5,7 @@ is composed of a release object and an ElementType
 import copy
 from datetime import datetime, timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 from colander import (iso8601,
                       SchemaNode, SequenceSchema,
@@ -476,10 +475,10 @@ class PointLineRelease(Release, Serializable):
 
         # index of end of current time step
         # a tiny bit to make it open on the right.
-        n_1 = int(((current_time - self.release_time).total_seconds()
-                   + time_step)
-                  / self.release_duration
-                  * (self.num_elements - 1))
+        n_1 = int(((current_time - self.release_time).total_seconds() +
+                   time_step) /
+                  self.release_duration *
+                  (self.num_elements - 1))
 
         n_1 = min(n_1, self.num_elements - 1)  # don't want to go over the end.
         if n_1 == self.num_released - 1:  # indexes from zero

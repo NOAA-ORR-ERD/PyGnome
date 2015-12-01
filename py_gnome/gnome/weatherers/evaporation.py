@@ -2,18 +2,18 @@
 model evaporation process
 '''
 import copy
-import os
 
 import numpy as np
 
+from gnome import constants
 from gnome.basic_types import oil_status
 from gnome.utilities.serializable import Serializable, Field
-from gnome import constants
+from gnome.exceptions import ReferencedObjectNotSet
+
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 from gnome.environment import (WindSchema,
                                WaterSchema)
-from gnome.exceptions import ReferencedObjectNotSet
 
 
 class Evaporation(Weatherer, Serializable):
@@ -123,40 +123,39 @@ class Evaporation(Weatherer, Serializable):
           this as we add more weatherers and perhaps density gets set elsewhere
 
         Following diff eq models rate of change each pseudocomponent of oil::
-        
+
             dm(t)/dt = -(1 - fw) * A/B * m(t)
 
         Over a time-step, A, B, C are assumed constant. m(t) is the component
         mass at beginning of timestep; m(t + Dt) is mass at end of timestep::
-        
+
             m(t + Dt) = m(t) * exp(-L * Dt)
             L := (1 - fw) * A/B
 
         Define properties for each pseudocomponent of oil and constants::
-        
+
             vp: vapor pressure
             mw: molecular weight
 
         The following quantities are defined for a given blob of oil. The
         thickness of the blob is same for all LEs regardless of how many LEs
         are used to model the blob::
-        
+
             area: area computed from fay spreading
             m_i: mass of component 'i'
             sum_m_mw: sum(m_i/mw_i) over all components
 
         effect of wind - mass transport coefficient::
-        
+
             K: See _mass_transport_coeff()
 
         Finally, Evaporation of component 'i' for blob of oil::
-        
+
             A = area * K * vp
             B = gas_constant * water_temp * sum_m_mw
 
         L becomes::
             L = (1 - fw) * area * K * vp/(gas_constant * water_temp * sum_m_mw)
-            
         '''
         if not self.active:
             return
@@ -168,11 +167,11 @@ class Evaporation(Weatherer, Serializable):
                 continue
 
             # set evap_decay_constant array
-            self._set_evap_decay_constant(model_time, data, substance, time_step)
-            mass_remain = \
-                self._exp_decay(data['mass_components'],
-                                data['evap_decay_constant'],
-                                time_step)
+            self._set_evap_decay_constant(model_time, data, substance,
+                                          time_step)
+            mass_remain = self._exp_decay(data['mass_components'],
+                                          data['evap_decay_constant'],
+                                          time_step)
 
             sc.mass_balance['evaporated'] += \
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])
@@ -197,16 +196,14 @@ class Evaporation(Weatherer, Serializable):
         """
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
+
         if json_ == 'webapi':
             if self.wind:
-                # add wind schema
                 schema.add(WindSchema(name='wind'))
             if self.water:
                 schema.add(WaterSchema(name='water'))
 
-        serial = schema.serialize(toserial)
-
-        return serial
+        return schema.serialize(toserial)
 
     @classmethod
     def deserialize(cls, json_):
@@ -214,14 +211,14 @@ class Evaporation(Weatherer, Serializable):
         append correct schema for wind object
         """
         schema = cls._schema()
+
         if 'wind' in json_:
             schema.add(WindSchema(name='wind'))
 
         if 'water' in json_:
             schema.add(WaterSchema(name='water'))
-        _to_dict = schema.deserialize(json_)
 
-        return _to_dict
+        return schema.deserialize(json_)
 
 
 class BlobEvaporation(Evaporation):

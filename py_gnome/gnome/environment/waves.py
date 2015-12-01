@@ -18,11 +18,15 @@ import copy
 from gnome import constants
 from gnome.utilities import serializable
 from gnome.utilities.serializable import Field
+from gnome.utilities.weathering import Adios2, LehrSimecek
+
 from gnome.persist import base_schema
-from .environment import Environment
-from wind import WindSchema
-from .environment import WaterSchema
 from gnome.exceptions import ReferencedObjectNotSet
+
+from .environment import Environment
+from .environment import WaterSchema
+
+from wind import WindSchema
 
 g = constants.gravity  # the gravitational constant.
 
@@ -114,8 +118,8 @@ class Waves(Environment, serializable.Serializable):
             H = self.compute_H(U)
         else:  # user specified a wave height
             H = wave_height
-            U = self.comp_psuedo_wind(H)
-        Wf = self.comp_whitecap_fraction(U)
+            U = self.pseudo_wind(H)
+        Wf = self.whitecap_fraction(U)
         T = self.comp_period(U)
 
         De = self.disp_wave_energy(H)
@@ -145,7 +149,7 @@ class Waves(Environment, serializable.Serializable):
         if wave_height is None:
             return U
         else:  # user specified a wave height
-            return max(U, self.comp_psuedo_wind(wave_height))
+            return max(U, self.pseudo_wind(wave_height))
 
     # def get_pseudo_wind(self, time):
     #     wave_height = self.water.wave_height
@@ -159,88 +163,13 @@ class Waves(Environment, serializable.Serializable):
     #     return U
 
     def compute_H(self, U):
-        """
-        compute the wave height
+        return Adios2.wave_height(U, self.water.fetch)
 
-        :param U: wind speed
-        :type U: floating point number in m/s units
+    def pseudo_wind(self, H):
+        return Adios2.wind_speed_from_height(H)
 
-        :returns Hrms: RMS wave height in meters
-        """
-        fetch = self.water.fetch
-
-        # wind stress factor
-        # Transition at U = 4.433049525859078 for linear scale with wind speed.
-        #   4.433049525859078 is where the solutions match
-        ws = 0.71 * U ** 1.23 if U < 4.433049525859078 else U
-
-        # (2268 * ws ** 2) is limit of fetch limited case.
-        if (fetch is not None) and (fetch < 2268 * ws ** 2):
-            H = 0.0016 * sqrt(fetch / g) * ws
-        else:  # fetch unlimited
-            H = 0.243 * ws * ws / g
-
-        Hrms = 0.707 * H
-
-        # arbitrary limit at 30 m -- about the largest waves recorded
-        # fixme -- this really depends on water depth -- should take that
-        #          into account?
-        return Hrms if Hrms < 30.0 else 30.0
-
-    def comp_psuedo_wind(self, H):
-        """
-        Compute the wind speed to use for the whitecap fraction
-        - Used if the wave height is specified.
-        - Unlimited fetch is assumed: this is the reverse of compute_H
-
-        :param H: given wave height.
-        """
-        # U_h = 2.0286 * g * sqrt(H / g) # Bill's version
-        U_h = sqrt(g * H / 0.243)
-
-        if U_h < 4.433049525859078:  # check if low wind case
-            U_h = (U_h / 0.71) ** 0.813008
-
-        return U_h
-
-    def comp_whitecap_fraction(self, U):
-        """
-        compute the white capping fraction
-
-        This and wave height drives dispersion
-
-        This based on the formula in:
-        Lehr and Simecek-Beatty
-        The Relation of Langmuir Circulation Processes to the Standard
-        Oil Spill Spreading, Dispersion and Transport Algorithms
-        Spill Sci. and Tech. Bull, 6:247-253 (2000)
-        (maybe typo -- didn't match)
-
-        Should look in:  Ocean Waves Breaking and Marine Aerosol Fluxes
-                         By Stanislaw R. Massel
-        """
-        # Monahan(JPO, 1971) time constant characterizing exponential
-        # whitecap decay.
-        # The saltwater value for this constant is 3.85 sec while the
-        # freshwater value is 2.54 sec.
-        # interpolate with salinity:
-        Tm = 0.03742857 * self.water.salinity + 2.54
-
-        if U < 4.0:  # m/s
-            # linear fit from 0 to the 4m/s value from Ding and Farmer
-            # maybe should be a exponential / quadratic fit?
-            # or zero less than 3, then a sharp increase to 4m/s?
-            fw = (0.0125 * U) / Tm
-        else:
-            # # Ding and Farmer (JPO 1994)
-            # fw = (0.01*U + 0.01) / Tm
-            # old ADIOS had a .5 factor - not sure why but we'll keep it
-            # for now
-
-            # Ding and Farmer (JPO 1994)
-            fw = 0.5 * (0.01 * U + 0.01) / Tm
-
-        return fw if fw <= 1.0 else 1.0  # only with U > 200m/s!
+    def whitecap_fraction(self, U):
+        return LehrSimecek.whitecap_fraction(U, self.water.salinity)
 
     def comp_period(self, U):
         """
@@ -284,15 +213,11 @@ class Waves(Environment, serializable.Serializable):
 
         if json_ == 'webapi':
             if self.wind:
-                # add wind schema
                 schema.add(WindSchema(name='wind'))
-
             if self.water:
                 schema.add(WaterSchema(name='water'))
 
-        serial = schema.serialize(toserial)
-
-        return serial
+        return schema.serialize(toserial)
 
     @classmethod
     def deserialize(cls, json_):
@@ -307,9 +232,7 @@ class Waves(Environment, serializable.Serializable):
         if 'water' in json_:
             schema.add(WaterSchema(name='water'))
 
-        _to_dict = schema.deserialize(json_)
-
-        return _to_dict
+        return schema.deserialize(json_)
 
     def prepare_for_model_run(self, model_time):
         if self.wind is None:
