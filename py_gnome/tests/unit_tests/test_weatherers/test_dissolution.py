@@ -16,6 +16,8 @@ from conftest import weathering_data_arrays
 from ..conftest import (sample_model_weathering,
                         sample_model_weathering2)
 
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2, width=120)
 
 water = Water()
 # also test with lower wind no dispersion
@@ -46,17 +48,25 @@ def test_sort_order():
 def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'
     wind = constant_wind(15., 0)
-    waves = Waves(wind, Water())
-    e = Dissolution(waves)
-    json_ = e.serialize()
-    json_['waves'] = waves.serialize()
+    water = Water()
+    waves = Waves(wind, water)
+
+    diss = Dissolution(waves, water)
+    json_ = diss.serialize()
+    pp.pprint(json_)
+
+    assert json_['waves'] == waves.serialize()
+    assert json_['water'] == water.serialize()
 
     # deserialize and ensure the dict's are correct
     d_ = Dissolution.deserialize(json_)
     assert d_['waves'] == Waves.deserialize(json_['waves'])
+    assert d_['water'] == Water.deserialize(json_['water'])
+
     d_['waves'] = waves
-    e.update_from_dict(d_)
-    assert e.waves is waves
+    diss.update_from_dict(d_)
+
+    assert diss.waves is waves
 
 
 def test_prepare_for_model_run():

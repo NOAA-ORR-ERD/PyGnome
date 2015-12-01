@@ -7,15 +7,13 @@ import copy
 
 import numpy as np
 
-import gnome    # required by deserialize
+import gnome  # required by deserialize
 
 from gnome import constants
-# from gnome.cy_gnome.cy_weatherers import disperse_oil
+from gnome.utilities.serializable import Serializable, Field
 from gnome.array_types import (viscosity,
                                mass,
                                density)
-
-from gnome.utilities.serializable import Serializable, Field
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer

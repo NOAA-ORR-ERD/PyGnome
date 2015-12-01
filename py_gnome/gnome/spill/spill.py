@@ -9,8 +9,7 @@ import copy
 from inspect import getmembers, ismethod
 from datetime import timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 import unit_conversion as uc
 from colander import (SchemaNode, Bool, String, Float, drop)
@@ -140,7 +139,7 @@ class Spill(serializable.Serializable):
             return False
 
         if (self._state.get_field_by_attribute('save') !=
-            other._state.get_field_by_attribute('save')):
+                other._state.get_field_by_attribute('save')):
             return False
 
         for name in self._state.get_names('save'):

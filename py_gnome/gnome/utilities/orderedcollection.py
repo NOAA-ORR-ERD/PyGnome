@@ -270,7 +270,7 @@ class OrderedCollection(object):
         '''
         Method takes the instance of ordered collection and outputs a list of
         dicts, each with two fields::
-        
+
             {obj_type: object type <module.class>,
             id: IDs of each object}
         '''

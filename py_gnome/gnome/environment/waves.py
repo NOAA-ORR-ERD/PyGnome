@@ -18,11 +18,15 @@ import copy
 from gnome import constants
 from gnome.utilities import serializable
 from gnome.utilities.serializable import Field
+from gnome.utilities.weathering import Adios2
+
 from gnome.persist import base_schema
-from .environment import Environment
-from wind import WindSchema
-from .environment import WaterSchema
 from gnome.exceptions import ReferencedObjectNotSet
+
+from .environment import Environment
+from .environment import WaterSchema
+
+from wind import WindSchema
 
 g = constants.gravity  # the gravitational constant.
 
@@ -159,33 +163,7 @@ class Waves(Environment, serializable.Serializable):
     #     return U
 
     def compute_H(self, U):
-        """
-        compute the wave height
-
-        :param U: wind speed
-        :type U: floating point number in m/s units
-
-        :returns Hrms: RMS wave height in meters
-        """
-        fetch = self.water.fetch
-
-        # wind stress factor
-        # Transition at U = 4.433049525859078 for linear scale with wind speed.
-        #   4.433049525859078 is where the solutions match
-        ws = 0.71 * U ** 1.23 if U < 4.433049525859078 else U
-
-        # (2268 * ws ** 2) is limit of fetch limited case.
-        if (fetch is not None) and (fetch < 2268 * ws ** 2):
-            H = 0.0016 * sqrt(fetch / g) * ws
-        else:  # fetch unlimited
-            H = 0.243 * ws * ws / g
-
-        Hrms = 0.707 * H
-
-        # arbitrary limit at 30 m -- about the largest waves recorded
-        # fixme -- this really depends on water depth -- should take that
-        #          into account?
-        return Hrms if Hrms < 30.0 else 30.0
+        return Adios2.wave_height(U, self.water.fetch)
 
     def comp_psuedo_wind(self, H):
         """
@@ -284,15 +262,11 @@ class Waves(Environment, serializable.Serializable):
 
         if json_ == 'webapi':
             if self.wind:
-                # add wind schema
                 schema.add(WindSchema(name='wind'))
-
             if self.water:
                 schema.add(WaterSchema(name='water'))
 
-        serial = schema.serialize(toserial)
-
-        return serial
+        return schema.serialize(toserial)
 
     @classmethod
     def deserialize(cls, json_):
@@ -307,9 +281,7 @@ class Waves(Environment, serializable.Serializable):
         if 'water' in json_:
             schema.add(WaterSchema(name='water'))
 
-        _to_dict = schema.deserialize(json_)
-
-        return _to_dict
+        return schema.deserialize(json_)
 
     def prepare_for_model_run(self, model_time):
         if self.wind is None:
