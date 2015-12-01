@@ -341,6 +341,30 @@ class FayGravityViscous(Weatherer, Serializable):
 
         sc.update_from_fatedataview()
 
+    def serialize(self, json_="webapi"):
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        serial = schema.serialize(toserial)
+
+        if json_ == 'webapi':
+            if self.water:
+                serial['water'] = self.water.serialize(json_)
+
+        return serial
+
+    def deserialize(cls, json_):
+        if not cls.is_sparse(json_):
+            schema = cls._schema()
+            dict_ = schema.deserialize(json_)
+
+            if 'water' in json_:
+                obj = json_['water']['obj_type']
+                dict_['water'] = (eval(obj).deserialize(json_['water']))
+
+            return dict_
+        else:
+            return json_
+
 
 class ConstantArea(Weatherer, Serializable):
     '''
