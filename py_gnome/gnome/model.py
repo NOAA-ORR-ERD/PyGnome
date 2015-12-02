@@ -1215,6 +1215,8 @@ class Model(Serializable):
             o_json_['valid'] = isvalid
             if len(msgs) > 0:
                 o_json_['messages'] = msgs
+            else:
+                o_json_['messages'] = []
 
         return o_json_
 
