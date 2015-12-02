@@ -21,14 +21,11 @@ from gnome.weatherers import Weatherer
 
 class Dissolution(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('water', save=True, update=True, save_reference=True),
-               Field('waves', save=True, update=True, save_reference=True)]
+    _state += [Field('waves', save=True, update=True, save_reference=True)]
+
     _schema = WeathererSchema
 
-    def __init__(self,
-                 waves=None,
-                 water=None,
-                 **kwargs):
+    def __init__(self, waves=None, **kwargs):
         '''
         :param conditions: gnome.environment.Conditions object which contains
                            things like water temperature
@@ -38,7 +35,6 @@ class Dissolution(Weatherer, Serializable):
               requires
         '''
         self.waves = waves
-        self.water = water
 
         super(Dissolution, self).__init__(**kwargs)
 
@@ -167,8 +163,6 @@ class Dissolution(Weatherer, Serializable):
         if json_ == 'webapi':
             if self.waves:
                 serial['waves'] = self.waves.serialize(json_)
-            if self.water:
-                serial['water'] = self.water.serialize(json_)
 
         return serial
 
@@ -180,10 +174,6 @@ class Dissolution(Weatherer, Serializable):
         if not cls.is_sparse(json_):
             schema = cls._schema()
             dict_ = schema.deserialize(json_)
-
-            if 'water' in json_:
-                obj = json_['water']['obj_type']
-                dict_['water'] = (eval(obj).deserialize(json_['water']))
 
             if 'waves' in json_:
                 obj = json_['waves']['obj_type']

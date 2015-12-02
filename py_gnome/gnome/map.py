@@ -391,6 +391,7 @@ class ParamMap(GnomeMap):
     def build(self, center, distance, bearing, units):
         self.units = units if units is not None else 'm'
         self._check_units(self.units)
+
         if units is not 'm':
             self._distance = uc.Convert("Length", self.units, 'm', distance)
         else:
@@ -439,15 +440,14 @@ class ParamMap(GnomeMap):
         Checks the user provided units are in list of valid volume
         or mass units
         """
-
         if units in self._valid_dist_units:
             return True
         else:
-            msg = ('unit must be a valid unit of distance: {0}').format(
-                self._valid_dist_units)
             ex = uc.InvalidUnitError((units, 'Length'))
             self.logger.exception(ex, exc_info=True)
-            raise ex  # this should be raised since run will fail otherwise
+
+            # this should be raised since run will fail otherwise
+            raise ex
 
     def get_map_bounds(self):
         return (self.map_bounds[0], self.map_bounds[2])
@@ -603,8 +603,7 @@ class ParamMap(GnomeMap):
                 'units' in data.keys()):
             self.build(
                 data['center'] if 'center' in data.keys() else self.center,
-                data[
-                    'distance'] if 'distance' in data.keys() else self.distance,
+                data['distance'] if 'distance' in data.keys() else self.distance,
                 data['bearing'] if 'bearing' in data.keys() else self.bearing,
                 data['units'] if 'units' in data.keys() else self.units)
         else:
@@ -1290,7 +1289,8 @@ class MapFromUGrid(RasterMap):
                            background_color='water',
                            viewport=BB,
                            )
-        canvas.add_colors((('water', (0, 255, 255)),  # aqua -- color doesn't matter here, only index
+        # color doesn't matter here, only index
+        canvas.add_colors((('water', (0, 255, 255)),  # aqua
                            ('land',  (255, 204, 153)),  # brown
                            ))
         canvas.clear_background()

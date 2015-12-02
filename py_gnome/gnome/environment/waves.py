@@ -130,7 +130,7 @@ class Waves(Environment, serializable.Serializable):
         Return the right wind for the wave climate
 
         If a wave height was specified, then you need the greater of the
-        real or psuedo wind.
+        real or pseudo wind.
 
         If not, then you need the actual wind.
 
