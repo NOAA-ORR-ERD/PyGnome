@@ -121,7 +121,7 @@ def test_pseudo_wind(U):
 
     print "testing for U:", U
     # 0.707 compensates for RMS wave height
-    assert round(w.pseudo_wind(w.compute_H(U) / 0.707), 5) == round(U, 8)
+    assert round(w.comp_pseudo_wind(w.compute_H(U) / 0.707), 5) == round(U, 8)
 
 
 # note: 200 becuse that's when whitecap fraction would go above 1.0
@@ -135,7 +135,7 @@ def test_whitecap_fraction(U):
     print "testing for U:", U
 
     w = Waves(test_wind_5, default_water)
-    f = w.whitecap_fraction(U)
+    f = w.comp_whitecap_fraction(U)
 
     assert f >= 0.0
     assert f <= 1.0
