@@ -62,10 +62,10 @@ class GnomeMapSchema(base_schema.ObjType):
 
 
 class ParamMapSchema(GnomeMapSchema):
-    center = base_schema.WorldPoint(missing=drop)
-    distance = SchemaNode(Integer(), missing=drop)
-    bearing = SchemaNode(Integer(), missing=drop)
-    units = SchemaNode(String(), missing=drop)
+    center = base_schema.WorldPoint()
+    distance = SchemaNode(Integer())
+    bearing = SchemaNode(Integer())
+    units = SchemaNode(String())
 
 
 class MapFromBNASchema(GnomeMapSchema):
@@ -340,8 +340,28 @@ class GnomeMap(Serializable):
 class ParamMap(GnomeMap):
     _state = copy.deepcopy(GnomeMap._state)
     _state.update(['map_bounds', 'spillable_area'], save=False)
-    _state.add(save=['center', 'distance', 'bearing', 'units'],
-               update=['center', 'distance', 'bearing', 'units'])
+#     _state.add(save=['center', 'distance', 'bearing', 'units'],
+#                update=['center', 'distance', 'bearing', 'units'])
+    _state.add_field([Field('center',
+                            isdatafile=True,
+                            save=True,
+                            update=True,
+                            test_for_eq=False)])
+    _state.add_field([Field('distance',
+                            isdatafile=True,
+                            save=True,
+                            update=True,
+                            test_for_eq=False)])
+    _state.add_field([Field('bearing',
+                            isdatafile=True,
+                            save=True,
+                            update=True,
+                            test_for_eq=False)])
+    _state.add_field([Field('units',
+                            isdatafile=True,
+                            save=True,
+                            update=True,
+                            test_for_eq=False)])
 
     _schema = ParamMapSchema
 
@@ -366,6 +386,9 @@ class ParamMap(GnomeMap):
         :param bearing: The bearing the closest point on the shoreline is
                         from the center.
         """
+        self.build(center, distance, bearing, units)
+
+    def build(self, center, distance, bearing, units):
         self.units = units if units is not None else 'm'
         self._check_units(self.units)
         if units is not 'm':
@@ -403,9 +426,9 @@ class ParamMap(GnomeMap):
                                (4 * d, 2 * d), (4 * d, -2 * d)),
                               dtype=np.float64) + (center[0], center[1])
 
-        self._refloat_halflife = 0.5
-
         GnomeMap.__init__(self, map_bounds=map_bounds, land_polys=land_polys)
+
+        self._refloat_halflife = 0.5
 
     @property
     def distance(self):
@@ -420,6 +443,8 @@ class ParamMap(GnomeMap):
         if units in self._valid_dist_units:
             return True
         else:
+            msg = ('unit must be a valid unit of distance: {0}').format(
+                self._valid_dist_units)
             ex = uc.InvalidUnitError((units, 'Length'))
             self.logger.exception(ex, exc_info=True)
             raise ex  # this should be raised since run will fail otherwise
@@ -572,8 +597,20 @@ class ParamMap(GnomeMap):
             spill_container['status_codes'][r_idx] = oil_status.in_water
 
     def update_from_dict(self, data):
-        raise ValueError(
-            "Do not update param maps. They should only be constructed")
+        if ('center' in data.keys() or
+                'distance' in data.keys() or
+                'bearing' in data.keys() or
+                'units' in data.keys()):
+            self.build(
+                data['center'] if 'center' in data.keys() else self.center,
+                data[
+                    'distance'] if 'distance' in data.keys() else self.distance,
+                data['bearing'] if 'bearing' in data.keys() else self.bearing,
+                data['units'] if 'units' in data.keys() else self.units)
+        else:
+            # for the case when instantiating a param map using new_from_dict,
+            # since new_from_dict will call update_from_dict
+            super(ParamMap, self).update_from_dict(data)
 
     def to_geojson(self):
         shoreline_geo = [p.points.tolist() for p in self.land_polys]
@@ -1251,8 +1288,9 @@ class MapFromUGrid(RasterMap):
         canvas = MapCanvas(image_size=(w, h),
                            preset_colors=None,
                            background_color='water',
-                           viewport=BB)
-        canvas.add_colors((('water', (0, 255, 255)),  # aqua
+                           viewport=BB,
+                           )
+        canvas.add_colors((('water', (0, 255, 255)),  # aqua -- color doesn't matter here, only index
                            ('land',  (255, 204, 153)),  # brown
                            ))
         canvas.clear_background()
@@ -1285,7 +1323,7 @@ class MapFromUGrid(RasterMap):
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,
                            land_polys=land_polys,
-                           **kwargs)
+                           ** kwargs)
 
         return None
 

@@ -190,6 +190,7 @@ class Test_ParamMap:
 
     Not sure where to go with these.
     '''
+
     def test_on_map(self):
         pmap = gnome.map.ParamMap((0, 0), 10000, 90)
         assert pmap.on_map((0, 0, 0))
@@ -235,12 +236,30 @@ def test_serialize_deserialize_param(json_):
     test create new ParamMap from deserialized dict
     """
     gmap = gnome.map.ParamMap((5, 5), 12000, 40)
+    print gmap.land_polys._PointsArray
 
     serial = gmap.serialize(json_)
+    serial['distance'] = 20000
+    print serial
     dict_ = gnome.map.ParamMap.deserialize(serial)
-    map2 = gmap.new_from_dict(dict_)
+    map2 = gnome.map.ParamMap.new_from_dict(dict_)
+    print map2
 
     assert gmap == map2
+
+
+@pytest.mark.parametrize("json_", ('save', 'webapi'))
+def test_update_from_dict_param(json_):
+    """
+    test create new ParamMap from deserialized dict
+    """
+    map1 = gnome.map.ParamMap((5, 5), 12000, 40)
+    serial = map1.serialize(json_)
+    map2 = gnome.map.ParamMap((6, 6), 20000, 40)
+    dict_ = gnome.map.ParamMap.deserialize(serial)
+    map2.update_from_dict(dict_)
+
+    assert map1 == map2
 
 
 class Test_RasterMap:
@@ -490,7 +509,7 @@ class TestRefloat:
         # these are original values that are not refloated
 
         mask = np.array([i not in refloat_ix for i in
-                        range(self.num_les)], dtype=bool)
+                         range(self.num_les)], dtype=bool)
         assert np.all(self.spill['positions'][mask, :] ==
                       self.orig_pos[mask, :])
 

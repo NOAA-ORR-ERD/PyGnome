@@ -17,6 +17,7 @@ class Field(object):  # ,serializable.Serializable):
     '''
     Class containing information about the property to be serialized
     '''
+
     def __init__(self, name,
                  isdatafile=False,
                  update=False, save=False, read=False,
@@ -108,6 +109,7 @@ class Field(object):  # ,serializable.Serializable):
 
 
 class State(object):
+
     def __init__(self, save=None, update=None, read=None, field=None):
         """
         Object keeps the list of properties that are output by
