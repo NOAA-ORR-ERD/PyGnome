@@ -57,3 +57,23 @@ class Adios2(object):
             U_h = (U_h / 0.71) ** 0.813008
 
         return U_h
+
+    @classmethod
+    def wave_period(cls, U, wave_height, fetch):
+        """
+        Compute the mean wave period
+        """
+        if wave_height is None:
+            ws = U * 0.71 * U ** 1.23  # fixme -- linear for large windspeed?
+
+            if (fetch is None) or (fetch >= 2268 * ws ** 2):
+                # fetch unlimited
+                T = 0.83 * ws
+            else:
+                # eq 3-34 (SPM?)
+                T = 0.06238 * (fetch * ws) ** 0.3333333333
+        else:
+            # user-specified wave height
+            T = 7.508 * np.sqrt(wave_height)
+
+        return T

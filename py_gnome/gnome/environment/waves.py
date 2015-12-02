@@ -118,9 +118,9 @@ class Waves(Environment, serializable.Serializable):
             H = self.compute_H(U)
         else:  # user specified a wave height
             H = wave_height
-            U = self.comp_pseudo_wind(H)
-        Wf = self.comp_whitecap_fraction(U)
-        T = self.comp_period(U)
+            U = self.pseudo_wind(H)
+        Wf = self.whitecap_fraction(U)
+        T = self.wave_period(U)
 
         De = self.disp_wave_energy(H)
 
@@ -149,7 +149,7 @@ class Waves(Environment, serializable.Serializable):
         if wave_height is None:
             return U
         else:  # user specified a wave height
-            return max(U, self.comp_pseudo_wind(wave_height))
+            return max(U, self.pseudo_wind(wave_height))
 
     # def get_pseudo_wind(self, time):
     #     wave_height = self.water.wave_height
@@ -165,10 +165,10 @@ class Waves(Environment, serializable.Serializable):
     def compute_H(self, U):
         return Adios2.wave_height(U, self.water.fetch)
 
-    def comp_pseudo_wind(self, H):
+    def pseudo_wind(self, H):
         return Adios2.wind_speed_from_height(H)
 
-    def comp_whitecap_fraction(self, U):
+    def whitecap_fraction(self, U):
         """
         compute the white capping fraction
 
@@ -207,30 +207,11 @@ class Waves(Environment, serializable.Serializable):
 
         return fw if fw <= 1.0 else 1.0  # only with U > 200m/s!
 
-    def comp_period(self, U):
-        """
-        Compute the mean wave period
-        """
+    def wave_period(self, U):
         # wind stress factor
         # fixme: check for discontinuity at large fetch..
         #        Is this s bit low??? 32 m/s -> T=15.7 s
-        wave_height = self.water.wave_height
-        fetch = self.water.wave_height
-
-        if wave_height is None:
-            ws = U * 0.71 * U ** 1.23  # fixme -- linear for large windspeed?
-
-            if (fetch is None) or (fetch >= 2268 * ws ** 2):
-                # fetch unlimited
-                T = 0.83 * ws
-            else:
-                # eq 3-34 (SPM?)
-                T = 0.06238 * (fetch * ws) ** 0.3333333333
-        else:
-            # user-specified wave height
-            T = 7.508*sqrt(wave_height)
-
-        return T
+        return Adios2.wave_period(U, self.water.wave_height, self.water.fetch)
 
     def disp_wave_energy(self, H):
         """
