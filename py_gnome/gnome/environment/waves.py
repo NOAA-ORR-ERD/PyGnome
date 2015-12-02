@@ -121,7 +121,7 @@ class Waves(Environment, serializable.Serializable):
         Wf = self.whitecap_fraction(U)
         T = self.wave_period(U)
 
-        De = self.disp_wave_energy(H)
+        De = self.dissipative_wave_energy(H)
 
         return H, T, Wf, De
 
@@ -150,17 +150,6 @@ class Waves(Environment, serializable.Serializable):
         else:  # user specified a wave height
             return max(U, self.pseudo_wind(wave_height))
 
-    # def get_pseudo_wind(self, time):
-    #     wave_height = self.water.wave_height
-    #     if wave_height is None:
-    #         U = self.wind.get_value(time)[0]  # only need velocity
-    #         H = self.compute_H(U)
-    #     else:  # user specified a wave height
-    #         H = wave_height
-    #     U = self.comp_psuedo_wind(H)
-
-    #     return U
-
     def compute_H(self, U):
         return Adios2.wave_height(U, self.water.fetch)
 
@@ -171,17 +160,10 @@ class Waves(Environment, serializable.Serializable):
         return LehrSimecek.whitecap_fraction(U, self.water.salinity)
 
     def wave_period(self, U):
-        # wind stress factor
-        # fixme: check for discontinuity at large fetch..
-        #        Is this s bit low??? 32 m/s -> T=15.7 s
         return Adios2.wave_period(U, self.water.wave_height, self.water.fetch)
 
-    def disp_wave_energy(self, H):
-        """
-        Compute the dissipative wave energy
-        """
-        # fixme: does this really only depend on height?
-        return 0.0034 * self.water.density * g * H ** 2
+    def dissipative_wave_energy(self, H):
+        return Adios2.dissipative_wave_energy(self.water.density, H)
 
     def serialize(self, json_='webapi'):
         """

@@ -178,6 +178,30 @@ def test_period_fetch(U):
     # assert False # what else to check for???
 
 
+@pytest.mark.parametrize("H, expected", [(0.0, 0.0),
+                                         (1.0, 34.01),
+                                         (2.0, 136.39),
+                                         (4.0, 545.58),
+                                         (8.0, 2182.35)])
+def test_wave_energy(H, expected):
+    """
+    Test the dissipative wave energy
+    """
+    print "testing for H:", H
+
+    water = copy(default_water)
+    water.fetch = 1e4  # 10km
+    w = Waves(test_wind_5, water)  # 10km fetch
+
+    De = w.dissipative_wave_energy(H)
+
+    print De
+
+    # Note: Right now we are just documenting the results that we are
+    #       getting.  The expected values need to be checked for validity.
+    assert np.isclose(De, expected, rtol=0.01)
+
+
 def test_call_no_fetch_or_height():
     "fully developed seas"
     w = Waves(test_wind_5, default_water)

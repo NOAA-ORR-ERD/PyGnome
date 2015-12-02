@@ -10,6 +10,9 @@ class Adios2(object):
     '''
         This is for any Adios 2 algorithms for which a scientific reference
         is not documented.
+
+        Note: We should really try to look up the references for these and
+              move them to an appropriately referenced class.
     '''
     @classmethod
     def wave_height(cls, U, fetch):
@@ -62,6 +65,9 @@ class Adios2(object):
     def wave_period(cls, U, wave_height, fetch):
         """
         Compute the mean wave period
+
+        fixme: check for discontinuity at large fetch..
+               Is this s bit low??? 32 m/s -> T=15.7 s
         """
         if wave_height is None:
             ws = U * 0.71 * U ** 1.23  # fixme -- linear for large windspeed?
@@ -77,3 +83,10 @@ class Adios2(object):
             T = 7.508 * np.sqrt(wave_height)
 
         return T
+
+    @classmethod
+    def dissipative_wave_energy(self, water_density, H):
+        """
+        Compute the dissipative wave energy
+        """
+        return 0.0034 * water_density * g * H ** 2
