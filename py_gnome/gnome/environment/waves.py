@@ -11,14 +11,13 @@ Uses the same approach as ADIOS 2
 
 """
 from __future__ import division
-from math import sqrt
 
 import copy
 
 from gnome import constants
 from gnome.utilities import serializable
 from gnome.utilities.serializable import Field
-from gnome.utilities.weathering import Adios2
+from gnome.utilities.weathering import Adios2, LehrSimecek
 
 from gnome.persist import base_schema
 from gnome.exceptions import ReferencedObjectNotSet
@@ -169,43 +168,7 @@ class Waves(Environment, serializable.Serializable):
         return Adios2.wind_speed_from_height(H)
 
     def whitecap_fraction(self, U):
-        """
-        compute the white capping fraction
-
-        This and wave height drives dispersion
-
-        This based on the formula in:
-        Lehr and Simecek-Beatty
-        The Relation of Langmuir Circulation Processes to the Standard
-        Oil Spill Spreading, Dispersion and Transport Algorithms
-        Spill Sci. and Tech. Bull, 6:247-253 (2000)
-        (maybe typo -- didn't match)
-
-        Should look in:  Ocean Waves Breaking and Marine Aerosol Fluxes
-                         By Stanislaw R. Massel
-        """
-        # Monahan(JPO, 1971) time constant characterizing exponential
-        # whitecap decay.
-        # The saltwater value for this constant is 3.85 sec while the
-        # freshwater value is 2.54 sec.
-        # interpolate with salinity:
-        Tm = 0.03742857 * self.water.salinity + 2.54
-
-        if U < 4.0:  # m/s
-            # linear fit from 0 to the 4m/s value from Ding and Farmer
-            # maybe should be a exponential / quadratic fit?
-            # or zero less than 3, then a sharp increase to 4m/s?
-            fw = (0.0125 * U) / Tm
-        else:
-            # # Ding and Farmer (JPO 1994)
-            # fw = (0.01*U + 0.01) / Tm
-            # old ADIOS had a .5 factor - not sure why but we'll keep it
-            # for now
-
-            # Ding and Farmer (JPO 1994)
-            fw = 0.5 * (0.01 * U + 0.01) / Tm
-
-        return fw if fw <= 1.0 else 1.0  # only with U > 200m/s!
+        return LehrSimecek.whitecap_fraction(U, self.water.salinity)
 
     def wave_period(self, U):
         # wind stress factor
