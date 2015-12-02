@@ -344,26 +344,24 @@ class FayGravityViscous(Weatherer, Serializable):
     def serialize(self, json_="webapi"):
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
-        serial = schema.serialize(toserial)
 
         if json_ == 'webapi':
-            if self.water:
-                serial['water'] = self.water.serialize(json_)
+            if self.water is not None:
+                schema.add(WaterSchema(name="water"))
+
+        serial = schema.serialize(toserial)
 
         return serial
 
+    @classmethod
     def deserialize(cls, json_):
-        if not cls.is_sparse(json_):
-            schema = cls._schema()
-            dict_ = schema.deserialize(json_)
+        schema = cls._schema(name=cls.__name__)
+        if 'water' in json_:
+            schema.add(WaterSchema(name="water"))
 
-            if 'water' in json_:
-                obj = json_['water']['obj_type']
-                dict_['water'] = (eval(obj).deserialize(json_['water']))
+        _to_dict = schema.deserialize(json_)
 
-            return dict_
-        else:
-            return json_
+        return _to_dict
 
 
 class ConstantArea(Weatherer, Serializable):
