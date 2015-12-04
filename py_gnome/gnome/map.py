@@ -20,7 +20,7 @@ import os
 import math
 
 import py_gd
-import pyugrid
+#import pyugrid
 
 import numpy as np
 
