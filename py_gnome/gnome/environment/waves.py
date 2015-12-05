@@ -17,7 +17,7 @@ import copy
 from gnome import constants
 from gnome.utilities import serializable
 from gnome.utilities.serializable import Field
-from gnome.utilities.weathering import Adios2, LehrSimecek
+from gnome.utilities.weathering import Adios2, LehrSimecek, PiersonMoskowitz
 
 from gnome.persist import base_schema
 from gnome.exceptions import ReferencedObjectNotSet
@@ -119,7 +119,7 @@ class Waves(Environment, serializable.Serializable):
             H = wave_height
             U = self.pseudo_wind(H)
         Wf = self.whitecap_fraction(U)
-        T = self.wave_period(U)
+        T = self.mean_wave_period(U)
 
         De = self.dissipative_wave_energy(H)
 
@@ -159,8 +159,20 @@ class Waves(Environment, serializable.Serializable):
     def whitecap_fraction(self, U):
         return LehrSimecek.whitecap_fraction(U, self.water.salinity)
 
-    def wave_period(self, U):
-        return Adios2.wave_period(U, self.water.wave_height, self.water.fetch)
+    def mean_wave_period(self, U):
+        return Adios2.mean_wave_period(U,
+                                       self.water.wave_height,
+                                       self.water.fetch)
+
+    def peak_wave_period(self, time):
+        '''
+        :param time: the time you want the wave data for
+        :type time: datetime.datetime object
+
+        :returns: peak wave period (s)
+        '''
+        U = self.wind.get_value(time)[0]
+        return PiersonMoskowitz.peak_wave_period(U)
 
     def dissipative_wave_energy(self, H):
         return Adios2.dissipative_wave_energy(self.water.density, H)

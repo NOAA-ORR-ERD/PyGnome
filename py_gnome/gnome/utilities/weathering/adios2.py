@@ -62,7 +62,7 @@ class Adios2(object):
         return U_h
 
     @classmethod
-    def wave_period(cls, U, wave_height, fetch):
+    def mean_wave_period(cls, U, wave_height, fetch):
         """
         Compute the mean wave period
 
