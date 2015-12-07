@@ -141,7 +141,6 @@ class Waves(Environment, serializable.Serializable):
 
         fixme: I'm not sure this is right -- if we stick with the wave energy
                given by the user for dispersion, why not for emulsification?
-
         """
         wave_height = self.water.wave_height
         U = self.wind.get_value(time)[0]  # only need velocity
