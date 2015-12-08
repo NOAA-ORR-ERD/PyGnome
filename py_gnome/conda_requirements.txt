@@ -1,0 +1,27 @@
+# Documents the packages required for PyGnome
+# This should be the minimal conda install
+
+setuptools
+numpy
+scipy
+ipython      
+matplotlib
+netCDF4
+py_gd
+gsw
+pyzmq
+cython
+pytest
+testfixtures
+psutil
+sphinx
+progressbar
+six
+geojson
+repoze.lru 
+unit_conversion
+colander
+sqlalchemy
+zope.interface
+zope.sqlalchemy
+
