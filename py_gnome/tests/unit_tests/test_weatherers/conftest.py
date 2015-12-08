@@ -17,7 +17,8 @@ def weathering_data_arrays(n_arrays,
                            water=None,
                            time_step=15.*60,
                            element_type=None,
-                           langmuir=False):
+                           langmuir=False,
+                           num_elements=2):
     '''
     function to initialize data_arrays set by WeatheringData. Weatherer tests
     can use this function to release elements and initialize data without
@@ -34,7 +35,7 @@ def weathering_data_arrays(n_arrays,
     if element_type is None:
         element_type = floating(substance=test_oil)
 
-    sc = sample_sc_release(num_elements=2,
+    sc = sample_sc_release(num_elements=num_elements,
                            element_type=element_type,
                            arr_types=arrays,
                            time_step=time_step)

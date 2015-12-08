@@ -97,12 +97,18 @@ def test_dissolution(oil, temp, num_elems, on):
     diss = Dissolution(waves)
     (sc, time_step) = weathering_data_arrays(diss.array_types,
                                              water,
-                                             element_type=et)[:2]
+                                             element_type=et,
+                                             num_elements=num_elems)[:2]
+
+    print 'num spills:', len(sc.spills)
+    print 'spill[0] amount:', sc.spills[0].amount
+
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 
     diss.on = on
     diss.prepare_for_model_run(sc)
+    diss.initialize_data(sc, sc.num_released)
 
     diss.prepare_for_model_step(sc, time_step, model_time)
     diss.weather_elements(sc, time_step, model_time)
