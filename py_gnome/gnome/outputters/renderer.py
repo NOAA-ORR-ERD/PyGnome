@@ -236,8 +236,8 @@ class Renderer(Outputter, MapCanvas):
         # initilize the images:
         self.add_colors(self.map_colors)
         self.background_color = 'background'
-        fn = '%s_anim.gif' % os.path.splitext(self._filename)[0] if self._filename is not None else ''
-        self.anim_filename = os.path.join(self.output_dir, fn)
+        fn = '%s_anim.gif' % os.path.splitext(self.map_filename)[0] if self.map_filename is not None else ''
+        self.anim_filename = os.path.join(output_dir,fn)
         self.formats = formats
         self.delay = 50
         self.repeat = True
@@ -309,7 +309,7 @@ class Renderer(Outputter, MapCanvas):
         self.draw_background()
         for ftype in self.formats:
             if ftype == 'gif':
-                self.start_animation(os.path.join(self.anim_filename))
+                self.start_animation(self.anim_filename)
             else:
                 self.save_background(os.path.join(self.output_dir,
                                               self.background_map_name),

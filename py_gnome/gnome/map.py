@@ -33,7 +33,6 @@ import unit_conversion as uc
 from gnome import _valid_units
 from gnome.basic_types import oil_status, world_point_type
 
-import gnome.utilities.profiledeco as pd
 from gnome.utilities.projections import (FlatEarthProjection,
                                          RectangularGridProjection,
                                          RegularGridProjection)
@@ -699,7 +698,6 @@ class RasterMap(GnomeMap):
 
         GnomeMap.__init__(self, **kwargs)
 
-    @pd.profile
     def build_coarser_bitmaps(self):
         """
         Builds the list which contains the different resolution raster maps.
@@ -855,7 +853,6 @@ class RasterMap(GnomeMap):
                                                                  asint=True)[0]
                                         )
 
-    @pd.profile
     def beach_elements(self, sc):
         """
         Determines which elements were or weren't beached.
