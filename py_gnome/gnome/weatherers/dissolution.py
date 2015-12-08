@@ -15,7 +15,8 @@ from gnome.utilities.weathering import LeeHuibers
 
 from gnome.array_types import (viscosity,
                                mass,
-                               density)
+                               density,
+                               mol_wt_components)
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
@@ -46,6 +47,7 @@ class Dissolution(Weatherer, Serializable):
         self.array_types.update({'viscosity': viscosity,
                                  'mass':  mass,
                                  'density': density,
+                                 'mol_wt_components': mol_wt_components,
                                  })
 
     def prepare_for_model_run(self, sc):
@@ -68,6 +70,55 @@ class Dissolution(Weatherer, Serializable):
 
         if not self.active:
             return
+
+    def initialize_data(self, sc, num_released):
+        '''
+            initialize the newly released portions of our data arrays:
+
+            If on is False, then arrays should not be included
+            - dont' initialize
+        '''
+        if not self.on:
+            return
+
+        self._initialize_mol_wt(sc, num_released)
+
+    def _initialize_mol_wt(self, sc, num_released):
+        '''
+            Initialize the aromatic molecular weight components.
+
+            mol_wt_components has been prebuilt with a static size based on
+            substance.num_components.
+            We fill in the available aromatics from our substance,
+            and leave the rest of the array as 0.0
+
+            Note: we are assuming that each substance gets a distinct
+                  slice from our data arrays (maybe not a good assumption)
+        '''
+        num_initialized = 0
+
+        for substance, data in sc.itersubstancedata(self.array_types):
+            if len(data['mol_wt_components']) == 0:
+                # no particles released yet
+                continue
+
+            mol_weights = substance._component_mw('Aromatics')
+
+            mask = data['mol_wt_components'][:, 0] == 0
+            num_initialized += len(mask)
+
+            for s_num in np.unique(data['spill_num'][mask]):
+                s_mask = np.logical_and(mask, data['spill_num'] == s_num)
+
+                row_size = len(mol_weights)
+
+                num = len(s_mask)
+                mol_weights = (mol_weights,) * num
+
+                data['mol_wt_components'][s_mask, :row_size] = mol_weights
+                print 'mol_wt_components = ', data['mol_wt_components']
+
+        assert num_initialized == num_released
 
     def dissolve_oil(self, **kwargs):
         '''
@@ -114,11 +165,6 @@ class Dissolution(Weatherer, Serializable):
         print 'self.array_types:'
         pp.pprint(self.array_types)
         for substance, data in sc.itersubstancedata(self.array_types):
-            print 'substance:'
-            pp.pprint(substance)
-            print 'data:'
-            pp.pprint(data)
-
             if len(data['mass']) == 0:
                 # substance does not contain any surface_weathering LEs
                 continue
