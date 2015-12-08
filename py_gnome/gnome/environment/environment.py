@@ -45,15 +45,15 @@ class Environment(object):
 
     def prepare_for_model_run(self, model_time):
         """
-        Override this method if a derived environment class needs to perform any
-        actions prior to a model run
+        Override this method if a derived environment class needs to perform
+        any actions prior to a model run
         """
         pass
 
     def prepare_for_model_step(self, model_time):
         """
-        Override this method if a derived environment class needs to perform any
-        actions prior to a model run
+        Override this method if a derived environment class needs to perform
+        any actions prior to a model run
         """
         pass
 
@@ -201,7 +201,7 @@ class Water(Environment, serializable.Serializable):
             # have any conversions for them in unit_conversion yet - revisit
             # this per requirements
             if (attr not in self._si_units or
-                self._si_units[attr] == self._units[attr]):
+                    self._si_units[attr] == self._units[attr]):
                 return val
             else:
                 unit = self._si_units[attr]

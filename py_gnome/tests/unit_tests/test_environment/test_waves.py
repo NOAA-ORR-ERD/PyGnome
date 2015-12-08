@@ -121,7 +121,7 @@ def test_pseudo_wind(U):
 
     print "testing for U:", U
     # 0.707 compensates for RMS wave height
-    assert round(w.comp_pseudo_wind(w.compute_H(U) / 0.707), 5) == round(U, 8)
+    assert round(w.pseudo_wind(w.compute_H(U) / 0.707), 5) == round(U, 8)
 
 
 # note: 200 becuse that's when whitecap fraction would go above 1.0
@@ -135,7 +135,7 @@ def test_whitecap_fraction(U):
     print "testing for U:", U
 
     w = Waves(test_wind_5, default_water)
-    f = w.comp_whitecap_fraction(U)
+    f = w.whitecap_fraction(U)
 
     assert f >= 0.0
     assert f <= 1.0
@@ -147,7 +147,7 @@ def test_whitecap_fraction(U):
 
 
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 3.0, 4.0, 8.0, 16.0, 32.0])
-def test_period(U):
+def test_mean_wave_period(U):
     """
     test the wave period
     """
@@ -155,14 +155,14 @@ def test_period(U):
 
     print "testing for U:", U
 
-    f = w.comp_period(U)
+    f = w.mean_wave_period(U)
 
     print f
     # assert False # what else to check for???
 
 
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 3.0, 4.0, 8.0, 16.0, 32.0])
-def test_period_fetch(U):
+def test_mean_wave_period_with_fetch(U):
     """
     Test the wave period
     """
@@ -172,10 +172,55 @@ def test_period_fetch(U):
     water.fetch = 1e4  # 10km
     w = Waves(test_wind_5, water)  # 10km fetch
 
-    T = w.comp_period(U)
+    T = w.mean_wave_period(U)
 
     print T
     # assert False # what else to check for???
+
+
+@pytest.mark.parametrize("H, expected", [(0.0, 0.0),
+                                         (1.0, 34.01),
+                                         (2.0, 136.39),
+                                         (4.0, 545.58),
+                                         (8.0, 2182.35)])
+def test_wave_energy(H, expected):
+    """
+    Test the dissipative wave energy
+    """
+    print "testing for H:", H
+
+    water = copy(default_water)
+    water.fetch = 1e4  # 10km
+    w = Waves(test_wind_5, water)  # 10km fetch
+
+    De = w.dissipative_wave_energy(H)
+
+    print De
+
+    # Note: Right now we are just documenting the results that we are
+    #       getting.  The expected values need to be checked for validity.
+    assert np.isclose(De, expected, rtol=0.01)
+
+
+@pytest.mark.parametrize("wind_speed, expected", [(0.0, 0.0),
+                                                  (1.0, 0.75),
+                                                  (2.0, 1.5),
+                                                  (4.0, 3.0),
+                                                  (8.0, 6.0),
+                                                  (16.0, 12.0)])
+def test_peak_wave_period(wind_speed, expected):
+    "fully developed seas"
+    series = np.array((start_time, (wind_speed, 45)),
+                      dtype=datetime_value_2d).reshape((1, ))
+    test_wind = Wind(timeseries=series, units='meter per second')
+
+    w = Waves(test_wind, default_water)
+
+    print 'Wind speed:', w.wind.get_value(start_time)
+
+    T_w = w.peak_wave_period(start_time)
+
+    assert np.isclose(T_w, expected)
 
 
 def test_call_no_fetch_or_height():

@@ -8,8 +8,8 @@ These are properties that are spill specific like:
   'weathering' element_types would use droplet_size, densities, mass?
 '''
 import copy
-import numpy
-np = numpy
+import numpy as np
+
 from colander import SchemaNode, Int, Float, Range, TupleSchema
 
 from gnome.utilities.rand import random_with_persistance
@@ -245,7 +245,7 @@ class InitRiseVelFromDist(DistributionBase):
 
         :param distribution: An object capable of generating a probability
                              distribution.
-        :type distribution: 
+        :type distribution:
             Right now, we have:
              * UniformDistribution
              * NormalDistribution
@@ -256,15 +256,14 @@ class InitRiseVelFromDist(DistributionBase):
             method which accepts a NumPy array.
             (presumably, this function will also modify
              the array in some way)
-             
         """
         super(InitRiseVelFromDist, self).__init__(**kwargs)
 
         if distribution:
             self.distribution = distribution
         else:
-            raise TypeError('InitRiseVelFromDist requires a distribution for rise velocities')
-            #self.distribution = UniformDistribution()
+            raise TypeError('InitRiseVelFromDist requires a distribution for '
+                            'rise velocities')
 
         self.array_types.add('rise_vel')
         self.name = 'rise_vel'
@@ -291,7 +290,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
 
         :param distribution: An object capable of generating a probability
                              distribution.
-        :type distribution: 
+        :type distribution:
         Right now, we have:
          * UniformDistribution
          * NormalDistribution
@@ -312,8 +311,8 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         if distribution:
             self.distribution = distribution
         else:
-            raise TypeError('InitRiseVelFromDropletSizeFromDist requires a distribution for droplet sizes')
-            #self.distribution = UniformDistribution()
+            raise TypeError('InitRiseVelFromDropletSizeFromDist requires a '
+                            'distribution for droplet sizes')
 
         self.water_viscosity = water_viscosity
         self.water_density = water_density

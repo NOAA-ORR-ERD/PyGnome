@@ -17,7 +17,18 @@
 using namespace std;
 
 
-OSErr emulsify(int n, unsigned long step_len, double *frac_water, double *interfacial_area, double *frac_evap, int32_t *age, double *bulltime, double k_emul, double emul_time, double emul_C, double S_max, double Y_max, double drop_max)
+OSErr emulsify(int n, unsigned long step_len,
+			   double *frac_water,
+			   double *interfacial_area,
+			   double *frac_evap,
+			   int32_t *age,
+			   double *bulltime,
+			   double k_emul,
+			   double emul_time,
+			   double emul_C,
+			   double S_max,
+			   double Y_max,
+			   double drop_max)
 {
 	OSErr err = 0;
 	double Y, S;
@@ -82,7 +93,23 @@ OSErr emulsify(int n, unsigned long step_len, double *frac_water, double *interf
 	return err;
 }
 
-OSErr disperse(int n, unsigned long step_len, double *frac_water, double *le_mass, double *le_viscosity, double *le_density, double *fay_area, double *d_disp, double *d_sed, double frac_breaking_waves, double disp_wave_energy, double wave_height, double visc_w, double rho_w, double C_sed, double V_entrain, double ka)
+
+OSErr disperse(int n, unsigned long step_len,
+			   double *frac_water,
+			   double *le_mass,
+			   double *le_viscosity,
+			   double *le_density,
+			   double *fay_area,
+			   double *d_disp,
+			   double *d_sed,
+			   double frac_breaking_waves,
+			   double disp_wave_energy,
+			   double wave_height,
+			   double visc_w,
+			   double rho_w,
+			   double C_sed,
+			   double V_entrain,
+			   double ka)
 {
 	OSErr err = 0;
 	
@@ -98,6 +125,7 @@ OSErr disperse(int n, unsigned long step_len, double *frac_water, double *le_mas
 	{
 		fbw *= pow(100. / Vol_0, .2);
 	}*/
+
 	V_entrain = 3.9e-8;
 	C_disp = pow(De, 0.57) * fbw; // dispersion term at current time
 

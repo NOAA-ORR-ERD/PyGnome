@@ -11,14 +11,13 @@ Uses the same approach as ADIOS 2
 
 """
 from __future__ import division
-from math import sqrt
 
 import copy
 
 from gnome import constants
 from gnome.utilities import serializable
 from gnome.utilities.serializable import Field
-from gnome.utilities.weathering import Adios2
+from gnome.utilities.weathering import Adios2, LehrSimecek, PiersonMoskowitz
 
 from gnome.persist import base_schema
 from gnome.exceptions import ReferencedObjectNotSet
@@ -118,11 +117,11 @@ class Waves(Environment, serializable.Serializable):
             H = self.compute_H(U)
         else:  # user specified a wave height
             H = wave_height
-            U = self.comp_pseudo_wind(H)
-        Wf = self.comp_whitecap_fraction(U)
-        T = self.comp_period(U)
+            U = self.pseudo_wind(H)
+        Wf = self.whitecap_fraction(U)
+        T = self.mean_wave_period(U)
 
-        De = self.disp_wave_energy(H)
+        De = self.dissipative_wave_energy(H)
 
         return H, T, Wf, De
 
@@ -131,7 +130,7 @@ class Waves(Environment, serializable.Serializable):
         Return the right wind for the wave climate
 
         If a wave height was specified, then you need the greater of the
-        real or psuedo wind.
+        real or pseudo wind.
 
         If not, then you need the actual wind.
 
@@ -142,102 +141,40 @@ class Waves(Environment, serializable.Serializable):
 
         fixme: I'm not sure this is right -- if we stick with the wave energy
                given by the user for dispersion, why not for emulsification?
-
         """
         wave_height = self.water.wave_height
         U = self.wind.get_value(time)[0]  # only need velocity
         if wave_height is None:
             return U
         else:  # user specified a wave height
-            return max(U, self.comp_pseudo_wind(wave_height))
-
-    # def get_pseudo_wind(self, time):
-    #     wave_height = self.water.wave_height
-    #     if wave_height is None:
-    #         U = self.wind.get_value(time)[0]  # only need velocity
-    #         H = self.compute_H(U)
-    #     else:  # user specified a wave height
-    #         H = wave_height
-    #     U = self.comp_psuedo_wind(H)
-
-    #     return U
+            return max(U, self.pseudo_wind(wave_height))
 
     def compute_H(self, U):
         return Adios2.wave_height(U, self.water.fetch)
 
-    def comp_pseudo_wind(self, H):
+    def pseudo_wind(self, H):
         return Adios2.wind_speed_from_height(H)
 
-    def comp_whitecap_fraction(self, U):
-        """
-        compute the white capping fraction
+    def whitecap_fraction(self, U):
+        return LehrSimecek.whitecap_fraction(U, self.water.salinity)
 
-        This and wave height drives dispersion
+    def mean_wave_period(self, U):
+        return Adios2.mean_wave_period(U,
+                                       self.water.wave_height,
+                                       self.water.fetch)
 
-        This based on the formula in:
-        Lehr and Simecek-Beatty
-        The Relation of Langmuir Circulation Processes to the Standard
-        Oil Spill Spreading, Dispersion and Transport Algorithms
-        Spill Sci. and Tech. Bull, 6:247-253 (2000)
-        (maybe typo -- didn't match)
+    def peak_wave_period(self, time):
+        '''
+        :param time: the time you want the wave data for
+        :type time: datetime.datetime object
 
-        Should look in:  Ocean Waves Breaking and Marine Aerosol Fluxes
-                         By Stanislaw R. Massel
-        """
-        # Monahan(JPO, 1971) time constant characterizing exponential
-        # whitecap decay.
-        # The saltwater value for this constant is 3.85 sec while the
-        # freshwater value is 2.54 sec.
-        # interpolate with salinity:
-        Tm = 0.03742857 * self.water.salinity + 2.54
+        :returns: peak wave period (s)
+        '''
+        U = self.wind.get_value(time)[0]
+        return PiersonMoskowitz.peak_wave_period(U)
 
-        if U < 4.0:  # m/s
-            # linear fit from 0 to the 4m/s value from Ding and Farmer
-            # maybe should be a exponential / quadratic fit?
-            # or zero less than 3, then a sharp increase to 4m/s?
-            fw = (0.0125 * U) / Tm
-        else:
-            # # Ding and Farmer (JPO 1994)
-            # fw = (0.01*U + 0.01) / Tm
-            # old ADIOS had a .5 factor - not sure why but we'll keep it
-            # for now
-
-            # Ding and Farmer (JPO 1994)
-            fw = 0.5 * (0.01 * U + 0.01) / Tm
-
-        return fw if fw <= 1.0 else 1.0  # only with U > 200m/s!
-
-    def comp_period(self, U):
-        """
-        Compute the mean wave period
-        """
-        # wind stress factor
-        # fixme: check for discontinuity at large fetch..
-        #        Is this s bit low??? 32 m/s -> T=15.7 s
-        wave_height = self.water.wave_height
-        fetch = self.water.wave_height
-
-        if wave_height is None:
-            ws = U * 0.71 * U ** 1.23  # fixme -- linear for large windspeed?
-
-            if (fetch is None) or (fetch >= 2268 * ws ** 2):
-                # fetch unlimited
-                T = 0.83 * ws
-            else:
-                # eq 3-34 (SPM?)
-                T = 0.06238 * (fetch * ws) ** 0.3333333333
-        else:
-            # user-specified wave height
-            T = 7.508*sqrt(wave_height)
-
-        return T
-
-    def disp_wave_energy(self, H):
-        """
-        Compute the dissipative wave energy
-        """
-        # fixme: does this really only depend on height?
-        return 0.0034 * self.water.density * g * H ** 2
+    def dissipative_wave_energy(self, H):
+        return Adios2.dissipative_wave_energy(self.water.density, H)
 
     def serialize(self, json_='webapi'):
         """
