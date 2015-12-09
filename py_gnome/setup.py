@@ -468,7 +468,7 @@ poly_cypath = os.path.join('gnome', 'utilities', 'geometry')
 sources = [os.path.join(poly_cypath, 'cy_point_in_polygon.pyx'),
            os.path.join(poly_cypath, 'c_point_in_polygon.c')]
 
-include_dirs = [np.get_include()]
+include_dirs = [np.get_include(), '../lib_gnome']
 if sys.platform == "win32":
     include_dirs.append(os.path.join(third_party_dir, 'win32_headers'))
 
