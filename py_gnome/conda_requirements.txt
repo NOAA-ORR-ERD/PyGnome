@@ -24,4 +24,4 @@ colander
 sqlalchemy
 zope.interface
 zope.sqlalchemy
-
+gdal
