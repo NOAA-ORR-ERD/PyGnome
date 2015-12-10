@@ -386,7 +386,7 @@ class ParamMap(GnomeMap):
                         from the center.
         """
         refloat_halflife = kwargs.pop('refloat_halflife', 1)
-        self._refloat_halflife = refloat_halflife * self.seconds_in_hour
+        self._refloat_halflife = refloat_halflife * 3600
         self.build(center, distance, bearing, units)
 
     def build(self, center, distance, bearing, units):
