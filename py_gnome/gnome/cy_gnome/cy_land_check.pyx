@@ -384,7 +384,6 @@ def move_particles(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not No
     for i in range(positions.shape[0]):
         #skip if already landed
         if (status_codes[i] == type_defs.OILSTAT_ONLAND):
-            print 'already landed'
             continue
         if (beaching[i]):
             p1, p2 = positions[i][0:2], end_positions[i][0:2]

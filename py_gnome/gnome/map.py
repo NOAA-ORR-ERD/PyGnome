@@ -558,6 +558,16 @@ class ParamMap(GnomeMap):
         move_particles(start_pos, next_pos, status_codes,
                        last_water_positions, self.land_points)
 
+        self._set_off_map_status(sc)
+
+        # todo: need a prepare_for_model_run() so map adds these keys to
+        #     mass_balance as opposed to SpillContainer
+        # update 'off_maps'/'beached' in mass_balance
+        sc.mass_balance['beached'] = \
+            sc['mass'][sc['status_codes'] == oil_status.on_land].sum()
+        sc.mass_balance['off_maps'] += \
+            sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
+
     def refloat_elements(self, spill_container, time_step):
         """
         This method performs the re-float logic -- changing the element

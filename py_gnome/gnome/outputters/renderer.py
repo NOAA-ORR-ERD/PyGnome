@@ -177,7 +177,7 @@ class Renderer(Outputter, MapCanvas):
         :param draw_ontop: draw 'forecast' or 'uncertain' LEs on top. Default
             is to draw 'forecast' LEs, which are in black on top
         :type draw_ontop: str
-        
+
         :param formats: list of formats to output. Default is .png and animated .gif
         :type formats: list of strings
 
@@ -236,8 +236,9 @@ class Renderer(Outputter, MapCanvas):
         # initilize the images:
         self.add_colors(self.map_colors)
         self.background_color = 'background'
-        fn = '%s_anim.gif' % os.path.splitext(self.map_filename)[0] if self.map_filename is not None else ''
-        self.anim_filename = os.path.join(output_dir,fn)
+        fn = '%s_anim.gif' % os.path.splitext(
+            self.map_filename)[0] if self.map_filename is not None else 'anim.gif'
+        self.anim_filename = os.path.join(output_dir, fn)
         self.formats = formats
         self.delay = 50
         self.repeat = True
@@ -262,7 +263,7 @@ class Renderer(Outputter, MapCanvas):
 
     @property
     def map_filename(self):
-        return basename(self._filename)
+        return basename(self._filename) if self._filename is not None else None
 
     @map_filename.setter
     def map_filename(self, name):
@@ -283,10 +284,10 @@ class Renderer(Outputter, MapCanvas):
         return os.path.abspath(self.output_dir)
 
     def start_animation(self, filename):
-            self.animation = py_gd.Animation(filename, self.delay)
-            l = 0 if self.repeat else -1
-            print 'Starting animation'
-            self.animation.begin_anim(self.back_image, l)
+        self.animation = py_gd.Animation(filename, self.delay)
+        l = 0 if self.repeat else -1
+        print 'Starting animation'
+        self.animation.begin_anim(self.back_image, l)
 
     def prepare_for_model_run(self, *args, **kwargs):
         """
@@ -312,8 +313,8 @@ class Renderer(Outputter, MapCanvas):
                 self.start_animation(self.anim_filename)
             else:
                 self.save_background(os.path.join(self.output_dir,
-                                              self.background_map_name),
-                                              file_type = ftype)
+                                                  self.background_map_name),
+                                     file_type=ftype)
 
     def set_timestamp_attrib(self, **kwargs):
         """
@@ -345,7 +346,7 @@ class Renderer(Outputter, MapCanvas):
         """
         self.timestamp_attribs.update(kwargs)
 
-    def draw_timestamp(self, time): 
+    def draw_timestamp(self, time):
         """
         Function that draws the timestamp to the foreground. Uses self.timestamp_attribs to
         determine it's appearance.
@@ -361,10 +362,12 @@ class Renderer(Outputter, MapCanvas):
         background = d['background'] if 'background' in d else 'white'
         color = d['color'] if 'color' in d else 'black'
         size = d['size'] if 'size' in d else 'small'
-        position = d['position'] if 'position' in d else (self.fore_image.width/2, self.fore_image.height)
+        position = d['position'] if 'position' in d else (
+            self.fore_image.width / 2, self.fore_image.height)
         align = d['alignment'] if 'alignment' in d else 'cb'
 
-        self.fore_image.draw_text(time.strftime(dt_format), position, size, color, align, background)
+        self.fore_image.draw_text(
+            time.strftime(dt_format), position, size, color, align, background)
 
     def clean_output_files(self):
 
@@ -494,10 +497,12 @@ class Renderer(Outputter, MapCanvas):
                     for j in range(h):
                         if raster_map.basebitmap[i, j] == 1:
                             rect = raster_map.projection.to_lonlat(np.array(((i, j),
-                                                                             (i + 1, j),
-                                                                             (i + 1, j + 1),
+                                                                             (i +
+                                                                              1, j),
+                                                                             (i + 1,
+                                                                              j + 1),
                                                                              (i, j + 1)),
-                                                                            dtype=np.float64) )
+                                                                            dtype=np.float64))
                             self.draw_polygon(rect, fill_color='raster_map',
                                               background=True)
 
