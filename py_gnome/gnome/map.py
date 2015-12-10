@@ -411,8 +411,8 @@ class ParamMap(GnomeMap):
         map_dist = (self._distance, 0.0, 0)
         d = FlatEarthProjection.meters_to_lonlat(map_dist, center)[0][0]
 
-        init_points = [(d, -8 * d), (d, 8 * d),
-                       (8 * d, 8 * d), (8 * d, -8 * d)]
+        init_points = [(d, -16 * d), (d, 16 * d),
+                       (16 * d, 16 * d), (16 * d, -16 * d)]
 
         ang = np.deg2rad(90 - bearing)
         rot_matrix = [(np.cos(ang), np.sin(ang)), (-np.sin(ang), np.cos(ang))]
@@ -424,8 +424,8 @@ class ParamMap(GnomeMap):
         land_polys = PolygonSet((self.land_points, [0, 4], []))
         land_polys._MetaDataList = [('polygon', '1', '1')]
 
-        map_bounds = np.array(((-4 * d, -2 * d), (-4 * d, 2 * d),
-                               (4 * d, 2 * d), (4 * d, -2 * d)),
+        map_bounds = np.array(((-8 * d, -6 * d), (-8 * d, 6 * d),
+                               (8 * d, 6 * d), (8 * d, -6 * d)),
                               dtype=np.float64) + (center[0], center[1])
 
         GnomeMap.__init__(self, map_bounds=map_bounds, land_polys=land_polys)
