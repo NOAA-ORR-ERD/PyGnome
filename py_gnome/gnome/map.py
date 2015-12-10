@@ -1459,7 +1459,7 @@ def refine_axis(old_axis, refine):
     return axis
 
 
-def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=6,
+def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=1,
                           map_bounds=None):
     """
     note: poorly tested -- here to save it in case we need it in the future
