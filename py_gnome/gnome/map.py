@@ -385,6 +385,8 @@ class ParamMap(GnomeMap):
         :param bearing: The bearing the closest point on the shoreline is
                         from the center.
         """
+        refloat_halflife = kwargs.pop('refloat_halflife', 1)
+        self._refloat_halflife = refloat_halflife * self.seconds_in_hour
         self.build(center, distance, bearing, units)
 
     def build(self, center, distance, bearing, units):
@@ -427,8 +429,6 @@ class ParamMap(GnomeMap):
                               dtype=np.float64) + (center[0], center[1])
 
         GnomeMap.__init__(self, map_bounds=map_bounds, land_polys=land_polys)
-
-        self._refloat_halflife = 0.5
 
     @property
     def distance(self):
@@ -602,7 +602,8 @@ class ParamMap(GnomeMap):
                 'units' in data.keys()):
             self.build(
                 data['center'] if 'center' in data.keys() else self.center,
-                data['distance'] if 'distance' in data.keys() else self.distance,
+                data[
+                    'distance'] if 'distance' in data.keys() else self.distance,
                 data['bearing'] if 'bearing' in data.keys() else self.bearing,
                 data['units'] if 'units' in data.keys() else self.units)
         else:
