@@ -5,29 +5,28 @@ Tests of the gd map canvas code.
 import os
 
 
-#from gnome.utilities import map_canvas
 from gnome.utilities.map_canvas import MapCanvas
-from gnome.utilities.file_tools import haz_files
-from gnome.utilities.geometry.polygons import Polygon, PolygonSet
 
 import pytest
-from ..conftest import testdata, isclose
+from ..conftest import testdata
 
 
 input_file = testdata["Renderer"]["bna_sample"]
+
 
 def test_init():
     """
     can we even initialize one
     """
-    mc = MapCanvas( (400,300) )
+    mc = MapCanvas((400, 300))
+
 
 def test_set_colors():
 
-    mc = MapCanvas( (400,300) )
+    mc = MapCanvas((400, 300))
 
-    colors = [ ('blue', (  0,   0, 255)),
-               ('red', (255,   0,   0))]
+    colors = [('blue', (0, 0, 255)),
+              ('red', (255, 0, 0))]
 
     mc.add_colors(colors)
 
@@ -37,96 +36,91 @@ def test_set_colors():
 
     assert colors == ['transparent', 'black', 'white', 'blue', 'red']
 
+
 def test_background_poly(output_dir):
     """
     test drawing polygons to the background
     """
-    mc = MapCanvas( (400,300), preset_colors='web' )
+    mc = MapCanvas((400, 300), preset_colors='web')
 
     mc.background_color = 'transparent'
     mc.clear_background()
 
-    mc.draw_polygon( ( (-30, 30),
-                       ( 30, 30),
-                       ( 30,-20),
-                       (-30,-20)
-                      ),
-                      fill_color = 'blue',
-                      line_color = 'black',
-                      background = True,
-                    )
+    mc.draw_polygon(((-30, 30),
+                     (30, 30),
+                     (30, -20),
+                     (-30, -20)),
+                    fill_color='blue',
+                    line_color='black',
+                    background=True)
 
     mc.save_background(os.path.join(output_dir, "background.png"))
+
 
 def test_foreground_poly(output_dir):
     """
     test drawing polygons to the background
     """
-    mc = MapCanvas( (400,300), preset_colors='web' )
+    mc = MapCanvas((400, 300), preset_colors='web')
 
     mc.background_color = 'transparent'
     mc.clear_background()
 
-    mc.draw_polygon( ( (-30, 30),
-                       ( 30, 30),
-                       ( 30,-20),
-                       (-30,-20)
-                      ),
-                      fill_color = 'white',
-                      line_color = 'black',
-                      background = False,
-                    )
+    mc.draw_polygon(((-30, 30),
+                     (30, 30),
+                     (30, -20),
+                     (-30, -20)),
+                    fill_color='white',
+                    line_color='black',
+                    background=False)
 
     mc.save_foreground(os.path.join(output_dir, "foreground.png"))
+
 
 def test_foreground_polyline(output_dir):
     """
     test drawing polygons to the background
     """
-    mc = MapCanvas( (400,300), preset_colors='web' )
+    mc = MapCanvas((400, 300), preset_colors='web')
 
     mc.background_color = 'transparent'
     mc.clear_background()
 
-    mc.draw_polyline( ( (-30, 30),
-                       ( 30, 30),
-                       ( 30,-20),
-                       (-30,-20)
-                      ),
-                      line_color = 'red',
-                      line_width = 5,
-                      background = False,
-                    )
+    mc.draw_polyline(((-30, 30),
+                      (30, 30),
+                      (30, -20),
+                      (-30, -20)),
+                     line_color='red',
+                     line_width=5,
+                     background=False)
 
     mc.save_foreground(os.path.join(output_dir, "foreground_polyline.png"))
 
+
 def test_copy_back_to_fore(output_dir):
 
-    mc = MapCanvas( (400,300), preset_colors='web' )
+    mc = MapCanvas((400, 300), preset_colors='web')
 
     mc.background_color = 'white'
     mc.clear_background()
     mc.clear_foreground()
 
-    mc.draw_polyline( ( (-30, 30),
-                       ( 30, 30),
-                       ( 30,-20),
-                       (-30,-20)
-                      ),
-                      line_color = 'red',
-                      line_width = 5,
-                      background = True,
-                    )
+    mc.draw_polyline(((-30, 30),
+                      (30, 30),
+                      (30, -20),
+                      (-30, -20)),
+                     line_color='red',
+                     line_width=5,
+                     background=True)
+
     mc.copy_back_to_fore()
-    mc.draw_polyline( ( (-20, 20),
-                       ( 20, 20),
-                       ( 20,-10),
-                       (-20,-10)
-                      ),
-                      line_color = 'blue',
-                      line_width = 5,
-                      background = False,
-                    )
+    mc.draw_polyline(((-20, 20),
+                      (20, 20),
+                      (20, -10),
+                      (-20, -10)),
+                     line_color='blue',
+                     line_width=5,
+                     background=False)
 
     mc.save_foreground(os.path.join(output_dir, "copy_back_to_fore.png"))
 
@@ -135,62 +129,56 @@ def test_projection(output_dir):
     """
     draw the "same sized" rectangle at three latitudes to see how the look
     """
-    mc = MapCanvas( (400,400) , preset_colors='web')
+    mc = MapCanvas((400, 400), preset_colors='web')
 
-
-    mc.viewport = ((-20,25),(20,65))
-    mc.draw_polygon( ( (-15, 60),
-                       ( 15, 60),
-                       ( 15, 30),
-                       (-15, 30)
-                      ),
-                      fill_color = 'maroon',
-                      line_color = 'black',
-                    )
+    mc.viewport = ((-20, 25), (20, 65))
+    mc.draw_polygon(((-15, 60),
+                     (15, 60),
+                     (15, 30),
+                     (-15, 30)),
+                    fill_color='maroon',
+                    line_color='black')
 
     mc.save_foreground(os.path.join(output_dir, "image_projection_north.png"))
 
-    mc.viewport = ((-20,-20),(20,20))
-    mc.draw_polygon( ( (-15, 15),
-                       ( 15, 15),
-                       ( 15, -15),
-                       (-15, -15)
-                      ),
-                      fill_color = 'maroon',
-                      line_color = 'black',
-                    )
+    mc.viewport = ((-20, -20), (20, 20))
+    mc.draw_polygon(((-15, 15),
+                     (15, 15),
+                     (15, -15),
+                     (-15, -15)
+                     ),
+                    fill_color='maroon',
+                    line_color='black')
 
-    mc.save_foreground(os.path.join(output_dir, "image_projection_equator.png"))
+    mc.save_foreground(os.path.join(output_dir,
+                                    "image_projection_equator.png"))
 
-    mc.viewport = ((-20,-45),(20,-90))
-    mc.draw_polygon( ( (-15, -80),
-                       ( 15, -80),
-                       ( 15, -50),
-                       (-15, -50)
-                      ),
-                      fill_color = 'maroon',
-                      line_color = 'black',
-                    )
+    mc.viewport = ((-20, -45), (20, -90))
+    mc.draw_polygon(((-15, -80),
+                     (15, -80),
+                     (15, -50),
+                     (-15, -50)),
+                    fill_color='maroon',
+                    line_color='black')
 
     mc.save_foreground(os.path.join(output_dir, "image_projection_south.png"))
 
-# @pytest.mark.parametrize( ("val","exp","num_digits"), [(    1.1,     1.0,      1 ),
-#                                                        ( 0.0011,     0.001,    1 ),
-#                                                        (  1100.,     1000.0,   1 ),
-#                                                        (  1900 ,     2000.0,   1 ),
-#                                                        (  0.0000154, 0.00002,  1 ),
-#                                                        (  0.0000154, 0.000015, 2 ),
-#                                                        (  1234.56,   1200.0,   2 ),
-#                                                        (  1234567,   1230000,      3 ),
-#                                                       ]
+# @pytest.mark.parametrize(("val","exp","num_digits"),
+#                          [(1.1, 1.0, 1),
+#                           (0.0011, 0.001, 1),
+#                           (1100., 1000.0, 1),
+#                           (1900 , 2000.0, 1),
+#                           (0.0000154, 0.00002, 1),
+#                           (0.0000154, 0.000015, 2),
+#                           (1234.56, 1200.0, 2),
+#                           (1234567, 1230000, 3),
+#                           ]
 #                          )
 # def test_round_to_digit(val, exp, num_digits):
-# 
+#
 #     rounded = MapCanvas._round_to_digit(val, num_digits)
-# 
-#     assert isclose(rounded, exp, rel_tol=1e-14)
-
-
+#
+#     assert np.isclose(rounded, exp, rel_tol=1e-14)
 
 
 # def test_render(dump):
