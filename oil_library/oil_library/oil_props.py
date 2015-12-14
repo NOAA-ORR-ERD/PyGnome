@@ -195,7 +195,18 @@ class OilProps(object):
 
     @property
     def component_density(self):
-        return self._sara['density']
+        return self._component_density()
+
+    def _component_density(self, sara_type=None):
+        '''
+        return the density of the pseudocomponents.
+        '''
+        ret = self._sara['density']
+
+        if sara_type is not None:
+            ret = ret[np.where(self._sara['type'] == sara_type)]
+
+        return ret
 
     @lru_cache(2)
     def vapor_pressure(self, temp, atmos_pressure=101325.0):

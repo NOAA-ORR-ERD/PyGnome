@@ -293,6 +293,9 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                                  ArrayTypeDivideOnSplit),
                    'mol_wt_components': (None, np.float64, 'mol_wt_components',
                                          None, ArrayTypeDivideOnSplit),
+                   'density_components': (None, np.float64,
+                                          'density_components', None,
+                                          ArrayTypeDivideOnSplit),
                    }
 
 

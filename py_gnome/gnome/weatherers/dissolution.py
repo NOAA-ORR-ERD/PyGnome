@@ -16,7 +16,8 @@ from gnome.utilities.weathering import LeeHuibers
 from gnome.array_types import (viscosity,
                                mass,
                                density,
-                               mol_wt_components)
+                               mol_wt_components,
+                               density_components)
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
@@ -48,6 +49,7 @@ class Dissolution(Weatherer, Serializable):
                                  'mass':  mass,
                                  'density': density,
                                  'mol_wt_components': mol_wt_components,
+                                 'density_components': density_components
                                  })
 
     def prepare_for_model_run(self, sc):
@@ -82,6 +84,7 @@ class Dissolution(Weatherer, Serializable):
             return
 
         self._initialize_mol_wt(sc, num_released)
+        self._initialize_density(sc, num_released)
 
     def _initialize_mol_wt(self, sc, num_released):
         '''
@@ -116,7 +119,42 @@ class Dissolution(Weatherer, Serializable):
                 mol_weights = (mol_weights,) * num
 
                 data['mol_wt_components'][s_mask, :row_size] = mol_weights
-                print 'mol_wt_components = ', data['mol_wt_components']
+
+        assert num_initialized == num_released
+
+    def _initialize_density(self, sc, num_released):
+        '''
+            Initialize the aromatic density components.
+
+            density_components has been prebuilt with a static size based on
+            substance.num_components.
+            We fill in the available aromatics from our substance,
+            and leave the rest of the array as 0.0
+
+            Note: we are assuming that each substance gets a distinct
+                  slice from our data arrays (maybe not a good assumption)
+        '''
+        num_initialized = 0
+
+        for substance, data in sc.itersubstancedata(self.array_types):
+            if len(data['density_components']) == 0:
+                # no particles released yet
+                continue
+
+            densities = substance._component_density('Aromatics')
+
+            mask = data['density_components'][:, 0] == 0
+            num_initialized += len(mask)
+
+            for s_num in np.unique(data['spill_num'][mask]):
+                s_mask = np.logical_and(mask, data['spill_num'] == s_num)
+
+                row_size = len(densities)
+
+                num = len(s_mask)
+                densities = (densities,) * num
+
+                data['density_components'][s_mask, :row_size] = densities
 
         assert num_initialized == num_released
 
@@ -133,12 +171,15 @@ class Dissolution(Weatherer, Serializable):
         '''
         # pp.pprint(kwargs)
         data = kwargs['data']
-        rho = data['density']
+        mol_wt = data['mol_wt_components']
+        rho = data['density_components']
 
         # recalculate the partition coefficient (K_ow)
         # - density for the LE should be current weathered density
-        print 'rho:', rho
-        # K_ow = LeeHuibers.partition_coeff(mol_wt, rho)
+        print 'mol_wt: ', mol_wt
+        print 'rho: ', rho
+        K_ow = LeeHuibers.partition_coeff(mol_wt, rho)
+        print 'K_ow: ', K_ow[np.where(K_ow != np.nan)]
 
         diss = np.zeros((len(data['mass'])), dtype=np.float64)
         return diss

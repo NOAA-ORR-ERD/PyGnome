@@ -76,6 +76,8 @@ def test_prepare_for_model_run():
                                              water,
                                              element_type=et)[:2]
 
+    assert 'mol_wt_components' in sc.data_arrays
+    assert 'density_components' in sc.data_arrays
     assert 'dissolution' not in sc.mass_balance
 
     diss.prepare_for_model_run(sc)
