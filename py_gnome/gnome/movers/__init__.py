@@ -35,6 +35,8 @@ from current_movers import (CatsMoverSchema,
                             CurrentCycleMover)
 from vertical_movers import RiseVelocityMoverSchema, RiseVelocityMover
 
+from ugrid_movers import UGridCurrentMover
+
 __all__ = [Mover,
            CyMover,
            Process,

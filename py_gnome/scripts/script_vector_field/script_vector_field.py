@@ -20,10 +20,11 @@ from gnome.map import MapFromBNA
 from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
-from gnome.environment import TriVectorField
-from gnome.movers import UGridCurrentMover
 
 from gnome.outputters import Renderer
+from gnome.environment import TriVectorField
+from gnome.movers import UGridCurrentMover
+import gnome.utilities.profiledeco as pd
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -78,16 +79,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += constant_wind_mover(0.5, 0, units='m/s')
 
     print 'adding a current mover:'
-    curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
+
+    vec_field = TriVectorField('COOPSu_CREOFS24.nc')
+    u_mover = UGridCurrentMover(vec_field)
    
     # uncertain_time_delay in hours
-    # vec_field = TriVectorField('COOPSu_CREOFS24.nc')
-    # u_mover = UGridCurrentMover(vec_field)
-    c_mover = GridCurrentMover(curr_file)
+    # c_mover = GridCurrentMover(curr_file)
     # c_mover.uncertain_cross = 0  # default is .25
    
-    # model.movers += u_mover
-    model.movers += c_mover
+    model.movers += u_mover
 
     return model
 
@@ -112,3 +112,4 @@ if __name__ == "__main__":
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     print datetime.now() - startTime
+    pd.print_stats(0.2)

@@ -428,7 +428,7 @@ class ParamMap(GnomeMap):
 
         GnomeMap.__init__(self, map_bounds=map_bounds, land_polys=land_polys)
 
-        self._refloat_halflife = 0.5
+        self._refloat_halflife = 1 * self.seconds_in_hour
 
     @property
     def distance(self):
