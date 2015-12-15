@@ -26,12 +26,11 @@ from gnome.utilities.projections import GeoProjection
 
 from ..conftest import sample_sc_release, testdata
 
-bna_sample = testdata['Renderer']['bna_sample']
-bna_star = testdata['Renderer']['bna_star']
-
-
 # fixme -- this should be in conftest
 from gnome.spill_container import SpillContainerPairData
+
+bna_sample = testdata['Renderer']['bna_sample']
+bna_star = testdata['Renderer']['bna_star']
 
 
 class FakeCache(object):
@@ -81,9 +80,9 @@ def test_file_delete(output_dir):
 
     # The default output formats are ['png','gif']
     # so now there should only be a background image and the animated gif.
-    files = os.listdir(output_dir)
-    assert files == [os.path.basename(r.anim_filename),
-                     r.background_map_name]
+    files = sorted(os.listdir(output_dir))
+    assert files == sorted([os.path.basename(r.anim_filename),
+                            r.background_map_name])
 
 
 def test_rewind(output_dir):
@@ -109,9 +108,9 @@ def test_rewind(output_dir):
     assert r._model_start_time == now
 
     # prepare for model run clears output dir, but adds in the background map
-    files = os.listdir(output_dir)
-    assert files == [os.path.basename(r.anim_filename),
-                     r.background_map_name]
+    files = sorted(os.listdir(output_dir))
+    assert files == sorted([os.path.basename(r.anim_filename),
+                            r.background_map_name])
 
     r.rewind()
 
@@ -125,9 +124,9 @@ def test_rewind(output_dir):
     # -- rewind() was getting called a lot
     # -- before there was time to change the ouput file names, etc.
     # So for this unit test, there should only be a background image now.
-    files = os.listdir(output_dir)
-    assert files == [os.path.basename(r.anim_filename),
-                     r.background_map_name]
+    files = sorted(os.listdir(output_dir))
+    assert files == sorted([os.path.basename(r.anim_filename),
+                            r.background_map_name])
 
 
 def test_render_basemap(output_dir):
