@@ -687,25 +687,34 @@ def add_molecular_weights(imported_rec, oil):
         Molecular weight units = g/mol
     '''
     for c in oil.cuts:
-        saturate = get_saturate_molecular_weight(c.vapor_temp_k)
-        aromatic = get_aromatic_molecular_weight(c.vapor_temp_k)
+        mw_sat = get_saturate_molecular_weight(c.vapor_temp_k)
+        if mw_sat is not None:
+            mw = MolecularWeight(sara_type='Saturates',
+                                 g_mol=mw_sat,
+                                 ref_temp_k=c.vapor_temp_k)
+            oil.molecular_weights.append(mw)
 
-        oil.molecular_weights.append(MolecularWeight(sara_type='Saturates',
-                                                     g_mol=saturate,
-                                                     ref_temp_k=c.vapor_temp_k)
-                                     )
-        oil.molecular_weights.append(MolecularWeight(sara_type='Aromatics',
-                                                     g_mol=aromatic,
-                                                     ref_temp_k=c.vapor_temp_k)
-                                     )
+        mw_arom = get_aromatic_molecular_weight(c.vapor_temp_k)
+        if mw_arom is not None:
+            mw = MolecularWeight(sara_type='Aromatics',
+                                 g_mol=mw_arom,
+                                 ref_temp_k=c.vapor_temp_k)
+            oil.molecular_weights.append(mw)
 
 
 def get_saturate_molecular_weight(vapor_temp):
     '''
         (Reference: CPPF, eq. 2.48 and table 2.6)
+        Note: T_b_inf is the upper cutoff temperature that we use.
+              The implication is that a supposed saturate would need to
+              have an infinite molecular weight to have a boiling point
+              above the cutoff.  I don't know how realistic this is, but
+              nevertheless, we don't calculate any distillation
+              cuts above our cutoff.
     '''
+    T_b_inf = 1070.0
     if vapor_temp < 1070.0:
-        return (49.7 * (6.983 - log(1070.0 - vapor_temp))) ** (3. / 2.)
+        return (49.7 * (6.983 - log(T_b_inf - vapor_temp))) ** (3. / 2.)
     else:
         return None
 
@@ -713,9 +722,16 @@ def get_saturate_molecular_weight(vapor_temp):
 def get_aromatic_molecular_weight(vapor_temp):
     '''
         (Reference: CPPF, eq. 2.48 and table 2.6)
+        Note: T_b_inf is the upper cutoff temperature that we use.
+              The implication is that a supposed saturate would need to
+              have an infinite molecular weight to have a boiling point
+              above the cutoff.  I don't know how realistic this is, but
+              nevertheless, we don't calculate any distillation
+              cuts above our cutoff.
     '''
+    T_b_inf = 1015.0
     if vapor_temp < 1015.0:
-        return (44.5 * (6.91 - log(1015.0 - vapor_temp))) ** (3. / 2.)
+        return (44.5 * (6.91 - log(T_b_inf - vapor_temp))) ** (3. / 2.)
     else:
         return None
 
