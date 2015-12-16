@@ -18,58 +18,26 @@ class TriVectorField(object):
     and provides an interface to retrieve this information.
     '''
 
-    v_desc = {'bnd': 'Nodes of a boundary edge, and edge info (n1, n2, island #, land(0)/water(1))',
-              'time': 'Time offset from a base date',
-              'lon': 'Longitude in decimal degrees',
-              'lat': 'Latitude in decimal degrees',
-              'nbe': 'Indices of neighbor face across edge in same order as nodes',
-              'nv': 'Indices of nodes that define a face',
-              'u': 'E/W velocity on node or face',
-              'v': 'N/S velocity on node or face'}
-
-    vars = {'bnd': {'desc': v_desc['bnd'], 'dtype': np.int32, 'dims': ['nbnd', 'nbi']},
-            'time': {'desc': v_desc['time'], 'dtype': np.float32, 'dims': ['time']},
-            'lon': {'desc': v_desc['lon'], 'dtype': np.float32, 'dims': ['node']},
-            'lat': {'desc': v_desc['lat'], 'dtype': np.float32, 'dims': ['node']},
-            'nbe': {'desc': v_desc['nbe'], 'dtype': np.int32, 'dims': ['three', 'nele']},
-            'nv': {'desc': v_desc['nv'], 'dtype': np.int32, 'dims': ['three', 'nele']},
-            'u': {'desc': v_desc['u'], 'dtype': np.float32, 'dims': ['time', 'node']},
-            'v': {'desc': v_desc['v'], 'dtype': np.float32, 'dims': ['time', 'node']}}
-    dims = ['node', 'nele', 'nbnd', 'nbi', 'time', 'three']
-    tri_attributes = {'grid_type': 'Triangular',
-                      'dimensions': dims,
-                      'vars': vars}
-    vel_on_nodes = True
-
     def __init__(self, filename=None, dataset=None):
         if dataset is None:
             dataset = nc4.Dataset(filename)
 
-        self.validate_tri_grid(dataset)
         nodes = np.ascontiguousarray(np.column_stack((dataset['lon'], dataset['lat']))).astype(np.double)
         faces = np.ascontiguousarray(np.array(dataset['nv']).T - 1)
         boundaries = np.ascontiguousarray(np.array(dataset['bnd'])[:,0:2] - 1)
         neighbors = np.ascontiguousarray(np.array(dataset['nbe']).T -1)
-        pyugrid.UGrid.__init__(self,nodes, faces, boundaries=boundaries, face_face_connectivity=neighbors)
-        self.build_edges()
-        self._data = {'time': pyugrid.UVar('time', data=dataset['time']), 'u': dataset['u'], 'v': dataset['v']}
+        self.grid = pyugrid.UGrid(nodes, faces, boundaries=boundaries, face_face_connectivity=neighbors)
+        self.grid.build_edges()
         self.grid_type = dataset.grid_type
-        self._base_time = datetime.strptime(self.data['time'].base_date, '%Y-%m-%d %H:%M:%S %Z')
-        self._min_time = self.base_time + timedelta(seconds=int(self.data['time'][0]))
-        self._max_time = self.base_time + timedelta(seconds=int(self.data['time'][len(self.data['time'])-1]))
-
-    def validate_tri_grid(self, dataset):
-        for k in self.vars:
-            if k not in dataset.variables.keys():
-                raise ValueError(
-                    'Necessary variable {} not in dataset'.format(k))
-            if self.vars[k]['dtype'] != dataset.variables[k].dtype:
-                raise ValueError('dtype for {} inconsistent; Expected {}, got {}'.format(
-                    k, self.vars[k]['dtype'], dataset.variables[k].dtype))
-        if 'nele' in dataset['u'].dimensions:
-            self.vars['u']['dims'] = ['time', 'nele']
-            self.vars['v']['dims'] = ['time', 'nele']
-            self.vel_on_nodes = False
+        u = pyugrid.UVar('u','node', dataset['u'])
+        v = pyugrid.UVar('v','node', dataset['v'])
+        time = pyugrid.UVar('time','none', dataset['time'])
+        self.variables = {'time': time, 'velocities': pyugrid.UMVar('velocities', 'node', [u,v])}
+        for k,v in self.variables.items():
+            setattr(self,k,v)
+        self._base_time = datetime.strptime(self.time.base_date, '%Y-%m-%d %H:%M:%S %Z')
+        self._min_time = self.base_time + timedelta(seconds=int(self.time[0]))
+        self._max_time = self.base_time + timedelta(seconds=int(self.time[len(self.time)-1]))
 
     @property
     def base_time(self):
@@ -84,7 +52,7 @@ class TriVectorField(object):
         return self._max_time
 
     def get_time_array(self):
-        return self.data['time'][:]
+        return self.time[:]
 
     def time_in_bounds(self, time):
         return not time < self.min_time or time > self.max_time
@@ -105,7 +73,6 @@ class TriVectorField(object):
         index = np.searchsorted(self.get_time_array(),delta_t) - 1
         return index
 
-    @pd.profile
     def get_node_velocities(self, time):
         '''
         TODO: implement and check a cache to avoid excessive disk lookup
@@ -119,48 +86,32 @@ class TriVectorField(object):
         index = np.searchsorted(self.get_time_array(),delta_t)
         # if len(self.vel_cache) == 0:
         #     cache = {index: np.column_stack((self.data['u'][index].data, self.data['v'][index].data))}
-        return np.column_stack((self.data['u'][index].data, self.data['v'][index].data))
+        return self.velocities[index]
+
+    def get_interpolated_node_velocities(self, time):
+        i0 = self.time_index(time)
+        t0 = self.base_time + timedelta(seconds=int(self.time[i0]))
+        t1 = self.base_time + timedelta(seconds=int(self.time[i0 + 1]))
+        base_vels = self.get_node_velocities(t0)
+        next_vels = self.get_node_velocities(t1)
+        t_alpha = ((time - t0).total_seconds()/(t1-t0).total_seconds())
+        time_interp_vels = base_vels + (next_vels - base_vels) * t_alpha
+        return time_interp_vels
 
     @pd.profile
     def interpolated_velocities(self, time, points):
         """
         Returns the velocities at each of the points at the specified time, using interpolation
         on the nodes of the triangle that the point is in.
-        :param time:
-        :param points:
-        :return:
+        :param time: The time in the simulation
+        :param points: a numpy array of points that you want to find interpolated velocities for
+        :return: interpolated velocities at the specified points
         """
+        indices = self.grid.locate_faces(points)
+        alphas = self.grid.interpolation_alphas(points,indices)
+        time_interp_vels = self.get_interpolated_node_velocities(time)[self.grid.faces[indices]]
 
-        # cyvf is the cython portion of the class....only does celltree interfacing right now
-        indices = np.ma.array(self.locate_faces(points), shrink=False)
-        mask = indices.mask
-        nodes = np.ma.array(self.nodes, mask=mask)
-        faces = np.ma.array(self.faces, mask=mask)
-        node_positions = nodes[faces[indices]]
-        (lon1,lon2,lon3) = node_positions[:,:,0].T
-        (lat1,lat2,lat3) = node_positions[:,:,1].T
-        reflats = points[:,1]
-        reflons = points[:,0]
-
-        # denom = (vertex3.v-vertex1.v)*(vertex2.h-vertex1.h)-(vertex3.h-vertex1.h)*(vertex2.v-vertex1.v);
-        denoms = ((lat3 - lat1) * (lon2 - lon1) - (lon3 - lon1) * (lat2 - lat1))
-        # alphas should all add up to 1
-        alpha1s = (reflats - lat3) * (lon3 - lon2) - (reflons - lon3) * (lat3 - lat2)
-        alpha2s = (reflons - lon1) * (lat3 - lat1) - (reflats - lat1) * (lon3 - lon1)
-        alpha3s = (reflats - lat1) * (lon2 - lon1) - (reflons - lon1) * (lat2 - lat1)
-        alphas = np.column_stack((alpha1s / denoms, alpha2s / denoms, alpha3s / denoms))
-
-        i0 = self.time_index(time)
-        t0 = self.base_time + timedelta(seconds=int(self.data['time'][i0]))
-        t1 = self.base_time + timedelta(seconds=int(self.data['time'][i0 + 1]))
-        base_vels = self.get_node_velocities(t0)[self.faces[indices]]
-        next_vels = self.get_node_velocities(t1)[self.faces[indices]]
-        t_interval = t1-t0
-        t_alpha = ((time - t0).total_seconds()/(t1-t0).total_seconds())
-        time_interp_vels = base_vels + (next_vels - base_vels) * t_alpha
         # scaled vels = [us,vs] = [(u1*alpha1 + u2*a2 + u3*a3), (v1*a1 + v2*a2 + v3*a3)]
-
-
         return np.column_stack((np.sum(time_interp_vels[:,:,0] * alphas, axis=1), np.sum(time_interp_vels[:,:,1] * alphas, axis=1)))
 
 
