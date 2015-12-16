@@ -6,7 +6,13 @@ import gnome.utilities.profiledeco as pd
 import cell_tree2d.cell_tree2d as ct
 
 
-class TriVectorField(pyugrid.UGrid):
+class VectorField(object):
+
+    def __init__(self, grid=None, variables=None):
+        self.grid = grid
+        self.variables = variables
+
+class TriVectorField(object):
     '''
     This class takes a netCDF file containing current or wind information on an unstructured grid
     and provides an interface to retrieve this information.
@@ -126,8 +132,11 @@ class TriVectorField(pyugrid.UGrid):
         """
 
         # cyvf is the cython portion of the class....only does celltree interfacing right now
-        indices = self.locate_faces(points)
-        node_positions = self.nodes[self.faces[indices]]
+        indices = np.ma.array(self.locate_faces(points), shrink=False)
+        mask = indices.mask
+        nodes = np.ma.array(self.nodes, mask=mask)
+        faces = np.ma.array(self.faces, mask=mask)
+        node_positions = nodes[faces[indices]]
         (lon1,lon2,lon3) = node_positions[:,:,0].T
         (lat1,lat2,lat3) = node_positions[:,:,1].T
         reflats = points[:,1]
