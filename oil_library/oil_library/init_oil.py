@@ -96,6 +96,7 @@ def add_oil(record):
     add_molecular_weights(record, oil)
     add_component_densities(record, oil)
     add_saturate_aromatic_fractions(record, oil)
+    adjust_molecular_weights(oil)
     adjust_resin_asphaltene_fractions(record, oil)
 
     add_k0y(record, oil)
@@ -746,6 +747,22 @@ def add_saturate_aromatic_fractions(imported_rec, oil):
                                                ref_temp_k=T_i))
 
 
+def adjust_molecular_weights(oil):
+    '''
+        Initially, we calculate our molecular weights based on the distillation
+        cuts.  But after we have added all our saturate & aromatic fractions,
+        there is a possibility that we have molecular weights calculated at
+        temperatures where there exists no mass fraction.
+
+        No mass, no molecular weight.  So we prune them.
+    '''
+    mass_temps = set([f.ref_temp_k for f in oil.sara_fractions])
+
+    for idx, mw in reversed(list(enumerate(oil.molecular_weights))):
+        if mw.ref_temp_k not in mass_temps:
+            del oil.molecular_weights[idx]
+
+
 def adjust_resin_asphaltene_fractions(imported_rec, oil):
     '''
         After we have added our saturate & aromatic fractions,
@@ -810,8 +827,11 @@ def get_ptry_values(oil_obj, component_type, sub_fraction=None):
 
         P_try = 1000 * (T_i ** (1.0 / 3.0) / watson_factor)
 
-        if sub_fraction is not None and len(sub_fraction) > idx:
-            F_i = sub_fraction[idx]
+        if sub_fraction is not None:
+            if len(sub_fraction) > idx:
+                F_i = sub_fraction[idx]
+            else:
+                break
 
         yield (P_try, F_i, T_i, component_type)
 
@@ -872,8 +892,8 @@ def get_sa_mass_fractions(oil_obj):
             f_sat = f_arom = F_i / 2
 
         if fraction_sum >= 1.0:
-            # we can't add any more.
-            pass
+            # print 'we cannot add any more'
+            break
         elif f_sat + f_arom + fraction_sum > 1.0:
             # we need to scale our sub-fractions so that the
             # fraction sum adds up to 1.0
@@ -903,6 +923,7 @@ def add_component_densities(imported_rec, oil):
                                           ref_temp_k=1015.0))
 
     sa_ratios = list(get_sa_mass_fractions(oil))
+
     ptry_values = (list(get_ptry_values(oil, 'Saturates',
                                         [r[0] for r in sa_ratios])) +
                    list(get_ptry_values(oil, 'Aromatics',
@@ -914,9 +935,7 @@ def add_component_densities(imported_rec, oil):
 
     ptry_avg_density = sum([(P_try * F_i)
                             for P_try, F_i, T_i, c_type in ptry_values] +
-                           [(P_try * F_i)
-                            for P_try, F_i in ra_ptry_values]
-                           )
+                           [(P_try * F_i) for P_try, F_i in ra_ptry_values])
 
     total_sa_fraction = sum([F_i for P_try, F_i, T_i, c_type in ptry_values])
 
