@@ -82,11 +82,11 @@ class WeatheringOutput(Outputter, Serializable):
         # return a dict - json of the mass_balance data
         # weathering outputter should only apply to forecast spill_container
         sc = self.cache.load_timestep(step_num).items()[0]
-        dict_ = {}
-        dict_.update(sc.mass_balance)
 
         output_info = {'time_stamp': sc.current_time_stamp.isoformat()}
-        output_info.update(dict_)
+        output_info.update(sc.mass_balance)
+
+        # output_info.update({'area': hull_area(sc['positions'][sc['status_codes'] == oil_status.in_water])})
         self.logger.debug(self._pid + 'step_num: {0}'.format(step_num))
         for name, val in dict_.iteritems():
             msg = ('\t{0}: {1}'.format(name, val))

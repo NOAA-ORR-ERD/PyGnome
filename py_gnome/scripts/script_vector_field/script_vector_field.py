@@ -80,6 +80,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a current mover:'
 
     vec_field = TriVectorField('COOPSu_CREOFS24.nc')
+    renderer.add_grid(vec_field)
     u_mover = UGridCurrentMover(vec_field)
    
     # uncertain_time_delay in hours
@@ -102,13 +103,13 @@ if __name__ == "__main__":
 #     rend.graticule.set_DMS(True)
     for step in model:
         if step['step_num'] == 1:
-            # rend.set_viewport(((-122.9, 45.6), (-122.6, 46.0)))
-            rend.set_viewport(((-122.8, 45.65), (-122.75, 45.7)))
+            rend.set_viewport(((-122.9, 45.6), (-122.6, 46.0)))
+            # rend.set_viewport(((-122.8, 45.65), (-122.75, 45.7)))
 #             rend.set_viewport(((-123.25, 48.125), (-122.5, 48.75)))
 #         if step['step_num'] == 18:
 #             rend.set_viewport(((-123.1, 48.55), (-122.95, 48.65)))
-#         if step['step_num'] == 110:
-#             rend.set_viewport(((-122.8, 45.75), (-122.75, 45.85)))
+        if step['step_num'] == 110:
+            rend.set_viewport(((-122.8, 45.75), (-122.75, 45.85)))
         # print step
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())

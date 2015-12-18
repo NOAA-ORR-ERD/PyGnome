@@ -7602,6 +7602,10 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue(const Seconds& model_time, World
 		// Calculate the interpolated velocity at the point
 		if (interpolationVal.ptIndex1 >= 0) 
 		{
+//		    cerr << timeAlpha << endl;
+//		    cerr << INDEXH(fStartData.dataHdl,ptIndex1).u << " " << INDEXH(fEndData.dataHdl,ptIndex1).u  << endl;
+//		    cerr << INDEXH(fStartData.dataHdl,ptIndex2).u << " " << INDEXH(fEndData.dataHdl,ptIndex2).u << endl;
+//		    cerr << INDEXH(fStartData.dataHdl,ptIndex3).u << " " << INDEXH(fEndData.dataHdl,ptIndex3).u << endl;
 			scaledPatVelocity.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1).u)
 			+interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2).u)
 			+interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3).u);
@@ -7630,7 +7634,8 @@ scale:
 	//scaledPatVelocity.v *= fVar.curScale; 
 	scaledPatVelocity.u *= fVar.fileScaleFactor; // may want to allow some sort of scale factor, though should be in file
 	scaledPatVelocity.v *= fVar.fileScaleFactor; 
-	
+
+//	cerr << scaledPatVelocity.u << " " << scaledPatVelocity.v << endl;
 	return scaledPatVelocity;
 }
 
