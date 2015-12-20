@@ -347,19 +347,18 @@ class OilProps(object):
                 raise ValueError(msg)
 
             if comp.fraction > 0.0:
-                print 'mol_wt: ', mol_wt
                 if hasattr(mol_wt, 'g_mol'):
-                    mw = mol_wt.g_mol / 1000.0
+                    mw = mol_wt.g_mol
                 else:
                     # We currently don't have estimation methods for
                     # resin and asphaltene molecular weights, so they
                     # don't exist in the oil record.
                     if comp.sara_type == 'Resins':
                         # recommended avg. value from Bill is 800 g/mol
-                        mw = 0.8
+                        mw = 800.0
                     elif comp.sara_type == 'Asphaltenes':
                         # recommended avg. value from Bill is 1000 g/mol
-                        mw = 0.1
+                        mw = 1000.0
 
                 items.append((comp.sara_type, comp.ref_temp_k, comp.fraction,
                               dens.density, mw))

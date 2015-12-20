@@ -16,8 +16,7 @@ from gnome.utilities.weathering import LeeHuibers
 from gnome.array_types import (viscosity,
                                mass,
                                density,
-                               mol_wt_components,
-                               density_components)
+                               partition_coeff)
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
@@ -48,8 +47,7 @@ class Dissolution(Weatherer, Serializable):
         self.array_types.update({'viscosity': viscosity,
                                  'mass':  mass,
                                  'density': density,
-                                 'mol_wt_components': mol_wt_components,
-                                 'density_components': density_components
+                                 'partition_coeff': partition_coeff
                                  })
 
     def prepare_for_model_run(self, sc):
@@ -83,17 +81,11 @@ class Dissolution(Weatherer, Serializable):
         if not self.on:
             return
 
-        self._initialize_mol_wt(sc, num_released)
-        self._initialize_density(sc, num_released)
+        self._initialize_k_ow(sc, num_released)
 
-    def _initialize_mol_wt(self, sc, num_released):
+    def _initialize_k_ow(self, sc, num_released):
         '''
-            Initialize the aromatic molecular weight components.
-
-            mol_wt_components has been prebuilt with a static size based on
-            substance.num_components.
-            We fill in the available aromatics from our substance,
-            and leave the rest of the array as 0.0
+            Initialize the molar averaged oil/water partition coefficient.
 
             Note: we are assuming that each substance gets a distinct
                   slice from our data arrays (maybe not a good assumption)
@@ -101,60 +93,18 @@ class Dissolution(Weatherer, Serializable):
         num_initialized = 0
 
         for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['mol_wt_components']) == 0:
+            if len(data['partition_coeff']) == 0:
                 # no particles released yet
                 continue
 
-            mol_weights = substance._component_mw('Aromatics')
+            mask = data['partition_coeff'] == 0
 
-            mask = data['mol_wt_components'][:, 0] == 0
             num_initialized += len(mask)
 
             for s_num in np.unique(data['spill_num'][mask]):
                 s_mask = np.logical_and(mask, data['spill_num'] == s_num)
 
-                row_size = len(mol_weights)
-
-                num = len(s_mask)
-                mol_weights = (mol_weights,) * num
-
-                data['mol_wt_components'][s_mask, :row_size] = mol_weights
-
-        assert num_initialized == num_released
-
-    def _initialize_density(self, sc, num_released):
-        '''
-            Initialize the aromatic density components.
-
-            density_components has been prebuilt with a static size based on
-            substance.num_components.
-            We fill in the available aromatics from our substance,
-            and leave the rest of the array as 0.0
-
-            Note: we are assuming that each substance gets a distinct
-                  slice from our data arrays (maybe not a good assumption)
-        '''
-        num_initialized = 0
-
-        for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['density_components']) == 0:
-                # no particles released yet
-                continue
-
-            densities = substance._component_density('Aromatics')
-
-            mask = data['density_components'][:, 0] == 0
-            num_initialized += len(mask)
-
-            for s_num in np.unique(data['spill_num'][mask]):
-                s_mask = np.logical_and(mask, data['spill_num'] == s_num)
-
-                row_size = len(densities)
-
-                num = len(s_mask)
-                densities = (densities,) * num
-
-                data['density_components'][s_mask, :row_size] = densities
+                data['partition_coeff'][s_mask] = 0
 
         assert num_initialized == num_released
 
@@ -163,23 +113,30 @@ class Dissolution(Weatherer, Serializable):
             Here is where we calculate the dissolved oil.
             We will outline the steps as we go along, but off the top of
             my head:
-            - recalculate the partition coeffieieint (K_ow)
+            - recalculate the partition coefficient (K_ow)
               TODO: This requires a molar average of the aromatic components.
             - use VDROP to calculate the shift in the droplet distribution
             - subtract the mass of smallest droplets in our distribution
               that are below a threshold.
         '''
-        # pp.pprint(kwargs)
         data = kwargs['data']
-        mol_wt = data['mol_wt_components']
-        rho = data['density_components']
+        fmass = data['mass_components']
 
-        # recalculate the partition coefficient (K_ow)
-        # - density for the LE should be current weathered density
-        print 'mol_wt: ', mol_wt
-        print 'rho: ', rho
-        K_ow = LeeHuibers.partition_coeff(mol_wt, rho)
-        print 'K_ow: ', K_ow[np.where(K_ow != np.nan)]
+        substance = kwargs['substance']
+        arom_mask = substance._sara['type'] == 'Aromatics'
+        mol_wt = substance.molecular_weight
+        rho = substance.component_density
+        assert mol_wt.shape == rho.shape
+
+        # calculate the partition coefficient (K_ow) for all aromatics.
+        # K_ow for non-aromatics should be masked to 0.0
+        K_ow_comp = arom_mask * LeeHuibers.partition_coeff(mol_wt, rho)
+
+        for idx, m in enumerate(fmass):
+            K_ow = (np.sum(m * K_ow_comp / mol_wt) /
+                    np.sum(m / mol_wt))
+
+            data['partition_coeff'][idx] = K_ow
 
         diss = np.zeros((len(data['mass'])), dtype=np.float64)
         return diss
@@ -214,6 +171,7 @@ class Dissolution(Weatherer, Serializable):
 
             diss = self.dissolve_oil(time_step=time_step,
                                      data=data,
+                                     substance=substance,
                                      frac_breaking_waves=frac_breaking_waves,
                                      disp_wave_energy=disp_wave_energy,
                                      wave_height=wave_height,
