@@ -231,7 +231,8 @@ def get_testdata():
          'ice_wind_curv': get_datafile(os.path.join(curr_dir,
                                                     'arctic_avg2_t0.nc')),
          'ice_wind_top_curv': get_datafile(os.path.join(curr_dir,
-                                                   'arctic_avg2_topo.dat'))}
+                                                        'arctic_avg2_topo.dat')
+                                           )}
 
     # get netcdf stored in fileseries flist2.txt, gridcur_ts_hdr2
     get_datafile(os.path.join(curr_dir, 'file_series', 'hiog_file1.nc'))
@@ -249,7 +250,9 @@ def get_testdata():
          'ice_wind_curv': get_datafile(os.path.join(curr_dir,
                                                     'arctic_avg2_t0.nc')),
          'ice_wind_top_curv': get_datafile(os.path.join(curr_dir,
-                                                   'arctic_avg2_topo.dat'))}
+                                                        'arctic_avg2_topo.dat')
+                                           )}
+
     data['MapFromBNA'] = {'testmap': testmap}
     data['Renderer'] = {'bna_sample': bna_sample,
                         'bna_star': os.path.join(s_data, 'Star.bna')}
@@ -393,7 +396,7 @@ def rq_rand():
 
 @pytest.fixture(scope='module')
 def sample_graph():
-    from gnome.utilities.weathering.graphs import Graph
+    from gnome.utilities.graphs import Graph
 
     return Graph(points=((1, 2, 3),
                          (2, 3, 4),
@@ -475,10 +478,12 @@ def sample_vertical_plume_spill():
     from gnome.utilities.plume import get_plume_data
 
     release_time = datetime.now()
+    end_release_time = release_time + timedelta(hours=24)
+
     vps = VerticalPlumeRelease(num_elements=200,
                                start_position=(28, -78, 0.),
                                release_time=release_time,
-                               end_release_time=release_time + timedelta(hours=24),
+                               end_release_time=end_release_time,
                                plume_data=get_plume_data())
 
     vps.plume_gen.time_step_delta = timedelta(hours=1).total_seconds()
@@ -504,6 +509,8 @@ def sample_sc_no_uncertainty():
     num_elements = 100
     start_position = (23.0, -78.5, 0.0)
     release_time = datetime(2012, 1, 1, 12)
+    release_time_2 = release_time + timedelta(hours=1)
+
     end_position = (24.0, -79.5, 1.0)
     end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
@@ -513,7 +520,7 @@ def sample_sc_no_uncertainty():
                                                    amount=10, units='l'),
               gnome.spill.point_line_release_spill(num_elements,
                                                    start_position,
-                                                   release_time + timedelta(hours=1),
+                                                   release_time_2,
                                                    end_position,
                                                    end_release_time),
               ]
@@ -728,48 +735,3 @@ def CyCurrentMover_props():
                     ('left_cur_uncertain', -0.1))
 
     return default_prop
-
-
-import cmath
-
-
-## for checking if floating point nuimberas are close
-## this is built in to py3.5!
-def isclose(a,
-            b,
-            rel_tol=1e-9,
-            abs_tol=0.0):
-    """
-    returns True if a is close in value to b. False otherwise
-    :param a: one of the values to be tested
-    :param b: the other value to be tested
-    :param rel_tol=1e-8: The relative tolerance -- the amount of error
-                         allowed, relative to the magnitude of the input
-                         values.
-    :param abs_tol=0.0: The minimum absolute tolerance level -- useful for
-                        comparisons to zero.
-    NOTES:
-    -inf, inf and NaN behave similar to the IEEE 754 standard. That
-    -is, NaN is not close to anything, even itself. inf and -inf are
-    -only close to themselves.
-    Complex values are compared based on their absolute value.
-    The function can be used with Decimal types, if the tolerance(s) are
-    specified as Decimals::
-      isclose(a, b, rel_tol=Decimal('1e-9'))
-    See PEP-0485 for a detailed description
-    """
-    if rel_tol < 0.0 or abs_tol < 0.0:
-        raise ValueError('error tolerances must be non-negative')
-
-    if a == b:  # short-circuit exact equality
-        return True
-    # use cmath so it will work with complex or float
-    if cmath.isinf(a) or cmath.isinf(b):
-        # This includes the case of two infinities of opposite sign, or
-        # one infinity and one finite number. Two infinities of opposite sign
-        # would otherwise have an infinite relative tolerance.
-        return False
-    diff = abs(b - a)
-    return (((diff <= abs(rel_tol * b)) or
-             (diff <= abs(rel_tol * a))) or
-            (diff <= abs_tol))

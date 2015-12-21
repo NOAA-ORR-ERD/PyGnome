@@ -26,20 +26,21 @@ from gnome.utilities.projections import GeoProjection
 
 from ..conftest import sample_sc_release, testdata
 
+# fixme -- this should be in conftest
+from gnome.spill_container import SpillContainerPairData
+
 bna_sample = testdata['Renderer']['bna_sample']
 bna_star = testdata['Renderer']['bna_star']
 
 
-## fixme -- this should be in conftest
-from gnome.spill_container import SpillContainerData, SpillContainerPairData
 class FakeCache(object):
     def __init__(self, sc):
         # pass in a  spill containters
         self.sc = sc
         self.sc.current_time_stamp = datetime.now()
+
     def load_timestep(self, step):
         return SpillContainerPairData(self.sc, )
-
 
 
 def test_exception(output_dir):
@@ -77,10 +78,11 @@ def test_file_delete(output_dir):
 
     r.prepare_for_model_run(model_start_time=datetime.now())
 
-    # there should only be a background image now.
-
-    files = os.listdir(output_dir)
-    assert files == [r.background_map_name]
+    # The default output formats are ['png','gif']
+    # so now there should only be a background image and the animated gif.
+    files = sorted(os.listdir(output_dir))
+    assert files == sorted([os.path.basename(r.anim_filename),
+                            r.background_map_name])
 
 
 def test_rewind(output_dir):
@@ -106,8 +108,9 @@ def test_rewind(output_dir):
     assert r._model_start_time == now
 
     # prepare for model run clears output dir, but adds in the background map
-    files = os.listdir(output_dir)
-    assert files == [r.background_map_name]
+    files = sorted(os.listdir(output_dir))
+    assert files == sorted([os.path.basename(r.anim_filename),
+                            r.background_map_name])
 
     r.rewind()
 
@@ -121,8 +124,10 @@ def test_rewind(output_dir):
     # -- rewind() was getting called a lot
     # -- before there was time to change the ouput file names, etc.
     # So for this unit test, there should only be a background image now.
-    files = os.listdir(output_dir)
-    assert files == ['background_map.png']
+    files = sorted(os.listdir(output_dir))
+    assert files == sorted([os.path.basename(r.anim_filename),
+                            r.background_map_name])
+
 
 def test_render_basemap(output_dir):
     """
@@ -133,6 +138,7 @@ def test_render_basemap(output_dir):
     r.draw_background()
     r.save_background(os.path.join(output_dir, 'basemap.png'))
 
+
 def test_render_basemap_with_bounds(output_dir):
     """
     render the basemap
@@ -141,6 +147,7 @@ def test_render_basemap_with_bounds(output_dir):
 
     r.draw_background()
     r.save_background(os.path.join(output_dir, 'basemap_bounds.png'))
+
 
 def test_render_elements(output_dir):
     """
@@ -184,7 +191,6 @@ def test_render_elements(output_dir):
     r.save_foreground(os.path.join(output_dir, 'elements1.png'))
 
 
-
 def test_write_output(output_dir):
     """
     render the basemap
@@ -211,7 +217,7 @@ def test_write_output(output_dir):
     sc['positions'][:, 0] = lon
     sc['positions'][:, 1] = lat
 
-    r.cache = FakeCache( sc )
+    r.cache = FakeCache(sc)
 
     r.write_output(0)
     r.save_foreground(os.path.join(output_dir, 'map_and_elements.png'))
@@ -220,6 +226,7 @@ def test_write_output(output_dir):
     r.clear_foreground()
     r.write_output(1)
     r.save_foreground(os.path.join(output_dir, 'just_elements.png'))
+
 
 def test_render_beached_elements(output_dir):
 
@@ -326,6 +333,7 @@ def test_set_viewport(output_dir):
     r.draw_background()
     r.save_background(os.path.join(output_dir, 'star_upper_left.png'))
 
+
 def test_draw_raster_map(output_dir):
     """
     tests drawing the raster map
@@ -336,7 +344,7 @@ def test_draw_raster_map(output_dir):
     import gnome
 
     r = Renderer(bna_sample, image_size=(1000, 1000))
-    r.viewport = ((-127.47,48.10),(-127.22, 48.24))
+    r.viewport = ((-127.47, 48.10), (-127.22, 48.24))
 
     r.draw_background()
 
@@ -349,9 +357,10 @@ def test_draw_raster_map(output_dir):
 
     r.save_background(os.path.join(output_dir, 'raster_map_render.png'))
 
+
 @pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 def test_serialize_deserialize(json_, output_dir):
-    ## non-defaults to check properly..
+    # non-defaults to check properly..
     r = Renderer(map_filename=bna_sample,
                  output_dir=output_dir,
                  image_size=(1000, 800),

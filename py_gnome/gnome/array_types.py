@@ -291,6 +291,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    # Used to update viscosity
                    'init_mass': ((), np.float64, 'init_mass', 0,
                                  ArrayTypeDivideOnSplit),
+                   'partition_coeff': ((), np.float64, 'partition_coeff', 0),
                    }
 
 

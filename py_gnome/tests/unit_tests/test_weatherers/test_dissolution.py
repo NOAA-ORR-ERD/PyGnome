@@ -19,9 +19,9 @@ from ..conftest import (sample_model_weathering,
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2, width=120)
 
-water = Water()
 # also test with lower wind no dispersion
 wind = constant_wind(15., 270, 'knots')
+water = Water()
 waves = Waves(wind, water)
 
 
@@ -51,17 +51,15 @@ def test_serialize_deseriailize():
     water = Water()
     waves = Waves(wind, water)
 
-    diss = Dissolution(waves, water)
+    diss = Dissolution(waves)
     json_ = diss.serialize()
     pp.pprint(json_)
 
     assert json_['waves'] == waves.serialize()
-    assert json_['water'] == water.serialize()
 
     # deserialize and ensure the dict's are correct
     d_ = Dissolution.deserialize(json_)
     assert d_['waves'] == Waves.deserialize(json_['waves'])
-    assert d_['water'] == Water.deserialize(json_['water'])
 
     d_['waves'] = waves
     diss.update_from_dict(d_)
@@ -72,17 +70,51 @@ def test_serialize_deseriailize():
 def test_prepare_for_model_run():
     'test sort order for Dissolution weatherer'
     et = floating(substance='ABU SAFAH')
-    diss = Dissolution(waves, water)
+    diss = Dissolution(waves)
 
     (sc, time_step) = weathering_data_arrays(diss.array_types,
                                              water,
                                              element_type=et)[:2]
 
+    assert 'partition_coeff' in sc.data_arrays
     assert 'dissolution' not in sc.mass_balance
 
     diss.prepare_for_model_run(sc)
 
     assert 'dissolution' in sc.mass_balance
+
+
+@pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'k_ow', 'on'),
+                         [('ABU SAFAH', 311.15, 3, 462.711, True),
+                          ('BAHIA', 311.15, 3, 511.445, True),
+                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
+                           311.15, 3, 0.0, False)])
+def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
+    '''
+        Here we are testing that the molar averaged oil/water partition
+        coefficient (K_ow) is getting calculated with reasonable values
+    '''
+    et = floating(substance=oil)
+    diss = Dissolution(waves)
+    (sc, time_step) = weathering_data_arrays(diss.array_types,
+                                             water,
+                                             element_type=et,
+                                             num_elements=num_elems)[:2]
+
+    print 'num spills:', len(sc.spills)
+    print 'spill[0] amount:', sc.spills[0].amount
+
+    model_time = (sc.spills[0].get('release_time') +
+                  timedelta(seconds=time_step))
+
+    diss.on = on
+    diss.prepare_for_model_run(sc)
+    diss.initialize_data(sc, sc.num_released)
+
+    diss.prepare_for_model_step(sc, time_step, model_time)
+    diss.weather_elements(sc, time_step, model_time)
+
+    assert all(np.isclose(sc._data_arrays['partition_coeff'], k_ow))
 
 
 @pytest.mark.xfail
@@ -96,20 +128,29 @@ def test_dissolution(oil, temp, num_elems, on):
     Fuel Oil #6 does not exist...
     '''
     et = floating(substance=oil)
-    diss = Dissolution(waves, water)
+    diss = Dissolution(waves)
     (sc, time_step) = weathering_data_arrays(diss.array_types,
                                              water,
-                                             element_type=et)[:2]
+                                             element_type=et,
+                                             num_elements=num_elems)[:2]
+
+    print 'num spills:', len(sc.spills)
+    print 'spill[0] amount:', sc.spills[0].amount
+
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 
     diss.on = on
     diss.prepare_for_model_run(sc)
+    diss.initialize_data(sc, sc.num_released)
 
     diss.prepare_for_model_step(sc, time_step, model_time)
     diss.weather_elements(sc, time_step, model_time)
 
     if on:
+        print sc._data_arrays
+        assert all(np.isclose(sc._data_arrays['partition_coeff'], 511.445))
+
         assert sc.mass_balance['dissolution'] > 0
         print "sc.mass_balance['dissolution']"
         print sc.mass_balance['dissolution']
@@ -123,11 +164,11 @@ def test_dissolution_not_active(oil, temp, num_elems):
     '''
     Fuel Oil #6 does not exist...
     '''
-    diss = Dissolution(waves, water)
-    (sc, time_step) = \
-        weathering_data_arrays(diss.array_types,
-                               water,
-                               element_type=floating(substance=oil))[:2]
+    diss = Dissolution(waves)
+    et = floating(substance=oil)
+    (sc, time_step) = weathering_data_arrays(diss.array_types, water,
+                                             element_type=et)[:2]
+
     sc.amount = 10000
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))

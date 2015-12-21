@@ -48,3 +48,4 @@ oil_library/oil_library/OilLib.db
 oil_library/temp.txt
 *OilLibrary.db
 
+py_gnome/scripts/*/images*/*.png

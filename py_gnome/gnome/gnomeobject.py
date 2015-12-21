@@ -153,7 +153,7 @@ class GnomeId(AddLogger):
             if hasattr(self, attr) and getattr(self, attr) is None:
                 msg = 'no {0} object defined'.format(attr)
 
-                setattr(self.logger, 'warning', msg)
+                self.logger.warning(msg)
                 msgs.append(prepend + msg)
 
                 # if we get here, level is 'warning' or lower

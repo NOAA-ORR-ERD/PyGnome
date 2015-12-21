@@ -22,27 +22,26 @@ def emulsify_oil(step_len, cnp.ndarray[cnp.npy_double] frac_water,
     """
     """
     cdef OSErr emul_err
-    #N = len(frac_water)  
-    N = len(le_age)  
-        
+    # N = len(frac_water)
+    N = len(le_age)
+
     emul_err = emulsify(N,
-                                step_len,
-                                &frac_water[0],
-                                &le_interfacial_area[0],
-                                &le_frac_evap[0],
-                                &le_age[0],
-                                &le_bulltime[0],
-                                k_emul,
-                                emul_time,
-                                emul_C,
-                                S_max,
-                                Y_max,
-                                drop_max)
+                        step_len,
+                        & frac_water[0],
+                        & le_interfacial_area[0],
+                        & le_frac_evap[0],
+                        & le_age[0],
+                        & le_bulltime[0],
+                        k_emul,
+                        emul_time,
+                        emul_C,
+                        S_max,
+                        Y_max,
+                        drop_max)
 
     if emul_err != 0:
         raise ValueError("C++ call to emulsify returned error code: "
                          "{0}".format(emul_err))
-
 
 
 def disperse_oil(step_len, cnp.ndarray[cnp.npy_double] frac_water,
@@ -63,26 +62,26 @@ def disperse_oil(step_len, cnp.ndarray[cnp.npy_double] frac_water,
     """
     """
     cdef OSErr disp_err
-    #N = len(frac_water)  
-    N = len(le_mass)  
-        
+    # N = len(frac_water)
+    N = len(le_mass)
+
     disp_err = disperse(N,
-                                step_len,
-                                &frac_water[0],
-                                &le_mass[0],
-                                &le_viscosity[0],
-                                &le_density[0],
-                                &fay_area[0],
-                                &d_disp[0],
-                                &d_sed[0],
-                                frac_breaking_waves,
-                                disp_wave_energy,
-                                wave_height,
-                                visc_w,
-                                rho_w,
-                                C_sed,
-                                V_entrain,
-                                ka)
+                        step_len,
+                        & frac_water[0],
+                        & le_mass[0],
+                        & le_viscosity[0],
+                        & le_density[0],
+                        & fay_area[0],
+                        & d_disp[0],
+                        & d_sed[0],
+                        frac_breaking_waves,
+                        disp_wave_energy,
+                        wave_height,
+                        visc_w,
+                        rho_w,
+                        C_sed,
+                        V_entrain,
+                        ka)
 
     if disp_err != 0:
         raise ValueError("C++ call to disperse returned error code: "

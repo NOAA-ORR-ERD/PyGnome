@@ -7,13 +7,13 @@ scipy
 ipython      
 matplotlib
 netCDF4
+py_gd
 gsw
-pillow
 pyzmq
 cython
 pytest
 testfixtures
-psutil>=2.0
+psutil
 sphinx
 progressbar
 six
@@ -24,6 +24,4 @@ colander
 sqlalchemy
 zope.interface
 zope.sqlalchemy
-awesome-slugify
-
-
+gdal

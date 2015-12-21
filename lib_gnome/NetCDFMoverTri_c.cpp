@@ -907,7 +907,7 @@ OSErr NetCDFMoverTri_c::ReorderPoints2(TMap **newMap, long *bndry_indices, long 
 		index = bndry_indices[i];
 		if (index > nv)
 		{
-			printNote("Boundary indices are out of bounds");
+			strcpy(errmsg,"Boundary indices are out of bounds");
 			err = -1;
 			goto done;
 		}
@@ -929,13 +929,19 @@ OSErr NetCDFMoverTri_c::ReorderPoints2(TMap **newMap, long *bndry_indices, long 
 	for(i = 0; i < nv; i++) {
 		if(INDEXH(vertFlagsH,i) == 0)	
 		{
+			if(numVerdatPts==nv) 
+			{
+				strcpy(errmsg,"Boundary indices are incorrect");
+				err = -1;
+				goto done;
+			}
 			INDEXH(verdatPtsH,numVerdatPts++) = i;
 			INDEXH(vertFlagsH,i) = 0; // mark as used
 		}
 	}
 	if (numVerdatPts!=nv) 
 	{
-		printNote("Not all vertex points were used");
+		strcpy(errmsg,"Not all vertex points were used");
 		// it seems this should be an error...
 		err = -1;
 		goto done;
@@ -1146,7 +1152,13 @@ OSErr NetCDFMoverTri_c::ReorderPoints2(TMap **newMap, long *bndry_indices, long 
 	//fVerdatToNetCDFH = verdatPtsH;	// this should be resized
 	
 done:
-	if (err) printError("Error reordering gridpoints into verdat format");
+	if (err) 
+	{
+		if(!errmsg[0])
+			strcpy(errmsg,"Error reordering gridpoints into verdat format");
+		//printError("Error reordering gridpoints into verdat format");
+	}
+	
 	if (vertFlagsH) {DisposeHandle((Handle)vertFlagsH); vertFlagsH = 0;}
 	if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
 	
@@ -1174,7 +1186,7 @@ done:
 		}
 		if (waterBoundariesH) {DisposeHandle((Handle)waterBoundariesH); waterBoundariesH=0;}
 		if (verdatBreakPtsH) {DisposeHandle((Handle)verdatBreakPtsH); verdatBreakPtsH = 0;}
-		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
+		//if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
 		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
 	}
 	return err;

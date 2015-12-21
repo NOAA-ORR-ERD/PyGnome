@@ -11,24 +11,27 @@ import gnome  # required by deserialize
 
 from gnome import constants
 from gnome.utilities.serializable import Serializable, Field
+from gnome.utilities.weathering import LeeHuibers
+
 from gnome.array_types import (viscosity,
                                mass,
-                               density)
+                               density,
+                               partition_coeff)
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2, width=120)
+
 
 class Dissolution(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('water', save=True, update=True, save_reference=True),
-               Field('waves', save=True, update=True, save_reference=True)]
+    _state += [Field('waves', save=True, update=True, save_reference=True)]
+
     _schema = WeathererSchema
 
-    def __init__(self,
-                 waves=None,
-                 water=None,
-                 **kwargs):
+    def __init__(self, waves=None, **kwargs):
         '''
         :param conditions: gnome.environment.Conditions object which contains
                            things like water temperature
@@ -38,13 +41,13 @@ class Dissolution(Weatherer, Serializable):
               requires
         '''
         self.waves = waves
-        self.water = water
 
         super(Dissolution, self).__init__(**kwargs)
 
         self.array_types.update({'viscosity': viscosity,
                                  'mass':  mass,
                                  'density': density,
+                                 'partition_coeff': partition_coeff
                                  })
 
     def prepare_for_model_run(self, sc):
@@ -59,10 +62,8 @@ class Dissolution(Weatherer, Serializable):
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
-        Set/update arrays used by dispersion module for this timestep:
-
+            Set/update arrays used by dispersion module for this timestep
         '''
-
         super(Dissolution, self).prepare_for_model_step(sc,
                                                         time_step,
                                                         model_time)
@@ -70,13 +71,80 @@ class Dissolution(Weatherer, Serializable):
         if not self.active:
             return
 
+    def initialize_data(self, sc, num_released):
+        '''
+            initialize the newly released portions of our data arrays:
+
+            If on is False, then arrays should not be included
+            - dont' initialize
+        '''
+        if not self.on:
+            return
+
+        self._initialize_k_ow(sc, num_released)
+
+    def _initialize_k_ow(self, sc, num_released):
+        '''
+            Initialize the molar averaged oil/water partition coefficient.
+
+            Note: we are assuming that each substance gets a distinct
+                  slice from our data arrays (maybe not a good assumption)
+        '''
+        num_initialized = 0
+
+        for substance, data in sc.itersubstancedata(self.array_types):
+            if len(data['partition_coeff']) == 0:
+                # no particles released yet
+                continue
+
+            mask = data['partition_coeff'] == 0
+
+            num_initialized += len(mask)
+
+            for s_num in np.unique(data['spill_num'][mask]):
+                s_mask = np.logical_and(mask, data['spill_num'] == s_num)
+
+                data['partition_coeff'][s_mask] = 0
+
+        assert num_initialized == num_released
+
     def dissolve_oil(self, **kwargs):
-        pass
+        '''
+            Here is where we calculate the dissolved oil.
+            We will outline the steps as we go along, but off the top of
+            my head:
+            - recalculate the partition coefficient (K_ow)
+              TODO: This requires a molar average of the aromatic components.
+            - use VDROP to calculate the shift in the droplet distribution
+            - subtract the mass of smallest droplets in our distribution
+              that are below a threshold.
+        '''
+        data = kwargs['data']
+        fmass = data['mass_components']
+
+        substance = kwargs['substance']
+        arom_mask = substance._sara['type'] == 'Aromatics'
+        mol_wt = substance.molecular_weight
+        rho = substance.component_density
+        assert mol_wt.shape == rho.shape
+
+        # calculate the partition coefficient (K_ow) for all aromatics.
+        # K_ow for non-aromatics should be masked to 0.0
+        K_ow_comp = arom_mask * LeeHuibers.partition_coeff(mol_wt, rho)
+
+        for idx, m in enumerate(fmass):
+            K_ow = (np.sum(m * K_ow_comp / mol_wt) /
+                    np.sum(m / mol_wt))
+
+            data['partition_coeff'][idx] = K_ow
+
+        diss = np.zeros((len(data['mass'])), dtype=np.float64)
+        return diss
 
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
-        - sets 'natural_dispersion' and 'sedimentation' in sc.mass_balance
+        - sets 'dissolution' in sc.mass_balance
         '''
         if not self.active:
             return
@@ -92,67 +160,44 @@ class Dissolution(Weatherer, Serializable):
         visc_w = self.waves.water.kinematic_viscosity
         rho_w = self.waves.water.density
 
-        # web has different units
-        sediment = self.waves.water.get('sediment', unit='kg/m^3')
-
+        print 'self.array_types:'
+        pp.pprint(self.array_types)
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['mass']) == 0:
                 # substance does not contain any surface_weathering LEs
                 continue
 
-            V_entrain = constants.volume_entrained
             ka = constants.ka  # oil sticking term
 
-            disp = np.zeros((len(data['mass'])), dtype=np.float64)
-            sed = np.zeros((len(data['mass'])), dtype=np.float64)
+            diss = self.dissolve_oil(time_step=time_step,
+                                     data=data,
+                                     substance=substance,
+                                     frac_breaking_waves=frac_breaking_waves,
+                                     disp_wave_energy=disp_wave_energy,
+                                     wave_height=wave_height,
+                                     visc_w=visc_w,
+                                     rho_w=rho_w,
+                                     ka=ka)
 
-            self.dissolve_oil(time_step,
-                              data['frac_water'],
-                              data['mass'],
-                              data['viscosity'],
-                              data['density'],
-                              data['fay_area'],
-                              disp,
-                              sed,
-                              frac_breaking_waves,
-                              disp_wave_energy,
-                              wave_height,
-                              visc_w,
-                              rho_w,
-                              sediment,
-                              V_entrain,
-                              ka)
-
-            sc.mass_balance['natural_dispersion'] += np.sum(disp[:])
+            print 'mass_balance:'
+            pp.pprint(sc.mass_balance)
+            sc.mass_balance['dissolution'] += np.sum(diss[:])
 
             if data['mass'].sum() > 0:
-                disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
-                if disp_mass_frac > 1:
-                    disp_mass_frac = 1
+                diss_mass_frac = np.sum(diss[:]) / data['mass'].sum()
+                if diss_mass_frac > 1:
+                    diss_mass_frac = 1
             else:
-                disp_mass_frac = 0
+                diss_mass_frac = 0
 
-            data['mass_components'] = ((1 - disp_mass_frac) *
+            data['mass_components'] = ((1 - diss_mass_frac) *
                                        data['mass_components'])
             data['mass'] = data['mass_components'].sum(1)
 
-            sc.mass_balance['sedimentation'] += np.sum(sed[:])
-
-            if data['mass'].sum() > 0:
-                sed_mass_frac = np.sum(sed[:]) / data['mass'].sum()
-                if sed_mass_frac > 1:
-                    sed_mass_frac = 1
-            else:
-                sed_mass_frac = 0
-
-            data['mass_components'] = ((1 - sed_mass_frac) *
-                                       data['mass_components'])
-            data['mass'] = data['mass_components'].sum(1)
-
-            self.logger.debug('{0} Amount Dispersed for {1}: {2}'
+            self.logger.debug('{0} Amount dissolved for {1}: {2}'
                               .format(self._pid,
                                       substance.name,
-                                      sc.mass_balance['natural_dispersion']))
+                                      sc.mass_balance['dissolution']))
 
         sc.update_from_fatedataview()
 
@@ -167,8 +212,6 @@ class Dissolution(Weatherer, Serializable):
         if json_ == 'webapi':
             if self.waves:
                 serial['waves'] = self.waves.serialize(json_)
-            if self.water:
-                serial['water'] = self.water.serialize(json_)
 
         return serial
 
@@ -180,10 +223,6 @@ class Dissolution(Weatherer, Serializable):
         if not cls.is_sparse(json_):
             schema = cls._schema()
             dict_ = schema.deserialize(json_)
-
-            if 'water' in json_:
-                obj = json_['water']['obj_type']
-                dict_['water'] = (eval(obj).deserialize(json_['water']))
 
             if 'waves' in json_:
                 obj = json_['waves']['obj_type']

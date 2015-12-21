@@ -138,9 +138,8 @@ class CleanUpBase(RemoveMass, Weatherer):
         '''
         substance = sc.get_substances(complete=False)
         if len(substance) > 1:
-            msg = ('Found more than one type of Oil - not supported. '
-                   'Results will be incorrect')
-            self.logger.error(msg)
+            self.logger.error('Found more than one type of Oil '
+                              '- not supported. Results will be incorrect')
         return substance[0]
 
     def _update_LE_status_codes(self,
@@ -185,6 +184,7 @@ class CleanUpBase(RemoveMass, Weatherer):
         # (1 - frac_water) * mass_to_remove
         if mass_to_remove >= curr_mass.sum():
             data['fate_status'][:] = new_status
+
             self.logger.warning('{0} insufficient mass released for cleanup'
                                 .format(self._pid))
             self.logger.warning('{0} marked ALL ({1}) LEs, total mass: {2}'
@@ -198,8 +198,8 @@ class CleanUpBase(RemoveMass, Weatherer):
             # change status for elements upto and including 'ix'
             data['fate_status'][:ix + 1] = new_status
 
-            self.logger.debug(self._pid + 'marked {0} LEs with mass: '
-                              '{1}'.format(ix, data['mass'][:ix].sum()))
+            self.logger.debug('{0} marked {1} LEs with mass: {2}'
+                              .format(self._pid, ix, data['mass'][:ix].sum()))
 
         sc.update_from_fatedataview(substance, 'surface_weather')
 
@@ -218,6 +218,7 @@ class CleanUpBase(RemoveMass, Weatherer):
                                 .format(self._pid,
                                         avg_frac_water,
                                         data['mass'].sum()))
+
         return (1 - avg_frac_water)
 
 
@@ -284,9 +285,9 @@ class Skimmer(CleanUpBase, Serializable):
         if self._validunits(value):
             self._units = value
         else:
-            msg = ('{0} are not valid volume or mass units.'
-                   ' Not updated').format(value)
-            self.logger.warn(msg)
+            self.logger.warn('{0} are not valid volume or mass units. '
+                             'Not updated'
+                             .format(value))
 
     def prepare_for_model_run(self, sc):
         '''
@@ -370,8 +371,8 @@ class Skimmer(CleanUpBase, Serializable):
             data['mass'] = data['mass_components'].sum(1)
 
             sc.mass_balance['skimmed'] += rm_mass
-            self.logger.debug(self._pid + 'amount skimmed for {0}: {1}'.
-                              format(substance.name, rm_mass))
+            self.logger.debug('{0} amount skimmed for {1}: {2}'
+                              .format(self._pid, substance.name, rm_mass))
 
         sc.update_from_fatedataview(fate='skim')
 
@@ -519,9 +520,10 @@ class Burn(CleanUpBase, Serializable):
         if (uc.Convert('Length', self.thickness_units, 'm',
                        self.thickness) <= self._min_thickness):
             msg = ("thickness of {0} {1}, is less than min required {2} m."
-                   " Burn will not occur".
-                   format(self.thickness, self.thickness_units,
-                          self._min_thickness))
+                   " Burn will not occur"
+                   .format(self.thickness,
+                           self.thickness_units,
+                           self._min_thickness))
             self.logger.warning(msg)
 
     @property
@@ -657,10 +659,10 @@ class Burn(CleanUpBase, Serializable):
         if self.efficiency is None:
             # get it from wind
             ws = self.wind.get_value(model_time)
-            if ws > 1./0.07:
-                msg = ("wind speed is greater than {0}."
-                       " Set efficiency to 0".format(1./0.07))
-                self.logger.warning(msg)
+            if ws > 1. / 0.07:
+                self.logger.warning('wind speed is greater than {0}. '
+                                    'Set efficiency to 0'
+                                    .format(1. / 0.07))
                 self._efficiency = 0
             else:
                 self.efficiency = 1 - 0.07 * ws
@@ -698,8 +700,8 @@ class Burn(CleanUpBase, Serializable):
                 (self._oilwater_thick_burnrate * self._timestep)
 
             sc.mass_balance['burned'] += rm_mass
-            self.logger.debug(self._pid + 'amount burned for {0}: {1}'.
-                              format(substance.name, rm_mass))
+            self.logger.debug('{0} amount burned for {1}: {2}'
+                              .format(self._pid, substance.name, rm_mass))
 
         sc.update_from_fatedataview(fate='burn')
 
@@ -844,9 +846,10 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                           0.000037*w**5)
             if efficiency < 0:
                 self._efficiency = 0
-                msg = ("wave height {0} - results in negative efficiency. "
-                       "Reset to 0")
-                self.logger.warning(msg)
+                self.logger.warning(("wave height {0} "
+                                     "- results in negative efficiency. "
+                                     "Reset to 0"
+                                     .format(w)))
             else:
                 self.efficiency = efficiency
 
@@ -870,8 +873,9 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                 data['mass'] = data['mass_components'].sum(1)
 
                 sc.mass_balance['chem_dispersed'] += rm_mass
-                self.logger.debug(self._pid + 'amount chemically dispersed for'
-                                  ' {0}: {1}'.format(substance.name, rm_mass))
+                self.logger.debug('{0} amount chemically dispersed for '
+                                  '{1}: {2}'
+                                  .format(self._pid, substance.name, rm_mass))
 
             sc.update_from_fatedataview(fate='disperse')
 
