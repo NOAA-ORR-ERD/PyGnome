@@ -204,7 +204,10 @@ class GeoProjection(object):
               a point  exactly at the max of the bounding box will be considered
               outside the map
         """
-        coords = np.asarray(coords).reshape((-1, 3))
+        try:
+            coords = np.asarray(coords).reshape((-1, 3))
+        except ValueError:
+            coords = np.asarray(coords).reshape((-1, 2))
 
         # shift to center:
         coords = coords[:, :2] - self.center

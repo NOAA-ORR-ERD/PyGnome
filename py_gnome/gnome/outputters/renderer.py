@@ -243,6 +243,7 @@ class Renderer(Outputter, MapCanvas):
         self.repeat = True
         self.timestamp_attribs = {}
         self.set_timestamp_attrib(**timestamp_attrib)
+        self.fancy_grid=True
 
     @property
     def delay(self):
@@ -400,6 +401,20 @@ class Renderer(Outputter, MapCanvas):
             self.draw_raster_map()
         self.draw_graticule()
         self.draw_tags()
+        self.draw_grid()
+
+    def add_grid(self, grid):
+        if not hasattr(self, 'grids'):
+            self.grids=[]
+        self.grids.append(grid)
+
+    def draw_grid(self):
+        if not hasattr(self, 'grids'):
+            return
+        for grid in self.grids:
+            lines = grid.get_edges(self.projection.image_box)
+            for line in lines:
+                self.draw_polyline(line, 'raster_map', 1,True)
 
     def draw_land(self):
         """
@@ -553,6 +568,12 @@ class Renderer(Outputter, MapCanvas):
 
         time_stamp = scp[0].current_time_stamp
         self.draw_timestamp(time_stamp)
+
+        if self.fancy_grid:
+            points = self.grids[0].masked_nodes(scp[0].current_time_stamp)
+            self.draw_points(points[~points.mask], diameter=2,color='black', background=True)
+            self.draw_points(points[points.mask], diameter=2,color='uncert_LE', background=True)
+
         for ftype in self.formats:
             if ftype == 'gif':
                 self.animation.add_frame(self.fore_image, self.delay)

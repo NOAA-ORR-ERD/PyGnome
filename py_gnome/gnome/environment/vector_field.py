@@ -110,9 +110,7 @@ class TriVectorField(object):
         t_alpha = self.time.interp_alpha(time)
         t_index = self.time.indexof(time)
         v0 = self.velocities[t_index]
-        v0[self.velocities.u.data[t_index].mask] *= 0
         v1 = self.velocities[t_index+1]
-        v1[self.velocities.u.data[t_index].mask] *= 0
         return v0 + (v1 - v0) * t_alpha
 
     @pd.profile
@@ -126,11 +124,11 @@ class TriVectorField(object):
         """
         indices = self.grid.locate_faces(points)
         pos_alphas = self.grid.interpolation_alphas(points,indices)
+        # map the node velocities to the faces specified by the points
         time_interp_vels = self.get_node_velocities(time)[self.grid.faces[indices]]
 
         # scaled vels = [us,vs] = [(u1*alpha1 + u2*a2 + u3*a3), (v1*a1 + v2*a2 + v3*a3)]
-        return np.column_stack((np.sum(time_interp_vels[:,:,0] * pos_alphas, axis=1),
-                                np.sum(time_interp_vels[:,:,1] * pos_alphas, axis=1)))
+        return np.sum(time_interp_vels * pos_alphas[:,:,np.newaxis],axis=1)
 
     def get_edges(self, bounds=None):
         """
@@ -155,6 +153,17 @@ class TriVectorField(object):
             pt2 = ((bounds[0][0] <= lines[:,1,0]) * (lines[:,1,0] <= bounds[1][0]) *
                    (bounds[0][1] <= lines[:,1,1]) * (lines[:,1,1] <= bounds[1][1]))
             return lines[pt1 + pt2]
+
+    def masked_nodes(self, time):
+        """
+        This allows visualization of the grid nodes with relation to whether the velocity is masked or not.
+        :param time: a time within the simulation
+        :return: An array of all the nodes, masked with the velocity mask.
+        """
+        if time < self.time.max_time:
+            return np.ma.array(self.grid.nodes, mask = self.velocities[self.time.indexof(time)].mask)
+        else:
+            return np.ma.array(self.grid.nodes, mask = self.velocities[self.time.indexof(self.time.max_time)].mask)
 
 if __name__ == "__main__":
     vf = TriVectorField('data\COOPSu_CREOFS24.nc')

@@ -376,19 +376,6 @@ class MapCanvas(object):
         self.draw_tags()
         self.draw_grid()
 
-    def add_grid(self, grid):
-        if not hasattr(self, 'grids'):
-            self.grids=[]
-        self.grids.append(grid)
-
-    def draw_grid(self):
-        if not hasattr(self, 'grids'):
-            return
-        for grid in self.grids:
-            lines = grid.get_edges(self.viewport)
-            for line in lines:
-                self.draw_polyline(line, 'raster_map', 1,True)
-
     def draw_land(self):
         return None
 
