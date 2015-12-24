@@ -63,6 +63,8 @@ class Renderer(Outputter, MapCanvas):
                   ('spillable_area', (255, 0, 0)),  # red
                   ('raster_map', (51, 102, 0)),  # dark green
                   ('raster_map_outline', (0, 0, 0)),  # black
+                  ('grid_1', (51,78, 0)),
+                  ('grid_2', (175, 175, 175)),
                   ]
 
     background_map_name = 'background_map.png'
@@ -251,7 +253,7 @@ class Renderer(Outputter, MapCanvas):
         self.repeat = True
         self.timestamp_attribs = {}
         self.set_timestamp_attrib(**timestamp_attrib)
-        self.fancy_grid=True
+        self.grids=[]
 
     @property
     def delay(self):
@@ -413,20 +415,24 @@ class Renderer(Outputter, MapCanvas):
             self.draw_raster_map()
         self.draw_graticule()
         self.draw_tags()
-        self.draw_grid()
+        self.draw_grids()
 
-    def add_grid(self, grid):
-        if not hasattr(self, 'grids'):
-            self.grids=[]
-        self.grids.append(grid)
-
-    def draw_grid(self):
-        if not hasattr(self, 'grids'):
-            return
+    def draw_grids(self):
         for grid in self.grids:
-            lines = grid.get_edges(self.projection.image_box)
-            for line in lines:
-                self.draw_polyline(line, 'raster_map', 1,True)
+            if grid.appearance['on']:
+                a = grid.appearance
+                lines = grid.get_edges(self.projection.image_box)
+                for line in lines:
+                    self.draw_polyline(line, a['color'], a['width'], True)
+
+    def draw_masked_nodes(self, grid, time):
+        if grid.appearance['on'] and grid.appearance['masked'] is True:
+            mask = grid.masked_nodes(time).mask
+            dia = grid.appearance['n_size']
+            nodes = grid.grid.nodes
+            self.draw_points(nodes[~mask], diameter=dia,color='black', background=True)
+            self.draw_points(nodes[mask], diameter=dia,color='uncert_LE', background=True)
+
 
     def draw_land(self):
         """
@@ -582,11 +588,8 @@ class Renderer(Outputter, MapCanvas):
 
         time_stamp = scp[0].current_time_stamp
         self.draw_timestamp(time_stamp)
-
-        if self.fancy_grid:
-            points = self.grids[0].masked_nodes(scp[0].current_time_stamp)
-            self.draw_points(points[~points.mask], diameter=2,color='black', background=True)
-            self.draw_points(points[points.mask], diameter=2,color='uncert_LE', background=True)
+        for grid in self.grids:
+            self.draw_masked_nodes(grid, time_stamp)
 
         for ftype in self.formats:
             if ftype == 'gif':

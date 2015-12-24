@@ -8,7 +8,7 @@ from tide import Tide, TideSchema
 from wind import Wind, WindSchema, constant_wind
 from running_average import RunningAverage, RunningAverageSchema
 from grid import Grid, GridSchema
-from vector_field import TriVectorField
+from vector_field import VectorField
 
 
 __all__ = [Environment,

@@ -1,103 +1,121 @@
 import netCDF4 as nc4
 import numpy as np
 from datetime import datetime, timedelta
+from dateutil import parser
 import pyugrid
-import gnome.utilities.profiledeco as pd
-import cell_tree2d.cell_tree2d as ct
+
+def tri_vector_field(filename=None, dataset=None):
+    if dataset is None:
+            dataset = nc4.Dataset(filename)
+
+    nodes = np.ascontiguousarray(np.column_stack((dataset['lon'], dataset['lat']))).astype(np.double)
+    faces = np.ascontiguousarray(np.array(dataset['nv']).T - 1)
+    boundaries = np.ascontiguousarray(np.array(dataset['bnd'])[:,0:2] - 1)
+    neighbors = np.ascontiguousarray(np.array(dataset['nbe']).T -1)
+    edges = None
+    u = pyugrid.UVar('u','node', dataset['u'])
+    v = pyugrid.UVar('v','node', dataset['v'])
+    time = Time(dataset['time'], dataset['time'].base_date)
+    variables = {'velocities': pyugrid.UMVar('velocities', 'node', [u,v])}
+    type = dataset.grid_type
+    return VectorField(nodes,faces,boundaries,neighbors,edges,time,variables,type)
+
+def ice_field(filename=None, dataset=None):
+    if dataset is None:
+        dataset = nc4.Dataset(filename)
+    y_size = len(dataset.dimensions['y'])
+    x_size = len(dataset.dimensions['x'])
+    dims={'x': x_size, 'y': y_size}
+    faces = np.array([np.array([[x,x+1,x+x_size+1,x+x_size] for x in range(0,x_size-1,1)]) + y*x_size for y in range(0,y_size-1)])
+    faces = np.ascontiguousarray(faces.reshape(((y_size-1)*(x_size-1),4)))
+    nodes = np.column_stack((dataset['lon'][:].reshape(y_size * x_size), dataset['lat'][:].reshape(y_size * x_size)))
+    nodes = np.ascontiguousarray(nodes)
+    time = Time(dataset['time'], dataset['time'].time_origin)
+    w_u = pyugrid.UVar('water_u', 'node', dataset['water_u'], curvilinear=True)
+    w_v = pyugrid.UVar('water_v', 'node', dataset['water_v'], curvilinear=True)
+    mask = pyugrid.UVar('mask', 'node', dataset['mask'], curvilinear=True)
+    i_u = pyugrid.UVar('ice_u', 'node', dataset['ice_u'], curvilinear=True)
+    i_v = pyugrid.UVar('ice_v', 'node', dataset['ice_v'], curvilinear=True)
+    thickness = pyugrid.UVar('ice_thickness', 'node', dataset['ice_thickness'], curvilinear=True)
+    fraction = pyugrid.UVar('ice_fraction', 'node', dataset['ice_fraction'], curvilinear=True)
+    variables = {'water_vel': pyugrid.UMVar('water_vel', 'node', [w_u, w_v]),
+                 'ice_vel': pyugrid.UMVar('ice_vel', 'node', [i_u, i_v]),
+                 'ice_thickness': thickness,
+                 'ice_fraction': fraction,
+                 'mask': mask,
+                 'time': time}
+    type = dataset.grid_type
+    return VectorField(nodes,faces,time=time, variables=variables,type=type, dimensions=dims)
+
+
 
 
 class VectorField(object):
-
-    def __init__(self, grid=None, variables=None):
-        self.grid = grid
-        self.variables = variables
-
-    def find_var_value(self, variable, dims, vals):
-        """
-
-        :param variable: the variable to
-        :param dims:
-        :param vals:
-        :return:
-        """
-
-class Time(object):
-
-    def __init__(self, data):
-        """
-
-        :param data: A netCDF, biggus, or dask source for time data
-        :return:
-        """
-        self.data = data
-        self._base_time = datetime.strptime(data.base_date, '%Y-%m-%d %H:%M:%S %Z')
-        self._min_time = self.base_time + timedelta(seconds=int(self.data[0]))
-        self._max_time = self.base_time + timedelta(seconds=int(self.data[len(self.data)-1]))
-
-    @property
-    def base_time(self):
-        return self._base_time
-
-    @property
-    def min_time(self):
-        return self._min_time
-
-    @property
-    def max_time(self):
-        return self._max_time
-
-    def get_time_array(self):
-        return self.data[:]
-
-    def time_in_bounds(self, time):
-        return not time < self.min_time or time > self.max_time
-
-    def valid_time(self, time):
-        if time < self.min_time or time > self.max_time:
-            raise ValueError('time specified ({0}) is not within the bounds of the data ({1} to {2})'.format(
-                time.strftime('%c'), self.min_time.strftime('%c'), self.max_time.strftime('%c')))
-
-    def indexof(self, time):
-        '''
-        Returns the index of the provided time with respect to the time intervals in the file.
-        :param time:
-        :return:
-        '''
-        self.valid_time(time)
-        delta_t = (time - self.base_time).total_seconds()
-        index = np.searchsorted(self.get_time_array(),delta_t) - 1
-        return index
-
-    def interp_alpha(self, time):
-        i0 = self.indexof(time)
-        t0 = self.base_time + timedelta(seconds=int(self.data[i0]))
-        t1 = self.base_time + timedelta(seconds=int(self.data[i0 + 1]))
-        return (time - t0).total_seconds()/(t1-t0).total_seconds()
-
-
-class TriVectorField(object):
     '''
     This class takes a netCDF file containing current or wind information on an unstructured grid
     and provides an interface to retrieve this information.
     '''
 
-    def __init__(self, filename=None, dataset=None):
-        if dataset is None:
-            dataset = nc4.Dataset(filename)
-
-        nodes = np.ascontiguousarray(np.column_stack((dataset['lon'], dataset['lat']))).astype(np.double)
-        faces = np.ascontiguousarray(np.array(dataset['nv']).T - 1)
-        boundaries = np.ascontiguousarray(np.array(dataset['bnd'])[:,0:2] - 1)
-        neighbors = np.ascontiguousarray(np.array(dataset['nbe']).T -1)
-        self.grid = pyugrid.UGrid(nodes, faces, boundaries=boundaries, face_face_connectivity=neighbors)
-        self.grid.build_edges()
-        self.grid_type = dataset.grid_type
-        u = pyugrid.UVar('u','node', dataset['u'])
-        v = pyugrid.UVar('v','node', dataset['v'])
-        self.time = Time(dataset['time'])
-        self.variables = {'velocities': pyugrid.UMVar('velocities', 'node', [u,v])}
+    def __init__(self, nodes,
+                 faces,
+                 boundaries=None,
+                 neighbors=None,
+                 edges=None,
+                 time=None,
+                 variables=None,
+                 name=None,
+                 type=None,
+                 dimensions=None,
+                 appearance={}
+                 ):
+        curv = 'CURVILINEAR' in type.upper()
+        self.grid = pyugrid.UGrid(nodes,
+                                  faces,
+                                  edges,
+                                  boundaries,
+                                  neighbors,
+                                  curvilinear=curv)
+        if curv:
+            self.grid.curv_x = dimensions['x']
+            self.grid.curv_y = dimensions['y']
+        if edges is None:
+            self.grid.build_edges()
+        if neighbors is None:
+            self.grid.build_face_face_connectivity()
+        self.grid.mesh_name = name
+        self.grid_type = type
+        self.time=time
+        self.variables=variables
         for k,v in self.variables.items():
             setattr(self,k,v)
+        self._appearance={}
+        self.set_appearance(**appearance)
+
+    def set_appearance(self, **kwargs):
+        self._appearance.update(kwargs)
+
+    @property
+    def appearance(self):
+        d = {'on': False,
+             'color': 'grid_1',
+             'width': 1,
+             'filled': False,
+             'masked': False,
+             'n_size': 2}
+        d.update(self._appearance)
+        return d
+
+    @property
+    def nodes(self):
+        return self.grid.nodes
+
+    @property
+    def faces(self):
+        return self.grid.faces
+
+    @property
+    def triangles(self):
+        return self.grid.nodes[self.grid.faces]
 
     def get_node_velocities(self, time):
         '''
@@ -113,7 +131,6 @@ class TriVectorField(object):
         v1 = self.velocities[t_index+1]
         return v0 + (v1 - v0) * t_alpha
 
-    @pd.profile
     def interpolated_velocities(self, time, points):
         """
         Returns the velocities at each of the points at the specified time, using interpolation
@@ -165,26 +182,61 @@ class TriVectorField(object):
         else:
             return np.ma.array(self.grid.nodes, mask = self.velocities[self.time.indexof(self.time.max_time)].mask)
 
-if __name__ == "__main__":
-    vf = TriVectorField('data\COOPSu_CREOFS24.nc')
-    # vf = TriVectorField('data\\21_tri_mesh.nc')
-    result = vf.locate_faces((0.,0.))
-    print type(result)
-    print result
-    result = vf.locate_faces(np.array(([0.,0.],)))
-    print type(result)
-    print result
 
-    # result = vf.locate_faces((0.,0.),simple=True)
-    # print type(result)
-    # print result
-    tris = vf.nodes[vf.faces]
-    cents = (tris[:,0,:] + tris[:,1,:] + tris[:,2,:])/3
-    indices = vf.locate_faces(cents.astype(np.double))
-    dts = [datetime(2015,9,24,3,0,) + timedelta(hours= x, minutes=30) for x in range(-2,47)]
+class Time(object):
 
-    for i in range(0,48):
-        vels = vf.interpolated_velocities(dts[1],cents)
+    def __init__(self, data, base_dt_str=None):
+        """
 
-    pd.print_stats(.1)
-    pass
+        :param data: A netCDF, biggus, or dask source for time data
+        :return:
+        """
+        self.data = data
+        if base_dt_str is not None:
+            # self._base_time = datetime.strptime(base_dt, '%Y-%m-%d %H:%M:%S %Z')
+            self._base_time = parser.parse(base_dt_str, ignoretz=True)
+        else:
+            # self._base_time = datetime.strptime(data.base_date, '%Y-%m-%d %H:%M:%S %Z')
+            self._base_time = parser.parse(data.base_time, ignoretz=True)
+        self._min_time = self.base_time + timedelta(seconds=int(self.data[0]))
+        self._max_time = self.base_time + timedelta(seconds=int(self.data[len(self.data)-1]))
+
+    @property
+    def base_time(self):
+        return self._base_time
+
+    @property
+    def min_time(self):
+        return self._min_time
+
+    @property
+    def max_time(self):
+        return self._max_time
+
+    def get_time_array(self):
+        return self.data[:]
+
+    def time_in_bounds(self, time):
+        return not time < self.min_time or time > self.max_time
+
+    def valid_time(self, time):
+        if time < self.min_time or time > self.max_time:
+            raise ValueError('time specified ({0}) is not within the bounds of the data ({1} to {2})'.format(
+                time.strftime('%c'), self.min_time.strftime('%c'), self.max_time.strftime('%c')))
+
+    def indexof(self, time):
+        '''
+        Returns the index of the provided time with respect to the time intervals in the file.
+        :param time:
+        :return:
+        '''
+        self.valid_time(time)
+        delta_t = (time - self.base_time).total_seconds()
+        index = np.searchsorted(self.get_time_array(),delta_t) - 1
+        return index
+
+    def interp_alpha(self, time):
+        i0 = self.indexof(time)
+        t0 = self.base_time + timedelta(seconds=int(self.data[i0]))
+        t1 = self.base_time + timedelta(seconds=int(self.data[i0 + 1]))
+        return (time - t0).total_seconds()/(t1-t0).total_seconds()

@@ -22,7 +22,7 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.outputters import Renderer
-from gnome.environment.vector_field import tri_vector_field
+from gnome.environment.vector_field import ice_field
 from gnome.movers import UGridCurrentMover
 import gnome.utilities.profiledeco as pd
 
@@ -41,7 +41,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   duration=timedelta(hours = 48),
                   time_step=900)
 
-    mapfile = get_datafile(os.path.join(base_dir, 'columbia_river.bna'))
+    mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
 
     print 'adding the map'
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
@@ -49,7 +49,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
-    renderer = Renderer(mapfile, images_dir, image_size=(600, 1200))
+    renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
 #     renderer.viewport = ((-123.35, 45.6), (-122.68, 46.13))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
     
@@ -79,12 +79,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a current mover:'
 
-    vec_field = tri_vector_field('COOPSu_CREOFS24.nc')
+    vec_field = ice_field('acnfs_example.nc')
     vec_field.set_appearance(on=True)
     renderer.grids += [vec_field]
     renderer.delay=25
-    u_mover = UGridCurrentMover(vec_field)
-    model.movers += u_mover
+    # u_mover = UGridCurrentMover(vec_field)
+    # model.movers += u_mover
 
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
     # c_mover = GridCurrentMover(curr_file)
@@ -104,16 +104,8 @@ if __name__ == "__main__":
     field = rend.grids[0]
 #     rend.graticule.set_DMS(True)
     for step in model:
-        if step['step_num'] == 1:
-            rend.set_viewport(((-122.9, 45.6), (-122.6, 46.0)))
-            # rend.set_viewport(((-122.8, 45.65), (-122.75, 45.7)))
-#             rend.set_viewport(((-123.25, 48.125), (-122.5, 48.75)))
-#         if step['step_num'] == 18:
-#             rend.set_viewport(((-123.1, 48.55), (-122.95, 48.65)))
-        if step['step_num'] == 110:
-            field.set_appearance(masked=True, color='grid_2')
-            rend.set_viewport(((-122.8, 45.75), (-122.75, 45.85)))
-        # print step
+        if step['step_num'] == 2:
+            rend.set_viewport(((-160, 70.5), (-157, 72)))
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     print datetime.now() - startTime

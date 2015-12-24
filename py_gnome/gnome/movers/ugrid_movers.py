@@ -3,7 +3,6 @@ import numpy as np
 import datetime
 from gnome import basic_types
 from gnome.utilities.projections import FlatEarthProjection
-from gnome.environment.vector_field import TriVectorField
 from gnome.basic_types import oil_status
 from gnome.basic_types import (world_point,
                                world_point_type,
