@@ -1335,7 +1335,7 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 		 if(!(filelength > 0))
 			throw("empty file.\n");
 		_ifstream->seekg (offset, ios::beg);
-		if(filelength > length+offset && length != 0)
+		if((filelength >= length+offset) && length != 0)
 		{
 			if(handle) {
 				*handle = _NewHandle(length);

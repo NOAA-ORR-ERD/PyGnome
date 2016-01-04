@@ -6461,7 +6461,7 @@ VelocityRec TimeGridVelIce_c::GetScaledPatValueIce(const Seconds& model_time, Wo
 	float totalDepth; 
 	Seconds startTime,endTime;
 	VelocityRec scaledPatVelocity = {0.,0.};
-	InterpolationVal interpolationVal;
+	InterpolationValBilinear interpolationVal;
 	OSErr err = 0;
 	
 	if (fGrid) 
@@ -6469,7 +6469,7 @@ VelocityRec TimeGridVelIce_c::GetScaledPatValueIce(const Seconds& model_time, Wo
 		if (bVelocitiesOnNodes)
 		{
 			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
-			interpolationVal = fGrid -> GetInterpolationValues(refPoint.p);
+			interpolationVal = fGrid -> GetBilinearInterpolationValues(refPoint.p);
 			if (interpolationVal.ptIndex1<0) return scaledPatVelocity;
 			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
 			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
@@ -6481,6 +6481,12 @@ VelocityRec TimeGridVelIce_c::GetScaledPatValueIce(const Seconds& model_time, Wo
 	}
 	if (index < 0) return scaledPatVelocity;
 	
+	if (bVelocitiesOnNodes>0 && interpolationVal.ptIndex1 >= 0) 
+	{
+		totalDepth = GetInterpolatedTotalDepth(refPoint.p);	// using base class
+		scaledPatVelocity = GetInterpolatedValue(model_time,interpolationVal,depth,totalDepth);
+		goto scale;
+	}						
 	totalDepth = GetTotalDepth(refPoint.p,index);	// may want to know depth relative to ice thickness...
 	
 	// Check for constant current 
@@ -6616,6 +6622,101 @@ scale:
 	//scaledPatVelocity.v *= fVar.fileScaleFactor; 
 			
 	return iceDataValue;
+}
+
+VelocityRec TimeGridVelIce_c::GetInterpolatedValue(const Seconds& model_time, InterpolationValBilinear interpolationVal,float depth,float totalDepth)
+{
+	// figure out which depth values the LE falls between
+	// will have to interpolate in lat/long for both levels first
+	// and some sort of check on the returned indices, what to do if one is below bottom?
+	// for sigma model might have different depth values at each point
+	// for multilayer they should be the same, so only one interpolation would be needed
+	// others don't have different velocities at different depths so no interpolation is needed
+	// in theory the surface case should be a subset of this case, may eventually combine
+	
+	long pt1depthIndex1, pt1depthIndex2, pt2depthIndex1, pt2depthIndex2, pt3depthIndex1, pt3depthIndex2, pt4depthIndex1, pt4depthIndex2;
+	long ptIndex1, ptIndex2, ptIndex3, ptIndex4, amtOfDepthData = 0;
+	double topDepth, bottomDepth, depthAlpha, timeAlpha;
+	VelocityRec pt1interp = {0.,0.}, pt2interp = {0.,0.}, pt3interp = {0.,0.}, pt4interp = {0.,0.};
+	VelocityRec scaledPatVelocity = {0.,0.};
+	Seconds startTime, endTime, relTime;
+	
+	if (interpolationVal.ptIndex1 >= 0)  // if negative corresponds to negative ntri
+	{
+		// this is only section that's different from ptcur
+		ptIndex1 =  interpolationVal.ptIndex1;	
+		ptIndex2 =  interpolationVal.ptIndex2;
+		ptIndex3 =  interpolationVal.ptIndex3;
+		ptIndex4 =  interpolationVal.ptIndex4;
+		if (fVerdatToNetCDFH)
+		{
+			ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			ptIndex4 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex4];
+		}
+	}
+	else
+		return scaledPatVelocity;
+	
+ 	// the contributions from each point will default to zero if the depth indicies
+	// come back negative (ie the LE depth is out of bounds at the grid point)
+	if ((GetNumTimesInFile() == 1 && !(GetNumFiles() > 1)) ||
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) ||
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+	{
+		pt1interp.u = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1).u); 
+		pt1interp.v = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1).v); 
+		
+		pt2interp.u = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2).u); 
+		pt2interp.v = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2).v);
+		
+		pt3interp.u = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3).u); 
+		pt3interp.v = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3).v); 
+
+		pt4interp.u = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4).u); 
+		pt4interp.v = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4).v); 
+	}
+	
+	else // time varying current 
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+		
+		// Calculate the time weight factor
+		if (fTimeAlpha==-1)
+		{
+			//Seconds relTime = time - model->GetStartTime();
+			relTime = model_time - fModelStartTime;
+			startTime = (*fTimeHdl)[fStartData.timeIndex];
+			endTime = (*fTimeHdl)[fEndData.timeIndex];
+			//timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+			timeAlpha = (endTime - relTime)/(double)(endTime - startTime);
+		}
+		else
+			timeAlpha = fTimeAlpha;
+
+		pt1interp.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1).u); 
+		pt1interp.v = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1).v); 
+		
+		pt2interp.u = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2).u); 
+		pt2interp.v = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2).v); 
+		
+		pt3interp.u = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3).u); 
+		pt3interp.v = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3).v); 
+
+		pt4interp.u = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4).u); 
+		pt4interp.v = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4).v); 
+	}
+	scaledPatVelocity.u = pt1interp.u + pt2interp.u + pt3interp.u + pt4interp.u;
+	scaledPatVelocity.v = pt1interp.v + pt2interp.v + pt3interp.v + pt4interp.v;
+	
+	return scaledPatVelocity;
 }
 
 OSErr TimeGridVelIce_c::ReadTimeDataIce(long index,VelocityFH *velocityH, char* errmsg) 
