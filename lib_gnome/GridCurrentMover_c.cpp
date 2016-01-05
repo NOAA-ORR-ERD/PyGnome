@@ -342,7 +342,7 @@ WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds time
 			for (int i = 0; i < 4; i++) {
 				WorldPoint3D RKDelta = scale_WP(deltaD[i], RK_dy_Factors[i]);
 				// could check the end time and only set interval if RK time is past the end time
-				err = timeGrid->SetInterval(errmsg, model_time + (Seconds)(timeStep*RK_dy_Factors[i]);
+				err = timeGrid->SetInterval(errmsg, model_time + (Seconds)(timeStep*RK_dy_Factors[i]));
 				if (err) return finalDelta;
 				scaledVel[i] = timeGrid->GetScaledPatValue(model_time + (Seconds)(timeStep*RK_dy_Factors[i]), add_two_WP3D(startPoint, RKDelta));
 				scaledVel[i].u *= fCurScale;
