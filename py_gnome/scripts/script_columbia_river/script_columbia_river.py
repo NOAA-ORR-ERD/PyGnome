@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+
 """
-Script to test GNOME with chesapeake bay data (netCDF 3D triangle grid)
+Script to test GNOME with columbia river data (netCDF 3D triangle grid)
 Eventually update to use Grid Map rather than BNA
 """
 
