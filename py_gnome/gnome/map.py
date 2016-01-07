@@ -39,9 +39,9 @@ from gnome.utilities.projections import (FlatEarthProjection,
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file,
-                                                      ogr_layers,
-                                                      ogr_features)
+from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
+from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
+from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
 
 from gnome.utilities.geometry.polygons import PolygonSet
 from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,

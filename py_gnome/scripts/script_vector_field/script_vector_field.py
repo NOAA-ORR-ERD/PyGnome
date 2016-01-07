@@ -34,11 +34,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
     start_time = datetime(2015, 9, 24, 1, 1)
+    # start_time = datetime(2015, 12, 18, 06, 01)
 
     # 1 day of data in file
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
-                  duration=timedelta(hours = 48),
+                  duration=timedelta(hours=48),
                   time_step=900)
 
     mapfile = get_datafile(os.path.join(base_dir, 'columbia_river.bna'))
@@ -49,10 +50,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
-    renderer = Renderer(mapfile, images_dir, image_size=(600, 1200))
+    renderer = Renderer(
+        mapfile, images_dir, image_size=(600, 1200))
 #     renderer.viewport = ((-123.35, 45.6), (-122.68, 46.13))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
-    
 
     print 'adding outputters'
     model.outputters += renderer
@@ -63,10 +64,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
     spill1 = point_line_release_spill(num_elements=2000,
-                                     start_position=(-122.625,
-                                                     45.609,
-                                                     0.0),
-                                     release_time=start_time)
+                                      start_position=(-122.625,
+                                                      45.609,
+                                                      0.0),
+                                      release_time=start_time)
 
     model.spills += spill1
 
@@ -74,22 +75,24 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += RandomMover(diffusion_coef=10000)
 
     print 'adding a wind mover:'
-   
+
     model.movers += constant_wind_mover(0.5, 0, units='m/s')
 
     print 'adding a current mover:'
 
     vec_field = tri_vector_field('COOPSu_CREOFS24.nc')
     vec_field.set_appearance(on=True)
+    vec_field.set_appearance(mask=vec_field.velocities)
+    # wf = wind_field('NDFD.nc')
+    # wf.set_appearance(on=True)
     renderer.grids += [vec_field]
-    renderer.delay=25
+    renderer.delay = 25
     u_mover = UGridCurrentMover(vec_field)
     model.movers += u_mover
 
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
     # c_mover = GridCurrentMover(curr_file)
     # model.movers += c_mover
-
 
     return model
 
@@ -104,18 +107,18 @@ if __name__ == "__main__":
     field = rend.grids[0]
 #     rend.graticule.set_DMS(True)
     for step in model:
-        if step['step_num'] == 1:
-            rend.set_viewport(((-122.9, 45.6), (-122.6, 46.0)))
+        #         if step['step_num'] == 1:
+        #             rend.set_viewport(((-122.9, 45.6), (-122.6, 46.0)))
             # rend.set_viewport(((-122.8, 45.65), (-122.75, 45.7)))
-#             rend.set_viewport(((-123.25, 48.125), (-122.5, 48.75)))
-#         if step['step_num'] == 18:
-#             rend.set_viewport(((-123.1, 48.55), (-122.95, 48.65)))
-        if step['step_num'] == 110:
-            field.set_appearance(masked=True, color='grid_2')
+        #             rend.set_viewport(((-123.25, 48.125), (-122.5, 48.75)))
+        #         if step['step_num'] == 18:
+        #             rend.set_viewport(((-123.1, 48.55), (-122.95, 48.65)))
+        if step['step_num'] == 10:
+            # field.set_appearance(masked=True)
             rend.set_viewport(((-122.8, 45.75), (-122.75, 45.85)))
         # print step
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
+        print "step: %.4i -- memuse: %fMB\n" % (step['step_num'],
+                                                utilities.get_mem_use())
     print datetime.now() - startTime
     pd.profiler.disable()
     pd.print_stats(0.2)

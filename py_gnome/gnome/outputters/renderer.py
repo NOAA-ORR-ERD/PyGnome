@@ -63,7 +63,7 @@ class Renderer(Outputter, MapCanvas):
                   ('spillable_area', (255, 0, 0)),  # red
                   ('raster_map', (51, 102, 0)),  # dark green
                   ('raster_map_outline', (0, 0, 0)),  # black
-                  ('grid_1', (51,78, 0)),
+                  ('grid_1', (51, 78, 0)),
                   ('grid_2', (175, 175, 175)),
                   ]
 
@@ -253,7 +253,7 @@ class Renderer(Outputter, MapCanvas):
         self.repeat = True
         self.timestamp_attribs = {}
         self.set_timestamp_attrib(**timestamp_attrib)
-        self.grids=[]
+        self.grids = []
 
     @property
     def delay(self):
@@ -426,13 +426,23 @@ class Renderer(Outputter, MapCanvas):
                     self.draw_polyline(line, a['color'], a['width'], True)
 
     def draw_masked_nodes(self, grid, time):
-        if grid.appearance['on'] and grid.appearance['masked'] is True:
-            mask = grid.masked_nodes(time).mask
+        if grid.appearance['on'] and grid.appearance['mask'] is not None:
+            var = grid.appearance['mask']
+            masked_nodes = grid.masked_nodes(time, var)
             dia = grid.appearance['n_size']
-            nodes = grid.grid.nodes
-            self.draw_points(nodes[~mask], diameter=dia,color='black', background=True)
-            self.draw_points(nodes[mask], diameter=dia,color='uncert_LE', background=True)
-
+            unmasked_nodes = np.ascontiguousarray(
+                masked_nodes.compressed().reshape(-1, 2))
+            self.draw_points(unmasked_nodes, dia, 'black')
+            masked = np.ascontiguousarray(
+                masked_nodes[masked_nodes.mask].data.reshape(-1, 2))
+            self.draw_points(masked, dia, 'uncert_LE')
+#             for i in range(0, grid.nodes.shape[0]):
+#                 if masked_nodes.mask[i, 0] and masked_nodes.mask[i, 1]:
+#                     self.draw_points(
+#                         grid.nodes[i], diameter=dia, color='uncert_LE')
+#                 else:
+#                     self.draw_points(
+#                         grid.nodes[i], diameter=dia, color='black')
 
     def draw_land(self):
         """

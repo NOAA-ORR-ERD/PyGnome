@@ -80,7 +80,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a current mover:'
 
     vec_field = ice_field('acnfs_example.nc')
-    vec_field.set_appearance(on=True)
+    vec_field.set_appearance(on=True, mask=vec_field.ice_thickness)
     renderer.grids += [vec_field]
     renderer.delay=25
     # u_mover = UGridCurrentMover(vec_field)
@@ -104,8 +104,10 @@ if __name__ == "__main__":
     field = rend.grids[0]
 #     rend.graticule.set_DMS(True)
     for step in model:
-        if step['step_num'] == 2:
-            rend.set_viewport(((-160, 70.5), (-157, 72)))
+        # if step['step_num'] == 2:
+            # rend.set_viewport(((-160, 70.5), (-157, 72)))
+        if step['step_num'] == 50:
+            field.set_appearance(mask=None)
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     print datetime.now() - startTime
