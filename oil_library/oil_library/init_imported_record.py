@@ -117,8 +117,9 @@ def fix_preferred_oils(kwargs):
 
 
 def add_synonyms(session, oil, row_dict):
-    if row_dict.get('Synonyms'):
-        for s in row_dict.get('Synonyms').split(','):
+    if ('synonyms' in row_dict and
+            row_dict['synonyms'] is not None):
+        for s in row_dict.get('synonyms').split(','):
             s = s.strip()
             if len(s) > 0:
                 synonyms = (session.query(Synonym)
