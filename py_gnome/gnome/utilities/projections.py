@@ -58,11 +58,11 @@ class NoProjection(object):
         if asint:
             # C ordering to make sure it's contiguous
             return np.asarray(np.asarray(coords).reshape((-1, 3))[:, :
-                              2], dtype=np.int32, order='C')
+                                                                  2], dtype=np.int32, order='C')
         else:
             # C ordering to make sure it's contiguous
             return np.asarray(np.asarray(coords).reshape((-1, 3))[:, :
-                              2], order='C')
+                                                                  2], order='C')
 
     def to_pixel_2D(self, coords, asint=False):
         """
@@ -97,7 +97,7 @@ class GeoProjection(object):
     i.e. "geo-coordinates"
     """
 
-    def __init__(self, bounding_box = None, image_size=None):
+    def __init__(self, bounding_box=None, image_size=None):
         """
         create a new projection
 
@@ -116,8 +116,9 @@ class GeoProjection(object):
         self.center = None
         self.offset = None
         self.scale = None
-        self.image_size = (600,600) if image_size is None else image_size
-        bounding_box = ((-180, -90), (180, 90)) if bounding_box is None else bounding_box
+        self.image_size = (600, 600) if image_size is None else image_size
+        bounding_box = (
+            (-180, -90), (180, 90)) if bounding_box is None else bounding_box
         self.image_box = bounding_box
         self.set_scale(bounding_box, image_size)
 
@@ -126,14 +127,15 @@ class GeoProjection(object):
         provide an equality check for checking
         saved state of renderers, etc
         """
-        if type(self) is not type(other): return False
+        if type(self) is not type(other):
+            return False
         elif not np.allclose(self.center, other.center, rtol=1e-4, atol=1e-4):
             return False
         elif not np.array_equal(self.offset, other.offset):
             return False
         elif not np.allclose(self.scale, other.scale, rtol=1e-4, atol=1e-4):
             return False
-        elif not np.array_equal(self.image_size,other.image_size):
+        elif not np.array_equal(self.image_size, other.image_size):
             return False
         else:
             return True
@@ -178,7 +180,8 @@ class GeoProjection(object):
 
         # doing this at the end, in case there is a problem with the input.
 
-        self.image_box = (self.to_lonlat((0,image_size[1])), self.to_lonlat((image_size[0], 0)))
+        self.image_box = (
+            self.to_lonlat((0, image_size[1])), self.to_lonlat((image_size[0], 0)))
         self.image_size = image_size
 
     def to_pixel(self, coords, asint=False):
@@ -205,10 +208,9 @@ class GeoProjection(object):
               outside the map
         """
 
-        try:
-            coords = np.asarray(coords).reshape((-1, 3))
-        except ValueError:
-            coords = np.asarray(coords).reshape((-1, 2))
+        coords = np.asarray(coords)
+        if len(coords.shape) == 1:
+            raise ValueError('input array cannot be flat')
 
         # shift to center:
         coords = coords[:, :2] - self.center
@@ -275,7 +277,7 @@ class GeoProjection(object):
 
         Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.
         If the input is integers, a 0.5 is added to "shift" the location to mid-pixel.
-        
+
         :returns:  the pixel coords as a similar Nx2 array of floating point x,y coordinates
         (using the y = 0 at the top, and y increasing down)
 
@@ -473,7 +475,8 @@ class FlatEarthProjection(GeoProjection):
             self.scale = (s * lon_scale, -s)
 
         # doing this at the end, in case there is a problem with the input.
-        self.image_box = (self.to_lonlat((0,image_size[1])), self.to_lonlat((image_size[0], 0)))
+        self.image_box = (
+            self.to_lonlat((0, image_size[1])), self.to_lonlat((image_size[0], 0)))
         self.image_size = image_size
 
 
@@ -491,6 +494,7 @@ class RectangularGridProjection(NoProjection):
     Primarily used for making a raster land-water map from a non-regular
     rectangular grid.
     """
+
     def __init__(self, longitude, latitude):
         """
         Create a new Rectangular Grid projection
@@ -518,13 +522,15 @@ class RectangularGridProjection(NoProjection):
 
         # Create interpolators:
         self._lon_to_pixel_interp = scipy.interpolate.interp1d(longitude,
-                                                               np.arange(len(longitude)),
+                                                               np.arange(
+                                                                   len(longitude)),
                                                                kind='linear',
                                                                copy=True,
                                                                bounds_error=False,
                                                                fill_value=None)  # None means use NaN
         self._lat_to_pixel_interp = scipy.interpolate.interp1d(latitude,
-                                                               np.arange(len(latitude)),
+                                                               np.arange(
+                                                                   len(latitude)),
                                                                kind='linear',
                                                                copy=True,
                                                                bounds_error=False,
@@ -560,14 +566,22 @@ class RectangularGridProjection(NoProjection):
                          default is to leave it as the same type it came in,
                          so you can have fractional pixels
         """
-        coords = np.asarray(coords).reshape(-1, 3)
+        coords = np.asarray(coords)
+        if len(coords.shape) == 1:
+            try:
+                coords = coords.reshape((-1, 3))
+            except ValueError:
+                coords = coords.reshape((-1, 2))
 
         pixel_coords = np.zeros((coords.shape[0], 2), dtype=np.float64)
 
-        np.putmask(coords[:,:2], coords[:,:2]<(self.min_lon, self.min_lat), (self.min_lon, self.min_lat) )
-        np.putmask(coords[:,:2], coords[:,:2]>(self.max_lon, self.max_lat), (self.max_lon, self.max_lat) )
+        np.putmask(coords[:, :2], coords[:, :2] < (
+            self.min_lon, self.min_lat), (self.min_lon, self.min_lat))
+        np.putmask(coords[:, :2], coords[:, :2] > (
+            self.max_lon, self.max_lat), (self.max_lon, self.max_lat))
 
-        np.clip(coords[:,:2], (self.min_lon, self.min_lat), (self.max_lon, self.max_lat), out=coords[:,:2])
+        np.clip(coords[:, :2], (self.min_lon, self.min_lat),
+                (self.max_lon, self.max_lat), out=coords[:, :2])
 
         pixel_coords[:, 0] = self._lon_to_pixel_interp(coords[:, 0])
         pixel_coords[:, 1] = (self.max_lat_index -
@@ -627,7 +641,8 @@ class RectangularGridProjection(NoProjection):
             coords += 0.5
 
         # out of bounds gets clipped to boundary
-        np.clip(coords, (0,0), (self.max_lon_index, self.max_lat_index), out=coords)
+        np.clip(
+            coords, (0, 0), (self.max_lon_index, self.max_lat_index), out=coords)
 
         # interpolate to lon-lat_coords
         lon = self._pixel_to_lon_interp(coords[:, 0])
@@ -647,6 +662,7 @@ class RegularGridProjection(GeoProjection):
     You  could use a RectangularGridProjection here as well, but this is
     simpler and should be faster.
     """
+
     def set_scale(self, bounding_box, image_size=None):
         """
         set the scaling, etc. of the projection
