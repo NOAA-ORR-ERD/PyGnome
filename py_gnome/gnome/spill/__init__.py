@@ -1,8 +1,9 @@
-from spill import Spill, SpillSchema, point_line_release_spill
+from spill import Spill, SpillSchema, point_line_release_spill, continuous_release_spill
 from release import (Release,
                      ReleaseSchema,
                      PointLineReleaseSchema,
                      PointLineRelease,
+                     ContinuousRelease,
                      SpatialRelease,
                      GridRelease,
                      VerticalPlumeRelease,
@@ -16,6 +17,7 @@ __all__ = [Spill,
            ReleaseSchema,
            PointLineReleaseSchema,
            PointLineRelease,
+           ContinuousRelease,
            SpatialRelease,
            GridRelease,
            VerticalPlumeRelease,

@@ -99,7 +99,6 @@ class Release(object):
         # flag determines if the first time is valid. If the first call to
         # self.num_elements_to_release(current_time, time_step) has
         # current_time > self.release_time, then no particles are ever released
-        # if current_time <= self.release_time, then toggle this flag since
         # model start time is valid
         self.start_time_invalid = None
 
@@ -535,10 +534,11 @@ class PointLineRelease(Release, Serializable):
             ts = min(time_step,
                      (self.end_release_time - current_time).total_seconds())
             frac = ((current_time + timedelta(seconds=ts) -
-                     self.release_time).total_seconds()/self.release_duration)
-            est_total_num_elems = (self.num_released + num_new_particles)/frac
+                     self.release_time).total_seconds() / self.release_duration)
+            est_total_num_elems = (
+                self.num_released + num_new_particles) / frac
             self._delta_pos = ((self.end_position - self.start_position) /
-                               (est_total_num_elems-1))
+                               (est_total_num_elems - 1))
 
         else:
             # if num_elements given, _delta_pos only set if it is None
@@ -632,6 +632,91 @@ class PointLineRelease(Release, Serializable):
         super(PointLineRelease, self).rewind()
         self._next_release_pos = self.start_position
         self._delta_pos = None
+
+
+class ContinuousRelease(Release, Serializable):
+
+    def __init__(self, release_time,
+                 start_position,
+                 num_elements=None,
+                 num_per_timestep=None,
+                 end_release_time=None,
+                 end_position=None,
+                 initial_elements=None,
+                 name=None):
+
+        self._num_per_timestep = num_per_timestep
+
+        # initializes internal variables: _end_release_time, _start_position,
+        # _end_position
+        self.end_release_time = end_release_time
+        self.start_position = start_position
+        self.end_position = end_position
+
+        # need this for a line release
+        self._next_release_pos = self.start_position
+
+        # set this the first time it is used
+        self._delta_pos = None
+
+        self.initial_release = PointLineRelease(
+            release_time, start_position, initial_elements)
+        self.continuous = PointLineRelease(
+            release_time, start_position, num_elements, num_per_timestep, end_release_time, end_position, name)
+        self.initial_done = False
+        self.num_initial_released = 0
+
+    def num_elements_to_release(self, current_time, time_step):
+        num = 0
+        if(self.initial_release._release(current_time, time_step) and not self.initial_done):
+            self.num_initial_released += self.initial_release.num_elements_to_release(
+                current_time, 1)
+            num += self.num_initial_released
+        num += self.continuous.num_elements_to_release(current_time, time_step)
+        return num
+
+    def set_newparticle_positions(self, num_new_particles,
+                                  current_time, time_step,
+                                  data_arrays):
+        cont_rel = num_new_particles
+        if self.num_initial_released is not 0 and not self.initial_done:
+            self.initial_release.set_newparticle_positions(
+                cont_rel, current_time, 0, data_arrays)
+            self.num_released += self.num_initial_released
+            cont_rel -= self.num_initial_released
+            self.initial_done = True
+        self.continuous.set_newparticle_positions(
+            cont_rel, current_time, time_step, data_arrays)
+        self.num_released += num_new_particles
+
+    def rewind(self):
+        '''
+        Rewind to initial conditions -- i.e. nothing released.
+        '''
+        super(ContinuousRelease, self).rewind()
+        self._next_release_pos = self.start_position
+        self._delta_pos = None
+
+    @property
+    def num_elements(self):
+        return self.initial_release.num_elements + self.continuous.num_elements
+
+    @num_elements.setter
+    def num_elements(self, val):
+        '''
+        made it a property w/ setter/getter because derived classes may need
+        to over ride the setter. See PointLineRelease() or an example
+        '''
+        self.continuous._num_elements = val
+
+    @property
+    def release_duration(self):
+        return self.continuous.release_duration
+
+    @classmethod
+    def deserialize(cls, json_):
+        schema = cls._schema(json_['json_'])
+        return schema.deserialize(json_)
 
 
 class SpatialRelease(Release, Serializable):
@@ -814,6 +899,7 @@ class InitElemsFromFile(Release):
     release object that sets the initial state of particles from a previously
     output NetCDF file
     '''
+
     def __init__(self, filename, release_time=None, index=None, time=None):
         '''
         Take a NetCDF file, which is an output of PyGnome's outputter:
