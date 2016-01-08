@@ -112,7 +112,6 @@ def test_land_cross(
 no_hit_examples = [((5, 5), (9, 5)), ((15, 5), (11, 5)), ((0, 0), (9,
                    9))]
 
-
 @pytest.mark.parametrize(('pt1', 'pt2'), no_hit_examples)
 def test_land_not_cross(pt1, pt2):
     """
@@ -136,7 +135,6 @@ diag_hit_examples = [((3, 0), (0, 3), (2, 1), (1, 1)), ((0, 3), (3, 0),
                      (1, 2), (2, 2)), ((4, 1), (0, 4), (3, 2), (2, 2)),
                      ((0, 4), (4, 1), (2, 3), (3, 3)), ((0, 8), (9, 0),
                      (3, 5), (4, 4))]
-
 
 @pytest.mark.parametrize(('pt1', 'pt2', 'prev_pt', 'hit_pt'),
                          diag_hit_examples)
@@ -231,6 +229,46 @@ def test_points_outside_grid(
     assert result[0] == prev_pt
     assert result[1] == hit_pt
 
+## starting on the raster, heading way off
+## This was an bug/issue found when we had a bad velocity value
+## it should never happened, but shouldn't fail, either...
+way_off_examples = [(1000, 1000), # not that big!
+                    (2147483647, 2147483647), # as big as it gets (32 bit)
+                    (-2147483647, 2147483647), # as big as it gets (32 bit)
+                    (2147483647, -2147483647), # as big as it gets (32 bit)
+                    (-2147483647, -2147483647), # as big as it gets (32 bit)
+                   ]
+@pytest.mark.parametrize('pt2', way_off_examples)
+def test_way_off(pt2):
+    # a very simple raster -- no land
+    (w, h) = (20, 20)
+    raster = np.zeros((w, h), dtype=np.uint8)
+    # a little block in the middle
+    # raster[8:12, 8:12] = 1
+    pt1 = (10, 10)
+    print pt1
+    print pt2
+    result = find_first_pixel(raster, pt1, pt2)
+
+    assert result is None
+
+off_to_off_examples = [( (-10, -10), (30, 30) ), 
+                       ( (30, 30), (-10, -10) ),
+                       ( (30, -10), (-10, 30) ),
+                       ( (-2, 40), (30, -10) ),
+                       ]
+
+@pytest.mark.parametrize(('pt1','pt2'), off_to_off_examples)
+def test_off_to_off(pt1, pt2):
+    """test  movement that is entirely off the raster"""
+    # a very simple raster -- no land
+    (w, h) = (20, 20)
+    raster = np.zeros((w, h), dtype=np.uint8)
+    result = find_first_pixel(raster, pt1, pt2)
+
+    assert result is None
+
+
 # def test_outside_raster(self):
 #         """
 #         test LEs starting form outside the raster bounds
@@ -274,33 +312,37 @@ def test_points_outside_grid(
 #                               (basic_types.oil_status.on_land,))
 
 if __name__ == '__main__':
-    (w, h) = (10, 10)
-    raster = np.zeros((w, h), dtype=np.uint8)
 
-    # a single skinny diagonal line part way:
 
-    raster[0, 0] = 1
-    raster[1, 1] = 1
-    raster[2, 2] = 1
-    raster[3, 3] = 1
-    raster[4, 4] = 1
+    test_way_off( (-30000000, -30000000) )
 
-    pt1 = (0, 8)
-    pt2 = (9, 0)
+    # (w, h) = (10, 10)
+    # raster = np.zeros((w, h), dtype=np.uint8)
 
-    print 'checking:'
-    print pt1
-    print pt2
-    result = find_first_pixel(raster, pt1, pt2)
+    # # a single skinny diagonal line part way:
 
-    print result
+    # raster[0, 0] = 1
+    # raster[1, 1] = 1
+    # raster[2, 2] = 1
+    # raster[3, 3] = 1
+    # raster[4, 4] = 1
 
-    pt1 = (pt1[1], pt1[0])
-    pt2 = (pt2[1], pt2[0])
+    # pt1 = (0, 8)
+    # pt2 = (9, 0)
 
-    print 'checking:'
-    print pt1
-    print pt2
-    result = find_first_pixel(raster, pt1, pt2)
+    # print 'checking:'
+    # print pt1
+    # print pt2
+    # result = find_first_pixel(raster, pt1, pt2)
 
-    print result
+    # print result
+
+    # pt1 = (pt1[1], pt1[0])
+    # pt2 = (pt2[1], pt2[0])
+
+    # print 'checking:'
+    # print pt1
+    # print pt2
+    # result = find_first_pixel(raster, pt1, pt2)
+
+    # print result

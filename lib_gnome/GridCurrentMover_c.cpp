@@ -63,6 +63,8 @@ GridCurrentMover_c::GridCurrentMover_c (TMap *owner, char *name) : CurrentMover_
 	
 	fAllowVerticalExtrapolationOfCurrents = false;
 	fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
+	
+	num_method = EULER;
 }
 #endif
 
@@ -106,6 +108,7 @@ GridCurrentMover_c::GridCurrentMover_c () : CurrentMover_c()
 	fAllowVerticalExtrapolationOfCurrents = false;
 	fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
 	
+	num_method = EULER;
 }
 
 void GridCurrentMover_c::Dispose ()
@@ -282,6 +285,8 @@ WorldPoint3D GridCurrentMover_c::add_two_WP3D(const WorldPoint3D &a, const World
 
 WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
+	OSErr err = 0;
+	char errmsg[256];
 	if (num_method == EULER) { //EULER
 		WorldPoint3D	deltaPoint = {{0,0},0.};
 		WorldPoint3D refPoint;
@@ -289,13 +294,10 @@ WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds time
 
 		VelocityRec scaledPatVelocity = {0.,0.};
 		Boolean useEddyUncertainty = false;
-		OSErr err = 0;
-		char errmsg[256];
 
 		if(!fIsOptimizedForStep)
 		{
 			err = timeGrid->SetInterval(errmsg, model_time);
-
 			if (err) return deltaPoint;
 		}
 
@@ -329,18 +331,19 @@ WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds time
 			VelocityRec scaledVel[4];
 			double dLong, dLat;
 			Boolean useEddyUncertainty = false;
-				OSErr err = 0;
-				char errmsg[256];
+			// check the interval and set if necessary each time
+			/*if(!fIsOptimizedForStep)
+			{
+				err = timeGrid->SetInterval(errmsg, model_time);
 
-				if(!fIsOptimizedForStep)
-				{
-					err = timeGrid->SetInterval(errmsg, model_time);
-
-					if (err) return finalDelta;
-				}
+				if (err) return finalDelta;
+			}*/
 
 			for (int i = 0; i < 4; i++) {
 				WorldPoint3D RKDelta = scale_WP(deltaD[i], RK_dy_Factors[i]);
+				// could check the end time and only set interval if RK time is past the end time
+				err = timeGrid->SetInterval(errmsg, model_time + (Seconds)(timeStep*RK_dy_Factors[i]));
+				if (err) return finalDelta;
 				scaledVel[i] = timeGrid->GetScaledPatValue(model_time + (Seconds)(timeStep*RK_dy_Factors[i]), add_two_WP3D(startPoint, RKDelta));
 				scaledVel[i].u *= fCurScale;
 				scaledVel[i].v *= fCurScale;

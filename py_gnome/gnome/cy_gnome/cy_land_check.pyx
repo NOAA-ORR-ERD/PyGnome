@@ -46,8 +46,9 @@ cdef int32_t c_overlap_grid(int32_t m,
     check if the line segment from pt1 to pt could overlap the grid of
     size (m,n).
 
-    returns True is both points are all the way to the left, right top or bottom of the grid
+    returns 1 if both points are all the way to the left, right top or bottom of the grid
 
+    NOTE: this could be extended to cover lines that cross quadrants, but don't intersect teh box -- wouls that be worth it?
     """
     if x1 < 0 and x2 < 0: # both left
         return 0
@@ -74,9 +75,19 @@ cdef bool c_find_first_pixel( uint8_t* grid,
                              int32_t *hit_x,
                              int32_t *hit_y,
                              ):
+    """
+    Marches along the grid to see if the LE movement crosses land
+    
+    returns False if no land is encountered
 
+    returns True is a land pixel is hit.
+
+    the passed-in values hit_x and hit_y are set to the pixel hit
+    """
     cdef int32_t dx, dy, sx, sy, err, e2,
     cdef int32_t pt1_x, pt1_y, pt2_x, pt2_y
+    cdef bool was_on_grid = False
+
     # check if totally off the grid
     if not c_overlap_grid(m, n, x0, y0, x1, y1):
         return False
@@ -107,6 +118,7 @@ cdef bool c_find_first_pixel( uint8_t* grid,
             hit_y[0] = y0
             return True
             #return (x0, y0), (x0, y0)
+        was_on_grid = True
 
     while True: #keep going till hit land or the final point
         if x0 == x1 and y0 == y1:
@@ -121,12 +133,18 @@ cdef bool c_find_first_pixel( uint8_t* grid,
         if e2 <  dx:
             err = err + dx
             y0 = y0 + sy
-        # check for land hit
 
+        # check for land hit
         if x0 < 0 or x0 >= m or y0 < 0 or y0 >= n:# is the point off the grid? if so, it's not land!
-            ## fixme -- if we've moved off the grid for good, no need to keep going.
-            continue                             # note: a diagonal movement, off the grid wouldn't be a hit either
+            ## if we've moved off the grid for good, no need to keep going.
+            ## but can only do this if we've crossed the grid.
+            if was_on_grid:
+                return False
+            else:
+                # haven't hit the grid yet -- keep going
+                continue
         else:
+            was_on_grid = True
             if grid[x0 * n + y0] == 1:
                 hit_x[0] = x0
                 hit_y[0] = y0
@@ -157,11 +175,11 @@ cdef bool c_find_first_pixel( uint8_t* grid,
 
 def find_first_pixel(grid, pt1, pt2):
     """
-    This finds the first non-zero pixel that is is encountered when followoing
+    This finds the first non-zero pixel that is is encountered when following
     a line from pt1 to pt2.
 
-    param: grid  -- a numpy integer array -- the raster were'e working with
-           zero eveywhere there is not considered a "hit"
+    param: grid  -- a numpy integer array -- the raster we're working with
+           zero everywhere there is not considered a "hit"
     param: pt1 -- the start point -- an integer (i,j) tuple
     param: pt2 -- the end point   -- an integer (i,j) tuple
 
@@ -173,7 +191,7 @@ def find_first_pixel(grid, pt1, pt2):
    (http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm)
 
     Usually used for drawing lines in graphics.  It's been adapted to do an
-    extra check when the algorythm puts two points diagonal to each-other, so
+    extra check when the algorithm puts two points diagonal to each-other, so
     as to avoid an exact match with a diagonal line of land skipping thorough.
     If _both_ the points diagonal to the move are land, it is considered a hit.
 
@@ -191,7 +209,7 @@ def find_first_pixel(grid, pt1, pt2):
 
     cdef cnp.ndarray[uint8_t, ndim=2, mode="c"] grid_arr = grid
     cdef uint8_t* dataptr = &grid_arr[0,0]
-    #initialize prev_x, prev y in case point starts on land.
+    #initialize prev_x, prev_y in case point starts on land.
     prev_x = x1
     prev_y = y1
 
@@ -370,9 +388,8 @@ def move_particles(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not No
                  cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] land_points not None):
     
     """
-        This land checking algorithm is for use with the parameterized map, a long, straight shoreline.
-
-        """
+    This land checking algorithm is for use with the parameterized map, a long, straight shoreline.
+    """
     cdef cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] shoreline
     shoreline = land_points[0:2]
     cdef cnp.float64_t x1,y1,x2,y2, x3, y3, x4, y4, a1, a2, b1, b2, x, y, u
