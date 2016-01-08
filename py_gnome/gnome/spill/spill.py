@@ -17,7 +17,7 @@ from gnome.persist import class_from_objtype
 from gnome.persist.base_schema import ObjType
 
 from . import elements
-from .release import PointLineRelease
+from .release import PointLineRelease, ContinuousRelease
 from .. import _valid_units
 
 
@@ -784,12 +784,12 @@ def continuous_release_spill(initial_elements,
     '''
     Helper function returns a Spill object containing a point or line release
     '''
-    release = Continuouselease(initial_elements=initial_elements,
-                               release_time=release_time,
-                               start_position=start_position,
-                               num_elements=num_elements,
-                               end_position=end_position,
-                               end_release_time=end_release_time)
+    release = ContinuousRelease(initial_elements=initial_elements,
+                                release_time=release_time,
+                                start_position=start_position,
+                                num_elements=num_elements,
+                                end_position=end_position,
+                                end_release_time=end_release_time)
     return Spill(release,
                  element_type,
                  substance,
