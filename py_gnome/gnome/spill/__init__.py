@@ -13,6 +13,7 @@ import elements
 __all__ = [Spill,
            SpillSchema,
            point_line_release_spill,
+           continuous_release_spill,
            Release,
            ReleaseSchema,
            PointLineReleaseSchema,

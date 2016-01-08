@@ -235,7 +235,7 @@ class Spill(serializable.Serializable):
                     time_step = (self.get('end_release_time') -
                                  current_time).total_seconds()
 
-                _mass_in_ts = _mass/rd_sec * time_step
+                _mass_in_ts = _mass / rd_sec * time_step
                 le_mass = _mass_in_ts / num_new_particles
 
         self.logger.debug(self._pid + "LE mass (kg): {0}".format(le_mass))
@@ -766,6 +766,36 @@ def subsurface_plume_spill(num_elements,
                  element_type=element_type,
                  amount=amount,
                  units=units,
+                 name=name)
+
+
+def continuous_release_spill(initial_elements,
+                             num_elements,
+                             start_position,
+                             release_time,
+                             end_position=None,
+                             end_release_time=None,
+                             element_type=None,
+                             substance=None,
+                             on=True,
+                             amount=None,
+                             units=None,
+                             name='Point/Line Release'):
+    '''
+    Helper function returns a Spill object containing a point or line release
+    '''
+    release = Continuouselease(initial_elements=initial_elements,
+                               release_time=release_time,
+                               start_position=start_position,
+                               num_elements=num_elements,
+                               end_position=end_position,
+                               end_release_time=end_release_time)
+    return Spill(release,
+                 element_type,
+                 substance,
+                 on,
+                 amount,
+                 units,
                  name=name)
 
 
