@@ -18,7 +18,7 @@ from gnome.model import Model
 
 from gnome.map import MapFromBNA
 from gnome.environment import Wind
-from gnome.spill import point_line_release_spill
+from gnome.spill import point_line_release_spill, continuous_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.outputters import Renderer
@@ -63,11 +63,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = point_line_release_spill(num_elements=2000,
+    spill1 = continuous_release_spill(initial_elements=1000,
+                                      num_elements=400,
                                       start_position=(-122.625,
                                                       45.609,
                                                       0.0),
-                                      release_time=start_time)
+                                      release_time=start_time,
+                                      end_position=(-122.6, 45.605, 0.0),
+                                      end_release_time=start_time + timedelta(seconds=36000))
 
     model.spills += spill1
 
@@ -107,15 +110,15 @@ if __name__ == "__main__":
     field = rend.grids[0]
 #     rend.graticule.set_DMS(True)
     for step in model:
-        #         if step['step_num'] == 1:
-        #             rend.set_viewport(((-122.9, 45.6), (-122.6, 46.0)))
-            # rend.set_viewport(((-122.8, 45.65), (-122.75, 45.7)))
+        if step['step_num'] == 0:
+            rend.set_viewport(((-122.9, 45.6), (-122.6, 46.0)))
+#             rend.set_viewport(((-122.8, 45.65), (-122.75, 45.7)))
         #             rend.set_viewport(((-123.25, 48.125), (-122.5, 48.75)))
         #         if step['step_num'] == 18:
         #             rend.set_viewport(((-123.1, 48.55), (-122.95, 48.65)))
-        if step['step_num'] == 10:
+#         if step['step_num'] == 10:
             # field.set_appearance(masked=True)
-            rend.set_viewport(((-122.8, 45.75), (-122.75, 45.85)))
+#             rend.set_viewport(((-122.8, 45.75), (-122.75, 45.85)))
         # print step
         print "step: %.4i -- memuse: %fMB\n" % (step['step_num'],
                                                 utilities.get_mem_use())

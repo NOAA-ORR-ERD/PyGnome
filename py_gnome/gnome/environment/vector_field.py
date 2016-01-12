@@ -19,8 +19,7 @@ def tri_vector_field(filename=None, dataset=None):
                          faces,
                          edges,
                          boundaries,
-                         neighbors,
-                         curvilinear=False)
+                         neighbors)
     u = pyugrid.UVar('u', 'node', dataset['u'])
     v = pyugrid.UVar('v', 'node', dataset['v'])
     time = Time(dataset['time'])
@@ -110,9 +109,9 @@ class VectorField(object):
         if curv:
             self.grid.curv_x = dimensions['x']
             self.grid.curv_y = dimensions['y']
-        if edges is None:
+        if grid.edges is None:
             self.grid.build_edges()
-        if neighbors is None:
+        if grid.face_face_connectivity is None:
             self.grid.build_face_face_connectivity()
         self.grid.mesh_name = name
         self.grid_type = type
