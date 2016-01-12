@@ -68,7 +68,7 @@ class ContinuousReleaseSchema(ReleaseSchema):
     end_release_time = SchemaNode(LocalDateTime(), missing=drop,
                                   validator=convertible_to_seconds)
     num_per_timestep = SchemaNode(Int(), missing=drop)
-    description = 'PointLineRelease object schema'
+    description = 'ContinuousRelease object schema'
 
 
 class StartPositions(SequenceSchema):
@@ -656,7 +656,7 @@ class ContinuousRelease(Release, Serializable):
     _state = copy.deepcopy(Release._state)
     _state.add(update=_update, save=_create)
 
-    _schema = PointLineReleaseSchema
+    _schema = ContinuousReleaseSchema
 
     def __init__(self, release_time,
                  start_position,
@@ -667,19 +667,11 @@ class ContinuousRelease(Release, Serializable):
                  initial_elements=None,
                  name=None):
 
-        self._num_per_timestep = num_per_timestep
         self.initial_release = PointLineRelease(
             release_time, start_position, initial_elements)
         self.continuous = PointLineRelease(
-            release_time, start_position, num_elements, num_per_timestep, end_release_time, end_position, name)
+            release_time, start_position, num_elements, num_per_timestep, end_release_time, end_position)
 
-        # initializes internal variables: _end_release_time, _start_position,
-        # _end_position
-        self.end_release_time = end_release_time
-        self.start_position = start_position
-        self.end_position = end_position
-
-        # need this for a line release
         self._next_release_pos = self.start_position
 
         # set this the first time it is used
@@ -687,6 +679,8 @@ class ContinuousRelease(Release, Serializable):
 
         self.initial_done = False
         self.num_initial_released = 0
+        if name:
+            self.name = name
 
     def num_elements_to_release(self, current_time, time_step):
         num = 0
@@ -711,40 +705,28 @@ class ContinuousRelease(Release, Serializable):
             cont_rel, current_time, time_step, data_arrays)
 
     def rewind(self):
-        '''
-        Rewind to initial conditions -- i.e. nothing released.
-        '''
-        super(ContinuousRelease, self).rewind()
-        self._next_release_pos = self.start_position
-        self._delta_pos = None
+        self.initial_release.rewind()
+        self.continuous.rewind()
+        self.initial_done = False
 
     @property
-    def num_released(self):
-        return self.initial_release.num_released + self.continuous.num_released_
+    def end_position(self):
+        return self.continuous._end_position
 
-    @property
-    def num_elements(self):
-        return self.initial_release.num_elements + self.continuous.num_elements
-
-    @num_elements.setter
-    def num_elements(self, val):
+    @end_position.setter
+    def end_position(self, val):
         '''
-        made it a property w/ setter/getter because derived classes may need
-        to over ride the setter. See PointLineRelease() or an example
+        set end_position and also make _delta_pos = None so it gets
+        recomputed - it should be updated
+
+        :param val: Set end_position to val. This can be None if release is a
+            point source.
         '''
-        self.continuous._num_elements = val
+        if val is not None:
+            val = np.array(val, dtype=world_point_type).reshape((3, ))
 
-    @property
-    def initial_elements(self):
-        return self.initial_release.num_elements
-
-    @initial_elements.setter
-    def initial_elements(self, val):
-        self.initial_release._num_elements = val
-
-    @property
-    def release_duration(self):
-        return self.continuous.release_duration
+        self.continuous._end_position = val
+        self.continuous._delta_pos = None
 
     @property
     def end_release_time(self):
@@ -768,23 +750,12 @@ class ContinuousRelease(Release, Serializable):
         self.continuous.end_release_time = val
 
     @property
-    def num_per_timestep(self):
-        return self.continuous.num_per_timestep
+    def initial_elements(self):
+        return self.initial_release.num_elements
 
-    @num_per_timestep.setter
-    def num_per_timestep(self, val):
-        '''
-        Defines fixed number of LEs released per timestep
-
-        Setter does the following:
-
-        1. sets num_per_timestep attribute
-        2. sets num_elements to None since total elements depends on duration
-            and timestep
-        3. invokes _reference_to_num_elements_to_release(), which updates the
-            method referenced by num_elements_to_release
-        '''
-        self.continuous.num_per_timestep = val
+    @initial_elements.setter
+    def initial_elements(self, val):
+        self.initial_release.num_elements = val
 
     @property
     def num_elements(self):
@@ -799,8 +770,37 @@ class ContinuousRelease(Release, Serializable):
         self.continuous.num_elements = val
 
     @property
+    def num_per_timestep(self):
+        return self.continuous.num_per_timestep
+
+    @num_per_timestep.setter
+    def num_per_timestep(self, val):
+        self.continuous.num_per_timestep = val
+
+    @property
+    def num_released(self):
+        return self.initial_release.num_released + self.continuous.num_released
+
+    @num_released.setter
+    def num_released(self, val):
+        self.continuous.num_released = val
+
+    @property
+    def release_duration(self):
+        return self.continuous.release_duration
+
+    @property
+    def release_time(self):
+        return self.initial_release.release_time
+
+    @release_time.setter
+    def release_time(self, val):
+        self.initial_release.release_time = val
+        self.continuous.release_time = val
+
+    @property
     def start_position(self):
-        return self._start_position
+        return self.initial_release.start_position
 
     @start_position.setter
     def start_position(self, val):
@@ -817,33 +817,16 @@ class ContinuousRelease(Release, Serializable):
         self.initial_release._delta_pos = None
 
     @property
-    def end_position(self):
-        return self.continuous._end_position
+    def start_time_invalid(self):
+        if self.initial_release.start_time_invalid is None or self.continuous.start_time_invalid is None:
+            return None
+        else:
+            return self.initial_release.start_time_invalid
 
-    @end_position.setter
-    def end_position(self, val):
-        '''
-        set end_position and also make _delta_pos = None so it gets
-        recomputed - it should be updated
-
-        :param val: Set end_position to val. This can be None if release is a
-            point source.
-        '''
-        if val is not None:
-            val = np.array(val, dtype=world_point_type).reshape((3, ))
-
-        self.continuous._end_position = val
-        self.continuous._delta_pos = None
-
-    @classmethod
-    def deserialize(cls, json_):
-        schema = cls._schema(json_['json_'])
-        return schema.deserialize(json_)
-
-    def rewind(self):
-        self.initial_release.rewind()
-        self.continuous.rewind()
-        self.initial_done = False
+    @start_time_invalid.setter
+    def start_time_invalid(self, val):
+        self.initial_release.start_time_invalid = val
+        self.continuous.start_time_invalid = val
 
 
 class SpatialRelease(Release, Serializable):
