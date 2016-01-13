@@ -49,6 +49,7 @@ SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 CWD = os.getcwd()
 os.chdir(SETUP_PATH)
 
+platform = sys.platform
 
 def target_dir(name):
     '''Returns the name of a distutils build directory'''
@@ -181,7 +182,7 @@ if sys.maxsize <= 2 ** 32:
 else:
     architecture = 'x86_64'
 
-if sys.platform == 'darwin':
+if platform == 'darwin':
     # for the mac -- decide whether we are 32 bit build
     if architecture == 'i386':
         #Setting this should force only 32 bit intel build
@@ -189,7 +190,7 @@ if sys.platform == 'darwin':
     else:
         os.environ['ARCHFLAGS'] = "-arch x86_64"
     libfile = 'lib{0}.a'  # OSX static library filename format
-elif sys.platform == "win32":
+elif platform == "win32":
     # Distutils normally only works with VS2008.
     # this is to trick it into seeing VS2010 or VS2012
     # We will prefer VS2012, then VS2010
@@ -205,16 +206,16 @@ elif sys.platform == "win32":
 ## Linux does not use the libraries in third_party_lib. It links against
 ## netcdf shared objects installed by apt-get
 
-if sys.platform is "darwin" or "win32":
+if platform is "darwin" or "win32":
     third_party_dir = os.path.join('..', 'third_party_lib')
 
     # the netCDF environment
     netcdf_base = os.path.join(third_party_dir, 'netcdf-4.3',
-                              sys.platform, architecture)
+                              platform, architecture)
     netcdf_libs = os.path.join(netcdf_base, 'lib')
     netcdf_inc = os.path.join(netcdf_base, 'include')
 
-    if sys.platform == 'win32':
+    if platform == 'win32':
         # also copy the netcdf *.dlls to cy_gnome directory
         # On windows the dlls have the same names for those used by python's
         # netCDF4 module and PyGnome modules. For PyGnome, we had the latest
@@ -364,7 +365,7 @@ static_lib_files = netcdf_lib_files
 #          Also, the static_lib_files only need to be linked against
 #          lib_gnome in the following Extension.
 
-if sys.platform == "darwin":
+if platform == "darwin":
 
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
             ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
@@ -379,7 +380,7 @@ if sys.platform == "darwin":
     extensions.append(basic_types_ext)
     static_lib_files = []
 
-elif sys.platform == "win32":
+elif platform == "win32":
     # build our compile arguments
     macros.append(('_EXPORTS', 1))
     macros.append(('_CRT_SECURE_NO_WARNINGS', 1))
@@ -412,7 +413,7 @@ elif sys.platform == "win32":
                                      'cy_basic_types.lib')]
     libdirs = []
 
-elif sys.platform == "linux2":
+elif platform.startswith('linux'):
 
     ## for some reason I have to create build/temp.linux-i686-2.7
     ## else the compile fails saying temp.linux-i686-2.7 is not found
@@ -551,7 +552,7 @@ os.chdir(CWD)
 ## but I kept the code here, as we might want to use something similar
 ## some day.
 # # is this an Anaconda environment:
-# if sys.platform == 'darwin':
+# if platform == 'darwin':
 #     import sys, os
 #     sub_path = "Anaconda/anaconda/lib/python2.7"
 #     for p in sys.path:
