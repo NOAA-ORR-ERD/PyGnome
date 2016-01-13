@@ -327,7 +327,7 @@ cpp_files = ['RectGridVeL_c.cpp',
              ]
 
 
-cpp_code_dir = os.path.join('..', 'lib_gnome')
+cpp_code_dir = os.path.abspath(os.path.join('..', 'lib_gnome'))
 cpp_files = [os.path.join(cpp_code_dir, f) for f in cpp_files]
 
 
@@ -413,14 +413,6 @@ elif sys.platform == "win32":
     libdirs = []
 
 elif sys.platform == "linux2":
-
-    ## for some reason I have to create build/temp.linux-i686-2.7
-    ## else the compile fails saying temp.linux-i686-2.7 is not found
-    ## required for develop or install mode
-    build_temp = target_path()
-    if 'clean' not in sys.argv[1:] and not os.path.exists(build_temp):
-        os.makedirs(build_temp)
-
     ## Not sure calling setup twice is the way to go - but do this for now
     ## NOTE: This is also linking against the netcdf library (*.so), not
     ## the static netcdf. We didn't build a NETCDF static library.
