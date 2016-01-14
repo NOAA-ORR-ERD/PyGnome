@@ -1,4 +1,5 @@
 # Documents the packages required for PyGnome
+#  this cover py_gnome and the oil_library
 # This should be the minimal conda install
 
 setuptools
@@ -25,3 +26,6 @@ sqlalchemy
 zope.interface
 zope.sqlalchemy
 gdal
+awesome-slugify
+regex
+unidecode

@@ -7,6 +7,7 @@ from subprocess import call
 from setuptools import setup, find_packages
 from distutils.command.clean import clean
 from setuptools import Command
+from setuptools.command.test import test as TestCommand
 
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.txt')).read()
@@ -83,6 +84,19 @@ class remake_oil_db(Command):
         else:
             print 'OilLibrary database generation returned: ', ret
 
+class PyTest(TestCommand):
+    """So we can run tests with ``setup.py test``"""
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        import pytest
+        errno = pytest.main(self.test_args)
+        import sys
+        sys.exit(errno)
+
 s = setup(name=pkg_name,
           version='0.1',
           description='OilLibrary',
@@ -94,11 +108,14 @@ s = setup(name=pkg_name,
           packages=find_packages(),
           include_package_data=True,
           package_data={'oil_library': ['OilLib.db',
+                                        'Oillib',
                                         'tests/*.py',
                                         'tests/sample_data/*']},
           cmdclass={'cleandev': cleandev,
                     'remake_oil_db': remake_oil_db,
-                    'cleanall': cleanall},
+                    'cleanall': cleanall,
+                    'test': PyTest,
+                    },
           entry_points={'console_scripts': [('initialize_OilLibrary_db = '
                                              'oil_library.initializedb'
                                              ':make_db'),
@@ -112,9 +129,11 @@ s = setup(name=pkg_name,
 
 # make database post install - couldn't call this directly so used
 # console script
-if 'install' in s.script_args:
+
+if 'install' in s.script_args or 'build' in s.script_args:
     print "Calling initialize_OilLibrary_db"
     call("initialize_OilLibrary_db")
+
 elif 'develop' in s.script_args:
     if os.path.exists(os.path.join(here, 'oil_library', 'OilLib.db')):
         print 'OilLibrary database exists - do not remake!'
