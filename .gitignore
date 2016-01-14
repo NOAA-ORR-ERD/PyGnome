@@ -11,6 +11,7 @@ cy_*.c
 *._.DS_Store
 empty_BW_image.png
 .DS_Store
+.cache/
 
 # ignore binaries generated during build
 *.egg-info
