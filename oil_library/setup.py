@@ -88,12 +88,15 @@ class PyTest(TestCommand):
     """So we can run tests with ``setup.py test``"""
     def finalize_options(self):
         TestCommand.finalize_options(self)
+        # runs the tests from inside the installed package
         self.test_args = []
         self.test_suite = True
 
     def run_tests(self):
-        import pytest
-        errno = pytest.main(self.test_args)
+        # no idea why it doesn't work to call pytest.main
+        #import pytest
+        #errno = pytest.main(self.test_args)
+        errno = os.system('py.test --pyargs oil_library')
         import sys
         sys.exit(errno)
 
