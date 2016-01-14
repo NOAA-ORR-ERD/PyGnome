@@ -7,7 +7,7 @@ built in. Thus it's a nice target for running GNOME on your own system.
 
 ## Windows:
 
-You want the Windows 64 bit Python 2.7 version
+You want the Windows 64 bit Python 2.7 version.
 Installing with the defaults works fine.
 You probably want to let it set the PATH for you -- that's a pain to do by hand.
 
@@ -44,7 +44,9 @@ Once you have either Anaconda or Miniconda installed, the rest of the instructio
 
 ## Update your (new) system
 
-Once you have Anaconda or miniconda installed, you should start by getting everything up to date, sometimes pacakges have been updated since the installer was built::
+Once you have Anaconda or miniconda installed, you should start by getting everything up to date, sometimes packages have been updated since the installer was built.
+
+Enter the following on the command-line:
 
 ```
 > conda update anaconda
@@ -69,7 +71,7 @@ Many of the dependencies that py_gnome requires come out of the box with
 Anaconda, but a few don't.
 
 So we have set up [our own anaconda channel](https://anaconda.org/noaa-orr-erd)
-where we put various packages needed for py_gnome. But you don't need to access the web site to use it...conda can find everything you need:
+where we put various packages needed for py_gnome. But you don't need to access the web site to use it...conda can find everything you need.
 
 To install the anaconda client:
 
@@ -107,7 +109,10 @@ To install all the packages pygnome needs:
 To get the whole setup, this file has a full dump of a conda environment
 with all the dependencies.
 
-conda support "environments" -- walled of setups for a compete set of packages of a poaorticualr version. If you are using python and conda for multipiel projet that may require different versions of various pacakges, you can set up a conda environment for py_gnome with:
+conda supports "environments" -- walled off setups for a complete set of
+packages of a particular version. If you are using python and conda for
+multiple projects that may require different versions of various packages,
+you can set up a conda environment for py_gnome with:
 
 ```
 > conda create -n py_gnome --file conda_packages.txt`
@@ -138,7 +143,8 @@ To install the XCode command line tools:
  - Click "Preferences", then click "Downloads".
  - Command Line Tools should be one of the downloadable items, and there should be an install button for that item.  Click to install.
 
-Once the command line tools are installed, you should be able to build py_gnome as above.
+Once the command line tools are installed, you should be able to build py_gnome
+as described below.
 
 
 ### Windows
