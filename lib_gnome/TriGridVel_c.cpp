@@ -143,6 +143,146 @@ long TriGridVel_c::GetNumDepths(void)
 	return numDepths;
 }
 
+InterpolationValBilinear TriGridVel_c::GetBilinearInterpolationValues(WorldPoint refPoint)
+{
+	InterpolationValBilinear interpolationVal;
+	LongPoint lp;
+	long ntri, adj_tri;
+	long ptIndex1,ptIndex2,ptIndex3,ptIndex4;
+	ExPoint vertex1,vertex2,vertex3,vertex4;
+	double largest_lat, smallest_lat, largest_lon, smallest_lon;
+	double denom,refLon,refLat;
+	double num1,num2,num3,num4;
+	
+	TopologyHdl topH ;
+	LongPointHdl ptsH ;
+	
+	memset(&interpolationVal,0,sizeof(interpolationVal));
+	
+	if(!fDagTree) return interpolationVal;
+	// get four corners (or just diagonals - x1,y1, x2,y2)
+	lp.h = refPoint.pLong;
+	lp.v = refPoint.pLat;
+	ntri = fDagTree->WhatTriAmIIn(lp);
+	if (ntri < 0) 
+	{
+		interpolationVal.ptIndex1 = ntri; // flag it
+		return interpolationVal;
+	}
+	if ((ntri+1)%2==0) adj_tri = ntri-1; else adj_tri = ntri+1; //odd, even
+	
+	refLon = lp.h/1000000.;
+	refLat = lp.v/1000000.;
+	
+	topH = fDagTree->GetTopologyHdl();
+	ptsH = fDagTree->GetPointsHdl();
+	
+	if(!topH || !ptsH) return interpolationVal;
+	
+	// get the index into the pts handle for each vertex
+	
+	//ptIndex1 = (*topH)[ntri].vertex1;
+	//ptIndex2 = (*topH)[ntri].vertex2;
+	//ptIndex3 = (*topH)[ntri].vertex3;
+	//ptIndex4 = (*topH)[adj_tri].vertex2;
+	
+	if (((ntri+1)%2==0))
+	{
+		ptIndex1 = (*topH)[ntri].vertex1;//bL
+		ptIndex2 = (*topH)[ntri].vertex2;//bR
+		ptIndex4 = (*topH)[ntri].vertex3;//tR
+		ptIndex3 = (*topH)[adj_tri].vertex2;//tL
+	}
+	else
+	{
+		ptIndex4 = (*topH)[ntri].vertex1;//tR
+		ptIndex3 = (*topH)[ntri].vertex2;//tL
+		ptIndex1 = (*topH)[ntri].vertex3;//bL
+		ptIndex2 = (*topH)[adj_tri].vertex2;//bR
+	}
+	// top left - tR, tL, bL - adj_tri = ntri+1
+	// bottom right - bL, bR, tR - adj_tri = ntri-1
+	
+	//interpolationVal.ptIndex1 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex1);
+	//interpolationVal.ptIndex2 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex2);
+	//interpolationVal.ptIndex3 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex3);
+	//interpolationVal.ptIndex4 = INDEXH(ptrVerdatToNetCDFH,(*topH)[adj_tri].vertex2);
+	interpolationVal.ptIndex1 = ptIndex1;
+	interpolationVal.ptIndex2 = ptIndex2;
+	interpolationVal.ptIndex3 = ptIndex3;
+	interpolationVal.ptIndex4 = ptIndex4;
+	//n = INDEXH(verdatPtsH,i);
+	// need to translate back to original index via verdatPtsH
+	
+	// get the vertices from fPtsH and figure out the interpolation coefficients
+	// to get the points use the triangle indices, for the velocities use the grid indicies for now
+	
+	vertex1.h = (*ptsH)[ptIndex1].h/1000000.;
+	vertex1.v = (*ptsH)[ptIndex1].v/1000000.;
+	vertex2.h = (*ptsH)[ptIndex2].h/1000000.;
+	vertex2.v = (*ptsH)[ptIndex2].v/1000000.;
+	vertex3.h = (*ptsH)[ptIndex3].h/1000000.;
+	vertex3.v = (*ptsH)[ptIndex3].v/1000000.;
+	vertex4.h = (*ptsH)[ptIndex4].h/1000000.;
+	vertex4.v = (*ptsH)[ptIndex4].v/1000000.;
+
+	// code goes here, find largest and smallest lat and lon
+	
+	largest_lat = vertex1.v;
+	smallest_lat = vertex1.v;
+	if (vertex2.v > largest_lat)
+		largest_lat = vertex2.v;
+	if (vertex2.v < smallest_lat)
+		smallest_lat = vertex2.v;
+	if (vertex3.v > largest_lat)
+		largest_lat = vertex3.v;
+	if (vertex3.v < smallest_lat)
+		smallest_lat = vertex3.v;
+	if (vertex4.v > largest_lat)
+		largest_lat = vertex4.v;
+	if (vertex4.v < smallest_lat)
+		smallest_lat = vertex4.v;
+	
+	largest_lon = vertex1.h;
+	smallest_lon = vertex1.h;
+	if (vertex2.h > largest_lon)
+		largest_lon = vertex2.h;
+	if (vertex2.h < smallest_lat)
+		smallest_lon = vertex2.h;
+	if (vertex3.h > largest_lon)
+		largest_lon = vertex3.h;
+	if (vertex3.h < smallest_lon)
+		smallest_lon = vertex3.h;
+	if (vertex4.h > largest_lon)
+		largest_lon = vertex4.h;
+	if (vertex4.h < smallest_lon)
+		smallest_lon = vertex4.h;
+	
+	denom = (largest_lon-smallest_lon)*(largest_lat-smallest_lat);
+	num1 = (largest_lon-refLon)*(largest_lat-refLat);
+	num2 = (refLon-smallest_lon)*(largest_lat-refLat);
+	num3 = (largest_lon-refLon)*(refLat-smallest_lat);
+	num4 = (refLon-smallest_lon)*(refLat-smallest_lat);
+	// just use 1 and 4 or 2 and 3, the diagonals
+	// use bilinear interpolation
+	/*denom = (vertex4.h-vertex1.h)*(vertex4.v-vertex1.v);
+	// check this - make sure the pts match the alphas
+	num1 = (vertex4.h-refLon)*(vertex4.v-refLat);
+	num2 = (refLon-vertex1.h)*(vertex4.v-refLat);
+	num3 = (vertex4.h-refLon)*(refLat-vertex1.v);
+	num4 = (refLon-vertex1.h)*(refLat-vertex1.v);*/
+	//(x2-x)(y2-y)q11 - lower left (pt3)
+	//(x-x1)(y2-y)q21 - lower right (pt4)
+	//(x2-x)(y-y1)q12 - upper left (pt2)
+	//(x-x1)(y-y1)q22 - upper right (pt1)
+	interpolationVal.alpha1 = num1/denom;
+	interpolationVal.alpha2 = num2/denom;
+	interpolationVal.alpha3 = num3/denom;
+	interpolationVal.alpha4 = num4/denom;
+	
+	return interpolationVal;
+}
+
 InterpolationVal TriGridVel_c::GetInterpolationValues(WorldPoint refPoint)
 {
 	InterpolationVal interpolationVal;

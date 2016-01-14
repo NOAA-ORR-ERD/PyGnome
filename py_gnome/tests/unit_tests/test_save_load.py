@@ -230,15 +230,15 @@ class TestSaveZipIsValid:
         badzip = os.path.join(self.here,
                               'sample_data/badzip_max_json_filesize.zip')
         filetoobig = 'filetoobig.json'
-        with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
+        with ZipFile(badzip, 'w', compression=ZIP_DEFLATED) as z:
             z.write(testdata['boston_data']['cats_ossm'], filetoobig)
 
         with LogCapture() as l:
             assert not is_savezip_valid(badzip)
             l.check(('gnome.persist.save_load',
                      'WARNING',
-                     "Filesize of {0} is {1}. It must be less than "
-                     "_max_json_filesize: {2}. Rejecting zipfile.".
+                     "Filesize of {0} is {1}. It must be less than {2}. "
+                     "Rejecting zipfile.".
                      format(filetoobig,
                             z.NameToInfo[filetoobig].file_size,
                             save_load._max_json_filesize)))
@@ -247,24 +247,25 @@ class TestSaveZipIsValid:
 
     def test_check_max_compress_ratio(self):
         '''
-        create fake zip containing 100 '0' as string. The compression ratio
+        create fake zip containing 1000 '0' as string. The compression ratio
         should be big
         '''
         badzip = os.path.join(self.here,
                               'sample_data/badzip_max_compress_ratio.zip')
         badfile = 'badcompressratio.json'
-        with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
-            z.writestr(badfile, ''.join(['0'] * 100))
+        with ZipFile(badzip, 'w', compression=ZIP_DEFLATED) as z:
+            z.writestr(badfile, ''.join(['0'] * 1000))
 
         with LogCapture() as l:
             assert not is_savezip_valid(badzip)
             zi = z.NameToInfo[badfile]
             l.check(('gnome.persist.save_load',
                      'WARNING',
-                     ("uncompressed filesize is {0} time compressed filesize."
-                      "_max_compress_ratio must be less than {1}. Rejecting "
-                      "zipfile".format(zi.file_size/zi.compress_size,
-                                       save_load._max_compress_ratio))))
+                     ('file compression ratio is {0}. '
+                      'maximum must be less than {1}. '
+                      'Rejecting zipfile'
+                      .format(zi.file_size / zi.compress_size,
+                              save_load._max_compress_ratio))))
 
     def test_filenames_dont_contain_dotdot(self):
         '''
@@ -272,7 +273,7 @@ class TestSaveZipIsValid:
         badzip = os.path.join(self.here,
                               'sample_data/badzip_max_compress_ratio.zip')
         badfile = './../badpath.json'
-        with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
+        with ZipFile(badzip, 'w', compression=ZIP_DEFLATED) as z:
             z.writestr(badfile, 'bad file, contains path')
 
         with LogCapture() as l:

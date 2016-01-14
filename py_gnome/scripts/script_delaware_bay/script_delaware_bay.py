@@ -112,7 +112,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     c_mover.scale_refpoint = (-74.7483333, 38.898333)
     c_mover.scale_value = .03
     model.movers += c_mover
-
     #
     # these are from windows they don't match Mac values...
     # pat1Angle 315;

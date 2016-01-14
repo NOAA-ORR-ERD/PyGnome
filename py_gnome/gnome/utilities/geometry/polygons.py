@@ -46,12 +46,32 @@ class Polygon(np.ndarray):
         return arr
 
     def __array_finalize__(self, obj):
-        # I'm not entirely sure why this is required, but I copied it from:
-        #   http://www.scipy.org/Subclasses
+        '''
+            ndarray subclass instances can come about in three ways:
 
-        # We use the getattr method to set a defaults if 'obj' doesn't have
-        # the attributes
+            - explicit constructor call. This will call the usual sequence
+              of SubClass.__new__ then (if it exists) SubClass.__init__.
+            - View casting (e.g arr.view(SubClass))
+            - Creating new from template (e.g. arr[:3])
+
+            SubClass.__array_finalize__ gets called for all three methods
+            of object creation, so this is where our object creation
+            housekeeping usually goes.
+
+            I got this from:
+              http://www.scipy.org/Subclasses
+
+                which has been deprecated and changed to...
+
+              http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
+        '''
+        if obj is None:
+            return
+
         self.metadata = getattr(obj, 'metadata', {})
+
+    def __array_wrap__(self, out_arr, context=None):
+        return np.ndarray.__array_wrap__(self, out_arr, context)
 
     def __getitem__(self, index):
         """
@@ -151,8 +171,9 @@ class Polygon(np.ndarray):
         else:
             return Polygon((), metadata=orig_poly.metadata)
 
+
 class PolygonSet:
-    ## version that uses an Accumulator, rather than all that concatenating
+    # version that uses an Accumulator, rather than all that concatenating
     """
     A set of polygons (or polylines) stored as a single array of vertex data,
     and indexes into that array.
@@ -193,26 +214,31 @@ class PolygonSet:
         polygon = np.asarray(polygon, dtype=self.dtype).reshape((-1, 2))
         # new method using resize() rather than concatanating
         # reduced test case run time from 10.3s to 1.85s !
-        #self._PointsArray = np.r_[self._PointsArray, polygon]
-        #self._IndexArray = np.r_[self._IndexArray,
+        # self._PointsArray = np.r_[self._PointsArray, polygon]
+        # self._IndexArray = np.r_[self._IndexArray,
         #                         (self._PointsArray.shape[0],)]
 
         old_length = self._PointsArray.shape[0]
 
         added_length = polygon.shape[0]
-        self._PointsArray.resize( (old_length+added_length, 2) )
-        self._PointsArray[-added_length:,:] = polygon
+        self._PointsArray.resize((old_length+added_length, 2))
+        self._PointsArray[-added_length:, :] = polygon
 
-        self._IndexArray.resize( (self._IndexArray.shape[0]+1) )
+        self._IndexArray.resize((self._IndexArray.shape[0]+1))
         self._IndexArray[-1] = self._PointsArray.shape[0]
         self._MetaDataList.append(metadata)
 
     def _get_bounding_box(self):
-        return BBox.fromPoints(self._PointsArray)
+        if len(self._PointsArray) > 0:
+            return BBox.fromPoints(self._PointsArray)
+        else:
+            return None
+
     bounding_box = property(_get_bounding_box)
 
     def _get_total_num_points(self):
         return len(self._PointsArray)
+
     total_num_points = property(_get_total_num_points)
 
     def GetPointsData(self):
@@ -303,7 +329,8 @@ class PolygonSet:
             if index < -(len(self._IndexArray) - 1):
                 raise IndexError
             index = len(self._IndexArray) - 1 + index
-        poly = Polygon(self._PointsArray[self._IndexArray[index]:self._IndexArray[index+1]],
+        poly = Polygon(self._PointsArray[self._IndexArray[index]:
+                                         self._IndexArray[index + 1]],
                        metadata=self._MetaDataList[index],
                        dtype=self.dtype)
         return poly

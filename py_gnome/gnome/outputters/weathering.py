@@ -119,3 +119,23 @@ class WeatheringOutput(Outputter, Serializable):
         'remove previously written files'
         super(WeatheringOutput, self).rewind()
         self.clean_output_files()
+
+    def __getstate__(self):
+        '''
+            This is to support pickle.dumps() inside the uncertainty model
+            subprocesses.
+            We need to be able to pickle our weathering outputters so that
+            our uncertainty subprocesses can send them back to the parent
+            process through a message queue.
+            And the cache attribute (specifically, the ElementCache.lock
+            attribute) can not be pickled, and instead produces a
+            RuntimeError.
+
+            (Note: The __setstate__() probably doesn't need to recreate the
+                   ElementCache since it will be created inside the
+                   Model.setup_model_run() function.)
+        '''
+        odict = self.__dict__.copy()  # copy the dict since we change it
+        del odict['cache']               # remove cache entry
+
+        return odict

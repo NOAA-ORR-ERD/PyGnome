@@ -3,6 +3,8 @@ C++ GridVel and TimeGridVel classes. Write Cython wrappers around these objects
 so Wind and Current objects can be initialized in Python independent of movers
 """
 
+from libcpp cimport bool
+
 from type_defs cimport (OSErr,
                         LoadedData,
                         VelocityFH,
@@ -39,6 +41,8 @@ cdef extern from "TriGridVel_c.h":
 
 cdef extern from "TimeGridVel_c.h":
     cdef cppclass TimeGridVel_c:
+        long       	fTimeShift
+        bool    	fAllowExtrapolationInTime
         #======================================================================
         # OSErr                TextRead(char *path, char *topFilePath)
         # OSErr                ReadInputFileNames(char *fileNamesPath)
@@ -51,6 +55,7 @@ cdef extern from "TimeGridVel_c.h":
         OSErr       ReadInputFileNames(char *fileNamesPath)
         OSErr       SetInterval(char *errmsg, const Seconds& model_time)
         VelocityRec GetScaledPatValue(Seconds& time, WorldPoint3D p)
+        OSErr 		get_values(int n, Seconds model_time, WorldPoint3D* ref, VelocityRec* vels)
 
     cdef cppclass TimeGridWindRect_c(TimeGridVel_c):
         pass

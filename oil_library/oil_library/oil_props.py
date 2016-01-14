@@ -68,10 +68,6 @@ class OilProps(object):
         # the boiling points are in ascending order
         self._init_sara()
 
-        # set molecular weights
-        self.molecular_weight = None
-        self._component_mw()
-
         self._bullwinkle = None
         self._bulltime = None
 
@@ -139,7 +135,7 @@ class OilProps(object):
     @bulltime.setter
     def bulltime(self, value):
         """
-        time to start emulsification 
+        time to start emulsification
         """
         self._bulltime = value
 
@@ -159,7 +155,7 @@ class OilProps(object):
     @bullwinkle.setter
     def bullwinkle(self, value):
         """
-        emulsion constant 
+        emulsion constant
         """
         self._bullwinkle = value
 
@@ -170,14 +166,24 @@ class OilProps(object):
         '''
         return len(self._sara)
 
-    def _component_mw(self):
+    @property
+    def molecular_weight(self):
+        return self._component_mw()
+
+    def _component_mw(self, sara_type=None):
         '''
         return the molecular weight of the pseudocomponents (mw_i) given the
         boiling points.
         It returns the mw_i for saturates and aromatic components
         '''
-        self.molecular_weight = (0.04132 - 1.985e-4 * self.boiling_point +
-                                 (9.494e-7 * self.boiling_point ** 2))
+        ret = (0.04132 -
+               1.985e-4 * self.boiling_point +
+               (9.494e-7 * self.boiling_point ** 2))
+
+        if sara_type is not None:
+            ret = ret[np.where(self._sara['type'] == sara_type)]
+
+        return ret
 
     @property
     def mass_fraction(self):

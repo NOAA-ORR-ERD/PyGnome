@@ -147,15 +147,8 @@ class Model(Serializable):
         [model.movers.add(obj) for obj in g_objects]
         [model.weatherers.add(obj) for obj in l_weatherers]
 
-        # register callback with OrderedCollection after objects are added
-        model.movers.register_callback(model._callback_add_mover,
-                                       ('add', 'replace'))
-
-        model.weatherers.register_callback(model._callback_add_weatherer_env,
-                                           ('add', 'replace'))
-
-        model.environment.register_callback(model._callback_add_weatherer_env,
-                                            ('add', 'replace'))
+        # register callbacks with OrderedCollections after objects are added
+        model._register_callbacks()
 
         # OrderedCollections are being used so maintain order.
         if json_ == 'webapi':
@@ -201,15 +194,21 @@ class Model(Serializable):
                          weathering_substeps,
                          uncertain, cache_enabled, map, name)
 
-        # register callback with OrderedCollection
+        self._register_callbacks()
+
+    def _register_callbacks(self):
+
+        '''
+        Register callbacks with the OrderedCollections
+        '''
         self.movers.register_callback(self._callback_add_mover,
                                       ('add', 'replace'))
-
         self.weatherers.register_callback(self._callback_add_weatherer_env,
                                           ('add', 'replace'))
-
         self.environment.register_callback(self._callback_add_weatherer_env,
                                            ('add', 'replace'))
+        self.outputters.register_callback(self._callback_add_outputter,
+                                          ('add', 'replace'))
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map, name):
@@ -635,7 +634,8 @@ class Model(Serializable):
             outputter.prepare_for_model_run(model_start_time=self.start_time,
                                             cache=self._cache,
                                             uncertain=self.uncertain,
-                                            spills=self.spills)
+                                            spills=self.spills,
+                                            model_time_step=self.time_step)
         self.logger.debug("{0._pid} setup_model_run complete for: "
                           "{0.name}".format(self))
 
@@ -946,6 +946,11 @@ class Model(Serializable):
         self._add_to_environ_collec(obj_added)
         self.rewind()  # rewind model if a new mover is added
 
+    def _callback_add_outputter(self, obj_added):
+        'Callback after outputter has been added'
+        # hook up the cache
+        obj_added.cache = self._cache
+
     def _callback_add_weatherer_env(self, obj_added):
         '''
         Callback after weatherer/environment object has been added. 'waves'
@@ -1034,11 +1039,13 @@ class Model(Serializable):
             either persisted here or a new model is re-created from the files
             stored here. The files are clobbered when save() is called.
         :type saveloc: A path as a string or unicode
+
         :param name=None: If data is saved to zipfile (default behavior), then
             this is name of zip file. For a zipfile, the model's state is
             always contained in Model.json. If zipsave is False, then model's
             json is stored in name.json
         :type name: str
+
         :param references: dict of references mapping 'id' to a string used for
             the reference. The value could be a unique integer or it could be
             a filename. It is upto the creator of the reference list to decide
@@ -1208,6 +1215,8 @@ class Model(Serializable):
             o_json_['valid'] = isvalid
             if len(msgs) > 0:
                 o_json_['messages'] = msgs
+            else:
+                o_json_['messages'] = []
 
         return o_json_
 
@@ -1431,12 +1440,12 @@ class Model(Serializable):
         return self.spills.items()[ucert][prop_name]
 
     def get_spill_data(self, target_properties, conditions, ucert=0):
-        '''
+        """
         Convenience method to allow user to write an expression to filter
         raw spill data
         Example case:
         get_spill_data('position && mass',
-                       'position > 50 && spill_num == 1 || status_codes == 1')
+        'position > 50 && spill_num == 1 || status_codes == 1')
 
         WARNING: EXPENSIVE! USE AT YOUR OWN RISK ON LARGE num_elements!
 
@@ -1444,7 +1453,7 @@ class Model(Serializable):
         all properties tracked by the model.
         'positions', 'next_positions', 'last_water_positions', 'status_codes',
         'spill_num', 'id', 'mass', 'age'
-        '''
+        """
         if ucert == 'ucert':
             ucert = 1
 

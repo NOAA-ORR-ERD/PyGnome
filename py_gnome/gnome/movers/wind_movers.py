@@ -14,6 +14,7 @@ from colander import (SchemaNode, String, Float, drop)
 from gnome.basic_types import (ts_format,
                                world_point,
                                world_point_type,
+                               velocity_rec,
                                datetime_value_2d)
 
 from gnome.utilities import serializable, rand
@@ -22,6 +23,7 @@ from gnome import environment
 from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
+from gnome.cy_gnome.cy_ice_wind_mover import CyIceWindMover
 
 from gnome.persist.base_schema import ObjType
 from gnome.exceptions import ReferencedObjectNotSet
@@ -316,8 +318,9 @@ def constant_wind_mover(speed, direction, units='m/s'):
 
     :return: returns a gnome.movers.WindMover object all set up.
 
-    .. note:: The time for a constant wind timeseries is irrelevant. This
-    function simply sets it to datetime.now() accurate to hours.
+    .. note::
+        The time for a constant wind timeseries is irrelevant. 
+        This function simply sets it to datetime.now() accurate to hours.   
     """
 
     series = np.zeros((1, ), dtype=datetime_value_2d)
@@ -334,6 +337,7 @@ class GridWindMoverSchema(WindMoversBaseSchema):
     """ Similar to WindMover except it doesn't have wind_id"""
     wind_file = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
+    wind_scale = SchemaNode(Float(), missing=drop)
 
 
 class GridWindMover(WindMoversBase, serializable.Serializable):
@@ -434,3 +438,204 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
                               (hours).
         """
         self.mover.offset_time(time_offset * 3600.)
+
+class IceWindMoverSchema(WindMoversBaseSchema):
+    filename = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
+    #current_scale = SchemaNode(Float(), missing=drop)
+    #extrapolate = SchemaNode(Bool(), missing=drop)
+
+
+class IceWindMover(WindMoversBase, serializable.Serializable):
+
+    #_update = ['wind_scale', 'extrapolate']               
+    #_save = ['wind_scale', 'extrapolate']             
+    _state = copy.deepcopy(WindMoversBase._state)
+
+    #_state.add(update=_update, save=_save)
+    _state.add_field([serializable.Field('filename',
+                                         save=True, read=True, isdatafile=True,
+                                         test_for_eq=False),
+                      serializable.Field('topology_file',
+                                         save=True, read=True, isdatafile=True,
+                                         test_for_eq=False)])
+    _schema = IceWindMoverSchema
+
+    def __init__(self, filename,
+                 topology_file=None,
+                 extrapolate=False,
+                 time_offset=0,
+                 **kwargs):
+        """
+        Initialize an IceWindMover
+
+        :param filename: absolute or relative path to the data file:
+                         could be netcdf or filelist
+        :param topology_file=None: absolute or relative path to topology file.
+                                   If not given, the IceMover will
+                                   compute the topology from the data file.
+        :param active_start: datetime when the mover should be active
+        :param active_stop: datetime after which the mover should be inactive
+        :param wind_scale: Value to scale wind data
+        :param extrapolate: Allow current data to be extrapolated
+                            before and after file data
+        :param time_offset: Time zone shift if data is in GMT
+
+        uses super, super(IceWindMover,self).__init__(\*\*kwargs)
+        """
+
+        # NOTE: will need to add uncertainty parameters and other dialog fields
+        #       use super with kwargs to invoke base class __init__
+
+        # if child is calling, the self.mover is set by child - do not reset
+        if type(self) == IceWindMover:
+            self.mover = CyIceWindMover()
+
+        if not os.path.exists(filename):
+            raise ValueError('Path for current file does not exist: {0}'
+                             .format(filename))
+
+        if topology_file is not None:
+            if not os.path.exists(topology_file):
+                raise ValueError('Path for Topology file does not exist: {0}'
+                                 .format(topology_file))
+
+        # check if this is stored with cy_ice_wind_mover?
+        self.filename = filename
+        self.name = os.path.split(filename)[1]
+
+        # check if this is stored with cy_ice_wind_mover?
+        self.topology_file = topology_file
+
+        self.mover.text_read(filename, topology_file)
+        self.extrapolate = extrapolate
+        self.mover.extrapolate_in_time(extrapolate)
+        self.mover.offset_time(time_offset * 3600.)
+
+        super(IceWindMover, self).__init__(**kwargs)
+
+    def __repr__(self):
+        return ('IceWindMover('
+                'active_start={1.active_start}, '
+                'active_stop={1.active_stop}, '
+                'on={1.on})'.format(self.mover, self))
+
+    def __str__(self):
+        return ('IceWindMover - current _state.\n'
+                '  active_start time={1.active_start}\n'
+                '  active_stop time={1.active_stop}\n'
+                '  current on/off status={1.on}'
+                .format(self.mover, self))
+
+    # Define properties using lambda functions: uses lambda function, which are
+    # accessible via fget/fset as follows:
+#     current_scale = property(lambda self: self.mover.current_scale,
+#                              lambda self, val: setattr(self.mover,
+#                                                        'current_scale',
+#                                                        val))
+# 
+#     extrapolate = property(lambda self: self.mover.extrapolate,
+#                            lambda self, val: setattr(self.mover,
+#                                                      'extrapolate',
+#                                                      val))
+# 
+#     time_offset = property(lambda self: self.mover.time_offset / 3600.,
+#                            lambda self, val: setattr(self.mover,
+#                                                      'time_offset',
+#                                                      val * 3600.))
+# 
+    def get_grid_data(self):
+        if self.mover._is_triangle_grid():
+            return self.get_triangles()
+        else:
+            return self.get_cells()
+
+    def get_center_points(self):
+        if self.mover._is_triangle_grid():
+            return self.get_triangle_center_points()
+        else:
+            return self.get_cell_center_points()
+
+    def get_scaled_velocities(self, model_time):
+        """
+        :param model_time=0:
+        """
+        num_tri = self.mover.get_num_triangles()
+        if self.mover._is_triangle_grid():
+            num_cells = num_tri
+        else:
+            num_cells = num_tri / 2
+        #vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
+        vels = np.zeros(num_cells, dtype=velocity_rec)
+        self.mover.get_scaled_velocities(model_time, vels)
+
+        return vels
+
+    def get_ice_velocities(self, model_time):
+        """
+        :param model_time=0:
+        """
+        num_tri = self.mover.get_num_triangles()
+        #vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
+        vels = np.zeros(num_tri, dtype=velocity_rec)
+        self.mover.get_ice_velocities(model_time, vels)
+
+        return vels
+
+    def get_movement_velocities(self, model_time):
+        """
+        :param model_time=0:
+        """
+        num_tri = self.mover.get_num_triangles()
+        #vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
+        vels = np.zeros(num_tri, dtype=velocity_rec)
+        self.mover.get_movement_velocities(model_time, vels)
+
+        return vels
+
+    def get_ice_fields(self, model_time):
+        """
+        :param model_time=0:
+        """
+        num_tri = self.mover.get_num_triangles()
+        num_cells = num_tri / 2
+        frac_coverage = np.zeros(num_cells, dtype=np.float64)
+        thickness = np.zeros(num_cells, dtype=np.float64)
+        self.mover.get_ice_fields(model_time, frac_coverage, thickness)
+
+        return frac_coverage, thickness
+
+    def export_topology(self, topology_file):
+        """
+        :param topology_file=None: absolute or relative path where
+                                   topology file will be written.
+        """
+        if topology_file is None:
+            raise ValueError('Topology file path required: {0}'
+                             .format(topology_file))
+
+        self.mover.export_topology(topology_file)
+
+    def extrapolate_in_time(self, extrapolate):
+        """
+        :param extrapolate=false: allow current data to be extrapolated
+                                  before and after file data.
+        """
+        self.mover.extrapolate_in_time(extrapolate)
+        self.extrapolate = extrapolate
+
+    def offset_time(self, time_offset):
+        """
+        :param offset_time=0: allow data to be in GMT with a time zone offset
+                              (hours).
+        """
+        self.mover.offset_time(time_offset * 3600.)
+
+    def get_offset_time(self):
+        """
+        :param offset_time=0: allow data to be in GMT with a time zone offset
+                              (hours).
+        """
+        return (self.mover.get_offset_time()) / 3600.
+
+

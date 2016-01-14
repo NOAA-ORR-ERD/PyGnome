@@ -23,6 +23,7 @@ NetCDFWindMoverCurv::NetCDFWindMoverCurv (TMap *owner, char *name) : NetCDFWindM
 {
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;
+	bIsCOOPSWaterMask = false;
 }
 
 
@@ -274,6 +275,51 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 		}
 	} 
 	
+	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
+	if (status != NC_NOERR) 
+	{	
+		status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto OLD;
+		}
+	}
+	bIsCOOPSWaterMask = true;
+	status = nc_inq_varid(ncid, "latc", &latid);
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_varid(ncid, "lat", &latid);
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
+	}
+	status = nc_inq_dimlen(ncid, latIndexid, &latLength);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	status = nc_inq_dimid(ncid, "xc", &lonIndexid);	
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
+	}
+	status = nc_inq_varid(ncid, "lonc", &lonid);	
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_varid(ncid, "lon", &lonid);
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
+	}
+	status = nc_inq_dimlen(ncid, lonIndexid, &lonLength);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	
+OLD:
+	if (!bIsCOOPSWaterMask)	
+	{
 	if (fIsNavy)
 	{
 		status = nc_inq_dimid(ncid, "gridy", &latIndexid); //Navy
@@ -333,7 +379,7 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 			}
 		}
 	}
-	
+	}
 	pt_count[0] = latLength;
 	pt_count[1] = lonLength;
 	vertexPtsH = (WorldPointF**)_NewHandleClear(latLength*lonLength*sizeof(WorldPointF));
@@ -451,7 +497,8 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 				err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 			if(err) goto done;*/
-			err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(newMap,errmsg);	
+			if (bIsCOOPSWaterMask) err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPointsCOOPSNoMask(newMap,errmsg);	
+			else err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(newMap,errmsg);	
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	 		goto done;
 		}
@@ -472,7 +519,8 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 				err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 			if(err) goto done;*/
-			err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(newMap,errmsg);	
+			if (bIsCOOPSWaterMask) err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPointsCOOPSNoMask(newMap,errmsg);	
+			else err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(newMap,errmsg);	
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	
 	 		/*if (err)*/ goto done;
 		}
@@ -494,7 +542,8 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 		err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 	else {strcpy(errmsg,"No times in file. Error opening NetCDF wind file"); err =  -1;}
 	if(err) goto done;*/
-	err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(newMap,errmsg);	
+	if (bIsCOOPSWaterMask) err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPointsCOOPSNoMask(newMap,errmsg);	
+	else err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(newMap,errmsg);	
 	//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	
 	
 done:
@@ -840,12 +889,30 @@ void NetCDFWindMoverCurv::Draw(Rect r, WorldRect view)
 				wp.pLong = pt.h;
 				
 				ptIndex = INDEXH(fVerdatToNetCDFH,i);
-				iIndex = ptIndex/(fNumCols+1);
+
+				if (bIsCOOPSWaterMask)
+				{
+					iIndex = ptIndex/(fNumCols);
+					jIndex = ptIndex%(fNumCols);
+					ptIndex = INDEXH(fVerdatToNetCDFH,i);
+				}
+				else
+				{
+					{
+					iIndex = ptIndex/(fNumCols+1);
+					jIndex = ptIndex%(fNumCols+1);
+					}
+					if (iIndex>0 && jIndex<fNumCols)
+						ptIndex = (iIndex-1)*(fNumCols)+jIndex;
+					else
+					{ptIndex = -1; continue;}
+				}
+				/*iIndex = ptIndex/(fNumCols+1);
 				jIndex = ptIndex%(fNumCols+1);
 				if (iIndex>0 && jIndex<fNumCols)
 					ptIndex = (iIndex-1)*(fNumCols)+jIndex;
 				else
-					ptIndex = -1;
+					ptIndex = -1;*/
 				
 				// for now draw arrow at midpoint of diagonal of gridbox
 				// this will result in drawing some arrows more than once
@@ -855,6 +922,11 @@ void NetCDFWindMoverCurv::Draw(Rect r, WorldRect view)
 					wp.pLong = (wp.pLong + wp2.pLong)/2.;
 				}
 				
+				if (bIsCOOPSWaterMask)
+				{
+					wp.pLat = (long)(1e6*INDEXH(fVertexPtsH,ptIndex).pLat);
+					wp.pLong = (long)(1e6*INDEXH(fVertexPtsH,ptIndex).pLong);
+				}
 				p = GetQuickDrawPt(wp.pLong, wp.pLat, &r, &offQuickDrawPlane);	// should put velocities in center of grid box
 				
 				// Should check vs fFillValue

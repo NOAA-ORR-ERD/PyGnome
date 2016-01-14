@@ -105,6 +105,6 @@ if __name__ == '__main__':
     model = make_model()
 
     for step in model:
-        # print step
-        print "step: %.4i -- memuse: %fMB" % (step['Renderer']['step_num'],
+        #print step
+        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())

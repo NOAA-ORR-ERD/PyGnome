@@ -39,7 +39,9 @@ public:
 
 	LongPointHdl		GetPointsHdl();
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
+	VelocityRec 		GetInterpolatedValue(InterpolationValBilinear interpolationVal,float depth,float totalDepth);
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	//VelocityRec 		GetMove3D(InterpolationValBilinear interpolationVal,float depth,float totalDepth);
 	/*long 				CheckSurroundingPoints(LONGH maskH, long numRows, long  numCols, long row, long col) ;
 	Boolean 			InteriorLandPoint(LONGH maskH, long numRows, long  numCols, long row, long col); 
 	//Boolean 			ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocityH, long numRows, long  numCols, long row, long col) ;
@@ -54,6 +56,7 @@ public:
 	OSErr 				ReorderPointsNoMask(TMap **newMap, char* errmsg); 
 	//OSErr 				ReorderPointsCOOPSMask(VelocityFH velocityH, TMap **newMap, char* errmsg); 
 	OSErr 				ReorderPointsCOOPSMask(DOUBLEH landmaskH, TMap **newMap, char* errmsg); 
+	OSErr 				ReorderPointsCOOPSNoMask(TMap **newMap, char* errmsg); 
 	Boolean				IsCOOPSFile();
 	//double GetTopDepth(long depthIndex, double totalDepth);
 	//double GetBottomDepth(long depthIndex, double totalDepth);
@@ -66,6 +69,7 @@ public:
 	void 				GetDepthIndices(long ptIndex, float depthAtPoint, float totalDepth, long *depthIndex1, long *depthIndex2);
 	float		GetTotalDepthFromTriIndex(long triIndex);
 	float		GetTotalDepth(WorldPoint refPoint,long ptIndex);
+	float 		GetInterpolatedTotalDepth(WorldPoint refPoint);
 	float		GetTotalDepth2(WorldPoint refPoint);
 
 	

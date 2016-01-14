@@ -28,9 +28,6 @@ TimeGridVel::TimeGridVel (/*TMap *owner, char *name*/)
 	fOverLapStartTime = 0;
 	
 	fFillValue = -1e+34;
-	//fIsNavy = false;	
-	
-	//fFileScaleFactor = 1.;	// let user set a scale factor in addition to what is in the file
 	
 	fOffset = 0;
 	fFraction = 0;
@@ -101,7 +98,6 @@ OSErr TimeGridVel::Write (BFPB *bfpb)
 	if (err = WriteMacValue(bfpb, fVar.gridType)) return err;
 	//
 	if (err = WriteMacValue(bfpb, fFillValue)) return err;
-	//if (err = WriteMacValue(bfpb, fIsNavy)) return err;
 	//
 	
 	if (err = WriteMacValue(bfpb, numTimes)) goto done;
@@ -255,7 +251,6 @@ OSErr TimeGridVel::Read(BFPB *bfpb)
 	if (err = ReadMacValue(bfpb, &fVar.gridType)) return err;
 	//
 	if (err = ReadMacValue(bfpb, &fFillValue)) return err;
-	//if (err = ReadMacValue(bfpb, &fIsNavy)) return err;
 	//
 	if (err = ReadMacValue(bfpb, &numTimes)) goto done;	
 	fTimeHdl = (Seconds**)_NewHandleClear(sizeof(Seconds)*numTimes);
@@ -761,9 +756,6 @@ TimeGridVelRect::TimeGridVelRect () : TimeGridVel()
 	fDepthLevelsHdl2 = 0;	// Cs_r
 	hc = 1.;	// what default?
 		
-	//fFillValue = -1e+34;
-	fIsNavy = false;	
-	
 	memset(&fStartData,0,sizeof(fStartData));
 	fStartData.timeIndex = UNASSIGNEDINDEX; 
 	fStartData.dataHdl = 0; 
@@ -881,8 +873,6 @@ OSErr TimeGridVelRect::Read(BFPB *bfpb)
 	if (version > TimeGridVelRectREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
 	////
 
-	if (err = ReadMacValue(bfpb, &fIsNavy)) return err;
-	//
 	{
 		if (err = ReadMacValue(bfpb, &numDepths)) goto done;	
 		if (numDepths>0)
@@ -1059,6 +1049,226 @@ done:
 	return err;
 }
 
+
+VelocityRec TimeGridVelCurv::GetInterpolatedValue(InterpolationValBilinear interpolationVal,float depth,float totalDepth)
+{
+	
+	long pt1depthIndex1, pt1depthIndex2, pt2depthIndex1, pt2depthIndex2, pt3depthIndex1, pt3depthIndex2, pt4depthIndex1, pt4depthIndex2;
+	long ptIndex1, ptIndex2, ptIndex3, ptIndex4, amtOfDepthData = 0;
+	double topDepth, bottomDepth, depthAlpha, timeAlpha;
+	VelocityRec pt1interp = {0.,0.}, pt2interp = {0.,0.}, pt3interp = {0.,0.}, pt4interp = {0.,0.};
+	VelocityRec interpolatedVelocity = {0.,0.};
+	Seconds startTime, endTime, relTime;
+	Seconds model_time = model->GetModelTime();
+	
+	if (interpolationVal.ptIndex1 >= 0)  // if negative corresponds to negative ntri
+	{
+		// this is only section that's different from ptcur
+		ptIndex1 =  interpolationVal.ptIndex1;	
+		ptIndex2 =  interpolationVal.ptIndex2;
+		ptIndex3 =  interpolationVal.ptIndex3;
+		ptIndex4 =  interpolationVal.ptIndex4;
+		if (fVerdatToNetCDFH)
+		{
+			ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			ptIndex4 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex4];
+		}
+	}
+	else
+		return interpolatedVelocity;
+	
+	if (fDepthDataInfo) amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
+ 	if (amtOfDepthData>0)
+ 	{
+		GetDepthIndices(ptIndex1,depth,totalDepth,&pt1depthIndex1,&pt1depthIndex2);	
+		GetDepthIndices(ptIndex2,depth,totalDepth,&pt2depthIndex1,&pt2depthIndex2);	
+		GetDepthIndices(ptIndex3,depth,totalDepth,&pt3depthIndex1,&pt3depthIndex2);	
+		GetDepthIndices(ptIndex4,depth,totalDepth,&pt4depthIndex1,&pt4depthIndex2);	
+	}
+ 	else
+ 	{	// old version that didn't use fDepthDataInfo, must be 2D
+ 		pt1depthIndex1 = ptIndex1;	pt1depthIndex2 = -1;
+ 		pt2depthIndex1 = ptIndex2;	pt2depthIndex2 = -1;
+ 		pt3depthIndex1 = ptIndex3;	pt3depthIndex2 = -1;
+ 		pt4depthIndex1 = ptIndex4;	pt4depthIndex2 = -1;
+ 	}
+
+ 	// the contributions from each point will default to zero if the depth indicies
+	// come back negative (ie the LE depth is out of bounds at the grid point)
+	if ((GetNumTimesInFile() == 1 && !(GetNumFiles() > 1)) ||
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) ||
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+	{
+		if (pt1depthIndex1!=-1)
+		{
+			if (pt1depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt1depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt1depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex2).u));
+				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex2).v));
+			}
+			else
+			{
+				pt1interp.u = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).u); 
+				pt1interp.v = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).v); 
+			}
+		}
+		
+		if (pt2depthIndex1!=-1)
+		{
+			if (pt2depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt2depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt2depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex2).u));
+				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex2).v));
+			}
+			else
+			{
+				pt2interp.u = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).u); 
+				pt2interp.v = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).v);
+			}
+		}
+		
+		if (pt3depthIndex1!=-1) 
+		{
+			if (pt3depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt3depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt3depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex2).u));
+				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex2).v));
+			}
+			else
+			{
+				pt3interp.u = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).u); 
+				pt3interp.v = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).v); 
+			}
+		}
+		if (pt4depthIndex1!=-1) 
+		{
+			if (pt4depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt4depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt4depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex2).u));
+				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex2).v));
+			}
+			else
+			{
+				pt4interp.u = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).u); 
+				pt4interp.v = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).v); 
+			}
+		}
+	}
+	
+	else // time varying current 
+	{
+		// Calculate the time weight factor
+		if (dynamic_cast<TimeGridVel_c *>(this)->GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		//startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+		
+		if (pt1depthIndex1!=-1)
+		{
+			if (pt1depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt1depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt1depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex2).u));
+				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex2).v));
+			}
+			else
+			{
+				pt1interp.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).u); 
+				pt1interp.v = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).v); 
+			}
+		}
+		
+		if (pt2depthIndex1!=-1)
+		{
+			if (pt2depthIndex2!=-1) 
+			{
+				topDepth = INDEXH(fDepthsH,pt2depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt2depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex2).u));
+				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex2).v));
+			}
+			else
+			{
+				pt2interp.u = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).u); 
+				pt2interp.v = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).v); 
+			}
+		}
+		
+		if (pt3depthIndex1!=-1) 
+		{
+			if (pt3depthIndex2!=-1)
+			{
+				topDepth = INDEXH(fDepthsH,pt3depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt3depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex2).u));
+				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex2).v));
+			}
+			else
+			{
+				pt3interp.u = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).u); 
+				pt3interp.v = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).v); 
+			}
+		}
+		if (pt4depthIndex1!=-1) 
+		{
+			if (pt4depthIndex2!=-1)
+			{
+				topDepth = INDEXH(fDepthsH,pt4depthIndex1);	
+				bottomDepth = INDEXH(fDepthsH,pt4depthIndex2);
+				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex2).u));
+				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex2).v));
+			}
+			else
+			{
+				pt4interp.u = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).u); 
+				pt4interp.v = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).v); 
+			}
+		}
+	}
+	interpolatedVelocity.u = pt1interp.u + pt2interp.u + pt3interp.u + pt4interp.u;
+	interpolatedVelocity.v = pt1interp.v + pt2interp.v + pt3interp.v + pt4interp.v;
+	
+	return interpolatedVelocity;
+}
+
 Boolean TimeGridVelCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth)
 {	// code goes here, this is triangle code, not curvilinear
 	char uStr[32],vStr[32],sStr[32],depthStr[32],errmsg[64];
@@ -1073,7 +1283,7 @@ Boolean TimeGridVelCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr
 	LongPoint indices;
 	
 	long ptIndex1,ptIndex2,ptIndex3; 
-	InterpolationVal interpolationVal;
+	InterpolationValBilinear interpolationVal;
 	long depthIndex1,depthIndex2;	// default to -1?
 	
 	
@@ -1083,7 +1293,7 @@ Boolean TimeGridVelCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr
 		if (bVelocitiesOnNodes)
 		{
 			//code goes here, put in interpolation
-			interpolationVal = fGrid -> GetInterpolationValues(wp.p);
+			interpolationVal = fGrid -> GetBilinearInterpolationValues(wp.p);
 			if (interpolationVal.ptIndex1<0) return false;
 			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
 			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
@@ -1097,6 +1307,13 @@ Boolean TimeGridVelCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr
 		indices = this->GetVelocityIndices(wp.p);
 	}
 	else return 0;
+	if (bVelocitiesOnNodes>0 && interpolationVal.ptIndex1 >= 0) 
+	{
+		double arrowDepth = 0;
+		totalDepth = GetInterpolatedTotalDepth(wp.p);
+		velocity = GetInterpolatedValue(interpolationVal,arrowDepth,totalDepth);
+		goto scale;
+	}						
 	totalDepth = GetTotalDepth(wp.p,index);
 	GetDepthIndices(index,arrowDepth,totalDepth,&depthIndex1,&depthIndex2);
 	if (depthIndex1==UNASSIGNEDINDEX && depthIndex2==UNASSIGNEDINDEX)
@@ -1175,6 +1392,7 @@ Boolean TimeGridVelCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr
 		}
 	}
 	
+scale:
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	//lengthS = this->fWindScale * lengthU;
 	//lengthS = this->fVar.curScale * lengthU;

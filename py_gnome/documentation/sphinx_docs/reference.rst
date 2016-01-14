@@ -1,72 +1,56 @@
-.. _reference:
-
-PyGnome Reference
-===========================
-
-PyGnomeis a wrapper around a set of C++ libraries. THe C++ code is designed to
-be used by itself, or from Python, though using it in Python is easier. The API
-is perhaps a bit klunky -- the C++ code was all orginally written as part of a
-monolithic GUI program -- we have separated the GUI parts, and cleaned up the
-API so that the pieces can be used individually.
-
-Basic Structure
--------------------
-
-There are a handful of core base classes you need to use PyGnome for anything
-useful:
-
-* `a model <reference.html#model>`_
-* movers:
-   These are classes that represent anything that moves a particle.  Or in fact,
-   alters a particle in any way (the name mover is a bit historical -- they
-   used to only move particles...).  Examples include surface winds, currents
-   (from a variety of sources), weathering processes, etc. -- this is where the
-   real work is done.  Each mover's action is essentially linear superposed
-   with the others. i.e at each time step, the model loops through all the
-   movers, and passes the spill objects to be acted on.
-   At the C++ level, each mover has a `get_move` method that takes the current
-   time, model time step, and pointers to the arrays of particle properties it
-   needs.  At the Python level, the get_move method takes a spill object, and
-   the required arrays are extracted from the spill object -- this lets us pass
-   to a mover only the data that it really needs, and lets us use Python for
-   the dynamic parts -- making sure that the data needed exists.
-* spills:
-   A spill class is a class that holds a set of particles and various
-   information about them. Each of the particle properties are stored as numpy
-   arrays (in a dict) -- so that for a given model setup, the spill only needs
-   to have the properties required, and the properties used by a given mover
-   (and only those) can be passed in as a C pointer to the mover code.  At the
-   very least, each spill has a set of particle position arrays.
-
-   There may be multiple spills in a model set-up, but for efficiency's sake,
-   each spill usually is a set of 1000 or so particles that share various
-   properties.
-   
-   Each spill is a composition of the type of substance spilled (ElementType)
-   and how elements are released (instantaneous, continuous, etc).
-* a map:
-   A map keeps track of where land and water are.  The simplest map is all the
-   earth with no land.  It has methods to ask if a location is on land, if a
-   location is "spillable", etc.  The most commonly used map for surface oil
-   spills is intialized with a `*.bna` file describing polygons of land -- this
-   is rasterized into a land-eater bitmap.  During the run, the model calls the
-   `'beach_LEs` method, which determines which particles have hit land in the
-   last time step, and sets those particles to "beached".
-
-Class Reference
----------------
-
-.. include:: model.rst
-------------------------
+PyGnome Class Reference
+=======================
+There are a handful of core base classes in PyGnome.
 
 ``gnome.model`` -- the PyGnome model class
----------------------------------------------------
+------------------------------------------
+This is the main class that contains objects used to model trajectory and
+weathering processes. It runs the loop through time, etc.
+The code comes with a full-featured version -- you may want a simpler one if
+you aren't doing a full-on oil spill model. The model contains:
+
+* map
+* collection of environment objects
+* collection of movers
+* collection of weatherers
+* a spills
+* its own attributes
+
+In pseudocode, the model loop is defined below. In the first step, it sets up the
+model run and in subsequent steps the model moves and weathers elements.
+
+.. code-block:: python
+
+    start_at_step_num = -1
+
+    if step_num == -1
+        setup_model_run()
+
+    else:
+        setup_time_step()
+        move()
+        weather()
+        step_is_done()
+
+    step_num += 1
+
+    for sc in self.spills.items():
+        num = sc.release_elements()     # initialize mover data arrays
+
+        if num > 0:
+            for w in weatherers:
+                w.initialize_data()     # initialize weatherer data arrays
+
+    o = write_output()
+
+    return o
+
 .. automodule:: gnome.model
 .. autoclass:: Model
    :members:
    :undoc-members:
    :show-inheritance:
-      
+
 ``gnome.map`` -- the PyGnome map class
 ---------------------------------------------------
 .. automodule:: gnome.map
@@ -156,13 +140,16 @@ Class Reference
 ``gnome.outputter`` -- PyGnome outputters module
 ---------------------------------------------------
 .. automodule:: gnome.outputters
-.. :autoclass:: Outputter
+.. autoclass:: Outputter
     :members:
     :show-inheritance:
-.. :autoclass:: Renderer
+.. autoclass:: Renderer
     :members:
     :show-inheritance:
-.. :autoclass:: NetCDFOutput
+.. autoclass:: NetCDFOutput
+    :members:
+    :show-inheritance:
+.. autoclass:: KMZOutput
     :members:
     :show-inheritance:
 .. autoclass:: TrajectoryGeoJsonOutput
@@ -178,13 +165,28 @@ Class Reference
 ``gnome.utilities`` -- PyGnome utilities module
 ---------------------------------------------------
 
+.. automodule:: gnome.utilities.distributions
+    :members:
+    :show-inheritance:
 .. automodule:: gnome.utilities.serializable
     :members:
     :show-inheritance:
-
 .. automodule:: gnome.utilities.orderedcollection
     :members:
     :show-inheritance:
+.. automodule:: gnome.utilities.map_canvas
+    :members:
+    :show-inheritance:
+.. automodule:: gnome.utilities.projections
+    :members:
+    :show-inheritance:
+.. automodule:: gnome.utilities.inf_datetime
+    :members:
+    :show-inheritance:
+.. automodule:: gnome.utilities.cache
+    :members:
+    :show-inheritance:
+
 
 
 ``gnome.persist`` -- PyGnome persistance classes

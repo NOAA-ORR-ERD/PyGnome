@@ -23,6 +23,7 @@ from gnome.spill.elements import (InitWindages,
                                   plume)
 
 from gnome.utilities.distributions import (NormalDistribution,
+                                           UniformDistribution,
                                            LogNormalDistribution,
                                            WeibullDistribution)
 
@@ -55,7 +56,7 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
 
 """ Initializers - following are used for parameterizing tests """
 fcn_list = (InitWindages(),
-            InitRiseVelFromDist(),
+            InitRiseVelFromDist(distribution=UniformDistribution()),
             InitRiseVelFromDist(distribution=NormalDistribution(mean=0,
                                                                 sigma=0.1)),
             InitRiseVelFromDist(distribution=LogNormalDistribution(mean=0,
@@ -160,7 +161,7 @@ def test_initialize_InitRiseVelFromDist_uniform():
     'Test initialize data_arrays with uniform dist'
     data_arrays = mock_append_data_arrays(rise_vel_array, num_elems)
 
-    fcn = InitRiseVelFromDist()
+    fcn = InitRiseVelFromDist(distribution=UniformDistribution())
     fcn.initialize(num_elems, None, data_arrays)
 
     assert_dataarray_shape_size(rise_vel_array, data_arrays, num_elems)
@@ -239,10 +240,10 @@ oil = test_oil
 inp_params = [((floating(substance=oil),
                 ElementType([InitWindages()], substance=oil)), arr_types),
               ((floating(substance=oil),
-                ElementType([InitWindages(), InitRiseVelFromDist()],
+                ElementType([InitWindages(), InitRiseVelFromDist(distribution=UniformDistribution())],
                             substance=oil)), rise_vel),
               ((floating(substance=oil),
-                ElementType([InitRiseVelFromDist()],
+                ElementType([InitRiseVelFromDist(distribution=UniformDistribution())],
                             substance=oil)), rise_vel),
               ]
 

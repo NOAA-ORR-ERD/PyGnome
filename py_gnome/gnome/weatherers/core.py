@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import copy
 
-import numpy
-np = numpy
+import numpy as np
+
 from colander import SchemaNode
 
 from gnome.persist.extend_colander import NumpyArray

@@ -11,8 +11,7 @@ Adds some for Python-only use
 
 import sys
 
-import numpy
-np = numpy
+import numpy as np
 
 # pull everything from the cython code
 from cy_gnome.cy_basic_types import *

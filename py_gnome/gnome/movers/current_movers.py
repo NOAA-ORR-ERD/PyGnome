@@ -99,12 +99,12 @@ class CurrentMoversBase(CyMover):
 
     def get_cell_center_points(self):
         '''
-            Right now the cython mover only gets the triangular center points,
-            so we need to calculate centers based on the cells themselves.
+        Right now the cython mover only gets the triangular center points,
+        so we need to calculate centers based on the cells themselves.
 
-            Cells will have the format (tl, tr, bl, br)
-            We need to get the rectangular centers
-             - center will be (tl + ((br - tl) / 2.))
+        Cells will have the format (tl, tr, bl, br)
+        We need to get the rectangular centers
+        Center will be: (tl + ((br - tl) / 2.))
         '''
         return self.mover._get_center_points().view(dtype='<f8').reshape(-1, 2)
 
@@ -823,11 +823,11 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
 class CurrentCycleMoverSchema(ObjType, ProcessSchema):
     filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
-    current_scale = SchemaNode(Float(), default=1)
-    uncertain_duration = SchemaNode(Float(), default=24)
-    uncertain_time_delay = SchemaNode(Float(), default=0)
-    uncertain_along = SchemaNode(Float(), default=.5)
-    uncertain_cross = SchemaNode(Float(), default=.25)
+    current_scale = SchemaNode(Float(), default=1, missing=drop)
+    uncertain_duration = SchemaNode(Float(), default=24, missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), default=0, missing=drop)
+    uncertain_along = SchemaNode(Float(), default=.5, missing=drop)
+    uncertain_cross = SchemaNode(Float(), default=.25, missing=drop)
 
 
 class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
@@ -1099,6 +1099,36 @@ class ComponentMover(CyMover, serializable.Serializable):
 
     scale_by = property(lambda self: self.mover.scale_by,
                         lambda self, val: setattr(self.mover, 'scale_by', val))
+
+    extrapolate = property(lambda self: self.mover.extrapolate,
+                           lambda self, val: setattr(self.mover,
+                                                     'extrapolate',
+                                                     val))
+
+    use_averaged_winds = property(lambda self: self.mover.use_averaged_winds,
+                           lambda self, val: setattr(self.mover,
+                                                     'use_averaged_winds',
+                                                     val))
+
+    wind_power_factor = property(lambda self: self.mover.wind_power_factor,
+                           lambda self, val: setattr(self.mover,
+                                                     'wind_power_factor',
+                                                     val))
+
+    past_hours_to_average = property(lambda self: self.mover.past_hours_to_average,
+                           lambda self, val: setattr(self.mover,
+                                                     'past_hours_to_average',
+                                                     val))
+
+    scale_factor_averaged_winds = property(lambda self: self.mover.scale_factor_averaged_winds,
+                           lambda self, val: setattr(self.mover,
+                                                     'scale_factor_averaged_winds',
+                                                     val))
+
+    use_original_scale_factor = property(lambda self: self.mover.use_original_scale_factor,
+                           lambda self, val: setattr(self.mover,
+                                                     'use_original_scale_factor',
+                                                     val))
 
     @property
     def scale_refpoint(self):

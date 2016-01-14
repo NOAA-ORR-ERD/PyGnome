@@ -35,7 +35,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
                   duration=timedelta(days=2),
-                  time_step=30 * 60,
+                  time_step=30 * 60, # 30 minutes
                   uncertain=False)
 
     print 'adding the map'
@@ -111,9 +111,7 @@ if __name__ == "__main__":
     scripting.make_images_dir()
 
     model = make_model()
-    model.duration = timedelta(hours=2)
-    #model.full_run(log=True)
-    model.full_run()
+    for step in model:
+        print step
 
-    for sc in model.spills.items():
-        print "sc:", sc
+    model.full_run()

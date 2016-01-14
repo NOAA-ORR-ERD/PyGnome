@@ -2362,7 +2362,7 @@ resource 'FREF' (130, "GNOME Stationery", purgeable) {
 resource 'STR#' (128, "GREETING", purgeable) {
 	{	/* array StringArray: 9 elements */
 		/* [1] */
-		"GNOMEª 1.3.9",
+		"GNOMEª 1.3.10",
 		/* [2] */
 		" ",
 		/* [3] */

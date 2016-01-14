@@ -9,6 +9,7 @@ import numpy as np
 
 from gnome.movers import RiseVelocityMover
 from gnome.spill.elements import ElementType, InitRiseVelFromDist
+from gnome.utilities.distributions import UniformDistribution
 
 from ..conftest import sample_sc_release
 
@@ -42,12 +43,12 @@ sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,
                        uncertain=False,
                        arr_types={'rise_vel'},
-                       element_type=ElementType([InitRiseVelFromDist()]))
+                       element_type=ElementType([InitRiseVelFromDist(distribution=UniformDistribution())]))
 u_sc = sample_sc_release(5, (3., 6., 0.),
                          rel_time,
                          uncertain=True,
                          arr_types={'rise_vel'},
-                         element_type=ElementType([InitRiseVelFromDist()]))
+                         element_type=ElementType([InitRiseVelFromDist(distribution=UniformDistribution())]))
 model_time = rel_time
 
 

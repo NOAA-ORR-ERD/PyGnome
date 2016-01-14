@@ -5,6 +5,7 @@ Does not contain a schema for persistence yet
 import copy
 import os
 from glob import glob
+from collections import defaultdict
 
 import numpy as np
 
@@ -37,6 +38,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
     associated properties. Following is the format for a particle - the
     data in <> are the results for each element.
     ::
+
         {
         "type": "FeatureCollection",
         "features": [
@@ -72,7 +74,10 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                Field('output_dir', update=True, save=True)]
     _schema = TrajectoryGeoJsonSchema
 
-    def __init__(self, round_data=True, round_to=4, output_dir=None,
+    def __init__(self,
+                 round_data=True,
+                 round_to=4,
+                 output_dir=None,
                  **kwargs):
         '''
         :param bool round_data=True: if True, then round the numpy arrays
@@ -90,7 +95,26 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         self.round_to = round_to
         self.output_dir = output_dir
 
-        super(TrajectoryGeoJsonOutput, self).__init__(**kwargs)
+        super(TrajectoryGeoJsonOutput, self).__init__(output_dir=output_dir,
+                                                      **kwargs)
+
+    def prepare_for_model_run(self, *args, **kwargs):
+        """
+        prepares the outputter for a model run.
+
+        Parameters passed to base class (use super): model_start_time, cache
+
+        Does not take any other input arguments; however, to keep the interface
+        the same for all outputters, define **kwargs and pass into base class
+
+        In this case, it cleans out previous written data files
+
+        If you want to keep them, a new output_dir should be set
+        """
+
+        super(TrajectoryGeoJsonOutput, self).prepare_for_model_run(*args,
+                                                                   **kwargs)
+        self.clean_output_files()
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
@@ -103,21 +127,22 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         # one feature per element client; replaced with multipoint
         # because client performance is much more stable with one
         # feature per step rather than (n) features per step.features = []
-        features = [];
+        features = []
         for sc in self.cache.load_timestep(step_num).items():
             time = date_to_sec(sc.current_time_stamp)
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
             sc_type = 'uncertain' if sc.uncertain else 'forecast'
 
-            # break elements into multipoint features based on their status code
-            # evaporated : 10
-            # in_water : 2
-            # not_released : 0
-            # off_maps : 7
-            # on_land : 3
-            # to_be_removed : 12
-            points = {};
+            # break elements into multipoint features based on their
+            # status code
+            #   evaporated : 10
+            #   in_water : 2
+            #   not_released : 0
+            #   off_maps : 7
+            #   on_land : 3
+            #   to_be_removed : 12
+            points = {}
             for ix, pos in enumerate(position):
                 st_code = status[ix]
 
@@ -178,14 +203,17 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
             data = data_array.astype(p_type).tolist()
         return data
 
-    def rewind(self):
-        'remove previously written files'
-        super(TrajectoryGeoJsonOutput, self).rewind()
-        self.clean_output_files()
+    # def rewind(self):
+    #     'remove previously written files'
+    #     super(TrajectoryGeoJsonOutput, self).rewind()
+    #     self.clean_output_files()
 
     def clean_output_files(self):
+        print "in clean_output_files"
         if self.output_dir:
             files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
+            print "files are:"
+            print files
             for f in files:
                 os.remove(f)
 
@@ -204,6 +232,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
     Following is the output format - the data in <> are the results
     for each element.
     ::
+    
         {
          "time_stamp": <TIME IN ISO FORMAT>,
          "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
@@ -258,20 +287,22 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
 
         geojson = {}
         for cm in self.current_movers:
-            features = []
             centers = cm.get_center_points()
+
             velocities = cm.get_scaled_velocities(model_time)
+            velocities = self.get_rounded_velocities(velocities)
 
-            current_vals = np.hstack((centers.view(dtype='<f8')
-                                      .reshape(-1, 2),
-                                      velocities.view(dtype='<f8')
-                                      .reshape(-1, 2)
-                                      )).reshape(-1, 2, 2)
+            velocity_dict = defaultdict(list)
+            for k, v in zip(velocities, centers):
+                k = tuple(k)
+                v = list(v)
+                velocity_dict[k].append(v)
 
-            for c, v in current_vals:
-                feature = Feature(geometry=Point(list(c)),
+            features = []
+            for v, cps in velocity_dict.items():
+                feature = Feature(geometry=MultiPoint(cps),
                                   id="1",
-                                  properties={'velocity': list(v)})
+                                  properties={'velocity': v})
                 features.append(feature)
 
             geojson[cm.id] = FeatureCollection(features)
@@ -285,8 +316,8 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         return output_info
 
     def get_rounded_velocities(self, velocities):
-        return np.vstack((velocities['u'].round(decimals=1),
-                          velocities['v'].round(decimals=1))).T
+        return np.vstack((velocities['u'].round(decimals=2),
+                          velocities['v'].round(decimals=2))).T
 
     def get_unique_velocities(self, velocities):
         '''
@@ -331,6 +362,7 @@ class IceGeoJsonOutput(Outputter, Serializable):
     Following is the output format - the data in <> are the results
     for each element.
     ::
+
         {
          "time_stamp": <TIME IN ISO FORMAT>,
          "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,

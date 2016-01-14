@@ -162,10 +162,6 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeSte
 	double 	dLong, dLat;
 	WorldPoint3D	deltaPoint ={0,0,0.};
 	WorldPoint3D refPoint;	
-	double timeAlpha;
-	long index; 
-	Seconds startTime,endTime;
-	//Seconds time = model->GetModelTime();
 	VelocityRec windVelocity;
 	OSErr err = noErr;
 
@@ -289,4 +285,12 @@ Error: // JLM 	 10/27/98
 	
 }	
 
+long GridWindMover_c::GetNumTriangles(void)
+{
+	long numTriangles = 0;
+	TopologyHdl topoH = timeGrid->fGrid->GetTopologyHdl();
+	if (topoH) numTriangles = _GetHandleSize((Handle)topoH)/sizeof(**topoH);
+	
+	return numTriangles;
+}
 

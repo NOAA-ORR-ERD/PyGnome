@@ -17,6 +17,7 @@ class Field(object):  # ,serializable.Serializable):
     '''
     Class containing information about the property to be serialized
     '''
+
     def __init__(self, name,
                  isdatafile=False,
                  update=False, save=False, read=False,
@@ -108,6 +109,7 @@ class Field(object):  # ,serializable.Serializable):
 
 
 class State(object):
+
     def __init__(self, save=None, update=None, read=None, field=None):
         """
         Object keeps the list of properties that are output by
@@ -161,7 +163,9 @@ class State(object):
         return new_
 
     def __eq__(self, other):
-        'check for equality'
+        """
+        check for equality
+        """
         return self.__dict__ == other.__dict__
 
     def __ne__(self, other):
@@ -570,6 +574,7 @@ class Serializable(GnomeId, Savable):
         NOTE: add the json_='webapi' key to be serialized so we know what the
         serialization is for
         """
+
         list_ = self._state.get_names('all')
 
         data = {}
@@ -788,7 +793,11 @@ class Serializable(GnomeId, Savable):
                 elif self_attr != other_attr:
                     return False
             else:
-                if not np.allclose(self_attr, other_attr):
+                if not isinstance(self_attr, type(other_attr)):
+                    return False
+
+                if not np.allclose(self_attr, other_attr,
+                                   rtol=1e-4, atol=1e-4):
                     return False
 
         return True

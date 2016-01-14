@@ -8,6 +8,7 @@ module to define classes for GNOME output:
   - saving to other formats ?
 
 """
+import os
 import copy
 from datetime import timedelta
 
@@ -45,7 +46,8 @@ class Outputter(Serializable):
                  output_timestep=None,
                  output_zero_step=True,
                  output_last_step=True,
-                 name=None):
+                 name='',
+                 output_dir=None):
         """
         sets attributes for all outputters, like output_timestep, cache
 
@@ -65,6 +67,12 @@ class Outputter(Serializable):
         :param output_last_step: default is True. If True then output for
             final step is written regardless of output_timestep
         :type output_last_step: boolean
+
+        :param name='': name for outputter
+
+        :param output_dir=None: directory to dump ouput in, if it needs to
+                                do this.
+        :type output_dir: string (path)
         """
         self.cache = cache
         self.on = on
@@ -74,10 +82,19 @@ class Outputter(Serializable):
             self._output_timestep = int(output_timestep.total_seconds())
         else:
             self._output_timestep = None
+
         self.sc_pair = None     # set in prepare_for_model_run
 
-        if name:
-            self.name = name
+        self.name = name
+
+        # make sure the output_dir exits:
+        if output_dir is not None:
+            try:
+                os.mkdir(output_dir)
+            except OSError:
+                pass
+
+        self.output_dir = output_dir
 
         # reset internally used variables
         self.rewind()
@@ -104,32 +121,51 @@ class Outputter(Serializable):
     def prepare_for_model_run(self,
                               model_start_time=None,
                               spills=None,
+                              model_time_step=None,
                               **kwargs):
         """
         This method gets called by the model at the beginning of a new run.
         Do what you need to do to prepare.
 
-        :param model_start_time: (Required) start time of the model run. NetCDF
-            time units calculated with respect to this time.
+        :param model_start_time: (Required) start time of the model run.
+                                 NetCDF time units calculated with respect
+                                 to this time.
         :type model_start_time: datetime.datetime object
+
         :param spills: (Required) model.spills object (SpillContainerPair)
         :type spills: gnome.spill_container.SpillContainerPair object
+
+        :param model_time_step: time step of the model
+                                -- used to set timespans for some outputters
+        :type model_time_step: float seconds
 
         Optional argument - in case cache needs to be updated
 
         :param cache=None: Sets the cache object to be used for the data.
-            If None, it will use the one already set up.
+                           If None, it will use the one already set up.
         :type cache: As defined in cache module (gnome.utilities.cache).
-            Currently only ElementCache is defined/used.
+                     Currently only ElementCache is defined/used.
 
-        also added **kwargs since a derived class like NetCDFOutput could
+        also added ``**kwargs`` since a derived class like NetCDFOutput could
         require additional variables.
 
         .. note:: base class doesn't use model_start_time or spills, but
-        multiple outputters need spills and netcdf needs model_start_time,
-        so just set them here
+            multiple outputters need spills and netcdf needs model_start_time,
+            so just set them here
+
         """
+        # check for required parameters
+        # -- they are None so that they can be out of order
+        # this breaks tests -- probably should fix the tests...
+        if model_start_time is None:
+            raise TypeError("model_start_time is a required parameter")
+        # if spills is None:
+        #    raise TypeError("spills is a required parameter")
+        # if model_time_step is None:
+        #     raise TypeError("model_time_step is a required parameter")
+
         self._model_start_time = model_start_time
+        self.model_timestep = model_time_step
         self.sc_pair = spills
         cache = kwargs.pop('cache', None)
         if cache is not None:
@@ -146,7 +182,8 @@ class Outputter(Serializable):
         Do what you need to do to prepare for a new model step
 
         base class method checks to see if data for model_time should be output
-        Set self._write_step flag to true if:
+        Set self._write_step flag to true if::
+
             model_time < self._dt_since_lastoutput <= model_time + time_step
 
         It also updates the _dt_since_lastoutput internal variable if the data
@@ -156,8 +193,8 @@ class Outputter(Serializable):
         :param model_time: current model time as datetime object
 
         .. note:: The write_output() method will be called after the Model
-        calls model_step_is_done(). Let's set the _write_step flag here and
-        update the _dt_since_lastoutput variable
+           calls model_step_is_done(). Let's set the _write_step flag here and
+           update the _dt_since_lastoutput variable
 
         """
         if self._output_timestep is not None:
@@ -200,6 +237,18 @@ class Outputter(Serializable):
             raise ValueError('cache object is not defined. It is required'
                              ' prior to calling write_output')
 
+    def clean_output_files(self):
+        '''
+        cleans out the output dir
+
+        This should be implemented by subclasses that dump files.
+
+        but each outputter type dumps different types of files, and this should
+        only clear out those. So it has to be custom implemented
+        '''
+        raise NotImplementedError('This Outputter does not suport '
+                                  'clearing out files')
+
     def rewind(self):
         '''
         Called by model.rewind()
@@ -211,7 +260,9 @@ class Outputter(Serializable):
         self._dt_since_lastoutput = None
         self._write_step = True
 
-    def write_output_post_run(self, model_start_time, num_time_steps,
+    def write_output_post_run(self,
+                              model_start_time,
+                              num_time_steps,
                               **kwargs):
         """
         If the model has already been run and the data is cached, then use
@@ -228,8 +279,8 @@ class Outputter(Serializable):
 
         Optional argument - depending on the outputter, the following maybe
         required. For instance, the 'spills' are required by NetCDFOutput,
-        GeoJson, but not Renderer in prepare_for_model_run(). The **kwargs here
-        are those required by prepare_for_model_run() for an outputter
+        GeoJson, but not Renderer in prepare_for_model_run(). The ``**kwargs``
+        here are those required by prepare_for_model_run() for an outputter
 
         :param cache=None: Sets the cache object to be used for the data.
             If None, it will use the one already set up.
@@ -265,3 +316,31 @@ class Outputter(Serializable):
             self.write_output(step_num, last_step)
             model_time = (self.cache.load_timestep(step_num).items()[0].
                           current_time_stamp)
+
+    # Some utilities for checking valid filenames, etc...
+    def _check_filename(self, filename):
+        'basic checks to make sure the filename is valid'
+        if os.path.isdir(filename):
+            raise ValueError('filename must be a file not a directory.')
+
+        if not os.path.exists(os.path.realpath(os.path.dirname(filename)
+                                               )):
+            raise ValueError('{0} does not appear to be a valid path'
+                             .format(os.path.dirname(filename)))
+
+    def _file_exists_error(self, file_):
+        """
+        invoked by prepare_for_model_run. If file already exists, it will raise
+        this error.
+
+        Do this in prepare_for_model_run, because user may want to define the
+        model and run it in batch mode. This will allow netcdf_outputter to be
+        created, but the first time it tries to write this file, it will check
+        and raise an error if file exists
+        """
+        if os.path.exists(file_):
+            raise ValueError('{0} file exists. Enter a filename that '
+                             'does not exist in which to save data.'
+                             .format(file_))
+
+

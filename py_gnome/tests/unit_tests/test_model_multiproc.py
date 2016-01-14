@@ -32,7 +32,6 @@ pytestmark = mark.skipif("sys.platform=='win32'", reason="skip on windows")
 
 def make_model(uncertain=False,
                geojson_output=False):
-    print 'initializing the model'
 
     start_time = datetime(2012, 9, 15, 12, 0)
     mapfile = testdata["lis"]["map"]
@@ -47,7 +46,6 @@ def make_model(uncertain=False,
                   duration=timedelta(hours=48), time_step=3600,
                   map=gnome_map, uncertain=uncertain, cache_enabled=False)
 
-    print 'adding a spill'
     spill = point_line_release_spill(num_elements=1000,
                                      start_position=(-72.419992,
                                                      41.202120, 0.0),
@@ -58,7 +56,6 @@ def make_model(uncertain=False,
     spill.amount_uncertainty_scale = 1.0
     model.spills += spill
 
-    print 'adding a RandomMover:'
     model.movers += RandomMover(diffusion_coef=500000, uncertain_factor=2)
 
     print 'adding a wind mover:'
@@ -264,13 +261,11 @@ def test_weathering_output_only():
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
 
-    print '\nOutputter results:'
     res = model_broadcaster.cmd('get_outputters', {})
 
     assert not [o for r in res for o in r
                 if not isinstance(o, WeatheringOutput)]
 
-    print '\nStep results:'
     res = model_broadcaster.cmd('step', {})
 
     assert len(res) == 9

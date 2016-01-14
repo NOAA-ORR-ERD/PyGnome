@@ -66,6 +66,7 @@ public:
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
 	
 	Boolean			VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth);
+	VelocityRec 	GetInterpolatedValue(InterpolationValBilinear interpolationVal,float depth,float totalDepth);
 	
 	//virtual	OSErr 	ReadTopology(char* path);
 	//virtual	OSErr 	ExportTopology(char* path);
@@ -200,6 +201,7 @@ public:
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
 	
 	Boolean			VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth);
+	VelocityRec 	GetInterpolatedValue(InterpolationValBilinear interpolationVal);
 	
 	//virtual	OSErr 	ReadTopology(char* path);
 	//virtual	OSErr 	ExportTopology(char* path);

@@ -1,22 +1,16 @@
 #!/usr/bin/env python
-
 """
-
 The master setup.py file for py_gnome
 
 you should be able to run :
-
-python setup.py develop
+    python setup.py develop
 
 to build and install the whole thing in development mode
-
 (it will only work right with distribute, not setuptools)
-
 All the shared C++ code is compiled with  basic_types.pyx
 
 It needs to be imported before any other extensions
 (which happens in the gnome.__init__.py file)
-
 """
 
 import os
@@ -54,6 +48,7 @@ platform = sys.platform
 def target_dir(name):
     '''Returns the name of a distutils build directory'''
     f = '{dirname}.{platform}-{version[0]}.{version[1]}'
+
     return f.format(dirname=name,
                     platform=sysconfig.get_platform(),
                     version=sys.version_info)
@@ -66,14 +61,17 @@ def target_path(name='temp'):
 
 def build_oil_lib(mode):
     'invoked at multiple places so made a function'
+    print "Installing oil_library since it isn't found"
+
     oil_lib_path = os.path.join(SETUP_PATH, '../oil_library')
     os.chdir(oil_lib_path)
-    print "Installing oil_library since it isn't found"
+
     if mode in ['develop', 'developall']:
         # anaconda doesn't like setuptools doing dependencies
         call(['python', 'setup.py', mode, '--no-deps'])
     else:
         call(['python', 'setup.py', mode])
+
     print "Change back to user's current working directory"
     os.chdir(CWD)
 
@@ -103,7 +101,7 @@ class cleandev(clean):
                     except OSError as err:
                         print("Failed to remove {0}. Error: {1}"
                               .format(f, err))
-                        #raise
+                        # raise
 
         rm_dir = ['pyGnome.egg-info', 'build']
         for dir_ in rm_dir:
@@ -112,7 +110,6 @@ class cleandev(clean):
                 shutil.rmtree(dir_)
             except OSError as err:
                 print("Failed to remove {0}. Error: {1}".format(dir_, err))
-                #pass
 
 
 class remake_oil_db(develop):
@@ -153,59 +150,35 @@ class install_self_and_oil_lib(install):
             build_oil_lib('install')
 
 
-## 64 bit Windows Notes:
-##     The following batch commands will be needed to setup the
-##     64 bit compile environment.
-##
-##     - cmd /E:ON /V:ON /T:0E /K "C:\Program Files\Microsoft SDKs\Windows\v7.0\Bin\SetEnv.cmd"
-##     - "C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin\vcvars64.bat"
-##
-##     We may want to script these, but for now we can just manually run them
-##     on the command line.
-##     SetEnv.cmd makes use of delayed environment variable expansion, and we
-##     might not even be able to automate it without a rewrite of the script.
-##     Also, there will be some warning messages caused
-##     by our inability to read the registry.  Ignore these for now.
-##
-##     With the environment setup, all our sources are compiling, but we are
-##     failing to link because we netCDF library is 32 bit (I believe).
-##     Added third_party_lib/win32/x86_64/netcdf.lib
-##     Adding the netCDF bin directory and the dependency bin directory
-##     to the Path variable
-
-## setup our environment and architecture
-## These should be properties that are used by all Extensions
+# setup our environment and architecture
+# These should be properties that are used by all Extensions
 libfile = ''
-## fixme: is this only for the mac? and aren't there better ways to get the architecture?
+
+# fixme: is this only for the mac?  And aren't there better ways to get the
+#        architecture?
 if sys.maxsize <= 2 ** 32:
     architecture = 'i386'
 else:
     architecture = 'x86_64'
 
 if platform == 'darwin':
-    # for the mac -- decide whether we are 32 bit build
-    if architecture == 'i386':
-        #Setting this should force only 32 bit intel build
-        os.environ['ARCHFLAGS'] = "-arch i386"
-    else:
-        os.environ['ARCHFLAGS'] = "-arch x86_64"
+    # for the mac -- we need to set the -arch flag
+    os.environ['ARCHFLAGS'] = "-arch {0}".format(architecture)
+
     libfile = 'lib{0}.a'  # OSX static library filename format
 elif platform == "win32":
-    # Distutils normally only works with VS2008.
-    # this is to trick it into seeing VS2010 or VS2012
-    # We will prefer VS2012, then VS2010
-    if 'VS110COMNTOOLS' in os.environ:
-        os.environ['VS90COMNTOOLS'] = os.environ['VS110COMNTOOLS']
-    elif 'VS100COMNTOOLS' in os.environ:
-        os.environ['VS90COMNTOOLS'] = os.environ['VS100COMNTOOLS']
-
+    # We are now pretty much only supporting the Microsoft package:
+    #     "Microsoft Visual C++ Compiler for Python 2.7"
+    # which is currently available here:
+    #     http://www.microsoft.com/en-us/download/details.aspx?id=44266
+    #
+    # It should have most everything setup, as long as we have the package
+    #     setuptools>=6.0
     libfile = '{0}.lib'  # windows static library filename format
 
-
-## setup our third party libraries environment - for Win32/Mac OSX
-## Linux does not use the libraries in third_party_lib. It links against
-## netcdf shared objects installed by apt-get
-
+# setup our third party libraries environment - for Win32/Mac OSX
+# Linux does not use the libraries in third_party_lib. It links against
+# netcdf shared objects installed by apt-get
 if platform is "darwin" or "win32":
     third_party_dir = os.path.join('..', 'third_party_lib')
 
@@ -270,6 +243,7 @@ extension_names = ['cy_mover',
                    'cy_gridcurrent_mover',
                    'cy_gridwind_mover',
                    'cy_ice_mover',
+                   'cy_ice_wind_mover',
                    'cy_currentcycle_mover',
                    'cy_ossm_time',
                    'cy_random_mover',
@@ -297,11 +271,11 @@ cpp_files = ['RectGridVeL_c.cpp',
              'RectUtils.cpp',
              'WindMover_c.cpp',
              'CompFunctions.cpp',
-             #'CMYLIST.cpp',
-             #'GEOMETR2.cpp',
+             # 'CMYLIST.cpp',
+             # 'GEOMETR2.cpp',
              'StringFunctions.cpp',
              'OUTILS.cpp',
-             #'NetCDFMover_c.cpp',
+             # 'NetCDFMover_c.cpp',
              'CATSMover_c.cpp',
              'CurrentMover_c.cpp',
              'ComponentMover_c.cpp',
@@ -315,6 +289,7 @@ cpp_files = ['RectGridVeL_c.cpp',
              'GridCurrentMover_c.cpp',
              'GridWindMover_c.cpp',
              'IceMover_c.cpp',
+             'IceWindMover_c.cpp',
              'CurrentCycleMover_c.cpp',
              'TimeGridVel_c.cpp',
              'TimeGridWind_c.cpp',
@@ -332,11 +307,11 @@ cpp_code_dir = os.path.abspath(os.path.join('..', 'lib_gnome'))
 cpp_files = [os.path.join(cpp_code_dir, f) for f in cpp_files]
 
 
-## setting the "pyGNOME" define so that conditional compilation
-## in the cpp files is done right.
+# setting the "pyGNOME" define so that conditional compilation
+# in the cpp files is done right.
 macros = [('pyGNOME', 1), ]
 
-## Build the extension objects
+# Build the extension objects
 compile_args = []
 extensions = []
 
@@ -368,14 +343,14 @@ static_lib_files = netcdf_lib_files
 if platform == "darwin":
 
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
-            ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
-            language='c++',
-            define_macros=macros,
-            extra_compile_args=compile_args,
-            extra_link_args=['-lz', '-lcurl'],
-            extra_objects=static_lib_files,
-            include_dirs=include_dirs,
-            )
+                                ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
+                                language='c++',
+                                define_macros=macros,
+                                extra_compile_args=compile_args,
+                                extra_link_args=['-lz', '-lcurl'],
+                                extra_objects=static_lib_files,
+                                include_dirs=include_dirs,
+                                )
 
     extensions.append(basic_types_ext)
     static_lib_files = []
@@ -395,15 +370,15 @@ elif platform == "win32":
     libdirs.append(netcdf_libs)
 
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
-            [r'gnome\cy_gnome\cy_basic_types.pyx'] + cpp_files,
-            language='c++',
-            define_macros=macros,
-            extra_compile_args=compile_args,
-            library_dirs=libdirs,
-            extra_link_args=link_args,
-            extra_objects=static_lib_files,
-            include_dirs=include_dirs,
-            )
+                                [r'gnome\cy_gnome\cy_basic_types.pyx'] + cpp_files,
+                                language='c++',
+                                define_macros=macros,
+                                extra_compile_args=compile_args,
+                                library_dirs=libdirs,
+                                extra_link_args=link_args,
+                                extra_objects=static_lib_files,
+                                include_dirs=include_dirs,
+                                )
 
     extensions.append(basic_types_ext)
 
@@ -413,10 +388,18 @@ elif platform == "win32":
                                      'cy_basic_types.lib')]
     libdirs = []
 
-elif sys.platform == "linux2":
-    ## Not sure calling setup twice is the way to go - but do this for now
-    ## NOTE: This is also linking against the netcdf library (*.so), not
-    ## the static netcdf. We didn't build a NETCDF static library.
+elif platform.startswith('linux'):
+
+    # for some reason I have to create build/temp.linux-i686-2.7
+    # else the compile fails saying temp.linux-i686-2.7 is not found
+    # required for develop or install mode
+    build_temp = target_path()
+    if 'clean' not in sys.argv[1:] and not os.path.exists(build_temp):
+        os.makedirs(build_temp)
+
+    # Not sure calling setup twice is the way to go - but do this for now
+    # NOTE: This is also linking against the netcdf library (*.so), not
+    # the static netcdf. We didn't build a NETCDF static library.
     setup(name='pyGnome',  # not required since ext defines this
           cmdclass={'build_ext': build_ext,
                     'cleandev': cleandev},
@@ -428,18 +411,18 @@ elif sys.platform == "linux2":
                                  include_dirs=[cpp_code_dir],
                                  )])
 
-    ## In install mode, it compiles and builds libgnome inside
-    ## lib.linux-i686-2.7/gnome/cy_gnome
-    ## This should be moved to build/temp.linux-i686-2.7 so cython files
-    ## build and link properly
+    # In install mode, it compiles and builds libgnome inside
+    # lib.linux-i686-2.7/gnome/cy_gnome
+    # This should be moved to build/temp.linux-i686-2.7 so cython files
+    # build and link properly
     if 'install' in sys.argv[1]:
         bdir = glob.glob(os.path.join('build/*/gnome/cy_gnome', 'libgnome.so'))
         if len(bdir) > 1:
-            raise Exception("Found more than one libgnome.so library" \
-                            " during install mode in 'build/*/gnome/cy_gnome'")
+            raise Exception("Found more than one libgnome.so library "
+                            "during install mode in 'build/*/gnome/cy_gnome'")
         if len(bdir) == 0:
-            raise Exception("Did not find libgnome.so library during install" \
-                            " mode in 'build/*/gnome/cy_gnome'")
+            raise Exception("Did not find libgnome.so library "
+                            "during install mode in 'build/*/gnome/cy_gnome'")
 
         libpath = os.path.dirname(bdir[0])
 
@@ -447,12 +430,12 @@ elif sys.platform == "linux2":
         libpath = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                'gnome', 'cy_gnome')
 
-    ## Need this for finding lib during linking and at runtime
-    ## using -rpath to define runtime path. Use $ORIGIN to define libgnome.so
-    ## relative to cy_*.so
+    # Need this for finding lib during linking and at runtime
+    # using -rpath to define runtime path. Use $ORIGIN to define libgnome.so
+    # relative to cy_*.so
     os.environ['LDFLAGS'] = "-L{0} -Wl,-rpath='$ORIGIN'".format(libpath)
 
-    ## End building C++ shared object
+    # End building C++ shared object
     lib = ['gnome']
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'],
@@ -467,10 +450,9 @@ elif sys.platform == "linux2":
     static_lib_files = []
 
 #
-### All other lib_gnome-based cython extensions.
-### These depend on the successful build of cy_basic_types
+# All other lib_gnome-based cython extensions.
+# These depend on the successful build of cy_basic_types
 #
-
 for mod_name in extension_names:
     cy_file = os.path.join("gnome/cy_gnome", mod_name + ".pyx")
     extensions.append(Extension('gnome.cy_gnome.' + mod_name,
@@ -484,30 +466,35 @@ for mod_name in extension_names:
                                 extra_objects=static_lib_files,
                                 include_dirs=include_dirs,
                                 )
-                       )
+                      )
 
 # and platform-independent cython extensions:
 # well...not entirely platform-independent.  We need to pass the link_args
 poly_cypath = os.path.join('gnome', 'utilities', 'geometry')
 sources = [os.path.join(poly_cypath, 'cy_point_in_polygon.pyx'),
            os.path.join(poly_cypath, 'c_point_in_polygon.c')]
+
+include_dirs = [np.get_include(), '../lib_gnome']
+if sys.platform == "win32":
+    include_dirs.append(os.path.join(third_party_dir, 'win32_headers'))
+
 extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                             sources=sources,
-                            include_dirs=[np.get_include()],
+                            include_dirs=include_dirs,
                             extra_link_args=link_args,
-                            )
-                  )
+                            ))
+
 extensions.append(Extension("gnome.utilities.file_tools.filescanner",
-                            sources = [os.path.join('gnome',
-                                                    'utilities',
-                                                    'file_tools',
-                                                    'filescanner.pyx')],
-                            include_dirs = [np.get_include()],
-                            language = "c",
+                            sources=[os.path.join('gnome',
+                                                  'utilities',
+                                                  'file_tools',
+                                                  'filescanner.pyx')],
+                            include_dirs=include_dirs,
+                            language="c",
                             ))
 
 setup(name='pyGnome',
-      version=__version__,
+      version='0.1',
       ext_modules=extensions,
       packages=find_packages(),
       package_dir={'gnome': 'gnome'},
@@ -519,31 +506,31 @@ setup(name='pyGnome',
                 'remake_oil_db': remake_oil_db,
                 'install': install_self_and_oil_lib},
 
-      #scripts,
+      # scripts,
 
-      #metadata for upload to PyPI
+      # metadata for upload to PyPI
       author="Gnome team at NOAA ORR",
       author_email="orr.gnome@noaa.gov",
       description=("GNOME (General NOAA Operational Modeling Environment) is "
-                    "the modeling tool the Office of Response and "
-                    "Restoration's (OR&R) Emergency Response Division uses to "
-                    "predict the possible route, or trajectory, a pollutant "
-                    "might follow in or on a body of water, such as in an "
-                    "oil spill."),
-      #license=
+                   "the modeling tool the Office of Response and "
+                   "Restoration's (OR&R) Emergency Response Division uses to "
+                   "predict the possible route, or trajectory, a pollutant "
+                   "might follow in or on a body of water, such as in an "
+                   "oil spill."),
+      # license=
       keywords="gnome oilspill modeling",
       url="https://github.com/NOAA-ORR-ERD/GNOME2"
-     )
+      )
 
 # Change current working directory back to what user originally had
 os.chdir(CWD)
 
 
-# ## total kludge to get linking to work right with Anaconda:
-## note: this doesn't work, as the env variable goes away with new process.
-## but I kept the code here, as we might want to use something similar
-## some day.
-# # is this an Anaconda environment:
+# total kludge to get linking to work right with Anaconda:
+# note: this doesn't work, as the env variable goes away with new process.
+# but I kept the code here, as we might want to use something similar
+# some day.
+# is this an Anaconda environment:
 # if platform == 'darwin':
 #     import sys, os
 #     sub_path = "Anaconda/anaconda/lib/python2.7"

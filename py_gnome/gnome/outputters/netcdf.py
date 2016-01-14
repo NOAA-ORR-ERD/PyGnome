@@ -1,6 +1,5 @@
 '''
-NetCDF outputter - follows the interface defined by gnome.Outputter for a
-NetCDF output writer
+NetCDF outputter - write the nc_particles netcdf file format
 '''
 
 import copy
@@ -117,11 +116,12 @@ class NetCDFOutput(Outputter, Serializable):
                 os.path.join(base_dir,'sample_model.nc'), which_data='most')
 
     `which_data` flag is used to set which data to add to the netcdf file:
+
     'standard' : the basic stuff most people would want
-    'most': everything the model is tracking except the internal-use-only
-        arrays
-    'all': everything tracked by the model (mostly used for diagnostics of
-        save files)
+
+    'most': everything the model is tracking except the internal-use-only arrays
+
+    'all': everything tracked by the model (mostly used for diagnostics of save files)
 
 
     .. note::
@@ -131,7 +131,7 @@ class NetCDFOutput(Outputter, Serializable):
        The attribute: `.arrays_to_output` is a set of the data arrays that
        will be added to the netcdf file. array names may be added to or removed
        from this set before a model run to customize what gets output:
-            `the_netcdf_outputter.arrays_to_output.add['rise_vel']`
+       `the_netcdf_outputter.arrays_to_output.add['rise_vel']`
 
        Since some of the names of the netcdf variables are different from the
        names in the SpillContainer data_arrays, this list uses the netcdf names
@@ -184,7 +184,10 @@ class NetCDFOutput(Outputter, Serializable):
                       ])
     _schema = NetCDFOutputSchema
 
-    def __init__(self, netcdf_filename, which_data='standard', compress=True,
+    def __init__(self,
+                 netcdf_filename,
+                 which_data='standard',
+                 compress=True,
                  **kwargs):
         """
         Constructor for Net_CDFOutput object. It reads data from cache and
@@ -194,11 +197,15 @@ class NetCDFOutput(Outputter, Serializable):
             store the NetCDF data.
         :type netcdf_filename: str. or unicode
 
-        :param which_data: If 'all', write all data to NetCDF.
+        :param which_data='standard':
             If 'standard', write only standard data.
-            Not sure what 'most' means.
+            If 'most' means, write everything except the attributes we know are
+            for internal model use.
+            If 'all', write all data to NetCDF -- usually only for diagnostics.
             Default is 'standard'.
-        :type which_data: {'standard', 'most', 'all'}
+            These are defined in the standard_arrays and usually_skipped_arrays
+            attributes
+        :type which_data: string -- one of {'standard', 'most', 'all'}
 
         Optional arguments passed on to base class (kwargs):
 
@@ -221,7 +228,7 @@ class NetCDFOutput(Outputter, Serializable):
 
         use super to pass optional kwargs to base class __init__ method
         """
-        self._check_netcdf_filename(netcdf_filename)
+        self._check_filename(netcdf_filename)
         self._netcdf_filename = netcdf_filename
 
         # uncertain file is only written out if model is uncertain
@@ -348,30 +355,6 @@ class NetCDFOutput(Outputter, Serializable):
     def netcdf_format(self):
         return self._format
 
-    def _check_netcdf_filename(self, netcdf_filename):
-        'basic checks to make sure the netcdf_filename is valid'
-        if os.path.isdir(netcdf_filename):
-            raise ValueError('netcdf_filename must be a file not a directory.')
-
-        if not os.path.exists(os.path.realpath(os.path.dirname(netcdf_filename)
-                                               )):
-            raise ValueError('{0} does not appear to be a valid path'
-                             .format(os.path.dirname(netcdf_filename)))
-
-    def _nc_file_exists_error(self, file_):
-        """
-        invoked by prepare_for_model_run. If file already exists, it will raise
-        this error.
-
-        Do this in prepare_for_model_run, because user may want to define the
-        model and run it in batch mode. This will allow netcdf_outputter to be
-        created, but the first time it tries to write this file, it will check
-        and raise an error if file exists
-        """
-        if os.path.exists(file_):
-            raise ValueError('{0} file exists. Enter a filename that '
-                             'does not exist in which to save data.'
-                             .format(file_))
 
     def _update_var_attributes(self, spills):
         '''
@@ -428,7 +411,8 @@ class NetCDFOutput(Outputter, Serializable):
                 for var_name in self.usually_skipped_arrays:
                     self.arrays_to_output.discard(var_name)
 
-    def prepare_for_model_run(self, model_start_time,
+    def prepare_for_model_run(self,
+                              model_start_time,
                               spills,
                               **kwargs):
         """
@@ -469,7 +453,7 @@ class NetCDFOutput(Outputter, Serializable):
 
         .. note::
             Does not take any other input arguments; however, to keep the
-            interface the same for all outputters, define kwargs in case
+            interface the same for all outputters, define ``**kwargs`` in case
             future outputters require different arguments.
 
         use super to pass model_start_time, cache=None and
@@ -477,7 +461,7 @@ class NetCDFOutput(Outputter, Serializable):
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         spills, **kwargs)
-        self.delete_output_files()
+        self.clean_output_files()
 
         self._update_var_attributes(spills)
 
@@ -487,7 +471,7 @@ class NetCDFOutput(Outputter, Serializable):
             else:
                 file_ = self.netcdf_filename
 
-            self._nc_file_exists_error(file_)
+            self._file_exists_error(file_)
 
             # create the netcdf files and write the standard stuff:
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
@@ -637,18 +621,22 @@ class NetCDFOutput(Outputter, Serializable):
                                     self._u_netcdf_filename),
                 'time_stamp': time_stamp}
 
-    def delete_output_files(self):
+    def clean_output_files(self):
         '''
-        deletes ouput files that may be around
+        deletes output files that may be around
 
         called by prepare_for_model_run
 
         here in case it needs to be called from elsewhere
         '''
-        if os.path.exists(self.netcdf_filename):
-            os.remove(self.netcdf_filename)
-        if (os.path.exists(self._u_netcdf_filename)):
+        try:
+          os.remove(self.netcdf_filename)
+        except OSError:
+            pass # it must not be there
+        try:
             os.remove(self._u_netcdf_filename)
+        except OSError:
+            pass # it must not be there
 
     def rewind(self):
         '''
@@ -661,7 +649,10 @@ class NetCDFOutput(Outputter, Serializable):
         self._start_idx = 0
 
     @classmethod
-    def read_data(klass, netcdf_file, time=None, index=None,
+    def read_data(klass,
+                  netcdf_file,
+                  time=None,
+                  index=None,
                   which_data='standard'):
         """
         Read and create standard data arrays for a netcdf file that was created

@@ -9,9 +9,6 @@ import copy
 from inspect import getmembers, ismethod
 from datetime import timedelta
 
-import numpy
-np = numpy
-
 import unit_conversion as uc
 from colander import (SchemaNode, Bool, String, Float, drop)
 
@@ -81,6 +78,11 @@ class Spill(serializable.Serializable):
         :param bool on=True: Toggles the spill on/off.
         :param float amount=None: mass or volume of oil spilled.
         :param str units=None: must provide units for amount spilled.
+        :param float amount_uncertainty_scale=0.0: scale value in range 0-1
+                                                   that adds uncertainty to the
+                                                   spill amount.
+                                                   Maximum uncertainty scale
+                                                   is (2/3) * spill_amount.
         :param str name='Spill': a name for the spill.
 
         .. note::
@@ -90,9 +92,13 @@ class Spill(serializable.Serializable):
             If amount property is None, then just floating elements
             (ie. 'windages')
         """
+
         self.release = release
         if element_type is None:
             element_type = elements.floating(substance=substance)
+        elif substance is not None:
+            raise ValueError('Substance and element_type cannot both be '
+                             'specified')
 
         self.element_type = element_type
 
@@ -134,7 +140,7 @@ class Spill(serializable.Serializable):
             return False
 
         if (self._state.get_field_by_attribute('save') !=
-            other._state.get_field_by_attribute('save')):
+                other._state.get_field_by_attribute('save')):
             return False
 
         for name in self._state.get_names('save'):
@@ -165,11 +171,9 @@ class Spill(serializable.Serializable):
             msg = ('Units for amount spilled must be in volume or mass units. '
                    'Valid units for volume: {0}, for mass: {1} ').format(
                        self.valid_vol_units, self.valid_mass_units)
-            #raise uc.InvalidUnitError(msg)
-            #self.logger.exception(msg)
             ex = uc.InvalidUnitError(msg)
             self.logger.exception(ex, exc_info=True)
-            raise ex    # this should be raised since run will fail otherwise
+            raise ex  # this should be raised since run will fail otherwise
 
     def _get_all_props(self):
         'return all properties accessible through get'
@@ -284,8 +288,8 @@ class Spill(serializable.Serializable):
                     break
                 else:
                     self.logger.warning('{0} attribute does not exist '
-                                     'in element_type '
-                                     'or release object'.format(prop))
+                                        'in element_type or release object'
+                                        .format(prop))
 
     def get(self, prop=None):
         """
@@ -350,10 +354,11 @@ class Spill(serializable.Serializable):
 
     def get_initializer(self, name=None):
         '''
-        if name is None, return list of all initializers else return initializer
-        that sets given 'name'. 'name' refers to the data_array initialized by
-        initializer. For instance, if name='rise_vel', function will look in
-        all initializers to find the one whose array_types contain 'rise_vel'.
+        If name is None, return list of all initializers else return
+        initializer that sets given 'name'.
+        'name' refers to the data_array initialized by initializer.
+        For instance, if name='rise_vel', function will look in all
+        initializers to find the one whose array_types contain 'rise_vel'.
 
         If multiple initializers set 'name', then return the first one in the
         list. Although nothing prevents the user from having two initializers
@@ -625,6 +630,143 @@ class Spill(serializable.Serializable):
             return json_
 
 """ Helper functions """
+
+
+def surface_point_line_spill(num_elements,
+                             start_position,
+                             release_time,
+                             end_position=None,
+                             end_release_time=None,
+                             substance=None,
+                             amount=None,
+                             units=None,
+                             windage_range=(.01, .04),
+                             windage_persist=900,
+                             name='Surface Point/Line Release'):
+    '''
+    Helper function returns a Spill object
+
+    :param num_elements: total number of elements to be released
+    :type num_elements: integer
+    :param start_position: initial location the elements are released
+    :type start_position: 3-tuple of floats (long, lat, z)
+    :param release_time: time the LEs are released (datetime object)
+    :type release_time: datetime.datetime
+    :param end_position=None: Optional. For moving source, the end position
+                              If None, then release is from a point source
+    :type end_position: 3-tuple of floats (long, lat, z)
+    :param end_release_time=None: optional -- for a time varying release,
+        the end release time. If None, then release is instantaneous
+    :type end_release_time: datetime.datetime
+    :param substance=None: Type of oil spilled.
+    :type substance: str or OilProps
+    :param float amount=None: mass or volume of oil spilled
+    :param str units=None: units for amount spilled
+    :param tuple windage_range=(.01, .04): Percentage range for windage.
+                                           Active only for surface particles
+                                           when a mind mover is added
+    :param int windage_persist=900: Persistence for windage values in seconds.
+                                    Use -1 for inifinite, otherwise it is
+                                    randomly reset on this time scale
+    :param str name='Surface Point/Line Release': a name for the spill
+    '''
+    release = PointLineRelease(release_time=release_time,
+                               start_position=start_position,
+                               num_elements=num_elements,
+                               end_position=end_position,
+                               end_release_time=end_release_time)
+
+    element_type = elements.floating(windage_range=windage_range,
+                                     windage_persist=windage_persist,
+                                     substance=substance)
+
+    return Spill(release,
+                 element_type=element_type,
+                 amount=amount,
+                 units=units,
+                 name=name)
+
+
+def subsurface_plume_spill(num_elements,
+                           start_position,
+                           release_time,
+                           distribution,
+                           distribution_type='droplet_size',
+                           end_release_time=None,
+                           substance=None,
+                           density=None,
+                           density_units='kg/m^3',
+                           amount=None,
+                           units=None,
+                           windage_range=(.01, .04),
+                           windage_persist=900,
+                           name='Subsurface plume'):
+    '''
+    Helper function returns a Spill object
+
+    :param num_elements: total number of elements to be released
+    :type num_elements: integer
+    :param start_position: initial location the elements are released
+    :type start_position: 3-tuple of floats (long, lat, z)
+    :param release_time: time the LEs are released (datetime object)
+    :type release_time: datetime.datetime
+    :param distribution=None: An object capable of generating a probability
+                              distribution.  Right now, we have:
+                               * UniformDistribution
+                               * NormalDistribution
+                               * LogNormalDistribution
+                               * WeibullDistribution
+    :type distribution: gnome.utilities.distribution
+    :param str distribution_type=droplet_size: What is being sampled from the
+                                               distribution.  Options are:
+                                                * droplet_size - Rise velocity
+                                                                 is then
+                                                                 calculated
+                                                * rise_velocity - No droplet
+                                                                  size is
+                                                                  computed
+    :param end_release_time=None: End release time for a time varying release.
+                                  If None, then release is instantaneous
+    :type end_release_time: datetime.datetime
+    :param substance='None': Required unless density specified.
+                             Type of oil spilled.
+    :type substance: str or OilProps
+    :param float density=None: Required unless substance specified.
+                               Density of spilled material.
+    :param str density_units='kg/m^3':
+    :param float amount=None: mass or volume of oil spilled.
+    :param str units=None: must provide units for amount spilled.
+    :param tuple windage_range=(.01, .04): Percentage range for windage.
+                                           Active only for surface particles
+                                           when a mind mover is added
+    :param windage_persist=900: Persistence for windage values in seconds.
+                                Use -1 for inifinite, otherwise it is
+                                randomly reset on this time scale.
+    :param str name='Surface Point/Line Release': a name for the spill.
+    '''
+
+    release = PointLineRelease(release_time=release_time,
+                               start_position=start_position,
+                               num_elements=num_elements,
+                               end_release_time=end_release_time)
+
+    # This helper function is just passing parameters thru to the plume
+    # helper function which will do the work.
+    # But this way user can just specify all parameters for release and
+    # element_type in one go...
+    element_type = elements.plume(distribution_type=distribution_type,
+                                  distribution=distribution,
+                                  substance_name=substance,
+                                  windage_range=windage_range,
+                                  windage_persist=windage_persist,
+                                  density=density,
+                                  density_units=density_units)
+
+    return Spill(release,
+                 element_type=element_type,
+                 amount=amount,
+                 units=units,
+                 name=name)
 
 
 def point_line_release_spill(num_elements,

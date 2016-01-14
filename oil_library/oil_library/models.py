@@ -339,7 +339,7 @@ class Category(Base):
                             backref=backref("parent", remote_side=id),
                             )
 
-    def __init__(self, name, parent=None):
+    def __init__(self, name, parent=None, **kwargs):
         self.name = name
         self.parent = parent
 
@@ -458,10 +458,11 @@ class Oil(Base):
     @classmethod
     def from_json(cls, oil_json):
         oil_obj = cls(**oil_json)
-        oil_obj._add_relationships_from_json(oil_json)
+        oil_obj._add_one_to_many_relationships_from_json(oil_json)
+        oil_obj._add_categories_from_json(oil_json)
         return oil_obj
 
-    def _add_relationships_from_json(self, oil_json):
+    def _add_one_to_many_relationships_from_json(self, oil_json):
         for r in self.one_to_many_relationships:
             if r in oil_json:
                 current_attr = getattr(self, r)
@@ -471,6 +472,35 @@ class Oil(Base):
                     for kwargs in oil_json[r]:
                         obj = py_class(**kwargs)
                         current_attr.append(obj)
+
+    def _add_categories_from_json(self, oil_json):
+        '''
+            categories is a many-to-many relationship, but has properties
+            that are not generalizable.  This handles the specific
+            behavior of our Categories class.
+        '''
+        attr = 'categories'
+        if (attr in oil_json and
+                len(oil_json[attr]) > 0):
+            if attr in self.many_to_many_relationships:
+                current_attr = getattr(self, attr)
+                py_class = self._get_class_from_relationship_property(attr)
+
+                for i in oil_json[attr]:
+                    current_attr.append(self.create_linked_obj(py_class, i))
+            else:
+                raise AttributeError('Oil object has no attribute '
+                                     '"categories"')
+
+    def create_linked_obj(self, py_class, json_):
+        '''
+            Create an object plus all objects that have a parent relationship.
+        '''
+        if 'parent' in json_:
+            json_['parent'] = self.create_linked_obj(py_class,
+                                                     json_['parent'])
+
+        return py_class(**json_)
 
     def _get_class_from_relationship_property(self, attr_name):
         for p in self.__mapper__.iterate_properties:

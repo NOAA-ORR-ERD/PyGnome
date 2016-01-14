@@ -10,7 +10,7 @@ class OrderedCollection(object):
     - The order of insertion is preserved.
     - Objects are accessed by id, as if in a dictionary.
     - Objects can be replaced in order.  The objects will be referenced
-      by a new id, and still be in the correct order.
+    by a new id, and still be in the correct order.
     '''
 
     def __init__(self, elems=None, dtype=None):
@@ -269,9 +269,10 @@ class OrderedCollection(object):
     def to_dict(self):
         '''
         Method takes the instance of ordered collection and outputs a list of
-        dicts, each with two fields:
+        dicts, each with two fields::
+
             {obj_type: object type <module.class>,
-            id: IDs of each object.}
+            id: IDs of each object}
         '''
         items = []
 

@@ -109,7 +109,7 @@ MESSAGE setfield;TO HarborMouth.cur; scaleType constant;refP 79.870333 W 32.756 
 
 MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME Offshore.cur;PATH resnum 10029;
 
---MESSAGE setfield;TO Offshore.cur; scaleType constant;refP 73.972666 W 40.808000 N; scaleValue 1; timeFile resNum 10028;
+MESSAGE setfield;TO Offshore.cur; scaleType none;refP 79.903533 W 32.842112 N; scaleValue 1;
 --MESSAGE setfield;TO GeorgeWashingtonBridge.CUR; DownCurUncertainty .50;
 --MESSAGE setfield;TO GeorgeWashingtonBridge.CUR; CrossCurUncertainty .20;
 --------------

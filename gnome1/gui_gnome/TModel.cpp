@@ -2212,7 +2212,7 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 	char fileNumStr[64] = "", outputFileName[256], shortFileName[64], copyPath[256];
 	char trajectoryTime[64], trajectoryDate[64], preparedTime[32], preparedDate[32];
 	Boolean bWriteUncertaintyLEs = this->IsUncertain();
-	float lat,lon;
+	float lat,lon,z=1;
 	WorldPoint *waterPts=0, *beachedPts=0, *uncertainWaterPts=0, *uncertainBeachedPts=0;
 	short *placemarks=0;
 	
@@ -2424,6 +2424,8 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 		{
 			strcpy(nameStr,"      <name>Floating Splots (Best Guess)</name>\n");
 			fwrite(nameStr,sizeof(char),strlen(nameStr),target);
+			//strcpy(hdrStr,"      <description>gx:drawOrder=3</description>\n");
+			//fwrite(hdrStr,sizeof(char),strlen(nameStr),target);
 			strcpy(styleStr,"      <styleUrl>#YellowDotIcon</styleUrl>\n");
 			fwrite(styleStr,sizeof(char),strlen(styleStr),target);
 			//strcpy(hdrStr,"      <MultiGeometry>\n");
@@ -2435,8 +2437,20 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 				//strcpy(ptHdrStr,"                 <Point>\n");
 				//strcpy(ptHdrStr2,"                 </Point>\n");
 				fwrite(ptHdrStr,sizeof(char),strlen(ptHdrStr),target);
-				sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
-				fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				if (bWriteUncertaintyLEs) 
+				{
+					strcpy(hdrStr,"                     <altitudeMode>relativeToGround</altitudeMode>\n");
+					fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+					sprintf(ptStr,"                     <coordinates>%lf,%lf,%lf</coordinates>\n",lon,lat,z);
+					fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				}
+				else
+				{
+					sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+					fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				}
+				//sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+				//fwrite(ptStr,sizeof(char),strlen(ptStr),target);
 				fwrite(ptHdrStr2,sizeof(char),strlen(ptHdrStr2),target);
 			}
 
@@ -2456,8 +2470,20 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 				//strcpy(ptHdrStr,"                 <Point>\n");
 				//strcpy(ptHdrStr2,"                 </Point>\n");
 				fwrite(ptHdrStr,sizeof(char),strlen(ptHdrStr),target);
-				sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
-				fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				if (bWriteUncertaintyLEs) 
+				{
+					strcpy(hdrStr,"                     <altitudeMode>relativeToGround</altitudeMode>\n");
+					fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+					sprintf(ptStr,"                     <coordinates>%lf,%lf,%lf</coordinates>\n",lon,lat,z);
+					fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				}
+				else
+				{
+					sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+					fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				}
+				//sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+				//fwrite(ptStr,sizeof(char),strlen(ptStr),target);
 				fwrite(ptHdrStr2,sizeof(char),strlen(ptHdrStr2),target);
 			}
 		}
@@ -2465,6 +2491,8 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 		{
 			strcpy(nameStr,"      <name>Uncertainty Floating Splots</name>\n");
 			fwrite(nameStr,sizeof(char),strlen(nameStr),target);
+			//strcpy(hdrStr,"      <description>gx:drawOrder=2</description>\n");	// need google kml extensions to support this
+			//fwrite(hdrStr,sizeof(char),strlen(nameStr),target);
 			strcpy(styleStr,"      <styleUrl>#RedDotIcon</styleUrl>\n");
 			fwrite(styleStr,sizeof(char),strlen(styleStr),target);
 			//strcpy(hdrStr,"      <MultiGeometry>\n");
@@ -3031,12 +3059,11 @@ OSErr TModel::FinishKmlFile ()
 		p = strrchr(target_path,NEWDIRDELIMITER);
 		if(p) *p = 0;
 	}
-	strcpy(kmz_path, target_path);
-	strcat(kmz_path,".kmz");
-	
+	//strcpy(kmz_path, target_path);
+	//strcat(kmz_path,".kmz");	
 	//sprintf(cmd,"/usr/bin/zip -r kmz_path target_path\n");
-	sprintf(cmd,"zip -r kmz_path target_path");
-	status = system(cmd);
+	//sprintf(cmd,"zip -r kmz_path target_path");
+	//status = system(cmd);
 	return err;
 }
 
