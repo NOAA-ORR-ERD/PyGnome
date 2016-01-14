@@ -92,7 +92,11 @@ rel_type = [PointLineRelease(release_time=rel_time,
                              start_position=(0, 0, 0)),
             PointLineRelease(release_time=rel_time,
                              num_per_timestep=5,
-                             start_position=(0, 0, 0))]
+                             start_position=(0, 0, 0)),
+            ContinuousRelease(initial_elements=5,
+                              release_time=rel_time,
+                              num_per_timestep=5,
+                              start_position=(0, 0, 0))]
 # SpatialRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
 
 
