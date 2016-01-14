@@ -722,9 +722,11 @@ def test_full_run(model, dump, traj_only):
     assert len(results) == calculated_steps
 
     # check if the images are there:
-    # (1 extra for background image)
+    # The Renderer instantiated with default arguments has two output formats
+    # which create a background image and an animated gif in addition to the
+    # step images.
     num_images = len(os.listdir(model.outputters[-1].output_dir))
-    assert num_images == model.num_time_steps + 1
+    assert num_images == model.num_time_steps + 2
 
 
 ''' Test Callbacks on OrderedCollections '''

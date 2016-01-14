@@ -101,7 +101,7 @@ To install all the packages pygnome needs:
 
 ```
 > cd pygnome  # or wherever you put the PyGnome project
-> conda install --file conda_packages.txt
+> conda install --file conda_requirements.txt
 ```
 
 To get the whole setup, this file has a full dump of a conda environment

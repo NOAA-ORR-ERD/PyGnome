@@ -327,6 +327,7 @@ public:
 	OSErr 				GetIceFields(Seconds time, double *thickness, double *fraction);
 	OSErr 				GetIceVelocities(Seconds time, VelocityFRec *ice_velocity);
 	OSErr 				GetMovementVelocities(Seconds time, VelocityFRec *movement_velocity);
+	VelocityRec 		GetInterpolatedValue(const Seconds& model_time, InterpolationValBilinear interpolationVal,float depth,float totalDepth);
 	//OSErr 				GetIceVelocities(Seconds time, double *u, double *v);
 	//VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
 	//VelocityRec 		GetScaledPatValue3D(const Seconds& model_time, InterpolationVal interpolationVal,float depth);

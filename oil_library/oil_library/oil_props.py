@@ -11,7 +11,7 @@ object used to initialize and OilProps object
 Not sure at present if this needs to be serializable?
 '''
 import copy
-from itertools import groupby, chain
+from itertools import groupby, chain, izip_longest
 
 from repoze.lru import lru_cache
 import numpy as np
@@ -25,7 +25,8 @@ from .models import Oil
 sara_dtype = np.dtype([('type', 'S16'),
                        ('boiling_point', np.float64),
                        ('fraction', np.float64),
-                       ('density', np.float64)])
+                       ('density', np.float64),
+                       ('mol_wt', np.float64)])
 
 
 class OilProps(object):
@@ -172,13 +173,9 @@ class OilProps(object):
 
     def _component_mw(self, sara_type=None):
         '''
-        return the molecular weight of the pseudocomponents (mw_i) given the
-        boiling points.
-        It returns the mw_i for saturates and aromatic components
+        return the molecular weight of the pseudocomponents
         '''
-        ret = (0.04132 -
-               1.985e-4 * self.boiling_point +
-               (9.494e-7 * self.boiling_point ** 2))
+        ret = self._sara['mol_wt']
 
         if sara_type is not None:
             ret = ret[np.where(self._sara['type'] == sara_type)]
@@ -195,7 +192,18 @@ class OilProps(object):
 
     @property
     def component_density(self):
-        return self._sara['density']
+        return self._component_density()
+
+    def _component_density(self, sara_type=None):
+        '''
+        return the density of the pseudocomponents.
+        '''
+        ret = self._sara['density']
+
+        if sara_type is not None:
+            ret = ret[np.where(self._sara['type'] == sara_type)]
+
+        return ret
 
     @lru_cache(2)
     def vapor_pressure(self, temp, atmos_pressure=101325.0):
@@ -296,13 +304,13 @@ class OilProps(object):
         '''
         initialize self._sara as a numpy array. The information is structured
         in increasing boiling points as:
-            ['Saturates', boiling_point_0, mass_fraction, density]
-            ['Aromatics', boiling_point_0, mass_fraction, density]
-            ['Saturates', boiling_point_1, mass_fraction, density]
-            ['Aromatics', boiling_point_1, mass_fraction, density]
+            ['Saturates', boiling_point_0, mass_fraction, density, molWt]
+            ['Aromatics', boiling_point_0, mass_fraction, density, molWt]
+            ['Saturates', boiling_point_1, mass_fraction, density, molWt]
+            ['Aromatics', boiling_point_1, mass_fraction, density, molWt]
             ...
-            ['Resins', boiling_point_terminal, mass_fraction, density]
-            ['Asphaltenes', boiling_point_terminal, mass_fraction, density]
+            ['Resins', boiling_point_terminal, mass_fraction, density, molWt]
+            ['Asphaltenes', boiling_point_terminal, mass_fraction, density, molWt]
 
         Omit components that have 0 mass fraction
         '''
@@ -322,21 +330,43 @@ class OilProps(object):
                                            lambda x: x.ref_temp_k)]
                               ))
 
+        all_mw = list(chain(*[sorted(list(g), key=lambda s: s.sara_type,
+                                     reverse=True)
+                              for k, g
+                              in groupby(sorted(self._r_oil.molecular_weights,
+                                                key=lambda s: s.ref_temp_k),
+                                         lambda x: x.ref_temp_k)]
+                            ))
+
         items = []
         sum_frac = 0.
-        for comp, dens in zip(all_comp, all_dens):
+        for comp, dens, mol_wt in izip_longest(all_comp, all_dens, all_mw):
             if (comp.ref_temp_k != comp.ref_temp_k or
                     comp.sara_type != comp.sara_type):
                 msg = "mismatch in sara_fractions and sara_densities tables"
                 raise ValueError(msg)
 
             if comp.fraction > 0.0:
+                if hasattr(mol_wt, 'g_mol'):
+                    mw = mol_wt.g_mol
+                else:
+                    # We currently don't have estimation methods for
+                    # resin and asphaltene molecular weights, so they
+                    # don't exist in the oil record.
+                    if comp.sara_type == 'Resins':
+                        # recommended avg. value from Bill is 800 g/mol
+                        mw = 800.0
+                    elif comp.sara_type == 'Asphaltenes':
+                        # recommended avg. value from Bill is 1000 g/mol
+                        mw = 1000.0
+
                 items.append((comp.sara_type, comp.ref_temp_k, comp.fraction,
-                              dens.density))
+                              dens.density, mw))
                 sum_frac += comp.fraction
 
         self._sara = np.asarray(items, dtype=sara_dtype)
+
         if not np.allclose(self._sara[:]['fraction'].sum(), 1.0):
-            msg = ("mass fractions add up to: {0} - required "
-                   "to add to 1.0").format(self._sara[:]['fraction'].sum())
+            msg = ("mass fraction sum: {0} - sum should be approximately 1.0"
+                   .format(self._sara[:]['fraction'].sum()))
             raise ValueError(msg)

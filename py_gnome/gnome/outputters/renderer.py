@@ -177,8 +177,9 @@ class Renderer(Outputter, MapCanvas):
         :param draw_ontop: draw 'forecast' or 'uncertain' LEs on top. Default
             is to draw 'forecast' LEs, which are in black on top
         :type draw_ontop: str
-        
-        :param formats: list of formats to output. Default is .png and animated .gif
+
+        :param formats: list of formats to output.
+                        Default is .png and animated .gif
         :type formats: list of strings
 
 
@@ -236,8 +237,15 @@ class Renderer(Outputter, MapCanvas):
         # initilize the images:
         self.add_colors(self.map_colors)
         self.background_color = 'background'
-        fn = '%s_anim.gif' % os.path.splitext(self.map_filename)[0] if self.map_filename is not None else ''
-        self.anim_filename = os.path.join(output_dir,fn)
+
+        if self.map_filename is not None:
+            file_prefix = os.path.splitext(self.map_filename)[0]
+            sep = '_'
+        else:
+            file_prefix = sep = ''
+        fn = '{}{}anim.gif'.format(file_prefix, sep)
+        self.anim_filename = os.path.join(output_dir, fn)
+
         self.formats = formats
         self.delay = 50
         self.repeat = True
@@ -262,7 +270,7 @@ class Renderer(Outputter, MapCanvas):
 
     @property
     def map_filename(self):
-        return basename(self._filename)
+        return basename(self._filename) if self._filename is not None else None
 
     @map_filename.setter
     def map_filename(self, name):
@@ -283,10 +291,10 @@ class Renderer(Outputter, MapCanvas):
         return os.path.abspath(self.output_dir)
 
     def start_animation(self, filename):
-            self.animation = py_gd.Animation(filename, self.delay)
-            l = 0 if self.repeat else -1
-            print 'Starting animation'
-            self.animation.begin_anim(self.back_image, l)
+        self.animation = py_gd.Animation(filename, self.delay)
+        l = 0 if self.repeat else -1
+        print 'Starting animation'
+        self.animation.begin_anim(self.back_image, l)
 
     def prepare_for_model_run(self, *args, **kwargs):
         """
@@ -312,46 +320,49 @@ class Renderer(Outputter, MapCanvas):
                 self.start_animation(self.anim_filename)
             else:
                 self.save_background(os.path.join(self.output_dir,
-                                              self.background_map_name),
-                                              file_type = ftype)
+                                                  self.background_map_name),
+                                     file_type=ftype)
 
     def set_timestamp_attrib(self, **kwargs):
         """
-        Function to set details of the timestamp's appearance when printed. These details are stored as
-        d dict.
+        Function to set details of the timestamp's appearance when printed.
+        These details are stored as a dict.
 
         Recognized attributes:
-        :param on: turn the draw function on or off
+        :param on: Turn the draw function on or off
         :type on: Boolean
 
-        :param dt_format: format string for strftime to format the timestamp
+        :param dt_format: Format string for strftime to format the timestamp
         :type dt_format: String
 
-        :param background: color of the text background. Color must be present in foreground palette
+        :param background: Color of the text background.
+                           Color must be present in foreground palette
         :type background: String
 
-        :param color: color of the font. Note that the color must be present in the foreground palette
+        :param color: Color of the font. Note that the color must be present
+                      in the foreground palette
         :type color: String
 
-        :param size: size of the font ('tiny', 'small', 'medium', 'large', 'giant')
-        :type size: String
+        :param size: Size of the font
+        :type size: One of: ('tiny', 'small', 'medium', 'large', 'giant')
 
         :param position: x, y pixel coordinates of where to draw the timestamp.
         :type position :tuple
 
-        :param align: the reference point of the text bounding box. ('lt'(left top), 'ct', 'rt', 'r', 'rb', 'cb', 'lb', 'l')
-        :type align: String
-
+        :param align: The reference point of the text bounding box.
+        :type align: One of: ('lt'(left top), 'ct', 'rt',
+                              'l', 'r',
+                              'rb', 'cb', 'lb')
         """
         self.timestamp_attribs.update(kwargs)
 
-    def draw_timestamp(self, time): 
+    def draw_timestamp(self, time):
         """
-        Function that draws the timestamp to the foreground. Uses self.timestamp_attribs to
-        determine it's appearance.
+        Function that draws the timestamp to the foreground.
+        Uses self.timestamp_attribs to determine it's appearance.
 
         :param time: the datetime object representing the timestamp
-        :type time: datetime 
+        :type time: datetime
         """
         d = self.timestamp_attribs
         on = d['on'] if 'on' in d else True
@@ -361,10 +372,12 @@ class Renderer(Outputter, MapCanvas):
         background = d['background'] if 'background' in d else 'white'
         color = d['color'] if 'color' in d else 'black'
         size = d['size'] if 'size' in d else 'small'
-        position = d['position'] if 'position' in d else (self.fore_image.width/2, self.fore_image.height)
+        position = d['position'] if 'position' in d else (
+            self.fore_image.width / 2, self.fore_image.height)
         align = d['alignment'] if 'alignment' in d else 'cb'
 
-        self.fore_image.draw_text(time.strftime(dt_format), position, size, color, align, background)
+        self.fore_image.draw_text(
+            time.strftime(dt_format), position, size, color, align, background)
 
     def clean_output_files(self):
 
@@ -382,9 +395,8 @@ class Renderer(Outputter, MapCanvas):
             # it's not there to delete..
             pass
 
-        foreground_filenames = glob.glob(os.path.join(self.output_dir,
-                                                      self.foreground_filename_glob))
-        for name in foreground_filenames:
+        for name in glob.glob(os.path.join(self.output_dir,
+                                           self.foreground_filename_glob)):
             os.remove(name)
 
     def draw_background(self):
@@ -405,7 +417,6 @@ class Renderer(Outputter, MapCanvas):
         """
         Draws the land map to the internal background image.
         """
-
         for poly in self.land_polygons:
             if poly.metadata[1].strip().lower() == 'map bounds':
                 if self.draw_map_bounds:
@@ -428,6 +439,7 @@ class Renderer(Outputter, MapCanvas):
             else:
                 self.draw_polygon(poly,
                                   fill_color='land', background=True)
+
         return None
 
     def draw_elements(self, sc):
@@ -494,10 +506,12 @@ class Renderer(Outputter, MapCanvas):
                     for j in range(h):
                         if raster_map.basebitmap[i, j] == 1:
                             rect = raster_map.projection.to_lonlat(np.array(((i, j),
-                                                                             (i + 1, j),
-                                                                             (i + 1, j + 1),
+                                                                             (i +
+                                                                              1, j),
+                                                                             (i + 1,
+                                                                              j + 1),
                                                                              (i, j + 1)),
-                                                                            dtype=np.float64) )
+                                                                            dtype=np.float64))
                             self.draw_polygon(rect, fill_color='raster_map',
                                               background=True)
 

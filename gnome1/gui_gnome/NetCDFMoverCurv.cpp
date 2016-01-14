@@ -34,7 +34,7 @@ Boolean NetCDFMoverCurv::IAmA3DMover()
 	if (fVar.gridType != TWO_D) return true;
 	return false;
 }
-#define NetCDFMoverCurvREADWRITEVERSION 1 //JLM
+#define NetCDFMoverCurvREADWRITEVERSION 2 //JLM
 
 OSErr NetCDFMoverCurv::Write (BFPB *bfpb)
 {
@@ -68,6 +68,7 @@ OSErr NetCDFMoverCurv::Write (BFPB *bfpb)
 		if (err = WriteMacValue(bfpb, vertex.pLong)) goto done;
 	}
 	
+	if (err = WriteMacValue(bfpb, bIsCOOPSWaterMask)) goto done;
 done:
 	if(err)
 		TechError("NetCDFMoverCurv::Write(char* path)", " ", 0); 
@@ -88,7 +89,7 @@ OSErr NetCDFMoverCurv::Read(BFPB *bfpb)
 	if (err = ReadMacValue(bfpb,&id)) return err;
 	if (id != GetClassID ()) { TechError("NetCDFMoverCurv::Read()", "id != TYPE_NETCDFMOVERCURV", 0); return -1; }
 	if (err = ReadMacValue(bfpb,&version)) return err;
-	if (version != NetCDFMoverCurvREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
+	if (version > NetCDFMoverCurvREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
 	////
 	if (err = ReadMacValue(bfpb, &numPoints)) goto done;	
 	if (numPoints>0)
@@ -112,6 +113,8 @@ OSErr NetCDFMoverCurv::Read(BFPB *bfpb)
 		INDEXH(fVertexPtsH, i) = vertex;
 	}
 	
+	if (version > 1) {if (err = ReadMacValue(bfpb, &bIsCOOPSWaterMask)) goto done;}
+
 done:
 	if(err)
 	{

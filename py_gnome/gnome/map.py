@@ -385,6 +385,8 @@ class ParamMap(GnomeMap):
         :param bearing: The bearing the closest point on the shoreline is
                         from the center.
         """
+        refloat_halflife = kwargs.pop('refloat_halflife', 1)
+        self._refloat_halflife = refloat_halflife * 3600
         self.build(center, distance, bearing, units)
 
     def build(self, center, distance, bearing, units):
@@ -409,8 +411,8 @@ class ParamMap(GnomeMap):
         map_dist = (self._distance, 0.0, 0)
         d = FlatEarthProjection.meters_to_lonlat(map_dist, center)[0][0]
 
-        init_points = [(d, -8 * d), (d, 8 * d),
-                       (8 * d, 8 * d), (8 * d, -8 * d)]
+        init_points = [(d, -16 * d), (d, 16 * d),
+                       (16 * d, 16 * d), (16 * d, -16 * d)]
 
         ang = np.deg2rad(90 - bearing)
         rot_matrix = [(np.cos(ang), np.sin(ang)), (-np.sin(ang), np.cos(ang))]
@@ -422,13 +424,11 @@ class ParamMap(GnomeMap):
         land_polys = PolygonSet((self.land_points, [0, 4], []))
         land_polys._MetaDataList = [('polygon', '1', '1')]
 
-        map_bounds = np.array(((-4 * d, -2 * d), (-4 * d, 2 * d),
-                               (4 * d, 2 * d), (4 * d, -2 * d)),
+        map_bounds = np.array(((-8 * d, -6 * d), (-8 * d, 6 * d),
+                               (8 * d, 6 * d), (8 * d, -6 * d)),
                               dtype=np.float64) + (center[0], center[1])
 
         GnomeMap.__init__(self, map_bounds=map_bounds, land_polys=land_polys)
-
-        self._refloat_halflife = 0.5
 
     @property
     def distance(self):
@@ -558,6 +558,16 @@ class ParamMap(GnomeMap):
         move_particles(start_pos, next_pos, status_codes,
                        last_water_positions, self.land_points)
 
+        self._set_off_map_status(sc)
+
+        # todo: need a prepare_for_model_run() so map adds these keys to
+        #     mass_balance as opposed to SpillContainer
+        # update 'off_maps'/'beached' in mass_balance
+        sc.mass_balance['beached'] = \
+            sc['mass'][sc['status_codes'] == oil_status.on_land].sum()
+        sc.mass_balance['off_maps'] += \
+            sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
+
     def refloat_elements(self, spill_container, time_step):
         """
         This method performs the re-float logic -- changing the element
@@ -602,7 +612,8 @@ class ParamMap(GnomeMap):
                 'units' in data.keys()):
             self.build(
                 data['center'] if 'center' in data.keys() else self.center,
-                data['distance'] if 'distance' in data.keys() else self.distance,
+                data[
+                    'distance'] if 'distance' in data.keys() else self.distance,
                 data['bearing'] if 'bearing' in data.keys() else self.bearing,
                 data['units'] if 'units' in data.keys() else self.units)
         else:
@@ -1448,7 +1459,7 @@ def refine_axis(old_axis, refine):
     return axis
 
 
-def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=6,
+def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=1,
                           map_bounds=None):
     """
     note: poorly tested -- here to save it in case we need it in the future
