@@ -133,14 +133,12 @@ s = setup(name=pkg_name,
 # make database post install - couldn't call this directly so used
 # console script
 
-if 'install' in s.script_args or 'build' in s.script_args:
+if 'install' in s.script_args or 'develop' in s.script_args:
     print "Calling initialize_OilLibrary_db"
     call("initialize_OilLibrary_db")
+    print 'OilLibrary database successfully generated from file!'
 
-elif 'develop' in s.script_args:
-    if os.path.exists(os.path.join(here, 'oil_library', 'OilLib.db')):
-        print 'OilLibrary database exists - do not remake!'
-    else:
-        print "Calling initialize_OilLibrary_db"
-        call("initialize_OilLibrary_db")
-        print 'OilLibrary database successfully generated from file!'
+## this used to be here to prevent uneccesary rebuilding of the lib 
+## but it turns out to cause more hassle than it's worth
+#    if os.path.exists(os.path.join(here, 'oil_library', 'OilLib.db')):
+#        print 'OilLibrary database exists - do not remake!'
