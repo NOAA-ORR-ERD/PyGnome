@@ -27,3 +27,5 @@ zope.interface
 zope.sqlalchemy
 gdal
 awesome-slugify
+regex
+unidecode
