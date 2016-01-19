@@ -79,6 +79,8 @@ def make_db(oillib_file=None, db_file=None):
     '''
     pck_loc = os.path.split(__file__)[0]
 
+    print "making DB:, pck_loc:", pck_loc
+
     if not db_file:
         db_file = os.path.join(pck_loc, 'OilLib.db')
 
