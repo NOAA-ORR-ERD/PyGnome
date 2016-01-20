@@ -1,5 +1,6 @@
 import netCDF4 as nc4
 import numpy as np
+from gnome.utilities.geometry.cy_point_in_polygon import ps_in_poly
 from datetime import datetime, timedelta
 from dateutil import parser
 import pyugrid
@@ -25,7 +26,7 @@ def tri_vector_field(filename=None, dataset=None):
     time = Time(dataset['time'])
     variables = {'velocities': pyugrid.UMVar('velocities', 'node', [u, v])}
     type = dataset.grid_type
-    return VectorField(grid, time, variables, type=type)
+    return VectorField(grid, time=time, variables=variables, type=type)
 
 
 def ice_field(filename=None, dataset=None):
@@ -64,30 +65,46 @@ def ice_field(filename=None, dataset=None):
     return VectorField(grid, time=time, variables=variables, type=type, dimensions=dims)
 
 
-def curv_field(filename=None, dataset=None):
+def roms_field(filename=None, dataset=None):
     if dataset is None:
         dataset = nc4.Dataset(filename)
-    y_size = len(dataset.dimensions['y'])
-    x_size = len(dataset.dimensions['x'])
-    dims = {'x': x_size, 'y': y_size}
-    faces = np.array([np.array([[x, x + 1, x + x_size + 1, x + x_size]
-                                for x in range(0, x_size - 1, 1)]) + y * x_size for y in range(0, y_size - 1)])
+    xi_psi = len(dataset.dimensions['xi_psi'])
+    eta_psi = len(dataset.dimensions['eta_psi'])
+    dims = {'xi_psi': xi_psi, 'eta_psi': eta_psi}
+    faces = np.array([np.array([[x, x + 1, x + xi_psi + 1, x + xi_psi]
+                                for x in range(0, xi_psi - 1, 1)]) + y * xi_psi for y in range(0, eta_psi - 1)])
     faces = np.ascontiguousarray(
-        faces.reshape(((y_size - 1) * (x_size - 1), 4)))
-    nodes = np.column_stack((dataset['lon'][:].reshape(
-        y_size * x_size), dataset['lat'][:].reshape(y_size * x_size)))
+        faces.reshape(((eta_psi - 1) * (xi_psi - 1), 4)))
+    nodes = np.column_stack((dataset['lon_psi'][:].reshape(
+        eta_psi * xi_psi), dataset['lat_psi'][:].reshape(eta_psi * xi_psi)))
     nodes = np.ascontiguousarray(nodes)
-    time = Time(dataset['time'])
-    i_u = pyugrid.UVar('ice_u', 'node', dataset['ice_u'], curvilinear=True)
-    i_v = pyugrid.UVar('ice_v', 'node', dataset['ice_v'], curvilinear=True)
-    variables = {'water_vel': pyugrid.UMVar('water_vel', 'node', [w_u, w_v]),
-                 'ice_vel': pyugrid.UMVar('ice_vel', 'node', [i_u, i_v]),
-                 'ice_thickness': thickness,
-                 'ice_fraction': fraction,
-                 'mask': mask,
+    grid = pyugrid.UGrid(nodes,
+                         faces,
+                         curv_x=xi_psi,
+                         curv_y=eta_psi,
+                         curvilinear=True)
+    time = Time(dataset['ocean_time'])
+    u = pyugrid.SUVar('u', data=dataset['u'])
+    v = pyugrid.SUVar('v', data=dataset['v'])
+    u_lon = dataset['lon_u'][:]
+    u_lat = dataset['lat_u'][:]
+    v_lon = dataset['lon_v'][:]
+    v_lat = dataset['lat_v'][:]
+    u_mask = pyugrid.SUVar('u_mask', data=dataset['mask_u'])
+    v_mask = pyugrid.SUVar('v_mask', data=dataset['mask_v'])
+    land_mask = pyugrid.SUVar('psi_mask', data=dataset['mask_psi'])
+    variables = {'u': u,
+                 'v': v,
+                 'u_lon': u_lon,
+                 'u_lat': u_lat,
+                 'v_lon': v_lon,
+                 'v_lat': v_lat,
+                 'u_mask': u_mask,
+                 'v_mask': v_mask,
+                 'land_mask': land_mask,
                  'time': time}
-    type = dataset.grid_type
-    return VectorField(nodes, faces, time=time, variables=variables, type=type, dimensions=dims)
+    type = 'curvilinear'
+    return SField(grid, 'u', 'v', time=time, variables=variables, type=type, dimensions=dims)
 
 
 class VectorField(object):
@@ -104,11 +121,7 @@ class VectorField(object):
                  dimensions=None,
                  appearance={}
                  ):
-        curv = 'CURVILINEAR' in type.upper()
         self.grid = grid
-        if curv:
-            self.grid.curv_x = dimensions['x']
-            self.grid.curv_y = dimensions['y']
         if grid.edges is None:
             self.grid.build_edges()
         if grid.face_face_connectivity is None:
@@ -210,10 +223,14 @@ class VectorField(object):
         :param time: a time within the simulation
         :return: An array of all the nodes, masked with the velocity mask.
         """
-        if time < self.time.max_time:
-            return np.ma.array(self.grid.nodes, mask=variable[self.time.indexof(time)].mask)
+        if hasattr(variable, 'name') and variable.name in self.variables:
+            if time < self.time.max_time:
+                return np.ma.array(self.grid.nodes, mask=variable[self.time.indexof(time)].mask)
+            else:
+                return np.ma.array(self.grid.nodes, mask=variable[self.time.indexof(self.time.max_time)].mask)
         else:
-            return np.ma.array(self.grid.nodes, mask=variable[self.time.indexof(self.time.max_time)].mask)
+            variable = np.array(variable, dtype=bool).reshape(-1, 2)
+            return np.ma.array(self.grid.nodes, mask=variable)
 
 
 class Time(object):
@@ -260,3 +277,50 @@ class Time(object):
         t0 = self.time[i0]
         t1 = self.time[i0 + 1]
         return (time - t0).total_seconds() / (t1 - t0).total_seconds()
+
+
+class SField(VectorField):
+
+    def __init__(self, grid, u_name, v_name, **kwargs):
+        super(SField, self).__init__(grid, **kwargs)
+
+    def s_poly(self, index, var):
+        arr = var[:]
+        x = index[:, 0]
+        y = index[:, 1]
+        return np.stack((arr[x, y], arr[x + 1, y], arr[x + 1, y + 1], arr[x, y + 1]), axis=1)
+
+    def interpolated_velocities(self, time, points, depth=0):
+        '''
+        For every point at time, find the index on the psi grid.
+        Then, compute the index on the u and v grids.
+        Retrieve the information, then interpolate
+        '''
+        indices = self.grid.locate_faces(points)
+        psi_x = indices % (self.u_lon.shape[1] - 1)
+        psi_y = indices / (self.u_lon.shape[1] - 1)
+        psi_ind = np.column_stack((psi_y, psi_x))
+
+        u_ind = np.copy(psi_ind)
+        v_ind = np.copy(psi_ind)
+#         polys = self.s_poly(psi_ind, self.v_pts)
+#         t = np.logical_and(points[..., 0] >= polys[..., 0, 0],
+#                            points[..., 0] < polys[..., 2, 0])
+        x = psi_x
+        y = psi_y
+        t = np.logical_and(points[..., 1] >= (self.u_lat[x, y]),
+                           points[..., 1] < (self.u_lat[x + 1, y]))
+
+        u_ind[~t] += [1, 0]
+#         t = np.logical_and(points[..., 1] >= polys[..., 0, 1],
+#                            points[..., 1] < polys[..., 1, 1])
+        t = np.logical_and(points[..., 0] >= self.v_lon[x, y],
+                           points[..., 0] < self.v_lon[x, y + 1])
+        v_ind[~t] += [0, 1]
+
+        '''add get time index here'''
+        u_vals = self.u[0, depth]
+        u_coords = self.s_poly(u_ind, np.stack((self.u_lon, self.u_lat), -1))
+        u_interp_vals = self.s_poly(u_ind, u_vals)
+
+        pass
