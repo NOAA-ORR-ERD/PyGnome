@@ -7,11 +7,11 @@
 make html
 
 # copy to other repo (on the gh-pages branch)
-cp -R build/html/ ../../IntroToPython.gh-pages
+cp -R _build/html/ ../../../pygnome.gh-pages/
 
-cd ../../IntroToPython.gh-pages
+cd ../../../pygnome.gh-pages/
 git checkout gh-pages
 git add * # in case there are new files added
-git commit -a -m "updating presentation materials"
-git pull -s ours
-git push
+git commit -a -m "updating documentation"
+#git pull -s ours
+#git push
