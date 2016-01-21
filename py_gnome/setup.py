@@ -488,7 +488,7 @@ extensions.append(Extension("gnome.utilities.file_tools.filescanner",
                             ))
 
 setup(name='pyGnome',
-      version='0.1',
+      version='0.0.2',
       ext_modules=extensions,
       packages=find_packages(),
       package_dir={'gnome': 'gnome'},
