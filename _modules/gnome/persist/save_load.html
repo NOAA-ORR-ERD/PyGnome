@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -101,13 +104,12 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">obj</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;a different object is referenced by &#39;</span>
-                    <span class="s">&#39;{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+                                 <span class="s">&#39;{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c"># make sure object doesn&#39;t already exist</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;this object is already referenced by &#39;</span>
-                    <span class="s">&#39;{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)))</span>
-
+                                 <span class="s">&#39;{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
 
@@ -181,20 +183,32 @@
 <span class="sd">        this fails, it checks if saveloc is a file and loads this assuming its</span>
 <span class="sd">        json for a gnome object. If none of these work, it just returns None.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="c"># is a directory, look for Model.json in directory</span>
+    <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
+            <span class="n">saveloc_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">saveloc</span><span class="p">)</span>
+            <span class="n">folders</span> <span class="o">=</span> <span class="n">zipfile_folders</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">folders</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c"># we allow our model content to be in a single top-level folder</span>
+                <span class="n">prefix</span> <span class="o">=</span> <span class="n">folders</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">extract_zipfile</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">saveloc_dir</span><span class="p">,</span> <span class="n">prefix</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">folders</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c"># all datafiles are at the top-level, which is fine</span>
+                <span class="n">extract_zipfile</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">saveloc_dir</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># nothing to do, zipfile does not have a good structure</span>
+                <span class="k">return</span>
+
+            <span class="n">saveloc</span> <span class="o">=</span> <span class="n">saveloc_dir</span>
+
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+        <span class="c"># is a directory, look for our fname in directory</span>
         <span class="n">fd</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">fname</span><span class="p">),</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
-
-    <span class="k">elif</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
-        <span class="n">z</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">)</span>
-        <span class="n">fd</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
-
     <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
         <span class="n">fd</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
         <span class="n">saveloc</span><span class="p">,</span> <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">saveloc</span><span class="p">)</span>
-
     <span class="k">else</span><span class="p">:</span>
-        <span class="c"># nothing to do, saveloc is not zipfile or a directory</span>
+        <span class="c"># nothing to do, saveloc is not a file or a directory</span>
         <span class="k">return</span>
 
     <span class="c"># load json data from file descriptor</span>
@@ -248,7 +262,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">:</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">save_reference</span> <span class="ow">and</span>
-                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
                 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">                attribute is stored as a reference</span>
 <span class="sd">                json_ will not contain a key for the referenced objects</span>
@@ -424,13 +438,6 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datafiles</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="n">iszip</span> <span class="o">=</span> <span class="bp">False</span>
-
-        <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
-            <span class="n">iszip</span> <span class="o">=</span> <span class="bp">True</span>
-            <span class="n">z</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
-            <span class="n">saveloc</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">saveloc</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-
         <span class="c"># fix datafiles path from relative to absolute so we can load datafiles</span>
         <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">datafiles</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">json_data</span><span class="p">:</span>
@@ -441,23 +448,18 @@
                 <span class="c"># For zip files coming from the web, is_savezip_valid() tests</span>
                 <span class="c"># filenames in archive do not contain paths with &#39;..&#39;</span>
                 <span class="c"># In here, we just extract datafile to saveloc/.</span>
-                <span class="k">if</span> <span class="n">iszip</span><span class="p">:</span>
-                    <span class="n">z</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">saveloc</span><span class="p">)</span>
-
                 <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
                                                      <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">iszip</span><span class="p">:</span>
-            <span class="n">z</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        loads object from json_data</span>
 
-<span class="sd">        - load json for references from files</span>
-<span class="sd">        - update paths of datafiles if needed</span>
-<span class="sd">        - deserialize json_data</span>
-<span class="sd">        - and create object with new_from_dict()</span>
+<span class="sd">        * load json for references from files</span>
+<span class="sd">        * update paths of datafiles if needed</span>
+<span class="sd">        * deserialize json_data</span>
+<span class="sd">        * and create object with new_from_dict()</span>
 
 <span class="sd">        json_data: dict containing json data. It has been parsed through the</span>
 <span class="sd">            json.loads() command. The json will be valided here when it gets</span>
@@ -466,9 +468,9 @@
 
 <span class="sd">        Optional parameter</span>
 
-<span class="sd">        :param saveloc: location of data files or *.json files for objects</span>
+<span class="sd">        :param saveloc: location of data files or \*.json files for objects</span>
 <span class="sd">            stored as references. If object requires no datafiles and does not</span>
-<span class="sd">            need to read references from a *.json file in saveloc, then this</span>
+<span class="sd">            need to read references from a \*.json file in saveloc, then this</span>
 <span class="sd">            can be None.</span>
 <span class="sd">        :param references: references object - if this is called by the Model,</span>
 <span class="sd">            it will pass a references object. It is not required.</span>
@@ -538,7 +540,7 @@
 <span class="c"># max json filesize is 1MegaByte</span>
 <span class="c"># max compression ratio: uncompressed/compressed = 3</span>
 <span class="n">_max_json_filesize</span> <span class="o">=</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span>
-<span class="n">_max_compress_ratio</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">_max_compress_ratio</span> <span class="o">=</span> <span class="mi">16</span>
 
 
 <span class="k">def</span> <span class="nf">is_savezip_valid</span><span class="p">(</span><span class="n">savezip</span><span class="p">):</span>
@@ -579,38 +581,55 @@
 
         <span class="k">for</span> <span class="n">zi</span> <span class="ow">in</span> <span class="n">z</span><span class="o">.</span><span class="n">filelist</span><span class="p">:</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;.json&#39;</span> <span class="ow">and</span>
-                <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span> <span class="o">&gt;</span> <span class="n">_max_json_filesize</span><span class="p">):</span>
+                    <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span> <span class="o">&gt;</span> <span class="n">_max_json_filesize</span><span class="p">):</span>
                 <span class="c"># 3) Found a *.json with size &gt; _max_json_filesize. Rejecting.</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;Filesize of {0} is {1}. It must be less than &quot;</span>
-                       <span class="s">&quot;_max_json_filesize: {2}. &quot;</span>
-                       <span class="s">&quot;Rejecting zipfile.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span><span class="p">,</span>
-                                                   <span class="n">_max_json_filesize</span><span class="p">))</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;Filesize of {0} is {1}. It must be less than {2}. &quot;</span>
+                       <span class="s">&quot;Rejecting zipfile.&quot;</span>
+                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span><span class="p">,</span> <span class="n">_max_json_filesize</span><span class="p">))</span>
                 <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
                 <span class="k">return</span> <span class="bp">False</span>
 
-        <span class="c"># integer division - it will floor</span>
-        <span class="k">if</span> <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span><span class="o">/</span><span class="n">zi</span><span class="o">.</span><span class="n">compress_size</span> <span class="o">&gt;</span> <span class="n">_max_compress_ratio</span><span class="p">:</span>
-            <span class="c"># 4) Found a file with</span>
-            <span class="c">#    uncompressed_size/compressed_size &gt; _max_compress_ratio.</span>
-            <span class="c">#    Rejecting.</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;uncompressed filesize is {0} time compressed filesize.&quot;</span>
-                   <span class="s">&quot;_max_compress_ratio must be less than {1}. &quot;</span>
-                   <span class="s">&quot;Rejecting zipfile&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">file_size</span><span class="o">/</span><span class="n">zi</span><span class="o">.</span><span class="n">compress_size</span><span class="p">,</span>
-                                              <span class="n">_max_compress_ratio</span><span class="p">))</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="k">return</span> <span class="bp">False</span>
+            <span class="c"># integer division - it will floor</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">compress_size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span>
+                    <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span> <span class="o">/</span> <span class="n">zi</span><span class="o">.</span><span class="n">compress_size</span> <span class="o">&gt;</span> <span class="n">_max_compress_ratio</span><span class="p">):</span>
+                <span class="c"># 4) Found a file with</span>
+                <span class="c">#    uncompressed_size/compressed_size &gt; _max_compress_ratio.</span>
+                <span class="c">#    Rejecting.</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;file compression ratio is {0}. &quot;</span>
+                       <span class="s">&quot;maximum must be less than {1}. &quot;</span>
+                       <span class="s">&quot;Rejecting zipfile&quot;</span>
+                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">file_size</span> <span class="o">/</span> <span class="n">zi</span><span class="o">.</span><span class="n">compress_size</span><span class="p">,</span>
+                               <span class="n">_max_compress_ratio</span><span class="p">))</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">False</span>
 
-        <span class="k">if</span> <span class="s">&#39;..&#39;</span> <span class="ow">in</span> <span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">:</span>
-            <span class="c"># 5) reject zipfile if it contains .. anywhere in filename.</span>
-            <span class="c">#    currently, all datafiles stored at same level in saveloc,</span>
-            <span class="c">#    no subdirectories. Even if we start using subdirectories,</span>
-            <span class="c">#    there should never be a need to do &#39;..&#39;</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;Found &#39;..&#39; in {0}. Rejecting zipfile&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">))</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="s">&#39;..&#39;</span> <span class="ow">in</span> <span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">:</span>
+                <span class="c"># 5) reject zipfile if it contains .. anywhere in filename.</span>
+                <span class="c">#    currently, all datafiles stored at same level in saveloc,</span>
+                <span class="c">#    no subdirectories. Even if we start using subdirectories,</span>
+                <span class="c">#    there should never be a need to do &#39;..&#39;</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;Found &#39;..&#39; in {0}. Rejecting zipfile&quot;</span>
+                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">))</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">False</span>
 
     <span class="c"># all checks pass - so we can load zipfile</span>
     <span class="k">return</span> <span class="bp">True</span>
+
+
+<span class="k">def</span> <span class="nf">zipfile_folders</span><span class="p">(</span><span class="n">zip_file</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">zip_file</span><span class="o">.</span><span class="n">namelist</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)]</span>
+
+
+<span class="k">def</span> <span class="nf">extract_zipfile</span><span class="p">(</span><span class="n">zip_file</span><span class="p">,</span> <span class="n">to_folder</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">zip_file</span><span class="o">.</span><span class="n">namelist</span><span class="p">():</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">prefix</span> <span class="ow">and</span> <span class="n">name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">to_folder</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">zip_file</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
 </pre></div>
 
           </div>
@@ -641,6 +660,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

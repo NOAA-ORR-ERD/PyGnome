@@ -1,0 +1,869 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.utilities.map_canvas &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.utilities.map_canvas</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># coding=utf8</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module to hold classes and suporting code for the map canvas for GNOME:</span>
+
+<span class="sd">The drawing code for rendering to images in scripting mode, and also for</span>
+<span class="sd">pushing some rendering to the server.</span>
+
+<span class="sd">Also used for making raster maps.</span>
+
+<span class="sd">This should have the basic drawing stuff. Ideally nothig in here is</span>
+<span class="sd">GNOME-specific.</span>
+
+<span class="sd">This version used libgd and py_gd instead of PIL for the rendering</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">bisect</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">py_gd</span>
+
+<span class="kn">import</span> <span class="nn">unit_conversion</span> <span class="kn">as</span> <span class="nn">uc</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.projections</span> <span class="kn">import</span> <span class="n">FlatEarthProjection</span>
+
+
+<div class="viewcode-block" id="MapCanvas"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas">[docs]</a><span class="k">class</span> <span class="nc">MapCanvas</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class to draw maps, etc.</span>
+
+<span class="sd">    This class provides the ability to set a projection, and then</span>
+<span class="sd">    change the viewport of the rendered map</span>
+
+<span class="sd">    All the drawing methods will project and scale and shift the points so the</span>
+<span class="sd">    rendered image is projected and shows only what is in the viewport.</span>
+
+<span class="sd">    In addition, it keeps two image buffers: background and foreground. These</span>
+<span class="sd">    can be rendered individually, and saved out either alone or composited.</span>
+
+<span class="sd">    This version uses a paletted (8 bit) image -- may be updated for RGB images</span>
+<span class="sd">    at some point.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">image_size</span><span class="p">,</span>
+                 <span class="n">projection</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">viewport</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">preset_colors</span><span class="o">=</span><span class="s">&#39;BW&#39;</span><span class="p">,</span>
+                 <span class="n">background_color</span><span class="o">=</span><span class="s">&#39;transparent&#39;</span><span class="p">,</span>
+                 <span class="n">colordepth</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        create a new map image from scratch -- specifying the size</span>
+
+<span class="sd">        :param image_size: (width, height) tuple of the image size in pixels</span>
+
+<span class="sd">        Optional parameters</span>
+
+<span class="sd">        :param projection=None: gnome.utilities.projections object to use.</span>
+<span class="sd">                                if None, it defaults to FlatEarthProjection()</span>
+
+<span class="sd">        :param viewport: viewport of map -- what gets drawn and on what</span>
+<span class="sd">                         scale.</span>
+<span class="sd">                         Default is full globe: (((-180, -90), (180, 90)))</span>
+
+<span class="sd">        :param preset_colors=&#39;BW&#39;: color set to preset. Options are:</span>
+
+<span class="sd">                                   &#39;BW&#39; - transparent, black, and white:</span>
+<span class="sd">                                          transparent background</span>
+
+<span class="sd">                                   &#39;web&#39; - the basic named colors for the web:</span>
+<span class="sd">                                           transparent background</span>
+
+<span class="sd">                                   &#39;transparent&#39; - transparent background,</span>
+<span class="sd">                                                   no other colors set</span>
+
+<span class="sd">                                   None - no pre-allocated colors</span>
+<span class="sd">                                          -- the first one you allocate will</span>
+<span class="sd">                                             be the background color</span>
+
+<span class="sd">        :param background_color = &#39;transparent&#39;: color for the background</span>
+<span class="sd">                                                 -- must be a color that exists</span>
+
+<span class="sd">        :param colordepth=8: only 8 bit color supported for now</span>
+<span class="sd">                             maybe someday, 32 bit will be an option</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">projection</span> <span class="o">=</span> <span class="p">(</span><span class="n">FlatEarthProjection</span><span class="p">()</span>
+                      <span class="k">if</span> <span class="n">projection</span> <span class="ow">is</span> <span class="bp">None</span>
+                      <span class="k">else</span> <span class="n">projection</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_image_size</span> <span class="o">=</span> <span class="n">image_size</span>
+
+        <span class="k">if</span> <span class="n">colordepth</span> <span class="o">!=</span> <span class="mi">8</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;only 8 bit color currently implemented&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">background_color</span> <span class="o">=</span> <span class="n">background_color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_images</span><span class="p">(</span><span class="n">preset_colors</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">projection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span> <span class="o">=</span> <span class="n">Viewport</span><span class="p">(((</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="mi">180</span><span class="p">,</span> <span class="mi">90</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="n">viewport</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">BB</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">viewport</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">set_scale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">viewport</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graticule</span> <span class="o">=</span> <span class="n">GridLines</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MapCanvas.viewport_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.viewport_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">viewport_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        convert numpy arrays to list of tuples</span>
+<span class="sd">        todo: this happens in multiple places so maybe worthwhile to define</span>
+<span class="sd">        custom serialize/deserialize -- but do this for now</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">map</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">BB</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">viewport</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns the current value of viewport of map:</span>
+<span class="sd">        the bounding box of the image</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">BB</span>
+
+    <span class="nd">@viewport.setter</span>
+    <span class="k">def</span> <span class="nf">viewport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">BB</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        viewport setter for bounding box only</span>
+<span class="sd">        - allows map_canvas.viewport = ((x1,y1),(x2,y2))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">BB</span> <span class="o">=</span> <span class="n">BB</span> <span class="k">if</span> <span class="n">BB</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">viewport</span><span class="o">.</span><span class="n">BB</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">()</span>
+
+<div class="viewcode-block" id="MapCanvas.set_viewport"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.set_viewport">[docs]</a>    <span class="k">def</span> <span class="nf">set_viewport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">BB</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function to allow the user to set properties of the viewport in meters,</span>
+<span class="sd">        or by bounding box</span>
+
+<span class="sd">        :param center: The point around which the viewport is centered</span>
+<span class="sd">        :type a tuple containing an x/y coordinate</span>
+
+<span class="sd">        :param width: Width of the viewport in meters</span>
+
+<span class="sd">        :param height: height of the viewport in meters</span>
+
+<span class="sd">        :param BB: Bounding box of the viewport</span>
+<span class="sd">                   (overrides all previous parameters)</span>
+<span class="sd">        :type a list of tuples containing of the lower left and top right</span>
+<span class="sd">              coordinates</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">BB</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="n">center</span>
+
+            <span class="n">distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">meters_to_lonlat</span><span class="p">((</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                                                         <span class="p">(</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">distances</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">distances</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">BB</span> <span class="o">=</span> <span class="n">BB</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">()</span>
+</div>
+    <span class="k">def</span> <span class="nf">zoom</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">multiplier</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="n">multiplier</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">shift_viewport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">()</span>
+
+<div class="viewcode-block" id="MapCanvas.rescale"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.rescale">[docs]</a>    <span class="k">def</span> <span class="nf">rescale</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rescales the projection to the viewport bounding box.</span>
+<span class="sd">        Should be called whenever the viewport changes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">set_scale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">viewport</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graticule</span><span class="o">.</span><span class="n">refresh_scale</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear_background</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw_background</span><span class="p">()</span>
+</div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">image_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        makes it read-only</span>
+
+<span class="sd">        or we can add a setter to re-size the images if we need that</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_size</span>
+
+<div class="viewcode-block" id="MapCanvas.add_colors"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.add_colors">[docs]</a>    <span class="k">def</span> <span class="nf">add_colors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">color_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a list of colors to the pallette</span>
+
+<span class="sd">        :param color_list: list of colors</span>
+<span class="sd">                           - each elemnt of the list is a 2-tuple:</span>
+<span class="sd">                             (&#39;color_name&#39;, (r,g,b))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="o">.</span><span class="n">add_colors</span><span class="p">(</span><span class="n">color_list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">back_image</span><span class="o">.</span><span class="n">add_colors</span><span class="p">(</span><span class="n">color_list</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="MapCanvas.get_color_names"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.get_color_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_color_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns all the names colors</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="o">.</span><span class="n">get_color_names</span><span class="p">()</span>
+</div>
+    <span class="k">def</span> <span class="nf">create_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">preset_colors</span><span class="p">):</span>
+        <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_size</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span> <span class="o">=</span> <span class="n">py_gd</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
+                                      <span class="n">preset_colors</span><span class="o">=</span><span class="n">preset_colors</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">back_image</span> <span class="o">=</span> <span class="n">py_gd</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
+                                      <span class="n">preset_colors</span><span class="o">=</span><span class="n">preset_colors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">preset_colors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="s">&quot;can&#39;t clear image if there are no colors&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear_background</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear_foreground</span><span class="p">()</span>
+
+<div class="viewcode-block" id="MapCanvas.back_asarray"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.back_asarray">[docs]</a>    <span class="k">def</span> <span class="nf">back_asarray</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        return the background image as a numpy array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">back_image</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="MapCanvas.fore_asarray"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.fore_asarray">[docs]</a>    <span class="k">def</span> <span class="nf">fore_asarray</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        return the foreground image as a numpy array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">clear_background</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">back_image</span><span class="o">.</span><span class="n">clear</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">background_color</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">clear_foreground</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="o">.</span><span class="n">clear</span><span class="p">(</span><span class="s">&#39;transparent&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MapCanvas.copy_back_to_fore"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.copy_back_to_fore">[docs]</a>    <span class="k">def</span> <span class="nf">copy_back_to_fore</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        copy the background to the foreground</span>
+
+<span class="sd">        note: this will write over anything on the foreground image</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">back_image</span><span class="p">,</span>
+                             <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">back_image</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="MapCanvas.draw_points"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.draw_points">[docs]</a>    <span class="k">def</span> <span class="nf">draw_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">points</span><span class="p">,</span>
+                    <span class="n">diameter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">color</span><span class="o">=</span><span class="s">&#39;black&#39;</span><span class="p">,</span>
+                    <span class="n">shape</span><span class="o">=</span><span class="s">&quot;round&quot;</span><span class="p">,</span>
+                    <span class="n">background</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Draws a set of individual points all in the same color</span>
+
+<span class="sd">        :param points: a Nx2 numpy array, or something that can be turned</span>
+<span class="sd">                       into one</span>
+
+<span class="sd">        :param diameter=1: diameter of the points in pixels.</span>
+<span class="sd">        :type diameter: integer</span>
+
+<span class="sd">        :param color: a named color.</span>
+<span class="sd">        :type color: string</span>
+
+<span class="sd">        :param shape: what shape to draw, options are &quot;round&quot;, &quot;x&quot;.</span>
+<span class="sd">        :type shape: string</span>
+
+<span class="sd">        :param background=False: whether to draw to the background image.</span>
+<span class="sd">        :type background: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">shape</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;round&#39;</span><span class="p">,</span> <span class="s">&#39;x&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;only &quot;round&quot; and &quot;x&quot; are supported shapes&#39;</span><span class="p">)</span>
+
+        <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">back_image</span> <span class="k">if</span> <span class="n">background</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span>
+
+        <span class="k">if</span> <span class="n">shape</span> <span class="o">==</span> <span class="s">&#39;round&#39;</span><span class="p">:</span>
+            <span class="n">img</span><span class="o">.</span><span class="n">draw_dots</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">diameter</span><span class="o">=</span><span class="n">diameter</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">shape</span> <span class="o">==</span> <span class="s">&#39;x&#39;</span><span class="p">:</span>
+            <span class="n">img</span><span class="o">.</span><span class="n">draw_xes</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">diameter</span><span class="o">=</span><span class="n">diameter</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="MapCanvas.draw_polygon"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.draw_polygon">[docs]</a>    <span class="k">def</span> <span class="nf">draw_polygon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                     <span class="n">points</span><span class="p">,</span>
+                     <span class="n">line_color</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                     <span class="n">fill_color</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                     <span class="n">line_width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                     <span class="n">background</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Draw a polygon</span>
+
+<span class="sd">        :param points: sequence of points</span>
+<span class="sd">        :type points: Nx2 array of integers (or something that can be turned</span>
+<span class="sd">                      into one)</span>
+
+<span class="sd">        :param line_color=None: the color of the outline</span>
+<span class="sd">        :type line_color=None:  color name (string) or index (int)</span>
+
+<span class="sd">        :param fill_color=None: the color of the filled polygon</span>
+<span class="sd">        :type  fill_color: color name (string) or index (int)</span>
+
+<span class="sd">        :param line_width=1: width of line</span>
+<span class="sd">        :type line_width: integer</span>
+
+<span class="sd">        :param background=False: whether to draw to the background image.</span>
+<span class="sd">        :type background: bool</span>
+
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel_2D</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">back_image</span> <span class="k">if</span> <span class="n">background</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span>
+
+        <span class="n">img</span><span class="o">.</span><span class="n">draw_polygon</span><span class="p">(</span><span class="n">points</span><span class="p">,</span>
+                         <span class="n">line_color</span><span class="o">=</span><span class="n">line_color</span><span class="p">,</span>
+                         <span class="n">fill_color</span><span class="o">=</span><span class="n">fill_color</span><span class="p">,</span>
+                         <span class="n">line_width</span><span class="o">=</span><span class="n">line_width</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="MapCanvas.draw_polyline"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.draw_polyline">[docs]</a>    <span class="k">def</span> <span class="nf">draw_polyline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                      <span class="n">points</span><span class="p">,</span>
+                      <span class="n">line_color</span><span class="p">,</span>
+                      <span class="n">line_width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                      <span class="n">background</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Draw a polyline</span>
+
+<span class="sd">        :param points: sequence of points</span>
+<span class="sd">        :type points: Nx2 array of integers (or something that can be turned</span>
+<span class="sd">                      into one)</span>
+
+<span class="sd">        :param line_color: the color of the outline</span>
+<span class="sd">        :type line_color:  color name or index</span>
+
+<span class="sd">        :param line_width=1: width of line</span>
+<span class="sd">        :type line_width: integer</span>
+
+<span class="sd">        :param background=False: whether to draw to the background image.</span>
+<span class="sd">        :type background: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel_2D</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">back_image</span> <span class="k">if</span> <span class="n">background</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span>
+
+        <span class="n">img</span><span class="o">.</span><span class="n">draw_polyline</span><span class="p">(</span><span class="n">points</span><span class="p">,</span>
+                          <span class="n">line_color</span><span class="o">=</span><span class="n">line_color</span><span class="p">,</span>
+                          <span class="n">line_width</span><span class="o">=</span><span class="n">line_width</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="MapCanvas.draw_text"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.draw_text">[docs]</a>    <span class="k">def</span> <span class="nf">draw_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text_list</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s">&#39;small&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;black&#39;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="s">&#39;lt&#39;</span><span class="p">,</span>
+                  <span class="n">background</span><span class="o">=</span><span class="s">&#39;none&#39;</span><span class="p">,</span> <span class="n">draw_to_back</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Draw ascii text to the image</span>
+
+<span class="sd">        :param text_list: sequence of strings to be printed, and the locations</span>
+<span class="sd">                          they are to be located</span>
+<span class="sd">        :type text_list: [&#39;string&#39;, (lon, lat)]</span>
+
+<span class="sd">        :param size: size of the text to be printed</span>
+<span class="sd">        :type size: one of the following strings:</span>
+<span class="sd">                    {&#39;tiny&#39;, &#39;small&#39;, &#39;medium&#39;, &#39;large&#39;, &#39;giant&#39;}</span>
+
+<span class="sd">        :param color: color of the text to be printed</span>
+<span class="sd">        :type color: a valid color string in the py_gd Image color palettes</span>
+
+<span class="sd">        :param align: sets the principal point of the text bounding box.</span>
+<span class="sd">        :type align: one of the following strings:</span>
+<span class="sd">                     {&#39;lt&#39;, &#39;ct&#39;, &#39;rt&#39;, &#39;r&#39;, &#39;rb&#39;, &#39;cb&#39;, &#39;lb&#39;, &#39;l&#39;}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">back_image</span> <span class="k">if</span> <span class="n">draw_to_back</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span>
+
+        <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">text_list</span><span class="p">:</span>
+            <span class="n">point</span> <span class="o">=</span> <span class="p">(</span><span class="n">tag</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">tag</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">img</span><span class="o">.</span><span class="n">draw_text</span><span class="p">(</span><span class="n">tag</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">point</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">align</span><span class="p">,</span> <span class="n">background</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">draw_background</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear_background</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw_graticule</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw_tags</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">draw_land</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="MapCanvas.draw_graticule"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.draw_graticule">[docs]</a>    <span class="k">def</span> <span class="nf">draw_graticule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        draw a graticule (grid lines) on the map</span>
+
+<span class="sd">        only supports decimal degrees for now...</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">graticule</span><span class="o">.</span><span class="n">get_lines</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">draw_polyline</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="s">&#39;black&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">background</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">draw_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">draw_to_back</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw_text</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graticule</span><span class="o">.</span><span class="n">get_tags</span><span class="p">(),</span> <span class="n">draw_to_back</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">save_background</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">file_type</span><span class="o">=</span><span class="s">&#39;png&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">back_image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">file_type</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MapCanvas.save_foreground"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.MapCanvas.save_foreground">[docs]</a>    <span class="k">def</span> <span class="nf">save_foreground</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">file_type</span><span class="o">=</span><span class="s">&#39;png&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        save the foreground image to the specified filename</span>
+
+<span class="sd">        :param filename: full path of file to be saved to</span>
+<span class="sd">        :type filename: string</span>
+
+<span class="sd">        :param draw_back_to_fore=True: whether to add the background image</span>
+<span class="sd">                                       to the foreground before saving.</span>
+<span class="sd">        :type draw_back_to_fore: bool</span>
+
+<span class="sd">        :param file_type: type of file to save</span>
+<span class="sd">        :type file_type: one of the following:</span>
+<span class="sd">                         {&#39;png&#39;, &#39;gif&#39;, &#39;jpeg&#39;, &#39;bmp&#39;}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">file_type</span><span class="o">=</span><span class="n">file_type</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="GridLines"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.GridLines">[docs]</a><span class="k">class</span> <span class="nc">GridLines</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    class to hold logic for determining where the gridlines should be</span>
+<span class="sd">    for the graticule</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">DEGREE</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">MINUTE</span> <span class="o">=</span> <span class="n">DEGREE</span> <span class="o">/</span> <span class="mf">60.0</span>
+    <span class="n">SECOND</span> <span class="o">=</span> <span class="n">MINUTE</span> <span class="o">/</span> <span class="mf">60.0</span>
+
+    <span class="n">DMS_STEPS</span> <span class="o">=</span> <span class="p">(</span><span class="n">SECOND</span> <span class="o">*</span> <span class="mi">15</span><span class="p">,</span>
+                 <span class="n">SECOND</span> <span class="o">*</span> <span class="mi">30</span><span class="p">,</span>
+                 <span class="n">MINUTE</span><span class="p">,</span>
+                 <span class="n">MINUTE</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                 <span class="n">MINUTE</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+                 <span class="n">MINUTE</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span>
+                 <span class="n">MINUTE</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span>
+                 <span class="n">MINUTE</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>
+                 <span class="n">MINUTE</span> <span class="o">*</span> <span class="mi">15</span><span class="p">,</span>
+                 <span class="n">MINUTE</span> <span class="o">*</span> <span class="mi">20</span><span class="p">,</span>
+                 <span class="n">MINUTE</span> <span class="o">*</span> <span class="mi">30</span><span class="p">,</span>
+                 <span class="n">DEGREE</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">15</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">20</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">30</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">40</span><span class="p">)</span>
+    <span class="n">DMS_COUNT</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">DMS_STEPS</span><span class="p">)</span>
+
+    <span class="n">DEGREE</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">TENTH</span> <span class="o">=</span> <span class="n">DEGREE</span> <span class="o">/</span> <span class="mf">10.0</span>
+    <span class="n">HUNDREDTH</span> <span class="o">=</span> <span class="n">DEGREE</span> <span class="o">/</span> <span class="mf">100.0</span>
+    <span class="n">THOUSANDTH</span> <span class="o">=</span> <span class="n">DEGREE</span> <span class="o">/</span> <span class="mf">1000.0</span>
+
+    <span class="n">DEG_STEPS</span> <span class="o">=</span> <span class="p">(</span><span class="n">THOUSANDTH</span><span class="p">,</span>
+                 <span class="n">THOUSANDTH</span> <span class="o">*</span> <span class="mf">2.5</span><span class="p">,</span>
+                 <span class="n">THOUSANDTH</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span>
+                 <span class="n">HUNDREDTH</span><span class="p">,</span>
+                 <span class="n">HUNDREDTH</span> <span class="o">*</span> <span class="mf">2.5</span><span class="p">,</span>
+                 <span class="n">HUNDREDTH</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span>
+                 <span class="n">TENTH</span><span class="p">,</span>
+                 <span class="n">TENTH</span> <span class="o">*</span> <span class="mf">2.5</span><span class="p">,</span>
+                 <span class="n">TENTH</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span>
+                 <span class="n">DEGREE</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">15</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">20</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">30</span><span class="p">,</span>
+                 <span class="n">DEGREE</span> <span class="o">*</span> <span class="mi">40</span><span class="p">)</span>
+    <span class="n">DEG_COUNT</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">DEG_STEPS</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">viewport</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">max_lines</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">DegMinSec</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a GridLines instance that does the logic for and describes</span>
+<span class="sd">        the current graticule</span>
+
+<span class="sd">        :param viewport: bounding box of the viewport in question.</span>
+<span class="sd">        :type viewport: tuple of lon/lat</span>
+
+<span class="sd">        :param max_lines: How many lines to be displayed on the longest</span>
+<span class="sd">                          dimension of the viewport. Graticule will scale up</span>
+<span class="sd">                          or down only when the number of lines in the viewport</span>
+<span class="sd">                          falls outside the range.</span>
+<span class="sd">        :type max_lines: tuple of integers, (max, min)</span>
+
+<span class="sd">        :param DegMinSec: Whether to scale by Degrees/Minute/Seconds,</span>
+<span class="sd">                          or decimal lon/lat</span>
+<span class="sd">        :type bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">viewport</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Viewport needs to be provided to generate &#39;</span>
+                             <span class="s">&#39;grid lines&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">viewport</span> <span class="o">=</span> <span class="n">viewport</span>
+
+        <span class="k">if</span> <span class="n">projection</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Projection needs to be provided to generate &#39;</span>
+                             <span class="s">&#39;grid lines&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">projection</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">type</span>
+        <span class="k">if</span> <span class="n">DegMinSec</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">STEPS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DMS_STEPS</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">STEP_COUNT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DMS_COUNT</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">STEPS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEG_STEPS</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">STEP_COUNT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEG_COUNT</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">DMS</span> <span class="o">=</span> <span class="n">DegMinSec</span>
+
+        <span class="c"># need to just use refresh_scale for this...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="o">=</span> <span class="n">max_lines</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_scale</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GridLines.get_step_size"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.GridLines.get_step_size">[docs]</a>    <span class="k">def</span> <span class="nf">get_step_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reference_size</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Chooses the interval size for the graticule, based on where the</span>
+<span class="sd">        reference size fits into the STEPS table.</span>
+
+<span class="sd">        :param reference_size: the approximate size you want in decimal degrees</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">STEPS</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">bisect</span><span class="o">.</span><span class="n">bisect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">STEPS</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">reference_size</span><span class="p">)),</span>
+                              <span class="bp">self</span><span class="o">.</span><span class="n">STEP_COUNT</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,)</span>
+                          <span class="p">]</span>
+</div>
+<div class="viewcode-block" id="GridLines.get_lines"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.GridLines.get_lines">[docs]</a>    <span class="k">def</span> <span class="nf">get_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes, builds, and returns a list of lines that when drawn,</span>
+<span class="sd">        creates the graticule.</span>
+<span class="sd">        The list consists of self.lon_lines vertical lines,</span>
+<span class="sd">        followed by self.lat_lines horizontal lines.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="p">(</span><span class="n">minlon</span><span class="p">,</span> <span class="n">minlat</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">image_box</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c"># create array of lines</span>
+        <span class="n">top</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">lat_lines</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_interval</span><span class="p">)</span>
+        <span class="n">right</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">lon_lines</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_interval</span><span class="p">)</span>
+
+        <span class="n">vertical_lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([((</span><span class="n">x</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_interval</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                                    <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_interval</span><span class="p">,</span> <span class="n">top</span><span class="p">))</span>
+                                   <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon_lines</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)])</span>
+        <span class="n">horizontal_lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([((</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_interval</span><span class="p">),</span>
+                                      <span class="p">(</span><span class="n">right</span><span class="p">,</span> <span class="n">y</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_interval</span><span class="p">))</span>
+                                     <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat_lines</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)])</span>
+
+        <span class="c"># shift lines into position</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="p">((</span><span class="n">minlon</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_interval</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_interval</span><span class="p">,</span>
+                 <span class="p">(</span><span class="n">minlat</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_interval</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_interval</span><span class="p">)</span>
+        <span class="n">vertical_lines</span> <span class="o">+=</span> <span class="n">delta</span>
+        <span class="n">horizontal_lines</span> <span class="o">+=</span> <span class="n">delta</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">vertical_lines</span><span class="p">,</span> <span class="n">horizontal_lines</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="GridLines.refresh_scale"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.GridLines.refresh_scale">[docs]</a>    <span class="k">def</span> <span class="nf">refresh_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recomputes the interval and number of lines in each dimension.</span>
+<span class="sd">        This should be called whenever the viewport changes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">img_width</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">image_size</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">img_height</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">image_size</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">ratio</span> <span class="o">=</span> <span class="n">img_width</span> <span class="o">/</span> <span class="n">img_height</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ref_dim</span> <span class="o">=</span> <span class="s">&#39;w&#39;</span> <span class="k">if</span> <span class="n">img_width</span> <span class="o">&gt;=</span> <span class="n">img_height</span> <span class="k">else</span> <span class="s">&#39;h&#39;</span>
+
+        <span class="n">width</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">image_box</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">image_box</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">height</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">image_box</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span>
+                  <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">image_box</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ref_len</span> <span class="o">=</span> <span class="n">width</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref_dim</span> <span class="ow">is</span> <span class="s">&#39;w&#39;</span> <span class="k">else</span> <span class="n">height</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_interval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_step_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_len</span> <span class="o">/</span>
+                                                   <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lon_lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref_dim</span> <span class="ow">is</span> <span class="s">&#39;w&#39;</span> <span class="k">else</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lat_lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref_dim</span> <span class="ow">is</span> <span class="s">&#39;h&#39;</span> <span class="k">else</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon_lines</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lon_lines</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lat_lines</span> <span class="o">*</span> <span class="n">ratio</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat_lines</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lat_lines</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lon_lines</span> <span class="o">/</span> <span class="n">ratio</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="GridLines.set_max_lines"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.GridLines.set_max_lines">[docs]</a>    <span class="k">def</span> <span class="nf">set_max_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_lines</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Alters the number of lines drawn.</span>
+
+<span class="sd">        :param max_lines: the maximum number of lines drawn.</span>
+<span class="sd">                          (Note: this is NOT the number of lines on the screen</span>
+<span class="sd">                                 at any given time.  That is determined by</span>
+<span class="sd">                                 the computed interval and the size/location</span>
+<span class="sd">                                 of the viewport)</span>
+<span class="sd">        :type max_lines: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">max_lines</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="o">=</span> <span class="n">max_lines</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_scale</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="GridLines.set_DMS"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.GridLines.set_DMS">[docs]</a>    <span class="k">def</span> <span class="nf">set_DMS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">DMS</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param DMS: Boolean value that specifies if Degrees/Minutes/Seconds</span>
+<span class="sd">                    tags are enabled.</span>
+<span class="sd">        :type DMS: Bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DMS</span> <span class="o">=</span> <span class="n">DMS</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DMS</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">STEPS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DMS_STEPS</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">STEP_COUNT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DMS_COUNT</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">STEPS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEG_STEPS</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">STEP_COUNT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEG_COUNT</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_scale</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="GridLines.get_tags"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.GridLines.get_tags">[docs]</a>    <span class="k">def</span> <span class="nf">get_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a list of tags for each line (in the same order the lines</span>
+<span class="sd">        are returned) and the position where the tag should be printed.</span>
+
+<span class="sd">        Line labels are anchored at the intersection between the line and the</span>
+<span class="sd">        edge of the viewport. This may cause the longitude labels to disappear</span>
+<span class="sd">        if the aspect ratio of the image and viewport are identical.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">tags</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_lines</span><span class="p">():</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">hemi</span> <span class="o">=</span> <span class="s">&#39;E&#39;</span> <span class="k">if</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s">&#39;W&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">hemi</span> <span class="o">=</span> <span class="s">&#39;N&#39;</span> <span class="k">if</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s">&#39;S&#39;</span>
+
+            <span class="n">tag</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                   <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">DMS</span>
+                   <span class="k">else</span> <span class="n">uc</span><span class="o">.</span><span class="n">LatLongConverter</span><span class="o">.</span><span class="n">ToDegMinSec</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ustring</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DMS</span><span class="p">:</span>
+                <span class="n">degrees</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">tag</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                <span class="n">minutes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tag</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">seconds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">tag</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+
+                <span class="k">if</span> <span class="n">seconds</span> <span class="o">==</span> <span class="mi">60</span><span class="p">:</span>
+                    <span class="n">minutes</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">seconds</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="k">if</span> <span class="n">seconds</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">tag</span> <span class="o">=</span> <span class="s">u&quot;</span><span class="si">%i</span><span class="s">d</span><span class="si">%i</span><span class="s">&#39;</span><span class="si">%i</span><span class="se">\&quot;</span><span class="si">%c</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">degrees</span><span class="p">,</span> <span class="n">minutes</span><span class="p">,</span> <span class="n">seconds</span><span class="p">,</span> <span class="n">hemi</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">minutes</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">tag</span> <span class="o">=</span> <span class="s">u&quot;</span><span class="si">%i</span><span class="s">d</span><span class="si">%i</span><span class="s">&#39;</span><span class="si">%c</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">degrees</span><span class="p">,</span> <span class="n">minutes</span><span class="p">,</span> <span class="n">hemi</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tag</span> <span class="o">=</span> <span class="s">u&quot;</span><span class="si">%i</span><span class="s">d</span><span class="si">%c</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">degrees</span><span class="p">,</span> <span class="n">hemi</span><span class="p">)</span>
+
+            <span class="n">top</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">image_box</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">image_box</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">anchor</span> <span class="o">=</span> <span class="p">((</span><span class="n">value</span><span class="p">,</span> <span class="n">top</span><span class="p">)</span>
+                      <span class="k">if</span> <span class="n">hemi</span> <span class="ow">is</span> <span class="s">&#39;E&#39;</span> <span class="ow">or</span> <span class="n">hemi</span> <span class="ow">is</span> <span class="s">&#39;W&#39;</span>
+                      <span class="k">else</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+
+            <span class="n">tags</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">tag</span><span class="p">,</span> <span class="n">anchor</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">tags</span>
+
+</div></div>
+<div class="viewcode-block" id="Viewport"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.map_canvas.Viewport">[docs]</a><span class="k">class</span> <span class="nc">Viewport</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Viewport</span>
+
+<span class="sd">    class that defines and manages attribues for a viewport onto a flat 2D map.</span>
+<span class="sd">    All points and measurements are in lon/lat</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">BB</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Init the viewport.</span>
+<span class="sd">        Can initialize with center/width/height, and/or with bounding box.</span>
+<span class="sd">        NOTE: Bounding box takes precedence over any previous parameters</span>
+
+<span class="sd">        :param center: The point around which the viewport is centered</span>
+<span class="sd">        :type a tuple containing an lon/lat coordinate</span>
+
+<span class="sd">        :param width: Width of the viewport (lon)</span>
+
+<span class="sd">        :param height: height of the viewport (lat)</span>
+
+<span class="sd">        :param BB: Bounding box of the viewport (overrides previous parameters)</span>
+<span class="sd">        :type a list of lon/lat tuples containing the lower left and top right</span>
+<span class="sd">              coordinates</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_BB</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_center</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_height</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="n">BB</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">center</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Center is unspecified&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">width</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Width is unspecified&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">height</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Height is unspecified&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_center</span> <span class="o">=</span> <span class="n">center</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="n">width</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_height</span> <span class="o">=</span> <span class="n">height</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">recompute_BB</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_BB</span> <span class="o">=</span> <span class="n">BB</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">recompute_dim</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">multiplier</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">*=</span> <span class="n">multiplier</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_height</span> <span class="o">*=</span> <span class="n">multiplier</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">recompute_BB</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">recompute_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">BB</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">BB</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">BB</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">BB</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_center</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">BB</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">BB</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">recompute_BB</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">halfx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">/</span> <span class="mf">2.0</span>
+        <span class="n">halfy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_BB</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">halfx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">halfy</span><span class="p">),</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">halfx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">halfy</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">aspect_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">BB</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_BB</span>
+
+    <span class="nd">@BB.setter</span>
+    <span class="k">def</span> <span class="nf">BB</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">BB</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_BB</span> <span class="o">=</span> <span class="n">BB</span> <span class="k">if</span> <span class="n">BB</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_BB</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recompute_dim</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">center</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_center</span>
+
+    <span class="nd">@center.setter</span>
+    <span class="k">def</span> <span class="nf">center</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_center</span> <span class="o">=</span> <span class="n">center</span> <span class="k">if</span> <span class="n">center</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_center</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recompute_BB</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">width</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_width</span>
+
+    <span class="nd">@width.setter</span>
+    <span class="k">def</span> <span class="nf">width</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="n">width</span> <span class="k">if</span> <span class="n">width</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recompute_BB</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">height</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_height</span>
+
+    <span class="nd">@height.setter</span>
+    <span class="k">def</span> <span class="nf">height</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_height</span> <span class="o">=</span> <span class="n">height</span> <span class="k">if</span> <span class="n">height</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_height</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recompute_BB</span><span class="p">()</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

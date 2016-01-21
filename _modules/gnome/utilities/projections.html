@@ -1,0 +1,767 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.utilities.projections &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.utilities.projections</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module to hold classes and supporting code for projections used in GNOME.</span>
+
+<span class="sd">Only:</span>
+
+<span class="sd">  * no projection</span>
+<span class="sd">  * geo-projection (just scaling to pixels)</span>
+<span class="sd">  * a simple &quot;flat earth&quot; projection for</span>
+
+<span class="sd">Also a bit of code for scaling lat-long to meters, etc.</span>
+
+<span class="sd">Used by map_canvas code and map code.</span>
+
+<span class="sd">NOTE: all coordinates are takes as (lon, lat, depth)</span>
+<span class="sd">      even though depth is always ignored</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c"># make sure to get float division everywhere</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">profiledeco</span> <span class="kn">as</span> <span class="nn">pd</span>
+
+
+<div class="viewcode-block" id="NoProjection"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.NoProjection">[docs]</a><span class="k">class</span> <span class="nc">NoProjection</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is do-nothing projection class -- returns what it gets.</span>
+
+<span class="sd">    It optionally rounds down to integer (pixel) coordinates</span>
+
+<span class="sd">    used for testing, primarily, and as a definition of the interface</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bounding_box</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">image_size</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        create a new do-nothing projection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="NoProjection.set_scale"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.NoProjection.set_scale">[docs]</a>    <span class="k">def</span> <span class="nf">set_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bounding_box</span><span class="p">,</span> <span class="n">image_size</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Does nothing</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="NoProjection.to_pixel"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.NoProjection.to_pixel">[docs]</a>    <span class="k">def</span> <span class="nf">to_pixel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns the same (lon, lat) coords, but as an np.array, if they aren&#39;t already</span>
+
+<span class="sd">        :param coords: -- the coords to project (Nx3 numpy array or compatible sequence)</span>
+<span class="sd">                          (lon, lat, depth)</span>
+<span class="sd">        :param asint: -- flag to set whether to convert to a integer or not</span>
+<span class="sd">                         default is to leave it as the same type it came in,</span>
+<span class="sd">                         so you can have fractional pixels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">asint</span><span class="p">:</span>
+            <span class="c"># C ordering to make sure it&#39;s contiguous</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))[:,</span> <span class="p">:</span>
+                              <span class="mi">2</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;C&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># C ordering to make sure it&#39;s contiguous</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))[:,</span> <span class="p">:</span>
+                              <span class="mi">2</span><span class="p">],</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;C&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="NoProjection.to_pixel_2D"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.NoProjection.to_pixel_2D">[docs]</a>    <span class="k">def</span> <span class="nf">to_pixel_2D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        same as to_pixel, but expects only (lon, lat) coords as input.</span>
+
+<span class="sd">        :param coords: -- the coords to project</span>
+<span class="sd">                          (Nx2 numpy array or compatible sequence)</span>
+<span class="sd">                          (lon, lat)</span>
+<span class="sd">        :param asint: -- flag to set whether to convert to a integer or not</span>
+<span class="sd">                         default is to leave it as the same type it came in,</span>
+<span class="sd">                         so you can have fractional pixels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">asint</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;C&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;C&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="NoProjection.to_lonlat"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.NoProjection.to_lonlat">[docs]</a>    <span class="k">def</span> <span class="nf">to_lonlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns the same coords, but as a np.array of float64,</span>
+<span class="sd">        if they aren&#39;t already</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;C&#39;</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="GeoProjection"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.GeoProjection">[docs]</a><span class="k">class</span> <span class="nc">GeoProjection</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This acts as the base class for a projection</span>
+
+<span class="sd">    This one doesn&#39;t really project, but does convert to pixel coords</span>
+<span class="sd">    i.e. &quot;geo-coordinates&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bounding_box</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">image_size</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        create a new projection</span>
+
+<span class="sd">        Projection(bounding_box, image_size)</span>
+
+<span class="sd">        :param bounding_box: the bounding box of the map:</span>
+<span class="sd">           ( (min_long, min_lat),</span>
+<span class="sd">             (max_lon,  max_lat) )</span>
+
+<span class="sd">        (or a BoundingBox Object)</span>
+
+<span class="sd">        :param image_size: the size of the map image -- (width, height)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">600</span><span class="p">,</span><span class="mi">600</span><span class="p">)</span> <span class="k">if</span> <span class="n">image_size</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">image_size</span>
+        <span class="n">bounding_box</span> <span class="o">=</span> <span class="p">((</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="mi">180</span><span class="p">,</span> <span class="mi">90</span><span class="p">))</span> <span class="k">if</span> <span class="n">bounding_box</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">bounding_box</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_box</span> <span class="o">=</span> <span class="n">bounding_box</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_scale</span><span class="p">(</span><span class="n">bounding_box</span><span class="p">,</span> <span class="n">image_size</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        provide an equality check for checking</span>
+<span class="sd">        saved state of renderers, etc</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span> <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">offset</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image_size</span><span class="p">,</span><span class="n">other</span><span class="o">.</span><span class="n">image_size</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GeoProjection.set_scale"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.GeoProjection.set_scale">[docs]</a>    <span class="k">def</span> <span class="nf">set_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bounding_box</span><span class="p">,</span> <span class="n">image_size</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        set the scaling, etc. of the projection</span>
+
+<span class="sd">        This should be called whenever the bounding box of the map,</span>
+<span class="sd">        or the size of the image is changed</span>
+
+<span class="sd">        :param bounding_box: bounding box of the visual portion of the map</span>
+<span class="sd">                             in the form:  ( (min_long, min_lat),</span>
+<span class="sd">                                             (max_long, max_lat) )</span>
+<span class="sd">        :param image_size=None: the size of the image that will be drawn to.</span>
+<span class="sd">                                if not given, the previous size will be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">image_size</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">image_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_size</span>
+
+        <span class="n">bounding_box</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">bounding_box</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">bounding_box</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="c"># compute BB to fit image</span>
+
+        <span class="n">h</span> <span class="o">=</span> <span class="n">bounding_box</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">bounding_box</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="c"># width scaled to longitude</span>
+
+        <span class="n">w</span> <span class="o">=</span> <span class="n">bounding_box</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">bounding_box</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">w</span> <span class="o">/</span> <span class="n">h</span> <span class="o">&gt;</span> <span class="n">image_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">image_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">image_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">w</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">image_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">h</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="o">-</span><span class="n">s</span><span class="p">)</span>
+
+        <span class="c"># doing this at the end, in case there is a problem with the input.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_box</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_lonlat</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="n">image_size</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_lonlat</span><span class="p">((</span><span class="n">image_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_size</span> <span class="o">=</span> <span class="n">image_size</span>
+</div>
+<div class="viewcode-block" id="GeoProjection.to_pixel"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.GeoProjection.to_pixel">[docs]</a>    <span class="k">def</span> <span class="nf">to_pixel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        converts input coordinates to pixel coords</span>
+
+<span class="sd">        param: coords --  an array of coordinates -- NX3::</span>
+
+<span class="sd">                 ( (long1, lat1, z1),</span>
+<span class="sd">                   (long2, lat2, z2),</span>
+<span class="sd">                   (long3, lat3, z3),</span>
+<span class="sd">                    ...</span>
+<span class="sd">                 )</span>
+
+<span class="sd">        (z is ignored, and there is no z in the returned array)</span>
+
+<span class="sd">        returns:  the pixel coords as a similar Nx2 array of integer x,y coordinates</span>
+<span class="sd">        (using the y = 0 at the top, and y increasing down)</span>
+
+<span class="sd">        NOTE: the values between the minimum of a pixel value to less than the</span>
+<span class="sd">              max of a pixel range are in that pixel, so  a point exactly at</span>
+<span class="sd">              the minimum of the bounding box will be in the zeroth pixel, but</span>
+<span class="sd">              a point  exactly at the max of the bounding box will be considered</span>
+<span class="sd">              outside the map</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+
+        <span class="c"># shift to center:</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
+        <span class="c"># scale to pixels:</span>
+        <span class="n">coords</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        <span class="c"># shift to pixel coords</span>
+        <span class="n">coords</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span>
+
+        <span class="k">if</span> <span class="n">asint</span><span class="p">:</span>
+            <span class="c"># NOTE: using &quot;floor&quot; as it rounds negative numbers towards -inf</span>
+            <span class="c">#      simple casting rounds toward zero</span>
+            <span class="c">#      we may need the negative coords to work right for locations</span>
+            <span class="c">#      off the grid.</span>
+            <span class="c">#      (used for the raster map code)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">coords</span>
+</div>
+<div class="viewcode-block" id="GeoProjection.to_pixel_2D"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.GeoProjection.to_pixel_2D">[docs]</a>    <span class="k">def</span> <span class="nf">to_pixel_2D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        same as to_pixel, but expects only (lon, lat) coords as input.</span>
+
+<span class="sd">        :param coords: -- the coords to project</span>
+<span class="sd">                          (Nx2 numpy array or compatible sequence)</span>
+<span class="sd">                          (lon, lat)</span>
+<span class="sd">        :param asint: -- flag to set whether to convert to a integer or not</span>
+<span class="sd">                         default is to leave it as the same type it came in,</span>
+<span class="sd">                         so you can have fractional pixels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">coords</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;input coords to to_pixel_2D must be Nx2 array&quot;</span><span class="p">)</span>
+
+        <span class="c"># shift to center:</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">coords</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
+        <span class="c"># scale to pixels:</span>
+        <span class="n">coords</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        <span class="c"># shift to pixel coords</span>
+        <span class="n">coords</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span>
+
+        <span class="k">if</span> <span class="n">asint</span><span class="p">:</span>
+            <span class="c"># NOTE: using &quot;floor&quot; as it rounds negative numbers towards -inf</span>
+            <span class="c">#       simple casting rounds toward zero</span>
+            <span class="c">#       we may need the negative coords to work right for locations</span>
+            <span class="c">#       off the grid.</span>
+            <span class="c">#       (used for the raster map code)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">coords</span>
+</div>
+<div class="viewcode-block" id="GeoProjection.to_lonlat"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.GeoProjection.to_lonlat">[docs]</a>    <span class="k">def</span> <span class="nf">to_lonlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        converts pixel coords to long-lat coords</span>
+
+<span class="sd">        :param coords:  - an array of pixel coordinates (usually integer type)</span>
+<span class="sd">           NX2: ( (long1, lat1),</span>
+<span class="sd">                  (long2, lat2),</span>
+<span class="sd">                  (long3, lat3),</span>
+<span class="sd">                 .....</span>
+<span class="sd">                )</span>
+<span class="sd">         (as produced by to_pixel)</span>
+
+<span class="sd">        NOTE: there is not depth in input -- pixels are always 2-d!</span>
+
+<span class="sd">        Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.</span>
+<span class="sd">        If the input is integers, a 0.5 is added to &quot;shift&quot; the location to mid-pixel.</span>
+<span class="sd">        </span>
+<span class="sd">        :returns:  the pixel coords as a similar Nx2 array of floating point x,y coordinates</span>
+<span class="sd">        (using the y = 0 at the top, and y increasing down)</span>
+
+<span class="sd">        Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.</span>
+<span class="sd">        If the input is integers, a 0.5 is added to &quot;shift&quot; the location to</span>
+<span class="sd">        mid-pixel.</span>
+
+<span class="sd">        :returns:  the pixel coords as a similar Nx2 array of floating point</span>
+<span class="sd">                   x,y coordinates (using the y = 0 at the top, and y increasing down)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="c"># convert to float64:</span>
+            <span class="n">coords</span> <span class="o">=</span> <span class="n">coords</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+            <span class="c"># add 0.5 to shift to center of pixel</span>
+            <span class="n">coords</span> <span class="o">+=</span> <span class="mf">0.5</span>
+        <span class="c"># shift to pixel center coords</span>
+        <span class="n">coords</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span>
+        <span class="c"># scale to lat-lon</span>
+        <span class="n">coords</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        <span class="c"># shift from center:</span>
+        <span class="n">coords</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
+
+        <span class="k">return</span> <span class="n">coords</span>
+
+</div></div>
+<div class="viewcode-block" id="FlatEarthProjection"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.FlatEarthProjection">[docs]</a><span class="k">class</span> <span class="nc">FlatEarthProjection</span><span class="p">(</span><span class="n">GeoProjection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    class to define a &quot;flat earth&quot; projection:</span>
+
+<span class="sd">        longitude is scaled to the cosine of the mid-latitude -- but that&#39;s it.</span>
+
+<span class="sd">        not conforming to equal area, distance, bearing, or any other nifty</span>
+<span class="sd">        map properties -- but easy to compute, and it looks OK.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="FlatEarthProjection.meters_to_lonlat"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.FlatEarthProjection.meters_to_lonlat">[docs]</a>    <span class="k">def</span> <span class="nf">meters_to_lonlat</span><span class="p">(</span><span class="n">meters</span><span class="p">,</span> <span class="n">ref_positions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts from delta meters to delta latitude-longitude, using the Flat-Earth projection.</span>
+
+<span class="sd">        :param meters: NX3 numpy array of (dx, dy, dz) distances in meters (dz is passed through untouched)</span>
+<span class="sd">        :param ref_positions: NX3, numpy array of reference positions in degrees (Only lat is used here)</span>
+
+<span class="sd">        :param meters: NX3 numpy array of (dx, dy, dz) distances in meters</span>
+<span class="sd">                       (dz is passed through untouched)</span>
+<span class="sd">        :param ref_positions: NX3, numpy array of reference positions</span>
+<span class="sd">                              in degrees (Only lat is used here)</span>
+
+<span class="sd">        :returns delta_lon_lat: Nx3 numpy array of</span>
+<span class="sd">                                (delta-lon, delta-lat, delta-z) triples</span>
+
+<span class="sd">        dlat = dy * 8.9992801e-06</span>
+<span class="sd">        dlon = dy * 8.9992801e-06 * cos(ref_lat)</span>
+<span class="sd">        (based on previous GNOME value: and/or average radius of the earth of</span>
+<span class="sd">         6366706.989  m)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># make a copy -- don&#39;t change meters</span>
+
+        <span class="n">delta_lon_lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">meters</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="c"># reference is possible for reference positions</span>
+
+        <span class="n">ref_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ref_positions</span><span class="p">,</span>
+                                   <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="n">delta_lon_lat</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">8.9992801e-06</span>
+        <span class="n">delta_lon_lat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">ref_positions</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">delta_lon_lat</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="FlatEarthProjection.lonlat_to_meters"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.FlatEarthProjection.lonlat_to_meters">[docs]</a>    <span class="k">def</span> <span class="nf">lonlat_to_meters</span><span class="p">(</span><span class="n">lon_lat</span><span class="p">,</span> <span class="n">ref_positions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts from delta longitude-latitude to delta meters, using the</span>
+<span class="sd">        Flat-Earth projection. This should be a reversal of meters_to_latlon.</span>
+
+<span class="sd">        This function mainly used for testing</span>
+
+<span class="sd">        :param lon_lat: NX3 numpy array of (dlon, dlat, dz) distances in meters</span>
+<span class="sd">                        (dz is passed through untouched)</span>
+<span class="sd">        :param ref_positions: NX3, numpy array of (lon,lat,z)</span>
+<span class="sd">                              reference positions in degrees</span>
+<span class="sd">                              (Only lat is used here)</span>
+
+<span class="sd">        :returns delta_meters: Nx3 numpy array of (delta-x, delta-y, delta-z)</span>
+<span class="sd">                               triples</span>
+
+<span class="sd">        NOTE: the input is in units of longitude and latitude, but they are</span>
+<span class="sd">              relative -- no absolute -- so 0 means zero distance,</span>
+<span class="sd">              not on the equator</span>
+
+<span class="sd">        dy = dlon / 8.9992801e-06</span>
+<span class="sd">        dx = dlat / ( 8.9992801e-06 * cos(ref_lat) )</span>
+
+<span class="sd">        (based on previous GNOME value: and/or average radius of the earth of 6366706.989  m)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># make a copy -- don&#39;t change input</span>
+        <span class="n">delta_meters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lon_lat</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="c"># reference is possible for reference positions</span>
+        <span class="n">ref_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ref_positions</span><span class="p">,</span>
+                                   <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="n">delta_meters</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">/=</span> <span class="mf">8.9992801e-06</span>
+        <span class="n">delta_meters</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">ref_positions</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">delta_meters</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="FlatEarthProjection.geodesic_sphere"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.FlatEarthProjection.geodesic_sphere">[docs]</a>    <span class="k">def</span> <span class="nf">geodesic_sphere</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span>
+                        <span class="n">distance</span><span class="p">,</span>
+                        <span class="n">bearing</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a start point, initial bearing, and distance, returns the</span>
+<span class="sd">        destination point along a (shortest distance) great circle arc --</span>
+<span class="sd">        assuming a spherical earth. Similar to how GNOME does it.</span>
+
+<span class="sd">        :param lon: longitude in decimal degrees.</span>
+<span class="sd">        :param lat: latitude in decimal degrees.</span>
+<span class="sd">        :param distance:  meters.</span>
+<span class="sd">        :param bearing: in decimal degrees, measured clockwise from north.</span>
+
+<span class="sd">        :returns longitude, latitude: in degrees.</span>
+
+<span class="sd">        Code from Brian Zelenke</span>
+
+<span class="sd">        NOTE: performance could be improved a lot here if need be (lots of data copies)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># EarthRadius = 6371010.0 # Value I&quot;ve looked up</span>
+        <span class="c"># Matches the value used above -- GNOME value</span>
+        <span class="n">EarthRadius</span> <span class="o">=</span> <span class="mf">6366706.989</span>
+
+        <span class="c"># Convert from degrees to radians.</span>
+
+        <span class="n">lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span>
+        <span class="n">lon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">lon</span><span class="p">)</span>
+        <span class="n">bearing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">bearing</span><span class="p">)</span>
+
+        <span class="c"># Convert linear distance to angular distance (in radians).</span>
+
+        <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span> <span class="o">/</span> <span class="n">EarthRadius</span>
+
+        <span class="n">latout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span> <span class="o">*</span>
+                           <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">bearing</span><span class="p">))</span>
+        <span class="n">lonout</span> <span class="o">=</span> <span class="n">lon</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">bearing</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span> <span class="o">*</span>
+                                  <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span> <span class="o">-</span>
+                                  <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">latout</span><span class="p">))</span>
+
+        <span class="c"># Convert from radians to degrees.</span>
+
+        <span class="n">lonout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">lonout</span><span class="p">)</span>
+        <span class="n">latout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">latout</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">lonout</span><span class="p">,</span> <span class="n">latout</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="FlatEarthProjection.set_scale"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.FlatEarthProjection.set_scale">[docs]</a>    <span class="k">def</span> <span class="nf">set_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bounding_box</span><span class="p">,</span> <span class="n">image_size</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        set the scaling, etc. of the projection</span>
+
+<span class="sd">        This should be called whenever the bounding box of the map,</span>
+<span class="sd">        or the size of the image is changed</span>
+
+<span class="sd">        :param bounding_box: bounding box of the visual portion of the map</span>
+<span class="sd">                             in the form:  ( (min_long, min_lat),</span>
+<span class="sd">                                             (max_long, max_lat) )</span>
+<span class="sd">        :param image_size=None: the size of the image that will be drawn to.</span>
+<span class="sd">                                if not given, the previous size will be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">image_size</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">image_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_size</span>
+
+        <span class="n">bounding_box</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">bounding_box</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">bounding_box</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+        <span class="n">bb</span> <span class="o">=</span> <span class="n">bounding_box</span>
+        <span class="n">lon_scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="c"># compute BB to fit image</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">bounding_box</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">bounding_box</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="c"># width scaled to longitude</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">bounding_box</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">bounding_box</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">lon_scale</span>
+
+        <span class="k">if</span> <span class="n">w</span> <span class="o">/</span> <span class="n">h</span> <span class="o">&gt;</span> <span class="n">image_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">image_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">image_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">w</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span> <span class="o">*</span> <span class="n">lon_scale</span><span class="p">,</span> <span class="o">-</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">image_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">h</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span> <span class="o">*</span> <span class="n">lon_scale</span><span class="p">,</span> <span class="o">-</span><span class="n">s</span><span class="p">)</span>
+
+        <span class="c"># doing this at the end, in case there is a problem with the input.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_box</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_lonlat</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="n">image_size</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_lonlat</span><span class="p">((</span><span class="n">image_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_size</span> <span class="o">=</span> <span class="n">image_size</span>
+
+</div></div>
+<div class="viewcode-block" id="RectangularGridProjection"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.RectangularGridProjection">[docs]</a><span class="k">class</span> <span class="nc">RectangularGridProjection</span><span class="p">(</span><span class="n">NoProjection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    projection for lat-lon to pixel and back for a rectangular but not regular</span>
+<span class="sd">    grid.</span>
+
+<span class="sd">    i.e a rectangular grid that can be defined by a single vector each of</span>
+<span class="sd">        latitude and longitude</span>
+
+<span class="sd">    This is a totally different type of projection -- it requires a linear</span>
+<span class="sd">    interpolation for the latitude and longitude.</span>
+
+<span class="sd">    Primarily used for making a raster land-water map from a non-regular</span>
+<span class="sd">    rectangular grid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">longitude</span><span class="p">,</span> <span class="n">latitude</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a new Rectangular Grid projection</span>
+
+<span class="sd">        :param longitude: the vector of longitudes</span>
+<span class="sd">        :param latitude: the vector of latitudes</span>
+
+<span class="sd">        It is assumed that the largest and smallest</span>
+<span class="sd">        values define the bounds of the raster.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">scipy.interpolate</span>
+
+        <span class="n">latitude</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">longitude</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">longitude</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_lat_index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">latitude</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c"># height of bitmap</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_lon_index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitude</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c"># width of bitmap</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_lon</span> <span class="o">=</span> <span class="n">longitude</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_lon</span> <span class="o">=</span> <span class="n">longitude</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_lat</span> <span class="o">=</span> <span class="n">latitude</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_lat</span> <span class="o">=</span> <span class="n">latitude</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+        <span class="n">pixels</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">latitude</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span>
+                  <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">longitude</span><span class="p">)))</span>
+
+        <span class="c"># Create interpolators:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lon_to_pixel_interp</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">longitude</span><span class="p">,</span>
+                                                               <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">longitude</span><span class="p">)),</span>
+                                                               <span class="n">kind</span><span class="o">=</span><span class="s">&#39;linear&#39;</span><span class="p">,</span>
+                                                               <span class="n">copy</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                                               <span class="n">bounds_error</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                                               <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>  <span class="c"># None means use NaN</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lat_to_pixel_interp</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span>
+                                                               <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">latitude</span><span class="p">)),</span>
+                                                               <span class="n">kind</span><span class="o">=</span><span class="s">&#39;linear&#39;</span><span class="p">,</span>
+                                                               <span class="n">copy</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                                               <span class="n">bounds_error</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                                               <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>  <span class="c"># None means use NaN</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pixel_to_lon_interp</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">longitude</span><span class="p">)),</span>
+                                                               <span class="n">longitude</span><span class="p">,</span>
+                                                               <span class="n">kind</span><span class="o">=</span><span class="s">&#39;linear&#39;</span><span class="p">,</span>
+                                                               <span class="n">copy</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                                               <span class="n">bounds_error</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                                               <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>  <span class="c"># None means use NaN</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pixel_to_lat_interp</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">latitude</span><span class="p">)),</span>
+                                                               <span class="n">latitude</span><span class="p">,</span>
+                                                               <span class="n">kind</span><span class="o">=</span><span class="s">&#39;linear&#39;</span><span class="p">,</span>
+                                                               <span class="n">copy</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                                               <span class="n">bounds_error</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                                               <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>  <span class="c"># None means use NaN</span>
+
+<div class="viewcode-block" id="RectangularGridProjection.set_scale"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.RectangularGridProjection.set_scale">[docs]</a>    <span class="k">def</span> <span class="nf">set_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bounding_box</span><span class="p">,</span> <span class="n">image_size</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Does nothing</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="n">NotImplimentedError</span><span class="p">(</span><span class="s">&quot;you can not reset the scale on a RectangularGridProjection object</span><span class="se">\n</span><span class="s">&quot;</span>
+                                  <span class="s">&quot;create a new one if you need a new scale&quot;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="RectangularGridProjection.to_pixel"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.RectangularGridProjection.to_pixel">[docs]</a>    <span class="k">def</span> <span class="nf">to_pixel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns the pixel coordintes in the gird for teh given lat-lon location.</span>
+
+<span class="sd">        :param coords: -- the coords to project (Nx3 numpy array or compatible sequence)</span>
+<span class="sd">                          (lon, lat, depth)</span>
+<span class="sd">        :param asint: -- flag to set whether to convert to a integer or not</span>
+<span class="sd">                         default is to leave it as the same type it came in,</span>
+<span class="sd">                         so you can have fractional pixels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="n">pixel_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">coords</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="n">np</span><span class="o">.</span><span class="n">putmask</span><span class="p">(</span><span class="n">coords</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">],</span> <span class="n">coords</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">]</span><span class="o">&lt;</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lat</span><span class="p">),</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lat</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">putmask</span><span class="p">(</span><span class="n">coords</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">],</span> <span class="n">coords</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">]</span><span class="o">&gt;</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lat</span><span class="p">),</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lat</span><span class="p">)</span> <span class="p">)</span>
+
+        <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">coords</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">],</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lat</span><span class="p">),</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lat</span><span class="p">),</span> <span class="n">out</span><span class="o">=</span><span class="n">coords</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="n">pixel_coords</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lon_to_pixel_interp</span><span class="p">(</span><span class="n">coords</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">pixel_coords</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_lat_index</span> <span class="o">-</span>
+                              <span class="bp">self</span><span class="o">.</span><span class="n">_lat_to_pixel_interp</span><span class="p">(</span><span class="n">coords</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="n">asint</span><span class="p">:</span>
+            <span class="c"># NOTE: using &quot;floor&quot; as it rounds negative numbers towards -inf</span>
+            <span class="c">#       simple casting rounds toward zero</span>
+            <span class="c">#       we may need the negative coords to work right for locations</span>
+            <span class="c">#       off the grid.</span>
+            <span class="c">#       (used for the raster map code)</span>
+            <span class="n">pixel_coords</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">pixel_coords</span><span class="p">,</span> <span class="n">pixel_coords</span><span class="p">)</span>
+                            <span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">pixel_coords</span>
+</div>
+<div class="viewcode-block" id="RectangularGridProjection.to_pixel_2D"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.RectangularGridProjection.to_pixel_2D">[docs]</a>    <span class="k">def</span> <span class="nf">to_pixel_2D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        same as to_pixel, but expects only (lon, lat) coords as input.</span>
+
+<span class="sd">        :param coords: -- the coords to project</span>
+<span class="sd">                          (Nx2 numpy array or compatible sequence)</span>
+<span class="sd">                          (lon, lat)</span>
+<span class="sd">        :param asint: -- flag to set whether to convert to a integer or not</span>
+<span class="sd">                         default is to leave it as the same type it came in,</span>
+<span class="sd">                         so you can have fractional pixels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</div>
+<div class="viewcode-block" id="RectangularGridProjection.to_lonlat"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.RectangularGridProjection.to_lonlat">[docs]</a>    <span class="k">def</span> <span class="nf">to_lonlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        converts pixel coords to long-lat coords</span>
+
+<span class="sd">        param: coords  - an array of pixel coordinates (usually integer type)</span>
+<span class="sd">           NX2: ( (long1, lat1),</span>
+<span class="sd">                  (long2, lat2),</span>
+<span class="sd">                  (long3, lat3),</span>
+<span class="sd">                 .....</span>
+<span class="sd">                )</span>
+<span class="sd">         (as produced by to_pixel)</span>
+
+<span class="sd">        NOTE: there is not depth in input -- pixels are always 2-d!</span>
+
+<span class="sd">        Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.</span>
+<span class="sd">        If the input is integers, a 0.5 is added to &quot;shift&quot; the location</span>
+<span class="sd">        to mid-pixel.</span>
+<span class="sd">        returns: the pixel coords as a similar Nx2 array of floating point</span>
+<span class="sd">                 x,y coordinates</span>
+<span class="sd">                 (using the y = 0 at the top, and y increasing down)</span>
+<span class="sd">         &quot;&quot;&quot;</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="c"># convert to float64:</span>
+            <span class="n">coords</span> <span class="o">=</span> <span class="n">coords</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="c"># add 0.5 to shift to center of pixel</span>
+            <span class="n">coords</span> <span class="o">+=</span> <span class="mf">0.5</span>
+
+        <span class="c"># out of bounds gets clipped to boundary</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_lon_index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lat_index</span><span class="p">),</span> <span class="n">out</span><span class="o">=</span><span class="n">coords</span><span class="p">)</span>
+
+        <span class="c"># interpolate to lon-lat_coords</span>
+        <span class="n">lon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pixel_to_lon_interp</span><span class="p">(</span><span class="n">coords</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pixel_to_lat_interp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_lat_index</span> <span class="o">-</span> <span class="n">coords</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">]</span>
+
+</div></div>
+<div class="viewcode-block" id="RegularGridProjection"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.RegularGridProjection">[docs]</a><span class="k">class</span> <span class="nc">RegularGridProjection</span><span class="p">(</span><span class="n">GeoProjection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    projection for lat-lon to pixel and back for a pre-defined regular grid.</span>
+
+<span class="sd">    This differs from the other projections in that it doesn&#39;t try to</span>
+<span class="sd">    match the bounding box aspect ratio -- it simply uses the one</span>
+<span class="sd">    already defined by the grid.</span>
+
+<span class="sd">    You  could use a RectangularGridProjection here as well, but this is</span>
+<span class="sd">    simpler and should be faster.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="RegularGridProjection.set_scale"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.RegularGridProjection.set_scale">[docs]</a>    <span class="k">def</span> <span class="nf">set_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bounding_box</span><span class="p">,</span> <span class="n">image_size</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        set the scaling, etc. of the projection</span>
+
+<span class="sd">        This should be called whenever the bounding box of the map,</span>
+<span class="sd">        or the size of the image is changed</span>
+
+<span class="sd">        :param bounding_box: bounding box of the visual portion of the map</span>
+<span class="sd">                             in the form:  ( (min_long, min_lat),</span>
+<span class="sd">                                             (max_long, max_lat) )</span>
+<span class="sd">        :param image_size=None: the size of the image that will be drawn to.</span>
+<span class="sd">                                if not given, the previous size will be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">image_size</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">image_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_size</span>
+
+        <span class="n">bounding_box</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">bounding_box</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">bounding_box</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="n">h</span> <span class="o">=</span> <span class="n">bounding_box</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">bounding_box</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">bounding_box</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">bounding_box</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="p">(</span><span class="n">image_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">w</span><span class="p">,</span> <span class="o">-</span> <span class="n">image_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">h</span><span class="p">)</span>
+
+        <span class="c"># doing this at the end, in case there is a problem with the input.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_size</span> <span class="o">=</span> <span class="n">image_size</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

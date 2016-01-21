@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -52,8 +55,7 @@
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span>
-<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">iso8601</span><span class="p">,</span>
                       <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">SequenceSchema</span><span class="p">,</span>
@@ -523,10 +525,10 @@
 
         <span class="c"># index of end of current time step</span>
         <span class="c"># a tiny bit to make it open on the right.</span>
-        <span class="n">n_1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(((</span><span class="n">current_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
-                   <span class="o">+</span> <span class="n">time_step</span><span class="p">)</span>
-                  <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_duration</span>
-                  <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">n_1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(((</span><span class="n">current_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">+</span>
+                   <span class="n">time_step</span><span class="p">)</span> <span class="o">/</span>
+                  <span class="bp">self</span><span class="o">.</span><span class="n">release_duration</span> <span class="o">*</span>
+                  <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
 
         <span class="n">n_1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>  <span class="c"># don&#39;t want to go over the end.</span>
         <span class="k">if</span> <span class="n">n_1</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>  <span class="c"># indexes from zero</span>
@@ -981,6 +983,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

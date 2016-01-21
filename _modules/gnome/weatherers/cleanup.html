@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -162,17 +165,20 @@
     <span class="nd">@efficiency.setter</span>
     <span class="k">def</span> <span class="nf">efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        update efficiency.</span>
+<span class="sd">            Update efficiency.</span>
 
-<span class="sd">        It must be greater than 0 and less than or equal to 1.0. It can also be</span>
-<span class="sd">        None since that means use wind to compute efficiency.</span>
+<span class="sd">            - Efficiency can be None since it indicates that we use wind</span>
+<span class="sd">              to compute efficiency.</span>
+<span class="sd">            - If efficiency is not None, it must be a number greater than</span>
+<span class="sd">              or equal to 0.0 and less than or equal to 1.0.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="n">value</span>
-
-        <span class="k">elif</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;efficiency must be &gt; 0 and &lt;= 1.0&quot;</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">value</span> <span class="o">&gt;=</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Efficiency must be either None or a number &#39;</span>
+                                <span class="s">&#39;between 0 and 1.0&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_substance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -182,9 +188,8 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">substance</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">get_substances</span><span class="p">(</span><span class="n">complete</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">substance</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;Found more than one type of Oil - not supported. &#39;</span>
-                   <span class="s">&#39;Results will be incorrect&#39;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;Found more than one type of Oil &#39;</span>
+                              <span class="s">&#39;- not supported. Results will be incorrect&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">substance</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">_update_LE_status_codes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -229,11 +234,13 @@
         <span class="c"># (1 - frac_water) * mass_to_remove</span>
         <span class="k">if</span> <span class="n">mass_to_remove</span> <span class="o">&gt;=</span> <span class="n">curr_mass</span><span class="o">.</span><span class="n">sum</span><span class="p">():</span>
             <span class="n">data</span><span class="p">[</span><span class="s">&#39;fate_status&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">new_status</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;insufficient mass released for cleanup&quot;</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&quot;marked ALL ({0}) LEs, total mass:&quot;</span>
-                                <span class="s">&quot; {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;fate_status&#39;</span><span class="p">]),</span>
-                                              <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;{0} insufficient mass released for cleanup&#39;</span>
+                                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;{0} marked ALL ({1}) LEs, total mass: {2}&#39;</span>
+                                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span><span class="p">,</span>
+                                        <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;fate_status&#39;</span><span class="p">]),</span>
+                                        <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c"># sum up mass until threshold is reached, find index where</span>
             <span class="c"># total_mass_removed is reached or exceeded</span>
@@ -241,8 +248,8 @@
             <span class="c"># change status for elements upto and including &#39;ix&#39;</span>
             <span class="n">data</span><span class="p">[</span><span class="s">&#39;fate_status&#39;</span><span class="p">][:</span><span class="n">ix</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_status</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;marked {0} LEs with mass: &#39;</span>
-                              <span class="s">&#39;{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ix</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][:</span><span class="n">ix</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;{0} marked {1} LEs with mass: {2}&#39;</span>
+                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span><span class="p">,</span> <span class="n">ix</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][:</span><span class="n">ix</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
 
         <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span> <span class="s">&#39;surface_weather&#39;</span><span class="p">)</span>
 
@@ -251,8 +258,17 @@
 <span class="sd">        find weighted average of frac_water array, return (1 - avg_frac_water)</span>
 <span class="sd">        since we want the average fraction of oil in this data</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">avg_frac_water</span> <span class="o">=</span> <span class="p">((</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">])</span><span class="o">.</span>
-                          <span class="nb">sum</span><span class="p">()</span><span class="o">/</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">avg_frac_water</span> <span class="o">=</span> <span class="p">((</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">])</span><span class="o">.</span>
+                              <span class="nb">sum</span><span class="p">())</span><span class="o">/</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">avg_frac_water</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;{0} set avg_frac_water = ({1}), &#39;</span>
+                                <span class="s">&#39;total mass: {2}&#39;</span>
+                                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span><span class="p">,</span>
+                                        <span class="n">avg_frac_water</span><span class="p">,</span>
+                                        <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+
         <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">avg_frac_water</span><span class="p">)</span>
 
 
@@ -319,9 +335,9 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validunits</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_units</span> <span class="o">=</span> <span class="n">value</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;{0} are not valid volume or mass units.&#39;</span>
-                   <span class="s">&#39; Not updated&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;{0} are not valid volume or mass units. &#39;</span>
+                             <span class="s">&#39;Not updated&#39;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
 
 <div class="viewcode-block" id="Skimmer.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Skimmer.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -330,7 +346,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">-</span>
                                   <span class="bp">self</span><span class="o">.</span><span class="n">active_start</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
-            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;skimmed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s">&#39;skimmed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 </div>
 <div class="viewcode-block" id="Skimmer.prepare_for_model_step"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Skimmer.prepare_for_model_step">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -404,9 +420,9 @@
                 <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">rm_mass_frac</span><span class="p">)</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span>
             <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;skimmed&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">rm_mass</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;amount skimmed for {0}: {1}&#39;</span><span class="o">.</span>
-                              <span class="n">format</span><span class="p">(</span><span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">rm_mass</span><span class="p">))</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s">&#39;skimmed&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">rm_mass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;{0} amount skimmed for {1}: {2}&#39;</span>
+                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span><span class="p">,</span> <span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">rm_mass</span><span class="p">))</span>
 
         <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">(</span><span class="n">fate</span><span class="o">=</span><span class="s">&#39;skim&#39;</span><span class="p">)</span>
 
@@ -468,13 +484,14 @@
 <span class="sd">            less than or equal to 1.0</span>
 <span class="sd">        :param wind: gnome.environment.Wind object. Only used to set</span>
 <span class="sd">            efficiency if efficiency is None. Efficiency is defined as:</span>
-<span class="sd">                1 - 0.07 * wind.get_value(model_time)</span>
+<span class="sd">            1 - 0.07 * wind.get_value(model_time)</span>
 <span class="sd">            where wind.get_value(model_time) is value of wind at model_time</span>
 
 <span class="sd">        Kwargs passed onto base class:</span>
 
 <span class="sd">        :param str name: name of object</span>
 <span class="sd">        :param bool on: whether object is on or not for the run</span>
+
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="s">&#39;active_stop&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="c"># user cannot set &#39;active_stop&#39;</span>
@@ -553,9 +570,10 @@
         <span class="k">if</span> <span class="p">(</span><span class="n">uc</span><span class="o">.</span><span class="n">Convert</span><span class="p">(</span><span class="s">&#39;Length&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thickness_units</span><span class="p">,</span> <span class="s">&#39;m&#39;</span><span class="p">,</span>
                        <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_thickness</span><span class="p">):</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;thickness of {0} {1}, is less than min required {2} m.&quot;</span>
-                   <span class="s">&quot; Burn will not occur&quot;</span><span class="o">.</span>
-                   <span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thickness</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thickness_units</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">_min_thickness</span><span class="p">))</span>
+                   <span class="s">&quot; Burn will not occur&quot;</span>
+                   <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thickness</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">thickness_units</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">_min_thickness</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -583,12 +601,12 @@
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        resets internal _oilwater_thickness variable to initial thickness</span>
 <span class="sd">        specified by user and active_stop to &#39;inf&#39; again.</span>
-<span class="sd">        initializes sc.weathering_data[&#39;burned&#39;] = 0.0</span>
+<span class="sd">        initializes sc.mass_balance[&#39;burned&#39;] = 0.0</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_rate_duration</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
-            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;burned&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s">&#39;burned&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 </div>
 <div class="viewcode-block" id="Burn.prepare_for_model_step"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Burn.prepare_for_model_step">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -597,7 +615,7 @@
 <span class="sd">           that are released together will be burned together since they would</span>
 <span class="sd">           be closer to each other in position.</span>
 <span class="sd">           Assumes: there is more mass in water than amount of mass to be</span>
-<span class="sd">           skimmed. The LEs marked for Burning are marked only once -</span>
+<span class="sd">           burned. The LEs marked for Burning are marked only once -</span>
 <span class="sd">           during the very first step that the object becomes active</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Burn</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
@@ -691,10 +709,10 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="c"># get it from wind</span>
             <span class="n">ws</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">ws</span> <span class="o">&gt;</span> <span class="mf">1.</span><span class="o">/</span><span class="mf">0.07</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;wind speed is greater than {0}.&quot;</span>
-                       <span class="s">&quot; Set efficiency to 0&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">0.07</span><span class="p">))</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ws</span> <span class="o">&gt;</span> <span class="mf">1.</span> <span class="o">/</span> <span class="mf">0.07</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;wind speed is greater than {0}. &#39;</span>
+                                    <span class="s">&#39;Set efficiency to 0&#39;</span>
+                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="mf">0.07</span><span class="p">))</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">0.07</span> <span class="o">*</span> <span class="n">ws</span>
@@ -704,7 +722,7 @@
 <span class="sd">        1. figure out the mass to remove for current timestep based on rate and</span>
 <span class="sd">           efficiency. Find fraction of total mass and remove equally from all</span>
 <span class="sd">           &#39;mass_components&#39; of LEs marked for burning.</span>
-<span class="sd">        2. update &#39;mass&#39; array and the amount burned in weathering_data dict</span>
+<span class="sd">        2. update &#39;mass&#39; array and the amount burned in mass_balance dict</span>
 <span class="sd">        3. append to _burn_duration for each timestep</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -731,9 +749,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_oilwater_thickness</span> <span class="o">-=</span> \
                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_oilwater_thick_burnrate</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestep</span><span class="p">)</span>
 
-            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;burned&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">rm_mass</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;amount burned for {0}: {1}&#39;</span><span class="o">.</span>
-                              <span class="n">format</span><span class="p">(</span><span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">rm_mass</span><span class="p">))</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s">&#39;burned&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">rm_mass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;{0} amount burned for {1}: {2}&#39;</span>
+                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span><span class="p">,</span> <span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">rm_mass</span><span class="p">))</span>
 
         <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">(</span><span class="n">fate</span><span class="o">=</span><span class="s">&#39;burn&#39;</span><span class="p">)</span>
 </div>
@@ -837,7 +855,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
-            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;chem_dispersed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s">&#39;chem_dispersed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 
     <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -878,9 +896,10 @@
                           <span class="mf">0.000037</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">efficiency</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;wave height {0} - results in negative efficiency. &quot;</span>
-                       <span class="s">&quot;Reset to 0&quot;</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">((</span><span class="s">&quot;wave height {0} &quot;</span>
+                                     <span class="s">&quot;- results in negative efficiency. &quot;</span>
+                                     <span class="s">&quot;Reset to 0&quot;</span>
+                                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">w</span><span class="p">)))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="n">efficiency</span>
 
@@ -903,9 +922,10 @@
                     <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">rm_mass_frac</span><span class="p">)</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span>
                 <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-                <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;chem_dispersed&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">rm_mass</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;amount chemically dispersed for&#39;</span>
-                                  <span class="s">&#39; {0}: {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">rm_mass</span><span class="p">))</span>
+                <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s">&#39;chem_dispersed&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">rm_mass</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;{0} amount chemically dispersed for &#39;</span>
+                                  <span class="s">&#39;{1}: {2}&#39;</span>
+                                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span><span class="p">,</span> <span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">rm_mass</span><span class="p">))</span>
 
             <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">(</span><span class="n">fate</span><span class="o">=</span><span class="s">&#39;disperse&#39;</span><span class="p">)</span>
 
@@ -968,6 +988,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

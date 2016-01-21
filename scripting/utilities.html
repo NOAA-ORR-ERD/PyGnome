@@ -1,0 +1,322 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Scripting utilities &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Scripting pygnome" href="../scripting.html" />
+    <link rel="next" title="Maps" href="maps.html" />
+    <link rel="prev" title="Overview" href="scripting_intro.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="maps.html" title="Maps"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="scripting_intro.html" title="Overview"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" accesskey="U">Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="scripting-utilities">
+<h1>Scripting utilities<a class="headerlink" href="#scripting-utilities" title="Permalink to this headline">¶</a></h1>
+<p>GNOME has a scripting module where many utilties and helper functions can be accessed to simplify
+common tasks. These include helper functions for easier creation of certain types of spills and movers.
+To use these functions import gnome.scripting</p>
+<div class="section" id="module-gnome.scripting">
+<span id="gnome-scripting"></span><h2><a class="reference internal" href="#module-gnome.scripting" title="gnome.scripting"><code class="xref py py-mod docutils literal"><span class="pre">gnome.scripting</span></code></a><a class="headerlink" href="#module-gnome.scripting" title="Permalink to this headline">¶</a></h2>
+<p>Scripting package for GNOME with assorted utilities that make it easier to
+write scripts.</p>
+<p>Helper functions are imported from various py_gnome modules
+(spill, environment, movers etc).</p>
+<dl class="function">
+<dt id="gnome.scripting.constant_wind">
+<code class="descclassname">gnome.scripting.</code><code class="descname">constant_wind</code><span class="sig-paren">(</span><em>speed</em>, <em>direction</em>, <em>units='m/s'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/environment/wind.html#constant_wind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.constant_wind" title="Permalink to this definition">¶</a></dt>
+<dd><p>utility to create a constant wind &#8220;timeseries&#8221;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>speed</strong> &#8211; speed of wind</li>
+<li><strong>direction</strong> &#8211; direction &#8211; degrees True, direction wind is from
+(degrees True)</li>
+<li><strong>unit='m/s'</strong> &#8211; units for speed, as a string, i.e. &#8220;knots&#8221;, &#8220;m/s&#8221;,
+&#8220;cm/s&#8221;, etc.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The time for a constant wind timeseries is irrelevant. This
+function simply sets it to datetime.now() accurate to hours.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gnome.scripting.constant_wind_mover">
+<code class="descclassname">gnome.scripting.</code><code class="descname">constant_wind_mover</code><span class="sig-paren">(</span><em>speed</em>, <em>direction</em>, <em>units='m/s'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/movers/wind_movers.html#constant_wind_mover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.constant_wind_mover" title="Permalink to this definition">¶</a></dt>
+<dd><p>utility function to create a mover with a constant wind</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>speed</strong> &#8211; wind speed</li>
+<li><strong>direction</strong> &#8211; wind direction in degrees true
+(direction from, following the meteorological convention)</li>
+<li><strong>units='m/s'</strong> &#8211; the units that the input wind speed is in.
+options: &#8216;m/s&#8217;, &#8216;knot&#8217;, &#8216;mph&#8217;, others...</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">returns a gnome.movers.WindMover object all set up.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The time for a constant wind timeseries is irrelevant. 
+This function simply sets it to datetime.now() accurate to hours.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gnome.scripting.wind_mover_from_file">
+<code class="descclassname">gnome.scripting.</code><code class="descname">wind_mover_from_file</code><span class="sig-paren">(</span><em>filename</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/movers/wind_movers.html#wind_mover_from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.wind_mover_from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a wind mover from a wind time-series file (OSM long wind format)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filename</strong> &#8211; The full path to the data file</li>
+<li><strong>kwargs</strong> &#8211; All keyword arguments are passed on to the WindMover
+constructor</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns mover:</th><td class="field-body"><p class="first last">returns a wind mover, built from the file</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gnome.scripting.make_images_dir">
+<code class="descclassname">gnome.scripting.</code><code class="descname">make_images_dir</code><span class="sig-paren">(</span><em>images_dir=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/scripting/utilities.html#make_images_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.make_images_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create output directory for rendered images.
+If it already exists, delete all old output files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gnome.scripting.surface_point_line_spill">
+<code class="descclassname">gnome.scripting.</code><code class="descname">surface_point_line_spill</code><span class="sig-paren">(</span><em>num_elements</em>, <em>start_position</em>, <em>release_time</em>, <em>end_position=None</em>, <em>end_release_time=None</em>, <em>substance=None</em>, <em>amount=None</em>, <em>units=None</em>, <em>windage_range=(0.01</em>, <em>0.04)</em>, <em>windage_persist=900</em>, <em>name='Surface Point/Line Release'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/spill/spill.html#surface_point_line_spill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.surface_point_line_spill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function returns a Spill object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>num_elements</strong> (<em>integer</em>) &#8211; total number of elements to be released</li>
+<li><strong>start_position</strong> (<em>3-tuple of floats (long, lat, z)</em>) &#8211; initial location the elements are released</li>
+<li><strong>release_time</strong> (<em>datetime.datetime</em>) &#8211; time the LEs are released (datetime object)</li>
+<li><strong>end_position=None</strong> &#8211; Optional. For moving source, the end position
+If None, then release is from a point source</li>
+<li><strong>end_release_time=None</strong> &#8211; optional &#8211; for a time varying release,
+the end release time. If None, then release is instantaneous</li>
+<li><strong>substance=None</strong> &#8211; Type of oil spilled.</li>
+<li><strong>amount=None</strong> (<em>float</em>) &#8211; mass or volume of oil spilled</li>
+<li><strong>units=None</strong> (<em>str</em>) &#8211; units for amount spilled</li>
+<li><strong>windage_range=(.01, .04)</strong> (<em>tuple</em>) &#8211; Percentage range for windage.
+Active only for surface particles
+when a mind mover is added</li>
+<li><strong>windage_persist=900</strong> (<em>int</em>) &#8211; Persistence for windage values in seconds.
+Use -1 for inifinite, otherwise it is
+randomly reset on this time scale</li>
+<li><strong>name='Surface Point/Line Release'</strong> (<em>str</em>) &#8211; a name for the spill</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gnome.scripting.subsurface_plume_spill">
+<code class="descclassname">gnome.scripting.</code><code class="descname">subsurface_plume_spill</code><span class="sig-paren">(</span><em>num_elements</em>, <em>start_position</em>, <em>release_time</em>, <em>distribution</em>, <em>distribution_type='droplet_size'</em>, <em>end_release_time=None</em>, <em>substance=None</em>, <em>density=None</em>, <em>density_units='kg/m^3'</em>, <em>amount=None</em>, <em>units=None</em>, <em>windage_range=(0.01</em>, <em>0.04)</em>, <em>windage_persist=900</em>, <em>name='Subsurface plume'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/spill/spill.html#subsurface_plume_spill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.subsurface_plume_spill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function returns a Spill object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>num_elements</strong> (<em>integer</em>) &#8211; total number of elements to be released</li>
+<li><strong>start_position</strong> (<em>3-tuple of floats (long, lat, z)</em>) &#8211; initial location the elements are released</li>
+<li><strong>release_time</strong> (<em>datetime.datetime</em>) &#8211; time the LEs are released (datetime object)</li>
+<li><strong>distribution=None</strong> &#8211; <p>An object capable of generating a probability
+distribution.  Right now, we have:</p>
+<blockquote>
+<div><ul>
+<li>UniformDistribution</li>
+<li>NormalDistribution</li>
+<li>LogNormalDistribution</li>
+<li>WeibullDistribution</li>
+</ul>
+</div></blockquote>
+</li>
+<li><strong>distribution_type=droplet_size</strong> (<em>str</em>) &#8211; <p>What is being sampled from the
+distribution.  Options are:</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>droplet_size - Rise velocity</dt>
+<dd>is then
+calculated</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>rise_velocity - No droplet</dt>
+<dd>size is
+computed</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><strong>end_release_time=None</strong> &#8211; End release time for a time varying release.
+If None, then release is instantaneous</li>
+<li><strong>substance='None'</strong> &#8211; Required unless density specified.
+Type of oil spilled.</li>
+<li><strong>density=None</strong> (<em>float</em>) &#8211; Required unless substance specified.
+Density of spilled material.</li>
+<li><strong>density_units='kg/m^3'</strong> (<em>str</em>) &#8211; </li>
+<li><strong>amount=None</strong> (<em>float</em>) &#8211; mass or volume of oil spilled.</li>
+<li><strong>units=None</strong> (<em>str</em>) &#8211; must provide units for amount spilled.</li>
+<li><strong>windage_range=(.01, .04)</strong> (<em>tuple</em>) &#8211; Percentage range for windage.
+Active only for surface particles
+when a mind mover is added</li>
+<li><strong>windage_persist=900</strong> &#8211; Persistence for windage values in seconds.
+Use -1 for inifinite, otherwise it is
+randomly reset on this time scale.</li>
+<li><strong>name='Surface Point/Line Release'</strong> (<em>str</em>) &#8211; a name for the spill.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Scripting utilities</a><ul>
+<li><a class="reference internal" href="#module-gnome.scripting"><code class="docutils literal"><span class="pre">gnome.scripting</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="scripting_intro.html"
+                        title="previous chapter">Overview</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="maps.html"
+                        title="next chapter">Maps</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripting/utilities.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="maps.html" title="Maps"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="scripting_intro.html" title="Overview"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" >Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

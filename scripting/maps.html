@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Maps &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Scripting pygnome" href="../scripting.html" />
+    <link rel="next" title="Spills" href="spills.html" />
+    <link rel="prev" title="Scripting utilities" href="utilities.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="spills.html" title="Spills"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="utilities.html" title="Scripting utilities"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" accesskey="U">Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="maps">
+<h1>Maps<a class="headerlink" href="#maps" title="Permalink to this headline">¶</a></h1>
+<p>Maps can be created manually (e.g. in the case of all water), generated from a model grid, or loaded from a file.
+The map file format supported by GNOME is the BNA shoreline format (see the GNOME file formats document).
+Support for shapefiles is currently being implemented.</p>
+<p>If a BNA map is loaded this will be the shoreline used for oil beaching algorithms. If gridded movers are also
+added to the model, it may be desirable to have the shoreline generated from the currents grid so that it matches
+(both in exact position and in resolution). See the section below on Generating Map from Currents Grid.</p>
+<p>Some of the more common use cases and map options are shown below.
+For complete documentation see <a class="reference internal" href="../reference.html#module-gnome.map" title="gnome.map"><code class="xref py py-mod docutils literal"><span class="pre">gnome.map</span></code></a></p>
+<div class="section" id="manual-creation">
+<h2>Manual Creation<a class="headerlink" href="#manual-creation" title="Permalink to this headline">¶</a></h2>
+<p>Create an all water map &#8211; if map_bounds is not specified, a spill can be added anywhere in the &#8220;water world&#8221;:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.map</span> <span class="kn">import</span> <span class="n">GnomeMap</span>
+<span class="n">mymap</span> <span class="o">=</span> <span class="n">GnomeMap</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><em>Options:</em></p>
+<dl class="docutils">
+<dt>map_bounds</dt>
+<dd>A polygon bounding the map, e.g. map_bounds = ((-145,48), (-145,49), (-143,49), (-143,48))</dd>
+</dl>
+</div>
+<div class="section" id="load-shoreline-from-file">
+<h2>Load Shoreline from File<a class="headerlink" href="#load-shoreline-from-file" title="Permalink to this headline">¶</a></h2>
+<p>Load a BNA map file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.map</span> <span class="kn">import</span> <span class="n">MapFromBNA</span>
+<span class="n">mymap</span> <span class="o">=</span> <span class="n">MapFromBNA</span><span class="p">(</span><span class="n">mapfile</span><span class="o">.</span><span class="n">bna</span><span class="p">,</span> <span class="n">refloat_halflife</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><em>Options:</em></p>
+<dl class="docutils">
+<dt>refloat_halflife</dt>
+<dd>Particles that beach on the shorelines are randomly refloated according to the specified half-life
+(specified in hours). This is a global shoreline parameter, i.e. there is only one shoreline type.
+If no refloating is desired set this value to -1.</dd>
+</dl>
+</div>
+<div class="section" id="create-map-from-currents-grid">
+<h2>Create Map from Currents Grid<a class="headerlink" href="#create-map-from-currents-grid" title="Permalink to this headline">¶</a></h2>
+<p>This feature is under development in pygnome.</p>
+</div>
+<div class="section" id="add-map-to-model">
+<h2>Add Map to Model<a class="headerlink" href="#add-map-to-model" title="Permalink to this headline">¶</a></h2>
+<p>This can be done a few ways. For example, when setting up the model:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">time_step</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+<span class="n">duration</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+<span class="nb">map</span><span class="o">=</span><span class="n">mymap</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Or added to the model after it has been set up.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">model</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="n">mymap</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Maps</a><ul>
+<li><a class="reference internal" href="#manual-creation">Manual Creation</a></li>
+<li><a class="reference internal" href="#load-shoreline-from-file">Load Shoreline from File</a></li>
+<li><a class="reference internal" href="#create-map-from-currents-grid">Create Map from Currents Grid</a></li>
+<li><a class="reference internal" href="#add-map-to-model">Add Map to Model</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="utilities.html"
+                        title="previous chapter">Scripting utilities</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="spills.html"
+                        title="next chapter">Spills</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripting/maps.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="spills.html" title="Spills"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="utilities.html" title="Scripting utilities"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" >Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

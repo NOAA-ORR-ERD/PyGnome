@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Weatherers &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Scripting pygnome" href="../scripting.html" />
+    <link rel="next" title="Outputters" href="outputters.html" />
+    <link rel="prev" title="Movers" href="movers.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="outputters.html" title="Outputters"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="movers.html" title="Movers"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" accesskey="U">Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="weatherers">
+<h1>Weatherers<a class="headerlink" href="#weatherers" title="Permalink to this headline">¶</a></h1>
+<p>Processes that change the properties of the LEs are termed &#8220;weatherers&#8221; in GNOME.
+For example, evaporation reduces the mass of LEs that remain floating on the water surface,
+while increasing their density and viscosity.</p>
+<p>Weathering processes modeled in GNOME include: evaporation, dispersion, dissolution,
+sedimentation, emulsification, and biodegredation. (Note: as of October 2015 many
+of these algorithms are still being implemented and refined &#8211; please contact GNOME developers for
+current status).</p>
+<p>Some examples and common use cases are shown here. For complete documentation see <a class="reference internal" href="../reference.html#module-gnome.weatherers" title="gnome.weatherers"><code class="xref py py-mod docutils literal"><span class="pre">gnome.weatherers</span></code></a> and
+<a class="reference internal" href="../reference.html#module-gnome.environment" title="gnome.environment"><code class="xref py py-mod docutils literal"><span class="pre">gnome.environment</span></code></a></p>
+<div class="section" id="the-environment-class">
+<h2>The Environment Class<a class="headerlink" href="#the-environment-class" title="Permalink to this headline">¶</a></h2>
+<p>As weathering processes depend on a variety of environmental conditions (e.g. wind, waves, and water properties),
+GNOME requires initialization of various environment objects before weathering processes can be added to
+the model.</p>
+<p>For example, to create a simple Wind object (for a constant in time wind):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="kn">import</span> <span class="n">Wind</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">datetime_value_2d</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">datetime_value_2d</span><span class="p">)</span> <span class="c">#Make a wind time series (one value for wind constant in time)</span>
+<span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="n">wind</span> <span class="o">=</span> <span class="n">Wind</span><span class="p">(</span><span class="n">timeseries</span><span class="o">=</span><span class="n">series</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;knots&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>More simply, we can use the helper function in :mod: <cite>gnome.scripting</cite> for creating a constant wind:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.environment.wind</span> <span class="kn">import</span> <span class="n">constant_wind</span>
+<span class="n">wind</span> <span class="o">=</span> <span class="n">constant_wind</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="s">&#39;knots&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once environment objects are created, they can be explicitly passed to weatherers or added to the model.environment:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">environment</span> <span class="o">+=</span> <span class="n">wind</span>
+</pre></div>
+</div>
+<p>If a weatherer is added to the model without explicity specifying the required environment objects, then the first object
+of the correct type in the environment collection will be used for that weathering process. For example,
+if multiple wind time series are created and added to model.environment then the first one added will be used
+for weathering processes unless explicitly specified.</p>
+</div>
+<div class="section" id="evaporation">
+<h2>Evaporation<a class="headerlink" href="#evaporation" title="Permalink to this headline">¶</a></h2>
+<p>Evaporation requires both Wind and Water Objects be initialized. Here&#8217;s an example, this time reading the wind time
+series from a file called &#8220;mywind.txt&#8221; (this file format is described in the <a class="reference internal" href="movers.html"><em>Movers</em></a> section):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">gnome.weatherers</span> <span class="kn">import</span> <span class="n">Evaporation</span>
+<span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="kn">import</span> <span class="n">Water</span><span class="p">,</span> <span class="n">Wind</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
+<span class="n">wind</span> <span class="o">=</span> <span class="n">Wind</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;path_2_file/mywind.txt&quot;</span><span class="p">)</span>
+<span class="n">water</span> <span class="o">=</span> <span class="n">Water</span><span class="p">(</span><span class="n">temperature</span><span class="o">=</span><span class="mf">300.0</span><span class="p">,</span> <span class="n">salinity</span><span class="o">=</span><span class="mf">35.0</span><span class="p">)</span> <span class="c">#temperature in Kelvin, salinity in psu</span>
+<span class="n">model</span><span class="o">.</span><span class="n">weatherers</span> <span class="o">+=</span> <span class="n">Evaporation</span><span class="p">(</span><span class="n">wind</span><span class="o">=</span><span class="n">wind</span><span class="p">,</span><span class="n">water</span><span class="o">=</span><span class="n">water</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="dispersion">
+<h2>Dispersion<a class="headerlink" href="#dispersion" title="Permalink to this headline">¶</a></h2>
+<p>Natural dispersion requires Wind, Water, and Waves objects are initialized. Note that the wind is not
+explicitly required but is needed by the Waves object. Adding on to our example above:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">gnome.weatherers</span> <span class="kn">import</span> <span class="n">Evaporation</span><span class="p">,</span> <span class="n">NaturalDispersion</span>
+<span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="kn">import</span> <span class="n">Water</span><span class="p">,</span> <span class="n">Wind</span><span class="p">,</span> <span class="n">Waves</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
+<span class="n">wind</span> <span class="o">=</span> <span class="n">Wind</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&quot;path_2_file/mywind.txt&quot;</span><span class="p">)</span>
+<span class="n">waves</span> <span class="o">=</span> <span class="n">Waves</span><span class="p">(</span><span class="n">wind</span><span class="p">)</span>
+<span class="n">water</span> <span class="o">=</span> <span class="n">Water</span><span class="p">(</span><span class="n">temperature</span><span class="o">=</span><span class="mf">300.0</span><span class="p">,</span> <span class="n">salinity</span><span class="o">=</span><span class="mf">35.0</span><span class="p">)</span> <span class="c">#temperature in Kelvin, salinity in psu</span>
+<span class="n">model</span><span class="o">.</span><span class="n">weatherers</span> <span class="o">+=</span> <span class="n">Evaporation</span><span class="p">(</span><span class="n">wind</span><span class="o">=</span><span class="n">wind</span><span class="p">,</span><span class="n">water</span><span class="o">=</span><span class="n">water</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">weatherers</span> <span class="o">+=</span> <span class="n">NaturalDispersion</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Weatherers</a><ul>
+<li><a class="reference internal" href="#the-environment-class">The Environment Class</a></li>
+<li><a class="reference internal" href="#evaporation">Evaporation</a></li>
+<li><a class="reference internal" href="#dispersion">Dispersion</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="movers.html"
+                        title="previous chapter">Movers</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="outputters.html"
+                        title="next chapter">Outputters</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripting/weatherers.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="outputters.html" title="Outputters"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="movers.html" title="Movers"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" >Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -217,7 +220,7 @@
 
             <span class="c"># either timeseries is given or nothing is given</span>
             <span class="c"># create an empty default object</span>
-            <span class="nb">super</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">format</span><span class="o">=</span><span class="n">format</span><span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="s">&#39;mps&#39;</span>  <span class="c"># units for default object</span>
             <span class="k">if</span> <span class="n">timeseries</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
@@ -422,7 +425,7 @@
 
         <span class="k">return</span> <span class="n">datetimeval</span>
 </div>
-<div class="viewcode-block" id="Wind.set_wind_data"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind.set_wind_data">[docs]</a>    <span class="k">def</span> <span class="nf">set_wind_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datetime_value_2d</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;r-theta&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Wind.set_wind_data"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind.set_wind_data">[docs]</a>    <span class="k">def</span> <span class="nf">set_wind_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wind_data</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;r-theta&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Sets the timeseries of the Wind object to the new value given by</span>
 <span class="sd">        a numpy array.  The format for the input data defaults to</span>
@@ -440,13 +443,18 @@
 <span class="sd">        :type format: either string or integer value defined by</span>
 <span class="sd">                      basic_types.format.* (see cy_basic_types.pyx)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_units</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span>
-        <span class="n">datetime_value_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xform_input_timeseries</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">)</span>
-        <span class="n">datetime_value_2d</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> \
-            <span class="bp">self</span><span class="o">.</span><span class="n">_convert_units</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">],</span>
-                                <span class="n">format</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="s">&#39;meter per second&#39;</span><span class="p">)</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_timeseries</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_timeseries</span><span class="p">(</span><span class="n">wind_data</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_units</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span>
+
+            <span class="n">wind_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xform_input_timeseries</span><span class="p">(</span><span class="n">wind_data</span><span class="p">)</span>
+            <span class="n">wind_data</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_units</span><span class="p">(</span><span class="n">wind_data</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">],</span>
+                                                     <span class="n">format</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span>
+                                                     <span class="s">&#39;meter per second&#39;</span><span class="p">)</span>
+
+            <span class="nb">super</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">set_timeseries</span><span class="p">(</span><span class="n">wind_data</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Bad timeseries as input&#39;</span><span class="p">)</span>
 </div>
 <div class="viewcode-block" id="Wind.get_value"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Wind.get_value">[docs]</a>    <span class="k">def</span> <span class="nf">get_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -537,7 +545,7 @@
         <span class="k">return</span> <span class="p">(</span><span class="n">msgs</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
 
 </div></div>
-<span class="k">def</span> <span class="nf">constant_wind</span><span class="p">(</span><span class="n">speed</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m/s&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="constant_wind"><a class="viewcode-back" href="../../../scripting/utilities.html#gnome.environment.constant_wind">[docs]</a><span class="k">def</span> <span class="nf">constant_wind</span><span class="p">(</span><span class="n">speed</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m/s&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    utility to create a constant wind &quot;timeseries&quot;</span>
 
@@ -547,8 +555,9 @@
 <span class="sd">    :param unit=&#39;m/s&#39;: units for speed, as a string, i.e. &quot;knots&quot;, &quot;m/s&quot;,</span>
 <span class="sd">                       &quot;cm/s&quot;, etc.</span>
 
-<span class="sd">    .. note:: The time for a constant wind timeseries is irrelevant. This</span>
-<span class="sd">    function simply sets it to datetime.now() accurate to hours.</span>
+<span class="sd">    .. note:: </span>
+<span class="sd">        The time for a constant wind timeseries is irrelevant. This</span>
+<span class="sd">        function simply sets it to datetime.now() accurate to hours.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">wind_vel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
 
@@ -558,7 +567,7 @@
                                                           <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">wind_vel</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">speed</span><span class="p">,</span> <span class="n">direction</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">Wind</span><span class="p">(</span><span class="n">timeseries</span><span class="o">=</span><span class="n">wind_vel</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;r-theta&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Wind</span><span class="p">(</span><span class="n">timeseries</span><span class="o">=</span><span class="n">wind_vel</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;r-theta&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span></div>
 </pre></div>
 
           </div>
@@ -589,6 +598,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

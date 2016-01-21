@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>A subsurface (mixed layer) release &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Examples" href="scripting_examples.html" />
+    <link rel="next" title="PyGnome Class Reference" href="../reference.html" />
+    <link rel="prev" title="CATS currents" href="cats.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../reference.html" title="PyGnome Class Reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="cats.html" title="CATS currents"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" >Scripting pygnome</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="scripting_examples.html" accesskey="U">Examples</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="a-subsurface-mixed-layer-release">
+<span id="mixedlayer"></span><h1>A subsurface (mixed layer) release<a class="headerlink" href="#a-subsurface-mixed-layer-release" title="Permalink to this headline">¶</a></h1>
+<p>This is a script to look at vertical diffusion mover in the mixed layer
+with and without a rise velocity.</p>
+<div class="code python highlight-python"><div class="highlight"><pre>import matplotlib.pyplot as plt
+%matplotlib inline
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="n">mod</span>
+<span class="kn">from</span> <span class="nn">gnome.spill.elements</span> <span class="kn">import</span> <span class="n">plume</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.distributions</span> <span class="kn">import</span> <span class="n">UniformDistribution</span>
+
+<span class="kn">from</span> <span class="nn">gnome.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">gnome.map</span> <span class="kn">import</span> <span class="n">GnomeMap</span>
+<span class="kn">from</span> <span class="nn">gnome.spill</span> <span class="kn">import</span> <span class="n">point_line_release_spill</span>
+<span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="kn">import</span> <span class="p">(</span>
+                          <span class="n">RiseVelocityMover</span><span class="p">,</span>
+                          <span class="n">RandomVerticalMover</span><span class="p">,</span>
+                          <span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">make_model</span><span class="p">(</span><span class="n">rise_vel</span><span class="p">):</span>
+
+    <span class="k">print</span> <span class="s">&#39;initializing the model&#39;</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
+                  <span class="n">time_step</span><span class="o">=</span><span class="mi">5</span> <span class="o">*</span> <span class="mi">60</span><span class="p">,</span> <span class="n">uncertain</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="s">&#39;adding the map&#39;</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="n">GnomeMap</span><span class="p">()</span>
+
+    <span class="k">print</span> <span class="s">&#39;adding spill&#39;</span>
+    <span class="c"># I use a uniform distribution with the same high/low values to get one size of droplets (50 microns)</span>
+    <span class="n">ud</span> <span class="o">=</span> <span class="n">UniformDistribution</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mf">50e-6</span><span class="p">,</span><span class="n">high</span><span class="o">=</span><span class="mf">50e-6</span><span class="p">)</span>
+    <span class="n">spill</span> <span class="o">=</span> <span class="n">point_line_release_spill</span><span class="p">(</span><span class="n">num_elements</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+                                     <span class="n">amount</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span>  <span class="c"># default volume_units=m^3</span>
+                                     <span class="n">units</span><span class="o">=</span><span class="s">&#39;m^3&#39;</span><span class="p">,</span>
+                                     <span class="n">start_position</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                                                     <span class="mi">5</span><span class="p">),</span>
+                                     <span class="n">release_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+                                     <span class="n">element_type</span><span class="o">=</span><span class="n">plume</span><span class="p">(</span><span class="n">distribution</span><span class="o">=</span><span class="n">ud</span><span class="p">,</span><span class="n">substance_name</span><span class="o">=</span><span class="s">&#39;ALASKA NORTH SLOPE (MIDDLE PIPELINE)&#39;</span><span class="p">)</span>
+                                     <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">spills</span> <span class="o">+=</span> <span class="n">spill</span>
+
+    <span class="c"># print &#39;adding a RiseVelocityMover:&#39;</span>
+    <span class="k">if</span> <span class="n">rise_vel</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">RiseVelocityMover</span><span class="p">()</span>
+
+    <span class="c"># print &#39;adding a RandomVerticalMover:&#39;</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">RandomVerticalMover</span><span class="p">(</span><span class="n">vertical_diffusion_coef_above_ml</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+                                        <span class="n">vertical_diffusion_coef_below_ml</span><span class="o">=.</span><span class="mi">11</span><span class="p">,</span>
+                                        <span class="n">mixed_layer_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">model</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># With RISE velocity (50 micron droplet)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">make_model</span><span class="p">(</span><span class="n">rise_vel</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">model</span><span class="o">.</span><span class="n">num_time_steps</span><span class="p">,</span><span class="mi">1000</span><span class="p">),</span><span class="n">datetime</span><span class="p">)</span>
+<span class="n">depths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">model</span><span class="o">.</span><span class="n">num_time_steps</span><span class="p">,</span><span class="mi">1000</span><span class="p">),)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">step</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">model_time</span><span class="p">]</span> <span class="o">*</span> <span class="mi">1000</span>
+    <span class="n">sc</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">]</span>
+    <span class="n">depths</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">pos</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">[::</span><span class="mi">10</span><span class="p">],</span><span class="n">depths</span><span class="p">[::</span><span class="mi">10</span><span class="p">],</span><span class="s">&#39;r.&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>initializing the model
+adding the map
+adding spill
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># No rise velocity</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">make_model</span><span class="p">(</span><span class="n">rise_vel</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">model</span><span class="o">.</span><span class="n">num_time_steps</span><span class="p">,</span><span class="mi">1000</span><span class="p">),</span><span class="n">datetime</span><span class="p">)</span>
+<span class="n">depths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">model</span><span class="o">.</span><span class="n">num_time_steps</span><span class="p">,</span><span class="mi">1000</span><span class="p">),)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">step</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">model_time</span><span class="p">]</span> <span class="o">*</span> <span class="mi">1000</span>
+    <span class="n">sc</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">]</span>
+    <span class="n">depths</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">pos</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">[::</span><span class="mi">10</span><span class="p">],</span><span class="n">depths</span><span class="p">[::</span><span class="mi">10</span><span class="p">],</span><span class="s">&#39;r.&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>initializing the model
+adding the map
+adding spill
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="cats.html"
+                        title="previous chapter">CATS currents</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../reference.html"
+                        title="next chapter">PyGnome Class Reference</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripting/mixedlayer_release.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../reference.html" title="PyGnome Class Reference"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="cats.html" title="CATS currents"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" >Scripting pygnome</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="scripting_examples.html" >Examples</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

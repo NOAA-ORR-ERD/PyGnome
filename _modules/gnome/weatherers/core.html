@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -48,8 +51,8 @@
 <span class="c">#!/usr/bin/env python</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span>
-<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
 <span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">SchemaNode</span>
 
 <span class="kn">from</span> <span class="nn">gnome.persist.extend_colander</span> <span class="kn">import</span> <span class="n">NumpyArray</span>
@@ -72,19 +75,22 @@
 
 <div class="viewcode-block" id="Weatherer"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer">[docs]</a><span class="k">class</span> <span class="nc">Weatherer</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">       Base Weathering agent.  This is almost exactly like the base Mover</span>
-<span class="sd">       in the way that it acts upon the model.  It contains the same API</span>
-<span class="sd">       as the mover as well. Not Serializable since it does is partial</span>
-<span class="sd">       implementation</span>
+<span class="sd">    Base Weathering agent.  This is almost exactly like the base Mover</span>
+<span class="sd">    in the way that it acts upon the model.  It contains the same API</span>
+<span class="sd">    as the mover as well. Not Serializable since it does is partial</span>
+<span class="sd">    implementation</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Process</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">WeathererSchema</span>  <span class="c"># nothing new added so use this schema</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">           :param weathering: object that represents the weathering</span>
-<span class="sd">                              properties of the substance that our</span>
-<span class="sd">                              LEs are made up of.</span>
+<span class="sd">        Base weatherer class; defines the API for all weatherers</span>
+<span class="sd">        Passes optional arguments to base (Process) class via super. See base</span>
+<span class="sd">        class for optional arguments:  `gnome.movers.mover.Process`</span>
+
+<span class="sd">        adds &#39;mass_components&#39;, &#39;mass&#39; to array_types since all weatherers</span>
+<span class="sd">        need these.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
@@ -99,6 +105,15 @@
                 <span class="s">&#39;active={0.active}&#39;</span>
                 <span class="s">&#39;)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
 
+<div class="viewcode-block" id="Weatherer.initialize_data"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer.initialize_data">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">num_released</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Let weatherers have a way to customize the initialization of</span>
+<span class="sd">        data arrays. Currently, only some weatherers use this to customize</span>
+<span class="sd">        initialization of data arrays. If movers also move towards this</span>
+<span class="sd">        implementation, then move to &#39;Process&#39; base class.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">pass</span>
+</div>
 <div class="viewcode-block" id="Weatherer.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Override for weatherers so they can initialize correct &#39;mass_balance&#39;</span>
@@ -115,13 +130,14 @@
 </div>
 <div class="viewcode-block" id="Weatherer.weather_elements"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer.weather_elements">[docs]</a>    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        run the equivalent of get_move for weathering processes. It weathers</span>
-<span class="sd">        each component and returns the mass remaining at end of time_step. It</span>
-<span class="sd">        returns the mass in units of &#39;kg&#39;</span>
+<span class="sd">        Run the equivalent of get_move for weathering processes. It modifies</span>
+<span class="sd">        the SpillContainer&#39;s data arrays; most weatherers update</span>
+<span class="sd">        &#39;mass_components&#39; and &#39;mass&#39;</span>
+
+<span class="sd">        Some objects do not implement this since they update arrays like &#39;area&#39;</span>
+<span class="sd">        in model_step_is_done()</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;All weatherers need to implement this &quot;</span>
-            <span class="s">&quot;method. It returns mass remaining for each component at end of &quot;</span>
-            <span class="s">&quot;time_step in &#39;kg&#39; (SI units)&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
 </div>
     <span class="k">def</span> <span class="nf">_halflife</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">M_0</span><span class="p">,</span> <span class="n">factors</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
         <span class="s">&#39;Assumes our factors are half-life values&#39;</span>
@@ -188,8 +204,7 @@
         <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">num_released</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="n">arrays</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">,</span> <span class="s">&#39;mass&#39;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="n">arrays</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="p">):</span>
             <span class="n">hl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_halflife</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">],</span>
                                 <span class="bp">self</span><span class="o">.</span><span class="n">half_lives</span><span class="p">,</span> <span class="n">time_step</span><span class="p">)</span>
             <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">hl</span>
@@ -226,6 +241,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

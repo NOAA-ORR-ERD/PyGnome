@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -92,15 +95,15 @@
 
     <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Override this method if a derived environment class needs to perform any</span>
-<span class="sd">        actions prior to a model run</span>
+<span class="sd">        Override this method if a derived environment class needs to perform</span>
+<span class="sd">        any actions prior to a model run</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
     <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Override this method if a derived environment class needs to perform any</span>
-<span class="sd">        actions prior to a model run</span>
+<span class="sd">        Override this method if a derived environment class needs to perform</span>
+<span class="sd">        any actions prior to a model run</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
@@ -248,7 +251,7 @@
             <span class="c"># have any conversions for them in unit_conversion yet - revisit</span>
             <span class="c"># this per requirements</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_si_units</span> <span class="ow">or</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_si_units</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="p">[</span><span class="n">attr</span><span class="p">]):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_si_units</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="p">[</span><span class="n">attr</span><span class="p">]):</span>
                 <span class="k">return</span> <span class="n">val</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_si_units</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span>
@@ -373,6 +376,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

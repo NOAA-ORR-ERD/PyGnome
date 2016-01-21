@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -50,13 +53,8 @@
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">import</span> <span class="nn">shutil</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">izip_longest</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span>
-<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">GnomeId</span>
 <span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">Savable</span>
@@ -69,6 +67,7 @@
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Class containing information about the property to be serialized</span>
 <span class="sd">    &#39;&#39;&#39;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span>
                  <span class="n">isdatafile</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                  <span class="n">update</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
@@ -93,7 +92,7 @@
 <span class="sd">        :param bool isdatafile=False: Is the property a datafile that should be</span>
 <span class="sd">            moved during persistence?</span>
 <span class="sd">        :param bool update=False: Is the property update-able by the web app?</span>
-<span class="sd">        :param bool create=False: Is the property required to re-create the</span>
+<span class="sd">        :param bool save=False: Is the property required to re-create the</span>
 <span class="sd">            object when loading from a save file?</span>
 <span class="sd">        :param bool read=False: If property is not updateable, perhaps make it</span>
 <span class="sd">            read only so web app has information about the object</span>
@@ -108,6 +107,10 @@
 
 <span class="sd">            .. note:: save_reference currently is only used when the field is</span>
 <span class="sd">                stored with &#39;save&#39; flag.</span>
+
+<span class="sd">        :param bool iscollection=True: bool with default value of True</span>
+<span class="sd">            If the property is a collection (list, tuple, ordered collection),</span>
+<span class="sd">            we will need to special-case treat it.</span>
 
 <span class="sd">        :param bool test_for_eq=True: bool with default value of True</span>
 <span class="sd">            when checking equality (__eq__()) of two gnome</span>
@@ -156,6 +159,7 @@
 
 </div>
 <span class="k">class</span> <span class="nc">State</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Object keeps the list of properties that are output by</span>
@@ -166,6 +170,11 @@
 <span class="sd">        &gt;&gt;&gt; s = State(update=[&#39;update_field&#39;], field=[Field(&#39;field_name&#39;)]</span>
 
 <span class="sd">        Args:</span>
+<span class="sd">        :param save: A list of strings which are properties that are</span>
+<span class="sd">                       required to create new object when JSON is read from</span>
+<span class="sd">                       save file.</span>
+<span class="sd">                       Only the create properties are saved to save file.</span>
+<span class="sd">        :type save:  A list of str</span>
 <span class="sd">        :param update: A list of strings which are properties that can be</span>
 <span class="sd">                       updated, so read/write capable</span>
 <span class="sd">        :type update:  list containing str</span>
@@ -173,11 +182,6 @@
 <span class="sd">                       info, so readonly. It is not required for creating</span>
 <span class="sd">                       new object.</span>
 <span class="sd">        :type read:    list containing str</span>
-<span class="sd">        :param save: A list of strings which are properties that are</span>
-<span class="sd">                       required to create new object when JSON is read from</span>
-<span class="sd">                       save file.</span>
-<span class="sd">                       Only the create properties are saved to save file.</span>
-<span class="sd">        :type save:  A list of str</span>
 <span class="sd">        :param field:  A field object or a list of field objects that should</span>
 <span class="sd">                       be added to the State for persistence.</span>
 <span class="sd">        :type field:   Field object or list of Field objects.</span>
@@ -209,7 +213,9 @@
         <span class="k">return</span> <span class="n">new_</span>
 
     <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="s">&#39;check for equality&#39;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        check for equality</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">__dict__</span>
 
     <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
@@ -288,6 +294,11 @@
 <span class="sd">        Also makes sure everything is a list.</span>
 
 <span class="sd">        Arguments:</span>
+<span class="sd">        :param save: A tuple of strings which are properties that are required</span>
+<span class="sd">                     to create new object when JSON is read from save file.</span>
+<span class="sd">                     Only the save properties are saved to save file</span>
+<span class="sd">        :type save: A tuple of str</span>
+
 <span class="sd">        :param update: A tuple of strings which are properties that can be</span>
 <span class="sd">                       updated, so read/write capable</span>
 <span class="sd">        :type update: Tuple containing str</span>
@@ -295,15 +306,6 @@
 <span class="sd">        :param read: A tuple of strings which are properties that are for info,</span>
 <span class="sd">                     so readonly. It is not required for creating new object.</span>
 <span class="sd">        :type read: Tuple containing str</span>
-
-<span class="sd">        :param save: A tuple of strings which are properties that are required</span>
-<span class="sd">                     to create new object when JSON is read from save file.</span>
-<span class="sd">                     Only the save properties are saved to save file</span>
-<span class="sd">        :type save: A tuple of str</span>
-
-<span class="sd">        :param field: A field object or a tuple of field objects that should be</span>
-<span class="sd">                      added to the State for persistence</span>
-<span class="sd">        :type field: Field object or tuple of Field objects</span>
 
 <span class="sd">        For &#39;update&#39;, &#39;read&#39;, &#39;save&#39;, a Field object is created for each</span>
 <span class="sd">        property in the tuple</span>
@@ -354,7 +356,6 @@
 <span class="sd">        l_names from the list.</span>
 <span class="sd">        l_names is a list containing the names (string) of properties.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l_names</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
             <span class="n">l_names</span> <span class="o">=</span> <span class="n">l_names</span><span class="p">,</span>
 
@@ -434,7 +435,7 @@
                 <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">,</span> <span class="n">read_</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s">&#39;update&#39;</span> <span class="ow">and</span> <span class="n">val</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s">&#39;update&#39;</span> <span class="ow">and</span> <span class="n">val</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>
                     <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">):</span>
                         <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;The &#39;read&#39; and &#39;update&#39; &quot;</span>
                                              <span class="s">&quot;attribute cannot both be True&quot;</span><span class="p">)</span>
@@ -529,49 +530,6 @@
     <span class="n">_state</span> <span class="o">=</span> <span class="n">State</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">),</span> <span class="n">read</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s">&#39;id&#39;</span><span class="p">),</span>
                    <span class="n">update</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,))</span>
 
-    <span class="c"># =========================================================================</span>
-    <span class="c"># @classmethod</span>
-    <span class="c"># def add_state(cls, **kwargs):</span>
-    <span class="c">#    &quot;&quot;&quot;</span>
-    <span class="c">#    Each class that mixes-in Serializable will contain a _state attribute</span>
-    <span class="c">#    of type State.</span>
-    <span class="c">#    The _state should be a static member for each subclass. It is static</span>
-    <span class="c">#    because instances of the class will all have the same field names for</span>
-    <span class="c">#    the _state.</span>
-    <span class="c">#</span>
-    <span class="c">#    In addition, the _state of the child class extends the _state of the</span>
-    <span class="c">#    parent class.</span>
-    <span class="c">#</span>
-    <span class="c">#    As such, this classmethod is available and used by each subclass in</span>
-    <span class="c">#    __init__ to extend the definition of the parent class _state attribute</span>
-    <span class="c">#</span>
-    <span class="c">#    It recursively looks for &#39;_state&#39; attribute in base classes</span>
-    <span class="c">#    (cls.__bases__); gets the (&#39;read&#39;,&#39;update&#39;,&#39;save&#39;) lists from each</span>
-    <span class="c">#    base class and adds;</span>
-    <span class="c">#    and creates a new State() object with its own lists and the lists of</span>
-    <span class="c">#    the parents</span>
-    <span class="c">#</span>
-    <span class="c">#    NOTE: removes duplicates (repeated fields) from list. The lists in</span>
-    <span class="c">#    State refer to attributes of the object. By default [&#39;id&#39;] in create</span>
-    <span class="c">#    list will end up duplicated if one of the base classes of cls already</span>
-    <span class="c">#    contained &#39;_state&#39; attribute</span>
-    <span class="c">#    &quot;&quot;&quot;</span>
-    <span class="c">#    print &quot;add_state&quot;</span>
-    <span class="c">#    update = kwargs.pop(&#39;update&#39;,[])</span>
-    <span class="c">#    create = kwargs.pop(&#39;save&#39;,[])</span>
-    <span class="c">#    read   = kwargs.pop(&#39;read&#39;,[])</span>
-    <span class="c">#    for obj in cls.__bases__:</span>
-    <span class="c">#        if &#39;_state&#39; in obj.__dict__:</span>
-    <span class="c">#            update.extend( obj._state.get()[&#39;update&#39;] )</span>
-    <span class="c">#            create.extend( obj._state.get()[&#39;save&#39;] )</span>
-    <span class="c">#            read.extend( obj._state.get()[&#39;read&#39;] )</span>
-    <span class="c">#</span>
-    <span class="c">#    update = list( set(update) )</span>
-    <span class="c">#    create = list( set(create) )</span>
-    <span class="c">#    read = list( set(read) )</span>
-    <span class="c">#    cls._state = State(update=update, save=create, read=read)</span>
-    <span class="c"># =========================================================================</span>
-
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_restore_attr_from_save</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">new_obj</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -589,7 +547,7 @@
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;{0} is not an attribute &#39;</span>
-                    <span class="s">&#39;of {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+                                     <span class="s">&#39;of {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="nb">setattr</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">dict_</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
             <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
@@ -663,14 +621,10 @@
 <span class="sd">        Note: any field in `list` that does not exist on the</span>
 <span class="sd">        object and does not have a to_dict method will raise an AttributeError.</span>
 
-<span class="sd">        :param json_=&#39;webapi&#39;: return the attributes for json payload for</span>
-<span class="sd">                               webapi.</span>
-<span class="sd">                               The other option is &#39;save&#39; corresponding with</span>
-<span class="sd">                               json for save files.</span>
-
 <span class="sd">        NOTE: add the json_=&#39;webapi&#39; key to be serialized so we know what the</span>
 <span class="sd">        serialization is for</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">list_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s">&#39;all&#39;</span><span class="p">)</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
@@ -889,7 +843,11 @@
                 <span class="k">elif</span> <span class="n">self_attr</span> <span class="o">!=</span> <span class="n">other_attr</span><span class="p">:</span>
                     <span class="k">return</span> <span class="bp">False</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="n">other_attr</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">other_attr</span><span class="p">)):</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="n">other_attr</span><span class="p">,</span>
+                                   <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">):</span>
                     <span class="k">return</span> <span class="bp">False</span>
 
         <span class="k">return</span> <span class="bp">True</span>
@@ -899,9 +857,10 @@
 
 <div class="viewcode-block" id="Serializable.to_serialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.to_serialize">[docs]</a>    <span class="k">def</span> <span class="nf">to_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        invoke to_dict() which converts all attributes defined in _state to</span>
-<span class="sd">        dict. If json_=&#39;save&#39;, it subselects the Fields with save=True. If</span>
-<span class="sd">        json_=&#39;webapi&#39;, it subselects Fields with (update=True, read=True)</span>
+<span class="sd">        Invoke to_dict() which converts all attributes defined in _state to</span>
+<span class="sd">        dict.</span>
+<span class="sd">        If json_=&#39;save&#39;, it subselects the Fields with save=True.</span>
+<span class="sd">        If json_=&#39;webapi&#39;, it subselects Fields with (update=True, read=True)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">dict_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
@@ -918,8 +877,8 @@
                 <span class="c"># if attribute is None, then dict_ does not contain it</span>
                 <span class="k">if</span> <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="ow">and</span>
                         <span class="nb">hasattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span> <span class="s">&#39;to_serialize&#39;</span><span class="p">)):</span>
-                    <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
                     <span class="c"># recursively call for nested objects</span>
+                    <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
                     <span class="n">toserial</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">attr</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="c"># not a nested object</span>
@@ -936,18 +895,10 @@
 <span class="sd">        It uses the modules_dict defined in gnome.persist to find the correct</span>
 <span class="sd">        schema module.</span>
 
-<span class="sd">        1. adds &#39;obj_type&#39; field to _state for &#39;save&#39; attribute so it is</span>
-<span class="sd">                contained in serialized data. todo: check if this is needed</span>
-<span class="sd">        2. do serialization and return json</span>
-
-<span class="sd">        :param do: tells object where serialization is for update or for</span>
-<span class="sd">            creating a new object</span>
+<span class="sd">        :param json_: tells object whether serialization is for web content</span>
+<span class="sd">            or for generating a save file.</span>
 <span class="sd">        :returns: json format of serialized data</span>
 
-<span class="sd">        Note: creating a new object versus &#39;update&#39; or &#39;read&#39; has a different</span>
-<span class="sd">            set of fields for serialization so &#39;do&#39; is required.</span>
-<span class="sd">            todo: revisit this to see if it still makes sense to have different</span>
-<span class="sd">            attributes for different operations like &#39;update&#39;, &#39;save&#39;, &#39;read&#39;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
@@ -1020,9 +971,8 @@
                         <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">CollectionItemsList</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
                 <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-            <span class="c"># return deserialized object</span>
-            <span class="k">return</span> <span class="n">_to_dict</span>
 
+            <span class="k">return</span> <span class="n">_to_dict</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">json_</span>
 </div>
@@ -1045,6 +995,7 @@
     <span class="k">def</span> <span class="nf">_deserialize_nested_obj</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">json_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">py_class</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;obj_type&#39;</span><span class="p">])</span>
+
             <span class="k">return</span> <span class="n">py_class</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">None</span>
@@ -1099,6 +1050,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

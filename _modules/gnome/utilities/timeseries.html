@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -46,20 +49,21 @@
             
   <h1>Source code for gnome.utilities.timeseries</h1><div class="highlight"><pre>
 <span class="kn">import</span> <span class="nn">datetime</span>
-<span class="kn">import</span> <span class="nn">os</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_ossm_time</span> <span class="kn">import</span> <span class="n">CyTimeseries</span>
 
-<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">basic_types</span>
-<span class="kn">from</span> <span class="nn">gnome.utilities.time_utils</span> <span class="kn">import</span> <span class="n">date_to_sec</span>
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">basic_types</span><span class="p">,</span> <span class="n">GnomeId</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.time_utils</span> <span class="kn">import</span> <span class="p">(</span><span class="n">zero_time</span><span class="p">,</span>
+                                        <span class="n">date_to_sec</span><span class="p">,</span>
+                                        <span class="n">sec_to_date</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities.convert</span> <span class="kn">import</span> <span class="p">(</span><span class="n">to_time_value_pair</span><span class="p">,</span>
                                      <span class="n">tsformat</span><span class="p">,</span>
                                      <span class="n">to_datetime_value_2d</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">Timeseries</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Timeseries</span><span class="p">(</span><span class="n">GnomeId</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeseries</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;uv&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initializes a timeseries object from either a timeseries or datafile</span>
@@ -118,21 +122,98 @@
 <span class="sd">            not use it as an argument name</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">timeseries</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">filename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
-            <span class="n">timeseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+            <span class="n">timeseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">sec_to_date</span><span class="p">(</span><span class="n">zero_time</span><span class="p">()),</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])],</span>
+                                  <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span> <span class="o">=</span> <span class="n">filename</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span><span class="p">:</span>
-            <span class="n">datetime_value_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xform_input_timeseries</span><span class="p">(</span><span class="n">timeseries</span><span class="p">)</span>
-            <span class="n">time_value_pair</span> <span class="o">=</span> <span class="n">to_time_value_pair</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ossm</span> <span class="o">=</span> <span class="n">CyTimeseries</span><span class="p">(</span><span class="n">timeseries</span><span class="o">=</span><span class="n">time_value_pair</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_timeseries</span><span class="p">(</span><span class="n">timeseries</span><span class="p">):</span>
+                <span class="n">datetime_value_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xform_input_timeseries</span><span class="p">(</span><span class="n">timeseries</span><span class="p">)</span>
+
+                <span class="n">time_value_pair</span> <span class="o">=</span> <span class="n">to_time_value_pair</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ossm</span> <span class="o">=</span> <span class="n">CyTimeseries</span><span class="p">(</span><span class="n">timeseries</span><span class="o">=</span><span class="n">time_value_pair</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Bad timeseries as input&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ts_format</span> <span class="o">=</span> <span class="n">tsformat</span><span class="p">(</span><span class="n">format</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span> <span class="o">=</span> <span class="n">filename</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">ossm</span> <span class="o">=</span> <span class="n">CyTimeseries</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_filename</span><span class="p">,</span>
                                      <span class="n">file_format</span><span class="o">=</span><span class="n">ts_format</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_xform_input_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datetime_value_2d</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_check_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeseries</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Run some checks to make sure timeseries is valid.</span>
+<span class="sd">        - We accept numpy arrays</span>
+<span class="sd">        - We will also accept a list of timeseries values of the form</span>
+<span class="sd">          (datetime(...), (N, N))</span>
+<span class="sd">        - we will also accept a constant single timeseries  value.</span>
+<span class="sd">        Also, make the resolution to minutes as opposed to seconds</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timeseries</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_timeseries_value</span><span class="p">(</span><span class="n">timeseries</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">timeseries</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_timeseries_value</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="bp">False</span>
+
+                <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timeseries_is_ascending</span><span class="p">(</span><span class="n">timeseries</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;{0} - timeseries are not in ascending order. &#39;</span>
+                              <span class="s">&#39;The datetime values in the array must be in &#39;</span>
+                              <span class="s">&#39;ascending order&#39;</span>
+                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timeseries_has_duplicates</span><span class="p">(</span><span class="n">timeseries</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;{0} - timeseries must contain unique &#39;</span>
+                              <span class="s">&#39;time entries&#39;</span>
+                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">_is_timeseries_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">_timeseries_is_ascending</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeseries</span><span class="p">):</span>
+        <span class="c"># we need to have a valid shape to sort</span>
+        <span class="k">if</span> <span class="n">timeseries</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">():</span>
+            <span class="n">timeseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">timeseries</span><span class="p">],</span>
+                                    <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">])]</span> <span class="o">!=</span>
+                  <span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">_timeseries_has_duplicates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeseries</span><span class="p">):</span>
+        <span class="c"># we need to have a valid shape to sort</span>
+        <span class="k">if</span> <span class="n">timeseries</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">():</span>
+            <span class="n">timeseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">timeseries</span><span class="p">],</span>
+                                    <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+
+        <span class="n">unique</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">_xform_input_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeseries</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Ensure input data is numpy array with correct dtype and check</span>
 <span class="sd">        timeseries doesn&#39;t have invalid data</span>
@@ -141,37 +222,18 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="c"># following fails for 0-d objects so make sure we have a 1-D array</span>
         <span class="c"># to work with</span>
-        <span class="n">datetime_value_2d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">,</span>
-                                       <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">datetime_value_2d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">():</span>
-            <span class="n">datetime_value_2d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">datetime_value_2d</span><span class="p">],</span>
-                                           <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_timeseries</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">datetime_value_2d</span>
+        <span class="n">timeseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">timeseries</span><span class="p">,</span>
+                                <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_check_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeseries</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Run some checks to make sure timeseries is valid.</span>
-<span class="sd">        Also, make the resolution to minutes as opposed to seconds</span>
-<span class="sd">        todo: update exceptions to logged errors</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="c"># check to make sure the time values are in ascending order</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">])]</span>
-                  <span class="o">!=</span> <span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;timeseries are not in ascending order. &#39;</span>
-                             <span class="s">&#39;The datetime values in the array must be in &#39;</span>
-                             <span class="s">&#39;ascending order&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">timeseries</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">():</span>
+            <span class="n">timeseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">timeseries</span><span class="p">],</span>
+                                    <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
 
-        <span class="c"># check for duplicate entries</span>
-        <span class="n">unique</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;timeseries must contain unique time entries. &#39;</span>
-                             <span class="s">&#39;Number of duplicate entries: &#39;</span>
-                             <span class="s">&#39;{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">timeseries</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)))</span>
-
-        <span class="c"># make resolution to minutes in datetime</span>
+        <span class="c"># Our datetime granularity is in minutes, so zero out the seconds.</span>
         <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">tm</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)):</span>
             <span class="n">timeseries</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">][</span><span class="n">ix</span><span class="p">]</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">second</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">timeseries</span>
 
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s">&#39;{0.__module__}.{0.__class__.__name__}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -235,6 +297,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">datetime_value_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xform_input_timeseries</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">)</span>
         <span class="n">timeval</span> <span class="o">=</span> <span class="n">to_time_value_pair</span><span class="p">(</span><span class="n">datetime_value_2d</span><span class="p">,</span> <span class="n">format</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">ossm</span><span class="o">.</span><span class="n">timeseries</span> <span class="o">=</span> <span class="n">timeval</span>
 
     <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
@@ -287,6 +350,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

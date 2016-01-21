@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -95,14 +98,14 @@
 
 <div class="viewcode-block" id="Emulsification.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        add water_content key to weathering_data</span>
+<span class="sd">        add water_content key to mass_balance</span>
 <span class="sd">        Assumes all spills have the same type of oil</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="c"># create &#39;water_content&#39; key if it doesn&#39;t exist</span>
         <span class="c"># let&#39;s only define this the first time</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
             <span class="nb">super</span><span class="p">(</span><span class="n">Emulsification</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
-            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;water_content&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s">&#39;water_content&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 </div>
 <div class="viewcode-block" id="Emulsification.prepare_for_model_step"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification.prepare_for_model_step">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -120,7 +123,7 @@
 <div class="viewcode-block" id="Emulsification.weather_elements"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification.weather_elements">[docs]</a>    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        weather elements over time_step</span>
-<span class="sd">        - sets &#39;water_content&#39; in sc.weathering_data</span>
+<span class="sd">        - sets &#39;water_content&#39; in sc.mass_balance</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
@@ -129,7 +132,8 @@
             <span class="k">return</span>
 
         <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;age&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c">#if len(data[&#39;frac_water&#39;]) == 0:</span>
                 <span class="c"># substance does not contain any surface_weathering LEs</span>
                 <span class="k">continue</span>
 
@@ -164,19 +168,19 @@
                          <span class="n">Y_max</span><span class="p">,</span>
                          <span class="n">constants</span><span class="o">.</span><span class="n">drop_max</span><span class="p">)</span>
 
-            <span class="c">#sc.weathering_data[&#39;water_content&#39;] += \</span>
+            <span class="c">#sc.mass_balance[&#39;water_content&#39;] += \</span>
                 <span class="c">#np.sum(data[&#39;frac_water&#39;][:]) / sc.num_released</span>
             <span class="c"># just average the water fraction each time - it is not per time</span>
             <span class="c"># step value but at a certain time value</span>
             <span class="c"># todo: probably should be weighted avg</span>
-            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;water_content&#39;</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s">&#39;water_content&#39;</span><span class="p">]</span> <span class="o">=</span> \
                 <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;frac_water&#39;</span><span class="p">])</span>
                 <span class="c">#np.sum(data[&#39;frac_water&#39;][:]*data[&#39;mass&#39;][:]) / np.sum(data[&#39;mass&#39;])</span>
                 <span class="c">#np.sum(data[&#39;frac_water&#39;][:]) / len(data[&#39;frac_water&#39;]</span>
                 <span class="c">#np.sum(data[&#39;frac_water&#39;][:]) / sc.num_released</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s">&#39;water_content for {0}: {1}&#39;</span><span class="o">.</span>
                               <span class="n">format</span><span class="p">(</span><span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-                                     <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;water_content&#39;</span><span class="p">]))</span>
+                                     <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s">&#39;water_content&#39;</span><span class="p">]))</span>
 
         <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">()</span>
 </div>
@@ -264,6 +268,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

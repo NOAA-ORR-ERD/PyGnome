@@ -1,0 +1,415 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.utilities.orderedcollection &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.utilities.orderedcollection</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+
+
+<div class="viewcode-block" id="OrderedCollection"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.orderedcollection.OrderedCollection">[docs]</a><span class="k">class</span> <span class="nc">OrderedCollection</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Generalized Container for a set of objects of a particular type which</span>
+<span class="sd">    preserves the order of insertion and supports replacement of not only</span>
+<span class="sd">    an object in the list, but the key/id that references it. (a normal</span>
+<span class="sd">    OrderedDict can&#39;t do this)</span>
+<span class="sd">    - The order of insertion is preserved.</span>
+<span class="sd">    - Objects are accessed by id, as if in a dictionary.</span>
+<span class="sd">    - Objects can be replaced in order.  The objects will be referenced</span>
+<span class="sd">    by a new id, and still be in the correct order.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elems</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">elems</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">elems</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">: needs a list of objects&#39;</span>
+                            <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">elems</span><span class="p">:</span>
+            <span class="n">elems</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dtype</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">elems</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">: specify a data type if list is empty&#39;</span>
+                            <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">dtype</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">elems</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">elems</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">: needs a list of </span><span class="si">%s</span><span class="s">&#39;</span>
+                            <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+
+        <span class="c"># a bunch of Gnome classes have an id property defined, which we will</span>
+        <span class="c"># prefer</span>
+        <span class="c"># otherwise, we just take the id(e) value</span>
+        <span class="c"># NOTE: we stringify the e.id value since it could be of a type that</span>
+        <span class="c"># is hard to reference as a key</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span> <span class="o">=</span> <span class="n">elems</span><span class="p">[:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span> <span class="o">=</span> \
+            <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_s_id</span><span class="p">(</span><span class="n">elem</span><span class="p">):</span> <span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">elem</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">)}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">_s_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elem</span><span class="p">):</span>
+        <span class="s">&#39;return the id of the object as a string&#39;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span> <span class="s">&#39;id&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">elem</span><span class="p">))</span>
+
+<div class="viewcode-block" id="OrderedCollection.remake"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.orderedcollection.OrderedCollection.remake">[docs]</a>    <span class="k">def</span> <span class="nf">remake</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        remove None elements from self._elems and renumber the indices in</span>
+<span class="sd">        self._d_index</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">None</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span> <span class="o">=</span> <span class="p">[</span><span class="n">elem</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span> <span class="k">if</span> <span class="n">elem</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">elem</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_s_id</span><span class="p">(</span><span class="n">elem</span><span class="p">)]</span> <span class="o">=</span> <span class="n">ix</span>
+</div>
+<div class="viewcode-block" id="OrderedCollection.get"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.orderedcollection.OrderedCollection.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ident</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        can get the object either by &#39;id&#39; or by index in the order in which</span>
+<span class="sd">        it was added</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># ident is an index into list</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="n">ident</span><span class="p">]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="c"># ident is the &#39;id&#39; string</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">[</span><span class="n">ident</span><span class="p">]]</span>
+</div>
+<div class="viewcode-block" id="OrderedCollection.add"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.orderedcollection.OrderedCollection.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elem</span><span class="p">):</span>
+        <span class="s">&#39;Add an object to the collection &#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">):</span>
+            <span class="n">l__id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s_id</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">l__id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">[</span><span class="n">l__id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+
+                <span class="c"># fire add event only if elem is not already in the list</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fire_event</span><span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="n">elem</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># assume its an iterable list/tuple of items to be added</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">elem</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">):</span>
+                        <span class="k">raise</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;{0}: expected {1!r}, &#39;</span>
+                                <span class="s">&#39;got {2!r}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+                                                   <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                                                   <span class="n">elem</span><span class="p">))</span>
+</div>
+    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elem</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+
+<div class="viewcode-block" id="OrderedCollection.remove"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.orderedcollection.OrderedCollection.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ident</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Remove an object from the collection:</span>
+<span class="sd">        1) can remove by index (similar to a list)</span>
+<span class="sd">        2) can remove by id of object (similar to a dict)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">ident</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">:</span>
+            <span class="c"># ident is object id</span>
+            <span class="n">obj_id</span> <span class="o">=</span> <span class="n">ident</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># ident is index into _elems list</span>
+            <span class="n">obj_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s_id</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">ident</span><span class="p">])</span>
+
+        <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">obj_id</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">[</span><span class="n">obj_id</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">[</span><span class="n">obj_id</span><span class="p">]</span>
+
+        <span class="c"># fire remove event before removing from collection</span>
+        <span class="c"># let gc delete item if it is no longer referenced</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fire_event</span><span class="p">(</span><span class="s">&#39;remove&#39;</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="OrderedCollection.replace"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.orderedcollection.OrderedCollection.replace">[docs]</a>    <span class="k">def</span> <span class="nf">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ident</span><span class="p">,</span> <span class="n">new_elem</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        replace an object in the collection:</span>
+<span class="sd">        1) replace by index (similar to a list)</span>
+<span class="sd">        2) replace by id of object (similar to a dict)</span>
+
+<span class="sd">        raise exception if &#39;id&#39; is not found.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_elem</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;{0}: expected {1}, &#39;</span>
+                            <span class="s">&#39;got {2}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                                             <span class="nb">type</span><span class="p">(</span><span class="n">new_elem</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ident</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">l__key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">[</span><span class="n">ident</span><span class="p">])</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">ident</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ident</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">:</span>
+                <span class="n">l__key</span> <span class="o">=</span> <span class="n">ident</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s">&#39;Cannot find object by this &quot;id&quot; in &#39;</span>
+                               <span class="s">&#39;OrderedCollection&#39;</span><span class="p">)</span>
+
+            <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">[</span><span class="n">l__key</span><span class="p">]</span>
+
+        <span class="c"># found existing object</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">[</span><span class="n">l__key</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_elem</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_s_id</span><span class="p">(</span><span class="n">new_elem</span><span class="p">)]</span> <span class="o">=</span> <span class="n">idx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fire_event</span><span class="p">(</span><span class="s">&#39;replace&#39;</span><span class="p">,</span> <span class="n">new_elem</span><span class="p">)</span>  <span class="c"># returns the newly added object</span>
+</div>
+<div class="viewcode-block" id="OrderedCollection.index"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.orderedcollection.OrderedCollection.index">[docs]</a>    <span class="k">def</span> <span class="nf">index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elem</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        acts like index method in a list.</span>
+<span class="sd">        It returns the index associated with self._elems[index] = elem</span>
+<span class="sd">        It can also take the &#39;id&#39; as input and returns the index of the object</span>
+<span class="sd">        in the list</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># first check if elem is the &#39;id&#39;</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">[</span><span class="n">elem</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c"># if its not a valid ID, then check if its the object</span>
+            <span class="n">ident</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s_id</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="p">[</span><span class="n">ident</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;{0} is not in OrderedCollection&#39;</span>
+                                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">elem</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elem</span><span class="p">):</span>
+        <span class="n">id_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s_id</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+        <span class="c"># NOTE: following is not a good test:</span>
+        <span class="c">#    return elem in self._elems</span>
+        <span class="c"># since it just checks to see if</span>
+        <span class="c"># there is some element in the list self._elems == elem.</span>
+        <span class="c"># We want to know if there is some index for which</span>
+        <span class="c"># self._elems[ix] is elem</span>
+        <span class="c"># Check to see if there is an &#39;id&#39; for this object</span>
+        <span class="c"># in self._d_index dict</span>
+        <span class="k">return</span> <span class="n">id_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span>
+
+    <span class="k">def</span> <span class="nf">_slice_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ident</span><span class="p">):</span>
+        <span class="s">&#39;support for slice operations like a list&#39;</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="p">(</span><span class="n">ident</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="mi">0</span><span class="p">)[</span><span class="n">ident</span><span class="o">.</span><span class="n">start</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">]</span>
+        <span class="n">stop</span> <span class="o">=</span> <span class="p">(</span><span class="n">ident</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))[</span><span class="n">ident</span><span class="o">.</span><span class="n">stop</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">]</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="p">(</span><span class="n">ident</span><span class="o">.</span><span class="n">step</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="n">ident</span><span class="o">.</span><span class="n">step</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ident</span><span class="p">):</span>
+        <span class="s">&#39;slicing works just like it does for lists&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ident</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_slice_attr</span><span class="p">(</span><span class="n">ident</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ix</span><span class="p">)</span> <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">step</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ident</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ident</span><span class="p">,</span> <span class="n">new_elem</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        does not yet support slice assignment.</span>
+<span class="sd">        There is no need but is easy to add if required</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">ident</span><span class="p">,</span> <span class="n">new_elem</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ident</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        does not yet support slice assignment.</span>
+<span class="sd">        There is no need but is easy to add if required</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">ident</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rop</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rop</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># order by position in list</span>
+        <span class="n">itemlist</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c"># reference the value in list</span>
+        <span class="n">itemlist</span> <span class="o">=</span> <span class="p">[(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">[</span><span class="n">v</span><span class="p">])</span> <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">itemlist</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">itemlist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">6</span><span class="p">:</span>  <span class="c"># should we abbreviate the list?</span>
+            <span class="n">strlist</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;</span><span class="se">\t</span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">,&#39;</span> <span class="o">%</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">itemlist</span><span class="p">[:</span><span class="mi">2</span><span class="p">]]</span>
+            <span class="n">strlist</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">...&#39;</span><span class="p">,</span> <span class="s">&#39;</span><span class="se">\t</span><span class="s">...&#39;</span><span class="p">)</span>
+            <span class="n">strlist</span> <span class="o">+=</span> <span class="p">[</span><span class="s">&#39;</span><span class="se">\t</span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">,&#39;</span> <span class="o">%</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">itemlist</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">strlist</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;</span><span class="se">\t</span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">,&#39;</span> <span class="o">%</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">itemlist</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;{0}({{</span><span class="se">\n</span><span class="s">&#39;</span>
+                <span class="s">&#39;{1}</span><span class="se">\n</span><span class="s">&#39;</span>
+                <span class="s">&#39;}})&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strlist</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Equality of two ordered collections &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">OrderedCollection</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">for</span> <span class="n">oc</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">oc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">oc</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span>
+
+<div class="viewcode-block" id="OrderedCollection.to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.orderedcollection.OrderedCollection.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Method takes the instance of ordered collection and outputs a list of</span>
+<span class="sd">        dicts, each with two fields::</span>
+
+<span class="sd">            {obj_type: object type &lt;module.class&gt;,</span>
+<span class="sd">            id: IDs of each object}</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">obj_type</span> <span class="o">=</span> <span class="s">&#39;{0.__module__}.{0.__class__.__name__}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="n">obj_type</span> <span class="o">=</span> <span class="s">&#39;{0.__class__.__name__}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;obj_type&#39;</span><span class="p">:</span> <span class="n">obj_type</span><span class="p">,</span> <span class="s">&#39;id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s_id</span><span class="p">(</span><span class="n">obj</span><span class="p">)}</span>
+            <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">items</span>
+</div>
+<div class="viewcode-block" id="OrderedCollection.register_callback"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.orderedcollection.OrderedCollection.register_callback">[docs]</a>    <span class="k">def</span> <span class="nf">register_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span>
+                          <span class="n">events</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">,</span> <span class="s">&#39;remove&#39;</span><span class="p">)):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        callbacks registered for following events:</span>
+<span class="sd">        - add: item is added</span>
+<span class="sd">        - replace:</span>
+<span class="sd">        - remove: callback invoked after removing the item</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">events</span> <span class="o">=</span> <span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">event</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="s">&#39;remove&#39;</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Events must be either &quot;</span>
+                                 <span class="s">&quot;(&#39;add&#39;, &#39;remove&#39;, &#39;replace&#39;). &quot;</span>
+                                 <span class="s">&quot;{0} is not supported&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">[</span><span class="n">callback</span><span class="p">]</span> <span class="o">=</span> <span class="n">events</span>
+</div>
+    <span class="k">def</span> <span class="nf">fire_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">obj_</span><span class="p">):</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">reg_event</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">reg_event</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">obj_</span><span class="p">)</span>  <span class="c"># this should be all that is required</span>
+
+<div class="viewcode-block" id="OrderedCollection.clear"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.orderedcollection.OrderedCollection.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        clear all elements from collection</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span><span class="p">[:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_d_index</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="OrderedCollection.values"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.orderedcollection.OrderedCollection.values">[docs]</a>    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">&#39;return list of items contained in collection&#39;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_elems</span> <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">]</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

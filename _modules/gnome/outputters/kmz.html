@@ -1,0 +1,289 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.outputters.kmz &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.outputters.kmz</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">kmz  outputter</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">glob</span> <span class="kn">import</span> <span class="n">glob</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">zipfile</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Bool</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.time_utils</span> <span class="kn">import</span> <span class="n">date_to_sec</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
+
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">class_from_objtype</span>
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">oil_status</span>
+
+<span class="kn">from</span> <span class="nn">.outputter</span> <span class="kn">import</span> <span class="n">Outputter</span><span class="p">,</span> <span class="n">BaseSchema</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">kmz_templates</span>
+
+
+<span class="k">class</span> <span class="nc">KMZSchema</span><span class="p">(</span><span class="n">BaseSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Nothing is required for initialization</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+<span class="c">#    round_data = SchemaNode(Bool(), missing=drop)</span>
+<span class="c">#    round_to = SchemaNode(Int(), missing=drop)</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="KMZOutput"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.KMZOutput">[docs]</a><span class="k">class</span> <span class="nc">KMZOutput</span><span class="p">(</span><span class="n">Outputter</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    class that outputs GNOME results in a kmz format.</span>
+
+<span class="sd">    Suitable for Google Earth, and semi-suitable for MarPlot</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Outputter</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+
+    <span class="c"># need a schema and also need to override save so output_dir</span>
+    <span class="c"># is saved correctly - maybe point it to saveloc</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;output_dir&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),]</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">KMZSchema</span>
+
+    <span class="n">time_formatter</span> <span class="o">=</span> <span class="s">&#39;%m/</span><span class="si">%d</span><span class="s">/%Y %H:%M&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param str output_dir=None: output directory for kmz files.</span>
+
+<span class="sd">        uses super to pass optional \*\*kwargs to base class __init__ method</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c">## a little check:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="c"># strip off the .kml or .kmz</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&quot;.kml&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&quot;.kmz&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span> <span class="o">+</span> <span class="s">&quot;.kmz&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kml_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">filename</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s">&quot;.kml&quot;</span>
+
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">KMZOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="KMZOutput.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.KMZOutput.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                              <span class="n">model_start_time</span><span class="p">,</span>
+                              <span class="n">spills</span><span class="p">,</span>
+                              <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        .. function:: prepare_for_model_run(model_start_time,</span>
+<span class="sd">                                            cache=None,</span>
+<span class="sd">                                            uncertain=False,</span>
+<span class="sd">                                            spills=None,</span>
+<span class="sd">                                            **kwargs)</span>
+
+<span class="sd">        Write the headers, png files, etc for the KMZ file</span>
+
+<span class="sd">        This must be done in prepare_for_model_run because if model _state</span>
+<span class="sd">        changes, it is rewound and re-run from the beginning.</span>
+
+<span class="sd">        If there are existing output files, they are deleted here.</span>
+
+<span class="sd">        This takes more than standard &#39;cache&#39; argument. Some of these are</span>
+<span class="sd">        required arguments - they contain None for defaults because non-default</span>
+<span class="sd">        argument cannot follow default argument. Since cache is already 2nd</span>
+<span class="sd">        positional argument for Renderer object, the required non-default</span>
+<span class="sd">        arguments must be defined following &#39;cache&#39;.</span>
+
+<span class="sd">        If uncertainty is on, then SpillContainerPair object contains</span>
+<span class="sd">        identical _data_arrays in both certain and uncertain SpillContainer&#39;s,</span>
+<span class="sd">        the data itself is different, but they contain the same type of data</span>
+<span class="sd">        arrays. If uncertain, then data arrays for uncertain spill container</span>
+<span class="sd">        are written to the KMZ file.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Does not take any other input arguments; however, to keep the</span>
+<span class="sd">            interface the same for all outputters, define kwargs in case</span>
+<span class="sd">            future outputters require different arguments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">KMZOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">model_start_time</span><span class="p">,</span>
+                                                     <span class="n">spills</span><span class="p">,</span>
+                                                     <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">delete_output_files</span><span class="p">()</span>
+        <span class="c"># shouldn&#39;t be required if the above worked!</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_file_exists_error</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="c"># create a list to hold what will be the contents of the kml</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kml</span> <span class="o">=</span> <span class="p">[</span><span class="n">kmz_templates</span><span class="o">.</span><span class="n">header_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">caveat</span><span class="o">=</span><span class="n">kmz_templates</span><span class="o">.</span><span class="n">caveat</span><span class="p">,</span>
+                                                         <span class="n">kml_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kml_name</span><span class="p">,</span>
+                                                         <span class="n">valid_timestring</span> <span class="o">=</span> <span class="n">model_start_time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_formatter</span><span class="p">),</span>
+                                                         <span class="n">issued_timestring</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_formatter</span><span class="p">),</span>
+                                                         <span class="p">)]</span>
+
+        <span class="c"># # netcdf outputter has this --  not sure why</span>
+        <span class="c"># self._middle_of_run = True</span>
+</div>
+<div class="viewcode-block" id="KMZOutput.write_output"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.KMZOutput.write_output">[docs]</a>    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;dump a timestep&#39;s data into the kmz file&quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">KMZOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+
+        <span class="c"># add to the kml list:</span>
+        <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span> <span class="c"># loop through uncertain and certain LEs</span>
+            <span class="c">## extract the data</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_timestep</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">end_time</span> <span class="o">=</span> <span class="n">start_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_timestep</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">end_time</span> <span class="o">=</span> <span class="n">start_time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_timestep</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">start_time</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+            <span class="n">end_time</span> <span class="o">=</span> <span class="n">end_time</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+
+            <span class="n">positions</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">]</span>
+            <span class="n">water_positions</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">]</span>   <span class="o">==</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">in_water</span><span class="p">]</span>
+            <span class="n">beached_positions</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">on_land</span><span class="p">]</span>
+
+            <span class="n">data_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;certain&#39;</span> <span class="p">:</span> <span class="s">&quot;Uncertainty&quot;</span><span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span> <span class="k">else</span> <span class="s">&quot;Best Guess&quot;</span><span class="p">,</span>
+                        <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kml</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kmz_templates</span><span class="o">.</span><span class="n">build_one_timestep</span><span class="p">(</span><span class="n">water_positions</span><span class="p">,</span>
+                                                             <span class="n">beached_positions</span><span class="p">,</span>
+                                                             <span class="n">start_time</span><span class="p">,</span>
+                                                             <span class="n">end_time</span><span class="p">,</span>
+                                                             <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span>
+                                                             <span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">islast_step</span><span class="p">:</span> <span class="c"># now we really write the file:</span>
+           <span class="bp">self</span><span class="o">.</span><span class="n">kml</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kmz_templates</span><span class="o">.</span><span class="n">footer</span><span class="p">)</span>
+           <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">)</span> <span class="k">as</span> <span class="n">kmzfile</span><span class="p">:</span>
+                <span class="n">kmzfile</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="s">&#39;dot.png&#39;</span><span class="p">,</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">DOT</span><span class="p">))</span>
+                <span class="n">kmzfile</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="s">&#39;x.png&#39;</span><span class="p">,</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+                <span class="c"># write the kml file</span>
+                <span class="n">kmzfile</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kml_name</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kml</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">&#39;utf8&#39;</span><span class="p">))</span>
+
+
+
+        <span class="c"># output_filename = self.output_to_file(geojson, step_num)</span>
+        <span class="n">output_info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;time_stamp&#39;</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                       <span class="s">&#39;output_filename&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">output_info</span>
+
+</div>
+<div class="viewcode-block" id="KMZOutput.rewind"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.KMZOutput.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        reset a few parameter and call base class rewind to reset</span>
+<span class="sd">        internal variables.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">KMZOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_middle_of_run</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span> <span class="o">=</span> <span class="mi">0</span>
+</div>
+<div class="viewcode-block" id="KMZOutput.delete_output_files"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.KMZOutput.delete_output_files">[docs]</a>    <span class="k">def</span> <span class="nf">delete_output_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        deletes ouput files that may be around</span>
+
+<span class="sd">        called by prepare_for_model_run</span>
+
+<span class="sd">        here in case it needs to be called from elsewhere</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">pass</span> <span class="c"># it must not be there</span>
+
+<span class="c"># These icons (these are base64 encoded 3-pixel sized dots in a 32x32 transparent PNG)</span>
+<span class="c">#   these were encoded by the &quot;build_icons&quot; script</span></div></div>
+<span class="n">DOT</span> <span class="o">=</span> <span class="s">&quot;iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAJOgAACToB8GSSSgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAEASURBVFiF7ZY7DsIwEEQfET09Ej11lFtwK06Re3ANlCoFPQpnoGJoHClCXpOPg10wUhonnnlyvF5vJJFSRdL0P0AOANsZcwqgAkrg6MZuQANcgdckN0ljn52kWlInW537ZjfWd2z4SVIbCP5U6+ZEAThLek4I7/V0cxcBnGaGDyGCK/Htn09ZdkutAnsiBFBHCO9VWzkb+XtBAdyB/Ywy9ekBHPCUqHUQVRHDcV6V74UFUEYMD3paAEdjfIm8nsl7gQVwWyHL62kBNCsAeD2zLcMXcIkUjvPyt+nASZj8KE7ejLJox1lcSIZ7IvqVzCrDkKJeSucARFW2veAP8DO9AXV74Qmb/4vgAAAAAElFTkSuQmCC&quot;</span>
+<span class="n">X</span> <span class="o">=</span> <span class="s">&quot;iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAHKSURBVFiFrdXLq01hGMfx12HMzMCUU4zFQEYiROYkEkkpHbeTXI5LSDqHtomBEJGY+RMMGBlKKWVmaiDXzvExsN7admuv9azLU89k7ef5fb/ruhMSVuIy3uEOVhXH++w1mMEbnMFSpITl+Ob/+oOpHuFHiszh+oIVCbPGVx8Sh0vguaYT3lcIdJU4VAGHtwm3agTaShysgcMgYUNAoKnEgQAcVueFqR4l9mMhkHVJ8RbkPt6DxL4g/EreGQ3oIrE3CL86vFd2FidaSOzBfGDn+ihv3KU82UBidxB+o4xV9TBFJSKX/eY4Tt0TfSooUVWzVYzIO326A3yuLj/6YWkjcTuSHRVImG4AH0RzJ1K8PqSUFoKzn8KpQdNd+N3wFoT+OyLwnfjVEB6WqIPv6AAPSVTBt+NnR3itxDj4tiD8Hs52kSiDb8WPQOB9LCp2WkuMwrcE4Q8xMbJ7ro3EcMBmfA8EPCqBt5bIi5uC8McV8Nznm0gkLMPXwMKTADz3haDExoRjgcGnWByEN5EYJLyuGXrWAp57pib7Y8K1ioHnHeC5L1bkP0iYHPPjCyzpCK+SmMdkHliLl8XBVzjaIzz3Ov++H59xF+uR/gJmOo2+fdNArAAAAABJRU5ErkJggg==&quot;</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

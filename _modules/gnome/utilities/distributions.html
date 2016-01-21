@@ -1,0 +1,335 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.utilities.distributions &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.utilities.distributions</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Classes that generate various types of probability distributions</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">Float</span><span class="p">,</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">drop</span>
+
+<span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="kn">import</span> <span class="n">ObjType</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.compute_fraction</span> <span class="kn">import</span> <span class="n">fraction_below_d</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
+
+
+<span class="k">class</span> <span class="nc">UniformDistributionSchema</span><span class="p">(</span><span class="n">ObjType</span><span class="p">):</span>
+    <span class="n">low</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;low&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s">&#39;lower bound for uniform distribution&#39;</span><span class="p">)</span>
+    <span class="n">high</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;high&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s">&#39;lower bound for uniform distribution&#39;</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;uniform&#39;</span>
+
+
+<span class="k">class</span> <span class="nc">NormalDistributionSchema</span><span class="p">(</span><span class="n">ObjType</span><span class="p">):</span>
+    <span class="n">mean</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;mean&#39;</span><span class="p">,</span>
+                      <span class="n">description</span><span class="o">=</span><span class="s">&#39;mean for normal distribution&#39;</span><span class="p">)</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;sigma&#39;</span><span class="p">,</span>
+                       <span class="n">description</span><span class="o">=</span><span class="s">&#39;standard deviation for normal distribution&#39;</span>
+                       <span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;normal&#39;</span>
+
+
+<div class="viewcode-block" id="LogNormalDistributionSchema"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.distributions.LogNormalDistributionSchema">[docs]</a><span class="k">class</span> <span class="nc">LogNormalDistributionSchema</span><span class="p">(</span><span class="n">NormalDistributionSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Same parameters as Normal</span>
+
+<span class="sd">        keep in its own class since serialize/deserialize automatically</span>
+<span class="sd">        looks for this class name. Helps keep things consistent.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;lognormal&#39;</span>
+
+</div>
+<span class="k">class</span> <span class="nc">WeibullDistributionSchema</span><span class="p">(</span><span class="n">ObjType</span><span class="p">):</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;alpha&#39;</span><span class="p">,</span>
+                       <span class="n">description</span><span class="o">=</span><span class="s">&#39;shape parameter for weibull distribution&#39;</span><span class="p">)</span>
+    <span class="n">lambda_</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;lambda_&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                         <span class="n">description</span><span class="o">=</span><span class="s">&#39;scale parameter for weibull distribution&#39;</span>
+                         <span class="p">)</span>
+    <span class="n">min_</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;min_&#39;</span><span class="p">,</span>
+                      <span class="n">description</span><span class="o">=</span><span class="s">&#39;lower bound? for weibull distribution&#39;</span><span class="p">,</span>
+                      <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">max_</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;max_&#39;</span><span class="p">,</span>
+                      <span class="n">description</span><span class="o">=</span><span class="s">&#39;upper bound? for weibull distribution&#39;</span><span class="p">,</span>
+                      <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;weibull&#39;</span>
+
+
+<span class="k">class</span> <span class="nc">UniformDistribution</span><span class="p">(</span><span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;low&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;high&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">UniformDistributionSchema</span>
+
+    <span class="s">&#39;Uniform Probability Distribution&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param low: For the Uniform distribution, it is lower bound.</span>
+<span class="sd">        :param high: For the Uniform distribution, it is upper bound.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">low</span> <span class="o">=</span> <span class="n">low</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">high</span> <span class="o">=</span> <span class="n">high</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_uniform_args</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_check_uniform_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">None</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">high</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Uniform probability distribution requires &#39;</span>
+                            <span class="s">&#39;low and high&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_uniform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">np_array</span><span class="p">):</span>
+        <span class="n">np_array</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">high</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">np_array</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">set_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">np_array</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uniform</span><span class="p">(</span><span class="n">np_array</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">NormalDistribution</span><span class="p">(</span><span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;mean&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;sigma&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">NormalDistributionSchema</span>
+
+    <span class="s">&#39;Normal Probability Distribution&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param mean: The mean of the normal distribution</span>
+<span class="sd">        :param sigma: The standard deviation of normal distribution</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean</span> <span class="o">=</span> <span class="n">mean</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_normal_args</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_check_normal_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">None</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Normal probability distribution requires &#39;</span>
+                            <span class="s">&#39;mean and sigma&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_normal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">np_array</span><span class="p">):</span>
+        <span class="n">np_array</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">np_array</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">set_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">np_array</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span><span class="p">(</span><span class="n">np_array</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">LogNormalDistribution</span><span class="p">(</span><span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;mean&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;sigma&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">LogNormalDistributionSchema</span>
+
+    <span class="s">&#39;Log Normal Probability Distribution&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param mean: The mean of the normal distribution</span>
+<span class="sd">        :param sigma: The standard deviation of normal distribution</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean</span> <span class="o">=</span> <span class="n">mean</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_lognormal_args</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_check_lognormal_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">None</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Log Normal probability distribution requires &#39;</span>
+                            <span class="s">&#39;mean and sigma&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_lognormal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">np_array</span><span class="p">):</span>
+        <span class="n">np_array</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">lognormal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">np_array</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">set_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">np_array</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lognormal</span><span class="p">(</span><span class="n">np_array</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">WeibullDistribution</span><span class="p">(</span><span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;alpha&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;lambda_&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;min_&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;max_&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">WeibullDistributionSchema</span>
+
+    <span class="s">&#39;Log Normal Probability Distribution&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">lambda_</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">min_</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">max_</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param alpha: The shape parameter &#39;alpha&#39; - labeled as &#39;a&#39; in</span>
+<span class="sd">                      numpy.random.weibull distribution</span>
+<span class="sd">        :param lambda_: The scale parameter for the distribution - required for</span>
+<span class="sd">                        2-parameter weibull distribution (Rosin-Rammler).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span> <span class="o">=</span> <span class="n">lambda_</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_</span> <span class="o">=</span> <span class="n">min_</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_</span> <span class="o">=</span> <span class="n">max_</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_weibull_args</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_check_weibull_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Weibull distribution requires alpha&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Weibull distribution requires minimum &gt;= 0&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">fraction_below_d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.999</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Weibull distribution requires &#39;</span>
+                                 <span class="s">&#39;minimum &lt; 99.9</span><span class="si">% o</span><span class="s">f total distribution&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Weibull distribution requires maximum &gt; 0&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">fraction_below_d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.001</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Weibull distribution requires &#39;</span>
+                                 <span class="s">&#39;maximum &gt; 0.1</span><span class="si">% o</span><span class="s">f total distribution&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Weibull distribution requires &#39;</span>
+                                 <span class="s">&#39;maximum &gt; minimum&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_</span> <span class="o">&lt;</span> <span class="mf">0.00005</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Weibull distribution requires &#39;</span>
+                                 <span class="s">&#39;maximum &gt; .000025 (25 microns)&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_weibull</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">np_array</span><span class="p">):</span>
+        <span class="n">np_array</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">weibull</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span>
+                                                       <span class="nb">len</span><span class="p">(</span><span class="n">np_array</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np_array</span><span class="p">)):</span>
+                <span class="k">while</span> <span class="n">np_array</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_</span> <span class="ow">or</span> <span class="n">np_array</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_</span><span class="p">:</span>
+                    <span class="n">np_array</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">weibull</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np_array</span><span class="p">)):</span>
+                <span class="k">while</span> <span class="n">np_array</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_</span><span class="p">:</span>
+                    <span class="n">np_array</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">weibull</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np_array</span><span class="p">)):</span>
+                <span class="k">while</span> <span class="n">np_array</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_</span><span class="p">:</span>
+                    <span class="n">np_array</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">weibull</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">np_array</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_weibull</span><span class="p">(</span><span class="n">np_array</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">RayleighDistribution</span><span class="p">():</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">sigma_from_wind</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">avg_speed</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="n">avg_speed</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">pdf</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">((</span><span class="n">x</span> <span class="o">/</span> <span class="n">sigma</span> <span class="o">**</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">((</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="n">sigma</span> <span class="o">**</span> <span class="mf">2.0</span><span class="p">)))</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">cdf</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">((</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="n">sigma</span> <span class="o">**</span> <span class="mf">2.0</span><span class="p">))</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">quantile</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">sigma</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">f</span><span class="p">)</span> <span class="o">**</span> <span class="mf">2.0</span><span class="p">))</span> <span class="o">+</span> <span class="mi">0j</span><span class="p">))</span><span class="o">.</span><span class="n">real</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="c"># generates TypeError</span>
+    <span class="c">#DistributionBase()</span>
+
+    <span class="n">UniformDistribution</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+    <span class="n">NormalDistribution</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+    <span class="n">LogNormalDistribution</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+    <span class="n">WeibullDistribution</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">1.8</span><span class="p">,</span> <span class="n">lambda_</span><span class="o">=</span><span class="mf">0.000248</span><span class="p">,</span> <span class="n">min_</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">max_</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

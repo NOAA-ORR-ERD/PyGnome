@@ -1,0 +1,353 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.utilities.cache &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gnome.utilities.cache</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">cache system for caching element data on disk for</span>
+<span class="sd">accessing again for output, etc.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Lock</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+
+<span class="kn">from</span> <span class="nn">gnome.spill_container</span> <span class="kn">import</span> <span class="p">(</span><span class="n">SpillContainerData</span><span class="p">,</span>
+                                   <span class="n">SpillContainerPairData</span><span class="p">)</span>
+
+<span class="c"># create a temp dir for this python instance</span>
+<span class="c"># this should happen once, on first import</span>
+<span class="c"># it will get cleaned up when python exits</span>
+<span class="c"># all individual cache dirs go in this one.</span>
+
+<span class="n">_cache_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="CacheError"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.cache.CacheError">[docs]</a><span class="k">class</span> <span class="nc">CacheError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="s">&#39;Here so we can be sure the user knows the error is coming from here&#39;</span>
+    <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="clean_up_cache"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.cache.clean_up_cache">[docs]</a><span class="k">def</span> <span class="nf">clean_up_cache</span><span class="p">(</span><span class="n">dir_name</span><span class="o">=</span><span class="n">_cache_dir</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Deletes a cache dir.</span>
+
+<span class="sd">    Designed to be called at program exit. and/or when</span>
+<span class="sd">    individual cache objects are deleted</span>
+
+<span class="sd">    raises a warning if there is problem deleting a particular directory</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">dir_name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+        <span class="c"># This would happen if the dir is already deleted</span>
+        <span class="c"># note: should be smarter and check the error code in</span>
+        <span class="c">#       the Exception to make sure that it&#39;s a &quot;file not there&quot;</span>
+        <span class="k">pass</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">excp</span><span class="p">:</span>
+        <span class="c"># something else went wrong</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Problem Deleting cache dir&#39;</span><span class="p">)</span>
+        <span class="c"># using repr to get the Error type in the warning</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">excp</span><span class="p">))</span>
+
+
+<span class="c"># need to clean up temp directories at exit:</span>
+<span class="c"># this will clean up the master temp dir, and anything in it if</span>
+<span class="c"># something went wrong with __del__ in the individual objects</span>
+</div>
+<span class="kn">import</span> <span class="nn">atexit</span>
+<span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">clean_up_cache</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ElementCache"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.cache.ElementCache">[docs]</a><span class="k">class</span> <span class="nc">ElementCache</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Cache for element data -- i.e. the data associated with the particles.</span>
+<span class="sd">    This caches UncertainSpillContainerPair</span>
+<span class="sd">    The cache can be accessed to re-draw the LE movies, etc.</span>
+
+<span class="sd">    TODO: This is a really fragile module in terms of handling multiple</span>
+<span class="sd">          instances.  The __del__() method of previous instances can clear</span>
+<span class="sd">          the _cache_dir at the whim of the GC.</span>
+<span class="sd">          We may want to manage this differently.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">enabled</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        initialize a new cache object</span>
+
+<span class="sd">        :param cache_dir=None: full path to the directory where the cache</span>
+<span class="sd">                               should be stored.</span>
+<span class="sd">                               If not provided, a temp dir will be created by</span>
+<span class="sd">                               the python tempfile module</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_new_dir</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">)</span>
+
+        <span class="c"># dict to hold recent data so we don&#39;t need to pull from the</span>
+        <span class="c"># file system</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recent</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c"># flag for whether to enable disk cache</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="n">enabled</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">&#39;Clear out the cache when this object is deleted&#39;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">):</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_make_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">uncertain</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a filename of the temp file generated from step_num</span>
+
+<span class="sd">        :param step_num: the model step number that is saved/reloaded</span>
+
+<span class="sd">        This here so that loading and saving use the same code</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">uncertain</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">,</span>
+                                <span class="s">&#39;step_</span><span class="si">%06i</span><span class="s">_uncert.npz&#39;</span> <span class="o">%</span> <span class="n">step_num</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">,</span>
+                                <span class="s">&#39;step_</span><span class="si">%06i</span><span class="s">.npz&#39;</span> <span class="o">%</span> <span class="n">step_num</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">create_new_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cache_dir</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="n">_cache_dir</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span> <span class="o">=</span> <span class="n">cache_dir</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="ElementCache.save_timestep"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.cache.ElementCache.save_timestep">[docs]</a>    <span class="k">def</span> <span class="nf">save_timestep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">spill_container_pair</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        add a time step of data to the cache</span>
+
+<span class="sd">        :param step_num: the step number of the data</span>
+<span class="sd">        :param spill_container: the spill container at this step</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="n">spill_container_pair</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">data_arrays</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_weathering_data</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="s">&#39;current_time_stamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="p">)</span>
+
+            <span class="c"># # note: this assumes that the certain SC will be first!</span>
+
+            <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">recent</span><span class="p">[</span><span class="n">step_num</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># this creates a new dict, so only one step is saved</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">recent</span> <span class="o">=</span> <span class="p">{</span><span class="n">step_num</span><span class="p">:</span> <span class="p">[</span><span class="n">data</span><span class="p">,</span> <span class="bp">None</span><span class="p">]}</span>
+
+            <span class="c"># write the data if enabled</span>
+            <span class="c"># could be threaded -- data is a copy, so doesn&#39;t need to be</span>
+            <span class="c">#                      re-used by anything</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_filename</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span><span class="p">)</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">savez</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="ElementCache.load_timestep"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.cache.ElementCache.load_timestep">[docs]</a>    <span class="k">def</span> <span class="nf">load_timestep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a SpillContainer with the data arrays cached on disk</span>
+
+<span class="sd">        :param step_num: the step number you want to load.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># look first in in-memory cache.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># make a copy because we pop out the current_time_stamp</span>
+            <span class="c"># make these changes to the copy so the self.recent does not change</span>
+
+            <span class="p">(</span><span class="n">data_arrays</span><span class="p">,</span> <span class="n">u_data_arrays</span><span class="p">)</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">recent</span><span class="p">[</span><span class="n">step_num</span><span class="p">])</span>
+
+            <span class="c"># copy.deepcopy(self.recent[step_num]) converts</span>
+            <span class="c"># &#39;current_time_stamp&#39; to datetime object</span>
+            <span class="c"># To be consistent with np.load() operation below,</span>
+            <span class="c"># make this an array.</span>
+            <span class="k">if</span> <span class="s">&#39;current_time_stamp&#39;</span> <span class="ow">in</span> <span class="n">data_arrays</span><span class="p">:</span>
+                <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;current_time_stamp&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;current_time_stamp&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">u_data_arrays</span><span class="p">:</span>
+                    <span class="n">u_data_arrays</span><span class="p">[</span><span class="s">&#39;current_time_stamp&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">u_data_arrays</span><span class="p">[</span><span class="s">&#39;current_time_stamp&#39;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c"># not in the recent dict: try to load from disk</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data_arrays</span> <span class="o">=</span> \
+                    <span class="nb">dict</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_make_filename</span><span class="p">(</span><span class="n">step_num</span><span class="p">)))</span>
+            <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">CacheError</span><span class="p">(</span><span class="s">&#39;step: {0} is not in the cache&#39;</span>
+                                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">step_num</span><span class="p">))</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">u_data_arrays</span> <span class="o">=</span> \
+                    <span class="nb">dict</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_make_filename</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="bp">True</span><span class="p">)))</span>
+            <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+                <span class="n">u_data_arrays</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># HOWEVER, loading numpy arrays</span>
+        <span class="c">#     data_arrays = dict(np.load(self._make_filename(step_num)))</span>
+        <span class="c"># converts current_time_stamp to numpy.ndarray objects</span>
+        <span class="n">current_time_stamp</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="s">&#39;current_time_stamp&#39;</span> <span class="ow">in</span> <span class="n">data_arrays</span><span class="p">:</span>
+            <span class="n">current_time_stamp</span> <span class="o">=</span> <span class="n">data_arrays</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;current_time_stamp&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+        <span class="n">weathering_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_weathering_data</span><span class="p">(</span><span class="n">data_arrays</span><span class="p">)</span>
+        <span class="n">sc</span> <span class="o">=</span> <span class="n">SpillContainerData</span><span class="p">(</span><span class="n">data_arrays</span><span class="p">)</span>
+        <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span> <span class="o">=</span> <span class="n">weathering_data</span>
+        <span class="k">if</span> <span class="n">current_time_stamp</span><span class="p">:</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span> <span class="o">=</span> <span class="n">current_time_stamp</span>
+
+        <span class="k">if</span> <span class="n">u_data_arrays</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">u_sc</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">current_time_stamp</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="s">&#39;current_time_stamp&#39;</span> <span class="ow">in</span> <span class="n">u_data_arrays</span><span class="p">:</span>
+                <span class="n">current_time_stamp</span> <span class="o">=</span> \
+                    <span class="n">u_data_arrays</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;current_time_stamp&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+            <span class="n">u_weathering_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_weathering_data</span><span class="p">(</span><span class="n">u_data_arrays</span><span class="p">)</span>
+            <span class="n">u_sc</span> <span class="o">=</span> <span class="n">SpillContainerData</span><span class="p">(</span><span class="n">u_data_arrays</span><span class="p">,</span> <span class="n">uncertain</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="n">u_sc</span><span class="o">.</span><span class="n">mass_balance</span> <span class="o">=</span> <span class="n">u_weathering_data</span>
+
+            <span class="k">if</span> <span class="n">current_time_stamp</span><span class="p">:</span>
+                <span class="n">u_sc</span><span class="o">.</span><span class="n">current_time_stamp</span> <span class="o">=</span> <span class="n">current_time_stamp</span>
+
+        <span class="n">scp</span> <span class="o">=</span> <span class="n">SpillContainerPairData</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">u_sc</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">scp</span>
+</div>
+    <span class="k">def</span> <span class="nf">_set_weathering_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="s">&#39;add mass balance data to arrays&#39;</span>
+        <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">:</span>
+            <span class="c"># let&#39;s convert weathering data to numpy_arrays. In order to save</span>
+            <span class="c"># it in the samefile, we&#39;ll also need to store the keys so we know</span>
+            <span class="c"># which arrays belong to mass_balance when reconstructing</span>
+            <span class="c"># set the itemsize of char array to be the len of largest key in</span>
+            <span class="c"># &#39;mass_balance&#39;</span>
+            <span class="n">max_name</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+                               <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)))</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_balance&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">chararray</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">),),</span>
+                             <span class="n">itemsize</span><span class="o">=</span><span class="n">max_name</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">):</span>
+                <span class="c"># an array with a scalar for each spill</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+                <span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_balance&#39;</span><span class="p">][</span><span class="n">ix</span><span class="p">]</span> <span class="o">=</span> <span class="n">key</span>
+
+    <span class="k">def</span> <span class="nf">_get_weathering_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">):</span>
+        <span class="n">mb_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s">&#39;mass_balance&#39;</span> <span class="ow">in</span> <span class="n">data_arrays</span><span class="p">:</span>
+            <span class="n">mb_names</span> <span class="o">=</span> <span class="n">data_arrays</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;mass_balance&#39;</span><span class="p">)</span>
+            <span class="n">mb_data</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">mb_names</span><span class="p">:</span>
+                <span class="n">mb_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_arrays</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">mb_data</span>
+
+<div class="viewcode-block" id="ElementCache.rewind"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.cache.ElementCache.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">&#39;Rewinds the cache -- clearing out everything&#39;</span>
+        <span class="c"># clean out the in-memory cache</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recent</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c"># clean out the disk cache</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">):</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

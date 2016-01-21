@@ -1,0 +1,235 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Spills &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Scripting pygnome" href="../scripting.html" />
+    <link rel="next" title="Movers" href="movers.html" />
+    <link rel="prev" title="Maps" href="maps.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="movers.html" title="Movers"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="maps.html" title="Maps"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" accesskey="U">Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="spills">
+<h1>Spills<a class="headerlink" href="#spills" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="using-helper-functions">
+<h2>Using helper functions<a class="headerlink" href="#using-helper-functions" title="Permalink to this headline">¶</a></h2>
+<p>Setting up the spill class can be tricky because it requires both a release object and an element_type. More
+details on setting up the Spill object can be found below, but for a lot of typical use cases helper functions in
+the scripting package can be utilized. Examples include:</p>
+<div class="section" id="surface-spill">
+<h3>Surface spill<a class="headerlink" href="#surface-spill" title="Permalink to this headline">¶</a></h3>
+<p>We use the <a class="reference internal" href="utilities.html#gnome.scripting.surface_point_line_spill" title="gnome.scripting.surface_point_line_spill"><code class="xref py py-func docutils literal"><span class="pre">gnome.scripting.surface_point_line_spill()</span></code></a> helper function to inialize a release along a line
+that occurs over one day. The oil type is specified as an Alaskan Crude from the ADIOS database with a spill volume
+of 5000 barrels. Here we change the default windage range to be 1-2% with an infinite persistence (particles keep
+the same windage value for all time).</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">gnome.scripting</span> <span class="kn">import</span> <span class="n">surface_point_line_spill</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+          <span class="n">duration</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span>
+          <span class="n">time_step</span><span class="o">=</span><span class="mi">60</span> <span class="o">*</span> <span class="mi">15</span><span class="p">,</span> <span class="c">#seconds</span>
+          <span class="p">)</span>
+<span class="n">spill</span> <span class="o">=</span> <span class="n">surface_point_line_spill</span><span class="p">(</span><span class="n">num_elements</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+                             <span class="n">start_position</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">144</span><span class="p">,</span><span class="mf">48.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">1000.0</span><span class="p">),</span>
+                             <span class="n">release_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+                             <span class="n">end_position</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">144</span><span class="p">,</span><span class="mf">48.6</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+                             <span class="n">end_release_time</span><span class="o">=</span> <span class="n">start_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                             <span class="n">amount</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+                             <span class="n">substance</span><span class="o">=</span><span class="s">&#39;ALASKA NORTH SLOPE (MIDDLE PIPELINE)&#39;</span><span class="p">,</span>
+                             <span class="n">units</span><span class="o">=</span><span class="s">&#39;bbl&#39;</span><span class="p">,</span>
+                             <span class="n">windage_range</span><span class="o">=</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span><span class="mf">0.02</span><span class="p">),</span>
+                             <span class="n">windage_persist</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                             <span class="n">name</span><span class="o">=</span><span class="s">&#39;My spill&#39;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">spills</span> <span class="o">+=</span> <span class="n">spill</span>
+
+<span class="c"># ... add movers/weatherers</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">full_run</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="subsurface-plume">
+<span id="id1"></span><h3>Subsurface plume<a class="headerlink" href="#subsurface-plume" title="Permalink to this headline">¶</a></h3>
+<p>For initialization of a subsurface plume, we can use the subsurface_plume_spill helper function.
+Required parameters in this case also include a specification of the droplet size distribution
+or of the rise velocities. The <a class="reference internal" href="../reference.html#module-gnome.utilities.distributions" title="gnome.utilities.distributions"><code class="xref py py-mod docutils literal"><span class="pre">gnome.utilities.distributions</span></code></a> module includes methods for
+specifying different types of distributions. In this case we specify a uniform distribution of
+droplets ranging from 10-300 microns:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.scripting</span> <span class="kn">import</span> <span class="n">subsurface_plume_spill</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.distributions</span> <span class="kn">import</span> <span class="n">UniformDistribution</span>
+<span class="n">ud</span> <span class="o">=</span> <span class="n">UniformDistribution</span><span class="p">(</span><span class="mf">10e-6</span><span class="p">,</span><span class="mf">300e-6</span><span class="p">)</span> <span class="c">#droplets in the range 10-300 microns</span>
+<span class="n">spill</span> <span class="o">=</span> <span class="n">subsurface_plume_spill</span><span class="p">(</span><span class="n">num_elements</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+                               <span class="n">start_position</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">144</span><span class="p">,</span><span class="mf">48.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+                               <span class="n">release_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+                               <span class="n">distribution</span><span class="o">=</span><span class="n">ud</span><span class="p">,</span>
+                               <span class="n">distribution_type</span><span class="o">=</span><span class="s">&#39;droplet_size&#39;</span><span class="p">,</span>
+                               <span class="n">end_release_time</span><span class="o">=</span> <span class="n">start_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                               <span class="n">amount</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+                               <span class="n">substance</span><span class="o">=</span><span class="s">&#39;ALASKA NORTH SLOPE (MIDDLE PIPELINE)&#39;</span><span class="p">,</span>
+                               <span class="n">units</span><span class="o">=</span><span class="s">&#39;bbl&#39;</span><span class="p">,</span>
+                               <span class="n">windage_range</span><span class="o">=</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span><span class="mf">0.02</span><span class="p">),</span>
+                               <span class="n">windage_persist</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s">&#39;My spill&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="the-spill-class">
+<h2>The Spill Class<a class="headerlink" href="#the-spill-class" title="Permalink to this headline">¶</a></h2>
+<p>Spills in GNOME contain a release object which specifies the details of the release
+(e.g. where, when, how many elements). They also contain an element_type object which
+provides information on the type of substance spilled (e.g. floating oil, subsurface plume etc).
+If element_type is not specified then the default is a conservative floating substance. The
+default for floating substances is to have windage values set in the range 1-4% with a persistence of
+15 minutes.</p>
+<p>For example, in the scripting <a class="reference internal" href="scripting_intro.html"><em>Overview</em></a> we showed how to setup a spill for a conservative substance using
+the PointLineRelease class:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">gnome.spill</span> <span class="kn">import</span> <span class="n">PointLineRelease</span><span class="p">,</span> <span class="n">Spill</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+              <span class="n">duration</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span>
+              <span class="n">time_step</span><span class="o">=</span><span class="mi">60</span> <span class="o">*</span> <span class="mi">15</span><span class="p">,</span> <span class="c">#seconds</span>
+              <span class="p">)</span>
+<span class="n">release</span> <span class="o">=</span> <span class="n">PointLineRelease</span><span class="p">(</span><span class="n">release_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span><span class="n">start_position</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">144</span><span class="p">,</span><span class="mf">48.5</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="n">num_elements</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">spill</span> <span class="o">=</span> <span class="n">Spill</span><span class="p">(</span><span class="n">release</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">spills</span> <span class="o">+=</span> <span class="n">spill</span>
+</pre></div>
+</div>
+<p>To specify the spill to represent a specific oil from the ADIOS database and specify the amount spilled, we could instantiate the Spill oject like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.spill.elements</span> <span class="kn">import</span> <span class="n">ElementType</span>
+<span class="n">element_type</span><span class="o">=</span><span class="n">ElementType</span><span class="p">(</span><span class="n">substance</span><span class="o">=</span><span class="s">&#39;ALASKA NORTH SLOPE (MIDDLE PIPELINE)&#39;</span><span class="p">)</span>
+<span class="n">spill</span> <span class="o">=</span> <span class="n">Spill</span><span class="p">(</span><span class="n">release</span><span class="p">,</span><span class="n">element_type</span><span class="o">=</span><span class="n">element_type</span><span class="p">,</span><span class="n">amount</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;bbls&#39;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">spills</span> <span class="o">+=</span> <span class="n">spill</span>
+</pre></div>
+</div>
+<p>Or even simpler:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">spill</span> <span class="o">=</span> <span class="n">Spill</span><span class="p">(</span><span class="n">release</span><span class="p">,</span><span class="n">substance</span><span class="o">=</span><span class="s">&#39;ALASKA NORTH SLOPE (MIDDLE PIPELINE)&#39;</span><span class="p">,</span><span class="n">amount</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;bbls&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this last case, the Spill class instantiates the element_type based on the specified substance.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Spills</a><ul>
+<li><a class="reference internal" href="#using-helper-functions">Using helper functions</a><ul>
+<li><a class="reference internal" href="#surface-spill">Surface spill</a></li>
+<li><a class="reference internal" href="#subsurface-plume">Subsurface plume</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-spill-class">The Spill Class</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="maps.html"
+                        title="previous chapter">Maps</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="movers.html"
+                        title="next chapter">Movers</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripting/spills.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="movers.html" title="Movers"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="maps.html" title="Maps"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" >Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

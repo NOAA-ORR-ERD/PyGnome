@@ -1,0 +1,177 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Scripting pygnome &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html" />
+    <link rel="next" title="Overview" href="scripting/scripting_intro.html" />
+    <link rel="prev" title="GNOME Structure" href="structure.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scripting/scripting_intro.html" title="Overview"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="structure.html" title="GNOME Structure"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="scripting-pygnome">
+<h1>Scripting pygnome<a class="headerlink" href="#scripting-pygnome" title="Permalink to this headline">¶</a></h1>
+<p>The pygnome scripting interface allows users to customize the model setup.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripting/scripting_intro.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/scripting_intro.html#initialize-the-model">Initialize the Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/scripting_intro.html#create-and-add-a-map">Create and Add a Map</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/scripting_intro.html#create-and-add-a-mover">Create and Add a Mover</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/scripting_intro.html#create-and-add-a-spill">Create and Add a Spill</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/scripting_intro.html#create-and-add-an-outputter">Create and Add an Outputter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/scripting_intro.html#run-the-model">Run the model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/scripting_intro.html#view-the-results">View the results</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/utilities.html">Scripting utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/utilities.html#module-gnome.scripting"><code class="docutils literal"><span class="pre">gnome.scripting</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/maps.html">Maps</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/maps.html#manual-creation">Manual Creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/maps.html#load-shoreline-from-file">Load Shoreline from File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/maps.html#create-map-from-currents-grid">Create Map from Currents Grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/maps.html#add-map-to-model">Add Map to Model</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/spills.html">Spills</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/spills.html#using-helper-functions">Using helper functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/spills.html#the-spill-class">The Spill Class</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/movers.html">Movers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/movers.html#wind-movers">Wind movers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/movers.html#gridded-wind-movers">Gridded wind movers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/movers.html#current-movers">Current movers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/movers.html#random-movers">Random movers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/movers.html#rise-velocity-movers">Rise velocity movers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/weatherers.html">Weatherers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/weatherers.html#the-environment-class">The Environment Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/weatherers.html#evaporation">Evaporation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/weatherers.html#dispersion">Dispersion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/outputters.html">Outputters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/outputters.html#the-outputter-api">The Outputter API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/outputters.html#renderer">Renderer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/outputters.html#netcdf-output">NetCDF Output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/outputters.html#kmz-output">KMZ Output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/scripting_examples.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/sample_scripts.html">Sample Scripts Included with PyGNOME</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/cats.html">CATS currents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/mixedlayer_release.html">A subsurface (mixed layer) release</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="structure.html"
+                        title="previous chapter">GNOME Structure</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="scripting/scripting_intro.html"
+                        title="next chapter">Overview</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/scripting.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scripting/scripting_intro.html" title="Overview"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="structure.html" title="GNOME Structure"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

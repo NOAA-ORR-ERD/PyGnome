@@ -1,0 +1,222 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Overview &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Scripting pygnome" href="../scripting.html" />
+    <link rel="next" title="Scripting utilities" href="utilities.html" />
+    <link rel="prev" title="Scripting pygnome" href="../scripting.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="utilities.html" title="Scripting utilities"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../scripting.html" title="Scripting pygnome"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" accesskey="U">Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<p>To run simulations using the pyGNOME scripting environment the first step is to create a model object.
+This model object will have attributes like the model start time and the run duration.</p>
+<p>Movers, spills, and outputters are then added to the model. Then we can run the model and view the results.</p>
+<p>For a first introduction to scripting pyGNOME, we will set up and run the very simplest model possible. We
+will not load any external data, but create a simple map and movers manually. The &#8220;spill&#8221; will be a conservative
+substance, i.e. it will not represent oil which has changing properties over time due to weathering processes.</p>
+<div class="section" id="initialize-the-model">
+<h2>Initialize the Model<a class="headerlink" href="#initialize-the-model" title="Permalink to this headline">¶</a></h2>
+<p>We initialize the model to begin on New Years Day 2015 and run for 3 days:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+              <span class="n">duration</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span>
+              <span class="n">time_step</span><span class="o">=</span><span class="mi">60</span> <span class="o">*</span> <span class="mi">15</span><span class="p">,</span> <span class="c">#seconds</span>
+              <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-and-add-a-map">
+<h2>Create and Add a Map<a class="headerlink" href="#create-and-add-a-map" title="Permalink to this headline">¶</a></h2>
+<p>Create a very simple map: all water with a polygon of latitude/longitude
+points to specify the map bounds:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.map</span> <span class="kn">import</span> <span class="n">GnomeMap</span>
+<span class="n">model</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="n">GnomeMap</span><span class="p">(</span><span class="n">map_bounds</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">145</span><span class="p">,</span><span class="mi">48</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">145</span><span class="p">,</span><span class="mi">49</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">143</span><span class="p">,</span><span class="mi">49</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">143</span><span class="p">,</span><span class="mi">48</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-and-add-a-mover">
+<h2>Create and Add a Mover<a class="headerlink" href="#create-and-add-a-mover" title="Permalink to this headline">¶</a></h2>
+<p>Now we will create some simple movers and add them to the model.
+We use the SimpleMover class to specify a 0.5 m/s eastward current and
+also the RandomMover class to simulate spreading due to turbulent motions:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="kn">import</span> <span class="n">SimpleMover</span><span class="p">,</span> <span class="n">RandomMover</span>
+<span class="n">velocity</span> <span class="o">=</span> <span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="c">#(u,v,w) in m/s</span>
+<span class="n">uniform_vel_mover</span> <span class="o">=</span> <span class="n">SimpleMover</span><span class="p">(</span><span class="n">velocity</span><span class="p">)</span>
+<span class="n">random_mover</span> <span class="o">=</span> <span class="n">RandomMover</span><span class="p">()</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">uniform_vel_mover</span>
+<span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">random_mover</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-and-add-a-spill">
+<h2>Create and Add a Spill<a class="headerlink" href="#create-and-add-a-spill" title="Permalink to this headline">¶</a></h2>
+<p>Spills in GNOME contain a release object which specifies the details of the release
+(e.g. where, when, how many elements). They also contain an element_type object which
+provides information on the type of substance spilled. For a conservative substance (i.e. one with
+no change in properties over time) we can use the default None value for element_type.</p>
+<p>We&#8217;ll use a simple release class which can be used for an instantaneous or continuous release which can
+occur at a single point, or over a line.
+(Here we set a instantaneous spill at a point in the middle of the map):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.spill</span> <span class="kn">import</span> <span class="n">PointLineRelease</span><span class="p">,</span> <span class="n">Spill</span>
+<span class="n">release</span> <span class="o">=</span> <span class="n">PointLineRelease</span><span class="p">(</span><span class="n">release_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span><span class="n">start_position</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">144</span><span class="p">,</span><span class="mf">48.5</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="n">num_elements</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">spill</span> <span class="o">=</span> <span class="n">Spill</span><span class="p">(</span><span class="n">release</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">spills</span> <span class="o">+=</span> <span class="n">spill</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-and-add-an-outputter">
+<h2>Create and Add an Outputter<a class="headerlink" href="#create-and-add-an-outputter" title="Permalink to this headline">¶</a></h2>
+<p>Outputters allow us to save our model run results. Options include saving images at specified model time steps
+or saving all the particle information into a netCDF file for further analysis.</p>
+<p>Here we use the Renderer class to save an image every 6 hours. We specify the bounding box of the rendered map to
+be the same as those specified when we created the map object. The default is to save files into the working directory:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.outputters</span> <span class="kn">import</span> <span class="n">Renderer</span>
+<span class="n">renderer</span> <span class="o">=</span> <span class="n">Renderer</span><span class="p">(</span><span class="n">output_timestep</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">6</span><span class="p">),</span><span class="n">map_BB</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">145</span><span class="p">,</span><span class="mi">48</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">145</span><span class="p">,</span><span class="mi">49</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">143</span><span class="p">,</span><span class="mi">49</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">143</span><span class="p">,</span><span class="mi">48</span><span class="p">)))</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">outputters</span> <span class="o">+=</span> <span class="n">renderer</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="run-the-model">
+<h2>Run the model<a class="headerlink" href="#run-the-model" title="Permalink to this headline">¶</a></h2>
+<p>The model can be run by stepping through individual timesteps (e.g. if we want to see results along the way) or we
+can do a full run:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">model</span><span class="o">.</span><span class="n">full_run</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="view-the-results">
+<h2>View the results<a class="headerlink" href="#view-the-results" title="Permalink to this headline">¶</a></h2>
+<p>The renderer that we added was  png images every 6 hours. Since we did not specify an output directory for these images,
+they will have been saved in the same directory that the script was executed from. The sequence of images should show a cloud
+of particles moving east and spreading.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Overview</a><ul>
+<li><a class="reference internal" href="#initialize-the-model">Initialize the Model</a></li>
+<li><a class="reference internal" href="#create-and-add-a-map">Create and Add a Map</a></li>
+<li><a class="reference internal" href="#create-and-add-a-mover">Create and Add a Mover</a></li>
+<li><a class="reference internal" href="#create-and-add-a-spill">Create and Add a Spill</a></li>
+<li><a class="reference internal" href="#create-and-add-an-outputter">Create and Add an Outputter</a></li>
+<li><a class="reference internal" href="#run-the-model">Run the model</a></li>
+<li><a class="reference internal" href="#view-the-results">View the results</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../scripting.html"
+                        title="previous chapter">Scripting pygnome</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="utilities.html"
+                        title="next chapter">Scripting utilities</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripting/scripting_intro.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="utilities.html" title="Scripting utilities"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../scripting.html" title="Scripting pygnome"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" >Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

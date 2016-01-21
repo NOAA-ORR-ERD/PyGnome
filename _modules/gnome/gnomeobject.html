@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -200,7 +203,7 @@
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;no {0} object defined&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
 
-                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">,</span> <span class="s">&#39;warning&#39;</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
                 <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prepend</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
 
                 <span class="c"># if we get here, level is &#39;warning&#39; or lower</span>
@@ -225,7 +228,8 @@
 <span class="sd">        &#39;wind&#39;, &#39;water&#39;, &#39;waves&#39; attributes also have special meaning. An</span>
 <span class="sd">        object containing this attribute references the corresponding object.</span>
 
-<span class="sd">        Logs warnings</span>
+<span class="sd">        Logs warnings:</span>
+
 <span class="sd">        :returns: a tuple of length two containing:</span>
 <span class="sd">            (a list of messages that were logged, isvalid bool)</span>
 <span class="sd">            If any references are missing and make_default_refs is False,</span>
@@ -277,6 +281,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &raquo;</li> 
       </ul>

@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html" />
-    <link rel="next" title="Tutorials" href="tutorials.html" />
+    <link rel="next" title="Scripting pygnome" href="scripting.html" />
     <link rel="prev" title="Installing" href="installing.html" /> 
   </head>
   <body role="document">
@@ -36,7 +36,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tutorials.html" title="Tutorials"
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scripting.html" title="Scripting pygnome"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="installing.html" title="Installing"
@@ -92,7 +95,7 @@ mass, floating weathering particles etc. There are helper functions
 to define the element_type without delving into initializers; however,
 user can optionally manipulate list of initializers. The helper functions are:</p>
 <ol class="arabic simple">
-<li><code class="xref py py-func docutils literal"><span class="pre">floating()</span></code> -
+<li><a class="reference internal" href="reference.html#gnome.spill.elements.element_type.floating" title="gnome.spill.elements.element_type.floating"><code class="xref py py-func docutils literal"><span class="pre">floating()</span></code></a> -
 to model floating elements with windages</li>
 <li><code class="xref py py-func docutils literal"><span class="pre">floating_mass()</span></code> -
 to model floating elements with windages. This assumes the Spill contains a
@@ -113,8 +116,8 @@ array will automatically be added. If you are not doing any
 weathering, the Spill object uses a default helper function based on
 whether a spill amount is defined or not. This should suffice for most cases.</p>
 <p>Multiple spills can share the same substance; which can be accessed by Spill&#8217;s
-<code class="xref py py-meth docutils literal"><span class="pre">get()</span></code> method. Multiple spill&#8217;s can also share the
-same <code class="xref py py-class docutils literal"><span class="pre">ElementType</span></code> with the
+<a class="reference internal" href="reference.html#gnome.spill.Spill.get" title="gnome.spill.Spill.get"><code class="xref py py-meth docutils literal"><span class="pre">get()</span></code></a> method. Multiple spill&#8217;s can also share the
+same <a class="reference internal" href="reference.html#gnome.spill.elements.element_type.ElementType" title="gnome.spill.elements.element_type.ElementType"><code class="xref py py-class docutils literal"><span class="pre">ElementType</span></code></a> with the
 caveat that they share the same list of initializers. For example, if
 two spills have different &#8216;windages&#8217; then the two spills cannot share the
 ElementType; however, they can still share the &#8216;substance&#8217;. Currently, the
@@ -164,8 +167,8 @@ format.</p>
   <p class="topless"><a href="installing.html"
                         title="previous chapter">Installing</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="tutorials.html"
-                        title="next chapter">Tutorials</a></p>
+  <p class="topless"><a href="scripting.html"
+                        title="next chapter">Scripting pygnome</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -197,7 +200,10 @@ format.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tutorials.html" title="Tutorials"
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scripting.html" title="Scripting pygnome"
              >next</a> |</li>
         <li class="right" >
           <a href="installing.html" title="Installing"

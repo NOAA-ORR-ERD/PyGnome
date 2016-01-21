@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -49,18 +52,18 @@
 <span class="sd">model evaporation process</span>
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">import</span> <span class="nn">os</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">constants</span>
 <span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">oil_status</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
-<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">gnome.exceptions</span> <span class="kn">import</span> <span class="n">ReferencedObjectNotSet</span>
+
 <span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">WeathererSchema</span>
 <span class="kn">from</span> <span class="nn">gnome.weatherers</span> <span class="kn">import</span> <span class="n">Weatherer</span>
 <span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="kn">import</span> <span class="p">(</span><span class="n">WindSchema</span><span class="p">,</span>
                                <span class="n">WaterSchema</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">gnome.exceptions</span> <span class="kn">import</span> <span class="n">ReferencedObjectNotSet</span>
 
 
 <div class="viewcode-block" id="Evaporation"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Evaporation">[docs]</a><span class="k">class</span> <span class="nc">Evaporation</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
@@ -92,7 +95,7 @@
 
 <div class="viewcode-block" id="Evaporation.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Evaporation.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        add evaporated key to weathering_data</span>
+<span class="sd">        add evaporated key to mass_balance</span>
 <span class="sd">        for now also add &#39;density&#39; key here</span>
 <span class="sd">        Assumes all spills have the same type of oil</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -101,7 +104,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
             <span class="nb">super</span><span class="p">(</span><span class="n">Evaporation</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
 
-            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;evaporated&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s">&#39;evaporated&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;{0._pid} init &#39;evaporated&#39; key to 0.0&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 </div>
@@ -164,44 +167,44 @@
 <div class="viewcode-block" id="Evaporation.weather_elements"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Evaporation.weather_elements">[docs]</a>    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        weather elements over time_step</span>
-<span class="sd">        - sets &#39;evaporation&#39; in sc.weathering_data</span>
-<span class="sd">        - currently also sets &#39;density&#39; in sc.weathering_data but may update</span>
+
+<span class="sd">        - sets &#39;evaporation&#39; in sc.mass_balance</span>
+<span class="sd">        - currently also sets &#39;density&#39; in sc.mass_balance but may update</span>
 <span class="sd">          this as we add more weatherers and perhaps density gets set elsewhere</span>
 
-<span class="sd">        Following diff eq models rate of change each pseudocomponent of oil:</span>
-<span class="sd">        ::</span>
+<span class="sd">        Following diff eq models rate of change each pseudocomponent of oil::</span>
+
 <span class="sd">            dm(t)/dt = -(1 - fw) * A/B * m(t)</span>
 
 <span class="sd">        Over a time-step, A, B, C are assumed constant. m(t) is the component</span>
-<span class="sd">        mass at beginning of timestep; m(t + Dt) is mass at end of timestep:</span>
-<span class="sd">        ::</span>
+<span class="sd">        mass at beginning of timestep; m(t + Dt) is mass at end of timestep::</span>
+
 <span class="sd">            m(t + Dt) = m(t) * exp(-L * Dt)</span>
 <span class="sd">            L := (1 - fw) * A/B</span>
 
-<span class="sd">        Define properties for each pseudocomponent of oil and constants:</span>
-<span class="sd">        ::</span>
+<span class="sd">        Define properties for each pseudocomponent of oil and constants::</span>
+
 <span class="sd">            vp: vapor pressure</span>
 <span class="sd">            mw: molecular weight</span>
 
 <span class="sd">        The following quantities are defined for a given blob of oil. The</span>
 <span class="sd">        thickness of the blob is same for all LEs regardless of how many LEs</span>
-<span class="sd">        are used to model the blob:</span>
-<span class="sd">        ::</span>
+<span class="sd">        are used to model the blob::</span>
+
 <span class="sd">            area: area computed from fay spreading</span>
-<span class="sd">            m_i:</span>
+<span class="sd">            m_i: mass of component &#39;i&#39;</span>
 <span class="sd">            sum_m_mw: sum(m_i/mw_i) over all components</span>
 
-<span class="sd">        effect of wind - mass transport coefficient:</span>
-<span class="sd">        ::</span>
+<span class="sd">        effect of wind - mass transport coefficient::</span>
+
 <span class="sd">            K: See _mass_transport_coeff()</span>
 
-<span class="sd">        Finally, Evaporation of component &#39;i&#39; for blob of oil:</span>
-<span class="sd">        ::</span>
+<span class="sd">        Finally, Evaporation of component &#39;i&#39; for blob of oil::</span>
+
 <span class="sd">            A = area * K * vp</span>
 <span class="sd">            B = gas_constant * water_temp * sum_m_mw</span>
 
-<span class="sd">        L becomes:</span>
-<span class="sd">        ::</span>
+<span class="sd">        L becomes::</span>
 <span class="sd">            L = (1 - fw) * area * K * vp/(gas_constant * water_temp * sum_m_mw)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
@@ -214,13 +217,13 @@
                 <span class="k">continue</span>
 
             <span class="c"># set evap_decay_constant array</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_set_evap_decay_constant</span><span class="p">(</span><span class="n">model_time</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">substance</span><span class="p">,</span> <span class="n">time_step</span><span class="p">)</span>
-            <span class="n">mass_remain</span> <span class="o">=</span> \
-                <span class="bp">self</span><span class="o">.</span><span class="n">_exp_decay</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">],</span>
-                                <span class="n">data</span><span class="p">[</span><span class="s">&#39;evap_decay_constant&#39;</span><span class="p">],</span>
-                                <span class="n">time_step</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_evap_decay_constant</span><span class="p">(</span><span class="n">model_time</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">substance</span><span class="p">,</span>
+                                          <span class="n">time_step</span><span class="p">)</span>
+            <span class="n">mass_remain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exp_decay</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">],</span>
+                                          <span class="n">data</span><span class="p">[</span><span class="s">&#39;evap_decay_constant&#39;</span><span class="p">],</span>
+                                          <span class="n">time_step</span><span class="p">)</span>
 
-            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span><span class="p">[</span><span class="s">&#39;evaporated&#39;</span><span class="p">]</span> <span class="o">+=</span> \
+            <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s">&#39;evaporated&#39;</span><span class="p">]</span> <span class="o">+=</span> \
                 <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">][:,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">mass_remain</span><span class="p">[:,</span> <span class="p">:])</span>
 
             <span class="c"># log amount evaporated at each step</span>
@@ -243,16 +246,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+
         <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="p">:</span>
-                <span class="c"># add wind schema</span>
                 <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">WindSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;wind&#39;</span><span class="p">))</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span><span class="p">:</span>
                 <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">WaterSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;water&#39;</span><span class="p">))</span>
 
-        <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">serial</span>
+        <span class="k">return</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
 </div>
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Evaporation.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Evaporation.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
@@ -260,20 +261,24 @@
 <span class="sd">        append correct schema for wind object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+
         <span class="k">if</span> <span class="s">&#39;wind&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
             <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">WindSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;wind&#39;</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="s">&#39;water&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
             <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">WaterSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;water&#39;</span><span class="p">))</span>
-        <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">_to_dict</span>
+        <span class="k">return</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
 
 </div></div>
 <span class="k">class</span> <span class="nc">BlobEvaporation</span><span class="p">(</span><span class="n">Evaporation</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    playing around with blob evaporation and time varying fay_area</span>
-<span class="sd">    experimental</span>
+<span class="sd">    experimental code - not currently used by Model.</span>
+<span class="sd">    Testing out the algorithm in ipython notebooks.</span>
+
+<span class="sd">    See documentation in source code:</span>
+<span class="sd">        gnome/documentation/evaporation/blob_evap.ipynb</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="nf">_set_evap_decay_constant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">substance</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -345,6 +350,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -97,8 +100,14 @@
 <div class="viewcode-block" id="LongLatBounds"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.LongLatBounds">[docs]</a><span class="k">class</span> <span class="nc">LongLatBounds</span><span class="p">(</span><span class="n">SequenceSchema</span><span class="p">):</span>
     <span class="s">&#39;Used to define bounds on a map&#39;</span>
     <span class="n">bounds</span> <span class="o">=</span> <span class="n">LongLat</span><span class="p">()</span>
-
 </div>
+<span class="n">Polygon</span> <span class="o">=</span> <span class="n">LongLatBounds</span>
+
+
+<span class="k">class</span> <span class="nc">PolygonSet</span><span class="p">(</span><span class="n">SequenceSchema</span><span class="p">):</span>
+    <span class="n">polygonset</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">()</span>
+
+
 <div class="viewcode-block" id="WorldPoint"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.WorldPoint">[docs]</a><span class="k">class</span> <span class="nc">WorldPoint</span><span class="p">(</span><span class="n">LongLat</span><span class="p">):</span>
     <span class="s">&#39;Used to define reference points. 3D positions (long,lat,z)&#39;</span>
     <span class="n">z</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
@@ -148,6 +157,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

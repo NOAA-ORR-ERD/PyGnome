@@ -8,7 +8,7 @@
     
     <title>gnome.outputters.geo_json &mdash; pyGNOME 0.1.1 documentation</title>
     
-    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
@@ -23,12 +23,12 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
-    <link rel="up" title="gnome.outputters" href="../outputters.html" /> 
+    <link rel="up" title="Module code" href="../../index.html" /> 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -37,16 +37,15 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >Module code</a> &raquo;</li>
-          <li><a href="../outputters.html" accesskey="U">gnome.outputters</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <h1>Source code for gnome.outputters.geo_json</h1><div class="highlight"><pre>
 <span class="sd">&#39;&#39;&#39;</span>
@@ -56,147 +55,186 @@
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">glob</span> <span class="kn">import</span> <span class="n">glob</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">geojson</span> <span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Feature</span><span class="p">,</span> <span class="n">FeatureCollection</span><span class="p">,</span> <span class="n">dump</span>
 
-<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span>
+<span class="kn">from</span> <span class="nn">geojson</span> <span class="kn">import</span> <span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">FeatureCollection</span><span class="p">,</span> <span class="n">dump</span><span class="p">,</span>
+                     <span class="n">Point</span><span class="p">,</span> <span class="n">MultiPoint</span><span class="p">,</span> <span class="n">MultiPolygon</span><span class="p">)</span>
 
-<span class="kn">from</span> <span class="nn">.outputter</span> <span class="kn">import</span> <span class="n">Outputter</span>
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Bool</span>
 
-<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">oil_status</span>
-<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">array_types</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities.time_utils</span> <span class="kn">import</span> <span class="n">date_to_sec</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
+
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">class_from_objtype</span>
+
+<span class="kn">from</span> <span class="nn">.outputter</span> <span class="kn">import</span> <span class="n">Outputter</span><span class="p">,</span> <span class="n">BaseSchema</span>
 
 
-<div class="viewcode-block" id="GeoJson"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.geo_json.GeoJson">[docs]</a><span class="k">class</span> <span class="nc">GeoJson</span><span class="p">(</span><span class="n">Outputter</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">TrajectoryGeoJsonSchema</span><span class="p">(</span><span class="n">BaseSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Nothing is required for initialization</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">round_data</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Bool</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">round_to</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Int</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="TrajectoryGeoJsonOutput"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.TrajectoryGeoJsonOutput">[docs]</a><span class="k">class</span> <span class="nc">TrajectoryGeoJsonOutput</span><span class="p">(</span><span class="n">Outputter</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    class that outputs GNOME results in a geojson format. The output is a</span>
 <span class="sd">    collection of Features. Each Feature contains a Point object with</span>
 <span class="sd">    associated properties. Following is the format for a particle - the</span>
 <span class="sd">    data in &lt;&gt; are the results for each element.</span>
 <span class="sd">    ::</span>
-<span class="sd">    {</span>
-<span class="sd">    &quot;type&quot;: &quot;FeatureCollection&quot;,</span>
-<span class="sd">    &quot;features&quot;: [</span>
-<span class="sd">        {</span>
-<span class="sd">            &quot;geometry&quot;: {</span>
-<span class="sd">                &quot;type&quot;: &quot;Point&quot;,</span>
-<span class="sd">                &quot;coordinates&quot;: [</span>
-<span class="sd">                    &lt;LONGITUDE&gt;,</span>
-<span class="sd">                    &lt;LATITUDE&gt;</span>
-<span class="sd">                ]</span>
-<span class="sd">            },</span>
-<span class="sd">            &quot;type&quot;: &quot;Feature&quot;,</span>
-<span class="sd">            &quot;id&quot;: &lt;PARTICLE_ID&gt;,</span>
-<span class="sd">            &quot;properties&quot;: {</span>
-<span class="sd">                &quot;current_time&quot;: &lt;TIME IN SEC SINCE EPOCH&gt;,</span>
-<span class="sd">                &quot;status_code&quot;: &lt;&gt;,</span>
-<span class="sd">                &quot;spill_id&quot;: &lt;UUID OF SPILL OBJECT THAT RELEASED PARTICLE&gt;,</span>
-<span class="sd">                &quot;depth&quot;: &lt;DEPTH&gt;,</span>
-<span class="sd">                &quot;spill_type&quot;: &lt;FORECAST OR UNCERTAIN&gt;,</span>
-<span class="sd">                &quot;step_num&quot;: &lt;OUTPUT ASSOCIATED WITH THIS STEP NUMBER&gt;</span>
-<span class="sd">            }</span>
-<span class="sd">        },</span>
-<span class="sd">        ...</span>
-<span class="sd">    }</span>
-<span class="sd">    &#39;&#39;&#39;</span>
 
-    <span class="n">outputfile_format</span> <span class="o">=</span> <span class="s">&#39;geojson_</span><span class="si">%05i</span><span class="s">.geojson&#39;</span>
-    <span class="n">outputfile_glob</span> <span class="o">=</span> <span class="s">&#39;geojson_*.geojson&#39;</span>
+<span class="sd">        {</span>
+<span class="sd">        &quot;type&quot;: &quot;FeatureCollection&quot;,</span>
+<span class="sd">        &quot;features&quot;: [</span>
+<span class="sd">            {</span>
+<span class="sd">                &quot;geometry&quot;: {</span>
+<span class="sd">                    &quot;type&quot;: &quot;Point&quot;,</span>
+<span class="sd">                    &quot;coordinates&quot;: [</span>
+<span class="sd">                        &lt;LONGITUDE&gt;,</span>
+<span class="sd">                        &lt;LATITUDE&gt;</span>
+<span class="sd">                    ]</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;type&quot;: &quot;Feature&quot;,</span>
+<span class="sd">                &quot;id&quot;: &lt;PARTICLE_ID&gt;,</span>
+<span class="sd">                &quot;properties&quot;: {</span>
+<span class="sd">                    &quot;current_time&quot;: &lt;TIME IN SEC SINCE EPOCH&gt;,</span>
+<span class="sd">                    &quot;status_code&quot;: &lt;&gt;,</span>
+<span class="sd">                    &quot;spill_id&quot;: &lt;UUID OF SPILL OBJECT THAT RELEASED PARTICLE&gt;,</span>
+<span class="sd">                    &quot;depth&quot;: &lt;DEPTH&gt;,</span>
+<span class="sd">                    &quot;spill_type&quot;: &lt;FORECAST OR UNCERTAIN&gt;,</span>
+<span class="sd">                    &quot;step_num&quot;: &lt;OUTPUT ASSOCIATED WITH THIS STEP NUMBER&gt;</span>
+<span class="sd">                }</span>
+<span class="sd">            },</span>
+<span class="sd">            ...</span>
+<span class="sd">        }</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Outputter</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
 
+    <span class="c"># need a schema and also need to override save so output_dir</span>
+    <span class="c"># is saved correctly - maybe point it to saveloc</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;round_data&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;round_to&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s">&#39;output_dir&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">TrajectoryGeoJsonSchema</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-        <span class="n">round_data</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-        <span class="n">roundto</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-        <span class="n">output_dir</span><span class="o">=</span><span class="s">&#39;./&#39;</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                 <span class="n">round_data</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                 <span class="n">round_to</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                 <span class="n">output_dir</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param bool round_data=True: if True, then round the numpy arrays</span>
-<span class="sd">            containing float to number of digits specified by &#39;roundto&#39;.</span>
+<span class="sd">            containing float to number of digits specified by &#39;round_to&#39;.</span>
 <span class="sd">            Default is True</span>
-<span class="sd">        :param int roundto=4: round float arrays to these number of digits.</span>
+<span class="sd">        :param int round_to=4: round float arrays to these number of digits.</span>
 <span class="sd">            Default is 4.</span>
-<span class="sd">        :param str output_dir=&#39;./&#39;: output directory for geojson files</span>
+<span class="sd">        :param str output_dir=None: output directory for geojson files. Default</span>
+<span class="sd">            is None since data is returned in dict for webapi. For using</span>
+<span class="sd">            write_output_post_run(), this must be set</span>
 
-<span class="sd">        use super to pass optional **kwargs to base class __init__ method</span>
+<span class="sd">        use super to pass optional \*\*kwargs to base class __init__ method</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">round_data</span> <span class="o">=</span> <span class="n">round_data</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">roundto</span> <span class="o">=</span> <span class="n">roundto</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">round_to</span> <span class="o">=</span> <span class="n">round_to</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">=</span> <span class="n">output_dir</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">GeoJson</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<div class="viewcode-block" id="GeoJson.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.geo_json.GeoJson.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_start_time</span><span class="p">,</span> <span class="n">spills</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        geo_json outputter also requires spills to be passed in - this is</span>
-<span class="sd">        because it needs to match the &#39;spill_num&#39; from the data array to the</span>
-<span class="sd">        spill object&#39;s ID. The keyword, spills is the SpillContainerPair object</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sc_pair</span> <span class="o">=</span> <span class="n">spills</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">GeoJson</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">model_start_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TrajectoryGeoJsonOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
+                                                      <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TrajectoryGeoJsonOutput.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.TrajectoryGeoJsonOutput.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        prepares the outputter for a model run.</span>
+
+<span class="sd">        Parameters passed to base class (use super): model_start_time, cache</span>
+
+<span class="sd">        Does not take any other input arguments; however, to keep the interface</span>
+<span class="sd">        the same for all outputters, define **kwargs and pass into base class</span>
+
+<span class="sd">        In this case, it cleans out previous written data files</span>
+
+<span class="sd">        If you want to keep them, a new output_dir should be set</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">TrajectoryGeoJsonOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                                                                   <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clean_output_files</span><span class="p">()</span>
 </div>
-<div class="viewcode-block" id="GeoJson.write_output"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.geo_json.GeoJson.write_output">[docs]</a>    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="TrajectoryGeoJsonOutput.write_output"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.TrajectoryGeoJsonOutput.write_output">[docs]</a>    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="s">&#39;dump data in geojson format&#39;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">GeoJson</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TrajectoryGeoJsonOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span>
+                                                          <span class="n">islast_step</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">None</span>
 
+        <span class="c"># one feature per element client; replaced with multipoint</span>
+        <span class="c"># because client performance is much more stable with one</span>
+        <span class="c"># feature per step rather than (n) features per step.features = []</span>
         <span class="n">features</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-
             <span class="n">time</span> <span class="o">=</span> <span class="n">date_to_sec</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="p">)</span>
             <span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataarray_p_types</span><span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">])</span>
             <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataarray_p_types</span><span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">])</span>
-            <span class="n">p_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataarray_p_types</span><span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">])</span>
+            <span class="n">sc_type</span> <span class="o">=</span> <span class="s">&#39;uncertain&#39;</span> <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span> <span class="k">else</span> <span class="s">&#39;forecast&#39;</span>
 
-            <span class="n">all_nums</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;spill_num&#39;</span><span class="p">])</span>
-            <span class="n">id_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sc_pair</span><span class="o">.</span><span class="n">spill_by_index</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-            <span class="n">spill_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">chararray</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">p_id</span><span class="p">,),</span> <span class="n">itemsize</span><span class="o">=</span><span class="n">id_len</span><span class="p">)</span>
-
-            <span class="c"># NOTE: spill_num are not renumbered if a spill is deleted;</span>
-            <span class="c"># HOWEVER, if a spill is deleted, a callback in the model should</span>
-            <span class="c"># shrink the OrderedCollection and everything should get renumbered</span>
-            <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">all_nums</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span><span class="p">:</span>
-                    <span class="n">spill_id</span><span class="p">[</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;spill_num&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">num</span><span class="p">]</span> <span class="o">=</span> \
-                        <span class="bp">self</span><span class="o">.</span><span class="n">sc_pair</span><span class="o">.</span><span class="n">spill_by_index</span><span class="p">(</span><span class="n">num</span><span class="p">)</span><span class="o">.</span><span class="n">id</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">spill_id</span><span class="p">[</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;spill_num&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">num</span><span class="p">]</span> <span class="o">=</span> \
-                        <span class="bp">self</span><span class="o">.</span><span class="n">sc_pair</span><span class="o">.</span><span class="n">spill_by_index</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">id</span>
-
-            <span class="n">sc_type</span> <span class="o">=</span> <span class="s">&#39;forecast&#39;</span>
-            <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span><span class="p">:</span>
-                <span class="n">sc_type</span> <span class="o">=</span> <span class="s">&#39;uncertain&#39;</span>
-
-            <span class="n">spill_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataarray_p_types</span><span class="p">(</span><span class="n">spill_id</span><span class="p">)</span>
-
+            <span class="c"># break elements into multipoint features based on their</span>
+            <span class="c"># status code</span>
+            <span class="c">#   evaporated : 10</span>
+            <span class="c">#   in_water : 2</span>
+            <span class="c">#   not_released : 0</span>
+            <span class="c">#   off_maps : 7</span>
+            <span class="c">#   on_land : 3</span>
+            <span class="c">#   to_be_removed : 12</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">position</span><span class="p">):</span>
-                <span class="n">st_code</span> <span class="o">=</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">_attr</span><span class="p">[</span><span class="n">oil_status</span><span class="o">.</span><span class="n">_int</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">status</span><span class="p">[</span><span class="n">ix</span><span class="p">])]</span>
-                <span class="n">feature</span> <span class="o">=</span> <span class="n">Feature</span><span class="p">(</span><span class="n">geometry</span><span class="o">=</span><span class="n">Point</span><span class="p">(</span><span class="n">pos</span><span class="p">[:</span><span class="mi">2</span><span class="p">]),</span>
-                                <span class="nb">id</span><span class="o">=</span><span class="n">p_id</span><span class="p">[</span><span class="n">ix</span><span class="p">],</span>
-                                <span class="n">properties</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;depth&#39;</span><span class="p">:</span> <span class="n">pos</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
-                                    <span class="s">&#39;step_num&#39;</span><span class="p">:</span> <span class="n">step_num</span><span class="p">,</span>
-                                    <span class="s">&#39;spill_type&#39;</span><span class="p">:</span> <span class="n">sc_type</span><span class="p">,</span>
-                                    <span class="s">&#39;spill_id&#39;</span><span class="p">:</span> <span class="n">spill_id</span><span class="p">[</span><span class="n">ix</span><span class="p">],</span>
-                                    <span class="s">&#39;current_time&#39;</span><span class="p">:</span> <span class="n">time</span><span class="p">,</span>
-                                    <span class="s">&#39;status_code&#39;</span><span class="p">:</span> <span class="n">st_code</span><span class="p">})</span>
+                <span class="n">st_code</span> <span class="o">=</span> <span class="n">status</span><span class="p">[</span><span class="n">ix</span><span class="p">]</span>
 
-                <span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">st_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">points</span><span class="p">:</span>
+                    <span class="n">points</span><span class="p">[</span><span class="n">st_code</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="n">points</span><span class="p">[</span><span class="n">st_code</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pos</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">points</span><span class="p">:</span>
+                <span class="n">feature</span> <span class="o">=</span> <span class="n">Feature</span><span class="p">(</span><span class="n">geometry</span><span class="o">=</span><span class="n">MultiPoint</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="n">k</span><span class="p">]),</span> <span class="nb">id</span><span class="o">=</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                                  <span class="n">properties</span><span class="o">=</span><span class="p">{</span>
+                                    <span class="s">&#39;sc_type&#39;</span><span class="p">:</span> <span class="n">sc_type</span><span class="p">,</span>
+                                    <span class="s">&#39;status_code&#39;</span><span class="p">:</span> <span class="n">k</span><span class="p">,</span>
+                                  <span class="p">})</span>
+                <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span><span class="p">:</span>
+                    <span class="n">features</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">feature</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
 
         <span class="n">geojson</span> <span class="o">=</span> <span class="n">FeatureCollection</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
-        <span class="n">output_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
-                                    <span class="bp">self</span><span class="o">.</span><span class="n">outputfile_format</span> <span class="o">%</span> <span class="n">step_num</span><span class="p">)</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_filename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
-            <span class="n">dump</span><span class="p">(</span><span class="n">geojson</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="c"># default geojson should not output data to file</span>
+        <span class="c"># read data from file and send it to web client</span>
+        <span class="n">output_info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;time_stamp&#39;</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                       <span class="s">&#39;feature_collection&#39;</span><span class="p">:</span> <span class="n">geojson</span>
+                       <span class="p">}</span>
 
-        <span class="n">output_info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;step_num&#39;</span><span class="p">:</span> <span class="n">step_num</span><span class="p">,</span>
-                       <span class="s">&#39;geojson&#39;</span><span class="p">:</span> <span class="n">geojson</span><span class="p">,</span>
-                       <span class="s">&#39;time_stamp&#39;</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="p">,</span>
-                       <span class="s">&#39;output_filename&#39;</span><span class="p">:</span> <span class="n">output_filename</span><span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">:</span>
+            <span class="n">output_filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_to_file</span><span class="p">(</span><span class="n">geojson</span><span class="p">,</span> <span class="n">step_num</span><span class="p">)</span>
+            <span class="n">output_info</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&#39;output_filename&#39;</span><span class="p">:</span> <span class="n">output_filename</span><span class="p">})</span>
 
         <span class="k">return</span> <span class="n">output_info</span>
 </div>
+    <span class="k">def</span> <span class="nf">output_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_content</span><span class="p">,</span> <span class="n">step_num</span><span class="p">):</span>
+        <span class="n">file_format</span> <span class="o">=</span> <span class="s">&#39;geojson_{0:06d}.geojson&#39;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
+                                <span class="n">file_format</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">step_num</span><span class="p">))</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+            <span class="n">dump</span><span class="p">(</span><span class="n">json_content</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">filename</span>
+
     <span class="k">def</span> <span class="nf">_dataarray_p_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_array</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        return array as list with appropriate python dtype</span>
@@ -205,41 +243,385 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">p_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asscalar</span><span class="p">(</span><span class="n">data_array</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
 
-        <span class="c">#======================================================================</span>
-        <span class="c"># try:</span>
-        <span class="c">#     # convert numpy dtype to python type</span>
-        <span class="c">#     #p_type = type(np.asscalar(data_array.dtype(0)))</span>
-        <span class="c">#     #p_type = type(np.asscalar(getattr(array_types, name).dtype(0)))</span>
-        <span class="c"># except AttributeError:</span>
-        <span class="c">#     # the dtype for the array is already a python type</span>
-        <span class="c">#     #p_type = type(data_array.dtype(0))</span>
-        <span class="c">#     p_type = type(getattr(array_types, name).dtype(0))</span>
-        <span class="c">#======================================================================</span>
-
         <span class="k">if</span> <span class="n">p_type</span> <span class="ow">is</span> <span class="nb">long</span><span class="p">:</span>
             <span class="s">&#39;geojson expects int - it fails for a long&#39;</span>
             <span class="n">p_type</span> <span class="o">=</span> <span class="nb">int</span>
 
         <span class="k">if</span> <span class="n">p_type</span> <span class="ow">is</span> <span class="nb">float</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">round_data</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">data_array</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">roundto</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">p_type</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data_array</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">round_to</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">p_type</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">data_array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">p_type</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">data</span>
 
-<div class="viewcode-block" id="GeoJson.rewind"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.geo_json.GeoJson.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="c"># def rewind(self):</span>
+    <span class="c">#     &#39;remove previously written files&#39;</span>
+    <span class="c">#     super(TrajectoryGeoJsonOutput, self).rewind()</span>
+    <span class="c">#     self.clean_output_files()</span>
+
+    <span class="k">def</span> <span class="nf">clean_output_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&quot;in clean_output_files&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">:</span>
+            <span class="n">files</span> <span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="s">&#39;geojson_*.geojson&#39;</span><span class="p">))</span>
+            <span class="k">print</span> <span class="s">&quot;files are:&quot;</span>
+            <span class="k">print</span> <span class="n">files</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+</div>
+<span class="k">class</span> <span class="nc">CurrentGeoJsonSchema</span><span class="p">(</span><span class="n">BaseSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Nothing is required for initialization</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+
+<div class="viewcode-block" id="CurrentGeoJsonOutput"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.CurrentGeoJsonOutput">[docs]</a><span class="k">class</span> <span class="nc">CurrentGeoJsonOutput</span><span class="p">(</span><span class="n">Outputter</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Class that outputs GNOME current velocity results for each current mover</span>
+<span class="sd">    in a geojson format.  The output is a collection of Features.</span>
+<span class="sd">    Each Feature contains a Point object with associated properties.</span>
+<span class="sd">    Following is the output format - the data in &lt;&gt; are the results</span>
+<span class="sd">    for each element.</span>
+<span class="sd">    ::</span>
+<span class="sd">    </span>
+<span class="sd">        {</span>
+<span class="sd">         &quot;time_stamp&quot;: &lt;TIME IN ISO FORMAT&gt;,</span>
+<span class="sd">         &quot;step_num&quot;: &lt;OUTPUT ASSOCIATED WITH THIS STEP NUMBER&gt;,</span>
+<span class="sd">         &quot;feature_collections&quot;: {&lt;mover_id&gt;: {&quot;type&quot;: &quot;FeatureCollection&quot;,</span>
+<span class="sd">                                              &quot;features&quot;: [{&quot;type&quot;: &quot;Feature&quot;,</span>
+<span class="sd">                                                            &quot;id&quot;: &lt;PARTICLE_ID&gt;,</span>
+<span class="sd">                                                            &quot;properties&quot;: {&quot;velocity&quot;: [u, v]</span>
+<span class="sd">                                                                           },</span>
+<span class="sd">                                                            &quot;geometry&quot;: {&quot;type&quot;: &quot;Point&quot;,</span>
+<span class="sd">                                                                         &quot;coordinates&quot;: [&lt;LONG&gt;, &lt;LAT&gt;]</span>
+<span class="sd">                                                                         },</span>
+<span class="sd">                                                        },</span>
+<span class="sd">                                                        ...</span>
+<span class="sd">                                                       ],</span>
+<span class="sd">                                          },</span>
+<span class="sd">                             ...</span>
+<span class="sd">                             }</span>
+<span class="sd">        }</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Outputter</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+
+    <span class="c"># need a schema and also need to override save so output_dir</span>
+    <span class="c"># is saved correctly - maybe point it to saveloc</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;current_movers&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                           <span class="n">iscollection</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">CurrentGeoJsonSchema</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_movers</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param list current_movers: A list or collection of current grid mover</span>
+<span class="sd">                                    objects.</span>
+
+<span class="sd">        use super to pass optional \*\*kwargs to base class __init__ method</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_movers</span> <span class="o">=</span> <span class="n">current_movers</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">CurrentGeoJsonOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CurrentGeoJsonOutput.write_output"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.CurrentGeoJsonOutput.write_output">[docs]</a>    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="s">&#39;dump data in geojson format&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CurrentGeoJsonOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="ow">is</span> <span class="bp">False</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">pass</span>
+
+        <span class="n">model_time</span> <span class="o">=</span> <span class="n">date_to_sec</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="p">)</span>
+
+        <span class="n">geojson</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">cm</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_movers</span><span class="p">:</span>
+            <span class="n">centers</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">get_center_points</span><span class="p">()</span>
+
+            <span class="n">velocities</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">get_scaled_velocities</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+            <span class="n">velocities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rounded_velocities</span><span class="p">(</span><span class="n">velocities</span><span class="p">)</span>
+
+            <span class="n">velocity_dict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">velocities</span><span class="p">,</span> <span class="n">centers</span><span class="p">):</span>
+                <span class="n">k</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                <span class="n">velocity_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+            <span class="n">features</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">v</span><span class="p">,</span> <span class="n">cps</span> <span class="ow">in</span> <span class="n">velocity_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">feature</span> <span class="o">=</span> <span class="n">Feature</span><span class="p">(</span><span class="n">geometry</span><span class="o">=</span><span class="n">MultiPoint</span><span class="p">(</span><span class="n">cps</span><span class="p">),</span>
+                                  <span class="nb">id</span><span class="o">=</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                                  <span class="n">properties</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;velocity&#39;</span><span class="p">:</span> <span class="n">v</span><span class="p">})</span>
+                <span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+
+            <span class="n">geojson</span><span class="p">[</span><span class="n">cm</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">FeatureCollection</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+
+        <span class="c"># default geojson should not output data to file</span>
+        <span class="c"># read data from file and send it to web client</span>
+        <span class="n">output_info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;time_stamp&#39;</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                       <span class="s">&#39;feature_collections&#39;</span><span class="p">:</span> <span class="n">geojson</span>
+                       <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">output_info</span>
+</div>
+    <span class="k">def</span> <span class="nf">get_rounded_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">velocities</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">velocities</span><span class="p">[</span><span class="s">&#39;u&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+                          <span class="n">velocities</span><span class="p">[</span><span class="s">&#39;v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span>
+
+<div class="viewcode-block" id="CurrentGeoJsonOutput.get_unique_velocities"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.CurrentGeoJsonOutput.get_unique_velocities">[docs]</a>    <span class="k">def</span> <span class="nf">get_unique_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">velocities</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        In order to make numpy perform this function fast, we will use a</span>
+<span class="sd">        contiguous structured array using a view of a void type that</span>
+<span class="sd">        joins the whole row into a single item.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">void</span><span class="p">,</span>
+                          <span class="n">velocities</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">itemsize</span> <span class="o">*</span> <span class="n">velocities</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">voidtype_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">velocities</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">voidtype_array</span><span class="p">,</span> <span class="n">return_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">velocities</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+</div>
+    <span class="k">def</span> <span class="nf">get_matching_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">velocities</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">velocities</span> <span class="o">==</span> <span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+<div class="viewcode-block" id="CurrentGeoJsonOutput.rewind"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.CurrentGeoJsonOutput.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s">&#39;remove previously written files&#39;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">GeoJson</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
-        <span class="n">files</span> <span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputfile_glob</span><span class="p">))</span>
-        <span class="k">for</span> <span class="n">file_</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">file_</span><span class="p">)</span></div></div>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CurrentGeoJsonOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="CurrentGeoJsonOutput.current_movers_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.CurrentGeoJsonOutput.current_movers_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">current_movers_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        a dict containing &#39;obj_type&#39; and &#39;id&#39; for each object in</span>
+<span class="sd">        list/collection</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collection_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_movers</span><span class="p">)</span>
+
+</div></div>
+<span class="k">class</span> <span class="nc">IceGeoJsonSchema</span><span class="p">(</span><span class="n">BaseSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Nothing is required for initialization</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+
+<div class="viewcode-block" id="IceGeoJsonOutput"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.IceGeoJsonOutput">[docs]</a><span class="k">class</span> <span class="nc">IceGeoJsonOutput</span><span class="p">(</span><span class="n">Outputter</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Class that outputs GNOME ice velocity results for each ice mover</span>
+<span class="sd">    in a geojson format.  The output is a collection of Features.</span>
+<span class="sd">    Each Feature contains a Point object with associated properties.</span>
+<span class="sd">    Following is the output format - the data in &lt;&gt; are the results</span>
+<span class="sd">    for each element.</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        {</span>
+<span class="sd">         &quot;time_stamp&quot;: &lt;TIME IN ISO FORMAT&gt;,</span>
+<span class="sd">         &quot;step_num&quot;: &lt;OUTPUT ASSOCIATED WITH THIS STEP NUMBER&gt;,</span>
+<span class="sd">         &quot;feature_collections&quot;: {&lt;mover_id&gt;: {&quot;type&quot;: &quot;FeatureCollection&quot;,</span>
+<span class="sd">                                              &quot;features&quot;: [{&quot;type&quot;: &quot;Feature&quot;,</span>
+<span class="sd">                                                            &quot;id&quot;: &lt;PARTICLE_ID&gt;,</span>
+<span class="sd">                                                            &quot;properties&quot;: {&quot;ice_fraction&quot;: &lt;FRACTION&gt;,</span>
+<span class="sd">                                                                           &quot;ice_thickness&quot;: &lt;METERS&gt;,</span>
+<span class="sd">                                                                           &quot;water_velocity&quot;: [u, v],</span>
+<span class="sd">                                                                           &quot;ice_velocity&quot;: [u, v]</span>
+<span class="sd">                                                                           },</span>
+<span class="sd">                                                            &quot;geometry&quot;: {&quot;type&quot;: &quot;Point&quot;,</span>
+<span class="sd">                                                                         &quot;coordinates&quot;: [&lt;LONG&gt;, &lt;LAT&gt;]</span>
+<span class="sd">                                                                         },</span>
+<span class="sd">                                                            },</span>
+<span class="sd">                                                            ...</span>
+<span class="sd">                                                           ],</span>
+<span class="sd">                                              },</span>
+<span class="sd">                                 ...</span>
+<span class="sd">                                 }</span>
+<span class="sd">        }</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Outputter</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+
+    <span class="c"># need a schema and also need to override save so output_dir</span>
+    <span class="c"># is saved correctly - maybe point it to saveloc</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;ice_movers&#39;</span><span class="p">,</span>
+                           <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">iscollection</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">IceGeoJsonSchema</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ice_movers</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param list current_movers: A list or collection of current grid mover</span>
+<span class="sd">                                    objects.</span>
+
+<span class="sd">        use super to pass optional \*\*kwargs to base class __init__ method</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ice_movers</span> <span class="o">=</span> <span class="n">ice_movers</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">IceGeoJsonOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="IceGeoJsonOutput.write_output"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.IceGeoJsonOutput.write_output">[docs]</a>    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="s">&#39;dump data in geojson format&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">IceGeoJsonOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="ow">is</span> <span class="bp">False</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">pass</span>
+
+        <span class="n">model_time</span> <span class="o">=</span> <span class="n">date_to_sec</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="p">)</span>
+
+        <span class="n">geojson</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">mover</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ice_movers</span><span class="p">:</span>
+            <span class="n">mover_triangles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_triangles</span><span class="p">(</span><span class="n">mover</span><span class="p">)</span>
+            <span class="n">ice_coverage</span><span class="p">,</span> <span class="n">ice_thickness</span> <span class="o">=</span> <span class="n">mover</span><span class="o">.</span><span class="n">get_ice_fields</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+
+            <span class="n">geojson</span><span class="p">[</span><span class="n">mover</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">geojson</span><span class="p">[</span><span class="n">mover</span><span class="o">.</span><span class="n">id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_coverage_fc</span><span class="p">(</span><span class="n">ice_coverage</span><span class="p">,</span>
+                                                          <span class="n">mover_triangles</span><span class="p">))</span>
+            <span class="n">geojson</span><span class="p">[</span><span class="n">mover</span><span class="o">.</span><span class="n">id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_thickness_fc</span><span class="p">(</span><span class="n">ice_thickness</span><span class="p">,</span>
+                                                           <span class="n">mover_triangles</span><span class="p">))</span>
+
+        <span class="c"># default geojson should not output data to file</span>
+        <span class="n">output_info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;time_stamp&#39;</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                       <span class="s">&#39;feature_collections&#39;</span><span class="p">:</span> <span class="n">geojson</span>
+                       <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">output_info</span>
+</div>
+    <span class="k">def</span> <span class="nf">get_coverage_fc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coverage</span><span class="p">,</span> <span class="n">triangles</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_grouped_fc_from_1d_array</span><span class="p">(</span><span class="n">coverage</span><span class="p">,</span> <span class="n">triangles</span><span class="p">,</span>
+                                                 <span class="s">&#39;coverage&#39;</span><span class="p">,</span>
+                                                 <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_thickness_fc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">thickness</span><span class="p">,</span> <span class="n">triangles</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_grouped_fc_from_1d_array</span><span class="p">(</span><span class="n">thickness</span><span class="p">,</span> <span class="n">triangles</span><span class="p">,</span>
+                                                 <span class="s">&#39;thickness&#39;</span><span class="p">,</span>
+                                                 <span class="n">decimals</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_grouped_fc_from_1d_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">triangles</span><span class="p">,</span>
+                                     <span class="n">property_name</span><span class="p">,</span> <span class="n">decimals</span><span class="p">):</span>
+        <span class="n">rounded</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="n">decimals</span><span class="p">)</span>
+        <span class="n">unique</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">rounded</span><span class="p">)</span>
+
+        <span class="n">features</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">unique</span><span class="p">:</span>
+            <span class="n">matching</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">rounded</span> <span class="o">==</span> <span class="n">u</span><span class="p">)</span>
+            <span class="n">matching_triangles</span> <span class="o">=</span> <span class="p">(</span><span class="n">triangles</span><span class="p">[</span><span class="n">matching</span><span class="p">])</span>
+
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">matching_triangles</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">descr</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="n">matching_triangles</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dtype</span><span class="p">),)</span>
+
+            <span class="n">coordinates</span> <span class="o">=</span> <span class="p">(</span><span class="n">matching_triangles</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s">&#39;&lt;f8&#39;</span><span class="p">)</span>
+                           <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+            <span class="n">prop_fmt</span> <span class="o">=</span> <span class="s">&#39;{{:.{}f}}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">decimals</span><span class="p">)</span>
+            <span class="n">properties</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">property_name</span><span class="p">):</span> <span class="n">prop_fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">)}</span>
+
+            <span class="n">feature</span> <span class="o">=</span> <span class="n">Feature</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s">&quot;1&quot;</span><span class="p">,</span>
+                              <span class="n">properties</span><span class="o">=</span><span class="n">properties</span><span class="p">,</span>
+                              <span class="n">geometry</span><span class="o">=</span><span class="n">MultiPolygon</span><span class="p">(</span><span class="n">coordinates</span><span class="o">=</span><span class="n">coordinates</span>
+                                                    <span class="p">))</span>
+            <span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">FeatureCollection</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_rounded_ice_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coverage</span><span class="p">,</span> <span class="n">thickness</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">coverage</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+                          <span class="n">thickness</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="mi">1</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span>
+
+<div class="viewcode-block" id="IceGeoJsonOutput.get_unique_ice_values"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.IceGeoJsonOutput.get_unique_ice_values">[docs]</a>    <span class="k">def</span> <span class="nf">get_unique_ice_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ice_values</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        In order to make numpy perform this function fast, we will use a</span>
+<span class="sd">        contiguous structured array using a view of a void type that</span>
+<span class="sd">        joins the whole row into a single item.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">void</span><span class="p">,</span>
+                          <span class="n">ice_values</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">itemsize</span> <span class="o">*</span> <span class="n">ice_values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">voidtype_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">ice_values</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">voidtype_array</span><span class="p">,</span> <span class="n">return_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ice_values</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+</div>
+    <span class="k">def</span> <span class="nf">get_matching_ice_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ice_values</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">ice_values</span> <span class="o">==</span> <span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+<div class="viewcode-block" id="IceGeoJsonOutput.get_triangles"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.IceGeoJsonOutput.get_triangles">[docs]</a>    <span class="k">def</span> <span class="nf">get_triangles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mover</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The triangle data that we get from the mover is in the form of</span>
+<span class="sd">        indices into the points array.</span>
+<span class="sd">        So we get our triangle data and points array, and then build our</span>
+<span class="sd">        triangle coordinates by reference.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_points</span><span class="p">(</span><span class="n">mover</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mover</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_is_triangle_grid</span><span class="p">():</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_triangle_data</span><span class="p">(</span><span class="n">mover</span><span class="p">)</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">descr</span>
+            <span class="n">unstructured_type</span> <span class="o">=</span> <span class="n">dtype</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">unstructured</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">unstructured_type</span><span class="p">)</span>
+                            <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dtype</span><span class="p">))[:,</span> <span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+
+            <span class="n">triangles</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">unstructured</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">triangles</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cell_data</span><span class="p">(</span><span class="n">mover</span><span class="p">)</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">descr</span>
+            <span class="n">unstructured_type</span> <span class="o">=</span> <span class="n">dtype</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">unstructured</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">unstructured_type</span><span class="p">)</span>
+                            <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dtype</span><span class="p">))[:,</span> <span class="mi">1</span><span class="p">:])</span>
+
+            <span class="n">cells</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">unstructured</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">cells</span>
+</div>
+    <span class="k">def</span> <span class="nf">get_triangle_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mover</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">mover</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_get_triangle_data</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_cell_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mover</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">mover</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_get_cell_data</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mover</span><span class="p">):</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="p">(</span><span class="n">mover</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_get_points</span><span class="p">()</span>
+                  <span class="o">.</span><span class="n">astype</span><span class="p">([(</span><span class="s">&#39;long&#39;</span><span class="p">,</span> <span class="s">&#39;&lt;f8&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;lat&#39;</span><span class="p">,</span> <span class="s">&#39;&lt;f8&#39;</span><span class="p">)]))</span>
+        <span class="n">points</span><span class="p">[</span><span class="s">&#39;long&#39;</span><span class="p">]</span> <span class="o">/=</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">6</span>
+        <span class="n">points</span><span class="p">[</span><span class="s">&#39;lat&#39;</span><span class="p">]</span> <span class="o">/=</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">6</span>
+
+        <span class="k">return</span> <span class="n">points</span>
+
+<div class="viewcode-block" id="IceGeoJsonOutput.rewind"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.IceGeoJsonOutput.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">&#39;remove previously written files&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">IceGeoJsonOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="IceGeoJsonOutput.ice_movers_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.IceGeoJsonOutput.ice_movers_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">ice_movers_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        a dict containing &#39;obj_type&#39; and &#39;id&#39; for each object in</span>
+<span class="sd">        list/collection</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collection_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ice_movers</span><span class="p">)</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="IceGeoJsonOutput.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.IceGeoJsonOutput.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        append correct schema for current mover</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s">&#39;ice_movers&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+            <span class="n">_to_dict</span><span class="p">[</span><span class="s">&#39;ice_movers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cm</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;ice_movers&#39;</span><span class="p">]):</span>
+                <span class="n">cm_cls</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">cm</span><span class="p">[</span><span class="s">&#39;obj_type&#39;</span><span class="p">])</span>
+                <span class="n">cm_dict</span> <span class="o">=</span> <span class="n">cm_cls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;ice_movers&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+
+                <span class="n">_to_dict</span><span class="p">[</span><span class="s">&#39;ice_movers&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cm_dict</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_to_dict</span></div></div>
 </pre></div>
 
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../search.html" method="get">
       <input type="text" name="q" />
@@ -256,7 +638,7 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -265,14 +647,13 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >Module code</a> &raquo;</li>
-          <li><a href="../outputters.html" >gnome.outputters</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer">
+    <div class="footer" role="contentinfo">
         &copy; Copyright 2012, NOAA Emergecny Response Division.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>
 </html>

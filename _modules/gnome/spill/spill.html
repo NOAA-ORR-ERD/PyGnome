@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -55,9 +58,6 @@
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">getmembers</span><span class="p">,</span> <span class="n">ismethod</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span>
-
-<span class="kn">import</span> <span class="nn">numpy</span>
-<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
 
 <span class="kn">import</span> <span class="nn">unit_conversion</span> <span class="kn">as</span> <span class="nn">uc</span>
 <span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">drop</span><span class="p">)</span>
@@ -128,6 +128,11 @@
 <span class="sd">        :param bool on=True: Toggles the spill on/off.</span>
 <span class="sd">        :param float amount=None: mass or volume of oil spilled.</span>
 <span class="sd">        :param str units=None: must provide units for amount spilled.</span>
+<span class="sd">        :param float amount_uncertainty_scale=0.0: scale value in range 0-1</span>
+<span class="sd">                                                   that adds uncertainty to the</span>
+<span class="sd">                                                   spill amount.</span>
+<span class="sd">                                                   Maximum uncertainty scale</span>
+<span class="sd">                                                   is (2/3) * spill_amount.</span>
 <span class="sd">        :param str name=&#39;Spill&#39;: a name for the spill.</span>
 
 <span class="sd">        .. note::</span>
@@ -137,9 +142,13 @@
 <span class="sd">            If amount property is None, then just floating elements</span>
 <span class="sd">            (ie. &#39;windages&#39;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">release</span> <span class="o">=</span> <span class="n">release</span>
         <span class="k">if</span> <span class="n">element_type</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">element_type</span> <span class="o">=</span> <span class="n">elements</span><span class="o">.</span><span class="n">floating</span><span class="p">(</span><span class="n">substance</span><span class="o">=</span><span class="n">substance</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">substance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Substance and element_type cannot both be &#39;</span>
+                             <span class="s">&#39;specified&#39;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span> <span class="o">=</span> <span class="n">element_type</span>
 
@@ -181,7 +190,7 @@
             <span class="k">return</span> <span class="bp">False</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">)</span> <span class="o">!=</span>
-            <span class="n">other</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">)):</span>
+                <span class="n">other</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">)):</span>
             <span class="k">return</span> <span class="bp">False</span>
 
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">):</span>
@@ -212,11 +221,9 @@
             <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;Units for amount spilled must be in volume or mass units. &#39;</span>
                    <span class="s">&#39;Valid units for volume: {0}, for mass: {1} &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                        <span class="bp">self</span><span class="o">.</span><span class="n">valid_vol_units</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_mass_units</span><span class="p">)</span>
-            <span class="c">#raise uc.InvalidUnitError(msg)</span>
-            <span class="c">#self.logger.exception(msg)</span>
             <span class="n">ex</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">InvalidUnitError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="n">ex</span>    <span class="c"># this should be raised since run will fail otherwise</span>
+            <span class="k">raise</span> <span class="n">ex</span>  <span class="c"># this should be raised since run will fail otherwise</span>
 
     <span class="k">def</span> <span class="nf">_get_all_props</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s">&#39;return all properties accessible through get&#39;</span>
@@ -331,8 +338,8 @@
                     <span class="k">break</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;{0} attribute does not exist &#39;</span>
-                                     <span class="s">&#39;in element_type &#39;</span>
-                                     <span class="s">&#39;or release object&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prop</span><span class="p">))</span>
+                                        <span class="s">&#39;in element_type or release object&#39;</span>
+                                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prop</span><span class="p">))</span>
 </div>
 <div class="viewcode-block" id="Spill.get"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Spill.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -397,10 +404,11 @@
 </div>
 <div class="viewcode-block" id="Spill.get_initializer"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Spill.get_initializer">[docs]</a>    <span class="k">def</span> <span class="nf">get_initializer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        if name is None, return list of all initializers else return initializer</span>
-<span class="sd">        that sets given &#39;name&#39;. &#39;name&#39; refers to the data_array initialized by</span>
-<span class="sd">        initializer. For instance, if name=&#39;rise_vel&#39;, function will look in</span>
-<span class="sd">        all initializers to find the one whose array_types contain &#39;rise_vel&#39;.</span>
+<span class="sd">        If name is None, return list of all initializers else return</span>
+<span class="sd">        initializer that sets given &#39;name&#39;.</span>
+<span class="sd">        &#39;name&#39; refers to the data_array initialized by initializer.</span>
+<span class="sd">        For instance, if name=&#39;rise_vel&#39;, function will look in all</span>
+<span class="sd">        initializers to find the one whose array_types contain &#39;rise_vel&#39;.</span>
 
 <span class="sd">        If multiple initializers set &#39;name&#39;, then return the first one in the</span>
 <span class="sd">        list. Although nothing prevents the user from having two initializers</span>
@@ -674,6 +682,143 @@
 <span class="sd">&quot;&quot;&quot; Helper functions &quot;&quot;&quot;</span>
 
 
+<div class="viewcode-block" id="surface_point_line_spill"><a class="viewcode-back" href="../../../scripting/utilities.html#gnome.spill.surface_point_line_spill">[docs]</a><span class="k">def</span> <span class="nf">surface_point_line_spill</span><span class="p">(</span><span class="n">num_elements</span><span class="p">,</span>
+                             <span class="n">start_position</span><span class="p">,</span>
+                             <span class="n">release_time</span><span class="p">,</span>
+                             <span class="n">end_position</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                             <span class="n">end_release_time</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                             <span class="n">substance</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                             <span class="n">amount</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                             <span class="n">units</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                             <span class="n">windage_range</span><span class="o">=</span><span class="p">(</span><span class="o">.</span><span class="mo">01</span><span class="p">,</span> <span class="o">.</span><span class="mo">04</span><span class="p">),</span>
+                             <span class="n">windage_persist</span><span class="o">=</span><span class="mi">900</span><span class="p">,</span>
+                             <span class="n">name</span><span class="o">=</span><span class="s">&#39;Surface Point/Line Release&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Helper function returns a Spill object</span>
+
+<span class="sd">    :param num_elements: total number of elements to be released</span>
+<span class="sd">    :type num_elements: integer</span>
+<span class="sd">    :param start_position: initial location the elements are released</span>
+<span class="sd">    :type start_position: 3-tuple of floats (long, lat, z)</span>
+<span class="sd">    :param release_time: time the LEs are released (datetime object)</span>
+<span class="sd">    :type release_time: datetime.datetime</span>
+<span class="sd">    :param end_position=None: Optional. For moving source, the end position</span>
+<span class="sd">                              If None, then release is from a point source</span>
+<span class="sd">    :type end_position: 3-tuple of floats (long, lat, z)</span>
+<span class="sd">    :param end_release_time=None: optional -- for a time varying release,</span>
+<span class="sd">        the end release time. If None, then release is instantaneous</span>
+<span class="sd">    :type end_release_time: datetime.datetime</span>
+<span class="sd">    :param substance=None: Type of oil spilled.</span>
+<span class="sd">    :type substance: str or OilProps</span>
+<span class="sd">    :param float amount=None: mass or volume of oil spilled</span>
+<span class="sd">    :param str units=None: units for amount spilled</span>
+<span class="sd">    :param tuple windage_range=(.01, .04): Percentage range for windage.</span>
+<span class="sd">                                           Active only for surface particles</span>
+<span class="sd">                                           when a mind mover is added</span>
+<span class="sd">    :param int windage_persist=900: Persistence for windage values in seconds.</span>
+<span class="sd">                                    Use -1 for inifinite, otherwise it is</span>
+<span class="sd">                                    randomly reset on this time scale</span>
+<span class="sd">    :param str name=&#39;Surface Point/Line Release&#39;: a name for the spill</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">release</span> <span class="o">=</span> <span class="n">PointLineRelease</span><span class="p">(</span><span class="n">release_time</span><span class="o">=</span><span class="n">release_time</span><span class="p">,</span>
+                               <span class="n">start_position</span><span class="o">=</span><span class="n">start_position</span><span class="p">,</span>
+                               <span class="n">num_elements</span><span class="o">=</span><span class="n">num_elements</span><span class="p">,</span>
+                               <span class="n">end_position</span><span class="o">=</span><span class="n">end_position</span><span class="p">,</span>
+                               <span class="n">end_release_time</span><span class="o">=</span><span class="n">end_release_time</span><span class="p">)</span>
+
+    <span class="n">element_type</span> <span class="o">=</span> <span class="n">elements</span><span class="o">.</span><span class="n">floating</span><span class="p">(</span><span class="n">windage_range</span><span class="o">=</span><span class="n">windage_range</span><span class="p">,</span>
+                                     <span class="n">windage_persist</span><span class="o">=</span><span class="n">windage_persist</span><span class="p">,</span>
+                                     <span class="n">substance</span><span class="o">=</span><span class="n">substance</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Spill</span><span class="p">(</span><span class="n">release</span><span class="p">,</span>
+                 <span class="n">element_type</span><span class="o">=</span><span class="n">element_type</span><span class="p">,</span>
+                 <span class="n">amount</span><span class="o">=</span><span class="n">amount</span><span class="p">,</span>
+                 <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span>
+                 <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="subsurface_plume_spill"><a class="viewcode-back" href="../../../scripting/utilities.html#gnome.spill.subsurface_plume_spill">[docs]</a><span class="k">def</span> <span class="nf">subsurface_plume_spill</span><span class="p">(</span><span class="n">num_elements</span><span class="p">,</span>
+                           <span class="n">start_position</span><span class="p">,</span>
+                           <span class="n">release_time</span><span class="p">,</span>
+                           <span class="n">distribution</span><span class="p">,</span>
+                           <span class="n">distribution_type</span><span class="o">=</span><span class="s">&#39;droplet_size&#39;</span><span class="p">,</span>
+                           <span class="n">end_release_time</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                           <span class="n">substance</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                           <span class="n">density</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                           <span class="n">density_units</span><span class="o">=</span><span class="s">&#39;kg/m^3&#39;</span><span class="p">,</span>
+                           <span class="n">amount</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                           <span class="n">units</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                           <span class="n">windage_range</span><span class="o">=</span><span class="p">(</span><span class="o">.</span><span class="mo">01</span><span class="p">,</span> <span class="o">.</span><span class="mo">04</span><span class="p">),</span>
+                           <span class="n">windage_persist</span><span class="o">=</span><span class="mi">900</span><span class="p">,</span>
+                           <span class="n">name</span><span class="o">=</span><span class="s">&#39;Subsurface plume&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Helper function returns a Spill object</span>
+
+<span class="sd">    :param num_elements: total number of elements to be released</span>
+<span class="sd">    :type num_elements: integer</span>
+<span class="sd">    :param start_position: initial location the elements are released</span>
+<span class="sd">    :type start_position: 3-tuple of floats (long, lat, z)</span>
+<span class="sd">    :param release_time: time the LEs are released (datetime object)</span>
+<span class="sd">    :type release_time: datetime.datetime</span>
+<span class="sd">    :param distribution=None: An object capable of generating a probability</span>
+<span class="sd">                              distribution.  Right now, we have:</span>
+<span class="sd">                               * UniformDistribution</span>
+<span class="sd">                               * NormalDistribution</span>
+<span class="sd">                               * LogNormalDistribution</span>
+<span class="sd">                               * WeibullDistribution</span>
+<span class="sd">    :type distribution: gnome.utilities.distribution</span>
+<span class="sd">    :param str distribution_type=droplet_size: What is being sampled from the</span>
+<span class="sd">                                               distribution.  Options are:</span>
+<span class="sd">                                                * droplet_size - Rise velocity</span>
+<span class="sd">                                                                 is then</span>
+<span class="sd">                                                                 calculated</span>
+<span class="sd">                                                * rise_velocity - No droplet</span>
+<span class="sd">                                                                  size is</span>
+<span class="sd">                                                                  computed</span>
+<span class="sd">    :param end_release_time=None: End release time for a time varying release.</span>
+<span class="sd">                                  If None, then release is instantaneous</span>
+<span class="sd">    :type end_release_time: datetime.datetime</span>
+<span class="sd">    :param substance=&#39;None&#39;: Required unless density specified.</span>
+<span class="sd">                             Type of oil spilled.</span>
+<span class="sd">    :type substance: str or OilProps</span>
+<span class="sd">    :param float density=None: Required unless substance specified.</span>
+<span class="sd">                               Density of spilled material.</span>
+<span class="sd">    :param str density_units=&#39;kg/m^3&#39;:</span>
+<span class="sd">    :param float amount=None: mass or volume of oil spilled.</span>
+<span class="sd">    :param str units=None: must provide units for amount spilled.</span>
+<span class="sd">    :param tuple windage_range=(.01, .04): Percentage range for windage.</span>
+<span class="sd">                                           Active only for surface particles</span>
+<span class="sd">                                           when a mind mover is added</span>
+<span class="sd">    :param windage_persist=900: Persistence for windage values in seconds.</span>
+<span class="sd">                                Use -1 for inifinite, otherwise it is</span>
+<span class="sd">                                randomly reset on this time scale.</span>
+<span class="sd">    :param str name=&#39;Surface Point/Line Release&#39;: a name for the spill.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">release</span> <span class="o">=</span> <span class="n">PointLineRelease</span><span class="p">(</span><span class="n">release_time</span><span class="o">=</span><span class="n">release_time</span><span class="p">,</span>
+                               <span class="n">start_position</span><span class="o">=</span><span class="n">start_position</span><span class="p">,</span>
+                               <span class="n">num_elements</span><span class="o">=</span><span class="n">num_elements</span><span class="p">,</span>
+                               <span class="n">end_release_time</span><span class="o">=</span><span class="n">end_release_time</span><span class="p">)</span>
+
+    <span class="c"># This helper function is just passing parameters thru to the plume</span>
+    <span class="c"># helper function which will do the work.</span>
+    <span class="c"># But this way user can just specify all parameters for release and</span>
+    <span class="c"># element_type in one go...</span>
+    <span class="n">element_type</span> <span class="o">=</span> <span class="n">elements</span><span class="o">.</span><span class="n">plume</span><span class="p">(</span><span class="n">distribution_type</span><span class="o">=</span><span class="n">distribution_type</span><span class="p">,</span>
+                                  <span class="n">distribution</span><span class="o">=</span><span class="n">distribution</span><span class="p">,</span>
+                                  <span class="n">substance_name</span><span class="o">=</span><span class="n">substance</span><span class="p">,</span>
+                                  <span class="n">windage_range</span><span class="o">=</span><span class="n">windage_range</span><span class="p">,</span>
+                                  <span class="n">windage_persist</span><span class="o">=</span><span class="n">windage_persist</span><span class="p">,</span>
+                                  <span class="n">density</span><span class="o">=</span><span class="n">density</span><span class="p">,</span>
+                                  <span class="n">density_units</span><span class="o">=</span><span class="n">density_units</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Spill</span><span class="p">(</span><span class="n">release</span><span class="p">,</span>
+                 <span class="n">element_type</span><span class="o">=</span><span class="n">element_type</span><span class="p">,</span>
+                 <span class="n">amount</span><span class="o">=</span><span class="n">amount</span><span class="p">,</span>
+                 <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span>
+                 <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+</div>
 <span class="k">def</span> <span class="nf">point_line_release_spill</span><span class="p">(</span><span class="n">num_elements</span><span class="p">,</span>
                              <span class="n">start_position</span><span class="p">,</span>
                              <span class="n">release_time</span><span class="p">,</span>
@@ -730,6 +875,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

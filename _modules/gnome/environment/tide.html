@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -52,21 +55,13 @@
 <span class="kn">import</span> <span class="nn">string</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">import</span> <span class="nn">datetime</span>
-
-<span class="kn">import</span> <span class="nn">numpy</span>
-<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
 
 <span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">drop</span>
 
 <span class="kn">import</span> <span class="nn">gnome</span>
-<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">time_value_pair</span>
 
 <span class="kn">from</span> <span class="nn">.environment</span> <span class="kn">import</span> <span class="n">Environment</span>
-<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">validators</span><span class="p">,</span> <span class="n">base_schema</span>
-<span class="kn">from</span> <span class="nn">gnome.persist.extend_colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">DefaultTupleSchema</span><span class="p">,</span>
-                                           <span class="n">LocalDateTime</span><span class="p">,</span>
-                                           <span class="n">DatetimeValue2dArraySchema</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">base_schema</span>
 
 <span class="c"># TODO: The name &#39;convert&#39; is doubly defined as</span>
 <span class="c">#       unit_conversion.convert and...</span>
@@ -74,46 +69,12 @@
 <span class="c">#       This will inevitably cause namespace collisions.</span>
 <span class="c">#       CHB-- I don&#39;t think that&#39;s a problem -- that&#39;s what namespaces are for!</span>
 
-<span class="kn">from</span> <span class="nn">gnome.utilities.time_utils</span> <span class="kn">import</span> <span class="n">date_to_sec</span>
-<span class="kn">from</span> <span class="nn">gnome.utilities.convert</span> <span class="kn">import</span> <span class="p">(</span><span class="n">to_time_value_pair</span><span class="p">,</span>
-                                     <span class="n">to_datetime_value_2d</span><span class="p">,</span>
-                                     <span class="n">tsformat</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.convert</span> <span class="kn">import</span> <span class="n">tsformat</span>
 
 <span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
 
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_ossm_time</span> <span class="kn">import</span> <span class="n">CyTimeseries</span>
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_shio_time</span> <span class="kn">import</span> <span class="n">CyShioTime</span>
-
-
-<span class="c">#==============================================================================</span>
-<span class="c"># class UVTuple(DefaultTupleSchema):</span>
-<span class="c">#     u = SchemaNode(Float())</span>
-<span class="c">#     v = SchemaNode(Float())</span>
-<span class="c"># </span>
-<span class="c"># </span>
-<span class="c"># class TimeSeriesTuple(DefaultTupleSchema):</span>
-<span class="c">#     &#39;&#39;&#39;</span>
-<span class="c">#     Schema for each tuple in WindTimeSeries list</span>
-<span class="c">#     &#39;&#39;&#39;</span>
-<span class="c">#     datetime = SchemaNode(LocalDateTime(default_tzinfo=None),</span>
-<span class="c">#                           default=base_schema.now,</span>
-<span class="c">#                           validator=validators.convertible_to_seconds)</span>
-<span class="c">#     uv = UVTuple()</span>
-<span class="c"># </span>
-<span class="c"># </span>
-<span class="c"># class TimeSeriesSchema(DatetimeValue2dArraySchema):</span>
-<span class="c">#     &#39;&#39;&#39;</span>
-<span class="c">#     Schema for list of Wind tuples, to make the wind timeseries</span>
-<span class="c">#     &#39;&#39;&#39;</span>
-<span class="c">#     value = TimeSeriesTuple(default=(datetime.datetime.now(), 0, 0))</span>
-<span class="c"># </span>
-<span class="c">#     def validator(self, node, cstruct):</span>
-<span class="c">#         &#39;&#39;&#39;</span>
-<span class="c">#         validate wind timeseries numpy array</span>
-<span class="c">#         &#39;&#39;&#39;</span>
-<span class="c">#         validators.no_duplicate_datetime(node, cstruct)</span>
-<span class="c">#         validators.ascending_datetime(node, cstruct)</span>
-<span class="c">#==============================================================================</span>
 
 
 <span class="k">class</span> <span class="nc">TideSchema</span><span class="p">(</span><span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span><span class="p">):</span>
@@ -122,7 +83,6 @@
 
     <span class="n">scale_factor</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
-    <span class="c">#timeseries = TimeSeriesSchema(missing=drop)</span>
     <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;tide&#39;</span>
 
 
@@ -252,15 +212,13 @@
                              <span class="s">&#39;that can be read by OSSM or Shio to get &#39;</span>
                              <span class="s">&#39;tide information&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Tide.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.environment.Tide.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        For the filename - need to make it the full path before saving</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">serial</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Tide</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
-            <span class="n">serial</span><span class="p">[</span><span class="s">&#39;filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cy_obj</span><span class="o">.</span><span class="n">path_filename</span>
+    <span class="k">def</span> <span class="nf">to_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="n">toserial</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Tide</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">serial</span></div></div>
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+            <span class="n">toserial</span><span class="p">[</span><span class="s">&#39;filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cy_obj</span><span class="o">.</span><span class="n">path_filename</span>
+
+        <span class="k">return</span> <span class="n">toserial</span></div>
 </pre></div>
 
           </div>
@@ -291,6 +249,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>

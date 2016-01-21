@@ -1,0 +1,274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Movers &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Scripting pygnome" href="../scripting.html" />
+    <link rel="next" title="Weatherers" href="weatherers.html" />
+    <link rel="prev" title="Spills" href="spills.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="weatherers.html" title="Weatherers"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="spills.html" title="Spills"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" accesskey="U">Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="movers">
+<h1>Movers<a class="headerlink" href="#movers" title="Permalink to this headline">¶</a></h1>
+<p>Processes that change the position of the LEs are termed &#8220;movers&#8221; in GNOME. These can include advection of the LEs due to winds and currents,
+diffusive movement of LEs due to unresolved turbulent flow fields, and prescribed behavior of the LEs (e.g. rise velocity of oil droplets
+or larval swimming.)</p>
+<p>Some examples and common use cases are shown here. For complete documentation see <a class="reference internal" href="../reference.html#module-gnome.movers" title="gnome.movers"><code class="xref py py-mod docutils literal"><span class="pre">gnome.movers</span></code></a></p>
+<div class="section" id="wind-movers">
+<h2>Wind movers<a class="headerlink" href="#wind-movers" title="Permalink to this headline">¶</a></h2>
+<p>Wind movers are tied to a wind object in the Environment class which is described
+more fully in <a class="reference internal" href="weatherers.html"><em>Weatherers</em></a>.
+For example to create a wind mover based on manually entered time series:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="kn">import</span> <span class="n">Wind</span>
+<span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="kn">import</span> <span class="n">WindMover</span>
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">datetime_value_2d</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2004</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+<span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">180</span><span class="p">))</span>
+<span class="n">series</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">start_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">18</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">180</span><span class="p">))</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
+<span class="n">wind</span> <span class="o">=</span> <span class="n">Wind</span><span class="p">(</span><span class="n">timeseries</span><span class="o">=</span><span class="n">series</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;m/s&#39;</span><span class="p">)</span>
+<span class="n">w_mover</span> <span class="o">=</span> <span class="n">WindMover</span><span class="p">(</span><span class="n">wind</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">w_mover</span>
+</pre></div>
+</div>
+<p>Some helper functions are available in <a class="reference internal" href="utilities.html#module-gnome.scripting" title="gnome.scripting"><code class="xref py py-mod docutils literal"><span class="pre">gnome.scripting</span></code></a> for creating wind movers. For example, to
+create a wind mover from a single point time series in a text file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.scripting</span> <span class="kn">import</span> <span class="n">wind_mover_from_file</span>
+<span class="n">w_mover</span> <span class="o">=</span> <span class="n">wind_mover_from_file</span><span class="p">(</span><span class="s">&#39;mywind.txt&#39;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">w_mover</span>
+</pre></div>
+</div>
+<p>The format of the text file is described in the GNOME file formats document available <a class="reference external" href="http://response.restoration.noaa.gov/sites/default/files/GNOME_DataFormats.pdf">here</a>.
+Briefly, it has 3 header lines, followed by comma seperated data. An example is given here with
+annotations in brackets at the end of the lines:</p>
+<div class="line-block">
+<div class="line">23NM W Cape Mohican AK <em>(Location name, can be blank)</em></div>
+<div class="line">60.240000, -168.223000 <em>(Latitude,longitude, can be blank)</em></div>
+<div class="line">knots <em>(Units, eg: knots,mph,kph,mps)</em></div>
+<div class="line">14, 10, 2015, 10, 0, 16.00, 20 <em>(day, month, year, hour, minute, speed, direction)</em></div>
+<div class="line">14, 10, 2015, 11, 0, 16.00, 20</div>
+<div class="line">14, 10, 2015, 12, 0, 16.00, 20</div>
+<div class="line">14, 10, 2015, 13, 0, 13.00, 20</div>
+</div>
+</div>
+<div class="section" id="gridded-wind-movers">
+<h2>Gridded wind movers<a class="headerlink" href="#gridded-wind-movers" title="Permalink to this headline">¶</a></h2>
+<p>A spatially variable gridded wind can also be used to move particles in GNOME. At present, this functionality
+does not extend to weathering (i.e. all weathering algorithms use a single point wind time series regardless of
+the particle location. The use of spatially variable winds for weathering processes is currently under development.
+Since the gridded wind effects transport only, a wind object is not added to the model Environment class.</p>
+<p>To create a gridded wind mover, we use the GridWindMover class:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="kn">import</span> <span class="n">GridWindMover</span>
+
+<span class="n">w_mover</span> <span class="o">=</span> <span class="n">GridWindMover</span><span class="p">(</span><span class="s">&#39;mygridwind.nc&#39;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">w_mover</span>
+</pre></div>
+</div>
+<p>The supported netCDF file formats for gridded winds are described <a class="reference external" href="http://response.restoration.noaa.gov/sites/default/files/GNOME_DataFormats.pdf">here</a>.</p>
+</div>
+<div class="section" id="current-movers">
+<h2>Current movers<a class="headerlink" href="#current-movers" title="Permalink to this headline">¶</a></h2>
+<p>An example of implementing a simple current mover with a uniform current was described in
+the Scripting <a class="reference internal" href="scripting_intro.html"><em>Overview</em></a>. More commonly, currents used to move particles in GNOME originate
+from models on regular, curvilinear, or unstructured (triangular) grids.
+Regardless of the grid type, we use the GridCurrentMover class:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="kn">import</span> <span class="n">GridCurrentMover</span>
+
+<span class="n">c_mover</span> <span class="o">=</span> <span class="n">GridCurrentMover</span><span class="p">(</span><span class="s">&#39;mygridcurrent.nc&#39;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">c_mover</span>
+</pre></div>
+</div>
+<p>The supported netCDF file formats for gridded currents are described <a class="reference external" href="http://response.restoration.noaa.gov/sites/default/files/GNOME_DataFormats.pdf">here</a>.</p>
+</div>
+<div class="section" id="random-movers">
+<h2>Random movers<a class="headerlink" href="#random-movers" title="Permalink to this headline">¶</a></h2>
+<p>Randoms movers can be added to simulate both horizontal and vertical turbulent motions.
+Diffusion coefficients can be explicity specified or default values will be used. For
+example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="kn">import</span> <span class="n">RandomMover</span><span class="p">,</span> <span class="n">RandomVerticalMover</span>
+
+<span class="n">random_mover</span> <span class="o">=</span> <span class="n">RandomMover</span><span class="p">(</span><span class="n">diffusion_coef</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="mo">000</span><span class="p">)</span> <span class="c">#in cm/s</span>
+<span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">random_mover</span>
+
+<span class="n">random_vert_mover</span> <span class="o">=</span> <span class="n">RandomVerticalMover</span><span class="p">(</span><span class="n">vertical_diffusion_coef_above_ml</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">vertical_diffusion_coef_below_ml</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>\
+<span class="n">mixed_layer_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c">#diffusion coefficients in cm/s, MLD in meters</span>
+<span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">random_vert_mover</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rise-velocity-movers">
+<h2>Rise velocity movers<a class="headerlink" href="#rise-velocity-movers" title="Permalink to this headline">¶</a></h2>
+<p>The rise velocity mover depends on parameters specified when setting up a subsurface spill. For example, in the
+<a class="reference internal" href="spills.html#subsurface-plume"><span>Subsurface plume</span></a> example, we initialized a spill with a droplet size distribution of 10-300 microns. If we add
+a rise velocity mover, the rise velocities will be calculated based on the droplet size for each particle and the density
+of the specified oil. Since this information is associated with the spill object, we only need to create and add a rise
+velocity mover as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="kn">import</span> <span class="n">RiseVelocityMover</span>
+
+<span class="n">rise_vel_mover</span> <span class="o">=</span> <span class="n">RiseVelocityMover</span>
+<span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">rise_vel_mover</span>
+</pre></div>
+</div>
+<p>As noted in the <a class="reference internal" href="spills.html#subsurface-plume"><span>Subsurface plume</span></a> example, a distribution of rise velocities can also be explicitly specified
+when initializing the subsurface release. To make all particles have the same rise velocity, specify a uniform distribution
+with the same value for high and low parameters. Here&#8217;s a complete example where all particles will have a 1 m/s rise velocity:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">gnome.scripting</span> <span class="kn">import</span> <span class="n">subsurface_plume_spill</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.distributions</span> <span class="kn">import</span> <span class="n">UniformDistribution</span>
+<span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="kn">import</span> <span class="n">RiseVelocityMover</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+          <span class="n">duration</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span>
+          <span class="n">time_step</span><span class="o">=</span><span class="mi">60</span> <span class="o">*</span> <span class="mi">15</span><span class="p">,</span> <span class="c">#seconds</span>
+          <span class="p">)</span>
+<span class="n">ud</span> <span class="o">=</span> <span class="n">UniformDistribution</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">spill</span> <span class="o">=</span> <span class="n">subsurface_plume_spill</span><span class="p">(</span><span class="n">num_elements</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+                               <span class="n">start_position</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">144</span><span class="p">,</span><span class="mf">48.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">1000.0</span><span class="p">),</span>
+                               <span class="n">release_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+                               <span class="n">distribution</span><span class="o">=</span><span class="n">ud</span><span class="p">,</span>
+                               <span class="n">distribution_type</span><span class="o">=</span><span class="s">&#39;rise_velocity&#39;</span><span class="p">,</span>
+                               <span class="n">end_release_time</span> <span class="o">=</span> <span class="n">start_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                               <span class="n">amount</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+                               <span class="n">substance</span><span class="o">=</span><span class="s">&#39;ALASKA NORTH SLOPE (MIDDLE PIPELINE)&#39;</span><span class="p">,</span>
+                               <span class="n">units</span><span class="o">=</span><span class="s">&#39;bbl&#39;</span><span class="p">,</span>
+                               <span class="n">windage_range</span><span class="o">=</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span><span class="mf">0.02</span><span class="p">),</span>
+                               <span class="n">windage_persist</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s">&#39;My spill&#39;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">spills</span> <span class="o">+=</span> <span class="n">spill</span>
+
+<span class="n">rise_vel_mover</span> <span class="o">=</span> <span class="n">RiseVelocityMover</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">rise_vel_mover</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">full_run</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Movers</a><ul>
+<li><a class="reference internal" href="#wind-movers">Wind movers</a></li>
+<li><a class="reference internal" href="#gridded-wind-movers">Gridded wind movers</a></li>
+<li><a class="reference internal" href="#current-movers">Current movers</a></li>
+<li><a class="reference internal" href="#random-movers">Random movers</a></li>
+<li><a class="reference internal" href="#rise-velocity-movers">Rise velocity movers</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="spills.html"
+                        title="previous chapter">Spills</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="weatherers.html"
+                        title="next chapter">Weatherers</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripting/movers.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="weatherers.html" title="Weatherers"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="spills.html" title="Spills"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" >Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

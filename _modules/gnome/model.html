@@ -34,6 +34,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -53,8 +56,8 @@
 <span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">import</span> <span class="nn">zipfile</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span>
-<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
 <span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span>
                       <span class="n">Float</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">drop</span><span class="p">)</span>
 
@@ -65,10 +68,14 @@
 <span class="kn">from</span> <span class="nn">gnome.utilities.orderedcollection</span> <span class="kn">import</span> <span class="n">OrderedCollection</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
 
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">oil_status</span><span class="p">,</span> <span class="n">fate</span>
 <span class="kn">from</span> <span class="nn">gnome.spill_container</span> <span class="kn">import</span> <span class="n">SpillContainerPair</span>
 <span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="kn">import</span> <span class="n">Wind</span>
 <span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="kn">import</span> <span class="n">Mover</span>
-<span class="kn">from</span> <span class="nn">gnome.weatherers</span> <span class="kn">import</span> <span class="n">weatherer_sort</span><span class="p">,</span> <span class="n">Weatherer</span><span class="p">,</span> <span class="n">WeatheringData</span>
+<span class="kn">from</span> <span class="nn">gnome.weatherers</span> <span class="kn">import</span> <span class="p">(</span><span class="n">weatherer_sort</span><span class="p">,</span>
+                              <span class="n">Weatherer</span><span class="p">,</span>
+                              <span class="n">WeatheringData</span><span class="p">,</span>
+                              <span class="n">FayGravityViscous</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">gnome.outputters</span> <span class="kn">import</span> <span class="n">Outputter</span><span class="p">,</span> <span class="n">NetCDFOutput</span><span class="p">,</span> <span class="n">WeatheringOutput</span>
 <span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="p">(</span><span class="n">extend_colander</span><span class="p">,</span>
                            <span class="n">validators</span><span class="p">,</span>
@@ -77,6 +84,9 @@
 <span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ObjType</span><span class="p">,</span>
                                        <span class="n">CollectionItemsList</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">gnome.exceptions</span> <span class="kn">import</span> <span class="n">ReferencedObjectNotSet</span>
+<span class="kn">from</span> <span class="nn">select</span> <span class="kn">import</span> <span class="n">select</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.sql.selectable</span> <span class="kn">import</span> <span class="n">Select</span>
+<span class="c"># from aifc import data</span>
 
 
 <span class="k">class</span> <span class="nc">ModelSchema</span><span class="p">(</span><span class="n">ObjType</span><span class="p">):</span>
@@ -187,27 +197,14 @@
         <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">movers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">g_objects</span><span class="p">]</span>
         <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">weatherers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">l_weatherers</span><span class="p">]</span>
 
-        <span class="c"># register callback with OrderedCollection after objects are added</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">movers</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_callback_add_mover</span><span class="p">,</span>
-                                       <span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">))</span>
-
-        <span class="n">model</span><span class="o">.</span><span class="n">weatherers</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_callback_add_weatherer_env</span><span class="p">,</span>
-                                           <span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">))</span>
-
-        <span class="n">model</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_callback_add_weatherer_env</span><span class="p">,</span>
-                                            <span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">))</span>
+        <span class="c"># register callbacks with OrderedCollections after objects are added</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">_register_callbacks</span><span class="p">()</span>
 
         <span class="c"># OrderedCollections are being used so maintain order.</span>
         <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
             <span class="n">model</span><span class="o">.</span><span class="n">update_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">cls</span><span class="o">.</span><span class="n">_restore_attr_from_save</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">dict_</span><span class="p">)</span>
-
-        <span class="c"># todo: get Water from environment collection</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">_weathering_data</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">w</span><span class="o">.</span><span class="n">on</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">weatherers</span><span class="p">]):</span>
-            <span class="n">water</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="s">&#39;water&#39;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
-            <span class="n">model</span><span class="o">.</span><span class="n">_weathering_data</span> <span class="o">=</span> <span class="n">WeatheringData</span><span class="p">(</span><span class="n">water</span><span class="p">)</span>
 
         <span class="c"># restore the spill data outside this method - let&#39;s not try to find</span>
         <span class="c"># the saveloc here</span>
@@ -247,18 +244,21 @@
                          <span class="n">weathering_substeps</span><span class="p">,</span>
                          <span class="n">uncertain</span><span class="p">,</span> <span class="n">cache_enabled</span><span class="p">,</span> <span class="nb">map</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
 
-        <span class="c"># set in setup_model_run if weatherers are added</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_register_callbacks</span><span class="p">()</span>
 
-        <span class="c"># register callback with OrderedCollection</span>
+    <span class="k">def</span> <span class="nf">_register_callbacks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Register callbacks with the OrderedCollections</span>
+<span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">movers</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_callback_add_mover</span><span class="p">,</span>
                                       <span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">))</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">weatherers</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_callback_add_weatherer_env</span><span class="p">,</span>
                                           <span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">))</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_callback_add_weatherer_env</span><span class="p">,</span>
                                            <span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_callback_add_outputter</span><span class="p">,</span>
+                                          <span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">__restore__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span>
                     <span class="n">weathering_substeps</span><span class="p">,</span> <span class="n">uncertain</span><span class="p">,</span> <span class="n">cache_enabled</span><span class="p">,</span> <span class="nb">map</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
@@ -508,7 +508,7 @@
 <span class="sd">        To get all obects of this type, set ret_all to True</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">all_objs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">collection</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">collection</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">ret_all</span><span class="p">:</span>
                     <span class="k">return</span> <span class="n">obj</span>
@@ -562,35 +562,64 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">attr</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;wind&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;water&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;waves&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">}</span>
         <span class="n">attr</span><span class="p">[</span><span class="s">&#39;wind&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="s">&#39;wind&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
-        <span class="n">attr</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="s">&#39;water&#39;</span><span class="p">,</span>
-                                           <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
-        <span class="n">attr</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="s">&#39;waves&#39;</span><span class="p">,</span>
-                                           <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
+        <span class="n">attr</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="s">&#39;water&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
+        <span class="n">attr</span><span class="p">[</span><span class="s">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="s">&#39;waves&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
 
-        <span class="n">weathering</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">weather_data</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">wd</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">spread</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="k">for</span> <span class="n">coll</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;environment&#39;</span><span class="p">,</span> <span class="s">&#39;weatherers&#39;</span><span class="p">,</span> <span class="s">&#39;movers&#39;</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coll</span><span class="p">):</span>
 
-                <span class="k">if</span> <span class="n">coll</span> <span class="o">==</span> <span class="s">&#39;weatherers&#39;</span> <span class="ow">and</span> <span class="n">item</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
-                    <span class="n">weathering</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">if</span> <span class="n">coll</span> <span class="o">==</span> <span class="s">&#39;weatherers&#39;</span><span class="p">:</span>
+                    <span class="c"># by default turn WeatheringData and spreading object off</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">WeatheringData</span><span class="p">):</span>
+                        <span class="n">item</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="bp">False</span>
+                        <span class="n">wd</span> <span class="o">=</span> <span class="n">item</span>
+
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">_ref_as</span> <span class="o">==</span> <span class="s">&#39;spreading&#39;</span><span class="p">:</span>
+                            <span class="n">item</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="bp">False</span>
+                            <span class="n">spread</span> <span class="o">=</span> <span class="n">item</span>
+
+                    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                        <span class="k">pass</span>
+
+                    <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+                        <span class="n">weather_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">array_types</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s">&#39;on&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+                    <span class="c"># no need to setup references if item is not on</span>
+                    <span class="k">continue</span>
 
                 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">attr</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
                     <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">and</span> <span class="n">item</span><span class="o">.</span><span class="n">make_default_refs</span><span class="p">:</span>
                         <span class="nb">setattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">weathering</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">attr</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;model has weathering but no water object - expect &quot;</span>
-                       <span class="s">&quot;failure at runtime&quot;</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span> <span class="o">=</span> <span class="n">WeatheringData</span><span class="p">(</span><span class="n">attr</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">])</span>
+        <span class="c"># if WeatheringData object and FayGravityViscous (spreading object)</span>
+        <span class="c"># are not defined by user, add them automatically because most</span>
+        <span class="c"># weatherers will need these</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">weather_data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">wd</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">weatherers</span> <span class="o">+=</span> <span class="n">WeatheringData</span><span class="p">(</span><span class="n">attr</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span><span class="p">,</span> <span class="s">&#39;water&#39;</span><span class="p">,</span> <span class="n">attr</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">])</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c"># reset to None if no weatherers found - don&#39;t want to carry around</span>
-            <span class="c"># all the extra data arrays</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="c"># turn mass_balance on and make references</span>
+                <span class="n">wd</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">if</span> <span class="n">wd</span><span class="o">.</span><span class="n">make_default_refs</span><span class="p">:</span>
+                    <span class="n">wd</span><span class="o">.</span><span class="n">water</span> <span class="o">=</span> <span class="n">attr</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">]</span>
+
+        <span class="c"># if a weatherer is using &#39;area&#39; array, make sure it is being set.</span>
+        <span class="c"># Objects that set &#39;area&#39; are referenced as &#39;spreading&#39;</span>
+        <span class="k">if</span> <span class="s">&#39;area&#39;</span> <span class="ow">in</span> <span class="n">weather_data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">spread</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">weatherers</span> <span class="o">+=</span> <span class="n">FayGravityViscous</span><span class="p">(</span><span class="n">attr</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># turn spreading on and make references</span>
+                <span class="n">spread</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">if</span> <span class="n">spread</span><span class="o">.</span><span class="n">make_default_refs</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">at</span> <span class="ow">in</span> <span class="n">attr</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">spread</span><span class="p">,</span> <span class="n">at</span><span class="p">):</span>
+                            <span class="n">spread</span><span class="o">.</span><span class="n">water</span> <span class="o">=</span> <span class="n">attr</span><span class="p">[</span><span class="s">&#39;water&#39;</span><span class="p">]</span>
 
 <div class="viewcode-block" id="Model.setup_model_run"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.setup_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">setup_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -603,9 +632,6 @@
         <span class="c"># attach references so objects don&#39;t raise ReferencedObjectNotSet error</span>
         <span class="c"># in prepare_for_model_run()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_attach_references</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span><span class="o">.</span><span class="n">array_types</span><span class="p">)</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>  <span class="c"># why is rewind for spills here?</span>
 
         <span class="c"># remake orderedcollections defined by model</span>
@@ -625,7 +651,7 @@
         <span class="n">weathering</span> <span class="o">=</span> <span class="bp">False</span>
         <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">weatherers</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="c"># weatherers will initialize &#39;weathering_data&#39; key/values</span>
+                <span class="c"># weatherers will initialize &#39;mass_balance&#39; key/values</span>
                 <span class="c"># to 0.0</span>
                 <span class="k">if</span> <span class="n">w</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
                     <span class="n">w</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
@@ -651,9 +677,6 @@
 
         <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">sc</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">array_types</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="c"># do this only if we have user has added spills!</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
 
         <span class="c"># outputters need array_types, so this needs to come after those</span>
         <span class="c"># have been updated.</span>
@@ -661,7 +684,8 @@
             <span class="n">outputter</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">model_start_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">,</span>
                                             <span class="n">cache</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">,</span>
                                             <span class="n">uncertain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uncertain</span><span class="p">,</span>
-                                            <span class="n">spills</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">)</span>
+                                            <span class="n">spills</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">,</span>
+                                            <span class="n">model_time_step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;{0._pid} setup_model_run complete for: &quot;</span>
                           <span class="s">&quot;{0.name}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
 </div>
@@ -709,9 +733,27 @@
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">beach_elements</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
 
+                <span class="c"># let model mark these particles to be removed</span>
+                <span class="n">tbr_mask</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">off_maps</span>
+                <span class="n">sc</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">][</span><span class="n">tbr_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">to_be_removed</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_update_fate_status</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+
                 <span class="c"># the final move to the new positions</span>
                 <span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">])[:]</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;next_positions&#39;</span><span class="p">]</span>
 </div>
+    <span class="k">def</span> <span class="nf">_update_fate_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        WeatheringData used to perform this operation in weather_elements;</span>
+<span class="sd">        however, WeatheringData is one of the objects in weatherers collection</span>
+<span class="sd">        so just let model do this for now. Eventually, we want to get rid</span>
+<span class="sd">        of &#39;fate_status&#39; array and only manipulate &#39;status_codes&#39;. Until then,</span>
+<span class="sd">        update fate_status in move_elements</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="s">&#39;fate_status&#39;</span> <span class="ow">in</span> <span class="n">sc</span><span class="p">:</span>
+            <span class="n">non_w_mask</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">on_land</span>
+            <span class="n">sc</span><span class="p">[</span><span class="s">&#39;fate_status&#39;</span><span class="p">][</span><span class="n">non_w_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">fate</span><span class="o">.</span><span class="n">non_weather</span>
+
 <div class="viewcode-block" id="Model.weather_elements"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.weather_elements">[docs]</a>    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Weathers elements:</span>
@@ -733,8 +775,7 @@
             <span class="k">return</span>
 
         <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span><span class="o">.</span><span class="n">update_fate_status</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+            <span class="c"># elements may have beached to update fate_status</span>
 
             <span class="n">sc</span><span class="o">.</span><span class="n">reset_fate_dataview</span><span class="p">()</span>
 
@@ -781,7 +822,11 @@
                 <span class="n">mover</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">weatherers</span><span class="p">:</span>
-            <span class="n">w</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">w</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">outputter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="p">:</span>
+            <span class="n">outputter</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">()</span>
 
         <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="sd">&#39;&#39;&#39;</span>
@@ -791,12 +836,9 @@
 
             <span class="c"># age remaining particles</span>
             <span class="n">sc</span><span class="p">[</span><span class="s">&#39;age&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;age&#39;</span><span class="p">][:]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span>
-
-        <span class="k">for</span> <span class="n">outputter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="p">:</span>
-            <span class="n">outputter</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">()</span>
 </div>
 <div class="viewcode-block" id="Model.write_output"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.write_output">[docs]</a>    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">valid</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="n">output_info</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">output_info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;step_num&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span><span class="p">}</span>
 
         <span class="k">for</span> <span class="n">outputter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_time_steps</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
@@ -807,11 +849,9 @@
             <span class="k">if</span> <span class="n">output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
                 <span class="n">output_info</span><span class="p">[</span><span class="n">outputter</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="n">output</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">output_info</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{</span><span class="s">&#39;step_num&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span><span class="p">}</span>
-
-        <span class="c"># append &#39;valid&#39; flag to output</span>
-        <span class="n">output_info</span><span class="p">[</span><span class="s">&#39;valid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">valid</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_info</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c"># append &#39;valid&#39; flag to output</span>
+            <span class="n">output_info</span><span class="p">[</span><span class="s">&#39;valid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">valid</span>
 
         <span class="k">return</span> <span class="n">output_info</span>
 </div>
@@ -833,8 +873,8 @@
 
             <span class="c"># let each object raise appropriate error if obj is incomplete</span>
             <span class="c"># validate and send validation flag if model is invalid</span>
-            <span class="c">#(msgs, isvalid) = self.validate()</span>
-            <span class="c">#if not isvalid:</span>
+            <span class="c"># (msgs, isvalid) = self.validate()</span>
+            <span class="c"># if not isvalid:</span>
             <span class="c">#    raise StopIteration(&quot;Setup model run complete but model &quot;</span>
             <span class="c">#                        &quot;is invalid&quot;, msgs)</span>
 
@@ -867,8 +907,13 @@
             <span class="c"># release particles for next step - these particles will be aged</span>
             <span class="c"># in the next step</span>
             <span class="n">num_released</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">release_elements</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_time</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">num_released</span><span class="p">,</span> <span class="n">sc</span><span class="p">)</span>
+
+            <span class="c"># initialize data - currently only weatherers do this so cycle</span>
+            <span class="c"># over weatherers collection - in future, maybe movers can also do</span>
+            <span class="c"># this</span>
+            <span class="k">if</span> <span class="n">num_released</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">weatherers</span><span class="p">:</span>
+                    <span class="n">item</span><span class="o">.</span><span class="n">initialize_data</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">num_released</span><span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;{1._pid} released {0} new elements for step:&quot;</span>
                               <span class="s">&quot; {1.current_time_step} for {1.name}&quot;</span><span class="o">.</span>
@@ -950,6 +995,11 @@
         <span class="s">&#39;Callback after mover has been added&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_environ_collec</span><span class="p">(</span><span class="n">obj_added</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>  <span class="c"># rewind model if a new mover is added</span>
+
+    <span class="k">def</span> <span class="nf">_callback_add_outputter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_added</span><span class="p">):</span>
+        <span class="s">&#39;Callback after outputter has been added&#39;</span>
+        <span class="c"># hook up the cache</span>
+        <span class="n">obj_added</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span>
 
     <span class="k">def</span> <span class="nf">_callback_add_weatherer_env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_added</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -1039,11 +1089,13 @@
 <span class="sd">            either persisted here or a new model is re-created from the files</span>
 <span class="sd">            stored here. The files are clobbered when save() is called.</span>
 <span class="sd">        :type saveloc: A path as a string or unicode</span>
+
 <span class="sd">        :param name=None: If data is saved to zipfile (default behavior), then</span>
 <span class="sd">            this is name of zip file. For a zipfile, the model&#39;s state is</span>
 <span class="sd">            always contained in Model.json. If zipsave is False, then model&#39;s</span>
 <span class="sd">            json is stored in name.json</span>
 <span class="sd">        :type name: str</span>
+
 <span class="sd">        :param references: dict of references mapping &#39;id&#39; to a string used for</span>
 <span class="sd">            the reference. The value could be a unique integer or it could be</span>
 <span class="sd">            a filename. It is upto the creator of the reference list to decide</span>
@@ -1151,9 +1203,6 @@
         <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">weatherers</span><span class="p">:</span>
             <span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">array_types</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span><span class="p">:</span>
-            <span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_weathering_data</span><span class="o">.</span><span class="n">array_types</span><span class="p">)</span>
-
         <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">sc</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">array_types</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span><span class="p">:</span>
@@ -1167,7 +1216,7 @@
 
             <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;current_time_stamp&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
             <span class="n">sc</span><span class="o">.</span><span class="n">_data_arrays</span> <span class="o">=</span> <span class="n">data</span>
-            <span class="n">sc</span><span class="o">.</span><span class="n">weathering_data</span> <span class="o">=</span> <span class="n">weather_data</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span> <span class="o">=</span> <span class="n">weather_data</span>
 
         <span class="c"># delete file after data is loaded - since no longer needed</span>
         <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">spill_data</span><span class="p">)</span>
@@ -1200,6 +1249,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
         <span class="n">o_json_</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
         <span class="n">o_json_</span><span class="p">[</span><span class="s">&#39;map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
 
@@ -1215,6 +1265,8 @@
             <span class="n">o_json_</span><span class="p">[</span><span class="s">&#39;valid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">isvalid</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">msgs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">o_json_</span><span class="p">[</span><span class="s">&#39;messages&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">msgs</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">o_json_</span><span class="p">[</span><span class="s">&#39;messages&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="k">return</span> <span class="n">o_json_</span>
 </div>
@@ -1225,9 +1277,10 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">])</span>
         <span class="n">deserial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="s">&#39;map&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
-            <span class="c">#d_item = cls._deserialize_nested_obj(json_[&#39;map&#39;])</span>
-            <span class="c">#deserial[&#39;map&#39;] = d_item</span>
+            <span class="c"># d_item = cls._deserialize_nested_obj(json_[&#39;map&#39;])</span>
+            <span class="c"># deserial[&#39;map&#39;] = d_item</span>
             <span class="c"># map will be deserialized later - no need to do it twice</span>
             <span class="c"># todo: clean this up</span>
             <span class="n">deserial</span><span class="p">[</span><span class="s">&#39;map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json_</span><span class="p">[</span><span class="s">&#39;map&#39;</span><span class="p">]</span>
@@ -1425,7 +1478,86 @@
         <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;weatherers&#39;</span><span class="p">,</span> <span class="s">&#39;movers&#39;</span><span class="p">,</span> <span class="s">&#39;environment&#39;</span><span class="p">):</span>
             <span class="n">oc</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">oc</span><span class="p">:</span>
-                <span class="n">item</span><span class="o">.</span><span class="n">make_default_refs</span> <span class="o">=</span> <span class="n">value</span></div></div>
+                <span class="n">item</span><span class="o">.</span><span class="n">make_default_refs</span> <span class="o">=</span> <span class="n">value</span>
+</div>
+<div class="viewcode-block" id="Model.get_spill_property"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.get_spill_property">[docs]</a>    <span class="k">def</span> <span class="nf">get_spill_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop_name</span><span class="p">,</span> <span class="n">ucert</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Convenience method to allow user to look up properties of a spill.</span>
+<span class="sd">        User can specify ucert as &#39;ucert&#39; or 1</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">ucert</span> <span class="o">==</span> <span class="s">&#39;ucert&#39;</span><span class="p">:</span>
+            <span class="n">ucert</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">()[</span><span class="n">ucert</span><span class="p">][</span><span class="n">prop_name</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="Model.get_spill_data"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.get_spill_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_spill_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_properties</span><span class="p">,</span> <span class="n">conditions</span><span class="p">,</span> <span class="n">ucert</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convenience method to allow user to write an expression to filter</span>
+<span class="sd">        raw spill data</span>
+<span class="sd">        Example case:</span>
+<span class="sd">        get_spill_data(&#39;position &amp;&amp; mass&#39;,</span>
+<span class="sd">        &#39;position &gt; 50 &amp;&amp; spill_num == 1 || status_codes == 1&#39;)</span>
+
+<span class="sd">        WARNING: EXPENSIVE! USE AT YOUR OWN RISK ON LARGE num_elements!</span>
+
+<span class="sd">        Example spill element properties are below. This list may not contain</span>
+<span class="sd">        all properties tracked by the model.</span>
+<span class="sd">        &#39;positions&#39;, &#39;next_positions&#39;, &#39;last_water_positions&#39;, &#39;status_codes&#39;,</span>
+<span class="sd">        &#39;spill_num&#39;, &#39;id&#39;, &#39;mass&#39;, &#39;age&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ucert</span> <span class="o">==</span> <span class="s">&#39;ucert&#39;</span><span class="p">:</span>
+            <span class="n">ucert</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">def</span> <span class="nf">elem_val</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+            <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Gets the column containing the information on one element</span>
+<span class="sd">            &#39;&#39;&#39;</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">()[</span><span class="n">ucert</span><span class="p">]</span><span class="o">.</span><span class="n">data_arrays</span><span class="p">[</span><span class="n">prop</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">val</span>
+
+        <span class="k">def</span> <span class="nf">test_phrase</span><span class="p">(</span><span class="n">phrase</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">sub_cond</span> <span class="ow">in</span> <span class="n">phrase</span><span class="p">:</span>
+                    <span class="n">cond</span> <span class="o">=</span> <span class="n">sub_cond</span><span class="o">.</span><span class="n">rsplit</span><span class="p">()</span>
+                    <span class="n">prop_val</span> <span class="o">=</span> <span class="n">elem_val</span><span class="p">(</span><span class="n">cond</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">i</span><span class="p">)</span>
+                    <span class="n">op</span> <span class="o">=</span> <span class="n">cond</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">test_num</span> <span class="o">=</span> <span class="n">cond</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">test</span><span class="p">(</span><span class="n">prop_val</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">test_num</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="bp">True</span>
+
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="n">elem_value</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">test_val</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">op</span> <span class="ow">in</span> <span class="p">{</span><span class="s">&#39;&lt;&#39;</span><span class="p">,</span> <span class="s">&#39;&lt;=&#39;</span><span class="p">,</span> <span class="s">&#39;&gt;&#39;</span><span class="p">,</span> <span class="s">&#39;&gt;=&#39;</span><span class="p">,</span> <span class="s">&#39;==&#39;</span><span class="p">}:</span>
+                <span class="k">return</span> <span class="nb">eval</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">elem_value</span><span class="p">))</span><span class="o">+</span><span class="n">op</span><span class="o">+</span><span class="n">test_val</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">num</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+        <span class="n">conditions</span> <span class="o">=</span> <span class="n">conditions</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;&amp;&amp;&#39;</span><span class="p">)</span>
+        <span class="n">conditions</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;||&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">cond</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">]</span>
+
+        <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">()[</span><span class="n">ucert</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">target_properties</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sc</span><span class="p">)):</span>
+            <span class="n">test_result</span> <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="k">for</span> <span class="n">phrase</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">test_phrase</span><span class="p">(</span><span class="n">phrase</span><span class="p">):</span>
+                    <span class="n">test_result</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">test_result</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">n</span> <span class="o">=</span> <span class="n">elem_val</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+                    <span class="n">result</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span></div></div>
 </pre></div>
 
           </div>
@@ -1456,6 +1588,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &raquo;</li> 
       </ul>

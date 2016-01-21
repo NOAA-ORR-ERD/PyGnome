@@ -1,0 +1,208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Outputters &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html" />
+    <link rel="up" title="Scripting pygnome" href="../scripting.html" />
+    <link rel="next" title="Examples" href="scripting_examples.html" />
+    <link rel="prev" title="Weatherers" href="weatherers.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scripting_examples.html" title="Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="weatherers.html" title="Weatherers"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" accesskey="U">Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="outputters">
+<h1>Outputters<a class="headerlink" href="#outputters" title="Permalink to this headline">¶</a></h1>
+<p>Outputters allow us to save our model run results. Options include saving images, netcdf, kmlz, and geoJSON formats.</p>
+<div class="section" id="the-outputter-api">
+<h2>The Outputter API<a class="headerlink" href="#the-outputter-api" title="Permalink to this headline">¶</a></h2>
+<p>Each outputter must be initialized a little differently, depending on its capabilities and intended use, but the general API is:</p>
+<div class="highlight-python"><div class="highlight"><pre>Outputter(cache=None,
+          on=True,
+          output_timestep=None,
+          output_zero_step=True,
+          output_last_step=True,
+          name=None):
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">cache</span></code> object is where the ouputtter will pull its data from &#8211; if not set, it automatically grabs the cache from the model when added to a model.</p>
+<p><code class="docutils literal"><span class="pre">output_timestep</span></code> specifies when you want the output written &#8211; it defaults to every model timestep, but you may only want output every hour, or every 6 hours, or...</p>
+<p><code class="docutils literal"><span class="pre">output_zero_timestep</span></code> specified whether you want the zeroth timestep (before any elements have been moved or altered) output</p>
+<p><code class="docutils literal"><span class="pre">output_last_timestep</span></code> specifies whether you want the final timestep output, regardless of whether it lands on a the specified output_timestep.</p>
+<p>See <a class="reference internal" href="../reference.html#gnome.outputters.Outputter" title="gnome.outputters.Outputter"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.Outputter</span></code></a> for the full API.</p>
+</div>
+<div class="section" id="renderer">
+<h2>Renderer<a class="headerlink" href="#renderer" title="Permalink to this headline">¶</a></h2>
+<p>For graphical (images) output we add a Renderer:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">gnome.outputters</span> <span class="kn">import</span> <span class="n">Renderer</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
+<span class="n">renderer</span> <span class="o">=</span> <span class="n">Renderer</span><span class="p">(</span><span class="n">mapfile</span><span class="o">=</span><span class="s">&quot;the_map_bna&quot;</span><span class="p">,</span>
+                    <span class="n">images_dir</span> <span class="o">=</span> <span class="s">&quot;output&quot;</span><span class="p">,</span>
+                    <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1280</span><span class="p">,</span><span class="mi">1024</span><span class="p">),</span>
+                    <span class="n">output_timestep</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">model</span><span class="o">.</span><span class="n">outputters</span> <span class="o">+=</span> <span class="n">renderer</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="../reference.html#gnome.outputters.Renderer" title="gnome.outputters.Renderer"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.Renderer</span></code></a> for some additional parameters that can be passed to the renderer.</p>
+</div>
+<div class="section" id="netcdf-output">
+<h2>NetCDF Output<a class="headerlink" href="#netcdf-output" title="Permalink to this headline">¶</a></h2>
+<p>To save particle information into a NetCDF file we use the NetCDF outputter. In this example, we also make use of a few utilities from the scripting package to create and clean output directories:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">gnome.outputters</span> <span class="kn">import</span> <span class="n">NetCDFOutput</span>
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">scripting</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
+<span class="n">images_dir</span> <span class="o">=</span> <span class="s">&#39;images&#39;</span>
+<span class="n">scripting</span><span class="o">.</span><span class="n">make_images_dir</span><span class="p">(</span><span class="n">images_dir</span><span class="p">)</span>
+<span class="n">netcdf_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">images_dir</span><span class="p">,</span> <span class="s">&#39;test_output.nc&#39;</span><span class="p">)</span>
+<span class="n">scripting</span><span class="o">.</span><span class="n">remove_netcdf</span><span class="p">(</span><span class="n">netcdf_file</span><span class="p">)</span>
+<span class="n">nc_outputter</span> <span class="o">=</span> <span class="n">NetCDFOutput</span><span class="p">(</span><span class="n">netcdf_file</span><span class="p">,</span> <span class="n">which_data</span><span class="o">=</span><span class="s">&#39;most&#39;</span><span class="p">,</span> <span class="n">output_timestep</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">24</span><span class="p">))</span>
+<span class="n">model</span><span class="o">.</span><span class="n">outputters</span> <span class="o">+=</span> <span class="n">nc_outputter</span>
+</pre></div>
+</div>
+<p><code class="docutils literal"><span class="pre">which_data</span></code> specifies what data associated with the elements you want written out to the file. the options are: &#8216;standard&#8217;, &#8216;most&#8217; or &#8216;all&#8217;.</p>
+<p>&#8216;standard&#8217; : the basic stuff most people would want</p>
+<dl class="docutils">
+<dt>&#8216;most&#8217;: everything the model is tracking except the internal-use-only</dt>
+<dd>arrays</dd>
+</dl>
+<p>&#8216;all&#8217;: everything tracked by the model (mostly used for diagnostics)</p>
+<p>in addition, you can specifically set exactly which data are output by altering the <code class="docutils literal"><span class="pre">.arrays_to_output</span></code> attribute of the outputter. It is a python set, and data array names can be added or removed before the model is run.</p>
+<p>The resulting netcdf files are in the &#8220;nc_particles&#8221; format. This format allows storage of arbitrary data associated with the elements, and different numbers of elements at each timestep. Code to read this format can be found here in the GnomeTools repository on gitHub:</p>
+<p><a class="reference external" href="https://github.com/NOAA-ORR-ERD/GnomeTools/blob/master/post_gnome/post_gnome/nc_particles.py">https://github.com/NOAA-ORR-ERD/GnomeTools/blob/master/post_gnome/post_gnome/nc_particles.py</a></p>
+<p>See <a class="reference internal" href="../reference.html#gnome.outputters.NetCDFOutput" title="gnome.outputters.NetCDFOutput"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.NetCDFOutput</span></code></a> for some additional parameters that can be passed to the constructor to customize the output.</p>
+</div>
+<div class="section" id="kmz-output">
+<h2>KMZ Output<a class="headerlink" href="#kmz-output" title="Permalink to this headline">¶</a></h2>
+<p>To save particle information into a KMZ file that can be read by Google Earth (and other applications), we use the KMZ outputter:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">model</span><span class="o">.</span><span class="n">outputters</span> <span class="o">+=</span> <span class="n">KMZOutput</span><span class="p">(</span><span class="s">&#39;gnome_results.kmz&#39;</span><span class="p">,</span>
+                              <span class="n">output_timestep</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">6</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The KMZ contains a kml file with layers for each output timestep, unceratain and certain elements, ans beached and floating elements, along with icons to render the elements.</p>
+<p>See <a class="reference internal" href="../reference.html#gnome.outputters.KMZOutput" title="gnome.outputters.KMZOutput"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.KMZOutput</span></code></a> for the full documentation</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Outputters</a><ul>
+<li><a class="reference internal" href="#the-outputter-api">The Outputter API</a></li>
+<li><a class="reference internal" href="#renderer">Renderer</a></li>
+<li><a class="reference internal" href="#netcdf-output">NetCDF Output</a></li>
+<li><a class="reference internal" href="#kmz-output">KMZ Output</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="weatherers.html"
+                        title="previous chapter">Weatherers</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="scripting_examples.html"
+                        title="next chapter">Examples</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripting/outputters.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scripting_examples.html" title="Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="weatherers.html" title="Weatherers"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../scripting.html" >Scripting pygnome</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>
