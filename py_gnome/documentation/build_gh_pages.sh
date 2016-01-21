@@ -6,12 +6,18 @@
 # make the docs
 make html
 
-# copy to other repo (on the gh-pages branch)
-cp -R _build/html/ ../../../pygnome.gh-pages/
-
-cd ../../../pygnome.gh-pages/
+# make sure other copy of repo is in the right branch
+pushd ../../../PyGnome.gh-pages/
 git checkout gh-pages
+popd
+
+# copy to other repo (on the gh-pages branch)
+cp -R _build/html/ ../../../PyGnome.gh-pages/
+
+pushd ../../../PyGnome.gh-pages/
 git add * # in case there are new files added
 git commit -a -m "updating documentation"
-#git pull -s ours
-#git push
+# make sure we're in sync with other changes in repo
+git pull -s ours
+git push
+
