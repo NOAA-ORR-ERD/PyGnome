@@ -38,11 +38,10 @@ os.chdir(SETUP_PATH)
 
 def target_dir(name):
     '''Returns the name of a distutils build directory'''
-    f = '{dirname}.{platform}-{version[0]}.{version[1]}'
-
-    return f.format(dirname=name,
+    return ('{dirname}.{platform}-{version[0]}.{version[1]}'
+            .format(dirname=name,
                     platform=sysconfig.get_platform(),
-                    version=sys.version_info)
+                    version=sys.version_info))
 
 
 def target_path(name='temp'):
@@ -326,7 +325,6 @@ elif sys.platform == "win32":
     libdirs = []
 
 elif sys.platform == "linux2":
-
     # for some reason I have to create build/temp.linux-i686-2.7
     # else the compile fails saying temp.linux-i686-2.7 is not found
     # required for develop or install mode
@@ -373,6 +371,8 @@ elif sys.platform == "linux2":
     os.environ['LDFLAGS'] = "-L{0} -Wl,-rpath='$ORIGIN'".format(libpath)
 
     # End building C++ shared object
+    compile_args = ["-Wl,-rpath,'$ORIGIN'"]
+
     lib = ['gnome']
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'],
