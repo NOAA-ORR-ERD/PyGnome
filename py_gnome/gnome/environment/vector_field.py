@@ -1,9 +1,14 @@
+import warnings
+
 import netCDF4 as nc4
 import numpy as np
-from gnome.utilities.geometry.cy_point_in_polygon import ps_in_poly
+
+from gnome.utilities.geometry.cy_point_in_polygon import points_in_polys
 from datetime import datetime, timedelta
 from dateutil import parser
+
 import pyugrid
+import pysgrid
 
 
 def tri_vector_field(filename=None, dataset=None):
@@ -68,43 +73,26 @@ def ice_field(filename=None, dataset=None):
 def roms_field(filename=None, dataset=None):
     if dataset is None:
         dataset = nc4.Dataset(filename)
-    xi_psi = len(dataset.dimensions['xi_psi'])
-    eta_psi = len(dataset.dimensions['eta_psi'])
-    dims = {'xi_psi': xi_psi, 'eta_psi': eta_psi}
-    faces = np.array([np.array([[x, x + 1, x + xi_psi + 1, x + xi_psi]
-                                for x in range(0, xi_psi - 1, 1)]) + y * xi_psi for y in range(0, eta_psi - 1)])
-    faces = np.ascontiguousarray(
-        faces.reshape(((eta_psi - 1) * (xi_psi - 1), 4)))
-    nodes = np.column_stack((dataset['lon_psi'][:].reshape(
-        eta_psi * xi_psi), dataset['lat_psi'][:].reshape(eta_psi * xi_psi)))
-    nodes = np.ascontiguousarray(nodes)
-    grid = pyugrid.UGrid(nodes,
-                         faces,
-                         curv_x=xi_psi,
-                         curv_y=eta_psi,
-                         curvilinear=True)
+    grid = pysgrid.from_nc_dataset(dataset)
+    grid.build_edges()
+
     time = Time(dataset['ocean_time'])
     u = pyugrid.SUVar('u', data=dataset['u'])
     v = pyugrid.SUVar('v', data=dataset['v'])
-    u_lon = dataset['lon_u'][:]
-    u_lat = dataset['lat_u'][:]
-    v_lon = dataset['lon_v'][:]
-    v_lat = dataset['lat_v'][:]
-    u_mask = pyugrid.SUVar('u_mask', data=dataset['mask_u'])
-    v_mask = pyugrid.SUVar('v_mask', data=dataset['mask_v'])
-    land_mask = pyugrid.SUVar('psi_mask', data=dataset['mask_psi'])
+    u_nodes = np.stack((dataset['lon_u'][:], dataset['lat_u'][:]), -1)
+    v_nodes = np.stack((dataset['lon_v'][:], dataset['lat_v'][:]), -1)
+    u_mask = dataset['mask_u'][:]
+    v_mask = dataset['mask_v'][:]
+    land_mask = dataset['mask_psi'][:]
     variables = {'u': u,
                  'v': v,
-                 'u_lon': u_lon,
-                 'u_lat': u_lat,
-                 'v_lon': v_lon,
-                 'v_lat': v_lat,
+                 'u_nodes': u_nodes,
+                 'v_nodes': v_nodes,
                  'u_mask': u_mask,
                  'v_mask': v_mask,
                  'land_mask': land_mask,
                  'time': time}
-    type = 'curvilinear'
-    return SField(grid, 'u', 'v', time=time, variables=variables, type=type, dimensions=dims)
+    return SField(grid, 'u', 'v', time=time, variables=variables, dimensions=grid.nodes.shape)
 
 
 class VectorField(object):
@@ -119,19 +107,22 @@ class VectorField(object):
                  name=None,
                  type=None,
                  dimensions=None,
+                 velocities=None,
                  appearance={}
                  ):
         self.grid = grid
         if grid.edges is None:
             self.grid.build_edges()
-        if grid.face_face_connectivity is None:
-            self.grid.build_face_face_connectivity()
-        self.grid.mesh_name = name
+#         if grid.face_face_connectivity is None:
+#             self.grid.build_face_face_connectivity()
         self.grid_type = type
         self.time = time
         self.variables = variables
         for k, v in self.variables.items():
             setattr(self, k, v)
+
+        if not hasattr(self, 'velocities'):
+            self.velocities = velocities
         self._appearance = {}
         self.set_appearance(**appearance)
 
@@ -145,7 +136,8 @@ class VectorField(object):
              'width': 1,
              'filled': False,
              'mask': None,
-             'n_size': 2}
+             'n_size': 2,
+             'curvilinear': False}
         d.update(self._appearance)
         return d
 
@@ -161,20 +153,6 @@ class VectorField(object):
     def triangles(self):
         return self.grid.nodes[self.grid.faces]
 
-    def get_node_velocities(self, time):
-        '''
-        TODO: implement and check a cache to avoid excessive disk lookup
-        Returns a numpy array containing the velocities at each node at the specified time.
-        :param time: a datetime object within the bounds of the time
-        :type time: datetime.datetime
-
-        '''
-        t_alpha = self.time.interp_alpha(time)
-        t_index = self.time.indexof(time)
-        v0 = self.velocities[t_index]
-        v1 = self.velocities[t_index + 1]
-        return v0 + (v1 - v0) * t_alpha
-
     def interpolated_velocities(self, time, points):
         """
         Returns the velocities at each of the points at the specified time, using interpolation
@@ -186,11 +164,36 @@ class VectorField(object):
         indices = self.grid.locate_faces(points)
         pos_alphas = self.grid.interpolation_alphas(points, indices)
         # map the node velocities to the faces specified by the points
-        time_interp_vels = self.get_node_velocities(
-            time)[self.grid.faces[indices]]
+        t_alpha = self.time.interp_alpha(time)
+        t_index = self.time.indexof(time)
+        v0 = self.velocities[t_index]
+        v1 = self.velocities[t_index + 1]
+        node_vels = v0 + (v1 - v0) * t_alpha
+        time_interp_vels = node_vels[self.grid.faces[indices]]
 
         # scaled vels = [us,vs] = [(u1*alpha1 + u2*a2 + u3*a3), (v1*a1 + v2*a2
         # + v3*a3)]
+        return np.sum(time_interp_vels * pos_alphas[:, :, np.newaxis], axis=1)
+
+    def interpolate(self, time, points, field):
+        """
+        Returns the velocities at each of the points at the specified time, using interpolation
+        on the nodes of the triangle that the point is in.
+        :param time: The time in the simulation
+        :param points: a numpy array of points that you want to find interpolated velocities for
+        :param field: the value field that you want to interpolate over. 
+        :return: interpolated velocities at the specified points
+        """
+        indices = self.grid.locate_faces(points)
+        pos_alphas = self.grid.interpolation_alphas(points, indices)
+        # map the node velocities to the faces specified by the points
+        t_alpha = self.time.interp_alpha(time)
+        t_index = self.time.indexof(time)
+        f0 = field[t_index]
+        f1 = field[t_index + 1]
+        node_vals = f0 + (f1 - f0) * t_alpha
+        time_interp_vels = node_vels[self.grid.faces[indices]]
+
         return np.sum(time_interp_vels * pos_alphas[:, :, np.newaxis], axis=1)
 
     def get_edges(self, bounds=None):
@@ -200,6 +203,7 @@ class VectorField(object):
         :return: array of pairs of lon/lat points describing all the edges in the grid, or only those within
         the bounds, if bounds is specified.
         """
+        return self.grid.edges
         if bounds is None:
             return self.grid.nodes[self.grid.edges]
         else:
@@ -283,6 +287,7 @@ class SField(VectorField):
 
     def __init__(self, grid, u_name, v_name, **kwargs):
         super(SField, self).__init__(grid, **kwargs)
+        self.set_appearance(curvilinear=True)
 
     def s_poly(self, index, var):
         arr = var[:]
@@ -290,37 +295,51 @@ class SField(VectorField):
         y = index[:, 1]
         return np.stack((arr[x, y], arr[x + 1, y], arr[x + 1, y + 1], arr[x, y + 1]), axis=1)
 
-    def interpolated_velocities(self, time, points, depth=0):
-        '''
-        For every point at time, find the index on the psi grid.
-        Then, compute the index on the u and v grids.
-        Retrieve the information, then interpolate
-        '''
-        indices = self.grid.locate_faces(points)
-        psi_x = indices % (self.u_lon.shape[1] - 1)
-        psi_y = indices / (self.u_lon.shape[1] - 1)
-        psi_ind = np.column_stack((psi_y, psi_x))
+    def interp_alphas(self, points, grid=None, indices=None, translation=None):
+        if grid is None:
+            grid = self.grid
+            pos_alphas = grid.interpolation_alphas(points, indices)
+            return pos_alphas
+        if indices is None:
+            if translation is not None:
+                warnings.warn(
+                    "indices not provided, translation ignored", UserWarning)
+                translation = None
+            indices = grid.locate_faces(points)
+        if translation is not None:
+            indices = pysgrid.utils.translate_index(
+                points, indices, grid, translation)
+        pos_alphas = grid.interpolation_alphas(points, indices)
+        return pos_alphas
 
-        u_ind = np.copy(psi_ind)
-        v_ind = np.copy(psi_ind)
-#         polys = self.s_poly(psi_ind, self.v_pts)
-#         t = np.logical_and(points[..., 0] >= polys[..., 0, 0],
-#                            points[..., 0] < polys[..., 2, 0])
-        x = psi_x
-        y = psi_y
-        t = np.logical_and(points[..., 1] >= (self.u_lat[x, y]),
-                           points[..., 1] < (self.u_lat[x + 1, y]))
+    def interpolated_velocities(self, time, points, indices=None, depth=0):
+        points = np.ascontiguousarray(points)
+        psi_ind = None
+        if indices == None:
+            psi_ind = self.grid.locate_faces(points)
+        else:
+            psi_ind = indices
 
-        u_ind[~t] += [1, 0]
-#         t = np.logical_and(points[..., 1] >= polys[..., 0, 1],
-#                            points[..., 1] < polys[..., 1, 1])
-        t = np.logical_and(points[..., 0] >= self.v_lon[x, y],
-                           points[..., 0] < self.v_lon[x, y + 1])
-        v_ind[~t] += [0, 1]
+        u_grid = pysgrid.SGrid2D(nodes=self.u_nodes)
+        v_grid = pysgrid.SGrid2D(nodes=self.v_nodes)
 
-        '''add get time index here'''
-        u_vals = self.u[0, depth]
-        u_coords = self.s_poly(u_ind, np.stack((self.u_lon, self.u_lat), -1))
-        u_interp_vals = self.s_poly(u_ind, u_vals)
+        u_alphas = self.interp_alphas(points, u_grid, psi_ind, 'psi2u')
+        v_alphas = self.interp_alphas(points, v_grid, psi_ind, 'psi2v')
 
-        pass
+        t_index = self.time.indexof(time)
+        u_vels = self.u[t_index, depth]
+        v_vels = self.v[t_index, depth]
+
+        u_interp = np.sum(u_vels * u_alphas)
+        v_interp = np.sum(v_vels * v_alphas)
+
+        return np.column_stack(u_interp, v_interp)
+
+    def get_edges(self, bounds=None):
+        """
+
+        :param bounds: Optional bounding box. Expected is lower left corner and top right corner in a tuple
+        :return: array of pairs of lon/lat points describing all the edges in the grid, or only those within
+        the bounds, if bounds is specified.
+        """
+        return self.grid.edges

@@ -424,6 +424,9 @@ class Renderer(Outputter, MapCanvas):
                 lines = grid.get_edges(self.projection.image_box)
                 for line in lines:
                     self.draw_polyline(line, a['color'], a['width'], True)
+                if a['curvilinear']:
+                    for line in np.swapaxes(lines, 0, 1):
+                        self.draw_polyline(line, a['color'], a['width'], True)
 
     def draw_masked_nodes(self, grid, time):
         if grid.appearance['on'] and grid.appearance['mask'] is not None:
