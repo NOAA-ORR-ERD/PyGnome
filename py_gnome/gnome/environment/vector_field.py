@@ -26,6 +26,7 @@ def tri_vector_field(filename=None, dataset=None):
                          edges,
                          boundaries,
                          neighbors)
+    grid.build_edges()
     u = pyugrid.UVar('u', 'node', dataset['u'])
     v = pyugrid.UVar('v', 'node', dataset['v'])
     time = Time(dataset['time'])
@@ -335,7 +336,7 @@ class SField(VectorField):
         pos_alphas = grid.interpolation_alphas(points, indices)
         return pos_alphas
 
-    def interpolated_velocities(self, time, points, indices=None, depth=0):
+    def interpolated_velocities(self, time, points, indices=None, depth=-1):
         '''
         Finds velocities at the points at the time specified, interpolating in 2D
         over the u and v grids to do so.

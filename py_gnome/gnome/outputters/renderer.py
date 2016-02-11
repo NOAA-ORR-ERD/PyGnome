@@ -423,16 +423,18 @@ class Renderer(Outputter, MapCanvas):
                 continue
 
             a = grid.appearance
-            if a['type'] is 'curvilinear':
+            is_curv = a['type'] is 'curvilinear'
+            if is_curv:
                 lines = grid.get_edges()
+                for line in lines:
+                    self.draw_polyline(line, a['color'], a['width'], True)
+
+                for line in np.swapaxes(lines, 0, 1):
+                    self.draw_polyline(line, a['color'], a['width'], True)
             else:
                 lines = grid.get_edges(self.projection.image_box)
-
-            for line in lines:
-                self.draw_polyline(line, a['color'], a['width'], True)
-
-            if a['type'] is 'curvilinear':
-                for line in np.swapaxes(lines, 0, 1):
+                for line in lines:
+                    line = grid.nodes[line]
                     self.draw_polyline(line, a['color'], a['width'], True)
 
     def draw_masked_nodes(self, grid, time):
