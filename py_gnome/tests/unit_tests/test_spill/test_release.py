@@ -17,13 +17,17 @@ from gnome.movers import RandomMover
 from gnome.array_types import positions
 from gnome.spill import (Release,
                          PointLineRelease,
+                         ContinuousRelease,
                          GridRelease,
                          InitElemsFromFile,
                          Spill)
 from gnome.spill_container import SpillContainer
 from gnome.spill.release import release_from_splot_data
 
-from ..conftest import testdata
+try:
+    from ..conftest import testdata
+except ValueError:
+    pass
 
 
 def test_init():
@@ -88,8 +92,12 @@ rel_type = [PointLineRelease(release_time=rel_time,
                              start_position=(0, 0, 0)),
             PointLineRelease(release_time=rel_time,
                              num_per_timestep=5,
-                             start_position=(0, 0, 0))]
-            #SpatialRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
+                             start_position=(0, 0, 0)),
+            ContinuousRelease(initial_elements=5,
+                              release_time=rel_time,
+                              num_per_timestep=5,
+                              start_position=(0, 0, 0))]
+# SpatialRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
 
 
 @pytest.mark.parametrize("rel_type", rel_type)
@@ -181,6 +189,108 @@ class TestInitElementsFromFile():
                         assert np.any(sc[key] != s.release._init_data[key])
 
 
+class TestContinuousRelease:
+    rel_time = datetime(2014, 1, 1, 0, 0)
+    pos = (0, 1, 2)
+
+    def test_property_num_per_timestep_elements(self):
+        '''
+        test either num_elements or num_per_timestep is set but not both
+        also test the num_elements_to_release references correct method
+        '''
+        r = ContinuousRelease(self.rel_time,
+                              self.pos,
+                              initial_elements=100,
+                              num_per_timestep=100)
+        r.num_elements = 10
+        assert r.num_per_timestep is None
+        assert r.num_elements_to_release(self.rel_time, 900) == 110
+
+        r.num_per_timestep = 100
+        assert r.num_elements is None
+        assert r.num_elements_to_release(self.rel_time, 900) == 200
+
+    def test_num_per_timestep(self):
+        'test ContinuousRelease when a fixed rate per timestep is given'
+        r = ContinuousRelease(self.rel_time,
+                              self.pos,
+                              initial_elements=1000,
+                              num_per_timestep=100)
+        assert r.num_elements is None
+        assert r.num_elements_to_release(self.rel_time, 100) == 1100
+        r.initial_done = True
+        for ts in (200, 400):
+            num = r.num_elements_to_release(self.rel_time, ts)
+            assert num == 100
+
+    def test_num_per_timestep_release_elements(self):
+        'release elements in the context of a spill container'
+        # todo: need a test for a line release where rate is given - to check
+        # positions are being initialized correctly
+        end_time = self.rel_time + timedelta(hours=1)
+        release = ContinuousRelease(self.rel_time,
+                                    self.pos,
+                                    num_per_timestep=100,
+                                    initial_elements=1000,
+                                    end_release_time=end_time)
+        s = Spill(release)
+        sc = SpillContainer()
+        sc.spills += s
+        sc.prepare_for_model_run()
+        for ix in range(5):
+            time = self.rel_time + timedelta(seconds=900 * ix)
+            num_les = sc.release_elements(900, time)
+            if time <= s.get('end_release_time'):
+                if ix == 0:
+                    assert num_les == 1100
+                else:
+                    assert num_les == 100
+                assert sc.num_released == 100 + ix * 100 + 1000
+            else:
+                assert num_les == 0
+
+    def test_rewind(self):
+        '''
+        test rewind resets all parameters of interest
+        '''
+        r = PointLineRelease(self.rel_time,
+                             self.pos,
+                             end_position=(1, 2, 3),
+                             num_per_timestep=100,
+                             end_release_time=self.rel_time + timedelta(hours=2))
+        num = r.num_elements_to_release(self.rel_time, 900)
+        assert not r.start_time_invalid
+
+        # updated only after set_newparticle_positions is called
+        assert r.num_released == 0
+        pos = {'positions': positions.initialize(num)}
+        r.set_newparticle_positions(num,
+                                    self.rel_time,
+                                    900,
+                                    pos)
+        assert r.num_released == num
+        assert r._delta_pos is not None
+        assert np.any(r._next_release_pos != r.start_position)
+
+        r.rewind()
+        assert r.start_time_invalid is None
+        assert r._delta_pos is None
+        assert np.all(r._next_release_pos == r.start_position)
+
+    def test__eq__(self):
+        r = PointLineRelease(self.rel_time,
+                             self.pos,
+                             end_position=(1, 2, 3),
+                             num_per_timestep=100,
+                             end_release_time=self.rel_time + timedelta(hours=2))
+        r1 = PointLineRelease(self.rel_time,
+                              (0, 0, 0),
+                              end_position=(1, 2, 3),
+                              num_per_timestep=100,
+                              end_release_time=self.rel_time + timedelta(hours=2))
+        assert r != r1
+
+
 class TestPointLineRelease:
     rel_time = datetime(2014, 1, 1, 0, 0)
     pos = (0, 1, 2)
@@ -241,7 +351,7 @@ class TestPointLineRelease:
                              self.pos,
                              end_position=(1, 2, 3),
                              num_per_timestep=100,
-                             end_release_time=self.rel_time+timedelta(hours=2))
+                             end_release_time=self.rel_time + timedelta(hours=2))
         num = r.num_elements_to_release(self.rel_time, 900)
         assert not r.start_time_invalid
 
@@ -249,9 +359,9 @@ class TestPointLineRelease:
         assert r.num_released == 0
         pos = {'positions': positions.initialize(num)}
         r.set_newparticle_positions(num,
-                                     self.rel_time,
-                                     900,
-                                     pos)
+                                    self.rel_time,
+                                    900,
+                                    pos)
         assert r.num_released == num
         assert r._delta_pos is not None
         assert np.any(r._next_release_pos != r.start_position)
@@ -266,12 +376,12 @@ class TestPointLineRelease:
                              self.pos,
                              end_position=(1, 2, 3),
                              num_per_timestep=100,
-                             end_release_time=self.rel_time+timedelta(hours=2))
+                             end_release_time=self.rel_time + timedelta(hours=2))
         r1 = PointLineRelease(self.rel_time,
                               (0, 0, 0),
                               end_position=(1, 2, 3),
                               num_per_timestep=100,
-                              end_release_time=self.rel_time+timedelta(hours=2))
+                              end_release_time=self.rel_time + timedelta(hours=2))
         assert r != r1
 
 
@@ -295,9 +405,14 @@ def test_release_from_splot_data():
     assert rel.num_elements == exp_num_elems
     assert len(rel.start_position) == exp_num_elems
     cumsum = np.cumsum(exp)
-    for ix in xrange(len(cumsum)-1):
+    for ix in xrange(len(cumsum) - 1):
         assert np.all(rel.start_position[cumsum[ix]] ==
                       rel.start_position[cumsum[ix]:cumsum[ix + 1]])
     assert np.all(rel.start_position[0] == rel.start_position[:cumsum[0]])
 
     os.remove(td_file)
+
+if __name__ == "__main__":
+    ct = TestContinuousRelease()
+    ct.test_num_per_timestep_release_elements()
+    pass

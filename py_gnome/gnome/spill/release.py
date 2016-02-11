@@ -60,6 +60,17 @@ class PointLineReleaseSchema(ReleaseSchema):
     description = 'PointLineRelease object schema'
 
 
+class ContinuousReleaseSchema(ReleaseSchema):
+    initial_elements = SchemaNode(Int(), missing=drop)
+    start_position = WorldPoint()
+    end_position = WorldPoint(missing=drop)
+    _next_release_pos = WorldPointNumpy(missing=drop)
+    end_release_time = SchemaNode(LocalDateTime(), missing=drop,
+                                  validator=convertible_to_seconds)
+    num_per_timestep = SchemaNode(Int(), missing=drop)
+    description = 'ContinuousRelease object schema'
+
+
 class StartPositions(SequenceSchema):
     start_position = WorldPoint()
 
@@ -99,7 +110,6 @@ class Release(object):
         # flag determines if the first time is valid. If the first call to
         # self.num_elements_to_release(current_time, time_step) has
         # current_time > self.release_time, then no particles are ever released
-        # if current_time <= self.release_time, then toggle this flag since
         # model start time is valid
         self.start_time_invalid = None
 
@@ -535,10 +545,11 @@ class PointLineRelease(Release, Serializable):
             ts = min(time_step,
                      (self.end_release_time - current_time).total_seconds())
             frac = ((current_time + timedelta(seconds=ts) -
-                     self.release_time).total_seconds()/self.release_duration)
-            est_total_num_elems = (self.num_released + num_new_particles)/frac
+                     self.release_time).total_seconds() / self.release_duration)
+            est_total_num_elems = (
+                self.num_released + num_new_particles) / frac
             self._delta_pos = ((self.end_position - self.start_position) /
-                               (est_total_num_elems-1))
+                               (est_total_num_elems - 1))
 
         else:
             # if num_elements given, _delta_pos only set if it is None
@@ -632,6 +643,190 @@ class PointLineRelease(Release, Serializable):
         super(PointLineRelease, self).rewind()
         self._next_release_pos = self.start_position
         self._delta_pos = None
+
+
+class ContinuousRelease(Release, Serializable):
+
+    _update = ['start_position', 'end_position',
+               'end_release_time', 'num_per_timestep', 'initial_elements']
+
+    _create = ['_next_release_pos']
+    _create.extend(_update)
+
+    _state = copy.deepcopy(Release._state)
+    _state.add(update=_update, save=_create)
+
+    _schema = ContinuousReleaseSchema
+
+    def __init__(self, release_time,
+                 start_position,
+                 num_elements=None,
+                 num_per_timestep=None,
+                 end_release_time=None,
+                 end_position=None,
+                 initial_elements=None,
+                 name=None):
+
+        self.initial_release = PointLineRelease(
+            release_time, start_position, initial_elements)
+        self.continuous = PointLineRelease(
+            release_time, start_position, num_elements, num_per_timestep, end_release_time, end_position)
+
+        self._next_release_pos = self.start_position
+
+        # set this the first time it is used
+        self._delta_pos = None
+
+        self.initial_done = False
+        self.num_initial_released = 0
+        if name:
+            self.name = name
+
+    def num_elements_to_release(self, current_time, time_step):
+        num = 0
+        if(self.initial_release._release(current_time, time_step) and not self.initial_done):
+            self.num_initial_released += self.initial_release.num_elements_to_release(
+                current_time, 1)
+            num += self.initial_release.num_elements_to_release(
+                current_time, 1)
+        num += self.continuous.num_elements_to_release(current_time, time_step)
+        return num
+
+    def set_newparticle_positions(self, num_new_particles,
+                                  current_time, time_step,
+                                  data_arrays):
+        cont_rel = num_new_particles
+        if self.num_initial_released is not 0 and not self.initial_done:
+            self.initial_release.set_newparticle_positions(
+                cont_rel, current_time, 0, data_arrays)
+            cont_rel -= self.num_initial_released
+            self.initial_done = True
+        self.continuous.set_newparticle_positions(
+            cont_rel, current_time, time_step, data_arrays)
+
+    def rewind(self):
+        self.initial_release.rewind()
+        self.continuous.rewind()
+        self.initial_done = False
+
+    @property
+    def end_position(self):
+        return self.continuous._end_position
+
+    @end_position.setter
+    def end_position(self, val):
+        '''
+        set end_position and also make _delta_pos = None so it gets
+        recomputed - it should be updated
+
+        :param val: Set end_position to val. This can be None if release is a
+            point source.
+        '''
+        if val is not None:
+            val = np.array(val, dtype=world_point_type).reshape((3, ))
+
+        self.continuous._end_position = val
+        self.continuous._delta_pos = None
+
+    @property
+    def end_release_time(self):
+        return self.continuous._end_release_time
+
+    @end_release_time.setter
+    def end_release_time(self, val):
+        '''
+        Set end_release_time.
+        If end_release_time is None or if end_release_time == release_time,
+        it is an instantaneous release.
+
+        Also update reference to set_newparticle_positions - if this was
+        previously an instantaneous release but is now timevarying, we need
+        to update this method
+        '''
+        if val is not None and self.continuous.release_time > val:
+            raise ValueError('end_release_time must be greater than '
+                             'release_time')
+
+        self.continuous.end_release_time = val
+
+    @property
+    def initial_elements(self):
+        return self.initial_release.num_elements
+
+    @initial_elements.setter
+    def initial_elements(self, val):
+        self.initial_release.num_elements = val
+
+    @property
+    def num_elements(self):
+        return self.continuous.num_elements
+
+    @num_elements.setter
+    def num_elements(self, val):
+        '''
+        over ride base class setter. Makes num_per_timestep None since only one
+        can be set at a time
+        '''
+        self.continuous.num_elements = val
+
+    @property
+    def num_per_timestep(self):
+        return self.continuous.num_per_timestep
+
+    @num_per_timestep.setter
+    def num_per_timestep(self, val):
+        self.continuous.num_per_timestep = val
+
+    @property
+    def num_released(self):
+        return self.initial_release.num_released + self.continuous.num_released
+
+    @num_released.setter
+    def num_released(self, val):
+        self.continuous.num_released = val
+
+    @property
+    def release_duration(self):
+        return self.continuous.release_duration
+
+    @property
+    def release_time(self):
+        return self.initial_release.release_time
+
+    @release_time.setter
+    def release_time(self, val):
+        self.initial_release.release_time = val
+        self.continuous.release_time = val
+
+    @property
+    def start_position(self):
+        return self.initial_release.start_position
+
+    @start_position.setter
+    def start_position(self, val):
+        '''
+        set start_position and also make _delta_pos = None so it gets
+        recomputed when model runs - it should be updated
+        '''
+        self.continuous.start_position = np.array(val,
+                                                  dtype=world_point_type).reshape((3, ))
+        self.initial_release.start_position = np.array(val,
+                                                       dtype=world_point_type).reshape((3, ))
+        self._start_position = val
+        self.continuous._delta_pos = None
+        self.initial_release._delta_pos = None
+
+    @property
+    def start_time_invalid(self):
+        if self.initial_release.start_time_invalid is None or self.continuous.start_time_invalid is None:
+            return None
+        else:
+            return self.initial_release.start_time_invalid
+
+    @start_time_invalid.setter
+    def start_time_invalid(self, val):
+        self.initial_release.start_time_invalid = val
+        self.continuous.start_time_invalid = val
 
 
 class SpatialRelease(Release, Serializable):
@@ -814,6 +1009,7 @@ class InitElemsFromFile(Release):
     release object that sets the initial state of particles from a previously
     output NetCDF file
     '''
+
     def __init__(self, filename, release_time=None, index=None, time=None):
         '''
         Take a NetCDF file, which is an output of PyGnome's outputter:
