@@ -76,7 +76,7 @@ where we put various packages needed for py_gnome. But you don't need to access 
 To install the anaconda client:
 
 ```
-> conda install anaconda
+> conda install anaconda-client
 ```
 
 and to add the NOAA-ORR-ERD binstar channel to Anaconda:
