@@ -424,8 +424,8 @@ class ParamMap(GnomeMap):
         land_polys = PolygonSet((self.land_points, [0, 4], []))
         land_polys._MetaDataList = [('polygon', '1', '1')]
 
-        map_bounds = np.array(((-8 * d, -6 * d), (-8 * d, 6 * d),
-                               (8 * d, 6 * d), (8 * d, -6 * d)),
+        map_bounds = np.array(((-16 * d, -16 * d), (-16 * d, 16 * d),
+                               (16 * d, 16 * d), (16 * d, -16 * d)),
                               dtype=np.float64) + (center[0], center[1])
 
         GnomeMap.__init__(self, map_bounds=map_bounds, land_polys=land_polys)
