@@ -427,8 +427,8 @@ class Model(Serializable):
         if self.duration is not None and self.time_step is not None:
             initial_0th_step = 1
             self._num_time_steps = (initial_0th_step +
-                                    int(self.duration.total_seconds()
-                                        // self.time_step))
+                                    int(self.duration.total_seconds() //
+                                        self.time_step))
         else:
             self._num_time_steps = None
 
