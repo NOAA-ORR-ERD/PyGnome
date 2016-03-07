@@ -20,6 +20,7 @@ import os
 import math
 
 import py_gd
+from osgeo import ogr
 #import pyugrid
 
 import numpy as np

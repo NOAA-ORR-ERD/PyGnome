@@ -86,9 +86,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     vec_field = tri_vector_field('COOPSu_CREOFS24.nc')
     vec_field.set_appearance(on=True)
     vec_field.set_appearance(mask=vec_field.velocities)
-    # wf = wind_field('NDFD.nc')
-    # wf.set_appearance(on=True)
     renderer.grids += [vec_field]
+
     renderer.delay = 25
     u_mover = UGridCurrentMover(vec_field)
     model.movers += u_mover
@@ -120,8 +119,8 @@ if __name__ == "__main__":
             # field.set_appearance(masked=True)
 #             rend.set_viewport(((-122.8, 45.75), (-122.75, 45.85)))
         # print step
-        print "step: %.4i -- memuse: %fMB\n" % (step['step_num'],
-                                                utilities.get_mem_use())
+        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                              utilities.get_mem_use())
     print datetime.now() - startTime
     pd.profiler.disable()
     pd.print_stats(0.2)

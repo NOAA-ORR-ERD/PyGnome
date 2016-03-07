@@ -23,7 +23,7 @@ from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.outputters import Renderer
 from gnome.environment.vector_field import ice_field
-from gnome.movers import UGridCurrentMover
+from gnome.movers import PyIceMover
 import gnome.utilities.profiledeco as pd
 
 # define base directory
@@ -33,15 +33,15 @@ base_dir = os.path.dirname(__file__)
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
-    start_time = datetime(2015, 9, 24, 1, 1)
+    start_time = datetime(1985, 1, 1, 13, 31)
 
     # 1 day of data in file
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
-                  duration=timedelta(hours = 48),
-                  time_step=900)
+                  duration=timedelta(hours=96),
+                  time_step=3600)
 
-    mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
+    mapfile = get_datafile(os.path.join(base_dir, 'norwegiansea.bna'))
 
     print 'adding the map'
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
@@ -50,9 +50,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
     renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
-#     renderer.viewport = ((-123.35, 45.6), (-122.68, 46.13))
+#     renderer.viewport = ((-180, -90), (180, 90))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
-    
 
     print 'adding outputters'
     model.outputters += renderer
@@ -62,34 +61,34 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = point_line_release_spill(num_elements=2000,
-                                     start_position=(-122.625,
-                                                     45.609,
-                                                     0.0),
-                                     release_time=start_time)
+    spill1 = point_line_release_spill(num_elements=20000,
+                                      start_position=(-9.5,
+                                                      70.5,
+                                                      0.0),
+                                      release_time=start_time)
 
     model.spills += spill1
 
     print 'adding a RandomMover:'
-    model.movers += RandomMover(diffusion_coef=10000)
+    model.movers += RandomMover(diffusion_coef=100000)
 
     print 'adding a wind mover:'
-   
-    model.movers += constant_wind_mover(0.5, 0, units='m/s')
+
+#     model.movers += constant_wind_mover(0.5, 0, units='m/s')
 
     print 'adding a current mover:'
 
-    vec_field = ice_field('acnfs_example.nc')
-    vec_field.set_appearance(on=True, mask=vec_field.ice_thickness)
-    renderer.grids += [vec_field]
-    renderer.delay=25
-    # u_mover = UGridCurrentMover(vec_field)
-    # model.movers += u_mover
+    ice, water, air = ice_field(
+        'N:\\Users\\Dylan.Righi\\OutBox\\ArcticROMS\\arctic_avg2_0001_gnome.nc')
+    ice_mover = PyIceMover(ice, water, air)
+    model.movers += ice_mover
+    ice.set_appearance(on=True)
+    renderer.grids += [ice]
+    renderer.delay = 25
 
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
     # c_mover = GridCurrentMover(curr_file)
     # model.movers += c_mover
-
 
     return model
 
@@ -104,10 +103,8 @@ if __name__ == "__main__":
     field = rend.grids[0]
 #     rend.graticule.set_DMS(True)
     for step in model:
-        # if step['step_num'] == 2:
-            # rend.set_viewport(((-160, 70.5), (-157, 72)))
-        if step['step_num'] == 50:
-            field.set_appearance(mask=None)
+        #         if step['step_num'] == 0:
+        #             rend.set_viewport(((-165, 69.5), (-162.5, 70)))
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     print datetime.now() - startTime

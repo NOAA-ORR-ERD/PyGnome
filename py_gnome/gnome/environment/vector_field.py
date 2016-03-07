@@ -10,6 +10,8 @@ from dateutil import parser
 import pyugrid
 import pysgrid
 
+from gnome.utilities import profiledeco as pd
+
 
 def tri_vector_field(filename=None, dataset=None):
     if dataset is None:
@@ -35,40 +37,62 @@ def tri_vector_field(filename=None, dataset=None):
     return VectorField(grid, time=time, variables=variables, type=type)
 
 
-def ice_field(filename=None, dataset=None):
+def ice_field(filename=None):
+    gridset = None
+    dataset = None
+
+    dataset = nc4.Dataset(filename)
+
+    time = Time(dataset['time'])
+    w_u = pysgrid.variables.SGridVariable(data=dataset['water_u'])
+    w_v = pysgrid.variables.SGridVariable(data=dataset['water_v'])
+    i_u = pysgrid.variables.SGridVariable(data=dataset['ice_u'])
+    i_v = pysgrid.variables.SGridVariable(data=dataset['ice_v'])
+    a_u = pysgrid.variables.SGridVariable(data=dataset['air_u'])
+    a_v = pysgrid.variables.SGridVariable(data=dataset['air_v'])
+    i_thickness = pysgrid.variables.SGridVariable(
+        data=dataset['ice_thickness'])
+    i_coverage = pysgrid.variables.SGridVariable(data=dataset['ice_fraction'])
+
+    grid = pysgrid.SGrid(node_lon=dataset['lon'],
+                         node_lat=dataset['lat'])
+
+    ice_vars = {'u': i_u,
+                'v': i_v,
+                'thickness': i_thickness,
+                'coverage': i_coverage}
+    water_vars = {'u': w_u,
+                  'v': w_v, }
+    air_vars = {'u': a_u,
+                'v': a_v}
+
+    dims = grid.node_lon.shape
+    icefield = SField(grid, time=time, variables=ice_vars, dimensions=dims)
+    waterfield = SField(grid, time=time, variables=water_vars, dimensions=dims)
+    airfield = SField(grid, time=time, variables=air_vars, dimensions=dims)
+
+    return (icefield, waterfield, airfield)
+
+
+def curv_field(filename=None, dataset=None):
     if dataset is None:
         dataset = nc4.Dataset(filename)
-    y_size = len(dataset.dimensions['y'])
-    x_size = len(dataset.dimensions['x'])
-    dims = {'x': x_size, 'y': y_size}
-    faces = np.array([np.array([[x, x + 1, x + x_size + 1, x + x_size]
-                                for x in range(0, x_size - 1, 1)]) + y * x_size for y in range(0, y_size - 1)])
-    faces = np.ascontiguousarray(
-        faces.reshape(((y_size - 1) * (x_size - 1), 4)))
-    nodes = np.column_stack((dataset['lon'][:].reshape(
-        y_size * x_size), dataset['lat'][:].reshape(y_size * x_size)))
-    nodes = np.ascontiguousarray(nodes)
-    grid = pyugrid.UGrid(nodes,
-                         faces,
-                         curvilinear=True)
+    node_lon = dataset['lonc']
+    node_lat = dataset['latc']
+    u = dataset['water_u']
+    v = dataset['water_v']
+    dims = node_lon.dimensions[0] + ' ' + node_lon.dimensions[1]
+
+    grid = pysgrid.SGrid(node_lon=node_lon,
+                         node_lat=node_lat,
+                         node_dimensions=dims)
+    grid.u = pysgrid.variables.SGridVariable(data=u)
+    grid.v = pysgrid.variables.SGridVariable(data=v)
     time = Time(dataset['time'])
-    w_u = pyugrid.UVar('water_u', 'node', dataset['water_u'], curvilinear=True)
-    w_v = pyugrid.UVar('water_v', 'node', dataset['water_v'], curvilinear=True)
-    mask = pyugrid.UVar('mask', 'node', dataset['mask'], curvilinear=True)
-    i_u = pyugrid.UVar('ice_u', 'node', dataset['ice_u'], curvilinear=True)
-    i_v = pyugrid.UVar('ice_v', 'node', dataset['ice_v'], curvilinear=True)
-    thickness = pyugrid.UVar(
-        'ice_thickness', 'node', dataset['ice_thickness'], curvilinear=True)
-    fraction = pyugrid.UVar(
-        'ice_fraction', 'node', dataset['ice_fraction'], curvilinear=True)
-    variables = {'water_vel': pyugrid.UMVar('water_vel', 'node', [w_u, w_v]),
-                 'ice_vel': pyugrid.UMVar('ice_vel', 'node', [i_u, i_v]),
-                 'ice_thickness': thickness,
-                 'ice_fraction': fraction,
-                 'mask': mask,
+    variables = {'u': grid.u,
+                 'v': grid.v,
                  'time': time}
-    type = dataset.grid_type
-    return VectorField(grid, time=time, variables=variables, type=type, dimensions=dims)
+    return SField(grid, time=time, variables=variables, dimensions=grid.node_lon.shape)
 
 
 def roms_field(filename=None, dataset=None):
@@ -301,6 +325,18 @@ class SField(VectorField):
         y = index[:, 1]
         return np.stack((arr[x, y], arr[x + 1, y], arr[x + 1, y + 1], arr[x, y + 1]), axis=1)
 
+    def get_efficient_var_slice(self, indices, time, var):
+        t_index = self.time.indexof(time)
+        grid = self.grid.infer_grid(var)
+        y_slice, x_slice = self.grid._get_efficient_slice(
+            grid, indices=indices)
+        if len(var.shape) == 3:
+            return [slice(t_index, t_index + 2), y_slice, x_slice]
+        if len(var.shape) == 4:
+            return [slice(t_index, t_index + 2), -1, y_slice, x_slice]
+        else:
+            raise ValueError("Unknown how to slice variable dimensions")
+
     def interp_alphas(self, points, grid=None, indices=None, translation=None):
         '''
         Find the interpolation alphas for the four points of the cells that contains the points
@@ -336,7 +372,28 @@ class SField(VectorField):
         pos_alphas = grid.interpolation_alphas(points, indices)
         return pos_alphas
 
-    def interpolated_velocities(self, time, points, indices=None, depth=-1):
+    def interpolate_var(self, points, time, variable, indices=None, alphas=None, slices=None, _translated_indices=None):
+        #         points = np.ascontiguousarray(points)
+        t_alphas = self.time.interp_alpha(time)
+        t_index = self.time.indexof(time)
+        ind = self.grid.locate_faces(points)
+        grid = self.grid.infer_grid(variable)
+
+        trans_ind = self.grid.translate_index(
+            points, ind, grid, slice_grid=False)
+
+        slices = self.get_efficient_var_slice(trans_ind, time, variable)
+
+        v0, v1 = variable[slices]
+
+        vt = v0 + (v1 - v0) * t_alphas
+
+        v_inter = self.grid.interpolate_var_to_points(
+            points, vt, ind, grid, alphas=alphas, slices=None, _translated_indices=trans_ind)
+
+        return v_inter
+
+    def interpolated_velocities(self, time, points, indices=None, alphas=None, depth=-1):
         '''
         Finds velocities at the points at the time specified, interpolating in 2D
         over the u and v grids to do so.
@@ -345,33 +402,64 @@ class SField(VectorField):
         :param indices: Numpy array of indices of the points, if already known.
         :return: interpolated velocities at the specified points
         '''
-        points = np.ascontiguousarray(points)
+#         points = np.ascontiguousarray(points)
 
-        t_index = self.time.indexof(time)
         t_alphas = self.time.interp_alpha(time)
-        u0, u1 = self.u[t_index:t_index + 2, depth]
-        v0, v1 = self.v[t_index:t_index + 2, depth]
-        u_mask = self.u_mask[:].astype(np.bool)
-        v_mask = self.v_mask[:].astype(np.bool)
-        land_mask = self.land_mask[:]
+        t_index = self.time.indexof(time)
+        ind = indices
+        if ind is None:
+            ind = self.grid.locate_faces(points)
 
-        ind = self.grid.locate_faces(points)
+        u_grid = self.grid.infer_grid(self.u)
+        v_grid = self.grid.infer_grid(self.v)
 
+        u_ind = self.grid.translate_index(
+            points, ind, u_grid, slice_grid=False)
+        v_ind = self.grid.translate_index(
+            points, ind, v_grid, slice_grid=False)
+
+        yu_slice, xu_slice = self.grid._get_efficient_slice(
+            u_grid, indices=u_ind)
+        u_slice = [slice(t_index, t_index + 2), depth, yu_slice, xu_slice]
+        v_slice = yv_slice, xv_slice = self.grid._get_efficient_slice(
+            v_grid, indices=v_ind)
+        v_slice = [slice(t_index, t_index + 2), depth, yv_slice, xv_slice]
+
+        if len(self.u.shape) < 4:
+            u_slice.remove(depth)
+            v_slice.remove(depth)
+
+        u0, u1 = self.u[u_slice]
+        v0, v1 = self.v[v_slice]
+#         u_mask = self.u_mask[:].astype(np.bool)
+#         v_mask = self.v_mask[:].astype(np.bool)
+#         land_mask = self.land_mask[:]
         u_vels = u0 + (u1 - u0) * t_alphas
         v_vels = v0 + (v1 - v0) * t_alphas
+        u_alphas = v_alphas = None
+        if alphas is not None:
+            u_alphas, v_alphas = alphas
+        else:
+            u_alphas = self.grid.interpolation_alphas(
+                points, None, u_grid, _translated_indices=u_ind)
+            v_alphas = self.grid.interpolation_alphas(
+                points, None, v_grid, _translated_indices=v_ind)
 
         u_interp = self.grid.interpolate_var_to_points(
-            points, u_vels, ind)
+            points, u_vels, ind, alphas=u_alphas, grid=u_grid, slices=None, _translated_indices=u_ind)
         v_interp = self.grid.interpolate_var_to_points(
-            points, v_vels, ind)
-
-        ang_ind = ind + [1, 1]
-        angs = self.grid.angles[:][ang_ind[:, 0], ang_ind[:, 1]]
-        rotations = np.array(
-            ([np.cos(angs), -np.sin(angs)], [np.sin(angs), np.cos(angs)]))
+            points, v_vels, ind, alphas=v_alphas, grid=v_grid, slices=None, _translated_indices=v_ind)
 
         vels = np.column_stack((u_interp, v_interp))
-        return np.matmul(rotations.T, vels[:, :, np.newaxis]).reshape(-1, 2)
+        if self.grid.angles is not None:
+            ang_ind = ind + [1, 1]
+            angs = self.grid.angles[:][ang_ind[:, 0], ang_ind[:, 1]]
+            rotations = np.array(
+                ([np.cos(angs), -np.sin(angs)], [np.sin(angs), np.cos(angs)]))
+
+            return np.matmul(rotations.T, vels[:, :, np.newaxis]).reshape(-1, 2)
+        else:
+            return vels
 
     def get_edges(self, bounds=None):
         """
