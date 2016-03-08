@@ -9,8 +9,7 @@
 from datetime import datetime
 import copy
 
-import numpy
-np = numpy
+import numpy as np
 
 from colander import (SchemaNode, drop,
                       Float, String, Range)
@@ -41,9 +40,7 @@ class BeachingTupleSchema(DefaultTupleSchema):
                         default=0,
                         validator=Range(min=0,
                                         min_err='amount must be '
-                                                'greater than or equal to 0'
-                                        )
-                        )
+                                                'greater than or equal to 0'))
 
 
 class BeachingTimeSeriesSchema(DatetimeValue1dArraySchema):
