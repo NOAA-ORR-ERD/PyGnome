@@ -94,90 +94,112 @@ OSErr emulsify(int n, unsigned long step_len,
 }
 
 
-OSErr disperse(int n, unsigned long step_len,
-			   double *frac_water,
-			   double *le_mass,
-			   double *le_viscosity,
-			   double *le_density,
-			   double *fay_area,
-			   double *d_disp,
-			   double *d_sed,
-			   double frac_breaking_waves,
-			   double disp_wave_energy,
-			   double wave_height,
-			   double visc_w,
-			   double rho_w,
-			   double C_sed,
-			   double V_entrain,
-			   double ka)
+OSErr adios2_disperse(int n, unsigned long step_len,
+                      double *frac_water,
+                      double *le_mass,
+                      double *le_viscosity,
+                      double *le_density,
+                      double *fay_area,
+                      double *d_disp,
+                      double *d_sed,
+                      double frac_breaking_waves,
+                      double disp_wave_energy,
+                      double wave_height,
+                      double visc_w,
+                      double rho_w,
+                      double C_sed,
+                      double V_entrain,
+                      double ka)
 {
 	OSErr err = 0;
-	
-	double rho, mass, Y, C_Roy, C_disp, A, q_disp;
 
-	double Vemul, thickness, droplet, speed;
-	double V_refloat, q_refloat;
-	double C_oil, Q_sed, visc, g = 9.80665;
-	double De = disp_wave_energy, fbw = frac_breaking_waves, Hrms = wave_height;
+	double g = 9.80665;
+	double De = disp_wave_energy;
+	double fbw = frac_breaking_waves;
+	double Hrms = wave_height;
 
-	// would need to pass in Vol_0
-	/*if (Vol_0 > 100. && visc > 40. * 1.e-6)
-	{
-		fbw *= pow(100. / Vol_0, .2);
-	}*/
-
-	V_entrain = 3.9e-8;
-	C_disp = pow(De, 0.57) * fbw; // dispersion term at current time
+	double C_disp = pow(De, 0.57) * fbw; // dispersion term at current time
 
 	for (int i=0; i < n; i++)
 	{
-		rho = le_density[i];	// pure oil density
-		mass = le_mass[i];	
-		visc = le_viscosity[i]; // oil (or emulsion) viscosity
+		double rho = le_density[i];	// pure oil density
+		double mass = le_mass[i];
+		double visc = le_viscosity[i]; // oil (or emulsion) viscosity
+		double Y = frac_water[i]; // water fraction
+		double A = fay_area[i];
 
-		Y = frac_water[i]; // water fraction
-		if (Y>=1) {d_disp[i]=0; continue;}	// shouldn't happen
+		double d_disp_out = 0.0;
+		double d_sed_out = 0.0;
 
-		C_Roy = 2400.0 * exp(-73.682 * sqrt(visc)); // Roy's constant
+		if (Y >= 1) {
+		    d_disp[i] = 0.0;
+		    d_sed[i] = 0.0;
+		    continue;
+		}  // shouldn't happen
 
-		Vemul = (le_mass[i] / le_density[i])  / (1.0 - Y); // emulsion volume (m3)
-		A = fay_area[i];
-		if (A>0) thickness = Vemul / A;
+		double C_Roy = 2400.0 * exp(-73.682 * sqrt(visc)); // Roy's constant
 
-		q_disp = C_Roy * C_disp * V_entrain * (1.0 - Y) * A / rho; // (m3/sec)
+        // surface oil slick thickness
+		double thickness = 0.0;
+		if (A > 0) {
+            // emulsion volume (m3)
+            double Vemul = (mass / rho)  / (1.0 - Y);
 
+            thickness = Vemul / A;
+		}
+
+		// mass rate of oil driven into the first 1.5 wave height (m3/sec)
+		double Q_disp = C_Roy * C_disp * V_entrain * (1.0 - Y) * A / rho;
+
+		// Net mass loss rate due to sedimentation (kg/s)
+		// (Note: why not in m^3/s???)
+		double Q_sed = 0.0;
 		if (C_sed > 0.0 && thickness >= 1.0e-4) {
-			// sediment load and > min thick
-			droplet = 0.613 * thickness;
-			rho_w = 1020;	// this is set to 997 in water module...
-			speed = droplet * droplet * g * (1.0 - rho / rho_w) / (18.0 * visc_w); //vert drop vel
-			V_refloat = 0.588 * (pow(thickness, 1.7) - 5.0e-8); //vol of refloat oil/wave p
+			// average droplet size based on surface oil slick thickness
+			double droplet = 0.613 * thickness;
+
+			// droplet average rise velocity
+			double speed = (droplet * droplet * g *
+			                (1.0 - rho / rho_w) /
+			                (18.0 * visc_w));
+
+			// vol of refloat oil/wave p
+			double V_refloat = 0.588 * (pow(thickness, 1.7) - 5.0e-8);
 			if (V_refloat < 0.0)
 				V_refloat = 0.0;
-	
-			q_refloat = C_Roy * C_disp * V_refloat * A; //(kg/m2-sec) mass rate of emulsion
-			C_oil = q_refloat * step_len / (speed * step_len + 1.5 * Hrms);
-			Q_sed = 1.6 * ka * sqrt(Hrms * De * fbw / (rho_w * visc_w)) * C_oil * C_sed / rho; //vol rate		
-		
+
+			// (kg/m2-sec) mass rate of emulsion
+			double q_refloat = C_Roy * C_disp * V_refloat * A;
+
+			double C_oil = (q_refloat * step_len /
+			                (speed * step_len + 1.5 * Hrms));
+
+			//vol rate
+			Q_sed = (1.6 * ka *
+			         sqrt(Hrms * De * fbw / (rho_w * visc_w)) *
+			         C_oil * C_sed / rho);
 		}
-		else
-			Q_sed=0.0;
-	
-		//d_disp[i] = (q_disp + (1.0 - Y) * Q_sed) * step_len; //total vol oil loss
-		d_disp[i] = q_disp * step_len; //total vol oil loss due to dispersion
-		d_sed[i] = (1.0 - Y) * Q_sed * step_len; //total vol oil loss due to sedimentation
-		
-		d_disp[i] = d_disp[i] * le_density[i]; 
-		d_sed[i] = d_sed[i] * le_density[i]; 
-	
-		//if (d_disp[i] > le_mass[i])
-			//d_disp[i] = le_mass[i];
-		if (d_disp[i] + d_sed[i] > le_mass[i])
-		{
-			double ratio = d_disp[i] / (d_disp[i] + d_sed[i]);
-			d_disp[i] = ratio * le_mass[i];
-			d_sed[i] = le_mass[i] - d_disp[i];
+
+		//total vol oil loss due to dispersion
+		d_disp_out = Q_disp * step_len;
+
+		//total vol oil loss due to sedimentation
+		d_sed_out = (1.0 - Y) * Q_sed * step_len;
+
+		d_disp_out *= rho;
+		d_sed_out *= rho;
+
+		if (d_disp_out + d_sed_out > mass) {
+			double ratio = d_disp_out / (d_disp_out + d_sed_out);
+
+			d_disp_out = ratio * mass;
+			d_sed_out = mass - d_disp_out;
 		}
+
+        // assign our final values to our output arrays
+		d_disp[i] = d_disp_out;
+        d_sed[i] = d_sed_out;
+
 	}
 
 	return err;
