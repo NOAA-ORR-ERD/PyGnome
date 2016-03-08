@@ -4,7 +4,7 @@ import numpy as np
 # following exist in gnome.cy_gnome
 from type_defs cimport *
 from utils cimport emulsify
-from utils cimport disperse
+from utils cimport adios2_disperse
 from libc.stdint cimport *
 
 
@@ -65,23 +65,23 @@ def disperse_oil(step_len, cnp.ndarray[cnp.npy_double] frac_water,
     # N = len(frac_water)
     N = len(le_mass)
 
-    disp_err = disperse(N,
-                        step_len,
-                        & frac_water[0],
-                        & le_mass[0],
-                        & le_viscosity[0],
-                        & le_density[0],
-                        & fay_area[0],
-                        & d_disp[0],
-                        & d_sed[0],
-                        frac_breaking_waves,
-                        disp_wave_energy,
-                        wave_height,
-                        visc_w,
-                        rho_w,
-                        C_sed,
-                        V_entrain,
-                        ka)
+    disp_err = adios2_disperse(N,
+                               step_len,
+                               & frac_water[0],
+                               & le_mass[0],
+                               & le_viscosity[0],
+                               & le_density[0],
+                               & fay_area[0],
+                               & d_disp[0],
+                               & d_sed[0],
+                               frac_breaking_waves,
+                               disp_wave_energy,
+                               wave_height,
+                               visc_w,
+                               rho_w,
+                               C_sed,
+                               V_entrain,
+                               ka)
 
     if disp_err != 0:
         raise ValueError("C++ call to disperse returned error code: "
