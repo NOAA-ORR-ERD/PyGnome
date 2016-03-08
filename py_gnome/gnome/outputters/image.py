@@ -7,6 +7,8 @@ These will output images for use in the Web client / OpenLayers
 import copy
 import os
 
+import numpy as np
+
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.time_utils import date_to_sec
 
@@ -16,7 +18,6 @@ from gnome.persist import class_from_objtype, References
 from gnome.persist.base_schema import CollectionItemsList
 
 from . import Outputter, BaseSchema
-
 
 
 class IceImageSchema(BaseSchema):
@@ -52,9 +53,8 @@ class IceImageOutput(Outputter, Serializable):
 
         super(IceImageOutput, self).__init__(**kwargs)
 
-        ## used to do the rendering
-        image_size = (1000, 1000) # just to start
-        self.map_canvas = MapCanvas(image_size)
+        # used to do the rendering
+        self.map_canvas = MapCanvas((1000, 1000))
 
     def write_output(self, step_num, islast_step=False):
         """
@@ -64,64 +64,72 @@ class IceImageOutput(Outputter, Serializable):
         #   - it does stuff with cache initialization
         super(IceImageOutput, self).write_output(step_num, islast_step)
 
-        if self.on is False or not self._write_step or self.ice_mover is None:
+        if (self.on is False or
+                not self._write_step or
+                self.ice_mover is None):
             return None
 
-        ## fixme -- doing all this cache stuff just to get the timestep..
-        ## maybe timestep should be passed in.
+        # fixme -- doing all this cache stuff just to get the timestep..
+        # maybe timestep should be passed in.
         for sc in self.cache.load_timestep(step_num).items():
             pass
 
         model_time = date_to_sec(sc.current_time_stamp)
 
         thick_image, conc_image = self.render_images(model_time)
-        ## fixme: Can we really loop through the movers?
-        ##        or should there be one IceImage outputter for each Ice Mover.
-            ## here is where we render....
-            # do something with self.get_coverage_fc(ice_coverage, mover_triangles))
-            # do somethign with self.get_thickness_fc(ice_thickness, mover_triangles))
+        # fixme: Can we really loop through the movers?
+        #        or should there be one IceImage outputter for each Ice Mover.
+
+        # here is where we render....
+        # do something with self.get_coverage_fc(ice_coverage,
+        #                                        mover_triangles))
+        # do somethign with self.get_thickness_fc(ice_thickness,
+        #                                         mover_triangles))
 
         # info to return to the caller
         output_dict = {'step_num': step_num,
                        'time_stamp': sc.current_time_stamp.isoformat(),
                        'thickness_image': thick_image,
                        'concentration_image': conc_image,
-                       'bounding_box': ((-85.0, 20.0),(-55.0, 45.0)),
+                       'bounding_box': ((-85.0, 20.0), (-55.0, 45.0)),
                        'projection': ("EPSG:3857"),
                        }
+
         return output_dict
 
     def get_sample_image(self):
         """
-        this returns a base 64 encoded PNG image for testing -- just so we have something
+            This returns a base 64 encoded PNG image for testing,
+            just so we have something
 
-        This should be removed when we have real functionality
+            This should be removed when we have real functionality
         """
-        ## hard-coding the base64 really confused my editor..
-        image_file_file_path = os.path.join(os.path.split(__file__)[0], 'sample.b64')
+        # hard-coding the base64 really confused my editor..
+        image_file_file_path = os.path.join(os.path.split(__file__)[0],
+                                            'sample.b64')
+
         return open(image_file_file_path).read()
 
     def render_images(self, model_time):
         """
-        render the actual images
+            render the actual images
+            This uses the MapCanvas code to do the actual rendering
 
-        returns: thickness_image, concentration_image
-
-        This uses the MapCanvas code to do the actual rendering
+            returns: thickness_image, concentration_image
         """
-
         canvas = self.map_canvas
-
         cells = self.get_cells()
+
         ice_coverage, ice_thickness = self.ice_mover.get_ice_fields(model_time)
 
-            ## here is where we render....
-            # do something with self.get_coverage_fc(ice_coverage, mover_triangles))
-            # do somethign with self.get_thickness_fc(ice_thickness, mover_triangles))
+        # Here is where we render....
+        # do something with self.get_coverage_fc(ice_coverage,
+        #                                        mover_triangles))
+        # do somethign with self.get_thickness_fc(ice_thickness,
+        #                                         mover_triangles))
 
-        return ("data:image/png;base64,%s"%self.get_sample_image(),
-                "data:image/png;base64,%s"%self.get_sample_image())
-
+        return ("data:image/png;base64,{}".format(self.get_sample_image()),
+                "data:image/png;base64,{}".format(self.get_sample_image()))
 
     def get_coverage_fc(self, coverage, triangles):
         return self.get_grouped_fc_from_1d_array(coverage, triangles,
@@ -166,9 +174,9 @@ class IceImageOutput(Outputter, Serializable):
 
     def get_unique_ice_values(self, ice_values):
         '''
-        In order to make numpy perform this function fast, we will use a
-        contiguous structured array using a view of a void type that
-        joins the whole row into a single item.
+            In order to make numpy perform this function fast, we will use a
+            contiguous structured array using a view of a void type that
+            joins the whole row into a single item.
         '''
         dtype = np.dtype((np.void,
                           ice_values.dtype.itemsize * ice_values.shape[1]))
@@ -182,30 +190,34 @@ class IceImageOutput(Outputter, Serializable):
         return np.where((ice_values == v).all(axis=1))
 
     def get_cells(self):
-        # fixme: This seems very coupled -- can we abstract that some?
-        #        Maybe should be using pyugrid for some of this.
         '''
-        The cell data that we get from the mover is in the form of
-        indices into the points array.
+            The cell data that we get from the mover is in the form of
+            indices into the points array.
 
-        So we get our cell data and points array, and then build our
-        cell coordinates by reference.
+            So we get our cell data and points array, and then build our
+            cell coordinates by reference.
 
-        cells can be either triangles or quads
+            cells can be either triangles or quads
+
+            fixme: This seems very coupled -- can we abstract that some?
+                   Maybe should be using pyugrid for some of this.
         '''
-
-        ## fixme: maybe update API? -- shouldn't have to reachi into a mover to get the c++ mover underneith
+        # fixme: maybe update API? -- shouldn't have to reach into a mover
+        #        to get the c++ mover underneith
         cell_data = self.ice_mover.mover._get_cell_data()
-        ## fixme -- define this in basic types somewhere?
-        ##          or -- points array should be in the right dtype already.
-        points = self.ice_mover.mover._get_points().astype( [('long', '<f8'), ('lat', '<f8')] )
-        
+
+        # fixme -- define this in basic types somewhere?
+        #          or -- points array should be in the right dtype already.
+        points = self.ice_mover.mover._get_points().astype([('long', '<f8'),
+                                                            ('lat', '<f8')])
+
         points['long'] /= 10 ** 6
         points['lat'] /= 10 ** 6
 
         dtype = cell_data[0].dtype.descr
         unstructured_type = dtype[0][1]
-        unstructured = (cell_data.view(dtype=unstructured_type).reshape(-1, len(dtype))[:, :3])
+        unstructured = (cell_data.view(dtype=unstructured_type)
+                        .reshape(-1, len(dtype))[:, :3])
 
         cells = points[unstructured]
 
