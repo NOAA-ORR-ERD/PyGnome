@@ -123,8 +123,9 @@ class Emulsification(Weatherer, Serializable):
             # just average the water fraction each time - it is not per time
             # step value but at a certain time value
             # todo: probably should be weighted avg
-            sc.mass_balance['water_content'] = \
-                np.sum(data['mass']/data['mass'].sum() * data['frac_water'])
+            if data['mass'].sum() > 0:
+                sc.mass_balance['water_content'] = \
+                    np.sum(data['mass']/data['mass'].sum() * data['frac_water'])
                 #np.sum(data['frac_water'][:]*data['mass'][:]) / np.sum(data['mass'])
                 #np.sum(data['frac_water'][:]) / len(data['frac_water']
                 #np.sum(data['frac_water'][:]) / sc.num_released
