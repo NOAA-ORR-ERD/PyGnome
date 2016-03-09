@@ -22,8 +22,8 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.outputters import Renderer
-from gnome.environment.vector_field import ice_field
-from gnome.movers import PyIceMover
+from gnome.environment.vector_field import curv_field
+from gnome.movers import UGridCurrentMover
 import gnome.utilities.profiledeco as pd
 
 # define base directory
@@ -33,15 +33,16 @@ base_dir = os.path.dirname(__file__)
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
-    start_time = datetime(1985, 1, 1, 13, 31)
+    start_time = datetime(2015, 11, 30, 18, 01)
+    # start_time = datetime(2015, 12, 18, 06, 01)
 
     # 1 day of data in file
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
-                  duration=timedelta(hours=96),
-                  time_step=3600)
+                  duration=timedelta(hours=24),
+                  time_step=900)
 
-    mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
+    mapfile = get_datafile(os.path.join(base_dir, 'stpetersflorida.bna'))
 
     print 'adding the map'
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
@@ -49,8 +50,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
-    renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
-#     renderer.viewport = ((-180, -90), (180, 90))
+    renderer = Renderer(mapfile, images_dir, image_size=(800, 1200))
+#     renderer.viewport = ((-123.35, 45.6), (-122.68, 46.13))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
 
     print 'adding outputters'
@@ -62,29 +63,28 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
     spill1 = point_line_release_spill(num_elements=10000,
-                                      start_position=(200.5,
-                                                      70.5,
+                                      start_position=(-82.6,
+                                                      27.7,
                                                       0.0),
                                       release_time=start_time)
 
     model.spills += spill1
 
     print 'adding a RandomMover:'
-    model.movers += RandomMover(diffusion_coef=100000)
+    model.movers += RandomMover(diffusion_coef=10000)
 
     print 'adding a wind mover:'
 
-#     model.movers += constant_wind_mover(0.5, 0, units='m/s')
+    model.movers += constant_wind_mover(0.5, 90, units='m/s')
 
     print 'adding a current mover:'
 
-    ice, water, air = ice_field(
-        'N:\\Users\\Dylan.Righi\\OutBox\\ArcticROMS\\arctic_avg2_0001_gnome.nc')
-    ice_mover = PyIceMover(ice, water, air)
-    model.movers += ice_mover
-    ice.set_appearance(on=True)
-    renderer.grids += [ice]
+    cf = curv_field('tbofs_example.nc')
+    cf.set_appearance(on=True)
+    renderer.grids += [cf]
     renderer.delay = 25
+    u_mover = UGridCurrentMover(cf)
+    model.movers += u_mover
 
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
     # c_mover = GridCurrentMover(curr_file)
@@ -103,8 +103,12 @@ if __name__ == "__main__":
     field = rend.grids[0]
 #     rend.graticule.set_DMS(True)
     for step in model:
-        #         if step['step_num'] == 0:
-        #             rend.set_viewport(((-165, 69.5), (-162.5, 70)))
+        if step['step_num'] == 0:
+            rend.set_viewport(((-82.70, 27.6), (-82.60, 27.8)))
+        if step['step_num'] == 77:
+            pass
+        #         if step['step_num'] == 8:
+        #             rend.set_viewport(((-82.65, 27.775), (-82.6, 27.875)))
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     print datetime.now() - startTime
