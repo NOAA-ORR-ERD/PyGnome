@@ -3,7 +3,7 @@
 # Script to build in develop mode under Anaconda -- requires some lib re-linking!
 
 if [[ "$1" = "" ]] ; then
-    echo "usage: ./build_anaconda.sh <build_target>"
+    echo "usage: ./build_anaconda.sh <build_target> build_target can be 'develop' or 'install'"
 elif [[ "$1" = "develop" ]] ; then
     python setup.py $1 --no-deps
     python re_link_for_anaconda.py 
