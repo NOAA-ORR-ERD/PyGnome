@@ -470,6 +470,9 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
 
         super(GridCurrentMover, self).__init__(**kwargs)
 
+        if self.topology_file is None:
+            self.topology_file = filename + '.dat'
+
     def __repr__(self):
         return ('GridCurrentMover('
                 'uncertain_duration={0.uncertain_duration},'
@@ -1106,29 +1109,29 @@ class ComponentMover(CyMover, serializable.Serializable):
                                                      val))
 
     use_averaged_winds = property(lambda self: self.mover.use_averaged_winds,
-                           lambda self, val: setattr(self.mover,
-                                                     'use_averaged_winds',
-                                                     val))
+                                  lambda self, val: setattr(self.mover,
+                                                            'use_averaged_winds',
+                                                            val))
 
     wind_power_factor = property(lambda self: self.mover.wind_power_factor,
-                           lambda self, val: setattr(self.mover,
-                                                     'wind_power_factor',
-                                                     val))
+                                 lambda self, val: setattr(self.mover,
+                                                           'wind_power_factor',
+                                                           val))
 
     past_hours_to_average = property(lambda self: self.mover.past_hours_to_average,
-                           lambda self, val: setattr(self.mover,
-                                                     'past_hours_to_average',
-                                                     val))
+                                     lambda self, val: setattr(self.mover,
+                                                               'past_hours_to_average',
+                                                               val))
 
     scale_factor_averaged_winds = property(lambda self: self.mover.scale_factor_averaged_winds,
-                           lambda self, val: setattr(self.mover,
-                                                     'scale_factor_averaged_winds',
-                                                     val))
+                                           lambda self, val: setattr(self.mover,
+                                                                     'scale_factor_averaged_winds',
+                                                                     val))
 
     use_original_scale_factor = property(lambda self: self.mover.use_original_scale_factor,
-                           lambda self, val: setattr(self.mover,
-                                                     'use_original_scale_factor',
-                                                     val))
+                                         lambda self, val: setattr(self.mover,
+                                                                   'use_original_scale_factor',
+                                                                   val))
 
     @property
     def scale_refpoint(self):

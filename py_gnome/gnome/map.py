@@ -18,6 +18,7 @@ Features:
 import copy
 import os
 import math
+from osgeo import ogr
 
 import py_gd
 #import pyugrid
@@ -1110,7 +1111,7 @@ class MapFromBNA(RasterMap):
                            viewport=BB)
         # color doesn't matter here, only index
         canvas.add_colors((('water', (0, 255, 255)),  # aqua
-                           ('land',  (255, 204, 153)),  # brown
+                           ('land', (255, 204, 153)),  # brown
                            ))
         canvas.clear_background()
 
@@ -1299,7 +1300,7 @@ class MapFromUGrid(RasterMap):
                            )
         # color doesn't matter here, only index
         canvas.add_colors((('water', (0, 255, 255)),  # aqua
-                           ('land',  (255, 204, 153)),  # brown
+                           ('land', (255, 204, 153)),  # brown
                            ))
         canvas.clear_background()
 
