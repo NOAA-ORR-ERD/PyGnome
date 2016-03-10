@@ -472,6 +472,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
 
         if self.topology_file is None:
             self.topology_file = filename + '.dat'
+            self.export_topology(self.topology_file)
 
     def __repr__(self):
         return ('GridCurrentMover('
