@@ -46,15 +46,16 @@ class NoProjection(object):
 
     def to_pixel(self, coords, asint=False):
         """
-        returns the same (lon, lat) coords, but as an np.array, if they aren't already
+        returns the same (lon, lat) coords, but as an np.array, if they aren't
+        already
 
-        :param coords: -- the coords to project (Nx3 numpy array or compatible sequence)
-                          (lon, lat, depth)
-        :param asint: -- flag to set whether to convert to a integer or not
-                         default is to leave it as the same type it came in,
-                         so you can have fractional pixels
+        :param coords: The coords to project
+        :type coords: Nx3 numpy array or compatible sequence (lon, lat, depth)
+
+        :param asint: Flag to set whether to convert to a integer or not
+                      default is to leave it as the same type it came in,
+                      so you can have fractional pixels
         """
-
         if asint:
             # C ordering to make sure it's contiguous
             return np.asarray(np.asarray(coords).reshape((-1, 3))[:, :
@@ -68,12 +69,12 @@ class NoProjection(object):
         """
         same as to_pixel, but expects only (lon, lat) coords as input.
 
-        :param coords: -- the coords to project
-                          (Nx2 numpy array or compatible sequence)
-                          (lon, lat)
-        :param asint: -- flag to set whether to convert to a integer or not
-                         default is to leave it as the same type it came in,
-                         so you can have fractional pixels
+        :param coords: The coords to project
+        :type coords: Nx2 numpy array or compatible sequence (lon, lat)
+
+        :param asint: flag to set whether to convert to a integer or not
+                      default is to leave it as the same type it came in,
+                      so you can have fractional pixels
         """
         if asint:
             return np.asarray(coords, dtype=np.int, order='C')
@@ -89,7 +90,6 @@ class NoProjection(object):
 
 
 class GeoProjection(object):
-
     """
     This acts as the base class for a projection
 
@@ -99,26 +99,29 @@ class GeoProjection(object):
 
     def __init__(self, bounding_box=None, image_size=None):
         """
-        create a new projection
+        Create a new projection
 
         Projection(bounding_box, image_size)
 
-        :param bounding_box: the bounding box of the map:
-           ( (min_long, min_lat),
-             (max_lon,  max_lat) )
+        :param bounding_box: The bounding box of the map
+        :type bounding_box: Struct of the form:
+                                ((min_long, min_lat),
+                                 (max_lon,  max_lat))
+                            or a BoundingBox Object
 
-        (or a BoundingBox Object)
-
-        :param image_size: the size of the map image -- (width, height)
-
+        :param image_size: The size of the map image
+        :type image_size: Struct of the form (width, height)
         """
-
         self.center = None
         self.offset = None
         self.scale = None
-        self.image_size = (600, 600) if image_size is None else image_size
-        bounding_box = (
-            (-180, -90), (180, 90)) if bounding_box is None else bounding_box
+
+        if image_size is None:
+            self.image_size = (600, 600)
+
+        if bounding_box is None:
+            bounding_box = ((-180, -90), (180, 90))
+
         self.image_box = bounding_box
         self.set_scale(bounding_box, image_size)
 
@@ -141,22 +144,22 @@ class GeoProjection(object):
             return True
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        return not self == other
 
     def set_scale(self, bounding_box, image_size=None):
         """
-        set the scaling, etc. of the projection
+        Set the scaling, etc. of the projection
 
         This should be called whenever the bounding box of the map,
         or the size of the image is changed
 
         :param bounding_box: bounding box of the visual portion of the map
-                             in the form:  ( (min_long, min_lat),
-                                             (max_long, max_lat) )
-        :param image_size=None: the size of the image that will be drawn to.
+        :type bounding_box: Struct of the form: ((min_long, min_lat),
+                                                 (max_long, max_lat))
+
+        :param image_size=None: The size of the image that will be drawn to.
                                 if not given, the previous size will be used.
         """
-
         if image_size is None:
             image_size = self.image_size
 
@@ -166,46 +169,46 @@ class GeoProjection(object):
         self.offset = np.array(image_size, dtype=np.float64) / 2
 
         # compute BB to fit image
-
         h = bounding_box[1, 1] - bounding_box[0, 1]
 
         # width scaled to longitude
-
         w = bounding_box[1, 0] - bounding_box[0, 0]
+
         if w / h > image_size[0] / image_size[1]:
             s = image_size[0] / w
         else:
             s = image_size[1] / h
+
         self.scale = (s, -s)
 
         # doing this at the end, in case there is a problem with the input.
 
-        self.image_box = (
-            self.to_lonlat((0, image_size[1])), self.to_lonlat((image_size[0], 0)))
+        self.image_box = (self.to_lonlat((0, image_size[1])),
+                          self.to_lonlat((image_size[0], 0)))
         self.image_size = image_size
 
     def to_pixel(self, coords, asint=False):
         """
-        converts input coordinates to pixel coords
+        Converts input coordinates to pixel coords
 
-        param: coords --  an array of coordinates -- NX3::
+        :param coords: An array of coordinates
+        :type coords: Sequence of NX3
+                          ((long1, lat1, z1),
+                           (long2, lat2, z2),
+                           (long3, lat3, z3),
+                           ...
+                          )
+                      (z is ignored, and there is no z in the returned array)
 
-                 ( (long1, lat1, z1),
-                   (long2, lat2, z2),
-                   (long3, lat3, z3),
-                    ...
-                 )
+        :returns: The pixel coords as a similar Nx2 array of integer
+                  x,y coordinates
+                  (using the y = 0 at the top, and y increasing down)
 
-        (z is ignored, and there is no z in the returned array)
-
-        returns:  the pixel coords as a similar Nx2 array of integer x,y coordinates
-        (using the y = 0 at the top, and y increasing down)
-
-        NOTE: the values between the minimum of a pixel value to less than the
+        NOTE: The values between the minimum of a pixel value to less than the
               max of a pixel range are in that pixel, so  a point exactly at
               the minimum of the bounding box will be in the zeroth pixel, but
-              a point  exactly at the max of the bounding box will be considered
-              outside the map
+              a point  exactly at the max of the bounding box will be
+              considered outside the map
         """
 
         coords = np.asarray(coords)
@@ -214,8 +217,10 @@ class GeoProjection(object):
 
         # shift to center:
         coords = coords[:, :2] - self.center
+
         # scale to pixels:
         coords *= self.scale
+
         # shift to pixel coords
         coords += self.offset
 
@@ -233,12 +238,12 @@ class GeoProjection(object):
         """
         same as to_pixel, but expects only (lon, lat) coords as input.
 
-        :param coords: -- the coords to project
-                          (Nx2 numpy array or compatible sequence)
-                          (lon, lat)
-        :param asint: -- flag to set whether to convert to a integer or not
-                         default is to leave it as the same type it came in,
-                         so you can have fractional pixels
+        :param coords: The coords to project
+        :type coords: Nx2 numpy array or compatible sequence (lon, lat)
+
+        :param asint: Flag to set whether to convert to a integer or not
+                      default is to leave it as the same type it came in,
+                      so you can have fractional pixels
         """
         coords = np.asarray(coords)
         if coords.shape[1] != 2:
@@ -246,8 +251,10 @@ class GeoProjection(object):
 
         # shift to center:
         coords = coords - self.center
+
         # scale to pixels:
         coords *= self.scale
+
         # shift to pixel coords
         coords += self.offset
 
@@ -265,40 +272,40 @@ class GeoProjection(object):
         """
         converts pixel coords to long-lat coords
 
-        :param coords:  - an array of pixel coordinates (usually integer type)
-           NX2: ( (long1, lat1),
-                  (long2, lat2),
-                  (long3, lat3),
-                 .....
-                )
-         (as produced by to_pixel)
+        :param coords: An array of pixel coordinates (usually integer type
+        :type coords: Sequence of NX2: ((long1, lat1),
+                                        (long2, lat2),
+                                        (long3, lat3),
+                                        ...
+                                        )
+                      (as produced by to_pixel)
+
+        :returns: The pixel coords as a similar Nx2 array of floating point
+                  x,y coordinates
+                  (using the y = 0 at the top, and y increasing down)
 
         NOTE: there is not depth in input -- pixels are always 2-d!
 
-        Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.
-        If the input is integers, a 0.5 is added to "shift" the location to mid-pixel.
 
-        :returns:  the pixel coords as a similar Nx2 array of floating point x,y coordinates
-        (using the y = 0 at the top, and y increasing down)
-
-        Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.
-        If the input is integers, a 0.5 is added to "shift" the location to
-        mid-pixel.
-
-        :returns:  the pixel coords as a similar Nx2 array of floating point
-                   x,y coordinates (using the y = 0 at the top, and y increasing down)
+        NOTE: to_lonlat(to_pixel(coords)) != coords, due to rounding.
+              If the input is integers, a 0.5 is added to "shift" the location
+              to mid-pixel.
         """
         coords = np.asarray(coords)
+
         if np.issubdtype(coords.dtype, int):
             # convert to float64:
             coords = coords.astype(np.float64)
 
             # add 0.5 to shift to center of pixel
             coords += 0.5
+
         # shift to pixel center coords
         coords -= self.offset
+
         # scale to lat-lon
         coords /= self.scale
+
         # shift from center:
         coords += self.center
 
@@ -318,36 +325,35 @@ class FlatEarthProjection(GeoProjection):
     @staticmethod
     def meters_to_lonlat(meters, ref_positions):
         """
-        Converts from delta meters to delta latitude-longitude, using the Flat-Earth projection.
-
-        :param meters: NX3 numpy array of (dx, dy, dz) distances in meters (dz is passed through untouched)
-        :param ref_positions: NX3, numpy array of reference positions in degrees (Only lat is used here)
-
-        :param meters: NX3 numpy array of (dx, dy, dz) distances in meters
-                       (dz is passed through untouched)
-        :param ref_positions: NX3, numpy array of reference positions
-                              in degrees (Only lat is used here)
-
-        :returns delta_lon_lat: Nx3 numpy array of
-                                (delta-lon, delta-lat, delta-z) triples
+        Converts from delta meters to delta latitude-longitude,
+        using the Flat-Earth projection.
 
         dlat = dy * 8.9992801e-06
         dlon = dy * 8.9992801e-06 * cos(ref_lat)
         (based on previous GNOME value: and/or average radius of the earth of
          6366706.989  m)
 
+        :param meters: Distances in meters
+        :type meters: NX3 numpy array of (dx, dy, dz)
+                      (dz is passed through untouched)
+
+        :param ref_positions: Reference positions in degrees
+        :type ref_positions: NX3, numpy array (Only lat is used here)
+
+        :returns delta_lon_lat: Differential (delta) positional values
+                                Nx3 numpy array of
+                                (delta-lon, delta-lat, delta-z)
         """
         # make a copy -- don't change meters
-
         delta_lon_lat = np.array(meters, dtype=np.float64).reshape(-1, 3)
 
         # reference is possible for reference positions
-
         ref_positions = np.asarray(ref_positions,
                                    dtype=np.float64).reshape(-1, 3)
 
         delta_lon_lat[:, :2] *= 8.9992801e-06
         delta_lon_lat[:, 0] /= np.cos(np.deg2rad(ref_positions[:, 1]))
+
         return delta_lon_lat
 
     @staticmethod
@@ -358,24 +364,27 @@ class FlatEarthProjection(GeoProjection):
 
         This function mainly used for testing
 
-        :param lon_lat: NX3 numpy array of (dlon, dlat, dz) distances in meters
-                        (dz is passed through untouched)
-        :param ref_positions: NX3, numpy array of (lon,lat,z)
-                              reference positions in degrees
-                              (Only lat is used here)
+        dy = dlon / 8.9992801e-06
+        dx = dlat / ( 8.9992801e-06 * cos(ref_lat) )
 
-        :returns delta_meters: Nx3 numpy array of (delta-x, delta-y, delta-z)
-                               triples
+        (based on previous GNOME value: and/or average radius of the earth
+         of 6366706.989 m)
 
         NOTE: the input is in units of longitude and latitude, but they are
               relative -- no absolute -- so 0 means zero distance,
               not on the equator
 
-        dy = dlon / 8.9992801e-06
-        dx = dlat / ( 8.9992801e-06 * cos(ref_lat) )
+        :param lon_lat: Distances in meters
+        :type lon_lat: NX3 numpy array of (dlon, dlat, dz)
+                       (dz is passed through untouched)
 
-        (based on previous GNOME value: and/or average radius of the earth of 6366706.989  m)
+        :param ref_positions: Reference positions in degrees
+        :type ref_positions: NX3, numpy array of (lon,lat,z)
+                             (Only lat is used here)
 
+        :returns delta_meters: Differential (delta) positional values in meters
+                               Nx3 numpy array of (delta-x, delta-y, delta-z)
+                               triples
         """
         # make a copy -- don't change input
         delta_meters = np.array(lon_lat, dtype=np.float64).reshape(-1, 3)
@@ -386,6 +395,7 @@ class FlatEarthProjection(GeoProjection):
 
         delta_meters[:, :2] /= 8.9992801e-06
         delta_meters[:, 0] *= np.cos(np.deg2rad(ref_positions[:, 1]))
+
         return delta_meters
 
     @staticmethod
@@ -406,31 +416,28 @@ class FlatEarthProjection(GeoProjection):
 
         Code from Brian Zelenke
 
-        NOTE: performance could be improved a lot here if need be (lots of data copies)
+        NOTE: performance could be improved a lot here if need be
+              (lots of data copies)
         """
-
         # EarthRadius = 6371010.0 # Value I"ve looked up
         # Matches the value used above -- GNOME value
         EarthRadius = 6366706.989
 
         # Convert from degrees to radians.
-
         lat = np.deg2rad(lat)
         lon = np.deg2rad(lon)
         bearing = np.deg2rad(bearing)
 
         # Convert linear distance to angular distance (in radians).
-
         distance = distance / EarthRadius
 
         latout = np.arcsin(np.sin(lat) * np.cos(distance) + np.cos(lat) *
                            np.sin(distance) * np.cos(bearing))
-        lonout = lon + np.arctan2(np.sin(bearing) * np.sin(distance) *
-                                  np.cos(lat), np.cos(distance) -
-                                  np.sin(lat) * np.sin(latout))
+        lonout = (lon +
+                  np.arctan2(np.sin(bearing) * np.sin(distance) * np.cos(lat),
+                             np.cos(distance) - np.sin(lat) * np.sin(latout)))
 
         # Convert from radians to degrees.
-
         lonout = np.rad2deg(lonout)
         latout = np.rad2deg(latout)
 
@@ -444,28 +451,27 @@ class FlatEarthProjection(GeoProjection):
         or the size of the image is changed
 
         :param bounding_box: bounding box of the visual portion of the map
-                             in the form:  ( (min_long, min_lat),
-                                             (max_long, max_lat) )
+        :type bounding_box: Structure of the form: ((min_long, min_lat),
+                                                    (max_long, max_lat))
+
         :param image_size=None: the size of the image that will be drawn to.
                                 if not given, the previous size will be used.
         """
-
         if image_size is None:
             image_size = self.image_size
 
-        bounding_box = np.asarray(bounding_box, dtype=np.float64)
+        bb = np.asarray(bounding_box, dtype=np.float64)
 
-        self.center = np.mean(bounding_box, axis=0)
+        self.center = np.mean(bb, axis=0)
         self.offset = np.array(image_size, dtype=np.float64) / 2.0
 
-        bb = bounding_box
         lon_scale = np.cos(np.deg2rad(self.center[1]))
 
         # compute BB to fit image
-        h = bounding_box[1, 1] - bounding_box[0, 1]
+        h = bb[1, 1] - bb[0, 1]
 
         # width scaled to longitude
-        w = (bounding_box[1, 0] - bounding_box[0, 0]) * lon_scale
+        w = (bb[1, 0] - bb[0, 0]) * lon_scale
 
         if w / h > image_size[0] / image_size[1]:
             s = image_size[0] / w
@@ -475,20 +481,21 @@ class FlatEarthProjection(GeoProjection):
             self.scale = (s * lon_scale, -s)
 
         # doing this at the end, in case there is a problem with the input.
-        self.image_box = (
-            self.to_lonlat((0, image_size[1])), self.to_lonlat((image_size[0], 0)))
+
+        self.image_box = (self.to_lonlat((0, image_size[1])),
+                          self.to_lonlat((image_size[0], 0)))
         self.image_size = image_size
 
 
 class RectangularGridProjection(NoProjection):
     """
-    projection for lat-lon to pixel and back for a rectangular but not regular
+    Projection for lat-lon to pixel and back for a rectangular but not regular
     grid.
 
-    i.e a rectangular grid that can be defined by a single vector each of
-        latitude and longitude
+    i.e. a rectangular grid that can be defined by a single vector each of
+         latitude and longitude
 
-    This is a totally different type of projection -- it requires a linear
+    This is a totally different type of projection.  It requires a linear
     interpolation for the latitude and longitude.
 
     Primarily used for making a raster land-water map from a non-regular
@@ -502,69 +509,80 @@ class RectangularGridProjection(NoProjection):
         :param longitude: the vector of longitudes
         :param latitude: the vector of latitudes
 
-        It is assumed that the largest and smallest
-        values define the bounds of the raster.
+        It is assumed that the largest and smallest values define the
+        bounds of the raster.
         """
         import scipy.interpolate
 
         latitude = np.array(latitude, dtype=np.float64)
         longitude = np.array(longitude, dtype=np.float64)
+
         self.max_lat_index = len(latitude) - 1  # height of bitmap
         self.max_lon_index = len(longitude) - 1  # width of bitmap
 
         self.min_lon = longitude.min()
         self.max_lon = longitude.max()
+
         self.min_lat = latitude.min()
         self.max_lat = latitude.max()
 
-        pixels = (np.arange(len(latitude)).reshape(-1, 1) *
-                  np.arange(len(longitude)))
+        # pixels = (np.arange(len(latitude)).reshape(-1, 1) *
+        #           np.arange(len(longitude)))
 
         # Create interpolators:
-        self._lon_to_pixel_interp = scipy.interpolate.interp1d(longitude,
-                                                               np.arange(
-                                                                   len(longitude)),
-                                                               kind='linear',
-                                                               copy=True,
-                                                               bounds_error=False,
-                                                               fill_value=None)  # None means use NaN
-        self._lat_to_pixel_interp = scipy.interpolate.interp1d(latitude,
-                                                               np.arange(
-                                                                   len(latitude)),
-                                                               kind='linear',
-                                                               copy=True,
-                                                               bounds_error=False,
-                                                               fill_value=None)  # None means use NaN
 
-        self._pixel_to_lon_interp = scipy.interpolate.interp1d(np.arange(len(longitude)),
-                                                               longitude,
-                                                               kind='linear',
-                                                               copy=True,
-                                                               bounds_error=False,
-                                                               fill_value=None)  # None means use NaN
-        self._pixel_to_lat_interp = scipy.interpolate.interp1d(np.arange(len(latitude)),
-                                                               latitude,
-                                                               kind='linear',
-                                                               copy=True,
-                                                               bounds_error=False,
-                                                               fill_value=None)  # None means use NaN
+        # fill value of None means use NaN
+        self._lon_to_pixel_interp = (scipy.interpolate
+                                     .interp1d(longitude,
+                                               np.arange(len(longitude)),
+                                               kind='linear',
+                                               copy=True,
+                                               bounds_error=False,
+                                               fill_value=None))
+
+        self._lat_to_pixel_interp = (scipy.interpolate
+                                     .interp1d(latitude,
+                                               np.arange(len(latitude)),
+                                               kind='linear',
+                                               copy=True,
+                                               bounds_error=False,
+                                               fill_value=None))
+
+        self._pixel_to_lon_interp = (scipy.interpolate
+                                     .interp1d(np.arange(len(longitude)),
+                                               longitude,
+                                               kind='linear',
+                                               copy=True,
+                                               bounds_error=False,
+                                               fill_value=None))
+
+        self._pixel_to_lat_interp = (scipy.interpolate
+                                     .interp1d(np.arange(len(latitude)),
+                                               latitude,
+                                               kind='linear',
+                                               copy=True,
+                                               bounds_error=False,
+                                               fill_value=None))
 
     def set_scale(self, bounding_box, image_size=None):
         """
         Does nothing
         """
-        raise NotImplimentedError("you can not reset the scale on a RectangularGridProjection object\n"
-                                  "create a new one if you need a new scale")
+        raise NotImplementedError('you can not reset the scale on a '
+                                  'RectangularGridProjection object\n'
+                                  'create a new one if you need a new scale')
 
     def to_pixel(self, coords, asint=False):
         """
-        returns the pixel coordintes in the gird for teh given lat-lon location.
+        Returns the pixel coordintes in the grid for the given
+        lat-lon location.
 
-        :param coords: -- the coords to project (Nx3 numpy array or compatible sequence)
-                          (lon, lat, depth)
-        :param asint: -- flag to set whether to convert to a integer or not
-                         default is to leave it as the same type it came in,
-                         so you can have fractional pixels
+        :param coords: The coords to project
+        :type coords: Nx3 numpy array or compatible sequence (lon, lat, depth)
+
+        :param asint: Flag to set whether to convert to a integer or not
+                      default is to leave it as the same type it came in,
+                      so you can have fractional pixels
         """
         coords = np.asarray(coords)
         if len(coords.shape) == 1:
@@ -575,13 +593,19 @@ class RectangularGridProjection(NoProjection):
 
         pixel_coords = np.zeros((coords.shape[0], 2), dtype=np.float64)
 
-        np.putmask(coords[:, :2], coords[:, :2] < (
-            self.min_lon, self.min_lat), (self.min_lon, self.min_lat))
-        np.putmask(coords[:, :2], coords[:, :2] > (
-            self.max_lon, self.max_lat), (self.max_lon, self.max_lat))
 
-        np.clip(coords[:, :2], (self.min_lon, self.min_lat),
-                (self.max_lon, self.max_lat), out=coords[:, :2])
+        np.putmask(coords[:, :2],
+                   coords[:, :2] < (self.min_lon, self.min_lat),
+                   (self.min_lon, self.min_lat))
+        np.putmask(coords[:, :2],
+                   coords[:, :2] > (self.max_lon, self.max_lat),
+                   (self.max_lon, self.max_lat))
+
+
+        np.clip(coords[:, :2],
+                (self.min_lon, self.min_lat),
+                (self.max_lon, self.max_lat),
+                out=coords[:, :2])
 
         pixel_coords[:, 0] = self._lon_to_pixel_interp(coords[:, 0])
         pixel_coords[:, 1] = (self.max_lat_index -
@@ -602,47 +626,51 @@ class RectangularGridProjection(NoProjection):
         """
         same as to_pixel, but expects only (lon, lat) coords as input.
 
-        :param coords: -- the coords to project
-                          (Nx2 numpy array or compatible sequence)
-                          (lon, lat)
-        :param asint: -- flag to set whether to convert to a integer or not
-                         default is to leave it as the same type it came in,
-                         so you can have fractional pixels
+        :param coords: The coords to project
+        :type coords: Nx2 numpy array or compatible sequence (lon, lat)
+
+        :param asint: Flag to set whether to convert to a integer or not
+                      default is to leave it as the same type it came in,
+                      so you can have fractional pixels
         """
         raise NotImplementedError
 
     def to_lonlat(self, coords):
         """
-        converts pixel coords to long-lat coords
+        Converts pixel coords to long-lat coords
 
-        param: coords  - an array of pixel coordinates (usually integer type)
-           NX2: ( (long1, lat1),
-                  (long2, lat2),
-                  (long3, lat3),
-                 .....
-                )
-         (as produced by to_pixel)
+        :param coords: An array of pixel coordinates (as produced by to_pixel)
+        :type coords: Sequence of Nx2 (usually integer type)
+                          ((long1, lat1),
+                           (long2, lat2),
+                           (long3, lat3),
+                           ...
+                           )
+
+        :returns: the pixel coords as a similar Nx2 array of floating point
+                  x,y coordinates
+                  (using the y = 0 at the top, and y increasing down)
 
         NOTE: there is not depth in input -- pixels are always 2-d!
 
-        Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.
-        If the input is integers, a 0.5 is added to "shift" the location
-        to mid-pixel.
-        returns: the pixel coords as a similar Nx2 array of floating point
-                 x,y coordinates
-                 (using the y = 0 at the top, and y increasing down)
+        NOTE: to_lonlat(to_pixel(coords)) != coords, due to rounding.
+              If the input is integers, a 0.5 is added to "shift" the location
+              to mid-pixel.
          """
         coords = np.asarray(coords).reshape((-1, 2))
 
         if np.issubdtype(coords.dtype, int):
             # convert to float64:
             coords = coords.astype(np.float64)
+
             # add 0.5 to shift to center of pixel
             coords += 0.5
 
         # out of bounds gets clipped to boundary
-        np.clip(
-            coords, (0, 0), (self.max_lon_index, self.max_lat_index), out=coords)
+
+        np.clip(coords,
+                (0, 0), (self.max_lon_index, self.max_lat_index),
+                out=coords)
 
         # interpolate to lon-lat_coords
         lon = self._pixel_to_lon_interp(coords[:, 0])
@@ -665,18 +693,18 @@ class RegularGridProjection(GeoProjection):
 
     def set_scale(self, bounding_box, image_size=None):
         """
-        set the scaling, etc. of the projection
+        Set the scaling, etc. of the projection
 
         This should be called whenever the bounding box of the map,
         or the size of the image is changed
 
-        :param bounding_box: bounding box of the visual portion of the map
-                             in the form:  ( (min_long, min_lat),
-                                             (max_long, max_lat) )
-        :param image_size=None: the size of the image that will be drawn to.
+        :param bounding_box: Bounding box of the visual portion of the map
+        :type bounding_box: Structure of the form: ((min_long, min_lat),
+                                                    (max_long, max_lat))
+
+        :param image_size=None: The size of the image that will be drawn to.
                                 if not given, the previous size will be used.
         """
-
         if image_size is None:
             image_size = self.image_size
 

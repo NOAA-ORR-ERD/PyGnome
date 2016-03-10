@@ -20,8 +20,8 @@ class NetCDFStore // Houses stepwise run information for NetCDF output (and inpu
         float *depth;
         float *mass;
         long *age;
-        short *flag;
-        long *status;
+        //short *flag;
+        short *status_codes;
         long *id;
 		map<string, int> *ncVarIDs, *ncDimIDs;
 	

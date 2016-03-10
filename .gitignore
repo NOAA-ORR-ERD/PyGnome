@@ -11,6 +11,7 @@ cy_*.c
 *._.DS_Store
 empty_BW_image.png
 .DS_Store
+.cache/
 
 # ignore binaries generated during build
 *.egg-info
@@ -21,6 +22,9 @@ py_gnome/gnome/pyGnome.egg-info/*
 
 # ignore built documention in WebGNOME
 web/gnome/webgnome/doc/_build/*
+
+# ignore ipython notebook checkpoint areas
+.ipynb_checkpoints
 
 # ignore generated model data in WebGNOME
 web/gnome/webgnome/webgnome/static/models/*

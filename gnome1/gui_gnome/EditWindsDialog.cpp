@@ -767,6 +767,8 @@ void DoClickInBullsEye(DialogPtr dialog)
 			#ifdef MAC
 				// this might mess up the IBM
 				// make sure all of the test is highlighted
+				HideDialogItem(dialog,EWSPEED);
+				ShowDialogItem(dialog,EWSPEED);
 				MySelectDialogItemText(dialog, EWSPEED, 0, 100);
 			#endif
 			

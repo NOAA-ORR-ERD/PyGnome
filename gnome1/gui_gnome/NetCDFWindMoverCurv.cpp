@@ -259,7 +259,7 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 			//startTime2 = model->GetStartTime();	// default to model start time
 			err = -1; TechError("NetCDFWindMoverCurv::TextRead()", "sscanf() == 8", 0); goto done;
 		}
-		else
+		//else
 		{
 			// code goes here, trouble with the DAYS since 1900 format, since converts to seconds since 1904
 			if (time.year ==1900) {time.year += 40; time.day += 1; /*for the 1900 non-leap yr issue*/ yearShift = 40.;}

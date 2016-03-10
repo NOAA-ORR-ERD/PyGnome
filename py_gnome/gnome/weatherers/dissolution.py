@@ -108,7 +108,7 @@ class Dissolution(Weatherer, Serializable):
 
         assert num_initialized == num_released
 
-    def dissolve_oil(self, **kwargs):
+    def dissolve_oil(self, data, substance, **kwargs):
         '''
             Here is where we calculate the dissolved oil.
             We will outline the steps as we go along, but off the top of
@@ -116,16 +116,20 @@ class Dissolution(Weatherer, Serializable):
             - recalculate the partition coefficient (K_ow)
               TODO: This requires a molar average of the aromatic components.
             - use VDROP to calculate the shift in the droplet distribution
+            - for each droplet size category:
+                - calculate the water phase transfer velocity (k_w) (Stokes)
+                - calculate the mass xfer rate coefficient (beta)
+                - calculate the water column time fraction (f_wc)
+                - calculate the volume dissolved
             - subtract the mass of smallest droplets in our distribution
               that are below a threshold.
         '''
-        data = kwargs['data']
         fmass = data['mass_components']
 
-        substance = kwargs['substance']
         arom_mask = substance._sara['type'] == 'Aromatics'
         mol_wt = substance.molecular_weight
         rho = substance.component_density
+
         assert mol_wt.shape == rho.shape
 
         # calculate the partition coefficient (K_ow) for all aromatics.
@@ -164,7 +168,7 @@ class Dissolution(Weatherer, Serializable):
         pp.pprint(self.array_types)
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['mass']) == 0:
-                # substance does not contain any surface_weathering LEs
+                # data does not contain any surface_weathering LEs
                 continue
 
             ka = constants.ka  # oil sticking term
