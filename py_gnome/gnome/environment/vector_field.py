@@ -404,25 +404,20 @@ class SField(VectorField):
         '''
 #         points = np.ascontiguousarray(points)
 
+        mem = True
         t_alphas = self.time.interp_alpha(time)
         t_index = self.time.indexof(time)
         ind = indices
+        _hash = self.grid._hash_of_pts(points)
         if ind is None:
-            ind = self.grid.locate_faces(points)
+            ind = self.grid.locate_faces(points, mem, _hash)
 
         u_grid = self.grid.infer_grid(self.u)
         v_grid = self.grid.infer_grid(self.v)
 
-        u_ind = self.grid.translate_index(
-            points, ind, u_grid, slice_grid=False)
-        v_ind = self.grid.translate_index(
-            points, ind, v_grid, slice_grid=False)
-
-        yu_slice, xu_slice = self.grid._get_efficient_slice(
-            u_grid, indices=u_ind)
+        yu_slice, xu_slice = self.grid.get_efficient_slice(points, u_grid, ind, mem, _hash)
         u_slice = [slice(t_index, t_index + 2), depth, yu_slice, xu_slice]
-        v_slice = yv_slice, xv_slice = self.grid._get_efficient_slice(
-            v_grid, indices=v_ind)
+        v_slice = yv_slice, xv_slice = self.grid.get_efficient_slice(points, v_grid, ind, mem, _hash)
         v_slice = [slice(t_index, t_index + 2), depth, yv_slice, xv_slice]
 
         if len(self.u.shape) < 4:
@@ -436,19 +431,11 @@ class SField(VectorField):
 #         land_mask = self.land_mask[:]
         u_vels = u0 + (u1 - u0) * t_alphas
         v_vels = v0 + (v1 - v0) * t_alphas
-        u_alphas = v_alphas = None
-        if alphas is not None:
-            u_alphas, v_alphas = alphas
-        else:
-            u_alphas = self.grid.interpolation_alphas(
-                points, None, u_grid, _translated_indices=u_ind)
-            v_alphas = self.grid.interpolation_alphas(
-                points, None, v_grid, _translated_indices=v_ind)
 
         u_interp = self.grid.interpolate_var_to_points(
-            points, u_vels, ind, alphas=u_alphas, grid=u_grid, slices=None, _translated_indices=u_ind)
+            points, u_vels, ind, grid=u_grid, slices=None, slice_grid=False, memo=mem, _hash=hash)
         v_interp = self.grid.interpolate_var_to_points(
-            points, v_vels, ind, alphas=v_alphas, grid=v_grid, slices=None, _translated_indices=v_ind)
+            points, v_vels, ind, grid=v_grid, slices=None, slice_grid=False, memo=mem, _hash=hash)
 
         vels = np.column_stack((u_interp, v_interp))
         if self.grid.angles is not None:
