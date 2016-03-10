@@ -372,26 +372,20 @@ class SField(VectorField):
         pos_alphas = grid.interpolation_alphas(points, indices)
         return pos_alphas
 
-    def interpolate_var(self, points, time, variable, indices=None, alphas=None, slices=None, _translated_indices=None):
+    def interpolate_var(self, time, points, variable, depth=-1, memo=True, _hash=None):
         #         points = np.ascontiguousarray(points)
+        memo = True
+        if _hash is None:
+            _hash = self.grid._hash_of_pts(points)
         t_alphas = self.time.interp_alpha(time)
         t_index = self.time.indexof(time)
-        ind = self.grid.locate_faces(points)
-        grid = self.grid.infer_grid(variable)
 
-        trans_ind = self.grid.translate_index(
-            points, ind, grid, slice_grid=False)
-
-        slices = self.get_efficient_var_slice(trans_ind, time, variable)
-
-        v0, v1 = variable[slices]
+        v0 = self.grid.interpolate_var_to_points(points, variable, slices=[t_index, depth], memo=memo, _hash=_hash)
+        v1 = self.grid.interpolate_var_to_points(points, variable, slices=[t_index + 1, depth], memo=memo, _hash=_hash)
 
         vt = v0 + (v1 - v0) * t_alphas
 
-        v_inter = self.grid.interpolate_var_to_points(
-            points, vt, ind, grid, alphas=alphas, slices=None, _translated_indices=trans_ind)
-
-        return v_inter
+        return vt
 
     def interpolated_velocities(self, time, points, indices=None, alphas=None, depth=-1):
         '''
@@ -402,42 +396,24 @@ class SField(VectorField):
         :param indices: Numpy array of indices of the points, if already known.
         :return: interpolated velocities at the specified points
         '''
-#         points = np.ascontiguousarray(points)
 
         mem = True
+        ind = indices
         t_alphas = self.time.interp_alpha(time)
         t_index = self.time.indexof(time)
-        ind = indices
-        _hash = self.grid._hash_of_pts(points)
         if ind is None:
-            ind = self.grid.locate_faces(points, mem, _hash)
+            ind = self.grid.locate_faces(points, memo=mem)
 
-        u_grid = self.grid.infer_grid(self.u)
-        v_grid = self.grid.infer_grid(self.v)
+        u0 = self.grid.interpolate_var_to_points(points, self.u, slices=[t_index, depth], slice_grid=False, memo=mem)
+        u1 = self.grid.interpolate_var_to_points(points, self.u, slices=[t_index + 1, depth], slice_grid=False, memo=mem)
 
-        yu_slice, xu_slice = self.grid.get_efficient_slice(points, u_grid, ind, mem, _hash)
-        u_slice = [slice(t_index, t_index + 2), depth, yu_slice, xu_slice]
-        v_slice = yv_slice, xv_slice = self.grid.get_efficient_slice(points, v_grid, ind, mem, _hash)
-        v_slice = [slice(t_index, t_index + 2), depth, yv_slice, xv_slice]
+        v0 = self.grid.interpolate_var_to_points(points, self.v, slices=[t_index, depth], slice_grid=False, memo=mem)
+        v1 = self.grid.interpolate_var_to_points(points, self.v, slices=[t_index + 1, depth], slice_grid=False, memo=mem)
 
-        if len(self.u.shape) < 4:
-            u_slice.remove(depth)
-            v_slice.remove(depth)
-
-        u0, u1 = self.u[u_slice]
-        v0, v1 = self.v[v_slice]
-#         u_mask = self.u_mask[:].astype(np.bool)
-#         v_mask = self.v_mask[:].astype(np.bool)
-#         land_mask = self.land_mask[:]
         u_vels = u0 + (u1 - u0) * t_alphas
         v_vels = v0 + (v1 - v0) * t_alphas
 
-        u_interp = self.grid.interpolate_var_to_points(
-            points, u_vels, ind, grid=u_grid, slices=None, slice_grid=False, memo=mem, _hash=hash)
-        v_interp = self.grid.interpolate_var_to_points(
-            points, v_vels, ind, grid=v_grid, slices=None, slice_grid=False, memo=mem, _hash=hash)
-
-        vels = np.column_stack((u_interp, v_interp))
+        vels = np.column_stack((u_vels, v_vels))
         if self.grid.angles is not None:
             ang_ind = ind + [1, 1]
             angs = self.grid.angles[:][ang_ind[:, 0], ang_ind[:, 1]]
