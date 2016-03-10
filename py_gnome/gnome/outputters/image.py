@@ -26,7 +26,7 @@ class IceImageSchema(BaseSchema):
     '''
 
 
-class IceImageOutput(Outputter, Serializable):
+class IceImageOutput(Outputter):
     '''
     Class that outputs ice data as an image for each ice mover.
 
@@ -41,20 +41,24 @@ class IceImageOutput(Outputter, Serializable):
 
     _schema = IceImageSchema
 
-    def __init__(self, ice_mover=None, **kwargs):
+    def __init__(self, ice_mover=None,
+                 image_size=(800, 600),
+                 projection=None,
+                 viewport=None,
+                 **kwargs):
         '''
         :param mover: An ice_mover object.
 
         Use super to pass optional \*\*kwargs to base class __init__ method
         '''
-
-        # NOTE: only supports one ice mover
-        self.ice_mover = ice_mover
+        self.map_canvas = MapCanvas(image_size,
+                                    projection=projection,
+                                    viewport=viewport)
 
         super(IceImageOutput, self).__init__(**kwargs)
 
-        # used to do the rendering
-        self.map_canvas = MapCanvas((1000, 1000))
+        # NOTE: only supports one ice mover
+        self.ice_mover = ice_mover
 
     def write_output(self, step_num, islast_step=False):
         """
