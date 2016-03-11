@@ -4,8 +4,7 @@ of gnome specific types
 '''
 import datetime
 
-import numpy
-np = numpy
+import numpy as np
 
 from colander import Float, DateTime, Sequence, Tuple, \
     TupleSchema, SequenceSchema, null, List
