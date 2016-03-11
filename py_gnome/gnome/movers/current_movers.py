@@ -389,6 +389,8 @@ class GridCurrentMoverSchema(CurrentMoversBaseSchema):
     current_scale = SchemaNode(Float(), missing=drop)
     uncertain_along = SchemaNode(Float(), missing=drop)
     uncertain_cross = SchemaNode(Float(), missing=drop)
+    extrapolate = SchemaNode(Bool(), missing=drop)
+    time_offset = SchemaNode(Float(), missing=drop)
 
 
 class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
