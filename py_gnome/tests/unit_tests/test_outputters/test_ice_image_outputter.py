@@ -10,6 +10,7 @@ import pytest
 from gnome.model import Model
 # from gnome.basic_types import oil_status
 from gnome.utilities import time_utils
+from gnome.utilities.projections import FlatEarthProjection, GeoProjection
 
 from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.movers import IceMover
@@ -64,6 +65,20 @@ def test_init():
     o = IceImageOutput(c_ice_mover)
 
     assert o.ice_mover is c_ice_mover
+
+    assert isinstance(o.map_canvas.projection, FlatEarthProjection)
+    assert o.map_canvas.viewport == ((-180, -90), (180, 90))
+
+
+def test_init_with_projection():
+    'simple initialization passes'
+    c_ice_mover = IceMover(curr_file, topology_file)
+    o = IceImageOutput(c_ice_mover, projection=GeoProjection())
+
+    assert o.ice_mover is c_ice_mover
+
+    assert not isinstance(o.map_canvas.projection, FlatEarthProjection)
+    assert isinstance(o.map_canvas.projection, GeoProjection)
 
 
 def test_ice_image_output():
