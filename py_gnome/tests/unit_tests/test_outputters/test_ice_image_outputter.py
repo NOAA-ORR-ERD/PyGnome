@@ -54,7 +54,12 @@ def make_model():
     c_ice_mover = IceMover(curr_file, topology_file)
     model.movers += c_ice_mover
 
-    model.outputters += IceImageOutput(c_ice_mover)
+    model.outputters += IceImageOutput(c_ice_mover,
+                                       viewport=[(-175.0, 75.05),
+                                                 (-145.0, 75.05),
+                                                 (-145.0, 65.0),
+                                                 (-175.0, 65.0)]
+                                       )
 
     return model
 
@@ -64,7 +69,7 @@ def test_init():
     c_ice_mover = IceMover(curr_file, topology_file)
     o = IceImageOutput(c_ice_mover)
 
-    assert o.ice_mover is c_ice_mover
+    assert o.ice_movers[0] is c_ice_mover
 
     assert isinstance(o.map_canvas.projection, FlatEarthProjection)
     assert o.map_canvas.viewport == ((-180, -90), (180, 90))
@@ -75,7 +80,7 @@ def test_init_with_projection():
     c_ice_mover = IceMover(curr_file, topology_file)
     o = IceImageOutput(c_ice_mover, projection=GeoProjection())
 
-    assert o.ice_mover is c_ice_mover
+    assert o.ice_movers[0] is c_ice_mover
 
     assert not isinstance(o.map_canvas.projection, FlatEarthProjection)
     assert isinstance(o.map_canvas.projection, GeoProjection)
@@ -88,6 +93,8 @@ def test_ice_image_output():
           -- that gets tricky with the cache and timesteps...
     '''
     model = make_model()
+
+    print model.outputters[0].map_canvas.viewport
 
     begin = time.time()
     for step in model:

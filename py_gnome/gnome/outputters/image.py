@@ -65,17 +65,17 @@ class IceImageOutput(Outputter):
                                     projection=projection,
                                     viewport=viewport,
                                     preset_colors='transparent')
+        self.map_canvas.add_colors([('black', (0, 0, 0))])
+
         self.set_gradient_colors('thickness',
-                                 low_color=(0, 0, 0x7f),  # dark blue
-                                 low_scale=0.0,
-                                 high_color=(0, 0xff, 0xff),  # cyan
-                                 high_scale=10.0,
+                                 color_range=((0, 0, 0x7f),  # dark blue
+                                              (0, 0xff, 0xff)),  # cyan
+                                 scale=(0.0, 10.0),
                                  num_colors=16)
         self.set_gradient_colors('concentration',
-                                 low_color=(0, 0x40, 0x60),  # dark blue
-                                 low_scale=0.0,
-                                 high_color=(0x80, 0xc0, 0xd0),  # sky blue
-                                 high_scale=10.0,
+                                 color_range=((0, 0x40, 0x60),  # dark blue
+                                              (0x80, 0xc0, 0xd0)),  # sky blue
+                                 scale=(0.0, 10.0),
                                  num_colors=16)
 
         super(IceImageOutput, self).__init__(**kwargs)
@@ -88,12 +88,10 @@ class IceImageOutput(Outputter):
         else:
             self.ice_movers = tuple()
 
-    def set_gradient_colors(self,
-                            gradient_name,
-                            low_color=(0, 0, 0x7f),  # dark blue
-                            low_scale=0.0,
-                            high_color=(0, 0xff, 0xff),  # cyan
-                            high_scale=10.0,
+    def set_gradient_colors(self, gradient_name,
+                            color_range=((0, 0, 0x7f),  # dark blue
+                                         (0, 0xff, 0xff)),  # cyan
+                            scale=(0.0, 10.0),
                             num_colors=16):
         '''
             Add a color gradient to our palette representing the colors we
@@ -102,36 +100,29 @@ class IceImageOutput(Outputter):
             :param gradient_name: The name of the gradient.
             :type gradient_name: str
 
-            :param low_color: The color representing the low end of our
-                              gradient.
-            :type low_color: A 3-tuple containing 8-bit RGB values.
+            :param color_range: The colors we will build our gradient with.
+            :type color_range: A 2 element sequence of 3-tuples containing
+                               8-bit RGB values.
 
-            :param low_scale: A value representing the low end of our gradient.
-            :type low_scale: float
-
-            :param high_color: The color representing the high end of our
-                               gradient.
-            :type hight_color: A 3-tuple containing 8-bit RGB values.
-
-            :param high_scale: A value representing the high end of our
-                               gradient.
-            :type high_scale: float
+            :param scale: A range of values representing the low and high end
+                          of our gradient.
+            :type scale: A 2 element sequence of float
 
             :param num_colors: The number of colors to use for the gradient.
             :type num_colors: int
         '''
-        color_names = self.add_gradient_to_canvas(low_color, high_color,
+        color_names = self.add_gradient_to_canvas(color_range,
                                                   gradient_name, num_colors)
 
-        pp.pprint(color_names)
-        self.gradient_lu[gradient_name] = (low_scale, high_scale, color_names)
+        self.gradient_lu[gradient_name] = (scale, np.array(color_names))
 
-    def add_gradient_to_canvas(self, low, high, color_prefix, num_colors):
+    def add_gradient_to_canvas(self, color_range, color_prefix, num_colors):
         '''
             Add a color gradient to our palette
 
             NOTE: Probably not the most efficient way to do this.
         '''
+        low, high = color_range[:2]
         r_grad = np.linspace(low[0], high[0], num_colors).round().astype(int)
         g_grad = np.linspace(low[1], high[1], num_colors).round().astype(int)
         b_grad = np.linspace(low[2], high[2], num_colors).round().astype(int)
@@ -141,26 +132,21 @@ class IceImageOutput(Outputter):
             new_colors.append(('{}{}'.format(color_prefix, i), (r, g, b)))
 
         self.map_canvas.add_colors(new_colors)
-        pp.pprint(self.map_canvas.get_color_names())
 
         return [c[0] for c in new_colors]
 
-    def lookup_gradient_color(self, gradient_name, value):
+    def lookup_gradient_color(self, gradient_name, values):
         try:
-            low_val, high_val, color_names = self.gradient_lu[gradient_name]
+            (low_val, high_val), color_names = self.gradient_lu[gradient_name]
         except IndexError:
             return None
 
-        if value <= low_val:
-            return color_names[0]
-        elif value >= high_val:
-            return color_names[-1]
-        else:
-            scale_range = high_val - low_val
-            q_step_range = scale_range / len(color_names)
-            print np.floor(value / q_step_range).astype(int)
+        scale_range = high_val - low_val
+        q_step_range = scale_range / len(color_names)
 
-            return color_names[np.floor(value / q_step_range).astype(int)]
+        idx = np.floor(values / q_step_range).astype(int)
+
+        return color_names[idx]
 
     def write_output(self, step_num, islast_step=False):
         """
@@ -220,6 +206,7 @@ class IceImageOutput(Outputter):
         # Here is where we render....
         for mover in self.ice_movers:
             mover_grid = mover.get_grid_data()
+
             print 'mover_grid (shape = {}):'.format(mover_grid.shape)
             pp.pprint(mover_grid)
 
@@ -228,58 +215,29 @@ class IceImageOutput(Outputter):
 
             ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
 
-            rounded_ice_values = self.get_rounded_ice_values(ice_coverage,
-                                                             ice_thickness)
-            print ('rounded ice values (shape = {}):'
-                   .format(rounded_ice_values.shape))
-            pp.pprint(rounded_ice_values)
+            thickness_colors = self.lookup_gradient_color('thickness',
+                                                          ice_thickness)
+
+            dtype = mover_grid.dtype.descr
+            unstructured_type = dtype[0][1]
+            new_shape = mover_grid.shape + (len(dtype),)
+            mover_grid = (mover_grid
+                          .view(dtype=unstructured_type)
+                          .reshape(*new_shape))
+
+            for poly, color in zip(mover_grid, thickness_colors):
+                canvas.draw_polygon(poly, fill_color=color)
 
             # self.get_coverage_fc(ice_coverage, mover_triangles)
             # self.get_thickness_fc(ice_thickness, mover_triangles)
 
         # diagnostic so we can see what we have rendered.
+        canvas.draw_graticule(False)
         canvas.save_background('background.png')
         canvas.save_foreground('foreground.png')
 
         return ("data:image/png;base64,{}".format(self.get_sample_image()),
                 "data:image/png;base64,{}".format(self.get_sample_image()))
-
-    def get_coverage_fc(self, coverage, triangles):
-        return self.get_grouped_fc_from_1d_array(coverage, triangles,
-                                                 'coverage',
-                                                 decimals=2)
-
-    def get_thickness_fc(self, thickness, triangles):
-        return self.get_grouped_fc_from_1d_array(thickness, triangles,
-                                                 'thickness',
-                                                 decimals=1)
-
-    def get_grouped_fc_from_1d_array(self, values, triangles,
-                                     property_name, decimals):
-        rounded = values.round(decimals=decimals)
-        unique = np.unique(rounded)
-
-        features = []
-        for u in unique:
-            matching = np.where(rounded == u)
-            matching_triangles = (triangles[matching])
-
-            dtype = matching_triangles.dtype.descr
-            shape = matching_triangles.shape + (len(dtype),)
-
-            coordinates = (matching_triangles.view(dtype='<f8')
-                           .reshape(shape).tolist())
-
-            prop_fmt = '{{:.{}f}}'.format(decimals)
-            properties = {'{}'.format(property_name): prop_fmt.format(u)}
-
-            feature = Feature(id="1",
-                              properties=properties,
-                              geometry=MultiPolygon(coordinates=coordinates
-                                                    ))
-            features.append(feature)
-
-        return FeatureCollection(features)
 
     def get_rounded_ice_values(self, coverage, thickness):
         return np.vstack((coverage.round(decimals=2),
