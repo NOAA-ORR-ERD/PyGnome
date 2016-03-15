@@ -33,8 +33,9 @@ The following colormaps are included:
 
 autumn, bone, cool, copper, hot, hsv, jet, pink, winter
 """
+import collections
 
-import numpy as N
+import numpy as np
 
 
 class DistictColormap:
@@ -47,40 +48,42 @@ class DistictColormap:
 
 
 class ColorMap:
-    def __init__(self, MapName=None, map_list=None, ValRange=(0, 255)):
+    def __init__(self, MapName=None, val_range=None, map_list=None):
         if MapName is not None:
             try:
-                self.map_list = N.asarray(NamedColorMaps[MapName], N.uint8)
+                self.map_list = np.asarray(NamedColorMaps[MapName], np.uint8)
             except KeyError:
                 raise Exception('MapName: "%s" is not defined' % MapName)
 
         elif map_list is not None:
-            self.map_list = N.asarray(map_list, N.uint8)
+            self.map_list = np.asarray(map_list, np.uint8)
         else:
             raise Exception('ColorMap must get either MapName or map-list '
                             'passed in')
 
-        self.ValRange = ValRange
-
-    def get_colors(self, values, ValRange=None, out_type='int'):
-        if ValRange is None:
-            ValRange = self.ValRange
-
-        # fixme: move to ValRange property?
-        if ValRange[0] == ValRange[1]:
-            # this is very arbitrary, but keeps things from crashing
-            ValRange = (ValRange[0], ValRange[0] + 1)
-
-        if ValRange == (0, 255):
-            values = N.asarray(values, N.uint8)
+        if (val_range is not None and
+            isinstance(val_range, collections.Iterable) and
+                not isinstance(val_range, str)):
+            self.val_range = val_range
         else:
-            values = N.asarray(values, N.float)
-            values = ((values - ValRange[0]) /
-                      (ValRange[1] - ValRange[0]) * 255)
+            self.val_range = (0, 255)
+
+    def get_colors(self, values, out_type='int'):
+        low, high = [float(v) for v in self.val_range[:2]]
+
+        if high == low:
+            # this is very arbitrary, but keeps things from crashing
+            high = low + 1
+
+        if (low, high) == (0, 255):
+            values = np.asarray(values, np.uint8)
+        else:
+            values = np.asarray(values, np.float)
+            values = (values - low) / (high - low) * 255.0
 
             # force out-of-range values into the acceptable range for map_list
             values.clip(min=0, max=255, out=values)
-            values = values.astype(N.uint8)
+            values = values.round().astype(np.uint8)
 
         if out_type == 'int':
             map_list = self.map_list[values]
@@ -876,8 +879,7 @@ NamedColorMaps['bone'] = ((0, 0, 1),
                           )
 
 # Linear copper-tone
-NamedColorMaps['copper'] = (
-                            (0, 0, 0),
+NamedColorMaps['copper'] = ((0, 0, 0),
                             (1, 1, 0),
                             (3, 2, 1),
                             (4, 2, 1),
@@ -2172,8 +2174,7 @@ NamedColorMaps['autumn'] = ((255, 0, 0),
                             )
 
 # Shades of blue and green
-NamedColorMaps['winter'] = (
-                            (0, 0, 255),
+NamedColorMaps['winter'] = ((0, 0, 255),
                             (0, 1, 255),
                             (0, 2, 254),
                             (0, 3, 254),
@@ -2468,23 +2469,42 @@ def ourTestFunc(frac):
         return (0, 255, 127)
 
 if __name__ == "__main__":
-
-    # CM = hsv
-
-    # print hsv.get_color( (0,1,5,7,255) )
-    # print hsv.get_color( (0,1,5,7,255), out_type="float" )
-    # print hsv.get_color( (0,1,5,7), ValRange=(0,7)  )
-
-    # nO = NewColorMap(ourTestFunc)
-    # for i in [1, 7, 24, 133, 200]:
-    #     print nO.get_color((i,))
-
-    cm = ColorMap("hsv", ValRange=(0, 255))
+    cm = ColorMap("hsv", val_range=(0, 255))
     print cm.get_colors((0, 100, 255))
 
-    cm.ValRange = (1000, 2000)
+    print '\nTesting an integer value range:'
+    cm.val_range = (1000, 2000)
     print cm.get_colors((1000,)), NamedColorMaps['hsv'][0]
     print cm.get_colors((1000,)) == NamedColorMaps['hsv'][0]
 
     print cm.get_colors((2000,)), NamedColorMaps['hsv'][-1]
     print cm.get_colors((2000,)) == NamedColorMaps['hsv'][-1]
+
+    # testing our entire range.
+    cm.val_range = (1000, 2020)
+    for i, v in enumerate(range(1000, 2024, 4)):
+        assert np.all(NamedColorMaps['hsv'][i] == cm.get_colors((v,)))
+
+    print '\nTesting a floating point value range:'
+    cm.val_range = (10.0, 20.0)
+    print cm.get_colors((10.0,)), NamedColorMaps['hsv'][0]
+    print cm.get_colors((10.0,)) == NamedColorMaps['hsv'][0]
+
+    print cm.get_colors((20.0,)), NamedColorMaps['hsv'][-1]
+    print cm.get_colors((20.0,)) == NamedColorMaps['hsv'][-1]
+
+    # testing our entire range.
+    for i, v in enumerate(np.linspace(10.0, 20.0, 256)):
+        assert np.all(NamedColorMaps['hsv'][i] == cm.get_colors((v,)))
+
+    print '\nTesting a reversed floating point value range:'
+    cm.val_range = (20.0, 10.0)
+    print cm.get_colors((20.0,)), NamedColorMaps['hsv'][0]
+    print cm.get_colors((20.0,)) == NamedColorMaps['hsv'][0]
+
+    print cm.get_colors((10.0,)), NamedColorMaps['hsv'][-1]
+    print cm.get_colors((10.0,)) == NamedColorMaps['hsv'][-1]
+
+    # testing our entire range.
+    for i, v in enumerate(np.linspace(20.0, 10.0, 256)):
+        assert np.all(NamedColorMaps['hsv'][i] == cm.get_colors((v,)))
