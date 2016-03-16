@@ -12,8 +12,7 @@ import json
 import pytest
 from pytest import raises
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome.basic_types import datetime_value_2d
 from gnome.map import MapFromBNA

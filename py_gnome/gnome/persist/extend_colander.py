@@ -4,7 +4,8 @@ of gnome specific types
 '''
 import datetime
 
-import numpy as np
+import numpy
+np = numpy
 
 from colander import Float, DateTime, Sequence, Tuple, \
     TupleSchema, SequenceSchema, null, List
@@ -108,21 +109,13 @@ class DatetimeValue2dArray(Sequence):
         efficient.
     """
     def serialize(self, node, appstruct):
-        print "*******************************************"
-        print "in DatetimeValue2dArray serialize"
         if appstruct is null:  # colander.null
             return null
 
         # getting serialized by PyGnome so data should be correct
-        print "data type:", appstruct.dtype
-        print appstruct['time'][-1]
-        print 
-        times = appstruct['time']
-        print times.dtype
-        times = []
-        series = zip(appstruct['time'].astype(datetime.datetime),
+        series = zip(appstruct['time'].astype(object),
                      appstruct['value'].tolist())
-        print series
+
         return super(DatetimeValue2dArray, self).serialize(node, series)
 
     def deserialize(self, node, cstruct):

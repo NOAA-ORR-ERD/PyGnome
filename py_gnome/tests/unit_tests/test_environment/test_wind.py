@@ -458,7 +458,7 @@ def gen_timeseries_for_dst(which='spring'):
     elif which == 'fall':
         transition_date = datetime(2016, 11, 6, 2)
     else:
-        raise ValueError("Only 'spring' and 'fall are supported")
+        raise ValueError("Only 'spring' and 'fall' are supported")
 
     vel = (1.0, 45.0)  # just to have some data there.
 
@@ -510,8 +510,6 @@ def test_update_from_dict_with_dst_spring_transition():
 
     print wind.get_timeseries()
 
-    # assert False
-
 
 def test_new_from_dict_with_dst_fall_transition():
     """
@@ -543,12 +541,11 @@ def test_new_from_dict_with_dst_fall_transition():
 
 def test_roundtrip_dst_spring_transition():
     """
-    checking a time series crossing over a DST transition.
-
-    NOTE: the ofset is ignored! so there is no way to do this "right"
+    checking the round trip trhough serializing for time series
+    crossing over the spring DST transition.
     """
     timeseries = gen_timeseries_for_dst('spring')
-    wind_json = {'obj_type': 'gnome.environment.Wind',
+    wind_json = {'obj_type': 'gnome.environment.wind.Wind',
                  'description': 'dst transition test',
                  'latitude': 90,
                  'longitude': 90,
@@ -561,15 +558,13 @@ def test_roundtrip_dst_spring_transition():
                  }
 
     wind_dict = Wind.deserialize(wind_json)
-    wind = Wind.new_from_dict(wind_dict)
+    wind = Wind.new_from_dict(wind_dict.copy())  # new munges the dict! (pop?)
 
-    # no re-serialize:
+    # now re-serialize:
     wind_dict2 = wind.serialize('webapi')
 
-    # assert wind_dict == wind_dict2
-
     # now make one from the new dict...
-    wind2 = Wind.new_from_dict(wind_dict2)
+    wind_dict2 = Wind.deserialize(wind_json)
+    wind2 = Wind.new_from_dict(wind_dict2.copy())
 
-    assert False
-    # print repr(wind)
+    assert wind2 == wind

@@ -91,14 +91,14 @@ class Timeseries(GnomeId):
                                      file_format=ts_format)
 
     def _check_timeseries(self, timeseries):
-        '''
+        """
         Run some checks to make sure timeseries is valid.
         - We accept numpy arrays
         - We will also accept a list of timeseries values of the form
           (datetime(...), (N, N))
         - we will also accept a constant single timeseries  value.
         Also, make the resolution to minutes as opposed to seconds
-        '''
+        """
         if not isinstance(timeseries, np.ndarray):
             if self._is_timeseries_value(timeseries):
                 return True
