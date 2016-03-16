@@ -39,7 +39,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1 day of data in file
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
-                  duration=timedelta(hours = 48),
+                  duration=timedelta(hours=48),
                   time_step=900)
 
     mapfile = get_datafile(os.path.join(base_dir, 'columbia_river.bna'))
@@ -54,7 +54,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     renderer.graticule.set_DMS(True)
 #     renderer.viewport = ((-123.35, 45.6), (-122.68, 46.13))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
-    
 
     print 'adding outputters'
     model.outputters += renderer
@@ -65,10 +64,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
     spill1 = point_line_release_spill(num_elements=1000,
-                                     start_position=(-122.625,
-                                                     45.609,
-                                                     0.0),
-                                     release_time=start_time)
+                                      start_position=(-122.625,
+                                                      45.609,
+                                                      0.0),
+                                      release_time=start_time)
 
     model.spills += spill1
 
@@ -76,20 +75,21 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # model.movers += RandomMover(diffusion_coef=50000)
 
     print 'adding a wind mover:'
-   
+
     model.movers += constant_wind_mover(0.5, 0, units='m/s')
 
     print 'adding a current mover:'
     curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
-   
+
     # uncertain_time_delay in hours
     # vec_field = TriVectorField('COOPSu_CREOFS24.nc')
     # u_mover = UGridCurrentMover(vec_field)
     c_mover = GridCurrentMover(curr_file)
     # c_mover.uncertain_cross = 0  # default is .25
-   
+
     # model.movers += u_mover
     model.movers += c_mover
+    model.save
 
     return model
 
