@@ -7,6 +7,7 @@ These will output images for use in the Web client / OpenLayers
 import os
 import copy
 import collections
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 
@@ -68,15 +69,16 @@ class IceImageOutput(Outputter):
         self.map_canvas.add_colors([('black', (0, 0, 0))])
 
         self.set_gradient_colors('thickness',
-                                 color_range=((0, 0, 0x7f),  # dark blue
-                                              (0, 0xff, 0xff)),  # cyan
-                                 scale=(0.0, 10.0),
-                                 num_colors=16)
+                                 color_range=((0x80, 0xb0, 0xff),  # light blue
+                                              (0, 0, 0x7f),  # dark blue
+                                              (0xff, 0, 0)),  # red
+                                 scale=(0.0, 7.0),
+                                 num_colors=64)
         self.set_gradient_colors('concentration',
-                                 color_range=((0, 0x40, 0x60),  # dark blue
-                                              (0x80, 0xc0, 0xd0)),  # sky blue
-                                 scale=(0.0, 10.0),
-                                 num_colors=16)
+                                 color_range=((0x80, 0xc0, 0xd0),  # sky blue
+                                              (0, 0x40, 0x60)),  # dark blue
+                                 scale=(0.0, 1.0),
+                                 num_colors=64)
 
         super(IceImageOutput, self).__init__(**kwargs)
 
@@ -121,11 +123,28 @@ class IceImageOutput(Outputter):
             Add a color gradient to our palette
 
             NOTE: Probably not the most efficient way to do this.
+
+            :param color_range: The colors that we would like to use to
+                                generate our gradient
+            :type color_range: A sequence of 2 or more 3-tuples
+
+            :param color_prefix: The prefix that will be used in the naming
+                                 of the colors in the gradient
+            :type color_prefix: str
+
+            :param num_colors: The number of gradient colors to generate
+            :type num_colors: Number
         '''
-        low, high = color_range[:2]
-        r_grad = np.linspace(low[0], high[0], num_colors).round().astype(int)
-        g_grad = np.linspace(low[1], high[1], num_colors).round().astype(int)
-        b_grad = np.linspace(low[2], high[2], num_colors).round().astype(int)
+        color_range_idx = range(len(color_range))
+        color_space = np.linspace(color_range_idx[0], color_range_idx[-1],
+                                  num=num_colors)
+
+        r_grad = np.interp(color_space, color_range_idx,
+                           [c[0] for c in color_range])
+        g_grad = np.interp(color_space, color_range_idx,
+                           [c[1] for c in color_range])
+        b_grad = np.interp(color_space, color_range_idx,
+                           [c[2] for c in color_range])
 
         new_colors = []
         for i, (r, g, b) in enumerate(zip(r_grad, g_grad, b_grad)):
@@ -207,16 +226,12 @@ class IceImageOutput(Outputter):
         for mover in self.ice_movers:
             mover_grid = mover.get_grid_data()
 
-            print 'mover_grid (shape = {}):'.format(mover_grid.shape)
-            pp.pprint(mover_grid)
-
-            print 'bounding rectangle:'
-            pp.pprint(mover.get_grid_bounding_rect(mover_grid))
-
-            ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
+            concentration, thickness = mover.get_ice_fields(model_time)
 
             thickness_colors = self.lookup_gradient_color('thickness',
-                                                          ice_thickness)
+                                                          thickness)
+            concentration_colors = self.lookup_gradient_color('concentration',
+                                                              concentration)
 
             dtype = mover_grid.dtype.descr
             unstructured_type = dtype[0][1]
@@ -225,19 +240,34 @@ class IceImageOutput(Outputter):
                           .view(dtype=unstructured_type)
                           .reshape(*new_shape))
 
-            for poly, color in zip(mover_grid, thickness_colors):
-                canvas.draw_polygon(poly, fill_color=color)
-
-            # self.get_coverage_fc(ice_coverage, mover_triangles)
-            # self.get_thickness_fc(ice_thickness, mover_triangles)
+            for poly, tc, cc in zip(mover_grid,
+                                    thickness_colors, concentration_colors):
+                canvas.draw_polygon(poly, fill_color=tc)
+                canvas.draw_polygon(poly, fill_color=cc, background=True)
 
         # diagnostic so we can see what we have rendered.
-        canvas.draw_graticule(False)
-        canvas.save_background('background.png')
-        canvas.save_foreground('foreground.png')
+        # print '\ndrawing reference objects...'
+        # canvas.draw_graticule(False)
+        # canvas.draw_tags(False)
+        # canvas.save_background('background.png')
+        # canvas.save_foreground('foreground.png')
 
-        return ("data:image/png;base64,{}".format(self.get_sample_image()),
-                "data:image/png;base64,{}".format(self.get_sample_image()))
+        # py_gd does not currently have the capability to generate a .png
+        # formatted buffer in memory. (libgd can be made to do this, but
+        # the wrapper is yet to be written)
+        # So we will just write to a tempfile and then read it back.
+        with NamedTemporaryFile() as fp:
+            canvas.save_foreground(fp.name)
+            fp.seek(0)
+            thickness_image = fp.read().encode('base64')
+
+        with NamedTemporaryFile() as fp:
+            canvas.save_background(fp.name)
+            fp.seek(0)
+            coverage_image = fp.read().encode('base64')
+
+        return ("data:image/png;base64,{}".format(thickness_image),
+                "data:image/png;base64,{}".format(coverage_image))
 
     def get_rounded_ice_values(self, coverage, thickness):
         return np.vstack((coverage.round(decimals=2),
