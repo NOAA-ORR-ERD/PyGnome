@@ -270,7 +270,6 @@ class MapCanvas(object):
             raise ValueError('only "round" and "x" are supported shapes')
 
         points = self.projection.to_pixel(points, asint=True)
-
         img = self.back_image if background else self.fore_image
 
         if shape == 'round':
@@ -302,8 +301,6 @@ class MapCanvas(object):
 
         :param background=False: whether to draw to the background image.
         :type background: bool
-
-
         """
         points = self.projection.to_pixel_2D(points, asint=True)
         img = self.back_image if background else self.fore_image

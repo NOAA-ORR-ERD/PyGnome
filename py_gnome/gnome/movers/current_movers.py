@@ -389,6 +389,8 @@ class GridCurrentMoverSchema(CurrentMoversBaseSchema):
     current_scale = SchemaNode(Float(), missing=drop)
     uncertain_along = SchemaNode(Float(), missing=drop)
     uncertain_cross = SchemaNode(Float(), missing=drop)
+    extrapolate = SchemaNode(Bool(), missing=drop)
+    time_offset = SchemaNode(Float(), missing=drop)
 
 
 class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
@@ -737,6 +739,28 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
             return self.get_triangles()
         else:
             return self.get_cells()
+
+    def get_grid_bounding_rect(self, grid_data=None):
+        if grid_data is None:
+            grid_data = self.get_grid_data()
+
+        dtype = grid_data.dtype.descr
+        unstructured_type = dtype[0][1]
+
+        longs = (grid_data
+                 .view(dtype=unstructured_type)
+                 .reshape(-1, len(dtype))[:, 0])
+        lats = (grid_data
+                .view(dtype=unstructured_type)
+                .reshape(-1, len(dtype))[:, 1])
+
+        left_top = (longs.min(), lats.max())
+        right_top = (longs.max(), lats.max())
+        right_bottom = (longs.max(), lats.min())
+        left_bottom = (longs.min(), lats.min())
+
+        return [left_top, right_top,
+                right_bottom, left_bottom]
 
     def get_center_points(self):
         if self.mover._is_triangle_grid():
