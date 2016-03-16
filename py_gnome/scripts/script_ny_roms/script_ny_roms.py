@@ -81,8 +81,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a current mover:'
 
-    url = (
-        'http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
+    url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
 #     cf = roms_field('ocean_his_4014_28-Dec-2015.nc')
     cf = roms_field(url)
     cf.set_appearance(on=True)

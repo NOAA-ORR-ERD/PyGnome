@@ -1,7 +1,9 @@
 import movers
 import numpy as np
 import datetime
+import copy
 from gnome import basic_types
+from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
 from gnome.basic_types import (world_point,
@@ -9,14 +11,22 @@ from gnome.basic_types import (world_point,
                                spill_type,
                                status_code_type)
 
-class UGridCurrentMover(movers.Mover):
+
+class UGridCurrentMover(movers.Mover, serializable.Serializable):
+
+    _state = copy.deepcopy(movers.Mover._state)
+    _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
+               save=['uncertain_duration', 'uncertain_time_delay'])
+
+    _ref_as = 'ugrid_current_movers'
 
     def __init__(self,
                  grid=None,
+                 filename=None,
                  extrapolate=False,
                  time_offset=0,
                  current_scale=1,
-                 uncertain_duration=24*3600,
+                 uncertain_duration=24 * 3600,
                  uncertain_time_delay=0,
                  uncertain_along=.5,
                  uncertain_across=.25,
@@ -59,11 +69,11 @@ class UGridCurrentMover(movers.Mover):
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
 
-        vels = self.grid.interpolated_velocities(model_time_datetime, positions[:,0:2])
+        vels = self.grid.interpolated_velocities(model_time_datetime, positions[:, 0:2])
         deltas = np.zeros_like(positions)
         deltas[:] = 0.
-        deltas[:,0:2] = vels * time_step
+        deltas[:, 0:2] = vels * time_step
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
-        deltas[status] = (0,0,0)
+        deltas[status] = (0, 0, 0)
         pass
         return deltas

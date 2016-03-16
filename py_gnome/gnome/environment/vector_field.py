@@ -6,6 +6,10 @@ import numpy as np
 from gnome.utilities.geometry.cy_point_in_polygon import points_in_polys
 from datetime import datetime, timedelta
 from dateutil import parser
+from colander import SchemaNode, Float, MappingSchema, drop, String, OneOf
+from gnome.persist.base_schema import ObjType
+from gnome.utilities import serializable
+from gnome.movers import ProcessSchema
 
 import pyugrid
 import pysgrid
@@ -115,6 +119,16 @@ def roms_field(filename=None, dataset=None):
                  'land_mask': land_mask,
                  'time': time}
     return SField(grid, time=time, variables=variables, dimensions=grid.node_lon.shape)
+
+
+class VectorFieldSchema(ObjType, ProcessSchema):
+    uncertain_duration = SchemaNode(Float(), missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), missing=drop)
+    filename = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
+    current_scale = SchemaNode(Float(), missing=drop)
+    uncertain_along = SchemaNode(Float(), missing=drop)
+    uncertain_cross = SchemaNode(Float(), missing=drop)
 
 
 class VectorField(object):
@@ -402,13 +416,23 @@ class SField(VectorField):
         t_alphas = self.time.interp_alpha(time)
         t_index = self.time.indexof(time)
         if ind is None:
-            ind = self.grid.locate_faces(points, memo=mem)
+            ind = self.grid.locate_faces(points, memo=mem, copy=False)
 
-        u0 = self.grid.interpolate_var_to_points(points, self.u, slices=[t_index, depth], slice_grid=False, memo=mem)
-        u1 = self.grid.interpolate_var_to_points(points, self.u, slices=[t_index + 1, depth], slice_grid=False, memo=mem)
+        s1 = [t_index]
+        s2 = [t_index + 1]
+        s3 = [t_index]
+        s4 = [t_index + 1]
+        if len(self.u.shape) == 4:
+            s1.append(depth)
+            s2.append(depth)
+            s3.append(depth)
+            s4.append(depth)
 
-        v0 = self.grid.interpolate_var_to_points(points, self.v, slices=[t_index, depth], slice_grid=False, memo=mem)
-        v1 = self.grid.interpolate_var_to_points(points, self.v, slices=[t_index + 1, depth], slice_grid=False, memo=mem)
+        u0 = self.grid.interpolate_var_to_points(points, self.u, slices=s1, slice_grid=False, memo=mem)
+        u1 = self.grid.interpolate_var_to_points(points, self.u, slices=s2, slice_grid=False, memo=mem)
+
+        v0 = self.grid.interpolate_var_to_points(points, self.v, slices=s3, slice_grid=False, memo=mem)
+        v1 = self.grid.interpolate_var_to_points(points, self.v, slices=s4, slice_grid=False, memo=mem)
 
         u_vels = u0 + (u1 - u0) * t_alphas
         v_vels = v0 + (v1 - v0) * t_alphas
