@@ -9,28 +9,8 @@ Not complete at all!
 
 from gnome.persist import extend_colander
 
-from datetime import datetime, timedelta, tzinfo
-
-
-# just to have a tzinfo object of some sort to play test_serialize_with_tzinfo
-class FixedOffset(tzinfo):
-    """Fixed offset in minutes east from UTC."""
-
-    def __init__(self, offset, name):
-        self.__offset = timedelta(minutes=offset)
-        self.__name = name
-
-    def __repr__(self):
-        return "FixedOffset(%i, '%s')" % (self.__offset.total_seconds() / 60, self.__name)
-
-    def utcoffset(self, dt):
-        return self.__offset
-
-    def tzname(self, dt):
-        return self.__name
-
-    def dst(self, dt):
-        return 0
+from datetime import datetime
+from gnome.utilities.time_utils import FixedOffset
 
 
 class Test_LocalDateTime(object):
@@ -61,5 +41,4 @@ class Test_LocalDateTime(object):
         result = self.dts.deserialize(None, dt_str)
         print repr(result)
         assert result == datetime(2016, 2, 12, 13, 32)
-
 

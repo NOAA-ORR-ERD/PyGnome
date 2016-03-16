@@ -578,8 +578,16 @@ class Serializable(GnomeId, Savable):
         list_ = self._state.get_names('all')
 
         data = {}
+        print "*******************"
+        print "in to_dict"
         for key in list_:
+            print "doing:", key
+
             value = self.attr_to_dict(key)
+            if key == 'timeseries':
+                print value
+                print type(value)
+                print value.dtype
             if hasattr(value, 'to_dict'):
                 value = value.to_dict()  # recursive call
 
@@ -590,7 +598,7 @@ class Serializable(GnomeId, Savable):
                 # on serialized -- that's ok though since we don't define
                 # defaults in colander
                 data[key] = value
-
+        print data['timeseries']
         return data
 
     def attr_to_dict(self, name):
@@ -813,6 +821,8 @@ class Serializable(GnomeId, Savable):
         If json_='webapi', it subselects Fields with (update=True, read=True)
         '''
         dict_ = self.to_dict()
+        print "*******************"
+        print "in to_serielize"
         if json_ == 'webapi':
             attrlist = self._attrlist()
         elif json_ == 'save':
@@ -825,6 +835,8 @@ class Serializable(GnomeId, Savable):
         for key in attrlist:
             if key in dict_:
                 # if attribute is None, then dict_ does not contain it
+                if key == "timeseries":
+                    print "processing", key
                 if (hasattr(self, key) and
                         hasattr(getattr(self, key), 'to_serialize')):
                     # recursively call for nested objects
@@ -835,6 +847,7 @@ class Serializable(GnomeId, Savable):
                     toserial[key] = dict_[key]
 
         toserial['json_'] = json_
+        print toserial['timeseries']
         return toserial
 
     def serialize(self, json_='webapi'):

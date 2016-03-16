@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import shutil
 
 import pytest
@@ -13,6 +15,8 @@ from gnome.basic_types import datetime_value_2d
 from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
 from gnome.environment import Wind, constant_wind
+
+# from colander import Invalid
 
 from ..conftest import testdata
 
@@ -114,9 +118,11 @@ def test_wind_circ_fixture(wind_circ):
     # output is in meter per second
 
     gtime_val = wm.get_wind_data(format='uv', units='meter per second'
-                                  ).view(dtype=np.recarray)
-    expected = unit_conversion.convert('Velocity', wm.units,
-            'meter per second', wind_circ['uv'].value)
+                                 ).view(dtype=np.recarray)
+    expected = unit_conversion.convert('Velocity',
+                                       wm.units,
+                                       'meter per second',
+                                       wind_circ['uv'].value)
 
     assert np.all(gtime_val.time == wind_circ['uv'].time)
     assert np.allclose(gtime_val.value, expected, atol, rtol)
@@ -269,9 +275,8 @@ class TestWind:
         get time series, but this time provide it with the datetime values
         for which you want timeseries
         """
-        gtime_val = (all_winds['wind']
-                     .get_wind_data(format='r-theta',
-                                     datetime=all_winds['rq'].time)
+        gtime_val = (all_winds['wind'].get_wind_data(format='r-theta',
+                                                     datetime=all_winds['rq'].time)
                      .view(dtype=np.recarray))
         assert np.all(gtime_val.time == all_winds['rq'].time)
         assert np.allclose(gtime_val.value, all_winds['rq'].value, atol, rtol)
@@ -441,3 +446,130 @@ def test_update_from_dict():
     for key in wind_json:
         if key != 'obj_type':
             assert new_w[key] == wind_json[key]
+
+
+def gen_timeseries_for_dst(which='spring'):
+    """utility for doing the dst tests: need 24 hours to make it work"""
+
+    num_hours = 2
+
+    if which == 'spring':
+        transition_date = datetime(2016, 3, 13, 2)
+    elif which == 'fall':
+        transition_date = datetime(2016, 11, 6, 2)
+    else:
+        raise ValueError("Only 'spring' and 'fall are supported")
+
+    vel = (1.0, 45.0)  # just to have some data there.
+
+    start_dt = transition_date - timedelta(hours=num_hours)
+    end_dt = transition_date + timedelta(hours=num_hours)
+    timeseries = []
+    dt = start_dt
+    while dt <= end_dt:
+        timeseries.append((dt.isoformat(), vel))
+        dt += timedelta(minutes=30)
+
+    return timeseries
+
+
+def test_update_from_dict_with_dst_spring_transition():
+    """
+    checking a time series crossing over a DST transition.
+
+    NOTE: the ofset is ignored! so there is no way to do this "right"
+    """
+    timeseries = gen_timeseries_for_dst('spring')
+    wind_json = {'obj_type': 'gnome.environment.Wind',
+                 'description': 'dst transition test',
+                 'latitude': 90,
+                 'longitude': 90,
+                 'updated_at': '2016-03-12T12:52:45.385126',
+                 'source_type': u'manual',
+                 'source_id': u'unknown',
+                 'timeseries': timeseries,
+                 'units': 'knots',
+                 'json_': u'webapi'
+                 }
+
+    wind_dict = Wind.deserialize(wind_json)
+    wind = Wind.new_from_dict(wind_dict)
+
+    # print repr(wind)
+
+    assert wind.description == 'dst transition test'
+    assert wind.units == 'knots'
+
+    ts = wind.get_timeseries()
+    wind._check_timeseries(ts)
+    print type(ts)
+    for i in ts['time']:
+        print i
+    print ts.dtype
+    print timeseries
+
+    print wind.get_timeseries()
+
+    # assert False
+
+
+def test_new_from_dict_with_dst_fall_transition():
+    """
+    checking a time series crossing over fall DST transition.
+
+    This creates duplicate times, which we can't deal with.
+    """
+    wind_json = {'obj_type': 'gnome.environment.Wind',
+                 'description': 'fall dst transition test',
+                 'latitude': 90,
+                 'longitude': 90,
+                 'updated_at': '2016-03-12T12:52:45.385126',
+                 'source_type': u'manual',
+                 'source_id': u'unknown',
+                 'timeseries': gen_timeseries_for_dst('fall'),
+                 'units': 'knots',
+                 'json_': u'webapi'
+                 }
+
+    wind_dict = Wind.deserialize(wind_json)
+
+    wind = Wind.new_from_dict(wind_dict)
+
+    assert wind.description == 'fall dst transition test'
+    assert wind.units == 'knots'
+
+    # assert False
+
+
+def test_roundtrip_dst_spring_transition():
+    """
+    checking a time series crossing over a DST transition.
+
+    NOTE: the ofset is ignored! so there is no way to do this "right"
+    """
+    timeseries = gen_timeseries_for_dst('spring')
+    wind_json = {'obj_type': 'gnome.environment.Wind',
+                 'description': 'dst transition test',
+                 'latitude': 90,
+                 'longitude': 90,
+                 'updated_at': '2016-03-12T12:52:45.385126',
+                 'source_type': u'manual',
+                 'source_id': u'unknown',
+                 'timeseries': timeseries,
+                 'units': 'knots',
+                 'json_': u'webapi'
+                 }
+
+    wind_dict = Wind.deserialize(wind_json)
+    wind = Wind.new_from_dict(wind_dict)
+
+    # no re-serialize:
+    wind_dict2 = wind.serialize('webapi')
+
+    # assert wind_dict == wind_dict2
+
+    # now make one from the new dict...
+    wind2 = Wind.new_from_dict(wind_dict2)
+
+    assert False
+    # print repr(wind)
