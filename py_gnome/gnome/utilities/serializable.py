@@ -598,7 +598,7 @@ class Serializable(GnomeId, Savable):
                 # on serialized -- that's ok though since we don't define
                 # defaults in colander
                 data[key] = value
-        print data['timeseries']
+        print data.get('timeseries')
         return data
 
     def attr_to_dict(self, name):
@@ -847,7 +847,7 @@ class Serializable(GnomeId, Savable):
                     toserial[key] = dict_[key]
 
         toserial['json_'] = json_
-        print toserial['timeseries']
+        print toserial.get('timeseries')
         return toserial
 
     def serialize(self, json_='webapi'):

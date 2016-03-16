@@ -109,6 +109,38 @@ def date_to_sec(date_times):
     return np.array(t_list, dtype=np.uint32) if not scalar else t_list[0]
 
 
+# def sec_to_date(seconds):
+# old code that uses sec_to_timestruct -- broken for spring DST transition
+#     """
+#     :param seconds: Either time in seconds or a numpy array containing
+#                     time in seconds (integer -- ideally uint32)
+
+#     Takes the time and converts it back to datetime object.
+
+#     It invokes time_utils.sec_to_timestruct(...), which it then
+#     converts back to datetime object. It keeps time to seconds accuracy,
+#     so up to the tm_sec field. tm_isdst = 0. Does not account for DST
+
+#     Note: Functionality broken up into time_utils.sec_to_timestruct(...)
+#           to test that it works in the same way as the lib_gnome C++
+#           cython wrapper
+#     """
+#     t_array = np.asarray(seconds, dtype=np.uint32).reshape(-1)
+#     d_array = np.zeros(np.shape(t_array), dtype='datetime64[s]')
+
+#     for li in xrange(len(t_array)):
+#         t = sec_to_timestruct(t_array[li])
+#         try:
+#             d_array[li] = datetime(*t[:6])
+#         except ValueError:
+#             print ('Cannot convert timestruct into datetime! '
+#                    'idx: {0}, '
+#                    'array elem: {1}, '
+#                    'timestruct: {2}'.format(li, t_array[li], t))
+#             raise
+
+#     return len(d_array) == 1 and d_array[0].astype(object) or d_array
+
 def sec_to_date(seconds):
     """
     :param seconds: Either time in seconds or a numpy array containing
@@ -116,36 +148,34 @@ def sec_to_date(seconds):
 
     Takes the time and converts it back to datetime object.
 
-    It invokes time_utils.sec_to_timestruct(...), which it then
-    converts back to datetime object. It keeps time to seconds accuracy,
-    so up to the tm_sec field. tm_isdst = 0. Does not account for DST
+    This does NOT use: time_utils.sec_to_timestruct(...), but rather,
+    converts directly then "fixes" DST to be compatible with GNOME
 
     Note: Functionality broken up into time_utils.sec_to_timestruct(...)
           to test that it works in the same way as the lib_gnome C++
           cython wrapper
+    FIXME: this may be broken there!!!!!
     """
     t_array = np.asarray(seconds, dtype=np.uint32).reshape(-1)
-    d_array = np.zeros(np.shape(t_array), dtype='datetime64[s]')
+    d_list = [sec_to_datetime(sec) for sec in t_array]
 
-    for li in xrange(len(t_array)):
-        t = sec_to_timestruct(t_array[li])
-        try:
-            d_array[li] = datetime(*t[:6])
-        except ValueError:
-            print ('Cannot convert timestruct into datetime! '
-                   'idx: {0}, '
-                   'array elem: {1}, '
-                   'timestruct: {2}'.format(li, t_array[li], t))
-            raise
-
-    return len(d_array) == 1 and d_array[0].astype(object) or d_array
+    return d_list[0] if len(d_list) == 1 else np.array(d_list, dtype='datetime64[s]')
 
 
-SECS_IN_HOUR = 3600
+def sec_to_datetime(seconds):
+    dt = datetime.fromtimestamp(seconds)
+    # check for dst -- have to use time.localtime -- no idea how else to get it!
+    timetuple = time.localtime(seconds)
+    if timetuple[-1] == 1:  # DST flag
+        dt -= timedelta(hours=1)
+    return dt
 
 
 def sec_to_timestruct(seconds):
     """
+    FIXME: left over code from previous attempt
+           mirrors Cython/C++ code, but breaks for the spring DST transition
+
     :param seconds: time in seconds
 
     This doesn't operate on a numpy array. This was separated as a way to
@@ -156,17 +186,18 @@ def sec_to_timestruct(seconds):
     If tm_dst = 1 (by default), then subtract 1 hour and set this flag to 0
     Returns a time.struct_time
     """
-    print "processing:", seconds
-    lt = list(time.localtime(seconds))
-    print "lt:", lt
-    if lt[-1] == 1:
-        print "adjusting for dst"
+    SECS_IN_HOUR = 3600
+
+    timetuple = list(time.localtime(seconds))
+    if timetuple[-1] == 1:
         # roll clock back by an hour for daylight savings correction
         # and then unset the daylight savings flag
-        lt = list(time.localtime(seconds - SECS_IN_HOUR))
-        lt[-1] = 0
+        # FIXME: this breaks for the spring transition!
+        # i.e.: datetime(2016, 3, 13, 2, 30))
+        timetuple = list(time.localtime(seconds - SECS_IN_HOUR))
+        timetuple[-1] = 0
 
-    return time.struct_time(lt)
+    return time.struct_time(timetuple)
 
 
 def round_time(dt=None, roundTo=60):  # IGNORE:W0621

@@ -131,18 +131,18 @@ def test_to_date_dst_transition_spring():
 
     dates = sec_to_date(seconds)
     diff = np.diff(dates).astype(np.int64)
-    print "difference:", diff
     # checks that the interval is constant -- i.e. no repeated or skipped times
     assert not np.any(np.diff(diff))
 
 
 def test_to_date_dst_transition_fall():
-    seconds = date_to_sec(datetimes_crossing_dst_fall)
-    print seconds
+    seconds = [1478419200, 1478421000, 1478422800, 1478424600, 1478426400, 1478428200]
 
-    assert False
-#    # checks that the interval is constant -- i.e. no repeated or skipped times
-#    assert not np.any(np.diff(np.diff(seconds)))
+    dates = sec_to_date(seconds)
+    diff = np.diff(dates).astype(np.int64)
+
+    # checks that the interval is constant -- i.e. no repeated or skipped times
+    assert not np.any(np.diff(diff))
 
 
 def test_FixedOffset():
@@ -163,7 +163,6 @@ def test_UTC():
     """
     tz = UTC()
 
-    print tz
     assert tz.utcoffset(datetime(2016, 1, 1)) == timedelta(hours=0)
     assert tz.tzname(datetime(2016, 1, 1)) == "UTC"
     assert tz.dst(datetime(2016, 1, 1)) == 0  # Jan, should not be DST
@@ -199,8 +198,5 @@ def test_datetime64_dst():
     # do they round-trip if you process as an array?
     dt_arr = np.array(dts, dtype='datetime64[s]')
     dt_list = dt_arr.astype(datetime).tolist()
-
-    for d in dt_list:
-        print d
 
     assert dt_list == dts
