@@ -54,7 +54,10 @@ def make_model():
     c_ice_mover = IceMover(curr_file, topology_file)
     model.movers += c_ice_mover
 
-    model.outputters += IceImageOutput(c_ice_mover)
+    model.outputters += IceImageOutput(c_ice_mover,
+                                       viewport=((-175.0, 65.0),
+                                                 (-145.0, 75.05))
+                                       )
 
     return model
 
@@ -64,7 +67,7 @@ def test_init():
     c_ice_mover = IceMover(curr_file, topology_file)
     o = IceImageOutput(c_ice_mover)
 
-    assert o.ice_mover is c_ice_mover
+    assert o.ice_movers[0] is c_ice_mover
 
     assert isinstance(o.map_canvas.projection, FlatEarthProjection)
     assert o.map_canvas.viewport == ((-180, -90), (180, 90))
@@ -75,7 +78,7 @@ def test_init_with_projection():
     c_ice_mover = IceMover(curr_file, topology_file)
     o = IceImageOutput(c_ice_mover, projection=GeoProjection())
 
-    assert o.ice_mover is c_ice_mover
+    assert o.ice_movers[0] is c_ice_mover
 
     assert not isinstance(o.map_canvas.projection, FlatEarthProjection)
     assert isinstance(o.map_canvas.projection, GeoProjection)
@@ -89,15 +92,14 @@ def test_ice_image_output():
     '''
     model = make_model()
 
+    print model.outputters[0].map_canvas.viewport
+
     begin = time.time()
     for step in model:
         print '\n\ngot step at: ', time.time() - begin
 
         ice_output = step['IceImageOutput']
-        # print ice_output['time_stamp']
-        # print ice_output['concentration_image'][:50] # could be really big!
-        # print ice_output['bounding_box']
-        # print ice_output['projection']
+
         for key in ('time_stamp',
                     'thickness_image',
                     'concentration_image',
@@ -105,9 +107,13 @@ def test_ice_image_output():
                     'projection'):
             assert key in ice_output
 
-    # not sure what to assert here -- at least it runs!
+        print 'size of thickness image:', len(ice_output['thickness_image'])
+        print 'size of concentration image:', len(ice_output['concentration_image'])
+
+    # not sure what else to check here
 
 
+@pytest.mark.slow
 def test_ice_image_mid_run():
     '''
         Test image outputter with a model

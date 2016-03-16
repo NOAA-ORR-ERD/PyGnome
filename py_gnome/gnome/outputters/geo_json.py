@@ -5,7 +5,7 @@ Does not contain a schema for persistence yet
 import copy
 import os
 from glob import glob
-from collections import defaultdict
+from collections import Iterable, defaultdict
 
 import numpy as np
 
@@ -396,12 +396,19 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
     def __init__(self, ice_movers, **kwargs):
         '''
-        :param list current_movers: A list or collection of current grid mover
-                                    objects.
+            :param ice_movers: ice_movers associated with this outputter.
+            :type ice_movers: An ice_mover object or sequence of ice_mover
+                              objects.
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+            Use super to pass optional \*\*kwargs to base class __init__ method
         '''
-        self.ice_movers = ice_movers
+        if (isinstance(ice_movers, Iterable) and
+                not isinstance(ice_movers, str)):
+            self.ice_movers = ice_movers
+        elif ice_movers is not None:
+            self.ice_movers = (ice_movers,)
+        else:
+            self.ice_movers = tuple()
 
         super(IceGeoJsonOutput, self).__init__(**kwargs)
 
@@ -419,7 +426,7 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
         geojson = {}
         for mover in self.ice_movers:
-            mover_triangles = self.get_triangles(mover)
+            mover_triangles = mover.get_grid_data()
             ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
 
             geojson[mover.id] = []
@@ -492,41 +499,6 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
     def get_matching_ice_values(self, ice_values, v):
         return np.where((ice_values == v).all(axis=1))
-
-    def get_triangles(self, mover):
-        '''
-        The triangle data that we get from the mover is in the form of
-        indices into the points array.
-        So we get our triangle data and points array, and then build our
-        triangle coordinates by reference.
-        '''
-        points = self.get_points(mover)
-
-        if mover.mover._is_triangle_grid():
-            data = self.get_triangle_data(mover)
-            dtype = data[0].dtype.descr
-            unstructured_type = dtype[0][1]
-            unstructured = (data.view(dtype=unstructured_type)
-                            .reshape(-1, len(dtype))[:, :3])
-
-            triangles = points[unstructured]
-            return triangles
-
-        else:
-            data = self.get_cell_data(mover)
-            dtype = data[0].dtype.descr
-            unstructured_type = dtype[0][1]
-            unstructured = (data.view(dtype=unstructured_type)
-                            .reshape(-1, len(dtype))[:, 1:])
-
-            cells = points[unstructured]
-            return cells
-
-    def get_triangle_data(self, mover):
-        return mover.mover._get_triangle_data()
-
-    def get_cell_data(self, mover):
-        return mover.mover._get_cell_data()
 
     def get_points(self, mover):
         points = (mover.mover._get_points()

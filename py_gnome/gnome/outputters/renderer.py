@@ -43,15 +43,12 @@ class RendererSchema(BaseSchema):
 
 
 class Renderer(Outputter, MapCanvas):
-
     """
     Map Renderer
 
     class that writes map images for GNOME results:
         writes the frames for the LE "movies", etc.
-
     """
-
     # This defines the colors used for the map
     #   -- they can then be referenced by name in the rest of the code.
     map_colors = [('background', (255, 255, 255)),  # white

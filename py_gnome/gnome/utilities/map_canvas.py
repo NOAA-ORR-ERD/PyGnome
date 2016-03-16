@@ -270,7 +270,6 @@ class MapCanvas(object):
             raise ValueError('only "round" and "x" are supported shapes')
 
         points = self.projection.to_pixel(points, asint=True)
-
         img = self.back_image if background else self.fore_image
 
         if shape == 'round':
@@ -302,8 +301,6 @@ class MapCanvas(object):
 
         :param background=False: whether to draw to the background image.
         :type background: bool
-
-
         """
         points = self.projection.to_pixel_2D(points, asint=True)
         img = self.back_image if background else self.fore_image
@@ -388,7 +385,7 @@ class MapCanvas(object):
             self.draw_polyline(line, 'black', 1, background)
 
     def draw_tags(self, draw_to_back=True):
-        self.draw_text(self.graticule.get_tags(), draw_to_back=True)
+        self.draw_text(self.graticule.get_tags(), draw_to_back=draw_to_back)
 
     def save_background(self, filename, file_type='png'):
         self.back_image.save(filename, file_type)
