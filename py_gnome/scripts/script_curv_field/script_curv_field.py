@@ -33,7 +33,7 @@ base_dir = os.path.dirname(__file__)
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
-    start_time = datetime(2015, 11, 30, 18, 01)
+    start_time = datetime(2015, 11, 30, 18, 00)
     # start_time = datetime(2015, 12, 18, 06, 01)
 
     # 1 day of data in file
@@ -66,7 +66,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                       start_position=(-82.6,
                                                       27.7,
                                                       0.0),
-                                      release_time=start_time)
+                                      release_time=start_time,
+                                      end_release_time=datetime(2015, 11, 30, 18, 30))
 
     model.spills += spill1
 

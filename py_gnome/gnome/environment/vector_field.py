@@ -14,8 +14,6 @@ from gnome.movers import ProcessSchema
 import pyugrid
 import pysgrid
 
-from gnome.utilities import profiledeco as pd
-
 
 def tri_vector_field(filename=None, dataset=None):
     if dataset is None:
@@ -96,7 +94,7 @@ def curv_field(filename=None, dataset=None):
     variables = {'u': grid.u,
                  'v': grid.v,
                  'time': time}
-    return SField(grid, time=time, variables=variables, dimensions=grid.node_lon.shape)
+    return SField(grid, time=time, variables=variables)
 
 
 def roms_field(filename=None, dataset=None):
@@ -118,7 +116,7 @@ def roms_field(filename=None, dataset=None):
                  'v_mask': v_mask,
                  'land_mask': land_mask,
                  'time': time}
-    return SField(grid, time=time, variables=variables, dimensions=grid.node_lon.shape)
+    return SField(grid, time=time, variables=variables)
 
 
 class VectorFieldSchema(ObjType, ProcessSchema):
@@ -142,7 +140,6 @@ class VectorField(object):
                  variables=None,
                  name=None,
                  type=None,
-                 dimensions=None,
                  velocities=None,
                  appearance={}
                  ):
@@ -313,9 +310,37 @@ class Time(object):
 
 class SField(VectorField):
 
-    def __init__(self, grid, **kwargs):
-        super(SField, self).__init__(grid, **kwargs)
-        self.set_appearance(curvilinear=True)
+    def __init__(self, grid,
+                 time=None,
+                 variables=None,
+                 name=None,
+                 type=None,
+                 appearance={}
+                 ):
+        self.grid = grid
+        self.time = time
+        self.variables = variables
+        for k, v in self.variables.items():
+            setattr(self, k, v)
+        self.grid_type = type
+
+        self._appearance = {}
+        self.set_appearance(**appearance)
+
+    @classmethod
+    def verify_variables(self):
+        '''
+        This function verifies that the SField is built with enough information
+        to accomplish it's goal. For example a subclass that works with water conditions should
+        verify that the water temperature, salinity, u-velocity, v-velocity, etc are all present.
+
+
+        In subclasses, this should be overridden
+        '''
+        pass
+
+    def set_appearance(self, **kwargs):
+        self._appearance.update(kwargs)
 
     @property
     def appearance(self):
@@ -329,27 +354,29 @@ class SField(VectorField):
         d.update(self._appearance)
         return d
 
-    def s_poly(self, index, var):
+    def interpolate_var(self, points, variable, time, depth=None, memo=True, _hash=None):
         '''
-        Function to get the node values of a given face index.
-        Emulates the self.grid.nodes[self.grid.faces[index]] paradigm of unstructured grids
+        Interpolates an arbitrary variable to the points specified at the time specified
         '''
-        arr = var[:]
-        x = index[:, 0]
-        y = index[:, 1]
-        return np.stack((arr[x, y], arr[x + 1, y], arr[x + 1, y + 1], arr[x, y + 1]), axis=1)
-
-    def get_efficient_var_slice(self, indices, time, var):
+        #         points = np.ascontiguousarray(points)
+        memo = True
+        if _hash is None:
+            _hash = self.grid._hash_of_pts(points)
+        t_alphas = self.time.interp_alpha(time)
         t_index = self.time.indexof(time)
-        grid = self.grid.infer_grid(var)
-        y_slice, x_slice = self.grid._get_efficient_slice(
-            grid, indices=indices)
-        if len(var.shape) == 3:
-            return [slice(t_index, t_index + 2), y_slice, x_slice]
-        if len(var.shape) == 4:
-            return [slice(t_index, t_index + 2), -1, y_slice, x_slice]
-        else:
-            raise ValueError("Unknown how to slice variable dimensions")
+
+        s1 = [t_index]
+        s2 = [t_index + 1]
+        if len(variable.shape) == 4:
+            s1.append(depth)
+            s2.append(depth)
+
+        v0 = self.grid.interpolate_var_to_points(points, variable, slices=s1, memo=memo, _hash=_hash)
+        v1 = self.grid.interpolate_var_to_points(points, variable, slices=s2, memo=memo, _hash=_hash)
+
+        vt = v0 + (v1 - v0) * t_alphas
+
+        return vt
 
     def interp_alphas(self, points, grid=None, indices=None, translation=None):
         '''
@@ -385,21 +412,6 @@ class SField(VectorField):
                 points, indices, grid, translation)
         pos_alphas = grid.interpolation_alphas(points, indices)
         return pos_alphas
-
-    def interpolate_var(self, time, points, variable, depth=-1, memo=True, _hash=None):
-        #         points = np.ascontiguousarray(points)
-        memo = True
-        if _hash is None:
-            _hash = self.grid._hash_of_pts(points)
-        t_alphas = self.time.interp_alpha(time)
-        t_index = self.time.indexof(time)
-
-        v0 = self.grid.interpolate_var_to_points(points, variable, slices=[t_index, depth], memo=memo, _hash=_hash)
-        v1 = self.grid.interpolate_var_to_points(points, variable, slices=[t_index + 1, depth], memo=memo, _hash=_hash)
-
-        vt = v0 + (v1 - v0) * t_alphas
-
-        return vt
 
     def interpolated_velocities(self, time, points, indices=None, alphas=None, depth=-1):
         '''
