@@ -25,7 +25,7 @@ from gnome.movers import RandomMover, WindMover, CatsMover, IceMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
 from gnome.outputters import CurrentGeoJsonOutput, IceGeoJsonOutput
 
-from conftest import dump, testdata, test_oil
+from ..conftest import dump, testdata, test_oil
 
 
 def make_model(uncertain=False):
