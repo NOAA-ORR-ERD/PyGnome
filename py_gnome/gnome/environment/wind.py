@@ -9,8 +9,7 @@ import copy
 import StringIO
 import zipfile
 
-import numpy
-np = numpy
+import numpy as np
 
 from colander import (SchemaNode, drop, OneOf,
                       Float, String, Range)
@@ -101,7 +100,7 @@ class WindSchema(base_schema.ObjType):
 
 class Wind(serializable.Serializable, Timeseries, Environment):
     '''
-    Defines the Wind conditions for a spill
+    Defines the Wind conditions for a single point
     '''
     # object is referenced by others using this attribute name
     _ref_as = 'wind'
@@ -138,9 +137,13 @@ class Wind(serializable.Serializable, Timeseries, Environment):
     # list of valid velocity units for timeseries
     valid_vel_units = _valid_units('Velocity')
 
-    def __init__(self, timeseries=None, units=None,
-                 filename=None, format='r-theta',
-                 latitude=None, longitude=None,
+    def __init__(self,
+                 timeseries=None,
+                 units=None,
+                 filename=None,
+                 format='r-theta',
+                 latitude=None,
+                 longitude=None,
                  speed_uncertainty_scale=0.0,
                  **kwargs):
         """
@@ -505,7 +508,7 @@ def constant_wind(speed, direction, units='m/s'):
     :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s",
                        "cm/s", etc.
 
-    .. note:: 
+    .. note::
         The time for a constant wind timeseries is irrelevant. This
         function simply sets it to datetime.now() accurate to hours.
     """
