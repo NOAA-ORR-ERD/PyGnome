@@ -153,10 +153,10 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
 
             for k in points:
                 feature = Feature(geometry=MultiPoint(points[k]), id="1",
-                                  properties={
-                                    'sc_type': sc_type,
-                                    'status_code': k,
-                                  })
+                                  properties={'sc_type': sc_type,
+                                              'status_code': k,
+                                              })
+
                 if sc.uncertain:
                     features.insert(0, feature)
                 else:
@@ -232,7 +232,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
     Following is the output format - the data in <> are the results
     for each element.
     ::
-    
+
         {
          "time_stamp": <TIME IN ISO FORMAT>,
          "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
@@ -281,9 +281,8 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
             return None
 
         for sc in self.cache.load_timestep(step_num).items():
-            pass
-
-        model_time = date_to_sec(sc.current_time_stamp)
+            model_time = date_to_sec(sc.current_time_stamp)
+            iso_time = sc.current_time_stamp.isoformat()
 
         geojson = {}
         for cm in self.current_movers:
@@ -309,7 +308,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
 
         # default geojson should not output data to file
         # read data from file and send it to web client
-        output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
+        output_info = {'time_stamp': iso_time,
                        'feature_collections': geojson
                        }
 
