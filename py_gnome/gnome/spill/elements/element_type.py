@@ -39,7 +39,7 @@ class ElementType(Serializable):
         weathering is off - if there are no weatherers, then oil doesn't
         weather.
 
-        :param iterbale initializers: a list/tuple of initializer classes used
+        :param iterable initializers: a list/tuple of initializer classes used
             to initialize these data arrays upon release. If this is not an
             iterable, then just append 'initializer' to list of initializers
             assuming it is just a single initializer object
@@ -283,52 +283,58 @@ def plume(distribution_type='droplet_size',
     Helper function returns an ElementType object containing 'rise_vel'
     and 'windages' initialized with user specified parameters for distribution.
 
-    :param str distribution_type: 
-        default is 'droplet_size' available options:
-         * 'droplet_size': Droplet size is samples from the specified
-            distribution. Rise velocity is calculated.
-         * 'rise_velocity': rise velocity is directly sampled from the specified
-            distribution. No droplet size is computed.
-    :param distribution=None: An object capable of generating a probability
-                             distribution.
-    :type gnome.utilities.distributions: 
-        Right now, we have:
-         * UniformDistribution
-         * NormalDistribution
-         * LogNormalDistribution
-         * WeibullDistribution
-         
-        New distribution classes could be made.  The only
-        requirement is they need to have a set_values()
-        method which accepts a NumPy array.
-        (presumably, this function will also modify
-        the array in some way)
-    :param windage_range=(.01, .04):
-    :param windage_persist=900:
-#    :param substance_name='oil_conservative':
-    :param substance_name=None:
+    :param str distribution_type='droplet_size': type of distribution
+
+    :param gnome.utilities.distributions distribution=None:
+
+    :param tuple-of-floats windage_range=(.01, .04): minimum and maximum windage
+
+    :param int windage_persist=900: persistance of windage in seconds
+
+    :param str substance_name=None:
+
     :param float density = None:
+
     :param str density_units='kg/m^3':
-    
-    .. note:: substance_name or density must be provided 
-        
+
+    Distribution type Available options:
+
+    * 'droplet_size' Droplet size is sampled from the specified distribution.
+      Rise velocity is calculated.
+    * 'rise_velocity': rise velocity is directly sampled from the specified distribution.
+      No droplet size is computed.
+
+    Distributions -- An object capable of generating a probability distribution.
+    Right now, we have:
+
+    * UniformDistribution
+    * NormalDistribution
+    * LogNormalDistribution
+    * WeibullDistribution
+
+    New distribution classes could be made.  The only requirement is they need to have a
+    ``set_values()`` method which accepts a NumPy array. (presumably, this function will also
+    modify the array in some way)
+
+    .. note:: substance_name or density must be provided
+
     """
     # Add docstring from called classes
     # Note: following gives sphinx warnings on build, ignore for now.
 
     plume.__doc__ += ("\nDocumentation of InitRiseVelFromDropletSizeFromDist:\n" +
-                  InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
-                  "\nDocumentation of InitRiseVelFromDist:\n" +
-                  InitRiseVelFromDist.__init__.__doc__ +
-                  "\nDocumentation of InitWindages:\n" +
-                  InitWindages.__init__.__doc__
-                  )
-                  
+                      InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
+                      "\nDocumentation of InitRiseVelFromDist:\n" +
+                      InitRiseVelFromDist.__init__.__doc__ +
+                      "\nDocumentation of InitWindages:\n" +
+                      InitWindages.__init__.__doc__
+                      )
+
     if density is not None:
         # Assume density is at 15 K - convert density to api
         api = uc.convert('density', density_units, 'API', density)
         if substance_name is not None:
-            substance = build_oil_props({'name':substance_name, 'api': api}, 2)
+            substance = build_oil_props({'name': substance_name, 'api': api}, 2)
         else:
             substance = build_oil_props({'api': api}, 2)
     elif substance_name is not None:
@@ -336,10 +342,10 @@ def plume(distribution_type='droplet_size',
         substance = get_oil_props(substance_name, 2)
     else:
         raise ValueError("plume substance density and/or name must be provided")
-    
+
     if distribution_type == 'droplet_size':
         return ElementType([InitRiseVelFromDropletSizeFromDist(
-                                distribution=distribution, **kwargs),
+                            distribution=distribution, **kwargs),
                             InitWindages(windage_range, windage_persist)],
                            substance)
     elif distribution_type == 'rise_velocity':
@@ -349,6 +355,7 @@ def plume(distribution_type='droplet_size',
                            substance)
     else:
         raise TypeError('distribution_type must be either droplet_size or rise_velocity')
+
 
 def plume_from_model(distribution_type='droplet_size',
                      distribution='weibull',
@@ -362,7 +369,7 @@ def plume_from_model(distribution_type='droplet_size',
     """
     if distribution_type == 'droplet_size':
         return ElementType([InitRiseVelFromDropletSizeFromDist(
-                                distribution=distribution, **kwargs),
+                            distribution=distribution, **kwargs),
                             InitWindages(windage_range, windage_persist),
                             InitMassFromPlume()])
     elif distribution_type == 'rise_velocity':

@@ -46,8 +46,9 @@ class Renderer(Outputter, MapCanvas):
     """
     Map Renderer
 
-    class that writes map images for GNOME results:
-        writes the frames for the LE "movies", etc.
+    class that writes map images for GNOME results.
+
+    Writes the frames for the LE "movies", etc.
     """
     # This defines the colors used for the map
     #   -- they can then be referenced by name in the rest of the code.
@@ -126,18 +127,15 @@ class Renderer(Outputter, MapCanvas):
         """
         Init the image renderer.
 
-        :param map_filename=None: name of file for basemap (BNA)
-        :type map_filename: string
+        :param str map_filename=None: name of file for basemap (BNA)
+        :type map_filename: str
 
-        :param output_dir='./': directory to output the images
-        :type output_dir: string
+        :param str output_dir='./': directory to output the images
 
-        :param image_size=(800, 600): size of images to output
-        :type image_size: 2-tuple of integers
+        :param 2-tuple image_size=(800, 600): size of images to output
 
         :param projection=None: projection instance to use:
-                                if None, set to
-                                projections.FlatEarthProjection()
+                                if None, set to projections.FlatEarthProjection()
         :type projection: a gnome.utilities.projection.Projection instance
 
         :param viewport: viewport of map -- what gets drawn and on what scale.
@@ -326,6 +324,7 @@ class Renderer(Outputter, MapCanvas):
         These details are stored as a dict.
 
         Recognized attributes:
+
         :param on: Turn the draw function on or off
         :type on: Boolean
 
@@ -341,15 +340,14 @@ class Renderer(Outputter, MapCanvas):
         :type color: String
 
         :param size: Size of the font
-        :type size: One of: ('tiny', 'small', 'medium', 'large', 'giant')
+        :type size: One of 'tiny', 'small', 'medium', 'large', 'giant'
 
         :param position: x, y pixel coordinates of where to draw the timestamp.
         :type position :tuple
 
         :param align: The reference point of the text bounding box.
-        :type align: One of: ('lt'(left top), 'ct', 'rt',
-                              'l', 'r',
-                              'rb', 'cb', 'lb')
+        :type align: One of: ('lt'(left top), 'ct', 'rt','l', 'r','rb', 'cb', 'lb')
+
         """
         self.timestamp_attribs.update(kwargs)
 
