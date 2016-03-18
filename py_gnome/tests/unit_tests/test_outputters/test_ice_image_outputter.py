@@ -107,8 +107,8 @@ def test_ice_image_output():
                     'projection'):
             assert key in ice_output
 
-        print 'size of thickness image:', len(ice_output['thickness_image'])
-        print 'size of concentration image:', len(ice_output['concentration_image'])
+        print 'thickness img size:', len(ice_output['thickness_image'])
+        print 'concentration img size:', len(ice_output['concentration_image'])
 
     # not sure what else to check here
 
@@ -162,7 +162,7 @@ def test_ice_image_mid_run():
 
 # def test_ice_image_output_1step():
 #     '''
-#     Test image outputter with a model 
+#     Test image outputter with a model
 #     NOTE: could it be tested with just a mover, and not a full model?
 #       -- that gets tricky with the cache and timesteps...
 #     '''
@@ -187,7 +187,7 @@ def test_ice_image_mid_run():
 
 # def test_ice_image_output_1step():
 #     '''
-#     Test image outputter with a model 
+#     Test image outputter with a model
 
 #     This only runs the first step
 
@@ -217,7 +217,7 @@ def test_ice_image_mid_run():
 
 # def test_ice_image_output2():
 #     '''
-#     Test image outputter without a model 
+#     Test image outputter without a model
 #        -- not working -- need time step to real time adjustment somehow.
 #     '''
 #     iio = IceImageOutput(c_ice_mover)
@@ -233,26 +233,3 @@ def test_ice_image_mid_run():
 #                 'bounding_box',
 #                 'projection'):
 #         assert key in ice_output
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

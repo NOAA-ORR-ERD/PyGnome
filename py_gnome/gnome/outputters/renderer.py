@@ -415,22 +415,23 @@ class Renderer(Outputter, MapCanvas):
         Draws the land map to the internal background image.
         """
         for poly in self.land_polygons:
-            if poly.metadata[1].strip().lower() == 'map bounds':
+            metadata = poly.metadata
+
+            if metadata[1].strip().lower() == 'map bounds':
                 if self.draw_map_bounds:
                     self.draw_polygon(poly,
                                       line_color='map_bounds',
                                       fill_color=None,
                                       line_width=2,
                                       background=True)
-            elif poly.metadata[1].strip().lower().replace(' ', '') == 'spillablearea':
+            elif metadata[1].strip().lower().replace(' ', '') == 'spillablearea':
                 if self.draw_spillable_area:
                     self.draw_polygon(poly,
                                       line_color='spillable_area',
                                       fill_color=None,
                                       line_width=2,
                                       background=True)
-
-            elif poly.metadata[2] == '2':
+            elif metadata[2] == '2':
                 # this is a lake
                 self.draw_polygon(poly, fill_color='lake', background=True)
             else:
@@ -481,20 +482,22 @@ class Renderer(Outputter, MapCanvas):
         """
         if self.raster_map is not None:
             raster_map = self.raster_map
+            projection = raster_map.projection
             w, h = raster_map.basebitmap.shape
+
             if self.raster_map_outline:
                 # vertical lines
                 for i in range(w):
-                    coords = raster_map.projection.to_lonlat(np.array(((i, 0.0),
-                                                                       (i, h)),
-                                                                      dtype=np.float64))
+                    coords = projection.to_lonlat(np.array(((i, 0.0),
+                                                            (i, h)),
+                                                           dtype=np.float64))
                     self.draw_polyline(coords, background=True,
                                        line_color='raster_map_outline')
                 # horizontal lines
                 for i in range(h):
-                    coords = raster_map.projection.to_lonlat(np.array(((0.0, i),
-                                                                       (w, i)),
-                                                                      dtype=np.float64))
+                    coords = projection.to_lonlat(np.array(((0.0, i),
+                                                            (w, i)),
+                                                           dtype=np.float64))
                     self.draw_polyline(coords, background=True,
                                        line_color='raster_map_outline')
 
@@ -502,13 +505,11 @@ class Renderer(Outputter, MapCanvas):
                 for i in range(w):
                     for j in range(h):
                         if raster_map.basebitmap[i, j] == 1:
-                            rect = raster_map.projection.to_lonlat(np.array(((i, j),
-                                                                             (i +
-                                                                              1, j),
-                                                                             (i + 1,
-                                                                              j + 1),
-                                                                             (i, j + 1)),
-                                                                            dtype=np.float64))
+                            rect = projection.to_lonlat(np.array(((i, j),
+                                                                  (i + 1, j),
+                                                                  (i + 1, j + 1),
+                                                                  (i, j + 1)),
+                                                                 dtype=np.float64))
                             self.draw_polygon(rect, fill_color='raster_map',
                                               background=True)
 

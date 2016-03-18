@@ -11,18 +11,14 @@ from tempfile import NamedTemporaryFile
 
 import numpy as np
 
-from gnome.utilities.serializable import Serializable, Field
+from gnome.utilities.serializable import Field
 from gnome.utilities.time_utils import date_to_sec
 
 from gnome.utilities.map_canvas import MapCanvas
 
-from gnome.persist import class_from_objtype, References
-from gnome.persist.base_schema import CollectionItemsList
+from gnome.persist import class_from_objtype
 
 from . import Outputter, BaseSchema
-
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2, width=120)
 
 
 class IceImageSchema(BaseSchema):
@@ -111,7 +107,7 @@ class IceImageOutput(Outputter):
             :type scale: A 2 element sequence of float
 
             :param num_colors: The number of colors to use for the gradient.
-            :type num_colors: int
+            :type num_colors: Number
         '''
         color_names = self.add_gradient_to_canvas(color_range,
                                                   gradient_name, num_colors)
@@ -183,15 +179,14 @@ class IceImageOutput(Outputter):
         # fixme -- doing all this cache stuff just to get the timestep..
         # maybe timestep should be passed in.
         for sc in self.cache.load_timestep(step_num).items():
-            pass
-
-        model_time = date_to_sec(sc.current_time_stamp)
+            model_time = date_to_sec(sc.current_time_stamp)
+            iso_time = sc.current_time_stamp.isoformat()
 
         thick_image, conc_image = self.render_images(model_time)
 
         # info to return to the caller
         output_dict = {'step_num': step_num,
-                       'time_stamp': sc.current_time_stamp.isoformat(),
+                       'time_stamp': iso_time,
                        'thickness_image': thick_image,
                        'concentration_image': conc_image,
                        'bounding_box': self.map_canvas.viewport,
