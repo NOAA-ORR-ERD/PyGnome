@@ -151,7 +151,7 @@ def sec_to_date(seconds):
     This does NOT use: time_utils.sec_to_timestruct(...), but rather,
     converts directly then "fixes" DST to be compatible with GNOME
 
-    Note: Functionality broken up into time_utils.sec_to_timestruct(...)
+    Note: time_utils.sec_to_timestruct(...)
           to test that it works in the same way as the lib_gnome C++
           cython wrapper
     FIXME: this may be broken there!!!!!
