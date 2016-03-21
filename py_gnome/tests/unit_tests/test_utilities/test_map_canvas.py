@@ -59,7 +59,7 @@ def test_background_poly(output_dir):
 
 def test_foreground_poly(output_dir):
     """
-    test drawing polygons to the background
+    test drawing polygons to the foreground
     """
     mc = MapCanvas((400, 300), preset_colors='web')
 
