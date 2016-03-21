@@ -14,6 +14,7 @@ import unit_conversion
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
+from gnome.utilities.timeseries import TimeseriesError
 from gnome.environment import Wind, constant_wind
 
 # from colander import Invalid
@@ -99,7 +100,7 @@ def test_init_timeseries():
     Wind(timeseries=np.asarray(constant, dtype=datetime_value_2d), units='mps')
     Wind(timeseries=np.asarray(ts, dtype=datetime_value_2d), units='mps')
 
-    with raises(ValueError):
+    with raises(TimeseriesError):
         Wind(timeseries=(1, 2), units='mps')
 
 

@@ -1,22 +1,37 @@
 '''
 Basic tests for timeseries
 '''
+
 from datetime import datetime
 
 import numpy as np
 from pytest import raises
 
 from gnome.basic_types import datetime_value_2d
-from gnome.utilities.timeseries import Timeseries
+from gnome.utilities.timeseries import Timeseries, TimeseriesError
 
 from ..conftest import testdata
 
 wind_file = testdata['timeseries']['wind_ts']
 
 
+def test_str():
+    ts = Timeseries()
+    s = str(ts)
+    # not much of a check, not much of a str.
+    assert 'Timeseries' in s
+
+
+def test_filename():
+    """ should really check for a real filename """
+    ts = Timeseries()
+    fn = ts.filename
+    assert fn is None
+
+
 def test_exceptions(invalid_rq):
     """
-    Test ValueError exception thrown if improper input arguments
+    Test TimeseriesError exception thrown if improper input arguments
     Test TypeError thrown if units are not given - so they are None
     """
     # valid timeseries for testing
@@ -29,7 +44,7 @@ def test_exceptions(invalid_rq):
     # which are rejected by the transforms.r_theta_to_uv_wind method.
     # It tests the inner exception is correct
 
-    with raises(ValueError):
+    with raises(TimeseriesError):
         invalid_dtv_rq = np.zeros((len(invalid_rq['rq']), ),
                                   dtype=datetime_value_2d)
         invalid_dtv_rq['value'] = invalid_rq['rq']
@@ -38,7 +53,7 @@ def test_exceptions(invalid_rq):
     # exception raised if datetime values are not in ascending order
     # or not unique
 
-    with raises(ValueError):
+    with raises(TimeseriesError):
         # not unique datetime values
         dtv_rq = np.zeros((2, ),
                           dtype=datetime_value_2d).view(dtype=np.recarray)
@@ -46,7 +61,7 @@ def test_exceptions(invalid_rq):
         (dtv_rq.value[1])[:] = (1, 10)
         Timeseries(timeseries=dtv_rq)
 
-    with raises(ValueError):
+    with raises(TimeseriesError):
         # not in ascending order
         dtv_rq = np.zeros((4, ),
                           dtype=datetime_value_2d).view(dtype=np.recarray)
@@ -68,6 +83,46 @@ def test_init(wind_timeseries):
     assert np.allclose(ts.get_timeseries()['value'],
                        uv['value'],
                        atol=1e-10)
+
+
+def test_get_timeseries(wind_timeseries):
+    uv = wind_timeseries['uv']
+    ts = Timeseries(uv, format='uv')
+    result = ts.get_timeseries()
+
+    assert len(result) == 6
+
+    for dt, value in result:
+        assert type(dt) is np.datetime64
+        assert len(value) == 2
+
+
+def test_get_timeseries_multiple(wind_timeseries):
+    uv = wind_timeseries['uv']
+    ts = Timeseries(uv, format='uv')
+
+    dts = [datetime(2012, 11, 6, 20, 12),
+           datetime(2012, 11, 6, 20, 14)]
+    result = ts.get_timeseries(dts)
+
+    assert len(result) == 2
+    assert result[0][1][0] == -1.0
+    assert result[0][1][1] == 0.0
+    assert result[1][1][0] == 0.0
+    assert result[1][1][1] == 1.0
+
+
+def test_empty():
+    """
+    can you create one with no data
+
+    FixMe: why would you want to do this??
+    """
+    ts = Timeseries()
+    arr = ts.get_timeseries()
+    assert len(arr) == 1
+    assert arr[0][1][0] == 0.0
+    assert arr[0][1][1] == 0.0
 
 
 def test_set_timeseries_prop():
@@ -98,3 +153,38 @@ def test_ne():
     ts[0]['value'] += (1, 1)
     ts2 = Timeseries(timeseries=ts)
     assert ts1 != ts2
+
+
+def test__check_timeseries_scalar():
+    ts = Timeseries()  # need one to get check methods..
+
+    result = ts._check_timeseries((datetime.now(), (1.0, 2.0)))
+    assert result
+
+    with raises(TimeseriesError):
+        result = ts._check_timeseries(('2007-03-01T13:00:00', (1.0, 2.0)))
+        assert result
+
+
+def test__check_timeseries_single_value():
+    ts = Timeseries()  # need one to get check methods..
+
+    result = ts._check_timeseries(((datetime.now(), (1.0, 2.0)),))
+    assert result
+
+    with raises(TimeseriesError):
+        print (('2007-03-01T13:00:00', (1.0, 2.0)),)
+        result = ts._check_timeseries((('2007-03-01T13:00:00', (1.0, 2.0)),))
+        assert result
+
+
+def test__check_timeseries_wrong_tuple():
+    ts = Timeseries()  # need one to get check methods..
+
+    with raises(TimeseriesError):
+        result = ts._check_timeseries(((datetime.now(), (1.0, 2.0, 3.0)),))
+        assert result
+
+    with raises(TimeseriesError):
+        result = ts._check_timeseries(((datetime.now(), ()),))
+        assert result
