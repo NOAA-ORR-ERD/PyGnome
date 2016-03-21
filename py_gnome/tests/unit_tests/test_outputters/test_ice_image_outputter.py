@@ -123,6 +123,7 @@ def test_ice_image_output():
                     'projection'):
             assert key in ice_output
 
+        print 'bounding box:', ice_output['bounding_box']
         print 'thickness img size:', len(ice_output['thickness_image'])
         print 'concentration img size:', len(ice_output['concentration_image'])
 

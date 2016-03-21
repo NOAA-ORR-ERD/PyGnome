@@ -182,14 +182,14 @@ class IceImageOutput(Outputter):
             model_time = date_to_sec(sc.current_time_stamp)
             iso_time = sc.current_time_stamp.isoformat()
 
-        thick_image, conc_image = self.render_images(model_time)
+        thick_image, conc_image, bb = self.render_images(model_time)
 
         # info to return to the caller
         output_dict = {'step_num': step_num,
                        'time_stamp': iso_time,
                        'thickness_image': thick_image,
                        'concentration_image': conc_image,
-                       'bounding_box': self.map_canvas.viewport,
+                       'bounding_box': bb,
                        'projection': ("EPSG:3857"),
                        }
 
@@ -217,9 +217,12 @@ class IceImageOutput(Outputter):
         """
         canvas = self.map_canvas
 
+        mover_grid_bb = None
         # Here is where we render....
         for mover in self.ice_movers:
             mover_grid = mover.get_grid_data()
+            mover_grid_bb = mover.get_grid_bounding_box(mover_grid,
+                                                        mover_grid_bb)
 
             concentration, thickness = mover.get_ice_fields(model_time)
 
@@ -262,7 +265,8 @@ class IceImageOutput(Outputter):
             coverage_image = fp.read().encode('base64')
 
         return ("data:image/png;base64,{}".format(thickness_image),
-                "data:image/png;base64,{}".format(coverage_image))
+                "data:image/png;base64,{}".format(coverage_image),
+                mover_grid_bb)
 
     def get_rounded_ice_values(self, coverage, thickness):
         return np.vstack((coverage.round(decimals=2),
