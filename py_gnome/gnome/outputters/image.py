@@ -289,20 +289,12 @@ class IceImageOutput(Outputter):
         'remove previously written files'
         super(IceImageOutput, self).rewind()
 
-    def serialize(self, json_='webapi'):
-        """
-        Serialize this outputter to JSON
-        """
-        dict_ = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        json_out = schema.serialize(dict_)
-
-        if self.ice_mover is not None:
-            json_out['ice_mover'] = self.ice_mover.serialize(json_)
-        else:
-            json_out['ice_mover'] = None
-
-        return json_out
+    def ice_movers_to_dict(self):
+        '''
+        a dict containing 'obj_type' and 'id' for each object in
+        list/collection
+        '''
+        return self._collection_to_dict(self.ice_movers)
 
     @classmethod
     def deserialize(cls, json_):
