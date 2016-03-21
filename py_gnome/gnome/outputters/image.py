@@ -304,8 +304,12 @@ class IceImageOutput(Outputter):
         schema = cls._schema()
         _to_dict = schema.deserialize(json_)
 
-        if 'ice_mover' in json_ and json_['ice_mover'] is not None:
-            cm_cls = class_from_objtype(json_['ice_mover']['obj_type'])
-            cm_dict = cm_cls.deserialize(json_['ice_mover'])
-            _to_dict['ice_mover'] = cm_dict
+        if 'ice_movers' in json_:
+            _to_dict['ice_movers'] = []
+            for i, cm in enumerate(json_['ice_movers']):
+                cm_cls = class_from_objtype(cm['obj_type'])
+                cm_dict = cm_cls.deserialize(json_['ice_movers'][i])
+
+                _to_dict['ice_movers'].append(cm_dict)
+
         return _to_dict
