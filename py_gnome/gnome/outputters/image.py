@@ -217,10 +217,20 @@ class IceImageOutput(Outputter):
         """
         canvas = self.map_canvas
 
+        # We kinda need to figure our our bounding box before doing the
+        # rendering.  We will try to be efficient about it mainly by not
+        # grabbing our grid data twice.
         mover_grid_bb = None
-        # Here is where we render....
+        mover_grids = []
         for mover in self.ice_movers:
-            mover_grid = mover.get_grid_data()
+            mover_grids.append(mover.get_grid_data())
+            mover_grid_bb = mover.get_grid_bounding_box(mover_grids[-1],
+                                                        mover_grid_bb)
+
+        canvas.viewport = mover_grid_bb
+
+        # Here is where we draw our grid data....
+        for mover, mover_grid in zip(self.ice_movers, mover_grids):
             mover_grid_bb = mover.get_grid_bounding_box(mover_grid,
                                                         mover_grid_bb)
 
@@ -267,27 +277,6 @@ class IceImageOutput(Outputter):
         return ("data:image/png;base64,{}".format(thickness_image),
                 "data:image/png;base64,{}".format(coverage_image),
                 mover_grid_bb)
-
-    def get_rounded_ice_values(self, coverage, thickness):
-        return np.vstack((coverage.round(decimals=2),
-                          thickness.round(decimals=1))).T
-
-    def get_unique_ice_values(self, ice_values):
-        '''
-            In order to make numpy perform this function fast, we will use a
-            contiguous structured array using a view of a void type that
-            joins the whole row into a single item.
-        '''
-        dtype = np.dtype((np.void,
-                          ice_values.dtype.itemsize * ice_values.shape[1]))
-        voidtype_array = np.ascontiguousarray(ice_values).view(dtype)
-
-        _, idx = np.unique(voidtype_array, return_index=True)
-
-        return ice_values[idx]
-
-    def get_matching_ice_values(self, ice_values, v):
-        return np.where((ice_values == v).all(axis=1))
 
     def rewind(self):
         'remove previously written files'
