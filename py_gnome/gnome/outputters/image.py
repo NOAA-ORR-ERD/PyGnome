@@ -195,12 +195,14 @@ class IceImageOutput(Outputter):
         thick_image, conc_image, bb = self.render_images(model_time)
 
         # info to return to the caller
+        web_mercator = 'EPSG:3857'
+        equirectangular = 'EPSG:32662'
         output_dict = {'step_num': step_num,
                        'time_stamp': iso_time,
                        'thickness_image': thick_image,
                        'concentration_image': conc_image,
                        'bounding_box': bb,
-                       'projection': ("EPSG:3857"),
+                       'projection': equirectangular,
                        }
 
         return output_dict
