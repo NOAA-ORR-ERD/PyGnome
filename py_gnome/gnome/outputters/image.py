@@ -182,14 +182,14 @@ class IceImageOutput(Outputter):
             model_time = date_to_sec(sc.current_time_stamp)
             iso_time = sc.current_time_stamp.isoformat()
 
-        thick_image, conc_image = self.render_images(model_time)
+        thick_image, conc_image, bb = self.render_images(model_time)
 
         # info to return to the caller
         output_dict = {'step_num': step_num,
                        'time_stamp': iso_time,
                        'thickness_image': thick_image,
                        'concentration_image': conc_image,
-                       'bounding_box': self.map_canvas.viewport,
+                       'bounding_box': bb,
                        'projection': ("EPSG:3857"),
                        }
 
@@ -217,9 +217,22 @@ class IceImageOutput(Outputter):
         """
         canvas = self.map_canvas
 
-        # Here is where we render....
+        # We kinda need to figure our our bounding box before doing the
+        # rendering.  We will try to be efficient about it mainly by not
+        # grabbing our grid data twice.
+        mover_grid_bb = None
+        mover_grids = []
         for mover in self.ice_movers:
-            mover_grid = mover.get_grid_data()
+            mover_grids.append(mover.get_grid_data())
+            mover_grid_bb = mover.get_grid_bounding_box(mover_grids[-1],
+                                                        mover_grid_bb)
+
+        canvas.viewport = mover_grid_bb
+
+        # Here is where we draw our grid data....
+        for mover, mover_grid in zip(self.ice_movers, mover_grids):
+            mover_grid_bb = mover.get_grid_bounding_box(mover_grid,
+                                                        mover_grid_bb)
 
             concentration, thickness = mover.get_ice_fields(model_time)
 
@@ -262,47 +275,19 @@ class IceImageOutput(Outputter):
             coverage_image = fp.read().encode('base64')
 
         return ("data:image/png;base64,{}".format(thickness_image),
-                "data:image/png;base64,{}".format(coverage_image))
-
-    def get_rounded_ice_values(self, coverage, thickness):
-        return np.vstack((coverage.round(decimals=2),
-                          thickness.round(decimals=1))).T
-
-    def get_unique_ice_values(self, ice_values):
-        '''
-            In order to make numpy perform this function fast, we will use a
-            contiguous structured array using a view of a void type that
-            joins the whole row into a single item.
-        '''
-        dtype = np.dtype((np.void,
-                          ice_values.dtype.itemsize * ice_values.shape[1]))
-        voidtype_array = np.ascontiguousarray(ice_values).view(dtype)
-
-        _, idx = np.unique(voidtype_array, return_index=True)
-
-        return ice_values[idx]
-
-    def get_matching_ice_values(self, ice_values, v):
-        return np.where((ice_values == v).all(axis=1))
+                "data:image/png;base64,{}".format(coverage_image),
+                mover_grid_bb)
 
     def rewind(self):
         'remove previously written files'
         super(IceImageOutput, self).rewind()
 
-    def serialize(self, json_='webapi'):
-        """
-        Serialize this outputter to JSON
-        """
-        dict_ = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        json_out = schema.serialize(dict_)
-
-        if self.ice_mover is not None:
-            json_out['ice_mover'] = self.ice_mover.serialize(json_)
-        else:
-            json_out['ice_mover'] = None
-
-        return json_out
+    def ice_movers_to_dict(self):
+        '''
+        a dict containing 'obj_type' and 'id' for each object in
+        list/collection
+        '''
+        return self._collection_to_dict(self.ice_movers)
 
     @classmethod
     def deserialize(cls, json_):
@@ -312,8 +297,12 @@ class IceImageOutput(Outputter):
         schema = cls._schema()
         _to_dict = schema.deserialize(json_)
 
-        if 'ice_mover' in json_ and json_['ice_mover'] is not None:
-            cm_cls = class_from_objtype(json_['ice_mover']['obj_type'])
-            cm_dict = cm_cls.deserialize(json_['ice_mover'])
-            _to_dict['ice_mover'] = cm_dict
+        if 'ice_movers' in json_:
+            _to_dict['ice_movers'] = []
+            for i, cm in enumerate(json_['ice_movers']):
+                cm_cls = class_from_objtype(cm['obj_type'])
+                cm_dict = cm_cls.deserialize(json_['ice_movers'][i])
+
+                _to_dict['ice_movers'].append(cm_dict)
+
         return _to_dict

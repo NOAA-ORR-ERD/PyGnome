@@ -740,7 +740,21 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         else:
             return self.get_cells()
 
-    def get_grid_bounding_rect(self, grid_data=None):
+    def get_grid_bounding_box(self, grid_data=None, box_to_merge=None):
+        '''
+            Return a bounding box surrounding the grid data.
+
+            :param grid_data: The point data of our grid.
+            :type grid_data: A sequence of 3-tuples or 4-tuples containing
+                             (long, lat) pairs.
+
+            :param box_to_merge: A bounding box to surround in combination
+                                 with our grid data.  This allows us to pad
+                                 the bounding box that we generate.
+            :type box_to_merge: A bounding box (extent) of the form:
+                                ((left, bottom),
+                                 (right, top))
+        '''
         if grid_data is None:
             grid_data = self.get_grid_data()
 
@@ -754,13 +768,23 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
                 .view(dtype=unstructured_type)
                 .reshape(-1, len(dtype))[:, 1])
 
-        left_top = (longs.min(), lats.max())
-        right_top = (longs.max(), lats.max())
-        right_bottom = (longs.max(), lats.min())
-        left_bottom = (longs.min(), lats.min())
+        left, right = longs.min(), longs.max()
+        bottom, top = lats.min(), lats.max()
 
-        return [left_top, right_top,
-                right_bottom, left_bottom]
+        if (box_to_merge is not None and
+                len(box_to_merge) == 2 and
+                [len(p) for p in box_to_merge] == [2, 2]):
+            if left > box_to_merge[0][0]:
+                left = box_to_merge[0][0]
+            if right < box_to_merge[1][0]:
+                right = box_to_merge[1][0]
+
+            if bottom > box_to_merge[0][1]:
+                bottom = box_to_merge[0][1]
+            if top < box_to_merge[1][1]:
+                top = box_to_merge[1][1]
+
+        return ((left, bottom), (right, top))
 
     def get_center_points(self):
         if self.mover._is_triangle_grid():

@@ -73,6 +73,22 @@ def test_init():
     assert o.map_canvas.viewport == ((-180, -90), (180, 90))
 
 
+def test_init_with_image_size():
+    'simple initialization passes'
+    c_ice_mover = IceMover(curr_file, topology_file)
+    o = IceImageOutput(c_ice_mover, image_size=(1000, 1000))
+
+    assert o.map_canvas.image_size == (1000, 1000)
+
+
+def test_init_with_viewport():
+    'simple initialization passes'
+    c_ice_mover = IceMover(curr_file, topology_file)
+    o = IceImageOutput(c_ice_mover, viewport=((-90, -90), (90, 90)))
+
+    assert o.map_canvas.viewport == ((-90, -90), (90, 90))
+
+
 def test_init_with_projection():
     'simple initialization passes'
     c_ice_mover = IceMover(curr_file, topology_file)
@@ -107,13 +123,13 @@ def test_ice_image_output():
                     'projection'):
             assert key in ice_output
 
+        print 'bounding box:', ice_output['bounding_box']
         print 'thickness img size:', len(ice_output['thickness_image'])
         print 'concentration img size:', len(ice_output['concentration_image'])
 
     # not sure what else to check here
 
 
-@pytest.mark.slow
 def test_ice_image_mid_run():
     '''
         Test image outputter with a model
@@ -135,20 +151,17 @@ def test_ice_image_mid_run():
     step = model.step()
 
     # now add the outputter
-    model.outputters += IceImageOutput(c_ice_mover)
+    model.outputters += IceImageOutput(c_ice_mover,
+                                       viewport=((-175.0, 65.0),
+                                                 (-145.0, 75.05))
+                                       )
 
     # and run some more:
-
     step = model.step()
     step = model.step()
 
     # and check the output
     ice_output = step['IceImageOutput']
-
-    # print ice_output['time_stamp']
-    # print ice_output['concentration_image'][:50] # could be really big!
-    # print ice_output['bounding_box']
-    # print ice_output['projection']
 
     for key in ('time_stamp',
                 'thickness_image',
@@ -156,6 +169,9 @@ def test_ice_image_mid_run():
                 'bounding_box',
                 'projection'):
         assert key in ice_output
+
+        print 'thickness img size:', len(ice_output['thickness_image'])
+        print 'concentration img size:', len(ice_output['concentration_image'])
 
     # not sure what else to assert here -- at least it runs!
 
