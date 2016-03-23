@@ -65,14 +65,16 @@ class IceImageOutput(Outputter):
         self.map_canvas.add_colors([('black', (0, 0, 0))])
 
         self.set_gradient_colors('thickness',
-                                 color_range=((0x80, 0xb0, 0xff),  # light blue
-                                              (0, 0, 0x7f),  # dark blue
-                                              (0xff, 0, 0)),  # red
-                                 scale=(0.0, 7.0),
+                                 color_range=((0, 0, 0x7f, 0x7f),  # dark blue
+                                              (0, 0, 0x7f, 0x3f),  # dark blue
+                                              (0, 0, 0x7f, 0x00),  # dark blue
+                                              (0xff, 0, 0, 0x00)),  # red
+                                 scale=(0.0, 6.0),
                                  num_colors=64)
+
         self.set_gradient_colors('concentration',
-                                 color_range=((0x80, 0xc0, 0xd0),  # sky blue
-                                              (0, 0x40, 0x60)),  # dark blue
+                                 color_range=((0x80, 0xc0, 0xd0, 0x7f),  # sky blue
+                                              (0, 0x40, 0x60, 0x00)),  # dark blue
                                  scale=(0.0, 1.0),
                                  num_colors=64)
 
@@ -142,9 +144,15 @@ class IceImageOutput(Outputter):
         b_grad = np.interp(color_space, color_range_idx,
                            [c[2] for c in color_range])
 
+        if all([len(c) >= 4 for c in color_range]):
+            a_grad = np.interp(color_space, color_range_idx,
+                               [c[3] for c in color_range])
+        else:
+            a_grad = np.array([0.] * num_colors)
+
         new_colors = []
-        for i, (r, g, b) in enumerate(zip(r_grad, g_grad, b_grad)):
-            new_colors.append(('{}{}'.format(color_prefix, i), (r, g, b)))
+        for i, (r, g, b, a) in enumerate(zip(r_grad, g_grad, b_grad, a_grad)):
+            new_colors.append(('{}{}'.format(color_prefix, i), (r, g, b, a)))
 
         self.map_canvas.add_colors(new_colors)
 
@@ -159,7 +167,9 @@ class IceImageOutput(Outputter):
         scale_range = high_val - low_val
         q_step_range = scale_range / len(color_names)
 
-        idx = np.floor(values / q_step_range).astype(int)
+        idx = (np.floor(values / q_step_range)
+               .astype(int)
+               .clip(0, len(color_names) - 1))
 
         return color_names[idx]
 
@@ -185,12 +195,14 @@ class IceImageOutput(Outputter):
         thick_image, conc_image, bb = self.render_images(model_time)
 
         # info to return to the caller
+        web_mercator = 'EPSG:3857'
+        equirectangular = 'EPSG:32662'
         output_dict = {'step_num': step_num,
                        'time_stamp': iso_time,
                        'thickness_image': thick_image,
                        'concentration_image': conc_image,
                        'bounding_box': bb,
-                       'projection': ("EPSG:3857"),
+                       'projection': equirectangular,
                        }
 
         return output_dict
@@ -228,6 +240,7 @@ class IceImageOutput(Outputter):
                                                         mover_grid_bb)
 
         canvas.viewport = mover_grid_bb
+        canvas.clear_background()
 
         # Here is where we draw our grid data....
         for mover, mover_grid in zip(self.ice_movers, mover_grids):
