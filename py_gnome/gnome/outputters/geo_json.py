@@ -353,7 +353,7 @@ class IceGeoJsonSchema(BaseSchema):
     '''
 
 
-class IceGeoJsonOutput(Outputter, Serializable):
+class IceGeoJsonOutput(Outputter):
     '''
     Class that outputs GNOME ice velocity results for each ice mover
     in a geojson format.  The output is a collection of Features.
@@ -362,27 +362,27 @@ class IceGeoJsonOutput(Outputter, Serializable):
     for each element.
     ::
 
-        {
-         "time_stamp": <TIME IN ISO FORMAT>,
-         "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
-         "feature_collections": {<mover_id>: {"type": "FeatureCollection",
-                                              "features": [{"type": "Feature",
-                                                            "id": <PARTICLE_ID>,
-                                                            "properties": {"ice_fraction": <FRACTION>,
-                                                                           "ice_thickness": <METERS>,
-                                                                           "water_velocity": [u, v],
-                                                                           "ice_velocity": [u, v]
-                                                                           },
-                                                            "geometry": {"type": "Point",
-                                                                         "coordinates": [<LONG>, <LAT>]
-                                                                         },
-                                                            },
-                                                            ...
-                                                           ],
-                                              },
-                                 ...
-                                 }
-        }
+    {
+     "time_stamp": <TIME IN ISO FORMAT>,
+     "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
+     "feature_collections": {<mover_id>: {"type": "FeatureCollection",
+                                          "features": [{"type": "Feature",
+                                                        "id": <PARTICLE_ID>,
+                                                        "properties": {"ice_fraction": <FRACTION>,
+                                                                       "ice_thickness": <METERS>,
+                                                                       "water_velocity": [u, v],
+                                                                       "ice_velocity": [u, v]
+                                                                       },
+                                                        "geometry": {"type": "Point",
+                                                                     "coordinates": [<LONG>, <LAT>]
+                                                                     },
+                                                        },
+                                                        ...
+                                                       ],
+                                          },
+                             ...
+                             }
+    }
     '''
     _state = copy.deepcopy(Outputter._state)
 
@@ -425,14 +425,14 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
         geojson = {}
         for mover in self.ice_movers:
-            mover_triangles = mover.get_grid_data()
+            grid_data = mover.get_grid_data()
             ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
 
             geojson[mover.id] = []
             geojson[mover.id].append(self.get_coverage_fc(ice_coverage,
-                                                          mover_triangles))
+                                                          grid_data))
             geojson[mover.id].append(self.get_thickness_fc(ice_thickness,
-                                                           mover_triangles))
+                                                           grid_data))
 
         # default geojson should not output data to file
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
@@ -499,17 +499,123 @@ class IceGeoJsonOutput(Outputter, Serializable):
     def get_matching_ice_values(self, ice_values, v):
         return np.where((ice_values == v).all(axis=1))
 
-    def get_points(self, mover):
-        points = (mover.mover._get_points()
-                  .astype([('long', '<f8'), ('lat', '<f8')]))
-        points['long'] /= 10 ** 6
-        points['lat'] /= 10 ** 6
-
-        return points
-
     def rewind(self):
         'remove previously written files'
         super(IceGeoJsonOutput, self).rewind()
+
+    def ice_movers_to_dict(self):
+        '''
+        a dict containing 'obj_type' and 'id' for each object in
+        list/collection
+        '''
+        return self._collection_to_dict(self.ice_movers)
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for current mover
+        """
+        schema = cls._schema()
+        _to_dict = schema.deserialize(json_)
+
+        if 'ice_movers' in json_:
+            _to_dict['ice_movers'] = []
+            for i, cm in enumerate(json_['ice_movers']):
+                cm_cls = class_from_objtype(cm['obj_type'])
+                cm_dict = cm_cls.deserialize(json_['ice_movers'][i])
+
+                _to_dict['ice_movers'].append(cm_dict)
+
+        return _to_dict
+
+
+class IceRawJsonSchema(BaseSchema):
+    '''
+    Nothing is required for initialization
+    '''
+
+
+class IceRawJsonOutput(Outputter):
+    '''
+    Class that outputs GNOME ice property results for each ice mover
+    in a raw JSON format.  The output contains a dict keyed by mover id.
+    Each value item in the dict contains a list of feature data.
+    Each feature item contains the ice fraction and thickness, and polyonal
+    coordinate data.
+    Following is the output format.
+
+    ::
+
+        {
+         "time_stamp": <TIME IN ISO FORMAT>,
+         "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
+         "feature_collections": {<mover_id>: [[<ICE_CONCENTRATION>,
+                                               <ICE_THICKNESS>,
+                                               [[<LONG>, <LAT>], ...],
+                                               ],
+                                              ...
+                                              ],
+                                 ...
+                                 }
+        }
+    '''
+    _state = copy.deepcopy(Outputter._state)
+
+    # need a schema and also need to override save so output_dir
+    # is saved correctly - maybe point it to saveloc
+    _state.add_field(Field('ice_movers',
+                           save=True, update=True, iscollection=True))
+
+    _schema = IceRawJsonSchema
+
+    def __init__(self, ice_movers, **kwargs):
+        '''
+            :param ice_movers: ice_movers associated with this outputter.
+            :type ice_movers: An ice_mover object or sequence of ice_mover
+                              objects.
+
+            Use super to pass optional \*\*kwargs to base class __init__ method
+        '''
+        if (isinstance(ice_movers, Iterable) and
+                not isinstance(ice_movers, str)):
+            self.ice_movers = ice_movers
+        elif ice_movers is not None:
+            self.ice_movers = (ice_movers,)
+        else:
+            self.ice_movers = tuple()
+
+        super(IceRawJsonOutput, self).__init__(**kwargs)
+
+    def write_output(self, step_num, islast_step=False):
+        'dump data in geojson format'
+        super(IceRawJsonOutput, self).write_output(step_num, islast_step)
+
+        if self.on is False or not self._write_step:
+            return None
+
+        for sc in self.cache.load_timestep(step_num).items():
+            pass
+
+        model_time = date_to_sec(sc.current_time_stamp)
+
+        raw_json = {}
+        for mover in self.ice_movers:
+            grid_data = mover.get_grid_data().tolist()
+            ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
+
+            raw_json[mover.id] = []
+            for c, th, grid in zip(ice_coverage, ice_thickness, grid_data):
+                raw_json[mover.id].append([c, th, grid])
+
+        output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
+                       'feature_collections': raw_json
+                       }
+
+        return output_info
+
+    def rewind(self):
+        'remove previously written files'
+        super(IceRawJsonOutput, self).rewind()
 
     def ice_movers_to_dict(self):
         '''
