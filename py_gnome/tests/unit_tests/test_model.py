@@ -83,6 +83,20 @@ def test_init():
     model = Model()
 
 
+def test_init_with_mode():
+    model = Model()
+    assert model.mode == 'gnome'
+
+    model = Model(mode='gnome')
+    assert model.mode == 'gnome'
+
+    model = Model(mode='adios')
+    assert model.mode == 'adios'
+
+    with raises(ValueError):
+        model = Model(mode='bogus')
+
+
 def test_start_time():
     model = Model()
 
