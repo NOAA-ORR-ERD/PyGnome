@@ -298,10 +298,10 @@ class TestWebApi:
             self._write_to_file(fname, serial)
 
     @pytest.mark.parametrize('uncertain, mode',
-                             [(False, 'Gnome'),
-                              (True, 'Gnome'),
-                              (False, 'Adios'),
-                              (True, 'Adios')])
+                             [(False, 'gnome'),
+                              (True, 'gnome'),
+                              (False, 'adios'),
+                              (True, 'adios')])
     def test_dump_webapi_option(self, uncertain, mode):
         model = make_model(uncertain, mode=mode)
         self.del_saveloc(self.webapi_files)
