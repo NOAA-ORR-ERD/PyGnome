@@ -54,18 +54,18 @@ def test_read_file_init():
     initialize from a long wind file
     """
     wm = Wind(filename=wind_file)
-    print
-    print '----------------------------------'
-    print 'Units: ' + str(wm.units)
-    assert True
+
+    # have to test something:
+    assert wm.units == 'knots'
 
 
 # tolerance for np.allclose(..) function.
 # Results are almost the same but not quite so needed to add tolerance.
-# The precision per numpy.spacing(1)=2.2e-16
-
-atol = 1e-14
-rtol = 0
+# numpy defaults:
+# rtol = 1e-05
+# atol = 1e-08
+rtol = 1e-14  # most of a float64's precision
+atol = 0  # zero must be exact in this case
 
 
 def test_units():
@@ -114,7 +114,7 @@ def test_wind_circ_fixture(wind_circ):
 
     gtime_val = wm.get_wind_data(format='uv').view(dtype=np.recarray)
     assert np.all(gtime_val.time == wind_circ['uv'].time)
-    assert np.allclose(gtime_val.value, wind_circ['uv'].value, atol, rtol)
+    assert np.allclose(gtime_val.value, wind_circ['uv'].value, rtol=rtol, atol=atol)
 
     # output is in meter per second
 
@@ -126,7 +126,7 @@ def test_wind_circ_fixture(wind_circ):
                                        wind_circ['uv'].value)
 
     assert np.all(gtime_val.time == wind_circ['uv'].time)
-    assert np.allclose(gtime_val.value, expected, atol, rtol)
+    assert np.allclose(gtime_val.value, expected, rtol=rtol, atol=atol)
 
 
 def test_get_value(wind_circ):
@@ -227,8 +227,9 @@ class TestWind:
 
         gtime_val = all_winds['wind'].get_wind_data()
         assert np.all(gtime_val['time'] == all_winds['rq'].time)
-        assert np.allclose(gtime_val['value'], all_winds['rq'].value,
-                           atol, rtol)
+        assert np.allclose(gtime_val['value'],
+                           all_winds['rq'].value,
+                           rtol=rtol, atol=atol)
 
     def test_set_wind_data(self, all_winds):
         """
@@ -247,7 +248,8 @@ class TestWind:
 
         # only matches to 10^-14
         assert np.allclose(wm.get_wind_data()['value'][:, 0],
-                           x['value'][:, 0], atol, rtol)
+                           x['value'][:, 0],
+                           rtol=rtol, atol=atol)
         assert np.all(wm.get_wind_data()['time'] == x['time'])
 
     def test_get_wind_data_rq(self, all_winds):
@@ -258,7 +260,8 @@ class TestWind:
 
         gtime_val = all_winds['wind'].get_wind_data(format='r-theta')
         assert np.all(gtime_val['time'] == all_winds['rq'].time)
-        assert np.allclose(gtime_val['value'], all_winds['rq'].value,
+        assert np.allclose(gtime_val['value'],
+                           all_winds['rq'].value,
                            atol, rtol)
 
     def test_get_wind_data_uv(self, all_winds):
@@ -269,7 +272,9 @@ class TestWind:
                      .get_wind_data(format='uv')
                      .view(dtype=np.recarray))
         assert np.all(gtime_val.time == all_winds['uv'].time)
-        assert np.allclose(gtime_val.value, all_winds['uv'].value, atol, rtol)
+        assert np.allclose(gtime_val.value,
+                           all_winds['uv'].value,
+                           rtol=rtol, atol=atol)
 
     def test_get_wind_data_by_time(self, all_winds):
         """
@@ -280,7 +285,7 @@ class TestWind:
                                                      datetime=all_winds['rq'].time)
                      .view(dtype=np.recarray))
         assert np.all(gtime_val.time == all_winds['rq'].time)
-        assert np.allclose(gtime_val.value, all_winds['rq'].value, atol, rtol)
+        assert np.allclose(gtime_val.value, all_winds['rq'].value, rtol=rtol, atol=atol)
 
     def test_get_wind_data_by_time_scalar(self, all_winds):
         """
@@ -399,17 +404,23 @@ def test_eq():
     assert w == w2
 
 
-def test_timeseries_res_sec():
-    '''check the timeseries resolution is changed to minutes.
-    Drop seconds from datetime, if given'''
-    ts = np.zeros((3,), dtype=datetime_value_2d)
-    ts[:] = [(datetime(2014, 1, 1, 10, 10, 30), (1, 10)),
-             (datetime(2014, 1, 1, 11, 10, 10), (2, 10)),
-             (datetime(2014, 1, 1, 12, 10), (3, 10))]
-    w = Wind(timeseries=ts, units='m/s')
-    # check that seconds resolution has been dropped
-    for ix, dt in enumerate(w.timeseries['time'].astype(datetime)):
-        assert ts['time'][ix].astype(datetime).replace(second=0) == dt
+# removed -- no longer doing the minutes truncation
+#  not sure why we ever did.
+# def test_timeseries_res_sec():
+#     '''
+#     check the timeseries resolution is changed to minutes.
+#     Drop seconds from datetime, if given
+#     '''
+#     ts = np.zeros((3,), dtype=datetime_value_2d)
+#     ts[:] = [(datetime(2014, 1, 1, 10, 10, 30), (1, 10)),
+#              (datetime(2014, 1, 1, 11, 10, 10), (2, 10)),
+#              (datetime(2014, 1, 1, 12, 10), (3, 10))]
+#     w = Wind(timeseries=ts, units='m/s')
+#     # check that seconds resolution has been dropped
+#     for dt1, dt2 in zip(ts['time'].astype(datetime),
+#                         w.timeseries['time'].astype(datetime)):
+#         print dt1, dt2
+#         assert dt1.replace(second=0) == dt2
 
 
 def test_update_from_dict():
@@ -496,20 +507,16 @@ def test_update_from_dict_with_dst_spring_transition():
     wind_dict = Wind.deserialize(wind_json)
     wind = Wind.new_from_dict(wind_dict)
 
-    # print repr(wind)
-
     assert wind.description == 'dst transition test'
     assert wind.units == 'knots'
 
     ts = wind.get_timeseries()
-    wind._check_timeseries(ts)
-    print type(ts)
-    for i in ts['time']:
-        print i
-    print ts.dtype
-    print timeseries
 
-    print wind.get_timeseries()
+    # this should raise if there is a problem
+    wind._check_timeseries(ts)
+
+    assert True # if we got here, the test passed.
+
 
 
 def test_new_from_dict_with_dst_fall_transition():
@@ -531,13 +538,10 @@ def test_new_from_dict_with_dst_fall_transition():
                  }
 
     wind_dict = Wind.deserialize(wind_json)
-
     wind = Wind.new_from_dict(wind_dict)
 
     assert wind.description == 'fall dst transition test'
     assert wind.units == 'knots'
-
-    # assert False
 
 
 def test_roundtrip_dst_spring_transition():
