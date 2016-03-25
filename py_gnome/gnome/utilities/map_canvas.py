@@ -495,7 +495,6 @@ class GridLines(object):
                              'grid lines')
         self.projection = projection
 
-        self.type = type
         if DegMinSec:
             self.STEPS = self.DMS_STEPS
             self.STEP_COUNT = self.DMS_COUNT
