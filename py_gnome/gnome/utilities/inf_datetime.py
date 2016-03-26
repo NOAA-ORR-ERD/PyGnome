@@ -16,8 +16,7 @@ range for this application
 
 import datetime
 
-## minimum and maximum valid datetime values
-
+# minimum and maximum valid datetime values
 min_datetime = datetime.datetime(1970, 01, 01)
 max_datetime = datetime.datetime(2038, 01, 19)
 
