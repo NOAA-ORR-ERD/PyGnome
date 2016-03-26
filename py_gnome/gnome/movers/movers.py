@@ -1,8 +1,7 @@
 import copy
 from datetime import timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 from colander import (SchemaNode, MappingSchema, Bool, drop)
 
@@ -66,8 +65,8 @@ class Process(AddLogger):
 
         self._check_active_startstop(active_start, active_stop)
 
-        self.active_start = active_start
-        self.active_stop = active_stop
+        self._active_start = active_start
+        self._active_stop = active_stop
 
         # empty dict since no array_types required for all movers at present
         self.array_types = set()
@@ -84,6 +83,24 @@ class Process(AddLogger):
     @property
     def active(self):
         return self._active
+
+    @property
+    def active_start(self):
+        return self._active_start
+
+    @active_start.setter
+    def active_start(self, value):
+        self._check_active_startstop(value, self._active_stop)
+        self._active_start = value
+
+    @property
+    def active_stop(self):
+        return self._active_stop
+
+    @active_stop.setter
+    def active_stop(self, value):
+        self._check_active_startstop(self._active_start, value)
+        self._active_stop = value
 
     def datetime_to_seconds(self, model_time):
         """

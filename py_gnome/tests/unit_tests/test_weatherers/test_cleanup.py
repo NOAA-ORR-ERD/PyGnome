@@ -4,8 +4,9 @@ tests for cleanup options
 from datetime import datetime, timedelta
 
 import numpy as np
-import unit_conversion as uc
 from pytest import raises, mark
+
+import unit_conversion as uc
 
 from gnome.basic_types import oil_status, fate
 
@@ -279,6 +280,7 @@ class TestBurn(ObjForTests):
                     active_stop=active_start,
                     name='test_burn',
                     on=False)   # this is ignored!
+
         # use burn constant for test - it isn't stored anywhere
         duration = (uc.convert('Length', burn.thickness_units, 'm',
                                burn.thickness) -
@@ -288,6 +290,32 @@ class TestBurn(ObjForTests):
                 burn.active_start + timedelta(seconds=duration))
         assert burn.name == 'test_burn'
         assert not burn.on
+
+    def test_update_active_start(self):
+        '''
+        active_stop should be updated if we update active_start or thickness
+        '''
+        burn = Burn(self.area,
+                    self.thick,
+                    active_start=active_start,
+                    active_stop=active_start,
+                    name='test_burn',
+                    on=False)   # this is ignored!
+
+        # use burn constant for test - it isn't stored anywhere
+        duration = ((uc.convert('Length', burn.thickness_units, 'm',
+                                burn.thickness) -
+                     burn._min_thickness) /
+                    burn._burn_constant)
+
+        assert (burn.active_stop ==
+                burn.active_start + timedelta(seconds=duration))
+
+        # after changing active_start, active_stop should still match the
+        # duration.
+        burn.active_start += timedelta(days=1)
+        assert (burn.active_stop ==
+                burn.active_start + timedelta(seconds=duration))
 
     @mark.parametrize(("area_units", "thickness_units"), [("m", "in"),
                                                           ("m^2", "l")])
