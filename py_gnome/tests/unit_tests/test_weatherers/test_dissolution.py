@@ -17,6 +17,7 @@ from ..conftest import (sample_model_weathering,
                         sample_model_weathering2)
 
 from pprint import PrettyPrinter
+from gnome.weatherers.natural_dispersion import NaturalDispersion
 pp = PrettyPrinter(indent=2, width=120)
 
 # also test with lower wind no dispersion
@@ -115,6 +116,57 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
     diss.weather_elements(sc, time_step, model_time)
 
     assert all(np.isclose(sc._data_arrays['partition_coeff'], k_ow))
+
+
+@pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'drop_size', 'on'),
+                         [('ABU SAFAH', 311.15, 3,
+                           [235.41e-6, 231.07e-6, 226.74e-6],
+                           True),
+                          ('BAHIA', 311.15, 3,
+                           [231.19e-6, 226.64e-6, 222.1e-6],
+                           True),
+                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
+                           [0.0, 0.0, 0.0],
+                           False)])
+def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
+    '''
+        Here we are testing that the molar averaged oil/water partition
+        coefficient (K_ow) is getting calculated with reasonable values
+    '''
+    et = floating(substance=oil)
+
+    disp = NaturalDispersion(waves, water)
+    diss = Dissolution(waves)
+
+    (sc, time_step) = weathering_data_arrays(diss.array_types,
+                                             water,
+                                             element_type=et,
+                                             num_elements=num_elems)[:2]
+
+    print 'num spills:', len(sc.spills)
+    print 'spill[0] amount:', sc.spills[0].amount
+
+    model_time = (sc.spills[0]
+                  .get('release_time') + timedelta(seconds=time_step))
+
+    disp.on = on
+    diss.on = on
+
+    disp.prepare_for_model_run(sc)
+    diss.prepare_for_model_run(sc)
+
+    disp.initialize_data(sc, sc.num_released)
+    diss.initialize_data(sc, sc.num_released)
+
+    for i in range(3):
+        disp.prepare_for_model_step(sc, time_step, model_time)
+        diss.prepare_for_model_step(sc, time_step, model_time)
+
+        disp.weather_elements(sc, time_step, model_time)
+        diss.weather_elements(sc, time_step, model_time)
+
+        print 'droplet_avg_size:', sc._data_arrays['droplet_avg_size']
+        assert np.allclose(sc._data_arrays['droplet_avg_size'], drop_size[i])
 
 
 @pytest.mark.xfail

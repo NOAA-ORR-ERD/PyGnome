@@ -100,8 +100,9 @@ OSErr adios2_disperse(int n, unsigned long step_len,
                       double *le_viscosity,
                       double *le_density,
                       double *fay_area,
-                      double *d_disp,
-                      double *d_sed,
+                      double *d_disp,  // output
+                      double *d_sed,  // output
+                      double *droplet_avg_size,  // output
                       double frac_breaking_waves,
                       double disp_wave_energy,
                       double wave_height,
@@ -134,6 +135,7 @@ OSErr adios2_disperse(int n, unsigned long step_len,
 		if (Y >= 1) {
 		    d_disp[i] = 0.0;
 		    d_sed[i] = 0.0;
+		    droplet_avg_size[i] = 0.0;
 		    continue;
 		}  // shouldn't happen
 
@@ -157,6 +159,7 @@ OSErr adios2_disperse(int n, unsigned long step_len,
 		if (C_sed > 0.0 && thickness >= 1.0e-4) {
 			// average droplet size based on surface oil slick thickness
 			double droplet = 0.613 * thickness;
+            droplet_avg_size[i] = droplet;
 
 			// droplet average rise velocity
 			double speed = (droplet * droplet * g *
