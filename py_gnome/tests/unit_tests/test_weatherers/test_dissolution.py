@@ -144,7 +144,7 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
                                              num_elements=num_elems)[:2]
 
     print 'num spills:', len(sc.spills)
-    print 'spill[0] amount:', sc.spills[0].amount
+    print 'spill[0] amount:', sc.spills[0].amount, sc.spills[0].units
 
     model_time = (sc.spills[0]
                   .get('release_time') + timedelta(seconds=time_step))
