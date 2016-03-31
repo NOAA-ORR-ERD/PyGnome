@@ -17,121 +17,97 @@ from gnome.utilities.timeseries_generic import DataTimeSeries
 
 import pyugrid
 import pysgrid
+import unit_conversion
 
 
-class EnvProperty(object):
+class TimeSeriesProp(object):
 
     def __init__(self,
-                 name=None,
-                 units=None,
-                 ** kwargs):
+                 name,
+                 units,
+                 data,
+                 times):
         self.name = name
         self.units = units
-
-    @classmethod
-    def constant_var(cls, name=None, value=None):
-        if name is None or value is None:
-            raise ValueError("Name and value must be provided")
-        return cls(name=name, is_constant=True, constant_val=value)
-
-    @classmethod
-    def gridded_var(cls, name=None, grid=None, data=None, time=None):
-        if grid is None or data_source is None:
-            raise ValueError('Must provide a grid and data source that can fit to the grid')
-        if grid.infer_grid(data_source) is None:
-            raise ValueError('Data source must be able to fit to the grid')
-        return cls(name=name, is_constant=False, grid=grid, data=data, time=time)
-
-
-class TimeSeriesProp(EnvProperty):
-
-    def __init__(self,
-                 name=None,
-                 units=None,
-                 data=None,
-                 times=None):
-        super(TimeSeriesProp, self).__init__(name, units)
-        if len(time) != len(data):
+        if len(times) != len(data):
             raise ValueError("Time and data sequences are of different length.\n\
             len(time_seq) == {0}, len(data_seq) == {1}".format(len(time_seq), len(data_seq)))
 
         self.time = Time(times)
-        self.data = data_seq
+        self.data = data
 
-    def at(self, points, time):
+    def at(self, points, time, units=None):
         t_alphas = self.time.interp_alpha(time)
         t_index = self.time.indexof(time)
         d0 = self.data[t_index]
         d1 = self.data[t_index + 1]
         value = d0 + (d1 - d0) * t_alphas
+        if units is not None and units != self.units:
+            value = unit_conversion.convert(None, self.units, units, value)
+
         return np.full((points.shape[0], 1), value)
 
 
-class GriddedProp(EnvProperty):
+class GriddedProp(object):
 
     def __init__(self,
-                 name=None,
-                 units=None,
-                 grid=None,
-                 data=None,
-                 times=None):
-        super(TimeSeriesProp, self).__init__(name, units)
+                 name,
+                 units,
+                 grid,
+                 data,
+                 time=None):
+        if grid is None or data_source is None:
+            raise ValueError('Must provide a grid and data source that can fit to the grid')
+        if grid.infer_grid(data_source) is None:
+            raise ValueError('Data source must be able to fit to the grid')
         self.grid = grid
         self.data = data
         self.time = time
 
-    def at(self, points, time):
+    def at(self, points, time, units=None):
         '''
         Interpolates this property to the given points at the given time.
         :param points: A Nx2 array of lon,lat points
         :param time: A datetime object. May be None; if this is so, the variable is assumed to be gridded
         but time-invariant
         '''
-        if self.is_constant:
-            return np.full((points.shape[0], 1), self.constant_val)
-        if self.is_timeseries:
-            # TBD
-            return None
-        if self.is_gridded:
-            t_alphas = t_index = s0 = s1 = None
-            if time is not None:
-                t_alphas = self.time.interp_alpha(time)
-                t_index = self.time.indexof(time)
-                s0 = [t_index]
-                s1 = [t_index + 1]
-                if len(variable.shape) == 4:
-                    s1.append(depth)
-                    s2.append(depth)
-                v0 = self.grid.interpolate_var_to_poitns(points, self.data, slices=s0, memo=True)
-                v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s2, memo=True)
-            else:
-                s0 = None
-                v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, memo=True)
+        t_alphas = t_index = s0 = s1 = None
+        if self.time is not None:
+            t_alphas = self.time.interp_alpha(time)
+            t_index = self.time.indexof(time)
+            s0 = [t_index]
+            s1 = [t_index + 1]
+            if len(variable.shape) == 4:
+                s1.append(depth)
+                s2.append(depth)
+            v0 = self.grid.interpolate_var_to_poitns(points, self.data, slices=s0, memo=True)
+            v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s2, memo=True)
+        else:
+            s0 = None
+            v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, memo=True)
 
-            vt = v0 + (v1 - v0) * t_alphas
-            return vt
-        warnings.warn("Type of property is unspecified. No data is indicated to be active \
-        (is_constant, is_gridded, is_timeseries == False)")
-        return None
+        vt = v0 + (v1 - v0) * t_alphas
+        if units is not None and units != self.units:
+            vt = unit_conversion.convert(None, self.units, units, vt)
+        return vt
 
-    # Should vector quantities even be supported?
-#     @classmethod
-#     def constant_vec(cls, name=None, vector=None, magnitude=None, direction=None):
-#         if name is None:
-#             raise ValueError('Name must be provided')
-#         if vector is None:
-#             if magnitude is None or direction is None:
-#                 raise ValueError('If vector is not provided, magnitude and direction must be')
-#             else:
-#                 return cls(name=name, is_constant=True, constant_val=magnitude, constant_direction=direction)
-#         else:
-#             vector = np.asarray(vector, dtype=np.double)
-#             if magnitude is not None or direction is not None:
-#                 warnings.warn("vector is defined, ignoring magnitude and direction")
-#             if vector.shape != (2,) or vector.shape != (3,):
-#                 raise ValueError("Must provide [u,v] or [u,v,w] for vector")
-#             return cls(name=name, is_constant=True, constant_vec=vector)
-#
+
+class VectorProp(object):
+
+    def __init__(self,
+                 name,
+                 units,
+                 variables):
+        self.name = name
+        self.units = units
+        for var in variables:
+            if var.units != self.units:
+                raise ValueError('Units of {0} for component property {1} are not the same as \
+                units specified for compound proprety {2}'.format(var.name, var.units, self.units))
+        self.variables = variables
+
+    def at(self, points, time, units=None):
+        return np.column_stack((var.at(points, time, units) for var in self.variables))
 
 
 class WaterConditions(object):
@@ -246,7 +222,7 @@ class Time(object):
         return cls(nc4.num2date(var[:], units=var.units))
 
     def _timeseries_is_ascending(self, ts):
-        return all(np.sort(ts) == time_seq)
+        return all(np.sort(ts) == ts)
 
     def _has_duplicates(self, ts):
         return len(np.unique(ts)) != len(ts)
@@ -276,7 +252,6 @@ class Time(object):
         :param time:
         :return:
         '''
-        self.valid_time(time)
         index = np.searchsorted(self.time, time) - 1
         return index
 
@@ -285,3 +260,17 @@ class Time(object):
         t0 = self.time[i0]
         t1 = self.time[i0 + 1]
         return (time - t0).total_seconds() / (t1 - t0).total_seconds()
+
+if __name__ == "__main__":
+    import datetime as dt
+    dates = np.array([dt.datetime(1, 1, 1, 0), dt.datetime(1, 1, 1, 2), dt.datetime(1, 1, 1, 4)])
+    u_data = np.array([2, 4, 6])
+    v_data = np.array([5, 7, 9])
+    u = TimeSeriesProp('u', 'm/s', u_data, dates)
+    v = TimeSeriesProp('v', 'm/s', v_data, dates)
+
+    print u.at(np.array([(1, 1), (1, 2)]), dt.datetime(1, 1, 1, 1))
+
+    vprop = VectorProp('velocity', 'm/s', [u, v])
+    print vprop.at(np.array([(1, 1), (1, 2)]), dt.datetime(1, 1, 1, 3), 'knots')
+    pass
