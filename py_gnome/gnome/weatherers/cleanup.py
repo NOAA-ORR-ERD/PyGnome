@@ -496,6 +496,15 @@ class Burn(CleanUpBase, Serializable):
             self._area_units = value
 
     @property
+    def active_start(self):
+        return self._active_start
+
+    @active_start.setter
+    def active_start(self, value):
+        self._active_start = value
+        self._init_rate_duration()
+
+    @property
     def thickness(self):
         return self._thickness
 

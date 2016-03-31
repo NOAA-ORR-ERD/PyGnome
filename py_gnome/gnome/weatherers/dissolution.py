@@ -16,7 +16,8 @@ from gnome.utilities.weathering import LeeHuibers
 from gnome.array_types import (viscosity,
                                mass,
                                density,
-                               partition_coeff)
+                               partition_coeff,
+                               droplet_avg_size)
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
@@ -47,7 +48,8 @@ class Dissolution(Weatherer, Serializable):
         self.array_types.update({'viscosity': viscosity,
                                  'mass':  mass,
                                  'density': density,
-                                 'partition_coeff': partition_coeff
+                                 'partition_coeff': partition_coeff,
+                                 'droplet_avg_size': droplet_avg_size
                                  })
 
     def prepare_for_model_run(self, sc):

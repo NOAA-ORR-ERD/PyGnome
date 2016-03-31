@@ -114,6 +114,7 @@ def test_full_run(sample_model_fcn2, oil, temp, dispersed):
             if step['step_num'] > 0:
                 assert (sc.mass_balance['natural_dispersion'] > 0)
                 assert (sc.mass_balance['sedimentation'] > 0)
+
             print ("Dispersed: {0}".
                    format(sc.mass_balance['natural_dispersion']))
             print ("Sedimentation: {0}".
@@ -122,6 +123,7 @@ def test_full_run(sample_model_fcn2, oil, temp, dispersed):
 
     sc = model.spills.items()[0]
     print (sc.mass_balance['natural_dispersion'], dispersed)
+
     assert np.isclose(sc.mass_balance['natural_dispersion'], dispersed,
                       atol=0.001)
 

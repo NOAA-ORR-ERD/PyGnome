@@ -1,8 +1,7 @@
 import copy
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 from colander import (SchemaNode, MappingSchema, Bool, drop)
 
@@ -18,6 +17,7 @@ from gnome.utilities import inf_datetime
 from gnome.utilities import time_utils, serializable
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome import AddLogger
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 
 class ProcessSchema(MappingSchema):
@@ -66,8 +66,8 @@ class Process(AddLogger):
 
         self._check_active_startstop(active_start, active_stop)
 
-        self.active_start = active_start
-        self.active_stop = active_stop
+        self._active_start = active_start
+        self._active_stop = active_stop
 
         # empty dict since no array_types required for all movers at present
         self.array_types = set()
@@ -75,15 +75,44 @@ class Process(AddLogger):
         self.make_default_refs = kwargs.pop('make_default_refs', True)
 
     def _check_active_startstop(self, active_start, active_stop):
-        if active_stop <= active_start:
-            msg = 'active_start {0} should be smaller than active_stop {1}'
-            raise ValueError(msg.format(active_start, active_stop))
+        # there are no swapped-argument versions of the comare operations,
+        # so it seems that InfTime and MinusInfTime cannot simply be fixed
+        # to work with datetime when they are on the right side of a compare
+        # operation.  So we have to put this kludge in.
+        if (isinstance(active_start, datetime) and
+                isinstance(active_stop, (InfTime, MinusInfTime))):
+            if active_stop <= active_start:
+                msg = 'active_start {0} should be smaller than active_stop {1}'
+                raise ValueError(msg.format(active_start, active_stop))
+        else:
+            if active_start >= active_stop:
+                msg = 'active_start {0} should be smaller than active_stop {1}'
+                raise ValueError(msg.format(active_start, active_stop))
+
         return True
 
     # Methods for active property definition
     @property
     def active(self):
         return self._active
+
+    @property
+    def active_start(self):
+        return self._active_start
+
+    @active_start.setter
+    def active_start(self, value):
+        self._check_active_startstop(value, self._active_stop)
+        self._active_start = value
+
+    @property
+    def active_stop(self):
+        return self._active_stop
+
+    @active_stop.setter
+    def active_stop(self, value):
+        self._check_active_startstop(self._active_start, value)
+        self._active_stop = value
 
     def datetime_to_seconds(self, model_time):
         """

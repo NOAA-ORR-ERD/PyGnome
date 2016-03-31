@@ -169,6 +169,8 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         '''
         if self.on:
             sc.mass_balance['observed_beached'] = 0.0
+            #force rate to be recalculated in case anything changed
+            self._rate = None 	
 
     def _remove_mass(self, time_step, model_time, substance):
         '''
