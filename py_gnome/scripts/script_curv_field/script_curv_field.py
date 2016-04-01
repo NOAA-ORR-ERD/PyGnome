@@ -80,7 +80,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a current mover:'
 
-    cf = curv_field('tbofs_example.nc')
+    curr_file = get_datafile(os.path.join(base_dir,'tbofs_example.nc'))
+    cf = curv_field(curr_file)
     cf.set_appearance(on=True)
     renderer.grids += [cf]
     renderer.delay = 25
