@@ -20,48 +20,109 @@ import pysgrid
 import unit_conversion
 
 
-class TimeSeriesProp(object):
+class EnvProp(serializable.Serializable):
 
     def __init__(self,
-                 name,
-                 units,
-                 data,
-                 times):
+                 name=None,
+                 units=None,
+                 data=None,
+                 extrapolate=False):
         self.name = name
-        self.units = units
-        if len(times) != len(data):
-            raise ValueError("Time and data sequences are of different length.\n\
-            len(time_seq) == {0}, len(data_seq) == {1}".format(len(time_seq), len(data_seq)))
-
-        self.time = Time(times)
+        if units in unit_conversion.unit_data.supported_units:
+            self._units = units
+        else:
+            raise ValueError('Units of {0} are not supported'.format(units))
         self.data = data
+        self.extrapolate = extrapolate
+
+    @property
+    def units(self):
+        return self._units
+
+    @units.setter
+    def units(self, unit):
+        warnings.warn('Setting units directly does not change data values. If this is desired, use convert_units()')
+        self._units = unit
+
+    def in_units(self, unit):
+        '''
+        Returns a full copy of this property in the units specified. 
+        WARNING: This will copy the data of the original property!
+        '''
+        copy = self.copy()
+        if hasattr(copy.data, '__mul__'):
+            copy.data = unit_conversion.Convert(None, copy.units, unit, copy.data)
+        else:
+            warnings.warn('Data was not converted to new units and was not copied because it does not support multiplication')
+        copy._units = unit
+        return copy
+
+    def update_from_dict(self, data):
+        '''
+        update attributes from dict - override base class because we want to
+        set the units before updating the data so conversion is done correctly.
+        Internally all data is stored in SI units.
+        '''
+        updated = self.update_attr('units', data.pop('units', self.units))
+        if super(Wind, self).update_from_dict(data):
+            return True
+        else:
+            return updated
+
+
+class TimeSeriesProp(EnvProp):
+
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 data=None,
+                 time=None,
+                 extrapolate=False):
+        if len(time) != len(data):
+            raise ValueError("Time and data sequences are of different length.\n\
+            len(time) == {0}, len(data) == {1}".format(len(time), len(data)))
+        super(TimeSeriesProp, self).__init__(name, units, data, extrapolate)
+        self.time = Time(time)
 
     def at(self, points, time, units=None):
-        t_alphas = self.time.interp_alpha(time)
+                '''
+        Interpolates this property to the given points at the given time with the units specified
+        :param points: A Nx2 array of lon,lat points
+        :param time: A datetime object. May be None; if this is so, the variable is assumed to be gridded
+        but time-invariant
+        :param units: The units that the result would be converted to
+        '''
+        value = None 
         t_index = self.time.indexof(time)
-        d0 = self.data[t_index]
-        d1 = self.data[t_index + 1]
-        value = d0 + (d1 - d0) * t_alphas
+        if self.extrapolate and t_index == len(self.time.time):
+            value = self.data[t_index]
+
+        else:
+            t_alphas = self.time.interp_alpha(time)
+            d0 = self.data[t_index]
+            d1 = self.data[t_index + 1]
+            value = d0 + (d1 - d0) * t_alphas
         if units is not None and units != self.units:
             value = unit_conversion.convert(None, self.units, units, value)
 
         return np.full((points.shape[0], 1), value)
 
 
-class GriddedProp(object):
+class GriddedProp(EnvProp):
 
     def __init__(self,
-                 name,
-                 units,
-                 grid,
-                 data,
-                 time=None):
+                 name=None,
+                 units=None,
+                 data=None,
+                 grid=None,
+                 time=None,
+                 extrapolate=False):
         if grid is None or data_source is None:
             raise ValueError('Must provide a grid and data source that can fit to the grid')
         if grid.infer_grid(data_source) is None:
             raise ValueError('Data source must be able to fit to the grid')
+        super(GriddedProp, self).__init__(name, units, data, extrapolate)
         self.grid = grid
-        self.data = data
         self.time = time
 
     def at(self, points, time, units=None):
@@ -71,40 +132,56 @@ class GriddedProp(object):
         :param time: A datetime object. May be None; if this is so, the variable is assumed to be gridded
         but time-invariant
         '''
-        t_alphas = t_index = s0 = s1 = None
+        t_alphas = t_index = s0 = s1 = value = None
         if self.time is not None:
-            t_alphas = self.time.interp_alpha(time)
             t_index = self.time.indexof(time)
-            s0 = [t_index]
-            s1 = [t_index + 1]
-            if len(variable.shape) == 4:
-                s1.append(depth)
-                s2.append(depth)
-            v0 = self.grid.interpolate_var_to_poitns(points, self.data, slices=s0, memo=True)
-            v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s2, memo=True)
+            if self.extrapolate and t_index == len(self.time.time):
+                s0 = [t_index]
+                value = self.grid.interpolate_var_to_points(points, self.data, slices=s0, memo=True)
+            else:
+                t_alphas = self.time.interp_alpha(time)
+                s0 = [t_index]
+                s1 = [t_index + 1]
+                if len(variable.shape) == 4:
+                    s1.append(depth)
+                    s2.append(depth)
+                v0 = self.grid.interpolate_var_to_poitns(points, self.data, slices=s0, memo=True)
+                v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s2, memo=True)
+                value = v0 + (v1 - v0) * t_alphas
         else:
             s0 = None
-            v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, memo=True)
+            value = self.grid.interpolate_var_to_points(points, self.data, slices=s0, memo=True)
 
-        vt = v0 + (v1 - v0) * t_alphas
         if units is not None and units != self.units:
-            vt = unit_conversion.convert(None, self.units, units, vt)
-        return vt
+            value = unit_conversion.convert(None, self.units, units, value)
+        return value
 
 
 class VectorProp(object):
 
     def __init__(self,
-                 name,
-                 units,
-                 variables):
+                 name=None,
+                 units=None,
+                 variables=None,
+                 extrapolate=False):
         self.name = name
-        self.units = units
+        self._units = units
+        self.extrapolate = extrapolate
         for var in variables:
             if var.units != self.units:
                 raise ValueError('Units of {0} for component property {1} are not the same as \
                 units specified for compound proprety {2}'.format(var.name, var.units, self.units))
+            if var.extrapolate != self.extrapolate:
+                raise ValueError("""VectorProp extrapolation is {0}, 
+                                 but component property {1} 
+                                 extrapolation is {2}""".format('on' if self.extrapolate else 'off',
+                                                                var.name,
+                                                                'on' if var.extrapolate else 'off'))
         self.variables = variables
+
+    @property
+    def units(self):
+        return self._units
 
     def at(self, points, time, units=None):
         return np.column_stack((var.at(points, time, units) for var in self.variables))
@@ -206,7 +283,7 @@ class WaterConditions(object):
 
 class Time(object):
 
-    def __init__(self, time_seq):
+    def __init__(self, time_seq, extrapolate=False):
         '''
         Functions for a time array
         :param time_seq: An ascending array of datetime objects of length N
@@ -216,6 +293,7 @@ class Time(object):
         if self._has_duplicates(time_seq):
             raise ValueError("Time sequence has duplicate entries")
         self.time = time_seq
+        self.extrapolate = False
 
     @classmethod
     def time_from_nc_var(cls, var):
@@ -241,10 +319,10 @@ class Time(object):
     def time_in_bounds(self, time):
         return not time < self.min_time or time > self.max_time
 
-#     def valid_time(self, time):
-#         if time < self.min_time or time > self.max_time:
-#             raise ValueError('time specified ({0}) is not within the bounds of the time ({1} to {2})'.format(
-#                 time.strftime('%c'), self.min_time.strftime('%c'), self.max_time.strftime('%c')))
+    def valid_time(self, time):
+        if time < self.min_time or time > self.max_time:
+            raise ValueError('time specified ({0}) is not within the bounds of the time ({1} to {2})'.format(
+                time.strftime('%c'), self.min_time.strftime('%c'), self.max_time.strftime('%c')))
 
     def indexof(self, time):
         '''
@@ -252,11 +330,17 @@ class Time(object):
         :param time:
         :return:
         '''
+        if not self.extrapolate:
+            self.valid_time(time)
         index = np.searchsorted(self.time, time) - 1
         return index
 
     def interp_alpha(self, time):
+        if not self.extrapolate:
+            self.valid_time(time)
         i0 = self.indexof(time)
+        if i0 == len(self.time):
+            return 1
         t0 = self.time[i0]
         t1 = self.time[i0 + 1]
         return (time - t0).total_seconds() / (t1 - t0).total_seconds()
