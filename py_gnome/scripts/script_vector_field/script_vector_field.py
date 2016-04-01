@@ -83,7 +83,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a current mover:'
 
-    vec_field = tri_vector_field('COOPSu_CREOFS24.nc')
+    curr_file = get_datafile('COOPSu_CREOFS24.nc')
+    vec_field = tri_vector_field(curr_file)
     vec_field.set_appearance(on=True)
     vec_field.set_appearance(mask=vec_field.velocities)
     renderer.grids += [vec_field]
