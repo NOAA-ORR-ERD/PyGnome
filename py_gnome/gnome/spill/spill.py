@@ -75,14 +75,19 @@ class Spill(serializable.Serializable):
             of the elements.
         :type element_type:
             :class:`~gnome.spill.elements.element_type.ElementType`
+
         :param bool on=True: Toggles the spill on/off.
+
         :param float amount=None: mass or volume of oil spilled.
+
         :param str units=None: must provide units for amount spilled.
+
         :param float amount_uncertainty_scale=0.0: scale value in range 0-1
                                                    that adds uncertainty to the
                                                    spill amount.
                                                    Maximum uncertainty scale
                                                    is (2/3) * spill_amount.
+
         :param str name='Spill': a name for the spill.
 
         .. note::

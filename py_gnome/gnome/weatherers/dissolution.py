@@ -2,7 +2,7 @@
 model dissolution process
 '''
 from __future__ import division
-
+from collections import Iterable
 import copy
 
 import numpy as np
@@ -11,7 +11,8 @@ import gnome  # required by deserialize
 
 from gnome import constants
 from gnome.utilities.serializable import Serializable, Field
-from gnome.utilities.weathering import LeeHuibers
+from gnome.utilities.weathering import (LeeHuibers, Stokes,
+                                        DingFarmer, DelvigneSweeney)
 
 from gnome.array_types import (viscosity,
                                mass,
@@ -126,9 +127,14 @@ class Dissolution(Weatherer, Serializable):
             - subtract the mass of smallest droplets in our distribution
               that are below a threshold.
         '''
+        model_time = kwargs.get('model_time')
+
         fmass = data['mass_components']
+        droplet_avg_size = data['droplet_avg_size']
 
         arom_mask = substance._sara['type'] == 'Aromatics'
+        not_arom_mask = arom_mask ^ True
+
         mol_wt = substance.molecular_weight
         rho = substance.component_density
 
@@ -138,14 +144,71 @@ class Dissolution(Weatherer, Serializable):
         # K_ow for non-aromatics should be masked to 0.0
         K_ow_comp = arom_mask * LeeHuibers.partition_coeff(mol_wt, rho)
 
-        for idx, m in enumerate(fmass):
+        for idx, (m, drop_sizes) in enumerate(zip(fmass, droplet_avg_size)):
             K_ow = (np.sum(m * K_ow_comp / mol_wt) /
                     np.sum(m / mol_wt))
+            print '\nK_ow = ', K_ow
+
+            # This will eventually be a droplet distribution, but for now
+            # we are receiving the average droplet size from the dispersion
+            # weatherer.  So we turn the scalar into an iterable.
+            if not isinstance(drop_sizes, Iterable):
+                drop_sizes = np.array(drop_sizes)
+
+            avg_rho = self.oil_avg_density(m, rho)
+            water_rho = self.waves.water.get('density')
+            print 'water_rho, avg_rho = ', (water_rho, avg_rho)
+            print 'drop_sizes = ', drop_sizes
+
+            k_w = Stokes.water_phase_xfer_velocity(water_rho - avg_rho,
+                                                   drop_sizes)
+            print 'k_w = ', k_w
+
+            total_volume = (m / rho).sum()
+            aromatic_volume = ((m / rho) * arom_mask).sum()
+            S_RA_volume = ((m / rho) * not_arom_mask).sum()
+
+            print 'total volume = ', total_volume
+            print 'aromatic volume = ', aromatic_volume
+            print 'S_RA volume = ', S_RA_volume
+
+            assert np.isclose(aromatic_volume + S_RA_volume, total_volume)
+
+            beta = self.beta_coeff(k_w, K_ow, S_RA_volume)
+            print 'beta = ', beta
+
+            f_wc = self.water_column_time_fraction(water_rho - avg_rho,
+                                                   drop_sizes)
+            print 'f_wc = ', f_wc
 
             data['partition_coeff'][idx] = K_ow
+        print
 
         diss = np.zeros((len(data['mass'])), dtype=np.float64)
         return diss
+
+    def oil_avg_density(self, masses, densities):
+        assert masses.shape == densities.shape
+
+        return (masses / masses.sum() * densities).sum()
+
+    def beta_coeff(self, k_w, K_ow, v_inert):
+        return -4.84 * k_w / K_ow * v_inert ** (2.0 / 3.0)
+
+    def water_column_time_fraction(self, model_time,
+                                   water_phase_xfer_velocity):
+        wave_period = self.waves.peak_wave_period(model_time)
+        wave_height = self.waves.get_value(model_time)[0]
+        wind_speed = self.waves.wind.get_value(model_time)[0]
+
+        f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
+
+        f_wc = DingFarmer.water_column_time_fraction(f_bw,
+                                                     wave_period,
+                                                     wave_height,
+                                                     water_phase_xfer_velocity)
+
+        return f_wc
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -158,13 +221,6 @@ class Dissolution(Weatherer, Serializable):
         if sc.num_released == 0:
             return
 
-        # from the waves module
-        wave_height = self.waves.get_value(model_time)[0]
-        frac_breaking_waves = self.waves.get_value(model_time)[2]
-        disp_wave_energy = self.waves.get_value(model_time)[3]
-
-        visc_w = self.waves.water.kinematic_viscosity
-        rho_w = self.waves.water.density
 
         print 'self.array_types:'
         pp.pprint(self.array_types)
@@ -173,17 +229,10 @@ class Dissolution(Weatherer, Serializable):
                 # data does not contain any surface_weathering LEs
                 continue
 
-            ka = constants.ka  # oil sticking term
-
-            diss = self.dissolve_oil(time_step=time_step,
+            diss = self.dissolve_oil(model_time=model_time,
+                                     time_step=time_step,
                                      data=data,
-                                     substance=substance,
-                                     frac_breaking_waves=frac_breaking_waves,
-                                     disp_wave_energy=disp_wave_energy,
-                                     wave_height=wave_height,
-                                     visc_w=visc_w,
-                                     rho_w=rho_w,
-                                     ka=ka)
+                                     substance=substance)
 
             print 'mass_balance:'
             pp.pprint(sc.mass_balance)
