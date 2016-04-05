@@ -196,16 +196,17 @@ class VectorField(object):
         t_alphas = self.time.interp_alpha(time)
         t_index = self.time.indexof(time)
 
-        u0 = self.grid.interpolate_var_to_points(points, self.u[t_index])
-        u1 = self.grid.interpolate_var_to_points(points, self.u[t_index]+1)
+        u0 = self.u[t_index]
+        u1 = self.u[t_index+1]
+        ut = u0 + (u1 - u0) * t_alphas
+        v0 = self.v[t_index]
+        v1 = self.v[t_index+1]
+        vt = v0 + (v1 - v0) * t_alphas
 
-        v0 = self.grid.interpolate_var_to_points(points, self.v[t_index])
-        v1 = self.grid.interpolate_var_to_points(points, self.v[t_index]+1)
+        u_vels = self.grid.interpolate_var_to_points(points, ut)
+        v_vels = self.grid.interpolate_var_to_points(points, vt)
 
-        u_vels = u0 + (u1 - u0) * t_alphas
-        v_vels = v0 + (v1 - v0) * t_alphas
-
-        vels = np.column_stack((u_vels, v_vels))
+        vels = np.ma.column_stack((u_vels, v_vels))
         return vels
 
     def interpolate(self, time, points, field):
@@ -457,7 +458,7 @@ class SField(VectorField):
         u_vels = u0 + (u1 - u0) * t_alphas
         v_vels = v0 + (v1 - v0) * t_alphas
 
-        vels = np.column_stack((u_vels, v_vels))
+        vels = np.ma.column_stack((u_vels, v_vels))
         if self.grid.angles is not None:
             ang_ind = ind + [1, 1]
             angs = self.grid.angles[:][ang_ind[:, 0], ang_ind[:, 1]]

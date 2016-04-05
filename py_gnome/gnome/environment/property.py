@@ -1,17 +1,17 @@
 import warnings
+import copy
 
 import netCDF4 as nc4
 import numpy as np
 
-from collections import namedtuple
-
 from gnome.utilities.geometry.cy_point_in_polygon import points_in_polys
 from datetime import datetime, timedelta
 from dateutil import parser
-from colander import SchemaNode, Float, MappingSchema, drop, String, OneOf
+from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
 from gnome.persist.base_schema import ObjType
 from gnome.utilities import serializable
 from gnome.movers import ProcessSchema
+from gnome.persist import base_schema
 
 from gnome.utilities.timeseries_generic import DataTimeSeries
 
@@ -20,13 +20,48 @@ import pysgrid
 import unit_conversion
 
 
-class EnvProp(serializable.Serializable):
+def curv_field(filename=None, dataset=None):
+    if dataset is None:
+        dataset = nc4.Dataset(filename)
+    node_lon = dataset['lonc']
+    node_lat = dataset['latc']
+    u = dataset['water_u']
+    v = dataset['water_v']
+    dims = node_lon.dimensions[0] + ' ' + node_lon.dimensions[1]
 
+    grid = pysgrid.SGrid(node_lon=node_lon,
+                         node_lat=node_lat,
+                         node_dimensions=dims)
+    grid.u = pysgrid.variables.SGridVariable(data=u)
+    grid.v = pysgrid.variables.SGridVariable(data=v)
+    time = Time(dataset['time'])
+    variables = {'u': grid.u,
+                 'v': grid.v,
+                 'time': time}
+    return SField(grid, time=time, variables=variables)
+
+class EnvPropSchema(base_schema.ObjType):
+    
+    name = SchemaNode(String(), missing='default')
+    units = SchemaNode(String(), missing='none')
+    data = SchemaNode(Float(), missing=drop)
+    extrapolate = SchemaNode(Boolean(), missing='False')
+
+class EnvProp(serializable.Serializable):
+    
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = EnvPropSchema
+
+    # add 'filename' as a Field object
+    _state.add_field([serializable.Field('time', save=False, update=True), serializable.Field('data', save=False, update=True)])
+    
     def __init__(self,
                  name=None,
                  units=None,
                  data=None,
                  extrapolate=False):
+        
+        
         self.name = name
         if units in unit_conversion.unit_data.supported_units:
             self._units = units
@@ -46,16 +81,16 @@ class EnvProp(serializable.Serializable):
 
     def in_units(self, unit):
         '''
-        Returns a full copy of this property in the units specified. 
-        WARNING: This will copy the data of the original property!
+        Returns a full cpy of this property in the units specified. 
+        WARNING: This will cpy the data of the original property!
         '''
-        copy = self.copy()
-        if hasattr(copy.data, '__mul__'):
-            copy.data = unit_conversion.Convert(None, copy.units, unit, copy.data)
+        cpy = copy.copy(self)
+        if hasattr(cpy.data, '__mul__'):
+            cpy.data = unit_conversion.Convert(None, cpy.units, unit, cpy.data)
         else:
             warnings.warn('Data was not converted to new units and was not copied because it does not support multiplication')
-        copy._units = unit
-        return copy
+        cpy._units = unit
+        return cpy
 
     def update_from_dict(self, data):
         '''
@@ -70,7 +105,22 @@ class EnvProp(serializable.Serializable):
             return updated
 
 
+class TimeSeriesPropSchema(EnvPropSchema):
+    
+    _time = SchemaNode(DateTime(default_tzinfo=None), missing=drop)
+    data = SchemaNode(Float(), missing=drop)
+    timeseries = SequenceSchema(TupleSchema(children=[_time, data], missing=drop))
+
 class TimeSeriesProp(EnvProp):
+    
+    _state = copy.deepcopy(EnvProp._state)
+    
+    _schema = TimeSeriesPropSchema
+
+    # add 'filename' as a Field object
+    _state.remove('data')
+    _state.add_field([serializable.Field('timeseries', save=False, update=True)])
+    
 
     def __init__(self,
                  name=None,
@@ -83,18 +133,26 @@ class TimeSeriesProp(EnvProp):
             len(time) == {0}, len(data) == {1}".format(len(time), len(data)))
         super(TimeSeriesProp, self).__init__(name, units, data, extrapolate)
         self.time = Time(time)
+        self._time = self.time.time
+
+    @property
+    def timeseries(self):
+        return map(lambda x,y:(x,y), self.time.time, self.data)
 
     def at(self, points, time, units=None):
-                '''
+        '''
         Interpolates this property to the given points at the given time with the units specified
         :param points: A Nx2 array of lon,lat points
         :param time: A datetime object. May be None; if this is so, the variable is assumed to be gridded
         but time-invariant
         :param units: The units that the result would be converted to
         '''
-        value = None 
+        value = None
+        if len(self.time) == 1:
+            #single time time series (constant)
+            return np.full((points.shape[0], 1), data)
         t_index = self.time.indexof(time)
-        if self.extrapolate and t_index == len(self.time.time):
+        if self.extrapolate and t_index == len(self.time):
             value = self.data[t_index]
 
         else:
@@ -106,6 +164,15 @@ class TimeSeriesProp(EnvProp):
             value = unit_conversion.convert(None, self.units, units, value)
 
         return np.full((points.shape[0], 1), value)
+
+    @classmethod
+    def deserialize(cls, json_):
+        d = super(TimeSeriesProp, cls).deserialize(json_)
+        ts, ds = zip(*d['timeseries'])
+        del d['timeseries']
+        d['time'] = ts
+        d['data'] = ds
+        return d
 
 
 class GriddedProp(EnvProp):
@@ -298,6 +365,9 @@ class Time(object):
     @classmethod
     def time_from_nc_var(cls, var):
         return cls(nc4.num2date(var[:], units=var.units))
+
+    def __len__(self):
+        return len(self.time)
 
     def _timeseries_is_ascending(self, ts):
         return all(np.sort(ts) == ts)
