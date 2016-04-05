@@ -104,8 +104,9 @@ class ElementType(Serializable):
             Whether saving to a savefile or outputting to the web client,
             the id of the substance objects is not necessary, and in fact
             not even wanted.
+
+            Except for the main oil ID from the database.
         '''
-        del substance_json['id']
         del substance_json['imported_record_id']
         del substance_json['estimated_id']
 
