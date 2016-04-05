@@ -48,16 +48,26 @@ class EnvPropSchema(base_schema.ObjType):
     extrapolate = SchemaNode(Boolean(), missing='False')
 
 class EnvProp(serializable.Serializable):
+    '''
+    A class that represents a natural phenomenon and provides an interface to get
+    the value of the phenomenon with respect to space and time. EnvProp is the base
+    class, and returns only a single value regardless of the time
+    '''
+    
     
     _state = copy.deepcopy(serializable.Serializable._state)
     _schema = EnvPropSchema
 
     # add 'filename' as a Field object
-    _state.add_field([serializable.Field('time', save=False, update=True), serializable.Field('data', save=False, update=True)])
+    _state.add_field([serializable.Field('units', save=True, update=True), 
+                      serializable.Field('time', save=True, update=True),
+                      serializable.Field('data', save=True, update=True),
+                      serializable.Field('extrapolate', save=True, update=True)])
     
     def __init__(self,
                  name=None,
                  units=None,
+                 time=None,
                  data=None,
                  extrapolate=False):
         
@@ -67,6 +77,7 @@ class EnvProp(serializable.Serializable):
             self._units = units
         else:
             raise ValueError('Units of {0} are not supported'.format(units))
+        self.time = time
         self.data = data
         self.extrapolate = extrapolate
 
@@ -78,6 +89,9 @@ class EnvProp(serializable.Serializable):
     def units(self, unit):
         warnings.warn('Setting units directly does not change data values. If this is desired, use convert_units()')
         self._units = unit
+
+    def at(self, points, time):
+        return np.full((points.shape[0], 1), data)
 
     def in_units(self, unit):
         '''
@@ -112,7 +126,10 @@ class TimeSeriesPropSchema(EnvPropSchema):
     timeseries = SequenceSchema(TupleSchema(children=[_time, data], missing=drop))
 
 class TimeSeriesProp(EnvProp):
-    
+    '''
+    This class represents a phenomenon using a time series
+    '''
+        
     _state = copy.deepcopy(EnvProp._state)
     
     _schema = TimeSeriesPropSchema
@@ -229,12 +246,17 @@ class VectorProp(object):
     def __init__(self,
                  name=None,
                  units=None,
+                 time=None,
                  variables=None,
                  extrapolate=False):
         self.name = name
         self._units = units
         self.extrapolate = extrapolate
+        if time is None:
+            time = variables[0].time
         for var in variables:
+            if var.time != self.time:
+                raise ValueError('All variables must share the same time series')
             if var.units != self.units:
                 raise ValueError('Units of {0} for component property {1} are not the same as \
                 units specified for compound proprety {2}'.format(var.name, var.units, self.units))
