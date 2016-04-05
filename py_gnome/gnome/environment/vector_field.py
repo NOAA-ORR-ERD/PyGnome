@@ -34,7 +34,7 @@ def tri_vector_field(filename=None, dataset=None):
     u = pyugrid.UVar('u', 'node', dataset['u'])
     v = pyugrid.UVar('v', 'node', dataset['v'])
     time = Time(dataset['time'])
-    variables = {'velocities': pyugrid.UMVar('velocities', 'node', [u, v])}
+    variables = {'u':u, 'v':v}
     type = dataset.grid_type
     return VectorField(grid, time=time, variables=variables, type=type)
 
@@ -192,13 +192,21 @@ class VectorField(object):
         :param points: a numpy array of points that you want to find interpolated velocities for
         :return: interpolated velocities at the specified points
         """
-        t_alpha = self.time.interp_alpha(time)
-        t_index = self.time.indexof(time)
-        v0 = self.velocities[t_index]
-        v1 = self.velocities[t_index + 1]
-        node_vels = v0 + (v1 - v0) * t_alpha
 
-        return self.grid.interpolate_var_to_points(points, node_vels)
+        t_alphas = self.time.interp_alpha(time)
+        t_index = self.time.indexof(time)
+
+        u0 = self.grid.interpolate_var_to_points(points, self.u[t_index])
+        u1 = self.grid.interpolate_var_to_points(points, self.u[t_index]+1)
+
+        v0 = self.grid.interpolate_var_to_points(points, self.v[t_index])
+        v1 = self.grid.interpolate_var_to_points(points, self.v[t_index]+1)
+
+        u_vels = u0 + (u1 - u0) * t_alphas
+        v_vels = v0 + (v1 - v0) * t_alphas
+
+        vels = np.column_stack((u_vels, v_vels))
+        return vels
 
     def interpolate(self, time, points, field):
         """

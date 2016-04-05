@@ -75,7 +75,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.spills += spill1
 
     print 'adding a RandomMover:'
-    model.movers += RandomMover(diffusion_coef=10000)
+#     model.movers += RandomMover(diffusion_coef=10000)
 
     print 'adding a wind mover:'
 

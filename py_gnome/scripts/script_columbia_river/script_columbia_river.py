@@ -22,8 +22,6 @@ from gnome.map import MapFromBNA
 from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
-from gnome.environment import TriVectorField
-from gnome.movers import UGridCurrentMover
 
 from gnome.outputters import Renderer
 
