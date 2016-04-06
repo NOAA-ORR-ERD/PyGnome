@@ -1298,8 +1298,7 @@ def test_weatherer_sort():
                   c_disp,
                   skimmer]
 
-    #exp_order = [weatherers[ix] for ix in (2, 4, 3, 1, 0)]
-    exp_order = [weatherers[ix] for ix in (4, 2, 3, 1, 0)]
+    exp_order = [weatherers[ix] for ix in (3, 4, 2, 1, 0)]
 
     model.environment += [Water(), constant_wind(5, 0), Waves()]
     model.weatherers += weatherers
@@ -1320,12 +1319,13 @@ def test_weatherer_sort():
     # another Burn to the end of the list will sort it to be just after
     # ChemicalDispersion so index 2
     burn = Burn(50, 1, active_start=datetime(2014, 1, 1, 0, 0))
-    exp_order.insert(2, burn)
+    exp_order.insert(3, burn)
 
-    model.weatherers += exp_order[2]  # add this and check sorting still works
+    model.weatherers += exp_order[3]  # add this and check sorting still works
     assert model.weatherers.values()[:len(exp_order)] != exp_order
 
     model.setup_model_run()
+
     assert model.weatherers.values()[:len(exp_order)] == exp_order
 
 
