@@ -9,6 +9,11 @@ import json
 
 import unit_conversion as uc
 
+from gnomeobject import GnomeId, init_obj_log, AddLogger
+
+__version__ = '0.1.1'
+# a few imports so that the basic stuff is there
+
 
 def initialize_log(config, logfile=None):
     '''
@@ -31,19 +36,12 @@ def _valid_units(unit_name):
                                 uc.ConvertDataUnits[unit_name].values()]))
     return tuple(_valid_units)
 
-
-__version__ = '0.1.1'
-# a few imports so that the basic stuff is there
-
-from gnomeobject import GnomeId, init_obj_log, AddLogger
-from . import map
-from . import spill
-from . import spill_container
-from . import movers
-from . import environment
-from . import model
-from . import outputters
-from . import multi_model_broadcast
+# we have a sort of chicken-egg situation here.  The above functions need
+# to be defined before we can import these modules.
+from . import (map, environment,
+               model, multi_model_broadcast,
+               spill_container, spill,
+               movers, outputters)
 
 __all__ = [GnomeId,
            map,

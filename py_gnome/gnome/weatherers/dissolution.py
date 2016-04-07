@@ -128,6 +128,7 @@ class Dissolution(Weatherer, Serializable):
               that are below a threshold.
         '''
         model_time = kwargs.get('model_time')
+        time_step = kwargs.get('time_step')
 
         fmass = data['mass_components']
         droplet_avg_size = data['droplet_avg_size']
@@ -145,43 +146,54 @@ class Dissolution(Weatherer, Serializable):
         K_ow_comp = arom_mask * LeeHuibers.partition_coeff(mol_wt, rho)
 
         for idx, (m, drop_sizes) in enumerate(zip(fmass, droplet_avg_size)):
-            K_ow = (np.sum(m * K_ow_comp / mol_wt) /
-                    np.sum(m / mol_wt))
-            print '\nK_ow = ', K_ow
-
             # This will eventually be a droplet distribution, but for now
             # we are receiving the average droplet size from the dispersion
             # weatherer.  So we turn the scalar into an iterable.
             if not isinstance(drop_sizes, Iterable):
                 drop_sizes = np.array(drop_sizes)
 
+            print '\nm = ', m
+            print 'drop_sizes = ', drop_sizes, 'in meters diameter'
+            # overall K_ow value
+            K_ow = (np.sum(m * K_ow_comp / mol_wt) /
+                    np.sum(m / mol_wt))
+
+            print '\nK_ow = ', K_ow
+            data['partition_coeff'][idx] = K_ow
+
             avg_rho = self.oil_avg_density(m, rho)
             water_rho = self.waves.water.get('density')
             print 'water_rho, avg_rho = ', (water_rho, avg_rho)
-            print 'drop_sizes = ', drop_sizes
 
             k_w = Stokes.water_phase_xfer_velocity(water_rho - avg_rho,
                                                    drop_sizes)
-            print 'k_w = ', k_w
+            print 'k_w = ', k_w, 'm/s'
 
             total_volume = (m / rho).sum()
             aromatic_volume = ((m / rho) * arom_mask).sum()
             S_RA_volume = ((m / rho) * not_arom_mask).sum()
+            X = aromatic_volume / S_RA_volume
 
-            print 'total volume = ', total_volume
-            print 'aromatic volume = ', aromatic_volume
-            print 'S_RA volume = ', S_RA_volume
+            print 'total volume = ', total_volume, '(m^3)'
+            print 'aromatic volume = ', aromatic_volume, '(m^3)'
+            print 'S_RA volume = ', S_RA_volume, '(m^3)'
+            print 'X = ', X
 
             assert np.isclose(aromatic_volume + S_RA_volume, total_volume)
 
             beta = self.beta_coeff(k_w, K_ow, S_RA_volume)
             print 'beta = ', beta
 
-            f_wc = self.water_column_time_fraction(water_rho - avg_rho,
-                                                   drop_sizes)
+            dX_dt = beta * X / (X + 1) ** (1.0 / 3.0)
+            print 'dX_dt = ', dX_dt, 'kg/s'
+            print '      = ', dX_dt * 1000.0, 'g/s'
+
+            f_wc = self.water_column_time_fraction(model_time, k_w)
             print 'f_wc = ', f_wc
 
-            data['partition_coeff'][idx] = K_ow
+            time_spent_in_wc = f_wc * time_step
+            print 'time_spent_in_wc = ', time_spent_in_wc
+
         print
 
         diss = np.zeros((len(data['mass'])), dtype=np.float64)
@@ -200,8 +212,11 @@ class Dissolution(Weatherer, Serializable):
         wave_period = self.waves.peak_wave_period(model_time)
         wave_height = self.waves.get_value(model_time)[0]
         wind_speed = self.waves.wind.get_value(model_time)[0]
+        print ('wind_speed, wave_height, wave_period = ',
+               wind_speed, wave_height, wave_period)
 
         f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
+        print 'f_bw = ', f_bw
 
         f_wc = DingFarmer.water_column_time_fraction(f_bw,
                                                      wave_period,
@@ -221,9 +236,6 @@ class Dissolution(Weatherer, Serializable):
         if sc.num_released == 0:
             return
 
-
-        print 'self.array_types:'
-        pp.pprint(self.array_types)
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['mass']) == 0:
                 # data does not contain any surface_weathering LEs
