@@ -458,16 +458,20 @@ class SField(VectorField):
         u_vels = u0 + (u1 - u0) * t_alphas
         v_vels = v0 + (v1 - v0) * t_alphas
 
+
         vels = np.ma.column_stack((u_vels, v_vels))
         if self.grid.angles is not None:
-            ang_ind = ind + [1, 1]
-            angs = self.grid.angles[:][ang_ind[:, 0], ang_ind[:, 1]]
-            rotations = np.array(
-                ([np.cos(angs), -np.sin(angs)], [np.sin(angs), np.cos(angs)]))
+            angs = self.grid.interpolate_var_to_points(points, self.grid.angles, slices=None, slice_grid=False, memo=mem)
+#             ang_ind = ind + [1, 1]
+#             angs = self.grid.angles[:][ang_ind[:, 0], ang_ind[:, 1]]
+            u_vels = u_vels*np.cos(angs) - v_vels*np.sin(angs)
+            v_vels = u_vels*np.sin(angs) + v_vels*np.cos(angs)
+#             rotations = np.array(
+#                 ([np.cos(angs), -np.sin(angs)], [np.sin(angs), np.cos(angs)]))
 
-            return np.matmul(rotations.T, vels[:, :, np.newaxis]).reshape(-1, 2)
-        else:
-            return vels
+#             return np.matmul(rotations.T, vels[:, :, np.newaxis]).reshape(-1, 2)
+        vels = np.ma.column_stack((u_vels, v_vels))
+        return vels
 
     def get_edges(self, bounds=None):
         """
