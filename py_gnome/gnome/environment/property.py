@@ -20,49 +20,12 @@ import pysgrid
 import unit_conversion
 
 
-def curv_field(filename=None, dataset=None):
-    if dataset is None:
-        dataset = nc4.Dataset(filename)
-    node_lon = dataset['lonc']
-    node_lat = dataset['latc']
-    u = dataset['water_u']
-    v = dataset['water_v']
-    dims = node_lon.dimensions[0] + ' ' + node_lon.dimensions[1]
-
-    grid = pysgrid.SGrid(node_lon=node_lon,
-                         node_lat=node_lat,
-                         node_dimensions=dims)
-    grid.u = pysgrid.variables.SGridVariable(data=u)
-    grid.v = pysgrid.variables.SGridVariable(data=v)
-    time = Time(dataset['time'])
-    variables = {'u': grid.u,
-                 'v': grid.v,
-                 'time': time}
-    return SField(grid, time=time, variables=variables)
-
-class EnvPropSchema(base_schema.ObjType):
-    
-    name = SchemaNode(String(), missing='default')
-    units = SchemaNode(String(), missing='none')
-    data = SchemaNode(Float(), missing=drop)
-    extrapolate = SchemaNode(Boolean(), missing='False')
-
-class EnvProp(serializable.Serializable):
+class EnvProp(object):
     '''
     A class that represents a natural phenomenon and provides an interface to get
     the value of the phenomenon with respect to space and time. EnvProp is the base
     class, and returns only a single value regardless of the time
     '''
-    
-    
-    _state = copy.deepcopy(serializable.Serializable._state)
-    _schema = EnvPropSchema
-
-    # add 'filename' as a Field object
-    _state.add_field([serializable.Field('units', save=True, update=True), 
-                      serializable.Field('time', save=True, update=True),
-                      serializable.Field('data', save=True, update=True),
-                      serializable.Field('extrapolate', save=True, update=True)])
     
     def __init__(self,
                  name=None,
@@ -107,26 +70,11 @@ class EnvProp(serializable.Serializable):
         return cpy
 
 
-class TimeSeriesPropSchema(EnvPropSchema):
-    
-    _time = SchemaNode(DateTime(default_tzinfo=None), missing=drop)
-    data = SchemaNode(Float(), missing=drop)
-    timeseries = SequenceSchema(TupleSchema(children=[_time, data], missing=drop))
-
 class TimeSeriesProp(EnvProp):
     '''
     This class represents a phenomenon using a time series
     '''
-        
-    _state = copy.deepcopy(EnvProp._state)
     
-    _schema = TimeSeriesPropSchema
-
-    # add 'filename' as a Field object
-    _state.remove('data')
-    _state.add_field([serializable.Field('timeseries', save=False, update=True)])
-    
-
     def __init__(self,
                  name=None,
                  units=None,
@@ -170,40 +118,12 @@ class TimeSeriesProp(EnvProp):
 
         return np.full((points.shape[0], 1), value)
 
-    @classmethod
-    def deserialize(cls, json_):
-        d = super(TimeSeriesProp, cls).deserialize(json_)
-        ts, ds = zip(*d['timeseries'])
-        del d['timeseries']
-        d['time'] = ts
-        d['data'] = ds
-        return d
-
-
-class GriddedPropSchema(EnvPropSchema):
-    
-    data_file = SchemaNode(String(), missing=drop)
-    grid_file = SchemaNode(String(), missing=drop)
-    time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
-    
 
 class GriddedProp(EnvProp):
     '''
     This class represents a phenomenon using gridded data
     '''
-        
-    _state = copy.deepcopy(EnvProp._state)
-    
-    _schema =GriddedPropSchema
 
-    # add 'filename' as a Field object
-    _state.remove('data')
-    _state.remove('time')
-    _state.add_field([serializable.Field('data_file', isdatafile=True, save=True, read=True,update=True, test_for_eq=False),
-                      serializable.Field('grid_file', isdatafile=True, save=True, read=True, test_for_eq=False),
-                      serializable.Field('time', save=False, update=True)])
-    
-    
     def __init__(self,
                  name=None,
                  units=None,
@@ -220,7 +140,6 @@ class GriddedProp(EnvProp):
         super(GriddedProp, self).__init__(name=name, units=units, data=data, extrapolate=extrapolate)
         self.grid = grid
         self.time = Time(time)
-        self._time = self.time.time
         self.data_file = data_file
         self.grid_file = grid_file
 
@@ -270,41 +189,22 @@ class VectorProp(object):
             units = variables[0].units
         self._units = units
         if time is None:
-            self.time = variables[0].time
+            self._time = variables[0].time
         elif isinstance(time, Time):
-            self.time = Time
+            self._time = Time
         else:
-            self.time = Time(time)
-            
+            self._time = Time(time)
+
+        self.data_file = None
+        self.grid_file = None
         if not isinstance(variables[0], GriddedProp):
             self.data_format = 'timeseries'
         else:
             self.data_format = 'gridded'
+            self.data_file = variables[0].data_file
+            self.grid_file = variables[0].grid_file
             
-        for i, var in enumerate(variables):
-            if self.data_format == 'timeseries':
-                if not isinstance(var, TimeSeriesProp):
-                    if isinstance(var, iterable) and len(var) == len(self.time):
-                        variables[i] = TimeSeriesProp(name='var{0}'.format(i),
-                                                      units=self.units, time=self.time,
-                                                      extrapolate=self.extrapolate)
-                    else:
-                        raise ValueError('Variables must contain an iterable or TimeSeriesProp')
-            if self.data_format == 'gridded':
-                if not isinstance(var, GriddedProp):
-                    raise ValueError('All variables must either be gridded or time series')
-            
-            if var.time != self.time:
-                raise ValueError('All variables must share the same time series')
-            if var.units != self.units:
-                raise ValueError('Units of {0} for component property {1} are not the same as \
-                units specified for compound proprety {2}'.format(var.name, var.units, self.units))
-            if var.extrapolate != self.extrapolate:
-                raise ValueError("""VectorProp extrapolation is {0}, 
-                                 but component property {1} 
-                                 extrapolation is {2}""".format('on' if self.extrapolate else 'off',
-                                                                var.name,
-                                                                'on' if var.extrapolate else 'off'))
+        self.check_variables(variables)
         self.variables = variables
         
         
@@ -321,8 +221,14 @@ class VectorProp(object):
             if self.data_format == 'gridded':
                 if not isinstance(var, GriddedProp):
                     raise ValueError('All variables must either be gridded or time series')
+                if var.data_file != self.data_file:
+                    raise ValueError("""Data filename for component property {0} is different 
+                                     than reference datafile {1}""".format(var.data_file, self.data_file))
+                if var.grid_file != self.grid_file:
+                    raise ValueError("""Grid filename for component property {0} is different 
+                                     than reference gridfile {1}""".format(var.grid_file, self.grid_file))
             
-            if var.time != self.time:
+            if var.time != self._time:
                 raise ValueError('All variables must share the same time series')
             if var.units != self.units:
                 raise ValueError('Units of {0} for component property {1} are not the same as \
@@ -342,6 +248,10 @@ class VectorProp(object):
     def units(self):
         return self._units
 
+    @property
+    def time(self):
+        return self._time
+
     def at(self, points, time, units=None):
         return np.column_stack((var.at(points, time, units) for var in self.variables))
 
@@ -351,8 +261,8 @@ class VelocitySchema(base_schema.ObjType):
     units = SchemaNode(String(), missing='none')
     data_format = SchemaNode(String(), missing='gridded')
     extrapolate = SchemaNode(Boolean(), missing='False')
-    data_files = SchemaNode(String(), missing=drop)
-    grid_file = SchemaNode(String(), missing=drop),
+    data_file = SchemaNode(String(), missing=drop)
+    grid_file = SchemaNode(String(), missing=drop)
     time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
     timeseries = SequenceSchema(TupleSchema(children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
                                                       TupleSchema(children=[
@@ -362,6 +272,7 @@ class VelocitySchema(base_schema.ObjType):
                                                                  )
                                                       ]
                                             , missing=drop))
+    varnames = SequenceSchema(SchemaNode(String(), missing=drop))
     
 
 class Velocity(VectorProp, serializable.Serializable):
@@ -371,41 +282,79 @@ class Velocity(VectorProp, serializable.Serializable):
     
     _state.add_field([serializable.Field('units', save=True, update=True), 
                       serializable.Field('time', save=True, update=True),
-                      serializable.Field('extrapolate', save=True, update=True)])
+                      serializable.Field('timeseries', save=True, update=True),
+                      serializable.Field('varnames', save=True, update=True),
+                      serializable.Field('extrapolate', save=True, update=True),
+                      serializable.Field('data_format', save=True, update=True),
+                      serializable.Field('data_file', save=True, update=True),
+                      serializable.Field('grid_file', save=True, update=True)])
     
-    def __init__(self, name=None, time = None, components = None, mag_dir = False):
-        VectorProp.__init__(self, name, time=time, variables=components)
+    def __init__(self, name=None, units=None, time = None, components = None, extrapolate=False, mag_dir = False):
+        VectorProp.__init__(self, name, units, time=time, variables=components, extrapolate=extrapolate)
         if self.data_format == 'timeseries':
             if mag_dir:
                 self.data_format = 'mag_dir_timeseries'
-            self._state.remove(['time', 'data_file', 'grid_file'])
-            
-        if self.data_format == 'gridded':
-            self._state.remove(['timeseries'])
         
 
     @property
     def timeseries(self):
-        x = self.variables[0].data
-        y = self.variables[1].data
-        if self.data_format == 'mag_dir_timeseries':
-            direction = -(np.arctan2(y,x)*180/np.pi + 90)
-            magnitude = np.sqrt(x**2 + y**2)
-            return map(lambda t,x,y:(t,(x,y)), self.time, magnitude, direction)
+        if self.data_format != 'gridded':
+            x = self.variables[0].data
+            y = self.variables[1].data
+            if self.data_format == 'mag_dir_timeseries':
+                direction = -(np.arctan2(y,x)*180/np.pi + 90)
+                magnitude = np.sqrt(x**2 + y**2)
+                return map(lambda t,x,y:(t,(x,y)), self._time, magnitude, direction)
+            else:
+                return map(lambda t,x,y:(t,(x,y)), self._time, x, y)
+        return None
+
+    @property
+    def varnames(self):
+        return [v.name for v in self.variables]
+
+    @property
+    def time(self):
+        if self.data_format != 'gridded':
+            return None
         else:
-            return map(lambda t,x,y:(t,(x,y)), self.time, x, y)
-    
-    @property
-    def data_files(self):
-        return [fn.data_file for fn in self.variables]
-    
-    @property
-    def grid_file(self):
-        return [fn.grid_file for fn in self.variables]
-    
+            return self._time
     @classmethod
     def from_file(cls, filename, name):
         pass
+
+    @classmethod
+    def deserialize(cls, json_):
+        d = super(Velocity, cls).deserialize(json_)
+        ts, ds = zip(*d['timeseries'])
+        del d['timeseries']
+        d['time'] = np.array(ts)
+        d['data'] = ds
+        return d
+    
+    @classmethod
+    def new_from_dict(cls, dict_):
+        data = np.array(dict_.pop('data'))
+        x_data, y_data = np.hsplit(data,2)
+        if dict_['data_format'] == 'mag_dir_timeseries':
+            y_data = ((-y_data - 90) * np.pi/180)
+            x_t = x_data *np.cos(y_data)
+            y_data = x_data * np.sin(y_data)
+            x_data = x_t
+        if 'timeseries' in dict_['data_format']:
+            x_ts = TimeSeriesProp(name = dict_['varnames'][0],
+                              units = dict_['units'],
+                              time = dict_['time'],
+                              data = x_data,
+                              extrapolate = dict_['extrapolate'])
+            y_ts = TimeSeriesProp(name = dict_['varnames'][1],
+                              units = dict_['units'],
+                              time = dict_['time'],
+                              data = y_data,
+                              extrapolate = dict_['extrapolate'])
+        dict_['components'] = [x_ts,y_ts]
+        #undo mag/direction here x_x
+        return super(Velocity, cls).new_from_dict(dict_)
 
 class Time(object):
 
@@ -418,6 +367,7 @@ class Time(object):
             self.time = nc4.num2date(time_seq[:], units=time_seq.units)
         else:
             self.time = time_seq
+
 #         if not self._timeseries_is_ascending(self.time):
 #             raise ValueError("Time sequence is not ascending")
 #         if self._has_duplicates(self.time):
@@ -438,7 +388,7 @@ class Time(object):
         return (self.time == other.time).all()
     
     def __ne__(self, other):
-        return (self.time != other.time).any()
+        return (self.time != other.time).all()
 
     def _timeseries_is_ascending(self, ts):
         return all(np.sort(ts) == ts)
@@ -505,6 +455,12 @@ if __name__ == "__main__":
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(vel.serialize())
+    pp.pprint(Velocity.deserialize(vel.serialize()))
+    
+    velfromdict = Velocity.new_from_dict(Velocity.deserialize(vel.serialize()))
+    
+    pp.pprint(vel.serialize())
+    pp.pprint(velfromdict.serialize())
     
     url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
     test_grid = pysgrid.load_grid(url)
@@ -512,9 +468,12 @@ if __name__ == "__main__":
     grid_v = test_grid.v
     grid_time = test_grid.ocean_time._data
     
-    vel2 = Velocity('gridvel', components=[GriddedProp('u','m/s', time=grid_time, data=grid_u, grid=test_grid, data_file=url, grid_file=url),
-                                                 GriddedProp('v','m/s', time=grid_time, data=grid_v, grid=test_grid, data_file=url, grid_file=url)])
+    u2 = GriddedProp('u','m/s', time=grid_time, data=grid_u, grid=test_grid, data_file=url, grid_file=url)
+    v2 = GriddedProp('v','m/s', time=grid_time, data=grid_v, grid=test_grid, data_file=url, grid_file=url) 
     
-    pp.pprint(vel2.serialize())
+    print "got here"
+    vel2 = Velocity(name='gridvel', components=[u2, v2])
+    
+#     pp.pprint(vel2.serialize())
     
     pass
