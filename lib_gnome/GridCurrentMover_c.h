@@ -61,6 +61,9 @@ public:
 	void	SetTimeShift(long timeShift) {timeGrid->SetTimeShift(timeShift);}	
 	long	GetTimeShift() {return timeGrid->GetTimeShift();}	
 	
+	OSErr	GetDataStartTime(Seconds *startTime) {return timeGrid->GetDataStartTime(startTime);}	
+	OSErr	GetDataEndTime(Seconds *endTime) {return timeGrid->GetDataEndTime(endTime);}	
+	
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 

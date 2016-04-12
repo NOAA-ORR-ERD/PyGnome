@@ -120,6 +120,18 @@ class Timeseries(GnomeId):
 
         return True
 
+    def get_start_time(self):
+        """
+        :this will be the real_data_start time (seconds).
+        """
+        return (self.ossm.get_start_time())
+
+    def get_end_time(self):
+        """
+        :this will be the real_data_stop time (seconds).
+        """
+        return (self.ossm.get_end_time())
+
     def _is_timeseries_value(self, value):
         if not isinstance(value, (list, tuple)):
             return False

@@ -48,6 +48,8 @@ cdef extern from "OSSMTimeValue_c.h":
         OSErr   CheckStartTime(Seconds)
         void    Dispose()
         WorldPoint3D    GetStationLocation()
+        OSErr           GetDataStartTime(Seconds *startTime)
+        OSErr           GetDataEndTime(Seconds *endTime)
 
 """
 ShioTimeValue_c.h derives from OSSMTimeValue_c - so no need to redefine methods

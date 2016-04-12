@@ -327,6 +327,36 @@ void OSSMTimeValue_c::Dispose()
 }
 
 
+OSErr OSSMTimeValue_c::GetDataStartTime(Seconds *startTime)
+{
+	OSErr err = 0;
+	long n = GetNumValues();
+	*startTime = 0;
+
+	if (!timeValues || _GetHandleSize((Handle)timeValues) == 0) {
+		return -1; 
+	}
+	
+	*startTime = INDEXH(timeValues, 0).time;
+	
+	return err;
+}
+	
+OSErr OSSMTimeValue_c::GetDataEndTime(Seconds *endTime)
+{
+	long n = GetNumValues();
+	*endTime = 0;
+	OSErr err = 0;
+
+	if (!timeValues || _GetHandleSize((Handle)timeValues) == 0) {
+		return -1; 
+	}
+
+	*endTime = INDEXH(timeValues, n-1).time;
+	
+	return err;
+}
+	
 OSErr OSSMTimeValue_c::CheckStartTime(Seconds forTime)
 {
 	long n = GetNumValues();

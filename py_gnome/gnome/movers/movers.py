@@ -30,6 +30,10 @@ class ProcessSchema(MappingSchema):
                               validator=convertible_to_seconds)
     active_stop = SchemaNode(LocalDateTime(), missing=drop,
                              validator=convertible_to_seconds)
+    real_data_start = SchemaNode(LocalDateTime(), missing=drop,
+                              validator=convertible_to_seconds)
+    real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
+                             validator=convertible_to_seconds)
 
 
 class Process(AddLogger):
@@ -42,8 +46,8 @@ class Process(AddLogger):
     a class level _schema attribute.
     """
     _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add(update=['on', 'active_start', 'active_stop'],
-               save=['on', 'active_start', 'active_stop'],
+    _state.add(update=['on', 'active_start', 'active_stop', 'real_data_start', 'real_data_stop'],
+               save=['on', 'active_start', 'active_stop', 'real_data_start', 'real_data_stop'],
                read=['active'])
 
     def __init__(self, **kwargs):   # default min + max values for timespan
@@ -55,6 +59,8 @@ class Process(AddLogger):
         :param on: boolean as to whether the object is on or not. Default is on
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
+        :param real_data_start: datetime when the mover first has data (not including extrapolation)
+        :param real_data_stop: datetime after which the mover has no data (not including extrapolation)
         """
         self.on = kwargs.pop('on', True)  # turn the mover on / off for the run
         self._active = self.on  # initial value
@@ -64,10 +70,21 @@ class Process(AddLogger):
         active_stop = kwargs.pop('active_stop',
                                  inf_datetime.InfDateTime('inf'))
 
+        real_data_start = kwargs.pop('real_data_start',
+                                  inf_datetime.InfDateTime('-inf'))
+        real_data_stop = kwargs.pop('real_data_stop',
+                                 inf_datetime.InfDateTime('inf'))
+
         self._check_active_startstop(active_start, active_stop)
 
         self._active_start = active_start
         self._active_stop = active_stop
+
+		# not sure if we would ever pass this in...
+        self._check_active_startstop(real_data_start, real_data_stop)
+
+        self.real_data_start = real_data_start
+        self.real_data_stop = real_data_stop
 
         # empty dict since no array_types required for all movers at present
         self.array_types = set()

@@ -87,6 +87,8 @@ cdef extern from "GridWindMover_c.h":
         bool 		    GetExtrapolationInTime()
         void 		    SetTimeShift(long timeShift)
         long 		    GetTimeShift()
+        OSErr           GetDataStartTime(Seconds *startTime)
+        OSErr           GetDataEndTime(Seconds *endTime)
         long  GetNumTriangles()
 
 cdef extern from "IceWindMover_c.h":
