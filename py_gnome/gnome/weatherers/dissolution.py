@@ -168,6 +168,7 @@ class Dissolution(Weatherer, Serializable):
             k_w = Stokes.water_phase_xfer_velocity(water_rho - avg_rho,
                                                    drop_sizes)
             print 'k_w = ', k_w, 'm/s'
+            print '    = ', k_w * (60.0 * 60.0), 'm/hr'
 
             total_volume = (m / rho).sum()
             aromatic_volume = ((m / rho) * arom_mask).sum()
@@ -193,6 +194,13 @@ class Dissolution(Weatherer, Serializable):
 
             time_spent_in_wc = f_wc * time_step
             print 'time_spent_in_wc = ', time_spent_in_wc
+
+            mass_dissipated = dX_dt * time_spent_in_wc
+            print 'mass_dissipated = ', mass_dissipated
+            print '% mass_dissipated = ', mass_dissipated / m.sum()
+
+            print 'aromatic mass = ', (m * arom_mask)
+            print 'non-aromatic mass = ', (m * not_arom_mask)
 
         print
 
