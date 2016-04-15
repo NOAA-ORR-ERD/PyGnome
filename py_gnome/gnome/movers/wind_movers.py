@@ -18,6 +18,7 @@ from gnome.basic_types import (ts_format,
                                datetime_value_2d)
 
 from gnome.utilities import serializable, rand
+from gnome.utilities import time_utils
 
 from gnome import environment
 from gnome.movers import CyMover, ProcessSchema
@@ -224,6 +225,11 @@ class WindMover(WindMoversBase, serializable.Serializable):
         # set optional attributes
         super(WindMover, self).__init__(**kwargs)
 
+		# this will have to be updated when wind is set or changed
+        if self.wind is not None:
+            self.real_data_start = time_utils.sec_to_datetime(self.wind.ossm.get_start_time())
+            self.real_data_stop = time_utils.sec_to_datetime(self.wind.ossm.get_end_time())
+
     def __repr__(self):
         """
         .. todo::
@@ -383,6 +389,8 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         super(GridWindMover, self).__init__(**kwargs)
 
         self.mover.text_read(wind_file, topology_file)
+        self.real_data_start = time_utils.sec_to_datetime(self.mover.get_start_time())
+        self.real_data_stop = time_utils.sec_to_datetime(self.mover.get_end_time())
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
 
@@ -438,6 +446,18 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
                               (hours).
         """
         self.mover.offset_time(time_offset * 3600.)
+
+    def get_start_time(self):
+        """
+        :this will be the real_data_start time (seconds).
+        """
+        return (self.mover.get_start_time())
+
+    def get_end_time(self):
+        """
+        :this will be the real_data_stop time (seconds).
+        """
+        return (self.mover.get_end_time())
 
 class IceWindMoverSchema(WindMoversBaseSchema):
     filename = SchemaNode(String(), missing=drop)
