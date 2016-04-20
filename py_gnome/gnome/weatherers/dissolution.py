@@ -130,8 +130,10 @@ class Dissolution(Weatherer, Serializable):
         model_time = kwargs.get('model_time')
         time_step = kwargs.get('time_step')
 
-        fmass = data['mass_components']
-        droplet_avg_size = data['droplet_avg_size']
+        fmasses = data['mass_components']
+        droplet_avg_sizes = data['droplet_avg_size']
+        areas = data['area']
+        print 'areas = ', areas
 
         arom_mask = substance._sara['type'] == 'Aromatics'
         not_arom_mask = arom_mask ^ True
@@ -144,8 +146,13 @@ class Dissolution(Weatherer, Serializable):
         # calculate the partition coefficient (K_ow) for all aromatics.
         # K_ow for non-aromatics should be masked to 0.0
         K_ow_comp = arom_mask * LeeHuibers.partition_coeff(mol_wt, rho)
+        print 'K_ow_comp = ', K_ow_comp
 
-        for idx, (m, drop_sizes) in enumerate(zip(fmass, droplet_avg_size)):
+        mass_dissolved_in_wc = []
+        mass_dissolved_in_slick = []
+        for idx, (m, drop_sizes, area) in enumerate(zip(fmasses,
+                                                        droplet_avg_sizes,
+                                                        areas)):
             # This will eventually be a droplet distribution, but for now
             # we are receiving the average droplet size from the dispersion
             # weatherer.  So we turn the scalar into an iterable.
@@ -190,18 +197,36 @@ class Dissolution(Weatherer, Serializable):
             print '      = ', dX_dt * 1000.0, 'g/s'
 
             f_wc = self.water_column_time_fraction(model_time, k_w)
+            T_calm = self.calm_between_wave_breaks(model_time)
             print 'f_wc = ', f_wc
+            print 'T_calm = ', T_calm
 
             time_spent_in_wc = f_wc * time_step
             print 'time_spent_in_wc = ', time_spent_in_wc
 
-            mass_dissipated = dX_dt * time_spent_in_wc
-            print 'mass_dissipated = ', mass_dissipated
-            print '% mass_dissipated = ', mass_dissipated / m.sum()
+            #
+            # OK, here it is, the mass dissolved in the water column.
+            #
+            mass_dissolved_in_wc.append(dX_dt * time_spent_in_wc)
 
-            print 'aromatic mass = ', (m * arom_mask)
-            print 'non-aromatic mass = ', (m * not_arom_mask)
+            #
+            # Now we need to calculate the mass dissolved in the surface slick
+            # dV_surf = N_s * rho_dis * time_step
+            #
+            oil_concentration = self.oil_concentration(m, rho)
 
+            N_s = self.slick_subsurface_mass_xfer_rate(model_time,
+                                                       oil_concentration,
+                                                       K_ow_comp,
+                                                       area)
+            N_s = np.nan_to_num(N_s * arom_mask)
+            print 'N_s = ', N_s
+            print 'time_step = ', time_step
+
+            mass_dissolved_in_slick.append(N_s.sum() * T_calm)
+
+        print 'mass_dissolved in water column = ', mass_dissolved_in_wc
+        print 'mass_dissolved in slick = ', mass_dissolved_in_slick
         print
 
         diss = np.zeros((len(data['mass'])), dtype=np.float64)
@@ -213,7 +238,7 @@ class Dissolution(Weatherer, Serializable):
         return (masses / masses.sum() * densities).sum()
 
     def beta_coeff(self, k_w, K_ow, v_inert):
-        return -4.84 * k_w / K_ow * v_inert ** (2.0 / 3.0)
+        return 4.84 * k_w / K_ow * v_inert ** (2.0 / 3.0)
 
     def water_column_time_fraction(self, model_time,
                                    water_phase_xfer_velocity):
@@ -232,6 +257,53 @@ class Dissolution(Weatherer, Serializable):
                                                      water_phase_xfer_velocity)
 
         return f_wc
+
+    def calm_between_wave_breaks(self, model_time):
+        wave_period = self.waves.peak_wave_period(model_time)
+        wind_speed = self.waves.wind.get_value(model_time)[0]
+
+        f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
+
+        T_calm = DingFarmer.calm_between_wave_breaks(f_bw, wave_period)
+
+        return T_calm
+
+    def oil_concentration(self, masses, densities):
+        mass_fractions = masses / masses.sum()
+
+        print 'mass_fractions = ', mass_fractions
+        print 'densities = ', densities
+
+        aggregate_rho = (mass_fractions * densities).sum()
+        print 'aggregate_rho = ', aggregate_rho
+
+        C_oil = aggregate_rho * mass_fractions
+        return C_oil
+
+    def slick_subsurface_mass_xfer_rate(self, model_time,
+                                        oil_concentration,
+                                        partition_coeff,
+                                        slick_area,
+                                        schmidt_number=1000.0):
+        U_10 = self.waves.wind.get_value(model_time)[0]
+        c_oil = oil_concentration
+        k_ow = partition_coeff
+        s_c = schmidt_number
+
+        print 'U_10 = ', U_10
+        print 'c_oil = ', c_oil
+        print 'k_ow = ', k_ow
+        print 'slick_area = ', slick_area
+
+        # mass xfer rate (per unit area) in units (kg / s * m^2)
+        N_s_a = (0.01 * U_10 ** (7.0 / 9.0) *
+                 (c_oil / k_ow) *
+                 (4 * slick_area / np.pi) ** (-1.0 / 18.0) *
+                 s_c ** (-2.0 / 3.0))
+        print 'N_s_a = ', N_s_a
+
+        # return mass xfer rate in units (kg / s)
+        return N_s_a * slick_area
 
     def weather_elements(self, sc, time_step, model_time):
         '''
