@@ -27,6 +27,7 @@ from gnome.utilities import projections
 
 from gnome.basic_types import oil_status
 
+from gnome.utilities.projections import FlatEarthProjection
 
 class RendererSchema(BaseSchema):
 
@@ -414,6 +415,33 @@ class Renderer(Outputter, MapCanvas):
         self.draw_tags()
         self.draw_grids()
 
+    def draw_vectors(self, time, time_step= 900):
+        for grid in self.grids:
+            if not grid.appearance['vectors']:
+                continue
+            a = grid.appearance
+            points = None
+            points = np.dstack((grid.grid.node_lon[:], grid.grid.node_lat[:])).reshape(-1,2)
+            vels = grid.interpolated_velocities(time, points)
+            positions = np.zeros((points.shape[0],3))
+            positions[:,0:2] = points
+            deltas = np.zeros((points.shape[0],3))
+            deltas[:] = 0.
+            deltas[:, 0:2] = vels * 1.2 * time_step
+            deltas[np.isnan(deltas)] = 0
+            deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
+            deltas[deltas == np.nan] = 0
+            ends = (positions + deltas)[:,0:2]
+            lines = np.stack([points[:],ends[:]], axis=-2)
+            bounds = self.projection.image_box
+            pt1 = ((bounds[0][0] <= lines[:, 0, 0]) * (lines[:, 0, 0] <= bounds[1][0]) *
+                   (bounds[0][1] <= lines[:, 0, 1]) * (lines[:, 0, 1] <= bounds[1][1]))
+            pt2 = ((bounds[0][0] <= lines[:, 1, 0]) * (lines[:, 1, 0] <= bounds[1][0]) *
+                   (bounds[0][1] <= lines[:, 1, 1]) * (lines[:, 1, 1] <= bounds[1][1]))
+            lines = lines[pt1 + pt2]
+            for line in lines:
+                self.draw_polyline(line, line_color='LE', line_width=a['width'], background=True)
+
     def draw_grids(self):
         for grid in self.grids:
             if not grid.appearance['on']:
@@ -609,6 +637,7 @@ class Renderer(Outputter, MapCanvas):
         self.draw_timestamp(time_stamp)
         for grid in self.grids:
             self.draw_masked_nodes(grid, time_stamp)
+            self.draw_vectors(time_stamp)
 
         for ftype in self.formats:
             if ftype == 'gif':

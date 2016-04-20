@@ -18,6 +18,7 @@ from gnome.utilities.timeseries_generic import DataTimeSeries
 import pyugrid
 import pysgrid
 import unit_conversion
+import collections
 
 
 class EnvProp(object):
@@ -26,23 +27,23 @@ class EnvProp(object):
     the value of the phenomenon with respect to space and time. EnvProp is the base
     class, and returns only a single value regardless of the time
     '''
-    
+
     def __init__(self,
                  name=None,
                  units=None,
                  time=None,
                  data=None,
                  extrapolate=False):
-        
-        
+
+
         self.name = name
         if units in unit_conversion.unit_data.supported_units:
             self._units = units
         else:
             raise ValueError('Units of {0} are not supported'.format(units))
-        self.time = time
-        self.data = data
-        self.extrapolate = extrapolate
+        self._time = time
+        self._data = data
+        self._extrapolate = extrapolate
 
     @property
     def units(self):
@@ -50,8 +51,10 @@ class EnvProp(object):
 
     @units.setter
     def units(self, unit):
-        warnings.warn('Setting units directly does not change data values. If this is desired, use convert_units()')
-        self._units = unit
+        if unit in unit_conversion.unit_data.supported_units:
+            self._units = unit
+        else:
+            raise ValueError('Units of {0} are not supported'.format(unit))
 
     def at(self, points, time):
         return np.full((points.shape[0], 1), data)
@@ -74,7 +77,7 @@ class TimeSeriesProp(EnvProp):
     '''
     This class represents a phenomenon using a time series
     '''
-    
+
     def __init__(self,
                  name=None,
                  units=None,
@@ -85,12 +88,63 @@ class TimeSeriesProp(EnvProp):
             raise ValueError("Time and data sequences are of different length.\n\
             len(time) == {0}, len(data) == {1}".format(len(time), len(data)))
         super(TimeSeriesProp, self).__init__(name, units, time, data, extrapolate)
-        self.time = Time(time)
-        self._time = self.time.time
+        self.time = time
 
     @property
     def timeseries(self):
         return map(lambda x,y:(x,y), self.time.time, self.data)
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, d):
+        if len(d) != len(self.time):
+            raise ValueError("Data/time interval mismatch")
+        self._data = d
+
+    @property
+    def time(self):
+        return self._time
+
+    @time.setter
+    def time(self, t):
+        if len(t) != len(self.data):
+            raise ValueError("Data/time interval mismatch")
+        if isinstance(t, Time):
+            self._time = t
+        elif isinstance(t,collections.Iterable):
+            self._time = Time(t)
+        else:
+            raise ValueError("Object being assigned must be an iterable or a Time object")
+
+    @property
+    def extrapolate(self):
+        return self._extrapolate
+
+    @extrapolate.setter
+    def extrapolate(self, e):
+        self._extrapolate = e
+        self.time.extrapolate = e
+
+    def set_ts(self,
+               name=None,
+               units=None,
+               time=None,
+               data=None,
+               extrapolate=None):
+        self.name = name if name is not None else self.name
+        self.units = units if units is not None else self.units
+        self.extrapolate = extrapolate if extrapolate is not None else self.extrapolate
+        if data is not None and time is not None:
+            if len(time) != len(data):
+                raise ValueError("Data/time interval mismatch")
+            self._data = data
+            self.time = time
+        else:
+            self.data = data if data is not None else self.data
+            self.time = time if time is not None else self.time
 
     def at(self, points, time, units=None):
         '''
@@ -104,11 +158,12 @@ class TimeSeriesProp(EnvProp):
         if len(self.time) == 1:
             #single time time series (constant)
             return np.full((points.shape[0], 1), data)
-        t_index = self.time.indexof(time)
-        if self.extrapolate and t_index == len(self.time):
-            value = self.data[t_index]
-
+        elif self.extrapolate and time >= self.time.max_time:
+            value = self.data[-1]
+        elif self.extrapolate and time <= self.time.min_time:
+            value = self.data[0]
         else:
+            t_index = self.time.indexof(time)
             t_alphas = self.time.interp_alpha(time)
             d0 = self.data[t_index]
             d1 = self.data[t_index + 1]
@@ -143,6 +198,44 @@ class GriddedProp(EnvProp):
         self.data_file = data_file
         self.grid_file = grid_file
 
+    @property
+    def time(self):
+        return self._time
+
+
+    @time.setter
+    def time(self, t):
+        if len(t) != len(self.data):
+            raise ValueError("Data and time array must be the same length")
+        if isinstance(t,collections.Iterable) or isinstance(t, nc4.Variable):
+            t = Time(t)
+        else:
+            raise ValueError("Time must be set with an iterable container or netCDF variable")
+        if len(t) != self.data.shape[0]:
+            raise ValueError("Time provided is incompatible with data source time dimension")
+        self._time = t
+
+
+    @property
+    def data(self):
+        return self._data
+
+    def set_data(self, d, datafile, grid=None, gridfile=None):
+        if grid is not None:
+            if gridfile is None:
+                raise ValueError('Gridfile needs to be provided')
+            if d.shape[-2:] != grid.shape or grid.infer_grid(d) is None:
+                raise ValueError("Data shape is incompatible with grid shape.")
+            self.grid = grid
+            self.gridfile = gridfile
+        if d.shape[-2:] != self.grid.shape or self.grid.infer_grid(d) is None:
+            raise ValueError("Data shape is incompatible with grid shape.")
+        if d.shape[0] != len(self.time):
+            raise ValueError("Data time dimension is incompatible with time series")
+        self.data = d
+        self.datafile = datafile
+
+
     def at(self, points, time, units=None):
         '''
         Interpolates this property to the given points at the given time.
@@ -174,7 +267,6 @@ class GriddedProp(EnvProp):
             value = unit_conversion.convert(None, self.units, units, value)
         return value
 
-
 class VectorProp(object):
 
     def __init__(self,
@@ -183,178 +275,179 @@ class VectorProp(object):
                  time=None,
                  variables=None,
                  extrapolate=False):
-        self.extrapolate = extrapolate
         self.name = name
+        if variables is None or len(variables) < 2:
+            raise ValueError('Variables must be an array-like of 2 or more Property objects')
+        self.variables = variables
         if units is None:
             units = variables[0].units
         self._units = units
-        if time is None:
-            self._time = variables[0].time
-        elif isinstance(time, Time):
-            self._time = Time
-        else:
-            self._time = Time(time)
+        self.time=time
 
-        self.data_file = None
-        self.grid_file = None
-        if not isinstance(variables[0], GriddedProp):
-            self.data_format = 'timeseries'
-        else:
-            self.data_format = 'gridded'
-            self.data_file = variables[0].data_file
-            self.grid_file = variables[0].grid_file
-            
-        self.check_variables(variables)
-        self.variables = variables
-        
-        
-    def check_variables(self, variables):
-        for i, var in enumerate(variables):
-            if self.data_format == 'timeseries':
-                if not isinstance(var, TimeSeriesProp):
-                    if isinstance(var, iterable) and len(var) == len(self.time):
-                        variables[i] = TimeSeriesProp(name='var{0}'.format(i),
-                                                      units=self.units, time=self.time,
-                                                      extrapolate=self.extrapolate)
-                    else:
-                        raise ValueError('Variables must contain an iterable or TimeSeriesProp')
-            if self.data_format == 'gridded':
-                if not isinstance(var, GriddedProp):
-                    raise ValueError('All variables must either be gridded or time series')
-                if var.data_file != self.data_file:
-                    raise ValueError("""Data filename for component property {0} is different 
-                                     than reference datafile {1}""".format(var.data_file, self.data_file))
-                if var.grid_file != self.grid_file:
-                    raise ValueError("""Grid filename for component property {0} is different 
-                                     than reference gridfile {1}""".format(var.grid_file, self.grid_file))
-            
-            if var.time != self._time:
-                raise ValueError('All variables must share the same time series')
-            if var.units != self.units:
-                raise ValueError('Units of {0} for component property {1} are not the same as \
-                units specified for compound proprety {2}'.format(var.name, var.units, self.units))
-            if var.extrapolate != self.extrapolate:
-                raise ValueError("""VectorProp extrapolation is {0}, 
-                                 but component property {1} 
-                                 extrapolation is {2}""".format('on' if self.extrapolate else 'off',
-                                                                var.name,
-                                                                'on' if var.extrapolate else 'off'))
-    def at(self, points, time, units):
-        val = [v.at(points, time, units) for v in self.variables]
-        return val
-        
+        self.extrapolate = extrapolate
 
     @property
     def units(self):
-        return self._units
+        if hasattr(self._units, '__iter__'):
+            if len(set(self._units) > 1):
+                return self._units
+            else:
+                return self._units[0]
+        else:
+            return self._units
+
+    @units.setter
+    def units(self, unit):
+        if unit in unit_conversion.unit_data.supported_units:
+            self._units = unit
+        else:
+            raise ValueError('Units of {0} are not supported'.format(unit))
 
     @property
     def time(self):
         return self._time
 
-    def at(self, points, time, units=None):
-        return np.column_stack((var.at(points, time, units) for var in self.variables))
-
-class VelocitySchema(base_schema.ObjType):
-    
-    name = SchemaNode(String(), missing='default')
-    units = SchemaNode(String(), missing='none')
-    data_format = SchemaNode(String(), missing='gridded')
-    extrapolate = SchemaNode(Boolean(), missing='False')
-    data_file = SchemaNode(String(), missing=drop)
-    grid_file = SchemaNode(String(), missing=drop)
-    time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
-    timeseries = SequenceSchema(TupleSchema(children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
-                                                      TupleSchema(children=[
-                                                                            SchemaNode(Float(), missing=0),
-                                                                            SchemaNode(Float(), missing=0)
-                                                                            ]
-                                                                 )
-                                                      ]
-                                            , missing=drop))
-    varnames = SequenceSchema(SchemaNode(String(), missing=drop))
-    
-
-class Velocity(VectorProp, serializable.Serializable):
-    
-    _state = copy.deepcopy(serializable.Serializable._state)
-    _schema=VelocitySchema
-    
-    _state.add_field([serializable.Field('units', save=True, update=True), 
-                      serializable.Field('time', save=True, update=True),
-                      serializable.Field('timeseries', save=True, update=True),
-                      serializable.Field('varnames', save=True, update=True),
-                      serializable.Field('extrapolate', save=True, update=True),
-                      serializable.Field('data_format', save=True, update=True),
-                      serializable.Field('data_file', save=True, update=True),
-                      serializable.Field('grid_file', save=True, update=True)])
-    
-    def __init__(self, name=None, units=None, time = None, components = None, extrapolate=False, mag_dir = False):
-        VectorProp.__init__(self, name, units, time=time, variables=components, extrapolate=extrapolate)
-        if self.data_format == 'timeseries':
-            if mag_dir:
-                self.data_format = 'mag_dir_timeseries'
-        
+    @time.setter
+    def time(self, t):
+        print self._variables
+        if len(t) != len(self._variables[0].data):
+            raise ValueError("Data/time interval mismatch")
+        if isinstance(t, Time):
+            self._time = t
+        elif isinstance(t,collections.Iterable):
+            self._time = Time(t)
+        else:
+            raise ValueError("Object being assigned must be an iterable or a Time object")
 
     @property
-    def timeseries(self):
-        if self.data_format != 'gridded':
-            x = self.variables[0].data
-            y = self.variables[1].data
-            if self.data_format == 'mag_dir_timeseries':
-                direction = -(np.arctan2(y,x)*180/np.pi + 90)
-                magnitude = np.sqrt(x**2 + y**2)
-                return map(lambda t,x,y:(t,(x,y)), self._time, magnitude, direction)
-            else:
-                return map(lambda t,x,y:(t,(x,y)), self._time, x, y)
-        return None
+    def variables(self):
+        return np.column_stack([v.data for v in self._variables])
+
+    @variables.setter
+    def variables(self, vars):
+        self.variables = vars
+
 
     @property
     def varnames(self):
         return [v.name for v in self.variables]
 
-    @property
-    def time(self):
-        if self.data_format != 'gridded':
-            return None
-        else:
-            return self._time
-    @classmethod
-    def from_file(cls, filename, name):
-        pass
+    def at(self, points, time, units=None):
+        return np.column_stack((var.at(points, time, units) for var in self._variables))
 
-    @classmethod
-    def deserialize(cls, json_):
-        d = super(Velocity, cls).deserialize(json_)
-        ts, ds = zip(*d['timeseries'])
-        del d['timeseries']
-        d['time'] = np.array(ts)
-        d['data'] = ds
-        return d
-    
-    @classmethod
-    def new_from_dict(cls, dict_):
-        data = np.array(dict_.pop('data'))
-        x_data, y_data = np.hsplit(data,2)
-        if dict_['data_format'] == 'mag_dir_timeseries':
-            y_data = ((-y_data - 90) * np.pi/180)
-            x_t = x_data *np.cos(y_data)
-            y_data = x_data * np.sin(y_data)
-            x_data = x_t
-        if 'timeseries' in dict_['data_format']:
-            x_ts = TimeSeriesProp(name = dict_['varnames'][0],
-                              units = dict_['units'],
-                              time = dict_['time'],
-                              data = x_data,
-                              extrapolate = dict_['extrapolate'])
-            y_ts = TimeSeriesProp(name = dict_['varnames'][1],
-                              units = dict_['units'],
-                              time = dict_['time'],
-                              data = y_data,
-                              extrapolate = dict_['extrapolate'])
-        dict_['components'] = [x_ts,y_ts]
-        #undo mag/direction here x_x
-        return super(Velocity, cls).new_from_dict(dict_)
+
+class TSVectorProp(VectorProp):
+
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time=None,
+                 variables=None,
+                 extrapolate=False):
+
+        self.name = name
+        if variables is None or len(variables) < 2:
+            raise ValueError('Variables must be an array-like of 2 or more Property objects')
+        if units is None:
+            if isinstance(variables[0], EnvProp):
+                units = variables[0].units
+            else:
+                raise ValueError('Need to specify units (cannot infer from variables provided)')
+        self.units = units
+        self._extrapolate = extrapolate
+        self.set_ts(time = time, variables=variables)
+
+    @property
+    def variables(self):
+        return np.stack([v.data for v in self._variables])
+
+    @variables.setter
+    def variables(self, vars):
+        print self.units
+        new_vars = []
+        for i, var in enumerate(vars):
+            if not isinstance(var, TimeSeriesProp):
+                if isinstance(var, collections.Iterable) and len(var) == len(self.time):
+                    new_vars.append(TimeSeriesProp(name='var{0}'.format(i),
+                                                          units=self.units, time=self.time,
+                                                          data = vars[i],
+                                                          extrapolate=self.extrapolate))
+                else:
+                    raise ValueError('Variables must contain iterables or TimeSeriesProp objects')
+        self._variables = new_vars
+
+    @property
+    def extrapolate(self):
+        return self._extrapolate
+
+    @extrapolate.setter
+    def extrapolate(self, e):
+        self._extrapolate = e
+        for v in self._variables:
+            v.extrapolate = e
+        self.time.extrapolate = e
+
+    def set_ts(self,
+               name=None,
+               units=None,
+               time=None,
+               variables=None,
+               extrapolate=None):
+        self.name = name if name is not None else self.name
+        self.units = units if units is not None else self.units
+        if variables is not None and time is not None:
+            new_vars = []
+            for i, var in enumerate(variables):
+                if not isinstance(var, TimeSeriesProp):
+                    if isinstance(var, collections.Iterable) and len(var) == len(time):
+                        new_vars.append(TimeSeriesProp(name = 'var{0}'.format(i),
+                                                              units = self.units, time=time,
+                                                              data = variables[i],
+                                                              extrapolate = extrapolate))
+                    else:
+                        raise ValueError('Variables must contain iterables or TimeSeriesProp objects')
+            self._variables = new_vars
+            self.time = time
+        else:
+            if variables is not None:
+                self.variables = variables
+            self.time = time if time is not None else self.time
+        self.extrapolate = extrapolate if extrapolate is not None else self.extrapolate
+
+    def in_units(self, units):
+        '''
+        Returns a full copy of this property in the units specified. 
+        WARNING: This will copy the data of the original property!
+        '''
+        cpy = copy.deepcopy(self)
+        for i, var in enumerate(cpy._variables):
+            cpy._variables[i] = var.in_units(units)
+        cpy._units = units
+        return cpy
+
+class GridVectorProp(VectorProp):
+
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time=None,
+                 variables=None,
+                 extrapolate=False):
+
+        self.data_file = variables[0].data_file
+        self.grid_file = variables[0].grid_file
+
+        for var in variables:
+            if not isinstance(var, GriddedProp):
+                raise ValueError('All variables must be GriddedProp objects')
+            if var.data_file != self.data_file:
+                raise ValueError("""Data filename for component property {0} is different 
+                                 than reference datafile {1}""".format(var.data_file, self.data_file))
+            if var.grid_file != self.grid_file:
+                raise ValueError("""Grid filename for component property {0} is different 
+                                     than reference gridfile {1}""".format(var.grid_file, self.grid_file))
+        VectorProp.__init__(name, units, time, variables, extrapolate)
+
 
 class Time(object):
 
@@ -380,13 +473,13 @@ class Time(object):
 
     def __len__(self):
         return len(self.time)
-    
+
     def __iter__(self):
         return self.time.__iter__()
-    
+
     def __eq__(self, other):
         return (self.time == other.time).all()
-    
+
     def __ne__(self, other):
         return (self.time != other.time).all()
 
@@ -437,43 +530,4 @@ class Time(object):
         return (time - t0).total_seconds() / (t1 - t0).total_seconds()
 
 if __name__ == "__main__":
-    import datetime as dt
-    dates = np.array([dt.datetime(1, 1, 1, 0), dt.datetime(1, 1, 1, 2), dt.datetime(1, 1, 1, 4)])
-    u_data = np.array([3, 4, 5])
-    v_data = np.array([4, 3, 12])
-    u = TimeSeriesProp('u', 'm/s', dates, u_data)
-    v = TimeSeriesProp('v', 'm/s', dates, v_data)
-
-    print u.at(np.array([(1, 1), (1, 2)]), dt.datetime(1, 1, 1, 1))
-
-    vprop = VectorProp('velocity', 'm/s', variables=[u, v])
-    print vprop.at(np.array([(1, 1), (1, 2)]), dt.datetime(1, 1, 1, 3))
-    
-    vel = Velocity('test_vel', components = [u,v], mag_dir=True)
-    print vel.at(np.array([(1, 1), (1, 2)]), dt.datetime(1, 1, 1, 3))
-    
-    import pprint
-    pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(vel.serialize())
-    pp.pprint(Velocity.deserialize(vel.serialize()))
-    
-    velfromdict = Velocity.new_from_dict(Velocity.deserialize(vel.serialize()))
-    
-    pp.pprint(vel.serialize())
-    pp.pprint(velfromdict.serialize())
-    
-    url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
-    test_grid = pysgrid.load_grid(url)
-    grid_u = test_grid.u
-    grid_v = test_grid.v
-    grid_time = test_grid.ocean_time._data
-    
-    u2 = GriddedProp('u','m/s', time=grid_time, data=grid_u, grid=test_grid, data_file=url, grid_file=url)
-    v2 = GriddedProp('v','m/s', time=grid_time, data=grid_v, grid=test_grid, data_file=url, grid_file=url) 
-    
-    print "got here"
-    vel2 = Velocity(name='gridvel', components=[u2, v2])
-    
-#     pp.pprint(vel2.serialize())
-    
     pass

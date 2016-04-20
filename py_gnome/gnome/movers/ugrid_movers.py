@@ -49,6 +49,19 @@ class UGridCurrentMover(movers.Mover, serializable.Serializable):
 
         movers.Mover.__init__(self)
 
+    def get_scaled_velocities(self, time):
+        """
+        :param model_time=0:
+        """
+        points = None
+        if isinstance(self.grid, pysgrid):
+            points = np.column_stack(self.grid.node_lon[:], self.grid.node_lat[:])
+        if isinstance(self.grid, pyugrid):
+            raise NotImplementedError("coming soon...")
+        vels = self.grid.interpolated_velocities(time, points)
+
+        return vels
+
     def get_move(self, sc, time_step, model_time_datetime):
         """
         Compute the move in (long,lat,z) space. It returns the delta move
