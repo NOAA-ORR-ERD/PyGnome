@@ -127,9 +127,9 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         # one feature per element client; replaced with multipoint
         # because client performance is much more stable with one
         # feature per step rather than (n) features per step.features = []
-        features = []
+        c_features = []
+        uc_features = []
         for sc in self.cache.load_timestep(step_num).items():
-            time = date_to_sec(sc.current_time_stamp)
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
             sc_type = 'uncertain' if sc.uncertain else 'forecast'
@@ -142,31 +142,24 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
             #   off_maps : 7
             #   on_land : 3
             #   to_be_removed : 12
-            points = {}
             for ix, pos in enumerate(position):
-                st_code = status[ix]
-
-                if st_code not in points:
-                    points[st_code] = []
-
-                points[st_code].append(pos[:2])
-
-            for k in points:
-                feature = Feature(geometry=MultiPoint(points[k]), id="1",
-                                  properties={'sc_type': sc_type,
-                                              'status_code': k,
-                                              })
-
+                feature = Feature(
+                    geometry=Point(pos[:2]), id=ix,
+                    properties={'status_code': status[ix],
+                                'sc_type': sc_type}
+                    )
                 if sc.uncertain:
-                    features.insert(0, feature)
+                    uc_features.append(feature)
                 else:
-                    features.append(feature)
+                    c_features.append(feature)
 
-        geojson = FeatureCollection(features)
+        c_geojson = FeatureCollection(c_features)
+        uc_geojson = FeatureCollection(uc_features)
         # default geojson should not output data to file
         # read data from file and send it to web client
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'feature_collection': geojson
+                       'certain': c_geojson,
+                       'uncertain': uc_geojson
                        }
 
         if self.output_dir:
@@ -600,15 +593,18 @@ class IceRawJsonOutput(Outputter):
 
         raw_json = {}
         for mover in self.ice_movers:
-            grid_data = mover.get_grid_data().tolist()
             ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
 
-            raw_json[mover.id] = []
-            for c, th, grid in zip(ice_coverage, ice_thickness, grid_data):
-                raw_json[mover.id].append([c, th, grid])
+            raw_json[mover.id] = {
+                    "thickness": [],
+                    "concentration": []
+                }
+
+            raw_json[mover.id]["thickness"] = ice_thickness.tolist()
+            raw_json[mover.id]["concentration"] = ice_coverage.tolist()
 
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'feature_collections': raw_json
+                       'data': raw_json
                        }
 
         return output_info
