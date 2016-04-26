@@ -67,6 +67,8 @@ cdef extern from "WindMover_c.h":
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID)
         void SetTimeDep(OSSMTimeValue_c *ossm)
         OSErr GetTimeValue(Seconds &time, VelocityRec *vel)
+        void  SetExtrapolationInTime(bool extrapolate)
+        bool  GetExtrapolationInTime()
 
 cdef extern from "GridWindMover_c.h":
     cdef cppclass GridWindMover_c(WindMover_c):
