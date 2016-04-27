@@ -396,8 +396,8 @@ class GridCurrentMoverSchema(CurrentMoversBaseSchema):
 
 class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
 
-    _update = ['uncertain_cross', 'uncertain_along', 'current_scale']
-    _save = ['uncertain_cross', 'uncertain_along', 'current_scale']
+    _update = ['uncertain_cross', 'uncertain_along', 'current_scale', 'extrapolate', 'time_offset']
+    _save = ['uncertain_cross', 'uncertain_along', 'current_scale', 'extrapolate', 'time_offset']
     _state = copy.deepcopy(CurrentMoversBase._state)
 
     _state.add(update=_update, save=_save)
@@ -469,8 +469,9 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         self.uncertain_along = uncertain_along
         self.uncertain_across = uncertain_across
         self.mover.text_read(filename, topology_file)
-        self.real_data_start = time_utils.sec_to_datetime(self.mover.get_start_time())
-        self.real_data_stop = time_utils.sec_to_datetime(self.mover.get_end_time())
+        if type(self) != CurrentCycleMover:
+            self.real_data_start = time_utils.sec_to_datetime(self.mover.get_start_time())
+            self.real_data_stop = time_utils.sec_to_datetime(self.mover.get_end_time())
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
         self.num_method = num_method

@@ -35,6 +35,7 @@ WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 {
 	if(!name || !name[0]) this->SetClassName("Variable Wind"); // JLM , a default useful in the wizard
 	Init();	// initialize the local vars
+	fAllowExtrapolationInTime = true;
 }
 #endif
 
@@ -69,6 +70,8 @@ void WindMover_c::Init()
 	
 	memset(&fWindBarbRect,0,sizeof(fWindBarbRect)); 
 	bShowWindBarb = true;
+
+	fAllowExtrapolationInTime = false;
 }
 
 void WindMover_c::Dispose()
@@ -437,6 +440,20 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds&
 
 	}
 	err = this -> GetTimeValue (model_time,&this->current_time_value);	
+	// put in a check for extrapolate here, or in the time value handle
+
+	if (err == -1 && fAllowExtrapolationInTime)
+	{
+		Seconds start_time, end_time;
+
+		err = timeDep -> GetDataStartTime(&start_time);	
+		err = timeDep -> GetDataEndTime(&end_time);	
+
+		if (model_time < start_time)
+			{err = this -> GetTimeValue (start_time,&this->current_time_value); return err;}
+		if (model_time > end_time)
+			{err = this -> GetTimeValue (end_time,&this->current_time_value); return err;}
+	}
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
 	return err;
 }

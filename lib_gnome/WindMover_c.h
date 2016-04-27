@@ -53,6 +53,8 @@ public:
 	Rect fWindBarbRect;
 	Boolean bShowWindBarb;
 	
+	Boolean fAllowExtrapolationInTime;
+
 	VelocityRec	current_time_value;		// AH 07/16/2012
 	
 #ifndef pyGNOME
@@ -84,6 +86,10 @@ public:
 	OSErr				GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
 	OSErr				get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windage, short* LE_status, LEType spillType, long spillID);
+
+	void 				SetExtrapolationInTime(bool extrapolate){fAllowExtrapolationInTime = extrapolate;}
+	bool 				GetExtrapolationInTime(){return fAllowExtrapolationInTime;}
+	
 };
 
 #undef TOSSMTimeValue
