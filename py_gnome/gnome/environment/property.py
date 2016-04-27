@@ -34,7 +34,14 @@ class EnvProp(object):
                  time=None,
                  data=None,
                  extrapolate=False):
-
+        '''
+        EnvProp base class constructor
+        :param name: Name
+        :param units: Units
+        :param time: Array of datetime objects, netCDF4 Variable, or gnome.environment.property.Time object
+        :param data: Value of the property
+        :param extrapolate: Determines whether the first/last values are used for times outside the interval
+        '''
 
         self.name = name
         if units in unit_conversion.unit_data.supported_units:
@@ -55,6 +62,15 @@ class EnvProp(object):
             self._units = unit
         else:
             raise ValueError('Units of {0} are not supported'.format(unit))
+
+    @property
+    def extrapolate(self):
+        return self._extrapolate
+
+    @extrapolate.setter
+    def extrapolate(self, e):
+        self._extrapolate = e
+        self.time.extrapolate = e
 
     def at(self, points, time):
         return np.full((points.shape[0], 1), data)
@@ -119,16 +135,7 @@ class TimeSeriesProp(EnvProp):
         else:
             raise ValueError("Object being assigned must be an iterable or a Time object")
 
-    @property
-    def extrapolate(self):
-        return self._extrapolate
-
-    @extrapolate.setter
-    def extrapolate(self, e):
-        self._extrapolate = e
-        self.time.extrapolate = e
-
-    def set_ts(self,
+    def set_attr(self,
                name=None,
                units=None,
                time=None,
@@ -188,13 +195,13 @@ class GriddedProp(EnvProp):
                  extrapolate=False,
                  data_file=None,
                  grid_file=None):
-        if grid is None or data is None:
-            raise ValueError('Must provide a grid and data that can fit to the grid')
-        if grid.infer_grid(data) is None:
+        if any([units == None, time == None, grid == None, data == None, grid_file == None, data_file == None]):
+            raise ValueError("All attributes except name and extrapolate MUST be defined if variables is not a list of GriddedProp objects")
+        if not hasattr(data, 'shape') or grid.infer_grid(data) is None:
             raise ValueError('Data must be able to fit to the grid')
         super(GriddedProp, self).__init__(name=name, units=units, data=data, extrapolate=extrapolate)
-        self.grid = grid
-        self.time = Time(time)
+        self._grid = grid
+        self.time = time
         self.data_file = data_file
         self.grid_file = grid_file
 
@@ -202,38 +209,55 @@ class GriddedProp(EnvProp):
     def time(self):
         return self._time
 
-
     @time.setter
     def time(self, t):
-        if len(t) != len(self.data):
-            raise ValueError("Data and time array must be the same length")
+        if len(t) != self.data.shape[0]:
+            raise ValueError("Data/time interval mismatch")
         if isinstance(t,collections.Iterable) or isinstance(t, nc4.Variable):
             t = Time(t)
         else:
             raise ValueError("Time must be set with an iterable container or netCDF variable")
-        if len(t) != self.data.shape[0]:
-            raise ValueError("Time provided is incompatible with data source time dimension")
         self._time = t
 
+    @property
+    def units(self):
+        return self._units
 
     @property
     def data(self):
         return self._data
 
-    def set_data(self, d, datafile, grid=None, gridfile=None):
-        if grid is not None:
-            if gridfile is None:
-                raise ValueError('Gridfile needs to be provided')
-            if d.shape[-2:] != grid.shape or grid.infer_grid(d) is None:
+    @property
+    def grid(self):
+        return self._grid
+
+    def set_attr(self,
+                 name=None,
+#                  units=None,
+                 time=None,
+                 data=None,
+                 data_file=None,
+                 grid=None,
+                 grid_file=None,
+                 extrapolate=None):
+        self.name = name if name is not None else self.name
+#         self.units = units if units is not None else self.units
+        self.extrapolate = extrapolate if extrapolate is not None else self.extrapolate
+        if time is not None:
+            if data and len(time) != data.shape[0]:
+                raise ValueError("Time provided is incompatible with data source time dimension")
+            self.time = time
+        if data is not None:
+            if (grid and grid.infer_grid(data) is None) or self.grid.infer_grid(data) is None:
                 raise ValueError("Data shape is incompatible with grid shape.")
-            self.grid = grid
-            self.gridfile = gridfile
-        if d.shape[-2:] != self.grid.shape or self.grid.infer_grid(d) is None:
-            raise ValueError("Data shape is incompatible with grid shape.")
-        if d.shape[0] != len(self.time):
-            raise ValueError("Data time dimension is incompatible with time series")
-        self.data = d
-        self.datafile = datafile
+            self._data = data
+        if grid is not None:
+            if data is None:
+                if grid.infer_grid(self.data) is None:
+                    raise ValueError("Grid shape is incompatible with current data shape.")
+                self._grid = grid
+        self.grid_file = grid_file if grid_file is not None else self.grid_file
+        self.data_file = data_file if data_file is not None else self.data_file
 
 
     def at(self, points, time, units=None):
@@ -301,7 +325,7 @@ class VectorProp(object):
         if unit in unit_conversion.unit_data.supported_units:
             self._units = unit
         else:
-            raise ValueError('Units of {0} are not supported'.format(unit))
+            raise ValueError(5,'Units of {0} are not supported'.format(unit))
 
     @property
     def time(self):
@@ -321,11 +345,11 @@ class VectorProp(object):
 
     @property
     def variables(self):
-        return np.column_stack([v.data for v in self._variables])
+        return np.stack([v.data for v in self._variables])
 
     @variables.setter
     def variables(self, vars):
-        self.variables = vars
+        self._variables = vars
 
 
     @property
@@ -343,23 +367,55 @@ class TSVectorProp(VectorProp):
                  units=None,
                  time=None,
                  variables=None,
+                 varnames=None,
                  extrapolate=False):
 
         self.name = name
         if variables is None or len(variables) < 2:
-            raise ValueError('Variables must be an array-like of 2 or more Property objects')
-        if units is None:
-            if isinstance(variables[0], EnvProp):
-                units = variables[0].units
-            else:
-                raise ValueError('Need to specify units (cannot infer from variables provided)')
-        self.units = units
+            raise TypeError('Variables must be an array-like of 2 or more TimeSeriesProp or array-like')
+
+        if all([isinstance(v, TimeSeriesProp) for v in variables]):
+            if time is not None and not isinstance(time, Time):
+                time = Time(time)
+            units = variables[0].units if units is None else units
+            time = variables[0].time if time is None else time
+            for v in variables:
+                if (v.units != units or
+                    v.time != time or
+                    v.extrapolate != extrapolate):
+                    raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
+        else:
+            if any([isinstance(v, TimeSeriesProp) for v in variables]):
+                raise TypeError("Cannot mix TimeSeriesProp objects with other data sources.")
+            if any([units == None, time == None]):
+                raise ValueError("All attributes except name, varnames and extrapolate MUST be defined if variables is not a list of TimeSeriesProp objects")
+            for i, var in enumerate(variables):
+                name = 'var{0}'.format(i) if varnames is None else varnames[i]
+                variables[i] = TimeSeriesProp(name = 'var{0}'.format(i),
+                                              units = units,
+                                              time = time,
+                                              data = variables[i],
+                                              extrapolate = extrapolate)
+
+        self._variables = variables
+        self.time = time
+        self._units = units
         self._extrapolate = extrapolate
-        self.set_ts(time = time, variables=variables)
+        self._check_consistency(self.variables)
+
+    def _check_consistency(self, varlist):
+        '''
+        Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
+        '''
+        for v in varlist:
+            if (v.units != self.units or
+                v.time != self.time or
+                v.extrapolate != self.extrapolate):
+                raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
 
     @property
     def variables(self):
-        return np.stack([v.data for v in self._variables])
+        return self._variables
 
     @variables.setter
     def variables(self, vars):
@@ -387,7 +443,7 @@ class TSVectorProp(VectorProp):
             v.extrapolate = e
         self.time.extrapolate = e
 
-    def set_ts(self,
+    def set_attr(self,
                name=None,
                units=None,
                time=None,
@@ -432,22 +488,165 @@ class GridVectorProp(VectorProp):
                  units=None,
                  time=None,
                  variables=None,
-                 extrapolate=False):
+                 extrapolate=False,
+                 grid = None,
+                 grid_file=None,
+                 data_file=None,
+                 varnames=None):
 
-        self.data_file = variables[0].data_file
-        self.grid_file = variables[0].grid_file
+        self.name = name
 
-        for var in variables:
-            if not isinstance(var, GriddedProp):
-                raise ValueError('All variables must be GriddedProp objects')
-            if var.data_file != self.data_file:
-                raise ValueError("""Data filename for component property {0} is different 
-                                 than reference datafile {1}""".format(var.data_file, self.data_file))
-            if var.grid_file != self.grid_file:
-                raise ValueError("""Grid filename for component property {0} is different 
-                                     than reference gridfile {1}""".format(var.grid_file, self.grid_file))
-        VectorProp.__init__(name, units, time, variables, extrapolate)
+        if variables is None or len(variables) < 2:
+            raise TypeError("Variables needs to be a list of at least 2 GriddedProp objects or ndarray-like arrays")
 
+        gp = True
+        if all([isinstance(v, GriddedProp) for v in variables]):
+            if time is not None and not isinstance(time, Time):
+                time = Time(time)
+            units = variables[0].units if units is None else units
+            time = variables[0].time if time is None else time
+            grid = variables[0].grid if grid is None else extrapolate
+            grid_file = variables[0].grid_file if grid_file is None else grid_file
+            data_file = variables[0].data_file if data_file is None else data_file
+            for v in variables:
+                if (v.units != units or
+                    v.time != time or
+                    v.extrapolate != extrapolate or
+                    v.grid != grid or
+                    v.grid_file != grid_file or
+                    v.data_file != data_file):
+                    raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
+        else:
+            if any([isinstance(v, GriddedProp) for v in variables]):
+                raise TypeError("Cannot mix GriddedProp objects with other data sources.")
+            if any([units == None, time == None, grid == None, grid_file == None, data_file == None]):
+                raise ValueError("All attributes except name, varnames and extrapolate MUST be defined if variables is not a list of GriddedProp objects")
+            for i, var in enumerate(variables):
+                name = 'var{0}'.format(i) if varnames is None else varnames[i]
+                variables[i] = GriddedProp(name = 'var{0}'.format(i),
+                                           units = units,
+                                           time = time,
+                                           data = variables[i],
+                                           grid = grid,
+                                           grid_file = grid_file,
+                                           data_file = data_file,
+                                           extrapolate = extrapolate)
+
+        self._variables = variables
+        self.data_file = data_file
+        self.grid_file = grid_file
+        self.time = time
+        self._grid = grid
+        self._units = units
+        self._extrapolate = extrapolate
+        self._check_consistency(self.variables)
+
+    def _check_consistency(self, varlist):
+        '''
+        Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
+        '''
+        for v in varlist:
+            if (v.units != self.units or
+                v.time != self.time or
+                v.extrapolate != self.extrapolate or
+                v.grid != self.grid or
+                v.grid_file != self.grid_file or
+                v.data_file != self.data_file):
+                raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
+
+    @property
+    def grid(self):
+        return self._grid
+
+    @property
+    def time(self):
+        return self._time
+
+    @time.setter
+    def time(self, t):
+        if not isinstance(t, Time):
+            if isinstance(t,collections.Iterable) or isinstance(t, nc4.Variable):
+                t = Time(t)
+            else:
+                raise ValueError("Time must be set with an iterable container of datetime.datatime, gnome.environment.property.Time, or netCDF4.Variable")
+        self._time = t
+
+    @property
+    def variables(self):
+        return self._variables
+
+    @variables.setter
+    def variables(self, variables):
+        if all([isinstance(v, GriddedProp) for v in variables]):
+            self._check_consistency(variables)
+            self._variables = variables
+            return
+        if any([isinstance(v, GriddedProp) for v in variables]):
+            raise ValueError("Cannot mix GriddedProp objects with other data sources.")
+
+    @property
+    def extrapolate(self):
+        return self._extrapolate
+
+    @extrapolate.setter
+    def extrapolate(self, e):
+        self._extrapolate = e
+        for v in self._variables:
+            v.extrapolate = e
+        self.time.extrapolate = e
+
+    def set_attr(self,
+                 name=None,
+                 units=None,
+                 time=None,
+                 variables=None,
+                 extrapolate=None,
+                 grid = None,
+                 grid_file=None,
+                 data_file=None,):
+
+        self.name = name if name is not None else self.name
+        if variables is not None:
+            if self.variables is not None and len(variables) != len(self.variables):
+                raise ValueError('Cannot change the number of variables using set_attr. {0} provided, {1} required'.format(len(variables), len(self.variables)))
+
+            for i, v in enumerate(variables):
+                if isinstance(v, GriddedProp):
+                    variables[i] = variables.data
+
+        units = self.units if units is None else units
+        time = self.time if time is None else time
+        extrapolate = self.extrapolate if extrapolate is None else extrapolate
+        grid = self.grid if grid is None else extrapolate
+        grid_file = self.grid_file if grid_file is None else grid_file
+        data_file = self.data_file if data_file is None else data_file
+
+        for i, var in enumerate(self.variables):
+            if variables is None:
+                nv = None
+            else:
+                nv = variables[i]
+            var.set_attr(units=units,
+                         time = time,
+                         data = nv,
+                         extrapolate = extrapolate,
+                         grid = grid,
+                         grid_file = grid_file,
+                         data_file = data_file,)
+        else:
+            for i, var in enumerate(self.variables):
+                var.set_attr(units=units,
+                             time=time,
+                             extrapolate=extrapolate,
+                             grid = grid,
+                             grid_file = grid_file,
+                             data_file = data_file,)
+        self._units = units
+        self._time = time
+        self._extrapolate = extrapolate
+        self._grid = grid
+        self.grid_file = grid_file
+        self.grid_file = grid_file
 
 class Time(object):
 

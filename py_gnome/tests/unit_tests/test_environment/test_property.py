@@ -4,7 +4,8 @@ import datetime as dt
 import numpy as np
 import pysgrid
 import datetime
-from gnome.environment.property import TimeSeriesProp, GriddedProp, Time, TSVectorProp
+from gnome.environment.property import TimeSeriesProp, GriddedProp, Time, TSVectorProp, GridVectorProp
+from gnome.environment.property_classes import VelocityTS, VelocityGrid
 from gnome.utilities.remote_data import get_datafile
 import netCDF4 as nc
 import unit_conversion
@@ -13,6 +14,7 @@ base_dir = os.path.dirname(__file__)
 '''
 Need to hook this up to existing test data infrastructure
 '''
+
 s_data = os.path.join(base_dir, 'sample_data')
 curr_dir = os.path.join(s_data, 'currents')
 curr_file = get_datafile(os.path.join(curr_dir,'tbofs_example.nc'))
@@ -24,6 +26,7 @@ grid_v = dataset['water_v']
 grid_time = dataset['time']
 test_grid = pysgrid.SGrid(node_lon=node_lon,
                           node_lat=node_lat)
+
 
 dates = np.array([dt.datetime(2000, 1, 1, 0),
                   dt.datetime(2000, 1, 1, 2),
@@ -105,35 +108,35 @@ class TestTSprop:
         u.time = dates2
         assert u.time == Time(dates2)
 
-    def test_set_ts(self,u):
+    def test_set_attr(self,u):
 
         #mismatched data and time length
         with pytest.raises(ValueError):
-            u.set_ts(time = dates2, data=s_data)
+            u.set_attr(time = dates2, data=s_data)
 
-        u.set_ts(name = 'v')
+        u.set_attr(name = 'v')
         assert u.name == 'v'
 
         with pytest.raises(ValueError):
-            u.set_ts(time = dates,data=u_data)
+            u.set_attr(time = dates,data=u_data)
 
-        u.set_ts(time=dates, data=s_data)
+        u.set_attr(time=dates, data=s_data)
         assert u.data[0] == 20
 
-        u.set_ts(data = [50,60,70])
+        u.set_attr(data = [50,60,70])
         assert u.data[0] == 50
 
-        u.set_ts(time = [datetime.datetime(2000,1,3,1),
+        u.set_attr(time = [datetime.datetime(2000,1,3,1),
                          datetime.datetime(2000,1,3,2),
                          datetime.datetime(2000,1,3,3)])
 
-        u.set_ts(extrapolate=True, units='km/hr')
+        u.set_attr(extrapolate=True, units='km/hr')
 
         assert u.extrapolate == True
         assert u.units == 'km/hr'
 
         with pytest.raises(ValueError):
-            u.set_ts(units='nm/hr')
+            u.set_attr(units='nm/hr')
 
     def test_at(self,u):
         pts = np.array(((1,1), (2,2)))
@@ -153,7 +156,7 @@ class TestTSprop:
             u.at(pts, t5)
 
         #turn extrapolation on
-        u.set_ts(extrapolate=True)
+        u.set_attr(extrapolate=True)
         print u.time
         print u.time.time
         print u.time.extrapolate
@@ -162,32 +165,45 @@ class TestTSprop:
 
 class TestTSVectorProp:
 
-    def test_construction(self):
+    def test_construction(self, u, v):
         vp = None
         vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data,v_data], extrapolate=False)
 
-        assert (vp.variables[0] == u_data).all()
+        assert all(vp.variables[0].data == u_data)
 
+        #3 components
         vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data,v_data, u_data], extrapolate=False)
 
+        #Using TimeSeriesProp
+        vp = TSVectorProp(name='vp', variables=[u, v])
+        assert vp.time == vp.variables[0].time == vp.variables[1].time
 
+        #Mixed TSP/raw variables
+        with pytest.raises(TypeError):
+            vp = TSVectorProp(name='vp', variables=[u, v_data])
+
+        #SHORT TIME
         with pytest.raises(ValueError):
             vp = TSVectorProp(name='vp', units='m/s', time=dates, variables=[u_data,v_data], extrapolate=False)
+
+        #DIFFERENT LENGTH VARS
         with pytest.raises(ValueError):
             vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[s_data,v_data], extrapolate=False)
+
+        #UNSUPPORTED UNITS
         with pytest.raises(ValueError):
-            vp = TSVectorProp(name='vp', units='m/s', time=dates, variables=[s_data,v_data, u_data], extrapolate=False)
+            vp = TSVectorProp(name='vp', units='km/s', time=dates2, variables=[s_data,v_data, u_data], extrapolate=False)
 
     def test_unit_conversion(self, vp):
         nvp = vp.in_units('km/hr')
-        assert round(nvp.variables[0][0],2) == 7.2
+        assert round(nvp.variables[0].data[0],2) == 7.2
 
         with pytest.raises(unit_conversion.UnitConversionError):
             # mismatched data and dates length
             nvp = vp.in_units('nm/hr')
 
         assert nvp != vp
-        assert (nvp.variables[0] != vp.variables[0]).all()
+        assert all(nvp.variables[0].data != vp.variables[0].data)
 
     def test_set_variables(self,vp):
         print u_data
@@ -206,36 +222,36 @@ class TestTSVectorProp:
         vp.time = dates2
         assert vp.time == Time(dates2)
 
-    def test_set_ts(self,vp):
+    def test_set_attr(self,vp):
 
         #mismatched data and time length
         with pytest.raises(ValueError):
-            vp.set_ts(time = dates2, variables=[s_data, s_data])
+            vp.set_attr(time = dates2, variables=[s_data, s_data])
 
-        vp.set_ts(name = 'vp1')
+        vp.set_attr(name = 'vp1')
         assert vp.name == 'vp1'
 
         with pytest.raises(ValueError):
-            vp.set_ts(time = dates, variables=[u_data,v_data])
+            vp.set_attr(time = dates, variables=[u_data,v_data])
 
-        vp.set_ts(time=dates, variables=[s_data, s_data])
-        print vp.variables[0][0]
-        assert vp.variables[0][0] == 20
+        vp.set_attr(time=dates, variables=[s_data, s_data])
+        assert vp.variables[0].data[0] == 20
 
-        vp.set_ts(variables = [[50,60,70],s_data])
-        assert vp.variables[0][0] == 50
+        vp.set_attr(variables = [[50,60,70],s_data])
+        assert vp.variables[0].data[0] == 50
 
-        vp.set_ts(time = [datetime.datetime(2000,1,3,1),
+        vp.set_attr(time = [datetime.datetime(2000,1,3,1),
                          datetime.datetime(2000,1,3,2),
                          datetime.datetime(2000,1,3,3)])
 
-        vp.set_ts(extrapolate=True, units='km/hr')
+        vp.set_attr(extrapolate=True, units='km/hr')
 
         assert vp.extrapolate == True
+        assert [v.extrapolate == True for v in vp._variables]
         assert vp.units == 'km/hr'
 
         with pytest.raises(ValueError):
-            vp.set_ts(units='nm/hr')
+            vp.set_attr(units='nm/hr')
 
     def test_at(self,vp):
         pts = np.array(((1,1), (2,2)))
@@ -257,7 +273,7 @@ class TestTSVectorProp:
             vp.at(pts, t5)
 
         #turn extrapolation on
-        vp.set_ts(extrapolate=True)
+        vp.set_attr(extrapolate=True)
         print vp.time
         print vp.time.time
         print vp.time.extrapolate
@@ -265,21 +281,167 @@ class TestTSVectorProp:
         assert (vp.at(pts, t5) == np.array([10,13])).all()
 
 
+@pytest.fixture()
+def gp():
+    return GriddedProp(name='u', units='m/s', time=grid_time, data=grid_u, data_file=curr_file, grid=test_grid, grid_file=curr_file)
 
-def test_gridprop_construction():
-    u = GriddedProp(name='u',
-                    units='m/s',
-                    data=grid_u,
-                    grid=test_grid,
-                    time=grid_time,
-                    data_file='tbofs_example.nc',
-                    grid_file='tbofs_example.nc')
-#     print u.at(np.array((-82.75, 27.5)), datetime.datetime(2015,11,30,19,30))
-#     print u.at(np.array((-82.75, 27.5)), datetime.datetime(2015,11,30,19,30), units='km/hr')
-    pass
+@pytest.fixture()
+def gp2():
+    return GriddedProp(name='v;', units='m/s', time=grid_time, data=grid_v, data_file=curr_file, grid=test_grid, grid_file=curr_file)
+
+@pytest.fixture()
+def gvp():
+    return GridVectorProp(name='velocity', units='m/s', time=grid_time, variables = [gp(), gp2()])
+
+class TestGriddedProp:
+
+    def test_construction(self):
+
+        u = GriddedProp(name='u',
+                        units='m/s',
+                        data=grid_u,
+                        grid=test_grid,
+                        time=grid_time,
+                        data_file='tbofs_example.nc',
+                        grid_file='tbofs_example.nc')
+        with pytest.raises(ValueError):
+            u = GriddedProp(name='u',
+                            units='m/s',
+                            data=None, #NO DATA
+                            grid=test_grid,
+                            time=grid_time,
+                            data_file='tbofs_example.nc',
+                            grid_file='tbofs_example.nc')
+        with pytest.raises(ValueError):
+            u = GriddedProp(name='u',
+                            units='m/s',
+                            data=grid_u,
+                            grid=None, #NO GRID
+                            time=grid_time,
+                            data_file='tbofs_example.nc',
+                            grid_file='tbofs_example.nc')
+        with pytest.raises(ValueError):
+            u = GriddedProp(name='u',
+                            units='m/s',
+                            data=u_data, #BAD DATA SHAPE
+                            grid=test_grid,
+                            time=grid_time,
+                            data_file='tbofs_example.nc',
+                            grid_file='tbofs_example.nc')
+        with pytest.raises(ValueError):
+            u = GriddedProp(name='u',
+                            units='m/s',
+                            data=grid_u,
+                            grid=test_grid,
+                            time=dates2, #BAD TIME SHAPE
+                            data_file='tbofs_example.nc',
+                            grid_file='tbofs_example.nc')
+
+    def test_unit_conversion(self, gp):
+        with pytest.raises(AttributeError):
+            gp.units = 'km/hr'
+
+    def test_set_data(self,gp):
+        with pytest.raises(AttributeError):
+            gp.data = grid_v
+
+    def test_set_grid(self,gp):
+        with pytest.raises(AttributeError):
+            gp.grid = test_grid
+
+    def test_set_time(self, gp):
+        gp.time = grid_time
+        gt2 = gp.time.time.copy()
+        gt2[0] = datetime.datetime(1999, 12, 31, 23)
+        gp.time = gt2
+        assert gp.time.time[0] == datetime.datetime(1999, 12, 31, 23)
+
+    def test_set_attr(self, gp):
+        gp.set_attr(name = 'gridpropobj')
+        assert gp.name == 'gridpropobj'
+
+        gp.set_attr(extrapolate = True)
+        assert gp.extrapolate == True
+        assert gp.time.extrapolate == True
+
+        gp.set_attr(data = grid_v)
+        assert gp.data == grid_v
+
+        gp.set_attr(grid = test_grid)
+        assert gp.grid == test_grid
+        assert gp.grid.infer_grid(gp.data) == 'node'
+
+        gp.set_attr(data = grid_u, grid = test_grid)
+        assert gp.data == grid_u
+        assert gp.grid.infer_grid(gp.data) == 'node'
+
+        gp.set_attr(data_file = 'f', grid_file = 'f')
+        assert gp.data_file == 'f'
+
+    def test_at(self, gp):
+        print gp.time.time
+        print gp.at(np.array([-82.8, 27.475]), gp.time.time[2])
+        assert gp.at(np.array([-82.8, 27.475]), gp.time.time[2]) != 0
+        assert np.isnan(gp.at(np.array([0,0]), gp.time.time[2]))
+
+class TestGridVectorProp:
+
+    def test_construction(self, gp, gp2):
+        with pytest.raises(ValueError):
+            gvp = GridVectorProp(name='velocity', units='m/s', time=grid_time, variables = [grid_u, grid_v])
+        with pytest.raises(ValueError):
+            gvp = GridVectorProp(name='velocity', units='km/hr', time=grid_time, variables = [gp,gp2])
+        gvp = GridVectorProp(name='velocity', units='m/s', time=grid_time, variables = [gp,gp2])
+        assert gvp.name == 'velocity'
+        assert gvp.units == 'm/s'
+        assert gvp.time == Time(grid_time)
+        assert gvp._variables[0].data == grid_u
+        assert gvp._variables[0].name == 'u'
+
+
+@pytest.fixture()
+def vel(u,v):
+    return VelocityTS(name='vel', components=[u,v])
+class TestVelocityTS:
+    def test_construction(self, u, v):
+        vel = None
+        vel = VelocityTS(name='vel', units='m/s', time=dates2, components=[u_data,v_data], extrapolate=False)
+
+        assert all(vel.variables[0].data == u_data)
+
+        #Using TimeSeriesProp objects
+        vel = VelocityTS(name='vel', components=[u, v])
+        assert vel.time == vel.variables[0].time == vel.variables[1].time
+        #3 components
+        with pytest.raises(ValueError):
+            vel = VelocityTS(name='vel', units='m/s', time=dates2, components=[u_data,v_data, u_data], extrapolate=False)
+
+    @pytest.mark.parametrize("json_", ('save', 'webapi'))
+    def test_serialization(self, vel, json_):
+        dict_ = vel.serialize(json_)
+        print dict_
+        assert dict_[u'name'] == 'vel'
+        if json_ == 'webapi':
+            assert dict_[u'units'] == ('m/s', 'degrees')
+            assert dict_[u'varnames'] == ['magnitude', 'direction', 'u', 'v']
+        if json_ == 'save':
+            print dict_['timeseries']
+            assert dict_['timeseries'][0][1][0] == 2.0
+            assert dict_[u'units'] == ['m/s']
+
+    @pytest.mark.parametrize("json_", ('save', 'webapi'))
+    def test_deserialize(self, vel, json_):
+        dict_ = vel.serialize(json_)
+        dser = VelocityTS.deserialize(dict_)
+        print dser
+        assert dser['name'] == 'vel'
+        assert all(dser['time'] == dates2)
+        assert all(np.isclose(dser['data'][0],u_data))
 
 if __name__ == "__main__":
+    a = vel()
+    a.at(np.array([0,0]), a.time.time[2])
     test_tsprop_construction()
     test_tsprop_unit_conversion()
-    test_tsprop_set_ts()
+    test_tsprop_set_attr()
     test_gridprop_construction()

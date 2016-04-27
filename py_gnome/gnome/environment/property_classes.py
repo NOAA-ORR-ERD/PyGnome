@@ -23,6 +23,14 @@ class PropertySchema(base_schema.ObjType):
     extrapolate = SchemaNode(Boolean(), missing='False')
     varnames = SequenceSchema(SchemaNode(String(), missing=drop))
 
+class TemperatureTSSchema(PropertySchema):
+    timeseries = SequenceSchema(
+                                TupleSchema(
+                                            children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
+                                                      SchemaNode(Float(), missing=0)
+                                                      ],
+                                            missing=drop)
+                                )
 
 class VelocityTSSchema(PropertySchema):
     timeseries = SequenceSchema(
@@ -48,7 +56,16 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
                       serializable.Field('varnames', save=True, update=True),
                       serializable.Field('extrapolate', save=True, update=True)])
 
-    def __init__(self, name=None, units=None, time = None, components = None, extrapolate=False):
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time = None,
+                 components = None,
+                 extrapolate=False,
+                 **kwargs):
+
+        if len(components) > 2:
+            raise ValueError('Only 2 dimensional velocities are supported')
         TSVectorProp.__init__(self, name, units, time=time, variables=components, extrapolate=extrapolate)
 
 
@@ -60,11 +77,6 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
         x = self.variables[0].data
         y = self.variables[1].data
         return map(lambda t,x,y:(t,(x,y)), self._time, x, y)
-
-    def set_data(self, times, datas, names, units):
-        for i, c in enumerate(self.components):
-            if c.name in names:
-                c.set_ts(t, data[i])
 
     def serialize(self, json_='webapi'):
         dict_ = serializable.Serializable.serialize(self, json_=json_)
@@ -108,7 +120,7 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
 
     @classmethod
     def new_from_dict(cls, dict_):
-        varnames = dict_.pop('varnames')
+        varnames = dict_['varnames']
         extrapolate = dict_['extrapolate']
         vars = []
         for i, varname in enumerate(varnames):
@@ -120,25 +132,6 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
         dict_.pop('data')
         dict_['components'] = vars
         return super(VelocityTS, cls).new_from_dict(dict_)
-
-    def update_from_dict(self, data):
-        list_ = self._state.get_names('update')
-        updated = False
-
-        vns = data.pop('varnames')
-        dat = data.pop('data')
-        t = data.pop('time')
-        u = data.pop('units')
-        ex = data.pop('extrapolate')
-        for i, c in enumerate(self.components):
-            c.set_ts(name = vns[i],
-                     units = u[i],
-                     data = dat[i],
-                     time = t,
-                     extrapolate = ex)
-        updated = True
-
-        return updated
 
 
 class VelocityGridSchema(PropertySchema):
