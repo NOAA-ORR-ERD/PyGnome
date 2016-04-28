@@ -161,6 +161,9 @@ class Dissolution(Weatherer, Serializable):
 
             print '\nm = ', m
             print 'drop_sizes = ', drop_sizes, 'in meters diameter'
+            print 'mol_wt = ', mol_wt, 'g/mole'
+            print
+
             # overall K_ow value
             K_ow = (np.sum(m * K_ow_comp / mol_wt) /
                     np.sum(m / mol_wt))
@@ -221,7 +224,11 @@ class Dissolution(Weatherer, Serializable):
                                                        area)
             N_s = np.nan_to_num(N_s * arom_mask)
             print 'N_s = ', N_s
-            print 'time_step = ', time_step
+            print 'sum(N_s) = ', N_s.sum(), 'kg/s'
+            print '         = ', N_s.sum() * 1000.0, 'g/s'
+
+            print 'sum(N_s) * T_calm = ', N_s.sum() * T_calm, 'kg'
+            print '                  = ', N_s.sum() * T_calm * 1000.0, 'g'
 
             mass_dissolved_in_slick.append(N_s.sum() * T_calm)
 
@@ -272,6 +279,7 @@ class Dissolution(Weatherer, Serializable):
         mass_fractions = masses / masses.sum()
 
         print 'mass_fractions = ', mass_fractions
+        print 'sum(mass_fractions) = ', mass_fractions.sum()
         print 'densities = ', densities
 
         aggregate_rho = (mass_fractions * densities).sum()
@@ -292,14 +300,16 @@ class Dissolution(Weatherer, Serializable):
 
         print 'U_10 = ', U_10
         print 'c_oil = ', c_oil
+        print 'sum(c_oil) = ', c_oil.sum()
         print 'k_ow = ', k_ow
         print 'slick_area = ', slick_area
+        print 'mass xfer rate = ', 0.01 * U_10
 
         # mass xfer rate (per unit area) in units (kg / s * m^2)
-        N_s_a = (0.01 * U_10 ** (7.0 / 9.0) *
-                 (c_oil / k_ow) *
-                 (4 * slick_area / np.pi) ** (-1.0 / 18.0) *
-                 s_c ** (-2.0 / 3.0))
+        N_s_a = (0.01 *
+                 U_10 *
+                 (c_oil / k_ow))
+
         print 'N_s_a = ', N_s_a
 
         # return mass xfer rate in units (kg / s)
