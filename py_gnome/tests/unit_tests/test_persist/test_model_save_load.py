@@ -12,8 +12,7 @@ import json
 import pytest
 from pytest import raises
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome.basic_types import datetime_value_2d
 from gnome.map import MapFromBNA
@@ -25,10 +24,10 @@ from gnome.movers import RandomMover, WindMover, CatsMover, IceMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
 from gnome.outputters import CurrentGeoJsonOutput, IceGeoJsonOutput
 
-from conftest import dump, testdata, test_oil
+from ..conftest import dump, testdata, test_oil
 
 
-def make_model(uncertain=False):
+def make_model(uncertain=False, mode='gnome'):
     '''
     Create a model from the data in sample_data/boston_data
     It contains:
@@ -39,14 +38,14 @@ def make_model(uncertain=False):
       - cats ossm mover
       - plain cats mover
     '''
-
     start_time = datetime(2013, 2, 13, 9, 0)
     model = Model(start_time=start_time,
                   duration=timedelta(days=2),
                   time_step=timedelta(minutes=30).total_seconds(),
                   uncertain=uncertain,
                   map=MapFromBNA(testdata['boston_data']['map'],
-                                 refloat_halflife=1))
+                                 refloat_halflife=1),
+                  mode=mode)
 
     print 'adding a spill'
     start_position = (144.664166, 13.441944, 0.0)
@@ -111,13 +110,15 @@ def make_model(uncertain=False):
     c_mover.scale_value = .04
     model.movers += c_mover
 
-    # todo: seg faulting for component mover - comment test for now
+    # TODO: seg faulting for component mover - comment test for now
     # print "adding a component mover:"
     # comp_mover = ComponentMover(testdata['boston_data']['component_curr1'],
     #                             testdata['boston_data']['component_curr2'],
     #                             w_mover.wind)
-    # #todo: callback did not work correctly below - fix!
-    # #comp_mover = ComponentMover(component_file1,component_file2,Wind(timeseries=series, units='m/s'))
+    # TODO: callback did not work correctly below - fix!
+    # comp_mover = ComponentMover(component_file1,
+    #                             component_file2,
+    #                             Wind(timeseries=series, units='m/s'))
 
     # comp_mover.ref_point = (-70.855, 42.275)
     # comp_mover.pat1_angle = 315
@@ -296,14 +297,25 @@ class TestWebApi:
                                                        count))
             self._write_to_file(fname, serial)
 
-    @pytest.mark.parametrize('uncertain', [False, True])
-    def test_dump_webapi_option(self, uncertain):
-        model = make_model(uncertain)
+    @pytest.mark.parametrize('uncertain, mode',
+                             [(False, 'gnome'),
+                              (True, 'gnome'),
+                              (False, 'adios'),
+                              (True, 'adios')])
+    def test_dump_webapi_option(self, uncertain, mode):
+        model = make_model(uncertain, mode=mode)
         self.del_saveloc(self.webapi_files)
         os.makedirs(self.webapi_files)
         serial = model.serialize('webapi')
+
         assert 'valid' in serial
         assert serial['valid']
+
+        assert 'uncertain' in serial
+        assert serial['uncertain'] == uncertain
+
+        assert 'mode' in serial
+        assert serial['mode'] == mode
 
         fname = os.path.join(self.webapi_files, 'Model.json')
         self._write_to_file(fname, serial)
@@ -319,8 +331,9 @@ class TestWebApi:
                     for obj in ['release', 'element_type']:
                         serial = getattr(spill, obj).serialize('webapi')
                         fname = os.path.join(self.webapi_files,
-                                             'Spill{0}_{1}.json'.format(idx,
-                                                                        obj))
+                                             'Spill{}_{}.json'.format(idx, obj)
+                                             )
+
                         self._write_to_file(fname, serial)
 
     @pytest.mark.parametrize('uncertain', [False, True])

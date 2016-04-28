@@ -134,14 +134,16 @@ The system compiler for OS-X is XCode. It can be installed from the App Store.
 _Note: it is a HUGE download._
 
 After installing XCode, you still need to install the "Command Line Tools".
-Xcode includes a new "Downloads" preference pane to install optional components
+XCode includes a new "Downloads" preference pane to install optional components
 such as command line tools, and previous iOS Simulators.
 
 To install the XCode command line tools:
- - Start Xcode from the launchpad
- - Click the "Xcode" dropdown menu button in the top left of the screen near the Apple logo
+ - Start XCode from the launchpad
+ - Click the "XCode" dropdown menu button in the top left of the screen near
+the Apple logo
  - Click "Preferences", then click "Downloads".
- - Command Line Tools should be one of the downloadable items, and there should be an install button for that item.  Click to install.
+ - Command Line Tools should be one of the downloadable items, and there should
+be an install button for that item.  Click to install.
 
 Once the command line tools are installed, you should be able to build py_gnome
 as described below.
@@ -192,7 +194,8 @@ So to build py_gnome on OS-X:
 
 ### Other platforms
 
-As far as I know, the same linking issues don't exist, so you can build directly.
+As far as we know, the linking issues encountered on OS-X don't exist for other
+platforms, so you can build directly.
 There are a number of options for building:
 
 ```

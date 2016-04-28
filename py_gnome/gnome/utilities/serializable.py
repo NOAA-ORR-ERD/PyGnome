@@ -638,6 +638,22 @@ class Serializable(GnomeId, Savable):
         list_ = self._state.get_names('update')
         updated = False
 
+        if ('active_start' in data and
+                'active_stop' in data and
+                'active_stop' in list_):
+            # special case: these attributes employ range checking,
+            # so we would like to make sure that we evaluate
+            # active_stop before active_start if we are setting the active
+            # range outside and above the original range,
+            # and we would like to evaluate active_start before active_stop
+            # if we are setting the active range outside and below the
+            # original range.
+            try:
+                self._check_active_startstop(data['active_start'],
+                                             self.active_stop)
+            except ValueError:
+                list_.insert(0, list_.pop(list_.index('active_stop')))
+
         for key in list_:
             if key not in data:
                 continue

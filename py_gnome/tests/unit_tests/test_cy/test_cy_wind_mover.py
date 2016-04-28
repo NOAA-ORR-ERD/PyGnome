@@ -34,6 +34,7 @@ def test_init():
     assert wm.uncertain_time_delay == 0
     assert wm.uncertain_speed_scale == 2
     assert wm.uncertain_angle_scale == 0.4
+    assert wm.extrapolate == False
 
 
 def test_properties():
@@ -43,11 +44,13 @@ def test_properties():
     wm.uncertain_time_delay = 2
     wm.uncertain_speed_scale = 3
     wm.uncertain_angle_scale = 4
+    wm.extrapolate = True
 
     assert wm.uncertain_duration == 1
     assert wm.uncertain_time_delay == 2
     assert wm.uncertain_speed_scale == 3
     assert wm.uncertain_angle_scale == 4
+    assert wm.extrapolate == True
 
 
 def test_eq():

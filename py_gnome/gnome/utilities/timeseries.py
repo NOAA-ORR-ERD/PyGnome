@@ -13,6 +13,13 @@ from gnome.utilities.convert import (to_time_value_pair,
                                      to_datetime_value_2d)
 
 
+class TimeseriesError(Exception):
+    """
+    Error class for a problem with the timeseries check
+    """
+    pass
+
+
 class Timeseries(GnomeId):
     def __init__(self, timeseries=None, filename=None, format='uv'):
         """
@@ -78,35 +85,30 @@ class Timeseries(GnomeId):
         self._filename = filename
 
         if filename is None:
-            if self._check_timeseries(timeseries):
-                datetime_value_2d = self._xform_input_timeseries(timeseries)
-
-                time_value_pair = to_time_value_pair(datetime_value_2d, format)
-                self.ossm = CyTimeseries(timeseries=time_value_pair)
-            else:
-                raise ValueError('Bad timeseries as input')
+            self._check_timeseries(timeseries)  # will raise an Exception if it fails
+            datetime_value_2d = self._xform_input_timeseries(timeseries)
+            time_value_pair = to_time_value_pair(datetime_value_2d, format)
+            self.ossm = CyTimeseries(timeseries=time_value_pair)
         else:
             ts_format = tsformat(format)
             self.ossm = CyTimeseries(filename=self._filename,
                                      file_format=ts_format)
 
     def _check_timeseries(self, timeseries):
-        '''
+        """
         Run some checks to make sure timeseries is valid.
         - We accept numpy arrays
         - We will also accept a list of timeseries values of the form
           (datetime(...), (N, N))
         - we will also accept a constant single timeseries  value.
-        Also, make the resolution to minutes as opposed to seconds
-        '''
+        """
         if not isinstance(timeseries, np.ndarray):
             if self._is_timeseries_value(timeseries):
                 return True
             else:
                 for i in timeseries:
                     if not self._is_timeseries_value(i):
-                        return False
-
+                        raise TimeseriesError('value: %s is not a timeseries value' % (i,))
                 return True
 
         if not self._timeseries_is_ascending(timeseries):
@@ -114,15 +116,21 @@ class Timeseries(GnomeId):
                               'The datetime values in the array must be in '
                               'ascending order'
                               .format(self._pid))
-            return False
-
-        if self._timeseries_has_duplicates(timeseries):
-            self.logger.error('{0} - timeseries must contain unique '
-                              'time entries'
-                              .format(self._pid))
-            return False
+            raise TimeseriesError("timeseries is not in ascending order")
 
         return True
+
+    def get_start_time(self):
+        """
+        :this will be the real_data_start time (seconds).
+        """
+        return (self.ossm.get_start_time())
+
+    def get_end_time(self):
+        """
+        :this will be the real_data_stop time (seconds).
+        """
+        return (self.ossm.get_end_time())
 
     def _is_timeseries_value(self, value):
         if not isinstance(value, (list, tuple)):
@@ -140,28 +148,34 @@ class Timeseries(GnomeId):
         return True
 
     def _timeseries_is_ascending(self, timeseries):
-        # we need to have a valid shape to sort
-        if timeseries.shape == ():
-            timeseries = np.asarray([timeseries],
-                                    dtype=basic_types.datetime_value_2d)
+        """
+        Check if values are monotonically increasing
 
-        if np.any(timeseries['time'][np.argsort(timeseries['time'])] !=
-                  timeseries['time']):
+        This should catch both out of order and duplicate values.
+        """
+
+        # FixMe: does this ever have to work for a true scalar??
+        if timeseries.shape == () or timeseries.shape == (1,):
+            # scalar or single value -- must be OK
+            return True
+
+        if np.any(np.diff(timeseries['time']) <= np.timedelta64(0, 's')):
             return False
         else:
             return True
 
-    def _timeseries_has_duplicates(self, timeseries):
-        # we need to have a valid shape to sort
-        if timeseries.shape == ():
-            timeseries = np.asarray([timeseries],
-                                    dtype=basic_types.datetime_value_2d)
+    # not needed -- _timeseries_is_ascending should catch this
+    # def _timeseries_has_duplicates(self, timeseries):
+    #     # we need to have a valid shape to sort
+    #     if timeseries.shape == ():
+    #         timeseries = np.asarray([timeseries],
+    #                                 dtype=basic_types.datetime_value_2d)
 
-        unique = np.unique(timeseries['time'])
-        if len(unique) != len(timeseries['time']):
-            return True
-        else:
-            return False
+    #     unique = np.unique(timeseries['time'])
+    #     if len(unique) != len(timeseries['time']):
+    #         return True
+    #     else:
+    #         return False
 
     def _xform_input_timeseries(self, timeseries):
         '''
@@ -179,9 +193,11 @@ class Timeseries(GnomeId):
             timeseries = np.asarray([timeseries],
                                     dtype=basic_types.datetime_value_2d)
 
-        # Our datetime granularity is in minutes, so zero out the seconds.
-        for ix, tm in enumerate(timeseries['time'].astype(datetime.datetime)):
-            timeseries['time'][ix] = tm.replace(second=0)
+        # removed -- we keep seconds everywhere except writing OSSM (WND) files
+        # we could truncate to seconds, but why?
+        # # Our datetime granularity is in minutes, so zero out the seconds.
+        # for ix, tm in enumerate(timeseries['time'].astype(datetime.datetime)):
+        #     timeseries['time'][ix] = tm.replace(second=0)
 
         return timeseries
 
@@ -263,7 +279,7 @@ class Timeseries(GnomeId):
         if not np.all(self_ts['time'] == other_ts['time']):
             return False
 
-        if not np.allclose(self_ts['value'], other_ts['value']):
+        if not np.allclose(self_ts['value'], other_ts['value'], atol=1e-10, rtol=1e-10):
             return False
 
         return True

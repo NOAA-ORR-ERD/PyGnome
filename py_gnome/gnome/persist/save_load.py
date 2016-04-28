@@ -568,8 +568,14 @@ def is_savezip_valid(savezip):
 
 
 def zipfile_folders(zip_file):
+    '''
+        Get a list of the folders in our archive.
+        - MAC OS X created zipfiles contain a folder named '__MACOSX/',
+          which is intended to contain file and folder related metadata.
+          we would like to ignore this folder.
+    '''
     return [name for name in zip_file.namelist()
-            if name.endswith('/')]
+            if name.endswith('/') and not name.startswith('__MACOSX')]
 
 
 def extract_zipfile(zip_file, to_folder='.', prefix=''):

@@ -62,6 +62,9 @@ public:
 	void	SetTimeShift(long timeShift) {timeGrid->SetTimeShift(timeShift);}	
 	long	GetTimeShift() {return timeGrid->GetTimeShift();}	
 	
+	OSErr	GetDataStartTime(Seconds *startTime) {return timeGrid->GetDataStartTime(startTime);}	
+	OSErr	GetDataEndTime(Seconds *endTime) {return timeGrid->GetDataEndTime(endTime);}	
+	
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	virtual void 		ModelStepIsDone();

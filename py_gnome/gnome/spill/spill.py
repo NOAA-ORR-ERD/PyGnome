@@ -17,7 +17,7 @@ from gnome.persist import class_from_objtype
 from gnome.persist.base_schema import ObjType
 
 from . import elements
-from .release import PointLineRelease
+from .release import PointLineRelease, ContinuousRelease
 from .. import _valid_units
 
 
@@ -75,14 +75,19 @@ class Spill(serializable.Serializable):
             of the elements.
         :type element_type:
             :class:`~gnome.spill.elements.element_type.ElementType`
+
         :param bool on=True: Toggles the spill on/off.
+
         :param float amount=None: mass or volume of oil spilled.
+
         :param str units=None: must provide units for amount spilled.
+
         :param float amount_uncertainty_scale=0.0: scale value in range 0-1
                                                    that adds uncertainty to the
                                                    spill amount.
                                                    Maximum uncertainty scale
                                                    is (2/3) * spill_amount.
+
         :param str name='Spill': a name for the spill.
 
         .. note::
@@ -235,7 +240,7 @@ class Spill(serializable.Serializable):
                     time_step = (self.get('end_release_time') -
                                  current_time).total_seconds()
 
-                _mass_in_ts = _mass/rd_sec * time_step
+                _mass_in_ts = _mass / rd_sec * time_step
                 le_mass = _mass_in_ts / num_new_particles
 
         self.logger.debug(self._pid + "LE mass (kg): {0}".format(le_mass))
@@ -766,6 +771,36 @@ def subsurface_plume_spill(num_elements,
                  element_type=element_type,
                  amount=amount,
                  units=units,
+                 name=name)
+
+
+def continuous_release_spill(initial_elements,
+                             num_elements,
+                             start_position,
+                             release_time,
+                             end_position=None,
+                             end_release_time=None,
+                             element_type=None,
+                             substance=None,
+                             on=True,
+                             amount=None,
+                             units=None,
+                             name='Point/Line Release'):
+    '''
+    Helper function returns a Spill object containing a point or line release
+    '''
+    release = ContinuousRelease(initial_elements=initial_elements,
+                                release_time=release_time,
+                                start_position=start_position,
+                                num_elements=num_elements,
+                                end_position=end_position,
+                                end_release_time=end_release_time)
+    return Spill(release,
+                 element_type,
+                 substance,
+                 on,
+                 amount,
+                 units,
                  name=name)
 
 

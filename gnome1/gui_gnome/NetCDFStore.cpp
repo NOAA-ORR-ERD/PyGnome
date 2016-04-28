@@ -19,8 +19,8 @@ NetCDFStore::NetCDFStore() {
     this->depth = NULL;
     this->mass = NULL;
     this->age = NULL;
-    this->flag = NULL;
-    this->status = NULL;
+    //this->flag = NULL;
+    this->status_codes = NULL;
     this->id = NULL;
 }
 
@@ -110,8 +110,8 @@ OSErr NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVa
 			netStore->depth = new float[c];
 		netStore->mass = new float[c];
 		netStore->age = new long[c];
-		netStore->flag = new short[c];
-		netStore->status = new long[c];
+		//netStore->flag = new short[c];
+		netStore->status_codes = new short[c];
 		netStore->id = new long[c];	
 	}
 	catch(std::bad_alloc) {
@@ -154,24 +154,24 @@ OSErr NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVa
 		}
         netStore->age[j] = tLE->ageInHrsWhenReleased*(3600);
 		netStore->age[j] += model->modelTime - tLE->releaseTime;
-		netStore->flag[j] = 0;
-		netStore->status[j] = OILSTAT_INWATER;
+		//netStore->flag[j] = 0;
+		netStore->status_codes[j] = OILSTAT_INWATER;
 		//if(threeMovement)
-			if(tLE->z > 0)
-				netStore->flag[j] += 16;
+			//if(tLE->z > 0)
+				//netStore->flag[j] += 16;
 
 		switch(tLE->statusCode) {
 			case OILSTAT_ONLAND:
-				netStore->flag[j] += 2;
-				netStore->status[j] = OILSTAT_ONLAND;
+				//netStore->flag[j] += 2;
+				netStore->status_codes[j] = OILSTAT_ONLAND;
 				break;
 			case OILSTAT_OFFMAPS:
-				netStore->flag[j] += 4;
-				netStore->status[j] = OILSTAT_OFFMAPS;
+				//netStore->flag[j] += 4;
+				netStore->status_codes[j] = OILSTAT_OFFMAPS;
 				break;
 			case OILSTAT_EVAPORATED:
-				netStore->flag[j] += 8;
-				netStore->status[j] = OILSTAT_EVAPORATED;
+				//netStore->flag[j] += 8;
+				netStore->status_codes[j] = OILSTAT_EVAPORATED;
 				break;
 			default:
 				break;
@@ -196,8 +196,8 @@ OSErr NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVa
 	//if(threeMovement)
 		delete[] netStore->depth;
 	delete[] netStore->mass;
-	delete[] netStore->flag;
-	delete[] netStore->status;
+	//delete[] netStore->flag;
+	delete[] netStore->status_codes;
 	delete[] netStore->age;
 	delete[] netStore->id;
     delete netStore;           
@@ -234,7 +234,7 @@ OSErr NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVar
 // ++ Dimensions:
 
 #define VAR_DIMS    1
-#define NUM_VARs    10
+#define NUM_VARs    9
 	
 	*ncDimIDs = map<string, int>();	
 	*ncVarIDs = map<string, int>();
@@ -309,16 +309,16 @@ OSErr NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVar
     (*ncVarIDs)["Age"] = *varIDs;
     ++varIDs;
 
-    ncErr = nc_def_var(ncID, "flag", NC_BYTE, VAR_DIMS, tData, varIDs);
+    //ncErr = nc_def_var(ncID, "flag", NC_BYTE, VAR_DIMS, tData, varIDs);
+    //err = CheckNC(ncErr); {if (err) return err;} // handle error.
+
+    //(*ncVarIDs)["Flag"] = *varIDs;
+    //++varIDs;
+
+    ncErr = nc_def_var(ncID, "status_codes", NC_SHORT, VAR_DIMS, tData, varIDs);
     err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
-    (*ncVarIDs)["Flag"] = *varIDs;
-    ++varIDs;
-
-    ncErr = nc_def_var(ncID, "status", NC_INT, VAR_DIMS, tData, varIDs);
-    err = CheckNC(ncErr); {if (err) return err;} // handle error.
-
-    (*ncVarIDs)["Status"] = *varIDs;
+    (*ncVarIDs)["Status_Codes"] = *varIDs;
     ++varIDs;
 
     ncErr = nc_def_var(ncID, "id", NC_INT, VAR_DIMS, tData, varIDs);
@@ -468,7 +468,7 @@ OSErr NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVar
 	
 	// Flags
 	
-	tStr = "particle status flag";
+	/*tStr = "particle status flag";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Flag"], "long_name", strlen(tStr), tStr);
 	err = CheckNC(ncErr); {if (err) return err;}
 	
@@ -486,25 +486,25 @@ OSErr NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVar
 		err = CheckNC(ncErr); {if (err) return err;}
 		
 			// we don't need masks.
-	}
+	}*/
 	
-	// Status
+	// Status_Codes
 	
 	tStr = "particle status flag";
-	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Status"], "long_name", strlen(tStr), tStr);
+	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Status_Codes"], "long_name", strlen(tStr), tStr);
 	err = CheckNC(ncErr); {if (err) return err;}
 	
 	{
 		const int tRange[] = {0, 10};
-		ncErr = nc_put_att_int(ncID, (*ncVarIDs)["Status"], "valid_range", NC_INT, 2, tRange);
+		ncErr = nc_put_att_int(ncID, (*ncVarIDs)["Status_Codes"], "valid_range", NC_INT, 2, tRange);
 		err = CheckNC(ncErr); {if (err) return err;}
 
 		const int tVals[] = { 2, 3, 7, 10 };
-		ncErr = nc_put_att_int(ncID, (*ncVarIDs)["Status"], "flag_values", NC_INT, 4, tVals);
+		ncErr = nc_put_att_int(ncID, (*ncVarIDs)["Status_Codes"], "flag_values", NC_INT, 4, tVals);
 		err = CheckNC(ncErr); {if (err) return err;}
 		
 		tStr = "2:in_water 3:on_land 7:off_maps 10:evaporated";
-		ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Status"], "flag_meanings", strlen(tStr), tStr);
+		ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Status_Codes"], "flag_meanings", strlen(tStr), tStr);
 		err = CheckNC(ncErr); {if (err) return err;}
 		
 			// we don't need masks.
@@ -543,9 +543,9 @@ OSErr NetCDFStore::Read() {
 //bool NetCDFStore::Write(TModel* model, bool threeMovement, bool uncertain) {
 OSErr NetCDFStore::Write(TModel* model, bool uncertain) {
 
-    short *cFlag;
+    short /**cFlag,*/ *cStatus;
 	int ncID, ncErr = 0;
-    long j, *cID, tID, timeStep, *cAge, *cStatus;
+    long j, *cID, tID, timeStep, *cAge/*, *cStatus*/;
     float *cLon, *cLat, *cDepth, *cMass;
     static map<string, int> lastCoord_M = map<string, int>();
 	static map<string, int> lastCoord_C = map<string, int>();
@@ -571,8 +571,8 @@ OSErr NetCDFStore::Write(TModel* model, bool uncertain) {
 		(*lastCoord)["Depth"] = 0;
         (*lastCoord)["Mass"] = 0;
         (*lastCoord)["Age"] = 0;
-        (*lastCoord)["Flag"] = 0;
-        (*lastCoord)["Status"] = 0;
+        //(*lastCoord)["Flag"] = 0;
+        (*lastCoord)["Status_Codes"] = 0;
         (*lastCoord)["ID"] = 0;
     }	
              // Time: 
@@ -641,21 +641,22 @@ OSErr NetCDFStore::Write(TModel* model, bool uncertain) {
     err = CheckNC(ncErr); {if (err) return err;}
         
             // Flags:
-    tID = (*this->ncVarIDs)["Flag"];
+    /*tID = (*this->ncVarIDs)["Flag"];
     for(cFlag = this->flag, j = 0; ncErr == NC_NOERR && j < this->pCount; j++, cFlag++) {
         const size_t tCoord[] = {(*lastCoord)["Flag"]+j};
 		ncErr = nc_put_var1_short(ncID, tID, tCoord, cFlag);
     }
     (*lastCoord)["Flag"]+=j;
     err = CheckNC(ncErr); {if (err) return err;}
-
-             // Status:
-    tID = (*this->ncVarIDs)["Status"];
-    for(cStatus = this->status, j = 0; ncErr == NC_NOERR && j < this->pCount; j++, cStatus++) {
-        const size_t tCoord[] = {(*lastCoord)["Status"]+j};
-		ncErr = nc_put_var1_long(ncID, tID, tCoord, cStatus);
+*/
+             // Status_Codes:
+    tID = (*this->ncVarIDs)["Status_Codes"];
+    for(cStatus = this->status_codes, j = 0; ncErr == NC_NOERR && j < this->pCount; j++, cStatus++) {
+        const size_t tCoord[] = {(*lastCoord)["Status_Codes"]+j};
+		//ncErr = nc_put_var1_long(ncID, tID, tCoord, cStatus);
+		ncErr = nc_put_var1_short(ncID, tID, tCoord, cStatus);
     }
-    (*lastCoord)["Status"]+=j;
+    (*lastCoord)["Status_Codes"]+=j;
     err = CheckNC(ncErr); {if (err) return err;}
 
            // ID:

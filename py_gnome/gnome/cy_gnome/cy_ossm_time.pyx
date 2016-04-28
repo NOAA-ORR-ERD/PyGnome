@@ -436,6 +436,18 @@ cdef class CyTimeseries(CyOSSMTime):
         return tval
 
 
+    def get_start_time(self):
+        cdef OSErr err
+        cdef Seconds start_time
+        err = self.time_dep.GetDataStartTime(&start_time)
+        return start_time
+
+    def get_end_time(self):
+        cdef OSErr err
+        cdef Seconds end_time
+        err = self.time_dep.GetDataEndTime(&end_time)
+        return end_time
+
     def check_time_in_range(self, Seconds model_time):
         """
         .. function:: check_time_in_range(self, model_time)
