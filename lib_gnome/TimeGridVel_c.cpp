@@ -1813,6 +1813,302 @@ OSErr TimeGridVel_c::GetEndTime(Seconds *endTime)
 	return 0;
 }
 
+OSErr TimeGridVel_c::GetFileStartTime(Seconds *startTime)
+{
+	char path[256];
+	DateTimeRec time;
+	OSErr err = 0;
+	long i, numScanned;
+
+	int status, ncid, recid, timeid;
+	size_t recs, t_len, t_len2;
+	double timeVal;
+	char recname[NC_MAX_NAME], *timeUnits = 0;
+	static size_t timeIndex;
+	Seconds startTime2;
+	double timeConversion = 1.;
+
+	
+	strcpy(path,fVar.pathName);
+	if (!path || !path[0]) return -1;
+	
+	status = nc_open(path, NC_NOWRITE, &ncid);
+	if (status != NC_NOERR) {
+		err = -2;
+		goto done;
+	}
+
+	status = nc_inq_dimid(ncid, "time", &recid); 
+	if (status != NC_NOERR) {
+		status = nc_inq_unlimdim(ncid, &recid);	// maybe time is unlimited dimension
+		if (status != NC_NOERR) {
+			err = -2;
+			goto done;
+		}
+	}
+
+	status = nc_inq_varid(ncid, "time", &timeid); 
+	if (status != NC_NOERR) {
+		err = -2;
+		goto done;
+	}
+	
+	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
+	if (status != NC_NOERR) {
+		err = -2;
+		goto done;
+	}
+	else
+	{
+		DateTimeRec time;
+		char unitStr[24], junk[10];
+		
+		timeUnits = new char[t_len + 1];
+
+		status = nc_get_att_text(ncid, timeid, "units", timeUnits);
+		if (status != NC_NOERR) {
+			err = -2;
+			goto done;
+		}
+
+		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
+		StringSubstitute(timeUnits, ':', ' ');
+		StringSubstitute(timeUnits, '-', ' ');
+		StringSubstitute(timeUnits, 'T', ' ');
+		StringSubstitute(timeUnits, 'Z', ' ');
+		
+		numScanned = sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
+							unitStr, junk, &time.year, &time.month, &time.day,
+							&time.hour, &time.minute, &time.second) ;
+		if (numScanned == 5) {
+			time.hour = 0;
+			time.minute = 0;
+			time.second = 0;
+		}
+		else if (numScanned == 7)
+			time.second = 0;
+		else if (numScanned < 8) {
+			err = -1;
+			TechError("TimeGridVel::ReadInputFileNames()", "sscanf() == 8", 0);
+			goto done;
+		}
+
+		// code goes here, which start Time to use ??
+		DateToSeconds (&time, &startTime2);
+		if (!strcmpnocase(unitStr, "HOURS") || !strcmpnocase(unitStr, "HOUR"))
+			timeConversion = 3600.;
+		else if (!strcmpnocase(unitStr, "MINUTES") || !strcmpnocase(unitStr, "MINUTE"))
+			timeConversion = 60.;
+		else if (!strcmpnocase(unitStr, "SECONDS") || !strcmpnocase(unitStr, "SECOND"))
+			timeConversion = 1.;
+		else if (!strcmpnocase(unitStr, "DAYS") || !strcmpnocase(unitStr, "DAY"))
+			timeConversion = 24 * 3600.;
+	}
+
+	status = nc_inq_dim(ncid, recid, recname, &recs);
+	if (status != NC_NOERR) {
+		err = -2;
+		goto done;
+	}
+
+	Seconds newTime;
+	// possible units are, HOURS, MINUTES, SECONDS,...
+	timeIndex = 0;	// first time
+
+	status = nc_get_var1_double(ncid, timeid, &timeIndex, &timeVal);
+	if (status != NC_NOERR) {
+		//strcpy(errmsg, "Error reading times from NetCDF file");
+		//printError(errmsg);
+		err = -1;
+		goto done;
+	}
+
+	newTime = RoundDateSeconds(round(startTime2 + timeVal * timeConversion));
+	*startTime = newTime;
+
+	status = nc_close(ncid);
+	if (status != NC_NOERR) {
+		err = -2;
+		goto done;
+	}
+done: 
+	return err;
+}
+
+
+OSErr TimeGridVel_c::GetFileEndTime(Seconds *endTime)
+{
+	char path[256];
+	DateTimeRec time;
+	OSErr err = 0;
+	long i, numScanned;
+
+	int status, ncid, recid, timeid;
+	size_t recs, t_len, t_len2;
+	double timeVal;
+	char recname[NC_MAX_NAME], *timeUnits = 0;
+	static size_t timeIndex;
+	Seconds startTime2;
+	double timeConversion = 1.;
+
+	
+	strcpy(path,fVar.pathName);
+	if (!path || !path[0]) return -1;
+	
+	status = nc_open(path, NC_NOWRITE, &ncid);
+	if (status != NC_NOERR) {
+		err = -2;
+		goto done;
+	}
+
+	status = nc_inq_dimid(ncid, "time", &recid); 
+	if (status != NC_NOERR) {
+		status = nc_inq_unlimdim(ncid, &recid);	// maybe time is unlimited dimension
+		if (status != NC_NOERR) {
+			err = -2;
+			goto done;
+		}
+	}
+
+	status = nc_inq_varid(ncid, "time", &timeid); 
+	if (status != NC_NOERR) {
+		err = -2;
+		goto done;
+	}
+	
+	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
+	if (status != NC_NOERR) {
+		err = -2;
+		goto done;
+	}
+	else
+	{
+		DateTimeRec time;
+		char unitStr[24], junk[10];
+		
+		timeUnits = new char[t_len + 1];
+
+		status = nc_get_att_text(ncid, timeid, "units", timeUnits);
+		if (status != NC_NOERR) {
+			err = -2;
+			goto done;
+		}
+
+		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
+		StringSubstitute(timeUnits, ':', ' ');
+		StringSubstitute(timeUnits, '-', ' ');
+		StringSubstitute(timeUnits, 'T', ' ');
+		StringSubstitute(timeUnits, 'Z', ' ');
+		
+		numScanned = sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
+							unitStr, junk, &time.year, &time.month, &time.day,
+							&time.hour, &time.minute, &time.second) ;
+		if (numScanned == 5) {
+			time.hour = 0;
+			time.minute = 0;
+			time.second = 0;
+		}
+		else if (numScanned == 7)
+			time.second = 0;
+		else if (numScanned < 8) {
+			err = -1;
+			TechError("TimeGridVel::ReadInputFileNames()", "sscanf() == 8", 0);
+			goto done;
+		}
+
+		// code goes here, which start Time to use ??
+		DateToSeconds (&time, &startTime2);
+		if (!strcmpnocase(unitStr, "HOURS") || !strcmpnocase(unitStr, "HOUR"))
+			timeConversion = 3600.;
+		else if (!strcmpnocase(unitStr, "MINUTES") || !strcmpnocase(unitStr, "MINUTE"))
+			timeConversion = 60.;
+		else if (!strcmpnocase(unitStr, "SECONDS") || !strcmpnocase(unitStr, "SECOND"))
+			timeConversion = 1.;
+		else if (!strcmpnocase(unitStr, "DAYS") || !strcmpnocase(unitStr, "DAY"))
+			timeConversion = 24 * 3600.;
+	}
+
+	status = nc_inq_dim(ncid, recid, recname, &recs);
+	if (status != NC_NOERR) {
+		err = -2;
+		goto done;
+	}
+
+	Seconds newTime;
+	// possible units are, HOURS, MINUTES, SECONDS,...
+	timeIndex = recs - 1;	// last time
+
+	status = nc_get_var1_double(ncid, timeid, &timeIndex, &timeVal);
+	if (status != NC_NOERR) {
+		//strcpy(errmsg, "Error reading times from NetCDF file");
+		//printError(errmsg);
+		err = -1;
+		goto done;
+	}
+
+	newTime = RoundDateSeconds(round(startTime2 + timeVal * timeConversion));
+	*endTime = newTime;
+
+	status = nc_close(ncid);
+	if (status != NC_NOERR) {
+		err = -2;
+		goto done;
+	}	
+done: 
+	return err;
+}
+
+OSErr TimeGridVel_c::GetDataStartTime(Seconds *startTime)
+{
+	OSErr err = 0;
+	*startTime = 0;
+	long numTimesInFile = GetNumTimesInFile();
+
+	if (GetNumFiles()>1)
+	{
+		*startTime = (*fInputFilesHdl)[0].startTime + fTimeShift;
+		return err;
+	}
+	else
+	{
+		if (numTimesInFile>0)
+		{
+			err = GetFileStartTime(startTime);
+			return err;
+		}
+		else
+			err = -1;
+		
+	}
+
+	return err;
+}
+
+OSErr TimeGridVel_c::GetDataEndTime(Seconds *endTime)
+{
+	OSErr err = 0;
+	*endTime = 0;
+	long numTimesInFile = GetNumTimesInFile();
+
+	if (GetNumFiles()>1)
+	{
+		*endTime = (*fInputFilesHdl)[GetNumFiles()-1].endTime + fTimeShift;				
+		return err;
+	}
+	else
+	{
+		if (numTimesInFile>0)
+		{
+			err = GetFileEndTime(endTime);
+			return err;
+		}
+		else
+			err = -1;
+	}
+
+	return err;
+}
+
 double TimeGridVelRect_c::GetDepthAtIndex(long depthIndex, double totalDepth)
 {	// really can combine and use GetDepthAtIndex - could move to base class
 	double depth = 0;

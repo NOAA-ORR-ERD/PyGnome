@@ -10,7 +10,7 @@ geojson
 repoze.lru 
 colander
 gsw             # Thermodynamic Equations Of Seawater - density computation
-OilLibrary
+oil-library
 
 ##    BINARY dependencies: cannot be pip installed
 ##    Following packages requires something more than pip install

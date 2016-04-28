@@ -49,8 +49,8 @@ class TestActive:
         assert mv.active  # model_time = active_start
 
     def test_active_start_after_one_timestep(self):
-        mv = movers.Mover(active_start=self.model_time
-                          + timedelta(seconds=self.time_step))
+        mv = movers.Mover(active_start=self.model_time +
+                          timedelta(seconds=self.time_step))
         mv.prepare_for_model_step(self.sc, self.time_step, self.model_time)
         assert not mv.active  # model_time + time_step = active_start
 
@@ -62,24 +62,26 @@ class TestActive:
         assert self.mv.active  # model_time + time_step/2 = active_start
 
     # Next test just some more borderline cases that active is set correctly
-
     def test_active_stop_greater_than_timestep(self):
-        self.mv.active_stop = \
-            self.model_time + timedelta(seconds=1.5 * self.time_step)
+        self.mv.active_start = self.model_time
+        self.mv.active_stop = (self.model_time +
+                               timedelta(seconds=1.5 * self.time_step))
         self.mv.prepare_for_model_step(self.sc, self.time_step,
                                        self.model_time)
         assert self.mv.active    # model_time + 1.5 * time_step = active_stop
 
     def test_active_stop_after_half_timestep(self):
-        self.mv.active_stop = \
-            self.model_time + timedelta(seconds=0.5 * self.time_step)
+        self.mv.active_start = self.model_time
+        self.mv.active_stop = (self.model_time +
+                               timedelta(seconds=0.5 * self.time_step))
         self.mv.prepare_for_model_step(self.sc, self.time_step,
                                        self.model_time)
         assert self.mv.active    # model_time + 1.5 * time_step = active_stop
 
     def test_active_stop_less_than_half_timestep(self):
-        self.mv.active_stop = \
-            self.model_time + timedelta(seconds=0.25 * self.time_step)
+        self.mv.active_start = self.model_time
+        self.mv.active_stop = (self.model_time +
+                               timedelta(seconds=0.25 * self.time_step))
         self.mv.prepare_for_model_step(self.sc, self.time_step,
                                        self.model_time)
         assert not self.mv.active    # current_model_time = active_stop

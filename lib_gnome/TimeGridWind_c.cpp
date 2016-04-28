@@ -933,7 +933,8 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 			TechError("TimeGridWindCurv_c::TextRead()", "sscanf() == 8", 0);
 			goto done;
 		}
-		else {
+		//else 
+		{
 			// code goes here, trouble with the DAYS since 1900 format, since converts to seconds since 1904
 			if (time.year == 1900) {
 				time.year += 40;

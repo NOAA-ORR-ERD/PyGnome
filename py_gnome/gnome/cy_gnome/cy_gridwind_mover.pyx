@@ -119,6 +119,18 @@ cdef class CyGridWindMover(CyWindMoverBase):
     def offset_time(self, time_offset):
         self.grid_wind.SetTimeShift(time_offset)
 
+    def get_start_time(self):
+        cdef OSErr err
+        cdef Seconds start_time
+        err = self.grid_wind.GetDataStartTime(&start_time)
+        return start_time
+
+    def get_end_time(self):
+        cdef OSErr err
+        cdef Seconds end_time
+        err = self.grid_wind.GetDataEndTime(&end_time)
+        return end_time
+
     def get_move(self,
                  model_time,
                  step_len,

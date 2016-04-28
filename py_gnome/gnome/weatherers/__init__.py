@@ -29,14 +29,20 @@ from spreading import Langmuir, FayGravityViscous, ConstantArea
         updates the 'area' and 'fay_area' array
     11. Langmuir - modifies the 'area' array with fractional coverage based on
         langmuir cells.
+
+        removal options have been re-prioritized - Burn, Skim, Disperse, Beach
+        the first three are listed in reverse order because the marking done
+        in prepare_for_model_step prioritizes whichever operation gets marked
+        last.
+        Once they are marked the weathering order doesn't matter.
 '''
-__all__ = [
-           Weatherer,
+
+__all__ = [Weatherer,
            HalfLifeWeatherer,
+           ChemicalDispersion,
            Skimmer,
            Burn,
            Beaching,
-           ChemicalDispersion,
            Evaporation,
            NaturalDispersion,
            # OilParticleAggregation,
@@ -49,7 +55,7 @@ __all__ = [
            Langmuir,
            ]
 
-weatherers_idx = dict(zip(__all__, range(len(__all__))))
+weatherers_idx = dict([(v, i) for i, v in enumerate(__all__)])
 
 
 def weatherer_sort(weatherer):

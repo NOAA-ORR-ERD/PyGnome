@@ -87,11 +87,14 @@ def test_dispersion_not_active(oil, temp, num_elems):
     assert np.all(sc.mass_balance['sedimentation'] == 0)
 
 
-@pytest.mark.parametrize(('oil', 'temp'),
-                         [('ABU SAFAH', 288.7),
-                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 288.7),
-                          ('BAHIA', 288.7)])
-def test_full_run(sample_model_fcn2, oil, temp):
+@pytest.mark.parametrize(('oil', 'temp', 'dispersed'),
+                         [('ABU SAFAH', 288.7, 34.909),
+                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
+                           288.7, 162.454),
+                          ('BAHIA', 288.7, 89.400)
+                          ]
+                         )
+def test_full_run(sample_model_fcn2, oil, temp, dispersed):
     '''
     test dispersion outputs post step for a full run of model. Dump json
     for 'weathering_model.json' in dump directory
@@ -111,11 +114,18 @@ def test_full_run(sample_model_fcn2, oil, temp):
             if step['step_num'] > 0:
                 assert (sc.mass_balance['natural_dispersion'] > 0)
                 assert (sc.mass_balance['sedimentation'] > 0)
+
             print ("Dispersed: {0}".
                    format(sc.mass_balance['natural_dispersion']))
             print ("Sedimentation: {0}".
                    format(sc.mass_balance['sedimentation']))
             print "Completed step: {0}\n".format(step['step_num'])
+
+    sc = model.spills.items()[0]
+    print (sc.mass_balance['natural_dispersion'], dispersed)
+
+    assert np.isclose(sc.mass_balance['natural_dispersion'], dispersed,
+                      atol=0.001)
 
 
 def test_full_run_disp_not_active(sample_model_fcn):

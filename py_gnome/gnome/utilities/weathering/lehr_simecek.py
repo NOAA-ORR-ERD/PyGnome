@@ -1,3 +1,5 @@
+from monahan import Monahan
+
 
 class LehrSimecek(object):
     '''
@@ -18,12 +20,7 @@ class LehrSimecek(object):
         Additionally:  Ocean Waves Breaking and Marine Aerosol Fluxes
                        By Stanislaw R. Massel
         """
-        # Monahan(JPO, 1971) time constant characterizing exponential
-        # whitecap decay.
-        # The saltwater value for this constant is 3.85 sec while the
-        # freshwater value is 2.54 sec.
-        # interpolate with salinity:
-        Tm = 0.03742857 * salinity + 2.54
+        Tm = Monahan.whitecap_decay_constant(salinity)
 
         if U < 4.0:  # m/s
             # linear fit from 0 to the 4m/s value from Ding and Farmer

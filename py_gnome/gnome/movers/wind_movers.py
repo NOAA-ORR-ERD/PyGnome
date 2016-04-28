@@ -9,7 +9,7 @@ import math
 
 import numpy
 np = numpy
-from colander import (SchemaNode, String, Float, drop)
+from colander import (SchemaNode, Bool, String, Float, drop)
 
 from gnome.basic_types import (ts_format,
                                world_point,
@@ -18,6 +18,7 @@ from gnome.basic_types import (ts_format,
                                datetime_value_2d)
 
 from gnome.utilities import serializable, rand
+from gnome.utilities import time_utils
 
 from gnome import environment
 from gnome.movers import CyMover, ProcessSchema
@@ -34,6 +35,7 @@ class WindMoversBaseSchema(ObjType, ProcessSchema):
     uncertain_time_delay = SchemaNode(Float(), missing=drop)
     uncertain_speed_scale = SchemaNode(Float(), missing=drop)
     uncertain_angle_scale = SchemaNode(Float(), missing=drop)
+    #extrapolate = SchemaNode(Bool(), missing=drop)
 
 
 class WindMoverSchema(WindMoversBaseSchema):
@@ -43,6 +45,7 @@ class WindMoverSchema(WindMoversBaseSchema):
     # 'wind' schema node added dynamically
     name = 'WindMover'
     description = 'wind mover properties'
+    extrapolate = SchemaNode(Bool(), missing=drop)
 
 
 class WindMoversBase(CyMover):
@@ -57,6 +60,7 @@ class WindMoversBase(CyMover):
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4,
+                 #extrapolate=False,
                  **kwargs):
         """
         This is simply a base class for WindMover and GridWindMover for the
@@ -86,6 +90,8 @@ class WindMoversBase(CyMover):
 
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
+
+        #self.extrapolate = extrapolate
 
         self.array_types.update({'windages',
                                  'windage_range',
@@ -124,6 +130,11 @@ class WindMoversBase(CyMover):
     @uncertain_time_delay.setter
     def uncertain_time_delay(self, val):
         self.mover.uncertain_time_delay = self._hours_to_seconds(val)
+
+#     extrapolate = property(lambda self: self.mover.extrapolate,
+#                            lambda self, val: setattr(self.mover,
+#                                                      'extrapolate',
+#                                                      val))
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
@@ -193,11 +204,14 @@ class WindMover(WindMoversBase, serializable.Serializable):
     sets everything up that is common to all movers.
     """
     _state = copy.deepcopy(WindMoversBase._state)
+    _state.add(update=['extrapolate'],
+               save=['extrapolate'])
     _state.add_field(serializable.Field('wind', save=True, update=True,
                                         save_reference=True))
     _schema = WindMoverSchema
 
-    def __init__(self, wind=None, **kwargs):
+    def __init__(self, wind=None, extrapolate=False, **kwargs):
+    #def __init__(self, wind=None, **kwargs):
         """
         Uses super to call CyMover base class __init__
 
@@ -221,8 +235,14 @@ class WindMover(WindMoversBase, serializable.Serializable):
             kwargs['name'] = \
                 kwargs.pop('name', wind.name)
 
+        self.extrapolate = extrapolate
         # set optional attributes
         super(WindMover, self).__init__(**kwargs)
+
+		# this will have to be updated when wind is set or changed
+        if self.wind is not None:
+            self.real_data_start = time_utils.sec_to_datetime(self.wind.ossm.get_start_time())
+            self.real_data_stop = time_utils.sec_to_datetime(self.wind.ossm.get_end_time())
 
     def __repr__(self):
         """
@@ -238,6 +258,12 @@ class WindMover(WindMoversBase, serializable.Serializable):
                 'See "wind" object for wind conditions:\n'
                 '{0}'.format(self._state_as_str()))
         return info
+
+
+    extrapolate = property(lambda self: self.mover.extrapolate,
+                           lambda self, val: setattr(self.mover,
+                                                     'extrapolate',
+                                                     val))
 
     @property
     def wind(self):
@@ -338,11 +364,12 @@ class GridWindMoverSchema(WindMoversBaseSchema):
     wind_file = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
     wind_scale = SchemaNode(Float(), missing=drop)
+    extrapolate = SchemaNode(Bool(), missing=drop)
 
 
 class GridWindMover(WindMoversBase, serializable.Serializable):
     _state = copy.deepcopy(WindMoversBase._state)
-    _state.add(update=['wind_scale'], save=['wind_scale'])
+    _state.add(update=['wind_scale', 'extrapolate'], save=['wind_scale', 'extrapolate'])
     _state.add_field([serializable.Field('wind_file', save=True,
                     read=True, isdatafile=True, test_for_eq=False),
                     serializable.Field('topology_file', save=True,
@@ -383,6 +410,8 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         super(GridWindMover, self).__init__(**kwargs)
 
         self.mover.text_read(wind_file, topology_file)
+        self.real_data_start = time_utils.sec_to_datetime(self.mover.get_start_time())
+        self.real_data_stop = time_utils.sec_to_datetime(self.mover.get_end_time())
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
 
@@ -438,6 +467,18 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
                               (hours).
         """
         self.mover.offset_time(time_offset * 3600.)
+
+    def get_start_time(self):
+        """
+        :this will be the real_data_start time (seconds).
+        """
+        return (self.mover.get_start_time())
+
+    def get_end_time(self):
+        """
+        :this will be the real_data_stop time (seconds).
+        """
+        return (self.mover.get_end_time())
 
 class IceWindMoverSchema(WindMoversBaseSchema):
     filename = SchemaNode(String(), missing=drop)

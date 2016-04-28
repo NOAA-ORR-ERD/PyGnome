@@ -190,6 +190,18 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
     def get_offset_time(self):
         return self.grid_current.GetTimeShift()
 
+    def get_start_time(self):
+        cdef OSErr err
+        cdef Seconds start_time
+        err = self.grid_current.GetDataStartTime(&start_time)
+        return start_time
+
+    def get_end_time(self):
+        cdef OSErr err
+        cdef Seconds end_time
+        err = self.grid_current.GetDataEndTime(&end_time)
+        return end_time
+
     def get_move(self,
                  model_time,
                  step_len,
