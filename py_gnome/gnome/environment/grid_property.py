@@ -94,13 +94,22 @@ class GriddedProp(EnvProp):
         self.data_file = data_file if data_file is not None else self.data_file
 
     def center_values(self, time, units=None):
-        if self.grid.infer_grid(self.data) == 'center' and :
-            value = self.data
         if not self.extrapolate:
             self.time.valid_time(time)
-        t_index = self.time.index_of(time)
         if len(self.time) == 1:
-            value = self.grid.interpolate_var_to_points(points, self.data, slices=s0, memo=True)
+            if self.grid.infer_grid(self.data) == 'center':
+                if len(self.data.shape) == 2:
+                    #curv grid
+                    value = self.data[0:1:-2,1:-2]
+                else:
+                    value = self.data
+            if units is not None and units != self.units:
+                value = unit_conversion.convert(None, self.units, units, value)
+        else:
+            t_index = self.time.index_of(time)
+            centers = self.grid.get_center_points()
+            value = self.at(centers, time, units)
+        return value
 
     def at(self, points, time, units=None):
         '''

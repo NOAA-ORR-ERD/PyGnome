@@ -403,6 +403,10 @@ class TestGriddedProp:
         gp.set_attr(data_file = 'f', grid_file = 'f')
         assert gp.data_file == 'f'
 
+    def test_center_vals(self):
+        pt = np.column_stack((gp.grid.))
+        assert gp.at(np.array[])
+
     def test_at(self, gp):
         print gp.time.time
         print gp.at(np.array([-82.8, 27.475]), gp.time.time[2])
