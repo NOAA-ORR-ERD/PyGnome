@@ -4,7 +4,9 @@ import datetime as dt
 import numpy as np
 import pysgrid
 import datetime
-from gnome.environment.property import TimeSeriesProp, GriddedProp, Time, TSVectorProp, GridVectorProp
+from gnome.environment.property import Time
+from gnome.environment.grid_property import GriddedProp, GridVectorProp
+from gnome.environment.ts_property import TimeSeriesProp, TSVectorProp
 from gnome.environment.property_classes import VelocityTS, VelocityGrid
 from gnome.utilities.remote_data import get_datafile
 import netCDF4 as nc
@@ -37,10 +39,33 @@ dates2 = np.array([dt.datetime(2000, 1, 1, 0),
                    dt.datetime(2000, 1, 1, 6),
                    dt.datetime(2000, 1, 1, 8), ])
 uv_units = 'm/s'
-u_data = np.array([2, 4, 6, 8, 10])
-v_data = np.array([5, 7, 9, 11, 13])
+u_data = np.array([2., 4., 6., 8., 10.])
+v_data = np.array([5., 7., 9., 11., 13.])
 
 s_data = np.array([20,30,40])
+
+
+@pytest.fixture()
+def ts():
+    return Time(dates2, extrapolate=False)
+
+class TestTime:
+
+    def test_extrapolation(self, ts):
+        ts.extrapolate = True
+        before = dt.datetime(1999,12,31,23)
+        after = dt.datetime(2000,1,1,9)
+        assert ts.index_of(before) == 0
+        assert ts.index_of(after) == 5
+        assert ts.index_of(ts.time[-1]) == 4
+        assert ts.index_of(ts.time[0]) == 0
+        ts.extrapolate = False
+        with pytest.raises(ValueError):
+            ts.index_of(before)
+        with pytest.raises(ValueError):
+            ts.index_of(after)
+        assert ts.index_of(ts.time[-1]) == 4
+        assert ts.index_of(ts.time[0]) == 0
 
 
 @pytest.fixture()
@@ -387,8 +412,10 @@ class TestGriddedProp:
 class TestGridVectorProp:
 
     def test_construction(self, gp, gp2):
+        #Grid_file and data_file missing
         with pytest.raises(ValueError):
             gvp = GridVectorProp(name='velocity', units='m/s', time=grid_time, variables = [grid_u, grid_v])
+        #Units inconsistent with variables units
         with pytest.raises(ValueError):
             gvp = GridVectorProp(name='velocity', units='km/hr', time=grid_time, variables = [gp,gp2])
         gvp = GridVectorProp(name='velocity', units='m/s', time=grid_time, variables = [gp,gp2])
@@ -401,20 +428,20 @@ class TestGridVectorProp:
 
 @pytest.fixture()
 def vel(u,v):
-    return VelocityTS(name='vel', components=[u,v])
+    return VelocityTS(name='vel', variables=[u,v])
 class TestVelocityTS:
     def test_construction(self, u, v):
         vel = None
-        vel = VelocityTS(name='vel', units='m/s', time=dates2, components=[u_data,v_data], extrapolate=False)
+        vel = VelocityTS(name='vel', units='m/s', time=dates2, variables=[u_data,v_data], extrapolate=False)
 
         assert all(vel.variables[0].data == u_data)
 
         #Using TimeSeriesProp objects
-        vel = VelocityTS(name='vel', components=[u, v])
+        vel = VelocityTS(name='vel', variables=[u, v])
         assert vel.time == vel.variables[0].time == vel.variables[1].time
         #3 components
         with pytest.raises(ValueError):
-            vel = VelocityTS(name='vel', units='m/s', time=dates2, components=[u_data,v_data, u_data], extrapolate=False)
+            vel = VelocityTS(name='vel', units='m/s', time=dates2, variables=[u_data,v_data, u_data], extrapolate=False)
 
     @pytest.mark.parametrize("json_", ('save', 'webapi'))
     def test_serialization(self, vel, json_):
@@ -438,9 +465,77 @@ class TestVelocityTS:
         assert all(dser['time'] == dates2)
         assert all(np.isclose(dser['data'][0],u_data))
 
+    @pytest.mark.parametrize("json_", ('save', 'webapi'))
+    def test_new_from_dict(self, vel, json_):
+        deser = VelocityTS.deserialize(vel.serialize(json_))
+        vel2 = VelocityTS.new_from_dict(deser)
+        assert vel == vel2
+
+    @pytest.mark.parametrize("json_", ('save', 'webapi'))
+    def test_update_from_dict(self, vel, json_):
+        deser = VelocityTS.deserialize(vel.serialize(json_))
+        vel2 = VelocityTS.new_from_dict(deser)
+        deser['name'] = 'vel2'
+        vel.update_from_dict(deser)
+        vel2.name = 'vel2'
+        assert vel.name == 'vel2'
+        assert vel == vel2
+
+
+@pytest.fixture()
+def g_vel(gp,gp2):
+    return VelocityGrid(name='g_vel', variables=[gp, gp2])
+class TestVelocityGrid:
+    def test_construction(self, gp, gp2):
+        g_vel = VelocityGrid(name='g_vel', variables=[gp,gp2])
+        g_vel = VelocityGrid(name='g_vel', units='m/s', time=grid_time, grid=test_grid, variables=[grid_u, grid_v], grid_file=curr_file, data_file=curr_file)
+        pass
+
+    @pytest.mark.parametrize("json_", ('save', 'webapi'))
+    def test_serialization(self, g_vel, json_):
+        dict_ = g_vel.serialize()
+
+    @pytest.mark.parametrize("json_", ('save', 'webapi'))
+    def test_deserialize(self, g_vel, json_):
+        pass
+
+    @pytest.mark.parametrize("json_", ('save', 'webapi'))
+    def test_new_from_dict(self, g_vel, json_):
+        pass
+
+    @pytest.mark.parametrize("json_", ('save', 'webapi'))
+    def test_update_from_dict(self, g_vel, json_):
+        pass
+
+
 if __name__ == "__main__":
-    a = vel()
-    a.at(np.array([0,0]), a.time.time[2])
+    import pprint
+    k = vp()
+    pts = np.array(((1,1), (2,2)))
+    t1 = dt.datetime(1999, 12,31,23)
+    t2 = dt.datetime(2000, 1, 1, 0)
+    t3 = dt.datetime(2000, 1, 1, 1)
+    t4 = dt.datetime(2000,1, 1, 8)
+    t5 = dt.datetime(2000,1, 1, 9)
+
+    #No extrapolation. out of bounds time should fail
+    with pytest.raises(ValueError):
+        k.at(pts, t1)
+
+    print k.name
+    assert (k.at(pts, t2) == np.array([2,5])).all()
+    assert (k.at(pts, t3) == np.array([3,6])).all()
+    assert (k.at(pts, t4) == np.array([10,13])).all()
+    with pytest.raises(ValueError):
+        k.at(pts, t5)
+
+    v = g_vel(gp(), gp2())
+    dict_ = v.serialize()
+    pp.pprint(dict_)
+    deser = VelocityGrid.deserialize(dict_)
+    pp.pprint(deser)
+    v2 = VelocityGrid.new_from_dict(deser)
+    v == v2
     test_tsprop_construction()
     test_tsprop_unit_conversion()
     test_tsprop_set_attr()

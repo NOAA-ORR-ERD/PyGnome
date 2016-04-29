@@ -14,7 +14,8 @@ from gnome.persist import base_schema
 import pyugrid
 import pysgrid
 import unit_conversion
-from gnome.environment.property import TSVectorProp, GridVectorProp, TimeSeriesProp, GriddedProp
+from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
+from gnome.environment.grid_property import GridVectorProp, GriddedProp
 
 class PropertySchema(base_schema.ObjType):
     name = SchemaNode(String(), missing='default')
@@ -60,16 +61,28 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
                  name=None,
                  units=None,
                  time = None,
-                 components = None,
+                 variables = None,
                  extrapolate=False,
                  **kwargs):
 
-        if len(components) > 2:
+        if len(variables) > 2:
             raise ValueError('Only 2 dimensional velocities are supported')
-        TSVectorProp.__init__(self, name, units, time=time, variables=components, extrapolate=extrapolate)
+        TSVectorProp.__init__(self, name, units, time=time, variables=variables, extrapolate=extrapolate)
 
+    def __eq__(self, o):
+        t1 = (self.name == o.name and
+              self.units == o.units and
+              self.extrapolate == o.extrapolate and
+              self.time == o.time)
+        t2 = True
+        for i in range(0, len(self._variables)):
+            if self._variables[i] != o._variables[i]:
+                t2=False
+                break
 
-    def __repr__(self):
+        return t1 and t2
+
+    def __str__(self):
         return self.serialize(json_='save').__repr__()
 
     @property
@@ -130,7 +143,7 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
                                        data = dict_['data'][i],
                                        extrapolate = dict_['extrapolate']))
         dict_.pop('data')
-        dict_['components'] = vars
+        dict_['variables'] = vars
         return super(VelocityTS, cls).new_from_dict(dict_)
 
 
@@ -139,16 +152,67 @@ class VelocityGridSchema(PropertySchema):
     grid_file = SchemaNode(String(), missing=drop)
 
 
-class VelocityGrid(GridVectorProp):
+class VelocityGrid(GridVectorProp, serializable.Serializable):
     _state = copy.deepcopy(serializable.Serializable._state)
 
     _schema = VelocityGridSchema
-    _state.add([serializable.Field('units', save=True, update=True),
+
+    _state.add_field([serializable.Field('units', save=True, update=True),
                 serializable.Field('varnames', save=True, update=True),
                 serializable.Field('extrapolate', save=True, update=True),
                 serializable.Field('time', save=True, update=True),
                 serializable.Field('data_file', save=True, update=True),
                 serializable.Field('grid_file', save=True, update=True)])
+
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time = None,
+                 grid = None,
+                 variables = None,
+                 extrapolate=False,
+                 data_file=None,
+                 grid_file=None,
+                 **kwargs):
+
+        if len(variables) > 2:
+            raise ValueError('Only 2 dimensional velocities are supported')
+        GridVectorProp.__init__(self,
+                                name=name,
+                                units=units,
+                                time=time,
+                                grid=grid,
+                                variables=variables,
+                                extrapolate=extrapolate,
+                                data_file = data_file,
+                                grid_file = grid_file)
+
+    def __eq__(self, o):
+        t1 = (self.name == o.name and
+              self.units == o.units and
+              self.extrapolate == o.extrapolate and
+              self.time == o.time)
+        t2 = True
+        for i in range(0, len(self._variables)):
+            if self._variables[i] != o._variables[i]:
+                t2=False
+                break
+
+        return t1 and t2
+
+    def __str__(self):
+        return self.serialize(json_='save').__repr__()
+
+#     def serialize(self, json_='webapi'):
+#         pass
+#
+#     @classmethod
+#     def deserialize(cls, json_):
+#         pass
+#
+#     @classmethod
+#     def new_from_dict(cls, dict_):
+#         pass
 
 if __name__ == "__main__":
     import datetime as dt
@@ -163,7 +227,7 @@ if __name__ == "__main__":
     vprop = TSVectorProp('velocity', 'm/s', variables=[u, v])
     print vprop.at(np.array([(1, 1), (1, 2)]), dt.datetime(2000, 1, 1, 3))
 
-    vel = VelocityTS('test_vel', components = [u,v])
+    vel = VelocityTS('test_vel', variables = [u,v])
     print vel.at(np.array([(1, 1), (1, 2)]), dt.datetime(2000, 1, 1, 3))
 
     import pprint
@@ -192,7 +256,7 @@ if __name__ == "__main__":
     v2 = GriddedProp('v','m/s', time=grid_time, data=grid_v, grid=test_grid, data_file=url, grid_file=url)
 
     print "got here"
-    vel2 = Velocity(name='gridvel', components=[u2, v2])
+    vel2 = Velocity(name='gridvel', variables=[u2, v2])
 
 #     pp.pprint(vel2.serialize())
 
