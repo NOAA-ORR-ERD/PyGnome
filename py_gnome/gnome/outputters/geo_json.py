@@ -277,35 +277,19 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
             model_time = date_to_sec(sc.current_time_stamp)
             iso_time = sc.current_time_stamp.isoformat()
 
-        geojson = {}
         for cm in self.current_movers:
-            centers = cm.get_center_points()
 
             velocities = cm.get_scaled_velocities(model_time)
             velocities = self.get_rounded_velocities(velocities)
+            x = velocities[:,0]
+            y = velocities[:,1]
+            direction = -(np.arctan2(y,x) + np.pi/2)
+            magnitude = np.sqrt(x**2 + y**2)
+            direction = np.round(direction,2)
+            magnitude = np.round(magnitude,2)
 
-            velocity_dict = defaultdict(list)
-            for k, v in zip(velocities, centers):
-                k = tuple(k)
-                v = list(v)
-                velocity_dict[k].append(v)
+            return np.column_stack((magnitude, direction)).tolist()
 
-            features = []
-            for v, cps in velocity_dict.items():
-                feature = Feature(geometry=MultiPoint(cps),
-                                  id="1",
-                                  properties={'velocity': v})
-                features.append(feature)
-
-            geojson[cm.id] = FeatureCollection(features)
-
-        # default geojson should not output data to file
-        # read data from file and send it to web client
-        output_info = {'time_stamp': iso_time,
-                       'feature_collections': geojson
-                       }
-
-        return output_info
 
     def get_rounded_velocities(self, velocities):
         return np.vstack((velocities['u'].round(decimals=2),

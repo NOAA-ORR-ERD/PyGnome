@@ -14,6 +14,7 @@ from gnome.persist.base_schema import ObjType, WorldPoint
 from gnome.movers import CyMover, ProcessSchema
 from gnome import environment
 from gnome.utilities import serializable
+from gnome.utilities import time_utils
 
 from gnome import basic_types
 from gnome.cy_gnome.cy_cats_mover import CyCatsMover
@@ -456,6 +457,8 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                 raise ValueError('Path for Topology file does not exist: {0}'
                                  .format(topology_file))
 
+        super(GridCurrentMover, self).__init__(**kwargs)
+
         # check if this is stored with cy_gridcurrent_mover?
         self.filename = filename
         self.name = os.path.split(filename)[1]
@@ -466,11 +469,13 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         self.uncertain_along = uncertain_along
         self.uncertain_across = uncertain_across
         self.mover.text_read(filename, topology_file)
+        self.real_data_start = time_utils.sec_to_datetime(self.mover.get_start_time())
+        self.real_data_stop = time_utils.sec_to_datetime(self.mover.get_end_time())
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
         self.num_method = num_method
 
-        super(GridCurrentMover, self).__init__(**kwargs)
+        #super(GridCurrentMover, self).__init__(**kwargs)
 
         if self.topology_file is None:
             self.topology_file = filename + '.dat'
@@ -597,6 +602,18 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                               (hours).
         """
         return (self.mover.get_offset_time()) / 3600.
+
+    def get_start_time(self):
+        """
+        :this will be the real_data_start time (seconds).
+        """
+        return (self.mover.get_start_time())
+
+    def get_end_time(self):
+        """
+        :this will be the real_data_stop time (seconds).
+        """
+        return (self.mover.get_end_time())
 
     def get_num_method(self):
         return self.mover.num_method

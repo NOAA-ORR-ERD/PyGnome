@@ -32,7 +32,9 @@ class DingFarmer(object):
             The time fraction that the droplet spends in the water column
             f_wc
         '''
-        return (cls.refloat_time(significant_wave_height,
+        f_wc = (cls.refloat_time(significant_wave_height,
                                  water_phase_xfer_velocity) /
                 cls.calm_between_wave_breaks(breaking_waves_frac,
                                              peak_wave_period))
+
+        return f_wc if f_wc <= 1.0 else 1.0
