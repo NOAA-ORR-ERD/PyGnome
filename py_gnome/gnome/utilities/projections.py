@@ -20,6 +20,34 @@ from __future__ import division
 import numpy as np
 import profiledeco as pd
 
+def to_2d_coords(coords):
+    """
+    utility function to take whatever the heck someone may pass in
+    for coordinates and make it an Nx2 array
+
+    :param input: the input coordinates. they should be one of:
+                  a (lon, lat) pair
+                  a (lon, lat, depth) triple
+                  a Nx2 array-like object of (lon,lat) pairs
+                  a Nx3 array-like object of (lon, lat, depth) triples
+    The depth is ignored in all cases
+
+    This is probably overly convenient, but the legacy is there...
+    """
+    coords = np.atleast_2d(coords)
+    if coords.shape[1] == 2:
+        return coords
+    if coords.shape[1] == 3:
+        return coords[:, :2]
+    else:
+        raise ValueError("coords must be one of:\n"
+                         "a (lon, lat) pair\n"
+                         "a (lon, lat, depth) triple\n"
+                         "a Nx2 array-like object of (lon,lat) pairs\n"
+                         "a Nx3 array-like object of (lon, lat, depth) triples\n"
+                         )
+
+
 
 class NoProjection(object):
     """
@@ -58,14 +86,13 @@ class NoProjection(object):
         """
         if asint:
             # C ordering to make sure it's contiguous
-            return np.asarray(np.asarray(coords).reshape((-1, 3))[:, :
-                              2], dtype=np.int32, order='C')
+            return np.asarray(to_2d_coords(coords), dtype=np.int32, order='C')
         else:
             # C ordering to make sure it's contiguous
-            return np.asarray(np.asarray(coords).reshape((-1, 3))[:, :
-                              2], order='C')
+            return np.asarray(to_2d_coords(coords), order='C')
 
     def to_pixel_2D(self, coords, asint=False):
+        # FIXME: this is not longer required, what with to_2d_coords
         """
         same as to_pixel, but expects only (lon, lat) coords as input.
 
@@ -76,10 +103,7 @@ class NoProjection(object):
                       default is to leave it as the same type it came in,
                       so you can have fractional pixels
         """
-        if asint:
-            return np.asarray(coords, dtype=np.int, order='C')
-        else:
-            return np.asarray(coords, order='C')
+        raise NotImplementedError("no longer required, use to_pixel()")
 
     def to_lonlat(self, coords):
         """
@@ -91,7 +115,7 @@ class NoProjection(object):
 
 class GeoProjection(object):
     """
-    This acts as the base class for a projection
+    This acts as the base class for other projections
 
     This one doesn't really project, but does convert to pixel coords
     i.e. "geo-coordinates"
@@ -208,10 +232,10 @@ class GeoProjection(object):
               a point  exactly at the max of the bounding box will be
               considered outside the map
         """
-        coords = np.asarray(coords).reshape((-1, 3))
+        coords = to_2d_coords(coords) # strip off depth, if it's there
 
         # shift to center:
-        coords = coords[:, :2] - self.center
+        coords = coords - self.center
 
         # scale to pixels:
         coords *= self.scale
@@ -231,37 +255,10 @@ class GeoProjection(object):
 
     def to_pixel_2D(self, coords, asint=False):
         """
-        same as to_pixel, but expects only (lon, lat) coords as input.
-
-        :param coords: The coords to project
-        :type coords: Nx2 numpy array or compatible sequence (lon, lat)
-
-        :param asint: Flag to set whether to convert to a integer or not
-                      default is to leave it as the same type it came in,
-                      so you can have fractional pixels
+        # Fixme: depreciated, as we have to_2d_coords
         """
-        coords = np.asarray(coords)
-        if coords.shape[1] != 2:
-            raise ValueError("input coords to to_pixel_2D must be Nx2 array")
+        raise NotImplementedError("no loger required, use to_pixel()")
 
-        # shift to center:
-        coords = coords - self.center
-
-        # scale to pixels:
-        coords *= self.scale
-
-        # shift to pixel coords
-        coords += self.offset
-
-        if asint:
-            # NOTE: using "floor" as it rounds negative numbers towards -inf
-            #       simple casting rounds toward zero
-            #       we may need the negative coords to work right for locations
-            #       off the grid.
-            #       (used for the raster map code)
-            return np.floor(coords, coords).astype(np.int32)
-        else:
-            return coords
 
     def to_lonlat(self, coords):
         """
@@ -565,7 +562,7 @@ class RectangularGridProjection(NoProjection):
 
     def to_pixel(self, coords, asint=False):
         """
-        Returns the pixel coordintes in the grid for the given
+        Returns the pixel coordinates in the grid for the given
         lat-lon location.
 
         :param coords: The coords to project
@@ -575,21 +572,21 @@ class RectangularGridProjection(NoProjection):
                       default is to leave it as the same type it came in,
                       so you can have fractional pixels
         """
-        coords = np.asarray(coords).reshape(-1, 3)
+        coords = to_2d_coords(coords)
 
-        pixel_coords = np.zeros((coords.shape[0], 2), dtype=np.float64)
+        pixel_coords = np.zeros_like(coords, dtype=np.float64)
 
-        np.putmask(coords[:, :2],
-                   coords[:, :2] < (self.min_lon, self.min_lat),
+        np.putmask(coords,
+                   coords < (self.min_lon, self.min_lat),
                    (self.min_lon, self.min_lat))
-        np.putmask(coords[:, :2],
-                   coords[:, :2] > (self.max_lon, self.max_lat),
+        np.putmask(coords,
+                   coords > (self.max_lon, self.max_lat),
                    (self.max_lon, self.max_lat))
 
-        np.clip(coords[:, :2],
+        np.clip(coords,
                 (self.min_lon, self.min_lat),
                 (self.max_lon, self.max_lat),
-                out=coords[:, :2])
+                out=coords)
 
         pixel_coords[:, 0] = self._lon_to_pixel_interp(coords[:, 0])
         pixel_coords[:, 1] = (self.max_lat_index -
@@ -641,7 +638,7 @@ class RectangularGridProjection(NoProjection):
               If the input is integers, a 0.5 is added to "shift" the location
               to mid-pixel.
          """
-        coords = np.asarray(coords).reshape((-1, 2))
+        coords = to_2d_coords(coords)
 
         if np.issubdtype(coords.dtype, int):
             # convert to float64:

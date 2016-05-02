@@ -302,7 +302,7 @@ class MapCanvas(object):
         :param background=False: whether to draw to the background image.
         :type background: bool
         """
-        points = self.projection.to_pixel_2D(points, asint=True)
+        points = self.projection.to_pixel(points, asint=True)
         img = self.back_image if background else self.fore_image
 
         img.draw_polygon(points,
@@ -331,7 +331,7 @@ class MapCanvas(object):
         :param background=False: whether to draw to the background image.
         :type background: bool
         """
-        points = self.projection.to_pixel_2D(points, asint=True)
+        points = self.projection.to_pixel(points, asint=True)
 
         img = self.back_image if background else self.fore_image
 
@@ -397,15 +397,37 @@ class MapCanvas(object):
         :param filename: full path of file to be saved to
         :type filename: string
 
-        :param draw_back_to_fore=True: whether to add the background image
-                                       to the foreground before saving.
-        :type draw_back_to_fore: bool
-
         :param file_type: type of file to save
         :type file_type: one of the following:
                          {'png', 'gif', 'jpeg', 'bmp'}
         """
         self.fore_image.save(filename, file_type=file_type)
+
+    def save(self, filename, file_type='png'):
+        """
+        save the map image to the specified filename
+
+        This copies the foreground image on top of the
+        background image and saves teh whole thing.
+
+        :param filename: full path of file to be saved to
+        :type filename: string
+
+        :param file_type: type of file to save
+        :type file_type: one of the following:
+                         {'png', 'gif', 'jpeg', 'bmp'}
+        """
+        # create a new image to composite
+        width, height = self.image_size[:2]
+        image = py_gd.Image(width=width, height=height)
+        # copy the pallette from the foreground image
+        print dir(self.fore_image)
+        print self.fore_image.colors
+        assert False
+
+        self.fore_image.copy(self.back_image,
+                             (0, 0), (0, 0),
+                             self.back_image.size)
 
 
 class GridLines(object):
