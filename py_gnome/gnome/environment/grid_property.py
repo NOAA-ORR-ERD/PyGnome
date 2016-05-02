@@ -65,6 +65,10 @@ class GriddedProp(EnvProp):
     def grid(self):
         return self._grid
 
+    @property
+    def is_data_on_nodes(self):
+        return self.grid.infer_grid(self._data) == 'node'
+
     def set_attr(self,
                  name=None,
 #                  units=None,
@@ -94,11 +98,12 @@ class GriddedProp(EnvProp):
         self.data_file = data_file if data_file is not None else self.data_file
 
     def center_values(self, time, units=None):
+        #NOT COMPLETE
         if not self.extrapolate:
             self.time.valid_time(time)
         if len(self.time) == 1:
-            if self.grid.infer_grid(self.data) == 'center':
-                if len(self.data.shape) == 2:
+            if len(self.data.shape) == 2:
+                if isinstance(self.grid, pysgrid.sgrid):
                     #curv grid
                     value = self.data[0:1:-2,1:-2]
                 else:

@@ -7,7 +7,7 @@ import datetime
 from gnome.environment.property import Time
 from gnome.environment.grid_property import GriddedProp, GridVectorProp
 from gnome.environment.ts_property import TimeSeriesProp, TSVectorProp
-from gnome.environment.property_classes import VelocityTS, VelocityGrid
+from gnome.environment.property_classes import VelocityTS, VelocityGrid, WindTS
 from gnome.utilities.remote_data import get_datafile
 import netCDF4 as nc
 import unit_conversion
@@ -403,10 +403,6 @@ class TestGriddedProp:
         gp.set_attr(data_file = 'f', grid_file = 'f')
         assert gp.data_file == 'f'
 
-    def test_center_vals(self):
-        pt = np.column_stack((gp.grid.))
-        assert gp.at(np.array[])
-
     def test_at(self, gp):
         print gp.time.time
         print gp.at(np.array([-82.8, 27.475]), gp.time.time[2])
@@ -510,6 +506,13 @@ class TestVelocityGrid:
     @pytest.mark.parametrize("json_", ('save', 'webapi'))
     def test_update_from_dict(self, g_vel, json_):
         pass
+
+
+class TestWindTS:
+    def test_construction(self):
+        wind = WindTS(name='wind1', units='m/s', time=dates2, variables=[u_data, v_data], extrapolate=True)
+        r = wind.at(np.array([[0,0],]), dates2[0], 'km/hr')
+        assert np.all(np.isclose(r ,np.array([7.2, 18])))
 
 
 if __name__ == "__main__":

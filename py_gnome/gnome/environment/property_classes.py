@@ -214,6 +214,24 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
 #     def new_from_dict(cls, dict_):
 #         pass
 
+
+class WindTS(VelocityTS):
+
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time = None,
+                 variables = None,
+                 extrapolate=False,
+                 **kwargs):
+        VelocityTS.__init__(self,name, units, time, variables, extrapolate)
+# class AirConditions(object):
+#
+#     def __init__(self,
+#                  wind=None,
+#                  temperature=None,
+#                  ):
+
 if __name__ == "__main__":
     import datetime as dt
     dates = np.array([dt.datetime(2000, 1, 1, 0), dt.datetime(2000, 1, 1, 2), dt.datetime(2000, 1, 1, 4)])
