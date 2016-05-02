@@ -277,6 +277,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
             model_time = date_to_sec(sc.current_time_stamp)
             iso_time = sc.current_time_stamp.isoformat()
 
+        json_ = {}
         for cm in self.current_movers:
 
             velocities = cm.get_scaled_velocities(model_time)
@@ -288,8 +289,10 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
             direction = np.round(direction,2)
             magnitude = np.round(magnitude,2)
 
-            return np.column_stack((magnitude, direction)).tolist()
-
+            json[cm.id]={'magnitude':magnitude.tolist(),
+                         'direction':direction.tolist()
+                         }
+        return json_
 
     def get_rounded_velocities(self, velocities):
         return np.vstack((velocities['u'].round(decimals=2),
