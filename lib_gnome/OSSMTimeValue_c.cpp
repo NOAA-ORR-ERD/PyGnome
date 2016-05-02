@@ -146,6 +146,11 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 	
 	if (forTime < INDEXH(timeValues, 0).time) {
 		// before first element
+#ifdef pyGNOME
+		err = -1;
+		*value = 0.;
+		return err;
+#endif
 		if (useExtrapolationCode) {
 			// old method
 			a = 0;
@@ -161,6 +166,11 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 	
 	if (forTime > INDEXH(timeValues, n - 1).time) {
 		// after last element
+#ifdef pyGNOME
+		err = -1;
+		*value = 0.;
+		return err;
+#endif
 		if (useExtrapolationCode) {
 			// old method
 			a = n - 2;
@@ -1519,7 +1529,19 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage,
 		for (j=0; j<pastHoursToAverage+1; j++)
 		{
 			timeToAverage = currentTime - j * 3600; 	// will get first value for any time before time zero
-			GetTimeValue(timeToAverage, &velocity);
+			err = GetTimeValue(timeToAverage, &velocity);
+			if (err == -1/* && fAllowExtrapolationInTime*/)
+			{
+				Seconds start_time, end_time;
+
+				err = GetDataStartTime(&start_time);	
+				err = GetDataEndTime(&end_time);	
+
+				if (model_time < start_time)
+					{err = GetTimeValue (start_time,&velocity); if (err) return 0;}
+				if (model_time > end_time)
+					{err = GetTimeValue (end_time,&velocity); if (err) return 0;}
+			}
 			
 			speed2 = sqrt(velocity.u*velocity.u + velocity.v*velocity.v);
 			if (j > 0)
