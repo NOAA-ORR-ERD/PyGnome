@@ -283,7 +283,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
             velocities = self.get_rounded_velocities(velocities)
             x = velocities[:,0]
             y = velocities[:,1]
-            direction = np.arctan2(y,x)
+            direction = np.arctan2(y,x) - np.pi/2
             magnitude = np.sqrt(x**2 + y**2)
             direction = np.round(direction,2)
             magnitude = np.round(magnitude,2)
