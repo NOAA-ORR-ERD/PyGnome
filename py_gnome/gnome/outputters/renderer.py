@@ -637,7 +637,7 @@ class Renderer(Outputter, MapCanvas):
         self.draw_timestamp(time_stamp)
         for grid in self.grids:
             self.draw_masked_nodes(grid, time_stamp)
-            self.draw_vectors(time_stamp)
+#             self.draw_vectors(time_stamp)
 
         for ftype in self.formats:
             if ftype == 'gif':

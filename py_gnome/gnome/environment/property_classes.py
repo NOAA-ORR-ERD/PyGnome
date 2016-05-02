@@ -225,6 +225,16 @@ class WindTS(VelocityTS):
                  extrapolate=False,
                  **kwargs):
         VelocityTS.__init__(self,name, units, time, variables, extrapolate)
+        
+    @classmethod
+    def constant_wind(cls,
+                      name='',
+                      units='m/s',
+                      time=datetime.datetime.now().replace(microsecond=0,
+                                                          second=0,
+                                                          minute=0)
+                      variables = 
+                      ):
 # class AirConditions(object):
 #
 #     def __init__(self,

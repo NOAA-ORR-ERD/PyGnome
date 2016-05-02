@@ -21,6 +21,10 @@ from gnome.environment import Wind
 from gnome.spill import point_line_release_spill, continuous_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
+from gnome.environment.property_classes import WindTS
+from gnome.movers.py_wind_movers import PyWindMover
+
+
 from gnome.outputters import Renderer
 from gnome.environment.vector_field import tri_vector_field
 from gnome.movers import UGridCurrentMover
@@ -79,13 +83,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a wind mover:'
 
+    wind = WindTS(name=None,
+                  units='m/s',
+                  time = )
+
     model.movers += constant_wind_mover(0.5, 0, units='m/s')
 
     print 'adding a current mover:'
 
     curr_file = get_datafile('COOPSu_CREOFS24.nc')
     vec_field = tri_vector_field(curr_file)
-    vec_field.set_appearance(on=True)
+    vec_field.set_appearance(on=False)
     vec_field.set_appearance(mask=vec_field.velocities)
     renderer.grids += [vec_field]
 
