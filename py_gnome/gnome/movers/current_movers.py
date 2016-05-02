@@ -29,15 +29,12 @@ from gnome.cy_gnome.cy_component_mover import CyComponentMover
 class CurrentMoversBaseSchema(ObjType, ProcessSchema):
     uncertain_duration = SchemaNode(Float(), missing=drop)
     uncertain_time_delay = SchemaNode(Float(), missing=drop)
-    is_data_on_cells = SchemaNode(Bool(), missing=drop)
 
 
 class CurrentMoversBase(CyMover):
     _state = copy.deepcopy(CyMover._state)
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
-    _state.add_field([serializable.Field('is_data_on_cells',
-                                         save=True, read=True)])
 
     _ref_as = 'current_movers'
 
@@ -127,10 +124,6 @@ class CurrentMoversBase(CyMover):
         points['lat'] /= 10 ** 6
 
         return points
-
-    @property
-    def is_data_on_cells(self):
-        return self.mover._is_data_on_cells
 
 
 class CatsMoverSchema(CurrentMoversBaseSchema):
@@ -399,6 +392,7 @@ class GridCurrentMoverSchema(CurrentMoversBaseSchema):
     uncertain_cross = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
+    is_data_on_cells = SchemaNode(Bool(), missing=drop)
 
 
 class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
@@ -413,7 +407,9 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                                          test_for_eq=False),
                       serializable.Field('topology_file',
                                          save=True, read=True, isdatafile=True,
-                                         test_for_eq=False)])
+                                         test_for_eq=False),
+                      serializable.Field('is_data_on_cells',
+                                         save=True, read=True)])
     _schema = GridCurrentMoverSchema
 
     def __init__(self, filename,
@@ -539,6 +535,10 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                           lambda self, val: setattr(self.mover,
                                                     'num_method',
                                                     val))
+
+    @property
+    def is_data_on_cells(self):
+        return self.mover._is_data_on_cells()
 
     def get_grid_data(self):
         """
