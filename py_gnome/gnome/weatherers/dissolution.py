@@ -97,7 +97,7 @@ class Dissolution(Weatherer, Serializable):
 
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['partition_coeff']) == 0:
-                # no particles released yet
+                # print 'no particles released yet...'
                 continue
 
             mask = data['partition_coeff'] == 0
@@ -108,8 +108,6 @@ class Dissolution(Weatherer, Serializable):
                 s_mask = np.logical_and(mask, data['spill_num'] == s_num)
 
                 data['partition_coeff'][s_mask] = 0
-
-        assert num_initialized == num_released
 
     def dissolve_oil(self, data, substance, **kwargs):
         '''
@@ -133,7 +131,6 @@ class Dissolution(Weatherer, Serializable):
         fmasses = data['mass_components']
         droplet_avg_sizes = data['droplet_avg_size']
         areas = data['area']
-        print 'areas = ', areas
 
         arom_mask = substance._sara['type'] == 'Aromatics'
         not_arom_mask = arom_mask ^ True
@@ -146,7 +143,6 @@ class Dissolution(Weatherer, Serializable):
         # calculate the partition coefficient (K_ow) for all aromatics.
         # K_ow for non-aromatics should be masked to 0.0
         K_ow_comp = arom_mask * LeeHuibers.partition_coeff(mol_wt, rho)
-        print 'K_ow_comp = ', K_ow_comp
 
         mass_dissolved_in_wc = []
         mass_dissolved_in_slick = []
@@ -159,58 +155,43 @@ class Dissolution(Weatherer, Serializable):
             if not isinstance(drop_sizes, Iterable):
                 drop_sizes = np.array(drop_sizes)
 
-            print '\nm = ', m
-            print 'drop_sizes = ', drop_sizes, 'in meters diameter'
-            print 'mol_wt = ', mol_wt, 'g/mole'
-            print
-
             # overall K_ow value
             K_ow = (np.sum(m * K_ow_comp / mol_wt) /
                     np.sum(m / mol_wt))
 
-            print '\nK_ow = ', K_ow
             data['partition_coeff'][idx] = K_ow
 
             avg_rho = self.oil_avg_density(m, rho)
             water_rho = self.waves.water.get('density')
-            print 'water_rho, avg_rho = ', (water_rho, avg_rho)
 
             k_w = Stokes.water_phase_xfer_velocity(water_rho - avg_rho,
                                                    drop_sizes)
-            print 'k_w = ', k_w, 'm/s'
-            print '    = ', k_w * (60.0 * 60.0), 'm/hr'
 
             total_volume = (m / rho).sum()
             aromatic_volume = ((m / rho) * arom_mask).sum()
             S_RA_volume = ((m / rho) * not_arom_mask).sum()
             X = aromatic_volume / S_RA_volume
 
-            print 'total volume = ', total_volume, '(m^3)'
-            print 'aromatic volume = ', aromatic_volume, '(m^3)'
-            print 'S_RA volume = ', S_RA_volume, '(m^3)'
-            print 'X = ', X
-
             assert np.isclose(aromatic_volume + S_RA_volume, total_volume)
 
             beta = self.beta_coeff(k_w, K_ow, S_RA_volume)
-            print 'beta = ', beta
 
             dX_dt = beta * X / (X + 1) ** (1.0 / 3.0)
-            print 'dX_dt = ', dX_dt, 'kg/s'
-            print '      = ', dX_dt * 1000.0, 'g/s'
 
             f_wc = self.water_column_time_fraction(model_time, k_w)
             T_calm = self.calm_between_wave_breaks(model_time)
-            print 'f_wc = ', f_wc
-            print 'T_calm = ', T_calm
 
             time_spent_in_wc = f_wc * time_step
-            print 'time_spent_in_wc = ', time_spent_in_wc
 
             #
             # OK, here it is, the mass dissolved in the water column.
             #
-            mass_dissolved_in_wc.append(dX_dt * time_spent_in_wc)
+            aromatic_mass = m * arom_mask
+            aromatic_fractions = aromatic_mass / aromatic_mass.sum()
+
+            mass_dissolved_in_wc.append(np.nan_to_num(aromatic_fractions *
+                                                      dX_dt *
+                                                      time_spent_in_wc))
 
             #
             # Now we need to calculate the mass dissolved in the surface slick
@@ -223,21 +204,18 @@ class Dissolution(Weatherer, Serializable):
                                                        K_ow_comp,
                                                        area)
             N_s = np.nan_to_num(N_s * arom_mask)
-            print 'N_s = ', N_s
-            print 'sum(N_s) = ', N_s.sum(), 'kg/s'
-            print '         = ', N_s.sum() * 1000.0, 'g/s'
 
-            print 'sum(N_s) * T_calm = ', N_s.sum() * T_calm, 'kg'
-            print '                  = ', N_s.sum() * T_calm * 1000.0, 'g'
+            mass_dissolved_in_slick.append(N_s * T_calm)
 
-            mass_dissolved_in_slick.append(N_s.sum() * T_calm)
+        mass_dissolved_in_wc = np.vstack(mass_dissolved_in_wc)
+        mass_dissolved_in_slick = np.vstack(mass_dissolved_in_slick)
+        total_mass_dissolved = mass_dissolved_in_wc + mass_dissolved_in_slick
 
-        print 'mass_dissolved in water column = ', mass_dissolved_in_wc
-        print 'mass_dissolved in slick = ', mass_dissolved_in_slick
-        print
+        # adjust any masses that might go negative
+        total_mass_dissolved += np.clip(fmasses - total_mass_dissolved,
+                                        -np.inf, 0.0)
 
-        diss = np.zeros((len(data['mass'])), dtype=np.float64)
-        return diss
+        return total_mass_dissolved
 
     def oil_avg_density(self, masses, densities):
         assert masses.shape == densities.shape
@@ -252,11 +230,8 @@ class Dissolution(Weatherer, Serializable):
         wave_period = self.waves.peak_wave_period(model_time)
         wave_height = self.waves.get_value(model_time)[0]
         wind_speed = self.waves.wind.get_value(model_time)[0]
-        print ('wind_speed, wave_height, wave_period = ',
-               wind_speed, wave_height, wave_period)
 
         f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
-        print 'f_bw = ', f_bw
 
         f_wc = DingFarmer.water_column_time_fraction(f_bw,
                                                      wave_period,
@@ -278,12 +253,7 @@ class Dissolution(Weatherer, Serializable):
     def oil_concentration(self, masses, densities):
         mass_fractions = masses / masses.sum()
 
-        print 'mass_fractions = ', mass_fractions
-        print 'sum(mass_fractions) = ', mass_fractions.sum()
-        print 'densities = ', densities
-
         aggregate_rho = (mass_fractions * densities).sum()
-        print 'aggregate_rho = ', aggregate_rho
 
         C_oil = aggregate_rho * mass_fractions
         return C_oil
@@ -293,26 +263,24 @@ class Dissolution(Weatherer, Serializable):
                                         partition_coeff,
                                         slick_area,
                                         schmidt_number=1000.0):
+        '''
+            Here we are implementing something similar to equation 1.21
+            of our dissolution document.
+
+            The Cohen equation (eq. 1.1), I believe, is actually expressed
+            in kg/m^2 * hr.  So we need to convert our time units.
+
+            We return the mass xfer rate in units (kg / s)
+        '''
         U_10 = self.waves.wind.get_value(model_time)[0]
         c_oil = oil_concentration
         k_ow = partition_coeff
-        s_c = schmidt_number
 
-        print 'U_10 = ', U_10
-        print 'c_oil = ', c_oil
-        print 'sum(c_oil) = ', c_oil.sum()
-        print 'k_ow = ', k_ow
-        print 'slick_area = ', slick_area
-        print 'mass xfer rate = ', 0.01 * U_10
-
-        # mass xfer rate (per unit area) in units (kg / s * m^2)
+        # mass xfer rate (per unit area)
         N_s_a = (0.01 *
-                 U_10 *
+                 (U_10 / 3600.0) *
                  (c_oil / k_ow))
 
-        print 'N_s_a = ', N_s_a
-
-        # return mass xfer rate in units (kg / s)
         return N_s_a * slick_area
 
     def weather_elements(self, sc, time_step, model_time):
@@ -335,20 +303,10 @@ class Dissolution(Weatherer, Serializable):
                                      time_step=time_step,
                                      data=data,
                                      substance=substance)
+            data['mass_components'] -= diss
 
-            print 'mass_balance:'
-            pp.pprint(sc.mass_balance)
-            sc.mass_balance['dissolution'] += np.sum(diss[:])
+            sc.mass_balance['dissolution'] += diss.sum()
 
-            if data['mass'].sum() > 0:
-                diss_mass_frac = np.sum(diss[:]) / data['mass'].sum()
-                if diss_mass_frac > 1:
-                    diss_mass_frac = 1
-            else:
-                diss_mass_frac = 0
-
-            data['mass_components'] = ((1 - diss_mass_frac) *
-                                       data['mass_components'])
             data['mass'] = data['mass_components'].sum(1)
 
             self.logger.debug('{0} Amount dissolved for {1}: {2}'
