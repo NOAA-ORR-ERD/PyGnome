@@ -289,7 +289,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
             direction = np.round(direction,2)
             magnitude = np.round(magnitude,2)
 
-            json[cm.id]={'magnitude':magnitude.tolist(),
+            json_[cm.id]={'magnitude':magnitude.tolist(),
                          'direction':direction.tolist()
                          }
         return json_
