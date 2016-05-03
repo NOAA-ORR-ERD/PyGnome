@@ -265,9 +265,14 @@ class CyMover(Mover):
                 uncertain_spill_size = np.array((sc.num_released, ),
                                                 dtype=np.int32)
 
-            self.mover.prepare_for_model_step(
+            err = self.mover.prepare_for_model_step(
                         self.datetime_to_seconds(model_time_datetime),
                         time_step, uncertain_spill_count, uncertain_spill_size)
+
+            if err != 0:
+                msg = "No available data in the time interval that is being modeled"
+                self.logger.error(msg)
+                raise RuntimeError(msg)
 
     def get_move(self, sc, time_step, model_time_datetime):
         """
