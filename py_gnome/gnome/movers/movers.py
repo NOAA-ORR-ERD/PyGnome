@@ -80,7 +80,7 @@ class Process(AddLogger):
         self._active_start = active_start
         self._active_stop = active_stop
 
-		# not sure if we would ever pass this in...
+                # not sure if we would ever pass this in...
         self._check_active_startstop(real_data_start, real_data_stop)
 
         self.real_data_start = real_data_start

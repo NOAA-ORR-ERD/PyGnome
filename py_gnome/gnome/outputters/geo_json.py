@@ -127,9 +127,9 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         # one feature per element client; replaced with multipoint
         # because client performance is much more stable with one
         # feature per step rather than (n) features per step.features = []
-        features = []
+        c_features = []
+        uc_features = []
         for sc in self.cache.load_timestep(step_num).items():
-            time = date_to_sec(sc.current_time_stamp)
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
             sc_type = 'uncertain' if sc.uncertain else 'forecast'
@@ -142,31 +142,24 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
             #   off_maps : 7
             #   on_land : 3
             #   to_be_removed : 12
-            points = {}
             for ix, pos in enumerate(position):
-                st_code = status[ix]
-
-                if st_code not in points:
-                    points[st_code] = []
-
-                points[st_code].append(pos[:2])
-
-            for k in points:
-                feature = Feature(geometry=MultiPoint(points[k]), id="1",
-                                  properties={'sc_type': sc_type,
-                                              'status_code': k,
-                                              })
-
+                feature = Feature(
+                    geometry=Point(pos[:2]), id=ix,
+                    properties={'status_code': status[ix],
+                                'sc_type': sc_type}
+                    )
                 if sc.uncertain:
-                    features.insert(0, feature)
+                    uc_features.append(feature)
                 else:
-                    features.append(feature)
+                    c_features.append(feature)
 
-        geojson = FeatureCollection(features)
+        c_geojson = FeatureCollection(c_features)
+        uc_geojson = FeatureCollection(uc_features)
         # default geojson should not output data to file
         # read data from file and send it to web client
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'feature_collection': geojson
+                       'certain': c_geojson,
+                       'uncertain': uc_geojson
                        }
 
         if self.output_dir:
@@ -284,35 +277,22 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
             model_time = date_to_sec(sc.current_time_stamp)
             iso_time = sc.current_time_stamp.isoformat()
 
-        geojson = {}
+        json_ = {}
         for cm in self.current_movers:
-            centers = cm.get_center_points()
 
             velocities = cm.get_scaled_velocities(model_time)
             velocities = self.get_rounded_velocities(velocities)
+            x = velocities[:,0]
+            y = velocities[:,1]
+            direction = np.arctan2(y,x) - np.pi/2
+            magnitude = np.sqrt(x**2 + y**2)
+            direction = np.round(direction,2)
+            magnitude = np.round(magnitude,2)
 
-            velocity_dict = defaultdict(list)
-            for k, v in zip(velocities, centers):
-                k = tuple(k)
-                v = list(v)
-                velocity_dict[k].append(v)
-
-            features = []
-            for v, cps in velocity_dict.items():
-                feature = Feature(geometry=MultiPoint(cps),
-                                  id="1",
-                                  properties={'velocity': v})
-                features.append(feature)
-
-            geojson[cm.id] = FeatureCollection(features)
-
-        # default geojson should not output data to file
-        # read data from file and send it to web client
-        output_info = {'time_stamp': iso_time,
-                       'feature_collections': geojson
-                       }
-
-        return output_info
+            json_[cm.id]={'magnitude':magnitude.tolist(),
+                         'direction':direction.tolist()
+                         }
+        return json_
 
     def get_rounded_velocities(self, velocities):
         return np.vstack((velocities['u'].round(decimals=2),
@@ -600,15 +580,18 @@ class IceRawJsonOutput(Outputter):
 
         raw_json = {}
         for mover in self.ice_movers:
-            grid_data = mover.get_grid_data().tolist()
             ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
 
-            raw_json[mover.id] = []
-            for c, th, grid in zip(ice_coverage, ice_thickness, grid_data):
-                raw_json[mover.id].append([c, th, grid])
+            raw_json[mover.id] = {
+                    "thickness": [],
+                    "concentration": []
+                }
+
+            raw_json[mover.id]["thickness"] = ice_thickness.tolist()
+            raw_json[mover.id]["concentration"] = ice_coverage.tolist()
 
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'feature_collections': raw_json
+                       'data': raw_json
                        }
 
         return output_info
