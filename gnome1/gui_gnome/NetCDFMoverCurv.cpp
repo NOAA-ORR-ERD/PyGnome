@@ -69,6 +69,7 @@ OSErr NetCDFMoverCurv::Write (BFPB *bfpb)
 	}
 	
 	if (err = WriteMacValue(bfpb, bIsCOOPSWaterMask)) goto done;
+	
 done:
 	if(err)
 		TechError("NetCDFMoverCurv::Write(char* path)", " ", 0); 
