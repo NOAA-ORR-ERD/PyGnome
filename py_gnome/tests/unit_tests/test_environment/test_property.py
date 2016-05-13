@@ -51,6 +51,13 @@ def ts():
 
 class TestTime:
 
+    def test_construction(self):
+        t1 = Time(dates2)
+        assert all(dates2 == t1.time)
+
+        t2 = Time(grid_time)
+        assert len(t2.time) == 54
+
     def test_extrapolation(self, ts):
         ts.extrapolate = True
         before = dt.datetime(1999,12,31,23)
@@ -97,6 +104,7 @@ class TestTSprop:
         assert u is not None
         assert u.name == 'u'
         assert u.units == 'm/s'
+        print u.time == Time(dates2)
         assert u.time == Time(dates2)
         assert (u.data == u_data).all()
 
@@ -203,10 +211,6 @@ class TestTSVectorProp:
         vp = TSVectorProp(name='vp', variables=[u, v])
         assert vp.time == vp.variables[0].time == vp.variables[1].time
 
-        #Mixed TSP/raw variables
-        with pytest.raises(TypeError):
-            vp = TSVectorProp(name='vp', variables=[u, v_data])
-
         #SHORT TIME
         with pytest.raises(ValueError):
             vp = TSVectorProp(name='vp', units='m/s', time=dates, variables=[u_data,v_data], extrapolate=False)
@@ -238,14 +242,6 @@ class TestTSVectorProp:
         with pytest.raises(ValueError):
             # mismatched data and time length
             vp.variables = [[5],[6],[7]]
-
-    def test_set_time(self,vp):
-        with pytest.raises(ValueError):
-            # mismatched data and time length
-            vp.time = dates
-
-        vp.time = dates2
-        assert vp.time == Time(dates2)
 
     def test_set_attr(self,vp):
 
@@ -362,17 +358,25 @@ class TestGriddedProp:
                             data_file='tbofs_example.nc',
                             grid_file='tbofs_example.nc')
 
-    def test_unit_conversion(self, gp):
-        with pytest.raises(AttributeError):
-            gp.units = 'km/hr'
+        topology = {'node_lon':'lonc',
+                    'node_lat':'latc'}
+        k = GriddedProp.from_netCDF(name='u',
+                                    grid_file=curr_file,
+                                    grid_topology=topology,
+                                    data_file=curr_file,
+                                    data_name='water_u')
+        assert k.name == u.name
+        assert k.units == 'meter second-1'
+        assert k.time == u.time
+        assert k.data[0,0,0] == u.data[0,0,0]
 
     def test_set_data(self,gp):
-        with pytest.raises(AttributeError):
-            gp.data = grid_v
+        with pytest.raises(ValueError):
+            gp.data = np.array(v_data)
 
     def test_set_grid(self,gp):
-        with pytest.raises(AttributeError):
-            gp.grid = test_grid
+        with pytest.raises(ValueError):
+            gp.grid = np.array(v_data)
 
     def test_set_time(self, gp):
         gp.time = grid_time
@@ -404,7 +408,9 @@ class TestGriddedProp:
         assert gp.data_file == 'f'
 
     def test_at(self, gp):
-        print gp.time.time
+
+        print type(gp.grid)
+
         print gp.at(np.array([-82.8, 27.475]), gp.time.time[2])
         assert gp.at(np.array([-82.8, 27.475]), gp.time.time[2]) != 0
         assert np.isnan(gp.at(np.array([0,0]), gp.time.time[2]))

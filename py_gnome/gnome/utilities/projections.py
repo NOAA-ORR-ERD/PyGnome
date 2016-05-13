@@ -268,6 +268,21 @@ class GeoProjection(object):
         else:
             return coords
 
+    def to_pixel_multipoint(self, coords, asint=False):
+        """
+        does the to_pixel operation, but on a generic shaped array
+        """
+        coords = coords - self.center
+
+        coords *= self.scale
+
+        coords += self.offset
+
+        if asint:
+            return np.floor(coords, coords).astype(np.int32)
+        else:
+            return coords
+
     def to_lonlat(self, coords):
         """
         converts pixel coords to long-lat coords

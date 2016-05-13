@@ -16,6 +16,8 @@ import pysgrid
 import unit_conversion
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
 from gnome.environment.grid_property import GridVectorProp, GriddedProp
+from gnome.environment import Environment
+from astropy.vo.validator import tstquery
 
 class PropertySchema(base_schema.ObjType):
     name = SchemaNode(String(), missing='default')
@@ -70,6 +72,8 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
         TSVectorProp.__init__(self, name, units, time=time, variables=variables, extrapolate=extrapolate)
 
     def __eq__(self, o):
+        if o is None:
+            return False
         t1 = (self.name == o.name and
               self.units == o.units and
               self.extrapolate == o.extrapolate and
@@ -215,7 +219,9 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
 #         pass
 
 
-class WindTS(VelocityTS):
+class WindTS(VelocityTS, Environment):
+
+    _ref_as = 'wind'
 
     def __init__(self,
                  name=None,
@@ -224,23 +230,108 @@ class WindTS(VelocityTS):
                  variables = None,
                  extrapolate=False,
                  **kwargs):
+        if 'timeseries' in kwargs:
+            ts = kwargs['timeseries']
+
+            time = map(lambda e:e[0], ts)
+            mag = np.array(map(lambda e:e[1][0], ts))
+            dir = np.array(map(lambda e:e[1][1], ts))
+            dir = dir * -1 - 90
+            u = mag * np.cos(dir * np.pi/180)
+            v = mag * np.sin(dir * np.pi/180)
+            variables = [u, v]
         VelocityTS.__init__(self,name, units, time, variables, extrapolate)
-        
+
     @classmethod
     def constant_wind(cls,
                       name='',
-                      units='m/s',
-                      time=datetime.datetime.now().replace(microsecond=0,
-                                                          second=0,
-                                                          minute=0)
-                      variables = 
-                      ):
-# class AirConditions(object):
-#
-#     def __init__(self,
-#                  wind=None,
-#                  temperature=None,
-#                  ):
+                      speed = 0,
+                      direction = 0,
+                      units='m/s'):
+        """
+        utility to create a constant wind "timeseries"
+
+        :param speed: speed of wind
+        :param direction: direction -- degrees True, direction wind is from
+                          (degrees True)
+        :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s",
+                           "cm/s", etc.
+
+        .. note:: 
+            The time for a constant wind timeseries is irrelevant. This
+            function simply sets it to datetime.now() accurate to hours.
+        """
+        t = datetime.now().replace(microsecond=0, second=0, minute=0)
+        direction = direction * -1 - 90
+        u = speed * np.cos(direction * np.pi/180)
+        v = speed * np.sin(direction * np.pi/180)
+        return cls(name=name, units=units, time = [t], variables = [[u],[v]], extrapolate=True)
+
+
+class GridCurrent(VelocityGrid, Environment):
+    _ref_as = 'current'
+
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time=None,
+                 variables=None,
+                 extrapolate=False,
+                 grid=None,
+                 grid_file=None,
+                 data_file=None):
+        VelocityGrid.__init__(self,
+                              name=name,
+                              units=units,
+                              time=time,
+                              variables=variables,
+                              extrapolate=extrapolate,
+                              grid=grid,
+                              grid_file=grid_file,
+                              data_file=data_file)
+
+    @classmethod
+    def from_netCDF(cls,
+                    filename=None,
+                    name=None,
+                    varnames=None,
+                    grid_topology=None,
+                    grid_file=None,
+                    data_file=None,
+                    extrapolate=False):
+        if filename is not None:
+            grid_file=filename
+            data_file=filename
+        retval = None
+        if varnames is None:
+            u_comp_names=['u','U','water_u','curr_ucmp']
+            v_comp_names=['v','V','water_v','curr_vcmp']
+            for n in zip(u_comp_names, v_comp_names):
+                varnames = n
+                try:
+                    retval = super(GridCurrent, cls).from_netCDF(name, varnames, grid_topology, grid_file, data_file, extrapolate)
+                    break
+                except IndexError:
+                    pass
+        else:
+            retval = super(GridCurrent, cls).from_netCDF(name, varnames, grid_topology, grid_file, data_file, extrapolate)
+        if retval is None:
+            raise ValueError("Default current names were not found in file specified")
+        df = nc4.Dataset(data_file)
+        if 'angle' in df.variables.keys():
+            #Unrotated ROMS Grid!
+            retval.angle = GriddedProp(name='angle',units='radians',time=[retval.time.time[0]],grid=retval.grid, data=df['angle'])
+        return retval
+
+    def at(self, points, time, units=None):
+        value = super(GridCurrent,self).at(points, time, units)
+        if hasattr(self, 'angle'):
+            angs = self.angle.at(points, time)
+            x = value[:,0] * np.cos(angs) - value[:,1] * np.sin(angs)
+            y = value[:,0] * np.sin(angs) + value[:,1] * np.cos(angs)
+            value[:,0] = x
+            value[:,1] = y
+        return value
 
 if __name__ == "__main__":
     import datetime as dt

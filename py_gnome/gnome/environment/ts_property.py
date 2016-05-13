@@ -39,9 +39,10 @@ class TimeSeriesProp(EnvProp):
 
     @data.setter
     def data(self, d):
-        if len(d) != len(self.time):
+        if self.time is not None and len(d) != len(self.time):
             raise ValueError("Data/time interval mismatch")
-        self._data = d
+        else:
+            self._data = d
 
     @property
     def time(self):
@@ -49,7 +50,7 @@ class TimeSeriesProp(EnvProp):
 
     @time.setter
     def time(self, t):
-        if len(t) != len(self.data):
+        if self.data is not None and len(t) != len(self.data):
             raise ValueError("Data/time interval mismatch")
         if isinstance(t, Time):
             self._time = t
@@ -87,7 +88,9 @@ class TimeSeriesProp(EnvProp):
         value = None
         if len(self.time) == 1:
             #single time time series (constant)
-            return np.full((points.shape[0], 1), data)
+            value = np.full((points.shape[0], 1), self.data)
+            value = unit_conversion.convert(None, self.units, units, value)
+            return value
 
         if not self.extrapolate:
             self.time.valid_time(time)
@@ -129,44 +132,19 @@ class TSVectorProp(VectorProp):
                  varnames=None,
                  extrapolate=False):
 
-        self.name = name
+        if any([units is None, time is None]) and not all([isinstance(v, TimeSeriesProp) for v in variables]):
+            raise ValueError("All attributes except name, varnames and extrapolate MUST be defined if variables is not a list of TimeSeriesProp objects")
+
         if variables is None or len(variables) < 2:
             raise TypeError('Variables must be an array-like of 2 or more TimeSeriesProp or array-like')
+        VectorProp.__init__(self, name, units, time, variables, extrapolate)
+        self._check_consistency()
 
-        if all([isinstance(v, TimeSeriesProp) for v in variables]):
-            if time is not None and not isinstance(time, Time):
-                time = Time(time)
-            units = variables[0].units if units is None else units
-            time = variables[0].time if time is None else time
-            for v in variables:
-                if (v.units != units or
-                    v.time != time or
-                    v.extrapolate != extrapolate):
-                    raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
-        else:
-            if any([isinstance(v, TimeSeriesProp) for v in variables]):
-                raise TypeError("Cannot mix TimeSeriesProp objects with other data sources.")
-            if any([units == None, time == None]):
-                raise ValueError("All attributes except name, varnames and extrapolate MUST be defined if variables is not a list of TimeSeriesProp objects")
-            for i, var in enumerate(variables):
-                name = 'var{0}'.format(i) if varnames is None else varnames[i]
-                variables[i] = TimeSeriesProp(name = 'var{0}'.format(i),
-                                              units = units,
-                                              time = time,
-                                              data = variables[i],
-                                              extrapolate = extrapolate)
-
-        self._variables = variables
-        self.time = time
-        self._units = units
-        self._extrapolate = extrapolate
-        self._check_consistency(self.variables)
-
-    def _check_consistency(self, varlist):
+    def _check_consistency(self):
         '''
         Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
         '''
-        for v in varlist:
+        for v in self.variables:
             if (v.units != self.units or
                 v.time != self.time or
                 v.extrapolate != self.extrapolate):
@@ -178,7 +156,6 @@ class TSVectorProp(VectorProp):
 
     @variables.setter
     def variables(self, vars):
-        print self.units
         new_vars = []
         for i, var in enumerate(vars):
             if not isinstance(var, TimeSeriesProp):
@@ -189,7 +166,27 @@ class TSVectorProp(VectorProp):
                                                           extrapolate=self.extrapolate))
                 else:
                     raise ValueError('Variables must contain iterables or TimeSeriesProp objects')
+            else:
+                new_vars.append(var)
         self._variables = new_vars
+        self._check_consistency()
+
+    @property
+    def time(self):
+        return self._time
+
+
+    @time.setter
+    def time(self, t):
+        if self.variables is not None:
+            for v in self.variables:
+                v.time = t
+        if isinstance(t, Time):
+            self._time = t
+        elif isinstance(t,collections.Iterable):
+            self._time = Time(t)
+        else:
+            raise ValueError("Object being assigned must be an iterable or a Time object")
 
     def set_attr(self,
                name=None,

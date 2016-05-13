@@ -29,15 +29,107 @@ class GriddedProp(EnvProp):
                  extrapolate=False,
                  data_file=None,
                  grid_file=None):
-        if any([units == None, time == None, grid == None, data == None, grid_file == None, data_file == None]):
+
+        self._grid = self._data_file = self._grid_file = None
+
+        if any([units is None, time is None, grid is None, data is None]):
             raise ValueError("All attributes except name and extrapolate MUST be defined if variables is not a list of GriddedProp objects")
-        if not hasattr(data, 'shape') or grid.infer_grid(data) is None:
-            raise ValueError('Data must be able to fit to the grid')
-        super(GriddedProp, self).__init__(name=name, units=units, data=data, extrapolate=extrapolate)
+        if not hasattr(data, 'shape'):
+            if isinstance(grid, pyugrid.UGrid) and not grid.fits_data(data):
+                raise ValueError('Data must be able to fit to the grid')
+            if isinstance(grid,pysgrid.SGrid) and grid.infer_grid(data) is None:
+                raise ValueError('Data must be able to fit to the grid')
+        super(GriddedProp, self).__init__(name=name, units=units, time=time, data=data, extrapolate=extrapolate)
         self._grid = grid
-        self.time = time
         self.data_file = data_file
         self.grid_file = grid_file
+
+    @classmethod
+    def from_netCDF(cls,
+                    name=None,
+                    grid_file=None,
+                    grid_topology=None,
+                    data_file=None,
+                    data_name=None,
+                    extrapolate=False):
+        gt = grid_topology
+        gf = nc4.Dataset(grid_file)
+        df = gf
+        if data_file != grid_file:
+            df = nc4.Dataset(data_file)
+        grid = None
+        if gt is None:
+            try:
+                grid = pyugrid.UGrid.from_nc_dataset(gf)
+            except ValueError:
+                grid = pysgrid.SGrid.load_grid(gf)
+        else:
+            nodes = node_lon = node_lat = None
+            if 'nodes' not in gt:
+                if 'node_lon' not in gt and 'node_lat' not in gt:
+                    raise ValueError('Nodes must be specified with either the "nodes" or "node_lon" and "node_lat" keys')
+                node_lon = gf[gt['node_lon']]
+                node_lat = gf[gt['node_lat']]
+            else:
+                nodes = gf[gt['nodes']]
+            if 'faces' in gt and gf[gt['faces']]:
+                #UGrid
+                faces = gf[gt['faces']]
+                if faces.shape[0] == 3:
+                    faces=np.ascontiguousarray(np.array(faces).T - 1)
+                if nodes is None:
+                    nodes = np.column_stack((node_lon, node_lat))
+                grid = pyugrid.UGrid(nodes = nodes, faces=faces)
+            else:
+                #SGrid
+                center_lon = center_lat = edge1_lon = edge1_lat = edge2_lon = edge2_lat = None
+                if node_lon is None:
+                    node_lon = nodes[:,0]
+                if node_lat is None:
+                    node_lat = nodes[:,1]
+                if 'center_lon' in gt:
+                    center_lon = gf[gt['center_lon']]
+                if 'center_lat' in gt:
+                    center_lat = gf[gt['center_lat']]
+                if 'edge1_lon' in gt:
+                    edge1_lon = gf[gt['edge1_lon']]
+                if 'edge1_lat' in gt:
+                    edge1_lat = gf[gt['edge1_lat']]
+                if 'edge2_lon' in gt:
+                    edge2_lon = gf[gt['edge2_lon']]
+                if 'edge2_lat' in gt:
+                    edge2_lat = gf[gt['edge2_lat']]
+                grid = pysgrid.SGrid(node_lon = node_lon,
+                                     node_lat = node_lat,
+                                     center_lon = center_lon,
+                                     center_lat = center_lat,
+                                     edge1_lon = edge1_lon,
+                                     edge1_lat = edge1_lat,
+                                     edge2_lon = edge2_lon,
+                                     edge2_lat = edge2_lat)
+        if data_name is None:
+            raise ValueError("Must supply variable name")
+        if data_name not in df.variables.keys():
+            raise ValueError("Data file does not contain variable name {0}".format(data_name))
+        data = df[data_name]
+        units = data.units
+        timevar=None
+        try:
+            timevar = data.time
+        except AttributeError:
+            timevar = data.dimensions[0]
+        time = Time(df[timevar])
+
+        prop = cls(name=name,
+                   units=units,
+                   time=time,
+                   data=data,
+                   grid=grid,
+                   extrapolate=extrapolate,
+                   data_file=data_file,
+                   grid_file=grid_file)
+        return prop
+
 
     @property
     def time(self):
@@ -45,25 +137,42 @@ class GriddedProp(EnvProp):
 
     @time.setter
     def time(self, t):
-        if len(t) != self.data.shape[0]:
+        if self.data is not None and len(t) != len(self.data) and len(t) > 1:
             raise ValueError("Data/time interval mismatch")
-        if isinstance(t,collections.Iterable) or isinstance(t, nc4.Variable):
-            t = Time(t)
+        if isinstance(t, Time):
+            self._time = t
+        elif isinstance(t,collections.Iterable) or isinstance(t, nc4.Variable):
+            self._time = Time(t)
         else:
             raise ValueError("Time must be set with an iterable container or netCDF variable")
-        self._time = t
-
-    @property
-    def units(self):
-        return self._units
 
     @property
     def data(self):
         return self._data
 
+    @data.setter
+    def data(self, d):
+        if self.time is not None and len(d) != len(self.time):
+            raise ValueError("Data/time interval mismatch")
+        if self.grid is not None and self.grid.infer_grid(d) is None:
+            raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(d.shape, grid.shape))
+        self._data = d
+
     @property
     def grid(self):
         return self._grid
+
+    @grid.setter
+    def grid(self, g):
+        if not (isinstance(g, (pyugrid.UGrid, pysgrid.SGrid))):
+            raise ValueError('Grid must be set with a pyugrid.UGrid or pysgrid.SGrid object')
+        if self.data is not None and g.infer_grid(self.data) is None:
+            raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(d.shape, grid.shape))
+        self._grid = g
+
+    @property
+    def data_shape(self):
+        return self.data.shape
 
     @property
     def is_data_on_nodes(self):
@@ -116,7 +225,7 @@ class GriddedProp(EnvProp):
             value = self.at(centers, time, units)
         return value
 
-    def at(self, points, time, units=None):
+    def at(self, points, time, units=None, depth = -1):
         '''
         Interpolates this property to the given points at the given time.
         :param points: A Nx2 array of lon,lat points
@@ -139,14 +248,22 @@ class GriddedProp(EnvProp):
                 value = self.grid.interpolate_var_to_points(points, self.data, slices=s0, memo=True)
             else:
                 t_alphas = self.time.interp_alpha(time)
-                s0 = [t_index]
-                s1 = [t_index + 1]
+                s1 = [t_index]
+                s0 = [t_index - 1]
                 if len(self.data.shape) == 4:
+                    s0.append(depth)
                     s1.append(depth)
-                    s2.append(depth)
-                v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, memo=True)
-                v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s1, memo=True)
-                value = v0 + (v1 - v0) * t_alphas
+
+                #THIS WILL BE REMOVED WHEN PYUGRID AND SGRID API IS CLOSER
+                if isinstance(self.grid, pysgrid.SGrid):
+                    v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, slice_grid=True, memo=True)
+                    v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s1, slice_grid=True, memo=True)
+                    value = v0 + (v1 - v0) * t_alphas
+                else:
+                    v0 = self.grid.interpolate_var_to_points(points, self.data[t_index])
+                    v1 = self.grid.interpolate_var_to_points(points, self.data[t_index])
+                    value = v0 + (v1 - v0) * t_alphas
+                #THIS WILL BE REMOVED WHEN PYUGRID AND SGRID API IS CLOSER
 
         if units is not None and units != self.units:
             value = unit_conversion.convert(None, self.units, units, value)
@@ -166,58 +283,73 @@ class GridVectorProp(VectorProp):
                  data_file=None,
                  varnames=None):
 
-        self.name = name
+        self._grid = self._grid_file = self._data_file = None
+
+        if any([units is None, time is None, grid is None]) and not all([isinstance(v, GriddedProp) for v in variables]):
+            raise ValueError("All attributes except name, varnames and extrapolate MUST be defined if variables is not a list of TimeSeriesProp objects")
 
         if variables is None or len(variables) < 2:
             raise TypeError("Variables needs to be a list of at least 2 GriddedProp objects or ndarray-like arrays")
 
-        gp = True
         if all([isinstance(v, GriddedProp) for v in variables]):
-            if time is not None and not isinstance(time, Time):
-                time = Time(time)
-            units = variables[0].units if units is None else units
-            time = variables[0].time if time is None else time
-            grid = variables[0].grid if grid is None else extrapolate
+            grid = variables[0].grid if grid is None else grid
             grid_file = variables[0].grid_file if grid_file is None else grid_file
             data_file = variables[0].data_file if data_file is None else data_file
-            for v in variables:
-                if (v.units != units or
-                    v.time != time or
-                    v.extrapolate != extrapolate or
-                    v.grid != grid or
-                    v.grid_file != grid_file or
-                    v.data_file != data_file):
-                    raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
-        else:
-            if any([isinstance(v, GriddedProp) for v in variables]):
-                raise TypeError("Cannot mix GriddedProp objects with other data sources.")
-            if any([units == None, time == None, grid == None, grid_file == None, data_file == None]):
-                raise ValueError("All attributes except name, varnames and extrapolate MUST be defined if variables is not a list of GriddedProp objects")
-            for i, var in enumerate(variables):
-                name = 'var{0}'.format(i) if varnames is None else varnames[i]
-                variables[i] = GriddedProp(name = 'var{0}'.format(i),
-                                           units = units,
-                                           time = time,
-                                           data = variables[i],
-                                           grid = grid,
-                                           grid_file = grid_file,
-                                           data_file = data_file,
-                                           extrapolate = extrapolate)
+        VectorProp.__init__(self,
+                            name,
+                            units,
+                            time,
+                            variables,
+                            extrapolate,
+                            grid = grid,
+                            data_file=data_file,
+                            grid_file=grid_file)
 
-        self._variables = variables
-        self.data_file = data_file
-        self.grid_file = grid_file
-        self.time = time
-        self._grid = grid
-        self._units = units
-        self._extrapolate = extrapolate
-        self._check_consistency(self.variables)
+        self._check_consistency()
 
-    def _check_consistency(self, varlist):
+    @classmethod
+    def from_netCDF(cls,
+                    name=None,
+                    varnames=None,
+                    grid_topology=None,
+                    grid_file=None,
+                    data_file=None,
+                    extrapolate=False):
+        variables = []
+        time = None
+        vn = GriddedProp.from_netCDF(varnames[0], grid_file, grid_topology, data_file, varnames[0], extrapolate)
+        time = vn.time
+        units = vn.units
+        grid = vn.grid
+        data_file = vn.data_file
+        df = nc4.Dataset(data_file)
+        data = df[varnames[1]]
+        variables.append(vn)
+        variables.append(GriddedProp(name=varnames[1],
+                                     units=units,
+                                     time=time,
+                                     data=data,
+                                     grid=grid,
+                                     grid_file=grid_file,
+                                     data_file = data_file,
+                                     extrapolate=extrapolate))
+        return cls(name,
+                   units,
+                   time,
+                   variables,
+                   extrapolate,
+                   grid=grid,
+                   grid_file=grid_file,
+                   data_file=data_file)
+
+
+    def _check_consistency(self):
         '''
         Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
         '''
-        for v in varlist:
+        if self.units is None or self.time is None or self.grid is None:
+            return
+        for v in self.variables:
             if (v.units != self.units or
                 v.time != self.time or
                 v.extrapolate != self.extrapolate or
@@ -230,31 +362,67 @@ class GridVectorProp(VectorProp):
     def grid(self):
         return self._grid
 
-    @property
-    def time(self):
-        return self._time
+    @grid.setter
+    def grid(self, g):
+        if not (isinstance(g, (pyugrid.UGrid, pysgrid.SGrid))):
+            raise ValueError('Grid must be set with a pyugrid.UGrid or pysgrid.SGrid object')
+        if self._variables is not None:
+            if g.infer_grid(self.variables[0]) is None:
+                raise ValueError("Grid with shape {0} not compatible with data of shape {1}".format(g.shape, self.data_shape))
+            for v in self.variables:
+                v.grid = g
+        else:
+            self._grid = g
 
-    @time.setter
-    def time(self, t):
-        if not isinstance(t, Time):
-            if isinstance(t,collections.Iterable) or isinstance(t, nc4.Variable):
-                t = Time(t)
-            else:
-                raise ValueError("Time must be set with an iterable container of datetime.datatime, gnome.environment.property.Time, or netCDF4.Variable")
-        self._time = t
 
     @property
     def variables(self):
         return self._variables
 
     @variables.setter
-    def variables(self, variables):
-        if all([isinstance(v, GriddedProp) for v in variables]):
-            self._check_consistency(variables)
-            self._variables = variables
-            return
-        if any([isinstance(v, GriddedProp) for v in variables]):
-            raise ValueError("Cannot mix GriddedProp objects with other data sources.")
+    def variables(self, vars):
+        new_vars = []
+        for i, var in enumerate(vars):
+            if not isinstance(var, GriddedProp):
+                if (isinstance(var, (collections.Iterable, nc4.Variable)) and
+                    len(var) == len(self.time) and
+                    self.grid.infer_grid(var) is not None):
+                    new_vars.append(GriddedProp(name='var{0}'.format(i),
+                                    units=self.units,
+                                    time=self.time,
+                                    grid = self.grid,
+                                    data = vars[i],
+                                    extrapolate=self.extrapolate))
+                else:
+                    raise ValueError('Variables must contain an iterable, netCDF4.Variable or GriddedProp objects')
+            else:
+                new_vars.append(var)
+        self._variables = new_vars
+        self._check_consistency()
+
+    @property
+    def time(self):
+        return self._time
+
+
+    @time.setter
+    def time(self, t):
+        if self.variables is not None:
+            for v in self.variables:
+                v.time = t
+        if isinstance(t, Time):
+            self._time = t
+        elif isinstance(t,collections.Iterable) or isinstance(t, nc4.Variable):
+            self._time = Time(t)
+        else:
+            raise ValueError("Time must be set with an iterable container or netCDF variable")
+
+    @property
+    def data_shape(self):
+        if self._variables is not None:
+            return self.variables.data.shape
+        else:
+            return None
 
     def set_attr(self,
                  name=None,

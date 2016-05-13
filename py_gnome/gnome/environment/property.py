@@ -36,14 +36,16 @@ class EnvProp(object):
         :param extrapolate: Determines whether the first/last values are used for times outside the interval
         '''
 
+        self.name = self._units = self._time = self._data = None
+
         self.name = name
         if units in unit_conversion.unit_data.supported_units:
             self._units = units
         else:
             raise ValueError('Units of {0} are not supported'.format(units))
-        self._time = time
-        self._data = data
-        self._extrapolate = extrapolate
+        self.data = data
+        self.time = time
+        self.extrapolate = extrapolate
 
     @property
     def units(self):
@@ -57,13 +59,26 @@ class EnvProp(object):
             raise ValueError('Units of {0} are not supported'.format(unit))
 
     @property
+    def time(self):
+        return self._time
+
+    @time.setter
+    def time(self, t):
+        if isinstance(t, Time):
+            self._time = t
+        elif isinstance(t,collections.Iterable):
+            self._time = Time(t)
+        else:
+            raise ValueError("Object being assigned must be an iterable or a Time object")
+
+    @property
     def extrapolate(self):
         return self._extrapolate or len(self.time) == 1
 
     @extrapolate.setter
     def extrapolate(self, e):
         self._extrapolate = e
-        self.time.extrapolate = e
+        self._time.extrapolate = e
 
     def at(self, points, time):
         return np.full((points.shape[0], 1), data)
@@ -89,17 +104,50 @@ class VectorProp(object):
                  units=None,
                  time=None,
                  variables=None,
-                 extrapolate=False):
+                 extrapolate=False,
+                 **kwargs):
+
+        self.name = self._units = self._time = self._variables = None
+
         self.name = name
-        if variables is None or len(variables) < 2:
-            raise ValueError('Variables must be an array-like of 2 or more Property objects')
-        self.variables = variables
+
+        if all([isinstance(v, EnvProp) for v in variables]):
+            if time is not None and not isinstance(time, Time):
+                time = Time(time)
+            units = variables[0].units if units is None else units
+            time = variables[0].time if time is None else time
+            for v in variables:
+                if (v.units != units or
+                    v.time != time or
+                    v.extrapolate != extrapolate):
+                    raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
+
         if units is None:
             units = variables[0].units
         self._units = units
+        if variables is None or len(variables) < 2:
+            raise ValueError('Variables must be an array-like of 2 or more Property objects')
         self.time=time
-
         self.extrapolate = extrapolate
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
+        self.variables = variables
+
+    @property
+    def extrapolate(self):
+        return self._extrapolate or len(self.time) == 1
+
+    @extrapolate.setter
+    def extrapolate(self, e):
+        self._extrapolate = e
+        if hasattr(self, '_variables') and self._variables is not None:
+            for v in self._variables:
+                v.extrapolate = e
+        self.time.extrapolate = e
+
+    @property
+    def time(self):
+        return self._time
 
     @property
     def units(self):
@@ -119,47 +167,17 @@ class VectorProp(object):
             raise ValueError(5,'Units of {0} are not supported'.format(unit))
 
     @property
-    def extrapolate(self):
-        return self._extrapolate or len(self.time) == 1
-
-    @extrapolate.setter
-    def extrapolate(self, e):
-        self._extrapolate = e
-        for v in self._variables:
-            v.extrapolate = e
-        self.time.extrapolate = e
-
-    @property
-    def time(self):
-        return self._time
-
-    @time.setter
-    def time(self, t):
-        print self._variables
-        if len(t) != len(self._variables[0].data):
-            raise ValueError("Data/time interval mismatch")
-        if isinstance(t, Time):
-            self._time = t
-        elif isinstance(t,collections.Iterable):
-            self._time = Time(t)
-        else:
-            raise ValueError("Object being assigned must be an iterable or a Time object")
-
-    @property
-    def variables(self):
-        return np.stack([v.data for v in self._variables])
-
-    @variables.setter
-    def variables(self, vars):
-        self._variables = vars
-
-
-    @property
     def varnames(self):
         return [v.name for v in self.variables]
 
+    def _check_consistency(self):
+        '''
+        Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
+        '''
+        raise NotImplementedError()
+
     def at(self, points, time, units=None):
-        return np.column_stack((var.at(points, time, units) for var in self._variables))
+        return np.column_stack([var.at(points, time, units) for var in self._variables])
 
 
 class Time(object):
@@ -191,10 +209,11 @@ class Time(object):
         return self.time.__iter__()
 
     def __eq__(self, other):
-        return (self.time == other.time).all()
+        r = self.time == other.time
+        return all(r) if hasattr(r, '__len__') else r
 
     def __ne__(self, other):
-        return (self.time != other.time).all()
+        return not self.__eq__(other)
 
     def _timeseries_is_ascending(self, ts):
         return all(np.sort(ts) == ts)
