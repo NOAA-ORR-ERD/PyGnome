@@ -9,7 +9,6 @@ import numpy as np
 
 import gnome  # required by deserialize
 
-from gnome import constants
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.weathering import (LeeHuibers, Stokes,
                                         DingFarmer, DelvigneSweeney)
@@ -35,12 +34,8 @@ class Dissolution(Weatherer, Serializable):
 
     def __init__(self, waves=None, **kwargs):
         '''
-        :param conditions: gnome.environment.Conditions object which contains
-                           things like water temperature
-        :param waves: waves object for obtaining wave_height, etc at given time
-
-        TODO: we still need to validate all the inputs that this weatherer
-              requires
+            :param waves: waves object for obtaining wave_height, etc. at a
+                          given time
         '''
         self.waves = waves
 
@@ -95,7 +90,7 @@ class Dissolution(Weatherer, Serializable):
         '''
         num_initialized = 0
 
-        for substance, data in sc.itersubstancedata(self.array_types):
+        for _substance, data in sc.itersubstancedata(self.array_types):
             if len(data['partition_coeff']) == 0:
                 # print 'no particles released yet...'
                 continue
@@ -115,15 +110,25 @@ class Dissolution(Weatherer, Serializable):
             We will outline the steps as we go along, but off the top of
             my head:
             - recalculate the partition coefficient (K_ow)
-              TODO: This requires a molar average of the aromatic components.
-            - use VDROP to calculate the shift in the droplet distribution
-            - for each droplet size category:
-                - calculate the water phase transfer velocity (k_w) (Stokes)
-                - calculate the mass xfer rate coefficient (beta)
-                - calculate the water column time fraction (f_wc)
-                - calculate the volume dissolved
-            - subtract the mass of smallest droplets in our distribution
-              that are below a threshold.
+            - droplet distribution per LE should be calculated by the
+              natural dispersion process and saved in the data arrays before
+              the dissolution weathering process.
+            - for each LE:
+                (Note: right now the natural dispersion process only
+                       calculates a single average droplet size. But we still
+                       treat it as an iterable.)
+                - for each droplet size category:
+                    - calculate the water phase transfer velocity (k_w)
+                    - calculate the mass xfer rate coefficient (beta)
+                    - calculate the water column time fraction (f_wc)
+                    - calculate the mass dissolved during refloat period
+                - calculate the mass dissolved from the slick during the
+                  calm period.
+            - the mass dissolved in the water column and the slick is summed
+              per mass fraction (should only be aromatic fractions)
+            - the sum of dissolved masses are compared to the existing mass
+              fractions and adjusted to make sure we don't dissolve more
+              mass than exists in the mass fractions.
         '''
         model_time = kwargs.get('model_time')
         time_step = kwargs.get('time_step')
@@ -141,7 +146,7 @@ class Dissolution(Weatherer, Serializable):
         assert mol_wt.shape == rho.shape
 
         # calculate the partition coefficient (K_ow) for all aromatics.
-        # K_ow for non-aromatics should be masked to 0.0
+        # K_ow for non-aromatics are masked to 0.0
         K_ow_comp = arom_mask * LeeHuibers.partition_coeff(mol_wt, rho)
 
         mass_dissolved_in_wc = []
@@ -176,7 +181,7 @@ class Dissolution(Weatherer, Serializable):
 
             beta = self.beta_coeff(k_w, K_ow, S_RA_volume)
 
-            dX_dt = beta * X / (X + 1) ** (1.0 / 3.0)
+            dX_dt = beta * X / (X + 1.0) ** (1.0 / 3.0)
 
             f_wc = self.water_column_time_fraction(model_time, k_w)
             T_calm = self.calm_between_wave_breaks(model_time)
@@ -233,12 +238,10 @@ class Dissolution(Weatherer, Serializable):
 
         f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
 
-        f_wc = DingFarmer.water_column_time_fraction(f_bw,
+        return DingFarmer.water_column_time_fraction(f_bw,
                                                      wave_period,
                                                      wave_height,
                                                      water_phase_xfer_velocity)
-
-        return f_wc
 
     def calm_between_wave_breaks(self, model_time):
         wave_period = self.waves.peak_wave_period(model_time)
@@ -246,31 +249,28 @@ class Dissolution(Weatherer, Serializable):
 
         f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
 
-        T_calm = DingFarmer.calm_between_wave_breaks(f_bw, wave_period)
-
-        return T_calm
+        return DingFarmer.calm_between_wave_breaks(f_bw, wave_period)
 
     def oil_concentration(self, masses, densities):
-        mass_fractions = masses / masses.sum()
+        assert masses.shape == densities.shape
 
+        mass_fractions = masses / masses.sum()
         aggregate_rho = (mass_fractions * densities).sum()
 
-        C_oil = aggregate_rho * mass_fractions
-        return C_oil
+        return aggregate_rho * mass_fractions
 
     def slick_subsurface_mass_xfer_rate(self, model_time,
                                         oil_concentration,
                                         partition_coeff,
-                                        slick_area,
-                                        schmidt_number=1000.0):
+                                        slick_area):
         '''
             Here we are implementing something similar to equation 1.21
             of our dissolution document.
 
             The Cohen equation (eq. 1.1), I believe, is actually expressed
-            in kg/m^2 * hr.  So we need to convert our time units.
+            in kg/(m^2 * hr).  So we need to convert our time units.
 
-            We return the mass xfer rate in units (kg / s)
+            We return the mass xfer rate in units (kg/s)
         '''
         U_10 = self.waves.wind.get_value(model_time)[0]
         c_oil = oil_concentration
@@ -285,8 +285,7 @@ class Dissolution(Weatherer, Serializable):
 
     def weather_elements(self, sc, time_step, model_time):
         '''
-        weather elements over time_step
-        - sets 'dissolution' in sc.mass_balance
+            weather elements over time_step
         '''
         if not self.active:
             return
@@ -303,6 +302,8 @@ class Dissolution(Weatherer, Serializable):
                                      time_step=time_step,
                                      data=data,
                                      substance=substance)
+
+            # TODO: We should probably only modify the floating LEs
             data['mass_components'] -= diss
 
             sc.mass_balance['dissolution'] += diss.sum()
@@ -318,7 +319,7 @@ class Dissolution(Weatherer, Serializable):
 
     def serialize(self, json_='webapi'):
         """
-        'water'/'waves' property is saved as references in save file
+            'water'/'waves' property is saved as references in save file
         """
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
@@ -333,7 +334,7 @@ class Dissolution(Weatherer, Serializable):
     @classmethod
     def deserialize(cls, json_):
         """
-        Append correct schema for water / waves
+            Append correct schema for water / waves
         """
         if not cls.is_sparse(json_):
             schema = cls._schema()
