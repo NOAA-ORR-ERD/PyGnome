@@ -6,7 +6,6 @@ import numpy as np
 
 from datetime import datetime, timedelta
 from dateutil import parser
-from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
 
 import pyugrid
 import pysgrid

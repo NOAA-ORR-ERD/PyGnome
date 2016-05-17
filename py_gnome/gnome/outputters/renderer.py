@@ -416,33 +416,6 @@ class Renderer(Outputter, MapCanvas):
         self.draw_tags()
         self.draw_grids()
 
-    def draw_vectors(self, time, time_step= 900):
-        for grid in self.grids:
-            if not grid.appearance['vectors']:
-                continue
-            a = grid.appearance
-            points = None
-            points = np.dstack((grid.grid.node_lon[:], grid.grid.node_lat[:])).reshape(-1,2)
-            vels = grid.interpolated_velocities(time, points)
-            positions = np.zeros((points.shape[0],3))
-            positions[:,0:2] = points
-            deltas = np.zeros((points.shape[0],3))
-            deltas[:] = 0.
-            deltas[:, 0:2] = vels * 1.2 * time_step
-            deltas[np.isnan(deltas)] = 0
-            deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
-            deltas[deltas == np.nan] = 0
-            ends = (positions + deltas)[:,0:2]
-            lines = np.stack([points[:],ends[:]], axis=-2)
-            bounds = self.projection.image_box
-            pt1 = ((bounds[0][0] <= lines[:, 0, 0]) * (lines[:, 0, 0] <= bounds[1][0]) *
-                   (bounds[0][1] <= lines[:, 0, 1]) * (lines[:, 0, 1] <= bounds[1][1]))
-            pt2 = ((bounds[0][0] <= lines[:, 1, 0]) * (lines[:, 1, 0] <= bounds[1][0]) *
-                   (bounds[0][1] <= lines[:, 1, 1]) * (lines[:, 1, 1] <= bounds[1][1]))
-            lines = lines[pt1 + pt2]
-            for line in lines:
-                self.draw_polyline(line, line_color='LE', line_width=a['width'], background=True)
-
     def add_grid(self, grid,
                  on=True,
                  color='grid_1',
@@ -737,7 +710,7 @@ class GridVisLayer:
                  projection,
                  on=True,
                  color='grid_1',
-                 width=2
+                 width=1
                  ):
         self.grid = grid
         self.projection=projection
@@ -758,6 +731,13 @@ class GridVisLayer:
             img.draw_polyline(l,
                               line_color=self.color,
                               line_width=self.width)
+        if len(lines[0]) > 2:
+            #curvilinear grid; ugrids never have line segments greater than 2 points
+            for l in lines.transpose((1,0,2)).copy():
+                img.draw_polyline(l,
+                                  line_color=self.color,
+                                  line_width=self.width)
+
 
 
 
@@ -787,12 +767,15 @@ class GridPropVisLayer:
             return
         data_u = self.prop.variables[0].data[self.prop.time.index_of(time) - 1]
         data_v = self.prop.variables[1].data[self.prop.time.index_of(time) - 1]
-        sh = data_u.shape + (2,)
         start=end=None
-        if sh != self.prop.grid.nodes.shape:
-            start = self.prop.grid.centers
-        else:
+#         if self.prop.grid.infer_grid(data_u) == 'centers':
+#             start = self.prop.grid.centers
+#         else:
+        try:
             start = self.prop.grid.nodes
+        except AttributeError:
+            start = np.column_stack((self.prop.grid.node_lon,
+                                     self.prop.grid.node_lat))
 
 #         deltas = FlatEarthProjection.meters_to_lonlat(data*self.scale, lines[:0])
         data_u *= self.scale * 8.9992801e-06
@@ -801,16 +784,16 @@ class GridPropVisLayer:
         end = start.copy()
         end[:,0] += data_u
         end[:,1] += data_v
+        bounds = self.projection.image_box
+        pt1 = ((bounds[0][0] <= start[:, 0]) * (start[:, 0] <= bounds[1][0]) *
+               (bounds[0][1] <= start[:, 1]) * (start[:, 1] <= bounds[1][1]))
+        pt2 = ((bounds[0][0] <= end[:, 0]) * (end[:, 0] <= bounds[1][0]) *
+               (bounds[0][1] <= end[:, 1]) * (end[:, 1] <= bounds[1][1]))
+        start = start[pt1 * pt2]
+        end = end[pt1 * pt2]
         start = self.projection.to_pixel_multipoint(start, asint=True)
         end = self.projection.to_pixel_multipoint(end, asint=True)
 
-#         bounds = self.projection.image_box
-#         pt1 = ((bounds[0][0] <= start[:, 0]) * (start[:, 0] <= bounds[1][0]) *
-#                (bounds[0][1] <= start[:, 1]) * (start[:, 1] <= bounds[1][1]))
-#         pt2 = ((bounds[0][0] <= end[:, 0]) * (end[:, 0] <= bounds[1][0]) *
-#                (bounds[0][1] <= end[:, 1]) * (end[:, 1] <= bounds[1][1]))
-#         start = start[pt1 + pt2]
-#         end = end[pt1+pt2]
         img.draw_dots(start, diameter=self.size, color=self.color)
         line = np.array([[0.,0.],[0.,0.]])
         for i in xrange(0,len(start)):

@@ -289,43 +289,113 @@ class GridCurrent(VelocityGrid, Environment):
                               grid=grid,
                               grid_file=grid_file,
                               data_file=data_file)
+        self.angle = None
+        df = nc4.Dataset(data_file)
+        if 'angle' in df.variables.keys():
+            #Unrotated ROMS Grid!
+            self.angle = GriddedProp(name='angle',units='radians',time=[self.time.time[0]], grid=self.grid, data=df['angle'])
+
 
     @classmethod
     def from_netCDF(cls,
                     filename=None,
-                    name=None,
                     varnames=None,
                     grid_topology=None,
-                    grid_file=None,
+                    name=None,
+                    units=None,
+                    time=None,
+                    grid=None,
+                    extrapolate=False,
                     data_file=None,
-                    extrapolate=False):
+                    grid_file=None):
         if filename is not None:
             grid_file=filename
             data_file=filename
         retval = None
         if varnames is None:
-            u_comp_names=['u','U','water_u','curr_ucmp']
-            v_comp_names=['v','V','water_v','curr_vcmp']
-            for n in zip(u_comp_names, v_comp_names):
-                varnames = n
-                try:
-                    retval = super(GridCurrent, cls).from_netCDF(name, varnames, grid_topology, grid_file, data_file, extrapolate)
-                    break
-                except IndexError:
-                    pass
-        else:
-            retval = super(GridCurrent, cls).from_netCDF(name, varnames, grid_topology, grid_file, data_file, extrapolate)
-        if retval is None:
-            raise ValueError("Default current names were not found in file specified")
-        df = nc4.Dataset(data_file)
-        if 'angle' in df.variables.keys():
-            #Unrotated ROMS Grid!
-            retval.angle = GriddedProp(name='angle',units='radians',time=[retval.time.time[0]],grid=retval.grid, data=df['angle'])
+            #test for default varnames
+            varnames = cls._gen_varnames(data_file)
+            if varnames is None:
+                raise NameError('Default current names are not in the data file')
+
+        retval = super(GridCurrent, cls).from_netCDF(name=name,
+                                                     varnames=varnames,
+                                                     grid_topology=grid_topology,
+                                                     grid_file = grid_file,
+                                                     data_file = data_file,
+                                                     extrapolate = extrapolate)
+
         return retval
+
+    @classmethod
+    def _gen_varnames(cls, filename):
+        '''
+        Function to find the default variable names if they are not provided
+
+        :param filename: Name of file that will be searched for variables
+        :return: List of default variable names, or None if none are found
+        '''
+        df = nc4.Dataset(filename)
+        comp_names=[['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]
+        for n in comp_names:
+            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
+                return n
+        return None
+
+
+    @classmethod
+    def _gen_topology(cls, filename):
+        '''
+        Function to determine create the correct default topology if it is not provided
+
+        :param filename: Name of file that will be searched for variables
+        :return: List of default variable names, or None if none are found
+        '''
+        gf = nc4.Dataset(filename)
+        gt = {}
+        node_coord_names = [['node_lon','node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
+        face_var_names = ['nv']
+        center_coord_names = [['center_lon', 'center_lat'], ['lon_rho', 'lat_rho']]
+        edge1_coord_names = [['edge1_lon', 'edge1_lat'], ['lon_u', 'lat_u']]
+        edge2_coord_names = [['edge2_lon', 'edge2_lat'], ['lon_v', 'lat_v']]
+        for n in node_coord_names:
+            if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
+                gt['node_lon'] = n[0]
+                gt['node_lat'] = n[1]
+                break
+
+        if 'node_lon' not in gt:
+            raise NameError('Default node topology names are not in the grid file')
+
+        for n in face_var_names:
+            if n in gf.variables.keys():
+                gt['faces'] = n
+                break
+
+        if 'faces' in gt.keys():
+            #UGRID
+            return gt
+        else:
+            for n in center_coord_names:
+                if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
+                    gt['center_lon'] = n[0]
+                    gt['center_lat'] = n[1]
+                    break
+            for n in edge1_coord_names:
+                if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
+                    gt['edge1_lon'] = n[0]
+                    gt['edge1_lat'] = n[1]
+                    break
+            for n in edge2_coord_names:
+                if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
+                    gt['edge2_lon'] = n[0]
+                    gt['edge2_lat'] = n[1]
+                    break
+        return gt
 
     def at(self, points, time, units=None):
         value = super(GridCurrent,self).at(points, time, units)
-        if hasattr(self, 'angle'):
+        if self.angle is not None:
             angs = self.angle.at(points, time)
             x = value[:,0] * np.cos(angs) - value[:,1] * np.sin(angs)
             y = value[:,0] * np.sin(angs) + value[:,1] * np.cos(angs)

@@ -21,8 +21,6 @@ from gnome.environment import Wind
 from gnome.spill import point_line_release_spill, continuous_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
-from gnome.environment.property_classes import WindTS
-from gnome.movers.py_wind_movers import PyWindMover
 
 
 from gnome.outputters import Renderer
@@ -82,10 +80,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     model.movers += RandomMover(diffusion_coef=10000)
 
     print 'adding a wind mover:'
-
-    wind = WindTS(name=None,
-                  units='m/s',
-                  time = )
 
     model.movers += constant_wind_mover(0.5, 0, units='m/s')
 
