@@ -21,12 +21,11 @@ class TimeSeriesProp(EnvProp):
                  name=None,
                  units=None,
                  time=None,
-                 data=None,
-                 extrapolate=False):
+                 data=None):
         if len(time) != len(data):
             raise ValueError("Time and data sequences are of different length.\n\
             len(time) == {0}, len(data) == {1}".format(len(time), len(data)))
-        super(TimeSeriesProp, self).__init__(name, units, time, data, extrapolate)
+        super(TimeSeriesProp, self).__init__(name, units, time, data)
         self.time = time
 
     @property
@@ -63,11 +62,9 @@ class TimeSeriesProp(EnvProp):
                name=None,
                units=None,
                time=None,
-               data=None,
-               extrapolate=None):
+               data=None):
         self.name = name if name is not None else self.name
         self.units = units if units is not None else self.units
-        self.extrapolate = extrapolate if extrapolate is not None else self.extrapolate
         if data is not None and time is not None:
             if len(time) != len(data):
                 raise ValueError("Data/time interval mismatch")
@@ -77,7 +74,7 @@ class TimeSeriesProp(EnvProp):
             self.data = data if data is not None else self.data
             self.time = time if time is not None else self.time
 
-    def at(self, points, time, units=None):
+    def at(self, points, time, units=None, extrapolate=False):
         '''
         Interpolates this property to the given points at the given time with the units specified
         :param points: A Nx2 array of lon,lat points
@@ -92,15 +89,15 @@ class TimeSeriesProp(EnvProp):
             value = unit_conversion.convert(None, self.units, units, value)
             return value
 
-        if not self.extrapolate:
+        if not extrapolate:
             self.time.valid_time(time)
-        t_index = self.time.index_of(time)
+        t_index = self.time.index_of(time, extrapolate)
         if time > self.time.max_time:
             value = self.data[-1]
         if time <= self.time.min_time:
             value = self.data[0]
         if value is None:
-            t_alphas = self.time.interp_alpha(time)
+            t_alphas = self.time.interp_alpha(time, extrapolate)
 
             d0 = self.data[t_index - 1]
             d1 = self.data[t_index]
@@ -113,7 +110,6 @@ class TimeSeriesProp(EnvProp):
     def __eq__(self, o):
         t1 = (self.name == o.name and
               self.units == o.units and
-              self.extrapolate == o.extrapolate and
               self.time == o.time)
         t2 = all(np.isclose(self.data, o.data))
         return t1 and t2
@@ -129,15 +125,14 @@ class TSVectorProp(VectorProp):
                  units=None,
                  time=None,
                  variables=None,
-                 varnames=None,
-                 extrapolate=False):
+                 varnames=None):
 
         if any([units is None, time is None]) and not all([isinstance(v, TimeSeriesProp) for v in variables]):
-            raise ValueError("All attributes except name, varnames and extrapolate MUST be defined if variables is not a list of TimeSeriesProp objects")
+            raise ValueError("All attributes except name, varnames MUST be defined if variables is not a list of TimeSeriesProp objects")
 
         if variables is None or len(variables) < 2:
             raise TypeError('Variables must be an array-like of 2 or more TimeSeriesProp or array-like')
-        VectorProp.__init__(self, name, units, time, variables, extrapolate)
+        VectorProp.__init__(self, name, units, time, variables)
         self._check_consistency()
 
     def _check_consistency(self):
@@ -146,8 +141,7 @@ class TSVectorProp(VectorProp):
         '''
         for v in self.variables:
             if (v.units != self.units or
-                v.time != self.time or
-                v.extrapolate != self.extrapolate):
+                v.time != self.time):
                 raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
 
     @property
@@ -162,8 +156,7 @@ class TSVectorProp(VectorProp):
                 if isinstance(var, collections.Iterable) and len(var) == len(self.time):
                     new_vars.append(TimeSeriesProp(name='var{0}'.format(i),
                                                           units=self.units, time=self.time,
-                                                          data = vars[i],
-                                                          extrapolate=self.extrapolate))
+                                                          data = vars[i]))
                 else:
                     raise ValueError('Variables must contain iterables or TimeSeriesProp objects')
             else:
@@ -192,8 +185,7 @@ class TSVectorProp(VectorProp):
                name=None,
                units=None,
                time=None,
-               variables=None,
-               extrapolate=None):
+               variables=None):
         self.name = name if name is not None else self.name
         self.units = units if units is not None else self.units
         if variables is not None and time is not None:
@@ -203,8 +195,7 @@ class TSVectorProp(VectorProp):
                     if isinstance(var, collections.Iterable) and len(var) == len(time):
                         new_vars.append(TimeSeriesProp(name = 'var{0}'.format(i),
                                                               units = self.units, time=time,
-                                                              data = variables[i],
-                                                              extrapolate = extrapolate))
+                                                              data = variables[i]))
                     else:
                         raise ValueError('Variables must contain iterables or TimeSeriesProp objects')
             self._variables = new_vars
@@ -213,7 +204,6 @@ class TSVectorProp(VectorProp):
             if variables is not None:
                 self.variables = variables
             self.time = time if time is not None else self.time
-        self.extrapolate = extrapolate if extrapolate is not None else self.extrapolate
 
     def in_units(self, units):
         '''

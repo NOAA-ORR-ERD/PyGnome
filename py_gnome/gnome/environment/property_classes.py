@@ -23,7 +23,6 @@ class PropertySchema(base_schema.ObjType):
     name = SchemaNode(String(), missing='default')
     units = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String(), missing=drop),SchemaNode(String(), missing=drop)])
     time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
-    extrapolate = SchemaNode(Boolean(), missing='False')
     varnames = SequenceSchema(SchemaNode(String(), missing=drop))
 
 class TemperatureTSSchema(PropertySchema):
@@ -56,27 +55,24 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
 
     _state.add_field([serializable.Field('units', save=True, update=True),
                       serializable.Field('timeseries', save=True, update=True),
-                      serializable.Field('varnames', save=True, update=True),
-                      serializable.Field('extrapolate', save=True, update=True)])
+                      serializable.Field('varnames', save=True, update=True)])
 
     def __init__(self,
                  name=None,
                  units=None,
                  time = None,
                  variables = None,
-                 extrapolate=False,
                  **kwargs):
 
         if len(variables) > 2:
             raise ValueError('Only 2 dimensional velocities are supported')
-        TSVectorProp.__init__(self, name, units, time=time, variables=variables, extrapolate=extrapolate)
+        TSVectorProp.__init__(self, name, units, time=time, variables=variables)
 
     def __eq__(self, o):
         if o is None:
             return False
         t1 = (self.name == o.name and
               self.units == o.units and
-              self.extrapolate == o.extrapolate and
               self.time == o.time)
         t2 = True
         for i in range(0, len(self._variables)):
@@ -138,14 +134,12 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
     @classmethod
     def new_from_dict(cls, dict_):
         varnames = dict_['varnames']
-        extrapolate = dict_['extrapolate']
         vars = []
         for i, varname in enumerate(varnames):
             vars.append(TimeSeriesProp(name= varname,
                                        units= dict_['units'],
                                        time = dict_['time'],
-                                       data = dict_['data'][i],
-                                       extrapolate = dict_['extrapolate']))
+                                       data = dict_['data'][i]))
         dict_.pop('data')
         dict_['variables'] = vars
         return super(VelocityTS, cls).new_from_dict(dict_)
@@ -163,7 +157,6 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
 
     _state.add_field([serializable.Field('units', save=True, update=True),
                 serializable.Field('varnames', save=True, update=True),
-                serializable.Field('extrapolate', save=True, update=True),
                 serializable.Field('time', save=True, update=True),
                 serializable.Field('data_file', save=True, update=True),
                 serializable.Field('grid_file', save=True, update=True)])
@@ -174,7 +167,6 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
                  time = None,
                  grid = None,
                  variables = None,
-                 extrapolate=False,
                  data_file=None,
                  grid_file=None,
                  **kwargs):
@@ -187,14 +179,12 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
                                 time=time,
                                 grid=grid,
                                 variables=variables,
-                                extrapolate=extrapolate,
                                 data_file = data_file,
                                 grid_file = grid_file)
 
     def __eq__(self, o):
         t1 = (self.name == o.name and
               self.units == o.units and
-              self.extrapolate == o.extrapolate and
               self.time == o.time)
         t2 = True
         for i in range(0, len(self._variables)):
@@ -228,7 +218,6 @@ class WindTS(VelocityTS, Environment):
                  units=None,
                  time = None,
                  variables = None,
-                 extrapolate=False,
                  **kwargs):
         if 'timeseries' in kwargs:
             ts = kwargs['timeseries']
@@ -240,7 +229,7 @@ class WindTS(VelocityTS, Environment):
             u = mag * np.cos(dir * np.pi/180)
             v = mag * np.sin(dir * np.pi/180)
             variables = [u, v]
-        VelocityTS.__init__(self,name, units, time, variables, extrapolate)
+        VelocityTS.__init__(self,name, units, time, variables)
 
     @classmethod
     def constant_wind(cls,
@@ -265,7 +254,7 @@ class WindTS(VelocityTS, Environment):
         direction = direction * -1 - 90
         u = speed * np.cos(direction * np.pi/180)
         v = speed * np.sin(direction * np.pi/180)
-        return cls(name=name, units=units, time = [t], variables = [[u],[v]], extrapolate=True)
+        return cls(name=name, units=units, time = [t], variables = [[u],[v]])
 
 
 class GridCurrent(VelocityGrid, Environment):
@@ -276,7 +265,6 @@ class GridCurrent(VelocityGrid, Environment):
                  units=None,
                  time=None,
                  variables=None,
-                 extrapolate=False,
                  grid=None,
                  grid_file=None,
                  data_file=None):
@@ -285,7 +273,6 @@ class GridCurrent(VelocityGrid, Environment):
                               units=units,
                               time=time,
                               variables=variables,
-                              extrapolate=extrapolate,
                               grid=grid,
                               grid_file=grid_file,
                               data_file=data_file)
@@ -305,7 +292,6 @@ class GridCurrent(VelocityGrid, Environment):
                     units=None,
                     time=None,
                     grid=None,
-                    extrapolate=False,
                     data_file=None,
                     grid_file=None):
         if filename is not None:
@@ -322,8 +308,7 @@ class GridCurrent(VelocityGrid, Environment):
                                                      varnames=varnames,
                                                      grid_topology=grid_topology,
                                                      grid_file = grid_file,
-                                                     data_file = data_file,
-                                                     extrapolate = extrapolate)
+                                                     data_file = data_file)
 
         return retval
 
@@ -393,10 +378,10 @@ class GridCurrent(VelocityGrid, Environment):
                     break
         return gt
 
-    def at(self, points, time, units=None):
-        value = super(GridCurrent,self).at(points, time, units)
+    def at(self, points, time, units=None, extrapolate=False):
+        value = super(GridCurrent,self).at(points, time, units, extrapolate=extrapolate)
         if self.angle is not None:
-            angs = self.angle.at(points, time)
+            angs = self.angle.at(points, time, extrapolate=extrapolate)
             x = value[:,0] * np.cos(angs) - value[:,1] * np.sin(angs)
             y = value[:,0] * np.sin(angs) + value[:,1] * np.cos(angs)
             value[:,0] = x

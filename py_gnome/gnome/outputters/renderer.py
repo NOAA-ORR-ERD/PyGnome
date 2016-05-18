@@ -740,7 +740,6 @@ class GridVisLayer:
 
 
 
-
 class GridPropVisLayer:
 
     def __init__(self,
@@ -765,19 +764,26 @@ class GridPropVisLayer:
     def draw_to_image(self, img, time):
         if not self.on:
             return
-        data_u = self.prop.variables[0].data[self.prop.time.index_of(time) - 1]
-        data_v = self.prop.variables[1].data[self.prop.time.index_of(time) - 1]
+        t0 = self.prop.time.index_of(time, extrapolate=True) - 1
+        data_u = self.prop.variables[0].data[t0]
+        data_u2 = self.prop.variables[0].data[t0+1]
+        data_v = self.prop.variables[1].data[t0]
+        data_v2 = self.prop.variables[1].data[t0+1]
+        t_alphas = self.prop.time.interp_alpha(time, extrapolate=True)
+        data_u = data_u + t_alphas * (data_u2 - data_u)
+        data_v = data_v + t_alphas * (data_v2 - data_v)
         start=end=None
 #         if self.prop.grid.infer_grid(data_u) == 'centers':
 #             start = self.prop.grid.centers
 #         else:
         try:
-            start = self.prop.grid.nodes
+            start = self.prop.grid.nodes.copy()
         except AttributeError:
             start = np.column_stack((self.prop.grid.node_lon,
                                      self.prop.grid.node_lat))
 
 #         deltas = FlatEarthProjection.meters_to_lonlat(data*self.scale, lines[:0])
+        start[data_u.mask] = [0.,0.]
         data_u *= self.scale * 8.9992801e-06
         data_v *= self.scale * 8.9992801e-06
         data_u /= np.cos(np.deg2rad(start[:,1]))

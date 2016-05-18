@@ -16,7 +16,7 @@ import collections
 class EnvProp(object):
     '''
     A class that represents a natural phenomenon and provides an interface to get
-    the value of the phenomenon with respect to space and time. EnvProp is the base
+    the value of the phenomenon at a position in space and time. EnvProp is the base
     class, and returns only a single value regardless of the time
     '''
 
@@ -24,15 +24,13 @@ class EnvProp(object):
                  name=None,
                  units=None,
                  time=None,
-                 data=None,
-                 extrapolate=False):
+                 data=None):
         '''
         EnvProp base class constructor
         :param name: Name
         :param units: Units
         :param time: Array of datetime objects, netCDF4 Variable, or gnome.environment.property.Time object
         :param data: Value of the property
-        :param extrapolate: Determines whether the first/last values are used for times outside the interval
         '''
 
         self.name = self._units = self._time = self._data = None
@@ -44,7 +42,14 @@ class EnvProp(object):
             raise ValueError('Units of {0} are not supported'.format(units))
         self.data = data
         self.time = time
-        self.extrapolate = extrapolate
+
+    '''
+    Subclasses should override\add any attribute property function getter/setters as needed
+    '''
+
+    @property
+    def data(self):
+        return self._data
 
     @property
     def units(self):
@@ -70,17 +75,8 @@ class EnvProp(object):
         else:
             raise ValueError("Object being assigned must be an iterable or a Time object")
 
-    @property
-    def extrapolate(self):
-        return self._extrapolate or len(self.time) == 1
-
-    @extrapolate.setter
-    def extrapolate(self, e):
-        self._extrapolate = e
-        self._time.extrapolate = e
-
-    def at(self, points, time):
-        return np.full((points.shape[0], 1), data)
+    def at(self, points, time, extrapolate):
+        raise NotImplementedError()
 
     def in_units(self, unit):
         '''
@@ -103,7 +99,6 @@ class VectorProp(object):
                  units=None,
                  time=None,
                  variables=None,
-                 extrapolate=False,
                  **kwargs):
 
         self.name = self._units = self._time = self._variables = None
@@ -117,8 +112,7 @@ class VectorProp(object):
             time = variables[0].time if time is None else time
             for v in variables:
                 if (v.units != units or
-                    v.time != time or
-                    v.extrapolate != extrapolate):
+                    v.time != time):
                     raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
 
         if units is None:
@@ -127,22 +121,9 @@ class VectorProp(object):
         if variables is None or len(variables) < 2:
             raise ValueError('Variables must be an array-like of 2 or more Property objects')
         self.time=time
-        self.extrapolate = extrapolate
         for k in kwargs:
             setattr(self, k, kwargs[k])
         self.variables = variables
-
-    @property
-    def extrapolate(self):
-        return self._extrapolate or len(self.time) == 1
-
-    @extrapolate.setter
-    def extrapolate(self, e):
-        self._extrapolate = e
-        if hasattr(self, '_variables') and self._variables is not None:
-            for v in self._variables:
-                v.extrapolate = e
-        self.time.extrapolate = e
 
     @property
     def time(self):
@@ -175,13 +156,13 @@ class VectorProp(object):
         '''
         raise NotImplementedError()
 
-    def at(self, points, time, units=None):
-        return np.column_stack([var.at(points, time, units) for var in self._variables])
+    def at(self, *args, **kwargs):
+        return np.column_stack([var.at(*args, **kwargs) for var in self._variables])
 
 
 class Time(object):
 
-    def __init__(self, time_seq, extrapolate=False):
+    def __init__(self, time_seq, tz_offset=None, offset=None):
         '''
         Functions for a time array
         :param time_seq: An ascending array of datetime objects of length N
@@ -191,11 +172,16 @@ class Time(object):
         else:
             self.time = time_seq
 
+        if tz_offset is not None:
+            self.time += tz_offset
+
+        if offset is not None:
+            delta = timedelta(**offset)
+            self.time += delta
 #         if not self._timeseries_is_ascending(self.time):
 #             raise ValueError("Time sequence is not ascending")
 #         if self._has_duplicates(self.time):
 #             raise ValueError("Time sequence has duplicate entries")
-        self.extrapolate = False
 
     @classmethod
     def time_from_nc_var(cls, var):
@@ -228,14 +214,6 @@ class Time(object):
     def max_time(self):
         return self.time[-1]
 
-    @property
-    def extrapolate(self):
-        return self._extrapolate or len(self.time) == 1
-
-    @extrapolate.setter
-    def extrapolate(self, b):
-        self._extrapolate = b
-
     def get_time_array(self):
         return self.time[:]
 
@@ -247,21 +225,21 @@ class Time(object):
             raise ValueError('time specified ({0}) is not within the bounds of the time ({1} to {2})'.format(
                 time.strftime('%c'), self.min_time.strftime('%c'), self.max_time.strftime('%c')))
 
-    def index_of(self, time):
+    def index_of(self, time, extrapolate):
         '''
         Returns the index of the provided time with respect to the time intervals in the file.
         :param time:
         :return:
         '''
-        if not self.extrapolate:
+        if not (extrapolate or len(self.time) == 1):
             self.valid_time(time)
         index = np.searchsorted(self.time, time)
         return index
 
-    def interp_alpha(self, time):
-        if not self.extrapolate:
+    def interp_alpha(self, time, extrapolate=False):
+        if not len(self.time) == 1 or not extrapolate:
             self.valid_time(time)
-        i0 = self.index_of(time)
+        i0 = self.index_of(time, extrapolate)
         if i0 > len(self.time) - 1:
             return 1
         if i0 == 0:

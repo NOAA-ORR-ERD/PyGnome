@@ -26,20 +26,19 @@ class GriddedProp(EnvProp):
                  time=None,
                  data=None,
                  grid=None,
-                 extrapolate=False,
                  data_file=None,
                  grid_file=None):
 
         self._grid = self._data_file = self._grid_file = None
 
         if any([units is None, time is None, grid is None, data is None]):
-            raise ValueError("All attributes except name and extrapolate MUST be defined if variables is not a list of GriddedProp objects")
+            raise ValueError("All attributes except name MUST be defined if variables is not a list of GriddedProp objects")
         if not hasattr(data, 'shape'):
             if isinstance(grid, pyugrid.UGrid) and not grid.fits_data(data):
                 raise ValueError('Data must be able to fit to the grid')
             if isinstance(grid,pysgrid.SGrid) and grid.infer_grid(data) is None:
                 raise ValueError('Data must be able to fit to the grid')
-        super(GriddedProp, self).__init__(name=name, units=units, time=time, data=data, extrapolate=extrapolate)
+        super(GriddedProp, self).__init__(name=name, units=units, time=time, data=data)
         self._grid = grid
         self.data_file = data_file
         self.grid_file = grid_file
@@ -53,7 +52,6 @@ class GriddedProp(EnvProp):
                     units=None,
                     time=None,
                     grid=None,
-                    extrapolate=False,
                     data_file=None,
                     grid_file=None):
         if filename is not None:
@@ -134,7 +132,6 @@ class GriddedProp(EnvProp):
                    time=time,
                    data=data,
                    grid=grid,
-                   extrapolate=extrapolate,
                    data_file=data_file,
                    grid_file=grid_file)
         return prop
@@ -194,11 +191,9 @@ class GriddedProp(EnvProp):
                  data=None,
                  data_file=None,
                  grid=None,
-                 grid_file=None,
-                 extrapolate=None):
+                 grid_file=None):
         self.name = name if name is not None else self.name
 #         self.units = units if units is not None else self.units
-        self.extrapolate = extrapolate if extrapolate is not None else self.extrapolate
         if time is not None:
             if data and len(time) != data.shape[0]:
                 raise ValueError("Time provided is incompatible with data source time dimension")
@@ -215,9 +210,9 @@ class GriddedProp(EnvProp):
         self.grid_file = grid_file if grid_file is not None else self.grid_file
         self.data_file = data_file if data_file is not None else self.data_file
 
-    def center_values(self, time, units=None):
+    def center_values(self, time, units=None, extrapolate=False):
         #NOT COMPLETE
-        if not self.extrapolate:
+        if not extrapolate:
             self.time.valid_time(time)
         if len(self.time) == 1:
             if len(self.data.shape) == 2:
@@ -229,12 +224,12 @@ class GriddedProp(EnvProp):
             if units is not None and units != self.units:
                 value = unit_conversion.convert(None, self.units, units, value)
         else:
-            t_index = self.time.index_of(time)
+            t_index = self.time.index_of(time, extrapolate)
             centers = self.grid.get_center_points()
             value = self.at(centers, time, units)
         return value
 
-    def at(self, points, time, units=None, depth = -1):
+    def at(self, points, time, units=None, depth = -1, extrapolate=False):
         '''
         Interpolates this property to the given points at the given time.
         :param points: A Nx2 array of lon,lat points
@@ -242,9 +237,9 @@ class GriddedProp(EnvProp):
         but time-invariant
         '''
         t_alphas = t_index = s0 = s1 = value = None
-        if not self.extrapolate:
+        if not extrapolate:
             self.time.valid_time(time)
-        t_index = self.time.index_of(time)
+        t_index = self.time.index_of(time, extrapolate)
         if len(self.time) == 1:
             value = self.grid.interpolate_var_to_points(points, self.data, slices=s0, memo=True)
         else:
@@ -252,11 +247,11 @@ class GriddedProp(EnvProp):
                 value = self.data[-1]
             if time <= self.time.min_time:
                 value = self.data[0]
-            if self.extrapolate and t_index == len(self.time.time):
+            if extrapolate and t_index == len(self.time.time):
                 s0 = [t_index]
                 value = self.grid.interpolate_var_to_points(points, self.data, slices=s0, memo=True)
             else:
-                t_alphas = self.time.interp_alpha(time)
+                t_alphas = self.time.interp_alpha(time, extrapolate)
                 s1 = [t_index]
                 s0 = [t_index - 1]
                 if len(self.data.shape) == 4:
@@ -286,7 +281,6 @@ class GridVectorProp(VectorProp):
                  units=None,
                  time=None,
                  variables=None,
-                 extrapolate=False,
                  grid = None,
                  grid_file=None,
                  data_file=None,
@@ -295,7 +289,7 @@ class GridVectorProp(VectorProp):
         self._grid = self._grid_file = self._data_file = None
 
         if any([units is None, time is None, grid is None]) and not all([isinstance(v, GriddedProp) for v in variables]):
-            raise ValueError("All attributes except name, varnames and extrapolate MUST be defined if variables is not a list of TimeSeriesProp objects")
+            raise ValueError("All attributes except name, varnames and MUST be defined if variables is not a list of TimeSeriesProp objects")
 
         if variables is None or len(variables) < 2:
             raise TypeError("Variables needs to be a list of at least 2 GriddedProp objects or ndarray-like arrays")
@@ -309,7 +303,6 @@ class GridVectorProp(VectorProp):
                             units,
                             time,
                             variables,
-                            extrapolate,
                             grid = grid,
                             data_file=data_file,
                             grid_file=grid_file)
@@ -325,7 +318,6 @@ class GridVectorProp(VectorProp):
                     units=None,
                     time=None,
                     grid=None,
-                    extrapolate=False,
                     data_file=None,
                     grid_file=None
                     ):
@@ -342,14 +334,12 @@ class GridVectorProp(VectorProp):
                                                      units=units,
                                                      time=time,
                                                      grid=grid,
-                                                     extrapolate=extrapolate,
                                                      data_file=data_file,
                                                      grid_file=grid_file))
         return cls(name,
                    units,
                    time,
                    variables,
-                   extrapolate,
                    grid=grid,
                    grid_file=grid_file,
                    data_file=data_file)
@@ -362,13 +352,16 @@ class GridVectorProp(VectorProp):
         if self.units is None or self.time is None or self.grid is None:
             return
         for v in self.variables:
-            if (v.units != self.units or
-                v.time != self.time or
-                v.extrapolate != self.extrapolate or
-                v.grid != self.grid or
-                v.grid_file != self.grid_file or
-                v.data_file != self.data_file):
-                raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
+            if v.units != self.units:
+                raise ValueError("Variable {0} did not have units consistent with what was specified. Got: {1} Expected {2}".format(v.name,v.units, self.units))
+            if v.time != self.time:
+                raise ValueError("Variable {0} did not have time consistent with what was specified Got: {1} Expected {2}".format(v.name,v.time, self.time))
+            if v.grid != self.grid:
+                raise ValueError("Variable {0} did not have grid consistent with what was specified Got: {1} Expected {2}".format(v.name,v.grid, self.grid))
+            if v.grid_file != self.grid_file:
+                raise ValueError("Variable {0} did not have grid_file consistent with what was specified Got: {1} Expected {2}".format(v.name,v.grid_file, self.grid_file))
+            if v.data_file != self.data_file:
+                raise ValueError("Variable {0} did not have data_file consistent with what was specified Got: {1} Expected {2}".format(v.name,v.data_file, self.data_file))
 
     @property
     def grid(self):
@@ -393,6 +386,9 @@ class GridVectorProp(VectorProp):
 
     @variables.setter
     def variables(self, vars):
+        if vars is None:
+            self._variables = None
+            return
         new_vars = []
         for i, var in enumerate(vars):
             if not isinstance(var, GriddedProp):
@@ -404,7 +400,8 @@ class GridVectorProp(VectorProp):
                                     time=self.time,
                                     grid = self.grid,
                                     data = vars[i],
-                                    extrapolate=self.extrapolate))
+                                    grid_file=self.grid_file,
+                                    data_file=self.data_file))
                 else:
                     raise ValueError('Variables must contain an iterable, netCDF4.Variable or GriddedProp objects')
             else:
@@ -413,15 +410,23 @@ class GridVectorProp(VectorProp):
         self._check_consistency()
 
     @property
+    def is_data_on_nodes(self):
+        return self.grid.infer_grid(self.variables[0].data) == 'node'
+
+    @property
     def time(self):
         return self._time
-
 
     @time.setter
     def time(self, t):
         if self.variables is not None:
             for v in self.variables:
-                v.time = t
+                try:
+                    v.time = t
+                except ValueError as e:
+                    raise ValueError('''Time was not compatible with variables. 
+                    Set variables attribute to None to allow changing other attributes
+                    Original error: {0}'''.format(str(e)))
         if isinstance(t, Time):
             self._time = t
         elif isinstance(t,collections.Iterable) or isinstance(t, nc4.Variable):
@@ -441,7 +446,6 @@ class GridVectorProp(VectorProp):
                  units=None,
                  time=None,
                  variables=None,
-                 extrapolate=None,
                  grid = None,
                  grid_file=None,
                  data_file=None,):
@@ -457,7 +461,6 @@ class GridVectorProp(VectorProp):
 
         units = self.units if units is None else units
         time = self.time if time is None else time
-        extrapolate = self._extrapolate if extrapolate is None else extrapolate
         grid = self.grid if grid is None else grid
         grid_file = self.grid_file if grid_file is None else grid_file
         data_file = self.data_file if data_file is None else data_file
@@ -470,7 +473,6 @@ class GridVectorProp(VectorProp):
             var.set_attr(units=units,
                          time = time,
                          data = nv,
-                         extrapolate = extrapolate,
                          grid = grid,
                          grid_file = grid_file,
                          data_file = data_file,)
@@ -478,13 +480,11 @@ class GridVectorProp(VectorProp):
             for i, var in enumerate(self.variables):
                 var.set_attr(units=units,
                              time=time,
-                             extrapolate=extrapolate,
                              grid = grid,
                              grid_file = grid_file,
                              data_file = data_file,)
         self._units = units
         self._time = time
-        self._extrapolate = extrapolate
         self._grid = grid
         self.grid_file = grid_file
         self.grid_file = grid_file

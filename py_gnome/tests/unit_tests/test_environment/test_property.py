@@ -47,7 +47,7 @@ s_data = np.array([20,30,40])
 
 @pytest.fixture()
 def ts():
-    return Time(dates2, extrapolate=False)
+    return Time(dates2)
 
 class TestTime:
 
@@ -58,21 +58,28 @@ class TestTime:
         t2 = Time(grid_time)
         assert len(t2.time) == 54
 
+    def test_offset(self):
+        t = Time(dates2.copy(), tz_offset=dt.timedelta(hours=1))
+        assert t.time[0] == dt.datetime(2000, 1, 1, 1)
+
+        t = Time(dates2.copy(), offset = {'seconds':3600})
+        assert t.time[0] == dt.datetime(2000, 1, 1, 1)
+
     def test_extrapolation(self, ts):
-        ts.extrapolate = True
         before = dt.datetime(1999,12,31,23)
         after = dt.datetime(2000,1,1,9)
-        assert ts.index_of(before) == 0
-        assert ts.index_of(after) == 5
-        assert ts.index_of(ts.time[-1]) == 4
-        assert ts.index_of(ts.time[0]) == 0
-        ts.extrapolate = False
+        assert ts.index_of(before, True) == 0
+        assert ts.index_of(after, True) == 5
+        assert ts.index_of(ts.time[-1], True) == 4
+        assert ts.index_of(ts.time[0], True) == 0
         with pytest.raises(ValueError):
-            ts.index_of(before)
+            ts.index_of(before, False)
         with pytest.raises(ValueError):
-            ts.index_of(after)
-        assert ts.index_of(ts.time[-1]) == 4
-        assert ts.index_of(ts.time[0]) == 0
+            ts.index_of(after, False)
+        assert ts.index_of(ts.time[-1], True) == 4
+        assert ts.index_of(ts.time[0], True) == 0
+
+
 
 
 @pytest.fixture()
@@ -85,7 +92,7 @@ def v():
 
 @pytest.fixture()
 def vp():
-    return TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data,v_data], extrapolate=False)
+    return TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data,v_data])
 
 class TestTSprop:
 
@@ -163,9 +170,8 @@ class TestTSprop:
                          datetime.datetime(2000,1,3,2),
                          datetime.datetime(2000,1,3,3)])
 
-        u.set_attr(extrapolate=True, units='km/hr')
+        u.set_attr(units='km/hr')
 
-        assert u.extrapolate == True
         assert u.units == 'km/hr'
 
         with pytest.raises(ValueError):
@@ -189,23 +195,19 @@ class TestTSprop:
             u.at(pts, t5)
 
         #turn extrapolation on
-        u.set_attr(extrapolate=True)
-        print u.time
-        print u.time.time
-        print u.time.extrapolate
-        assert (u.at(pts, t1) == np.array([2])).all()
-        assert (u.at(pts, t5) == np.array([10])).all()
+        assert (u.at(pts, t1, extrapolate=True) == np.array([2])).all()
+        assert (u.at(pts, t5, extrapolate=True) == np.array([10])).all()
 
 class TestTSVectorProp:
 
     def test_construction(self, u, v):
         vp = None
-        vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data,v_data], extrapolate=False)
+        vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data,v_data])
 
         assert all(vp.variables[0].data == u_data)
 
         #3 components
-        vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data,v_data, u_data], extrapolate=False)
+        vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data,v_data, u_data])
 
         #Using TimeSeriesProp
         vp = TSVectorProp(name='vp', variables=[u, v])
@@ -213,15 +215,15 @@ class TestTSVectorProp:
 
         #SHORT TIME
         with pytest.raises(ValueError):
-            vp = TSVectorProp(name='vp', units='m/s', time=dates, variables=[u_data,v_data], extrapolate=False)
+            vp = TSVectorProp(name='vp', units='m/s', time=dates, variables=[u_data,v_data])
 
         #DIFFERENT LENGTH VARS
         with pytest.raises(ValueError):
-            vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[s_data,v_data], extrapolate=False)
+            vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[s_data,v_data])
 
         #UNSUPPORTED UNITS
         with pytest.raises(ValueError):
-            vp = TSVectorProp(name='vp', units='km/s', time=dates2, variables=[s_data,v_data, u_data], extrapolate=False)
+            vp = TSVectorProp(name='vp', units='km/s', time=dates2, variables=[s_data,v_data, u_data])
 
     def test_unit_conversion(self, vp):
         nvp = vp.in_units('km/hr')
@@ -265,10 +267,8 @@ class TestTSVectorProp:
                          datetime.datetime(2000,1,3,2),
                          datetime.datetime(2000,1,3,3)])
 
-        vp.set_attr(extrapolate=True, units='km/hr')
+        vp.set_attr(units='km/hr')
 
-        assert vp.extrapolate == True
-        assert [v.extrapolate == True for v in vp._variables]
         assert vp.units == 'km/hr'
 
         with pytest.raises(ValueError):
@@ -294,12 +294,8 @@ class TestTSVectorProp:
             vp.at(pts, t5)
 
         #turn extrapolation on
-        vp.set_attr(extrapolate=True)
-        print vp.time
-        print vp.time.time
-        print vp.time.extrapolate
-        assert (vp.at(pts, t1) == np.array([2,5])).all()
-        assert (vp.at(pts, t5) == np.array([10,13])).all()
+        assert (vp.at(pts, t1, extrapolate=True) == np.array([2,5])).all()
+        assert (vp.at(pts, t5, extrapolate=True) == np.array([10,13])).all()
 
 
 @pytest.fixture()
@@ -364,7 +360,7 @@ class TestGriddedProp:
                                     grid_file=curr_file,
                                     grid_topology=topology,
                                     data_file=curr_file,
-                                    data_name='water_u')
+                                    varname='water_u')
         assert k.name == u.name
         assert k.units == 'meter second-1'
         assert k.time == u.time
@@ -388,10 +384,6 @@ class TestGriddedProp:
     def test_set_attr(self, gp):
         gp.set_attr(name = 'gridpropobj')
         assert gp.name == 'gridpropobj'
-
-        gp.set_attr(extrapolate = True)
-        assert gp.extrapolate == True
-        assert gp.time.extrapolate == True
 
         gp.set_attr(data = grid_v)
         assert gp.data == grid_v
