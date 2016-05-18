@@ -48,6 +48,8 @@ cdef extern from "OSSMTimeValue_c.h":
         OSErr   CheckStartTime(Seconds)
         void    Dispose()
         WorldPoint3D    GetStationLocation()
+        OSErr           GetDataStartTime(Seconds *startTime)
+        OSErr           GetDataEndTime(Seconds *endTime)
 
 """
 ShioTimeValue_c.h derives from OSSMTimeValue_c - so no need to redefine methods
@@ -74,8 +76,8 @@ cdef extern from "ShioTimeValue_c.h":
         ShioTimeValue_c() except +
         char        fStationType
         string      fYearDataPath
-        bool        daylight_savings_off    # is this required?
-        EbbFloodDataH   fEbbFloodDataHdl    # values to show on list for tidal currents - not sure if these should be available
+        bool        daylight_savings_off  # is this required?
+        EbbFloodDataH   fEbbFloodDataHdl  # values to show on list for tidal currents - not sure if these should be available
         HighLowDataH    fHighLowDataHdl
 
         OSErr       ReadTimeValues(char *path)
@@ -86,6 +88,33 @@ cdef extern from "ShioTimeValue_c.h":
         OSErr       GetProgressiveWaveValue(Seconds &, VelocityRec *)
 
 cdef extern from "Weatherers_c.h":
-    # OSErr emulsify(int n, unsigned long step_len, double *frac_water, double *interfacial_area, double *frac_evap, double *droplet_diameter, unsigned long *age, unsigned long *bulltime, double k_emul, unsigned long emul_time, double emul_C, double S_max, double Y_max, double drop_max)
-    OSErr emulsify(int n, unsigned long step_len, double *frac_water, double *interfacial_area, double *frac_evap, int32_t *age, double *bulltime, double k_emul, double emul_time, double emul_C, double S_max, double Y_max, double drop_max)
-    OSErr adios2_disperse(int n, unsigned long step_len, double *frac_water, double *le_mass, double *le_viscosity, double *le_density, double *fay_area, double *d_disp, double *d_sed, double frac_breaking_waves, double disp_wave_energy, double wave_height, double visc_w, double rho_w, double C_sed, double V_entrain, double ka)
+    OSErr emulsify(int n, unsigned long step_len,
+                   double *frac_water,
+                   double *interfacial_area,
+                   double *frac_evap,
+                   int32_t *age,
+                   double *bulltime,
+                   double k_emul,
+                   double emul_time,
+                   double emul_C,
+                   double S_max,
+                   double Y_max,
+                   double drop_max)
+
+    OSErr adios2_disperse(int n, unsigned long step_len,
+                          double *frac_water,
+                          double *le_mass,
+                          double *le_viscosity,
+                          double *le_density,
+                          double *fay_area,
+                          double *d_disp,
+                          double *d_sed,
+                          double *droplet_avg_size,
+                          double frac_breaking_waves,
+                          double disp_wave_energy,
+                          double wave_height,
+                          double visc_w,
+                          double rho_w,
+                          double C_sed,
+                          double V_entrain,
+                          double ka)

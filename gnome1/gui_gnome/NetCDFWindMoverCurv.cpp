@@ -36,7 +36,7 @@ void NetCDFWindMoverCurv::Dispose ()
 }
 
 
-#define NetCDFWindMoverCurvREADWRITEVERSION 1 //JLM
+#define NetCDFWindMoverCurvREADWRITEVERSION 2 //JLM
 
 OSErr NetCDFWindMoverCurv::Write (BFPB *bfpb)
 {
@@ -69,6 +69,8 @@ OSErr NetCDFWindMoverCurv::Write (BFPB *bfpb)
 		if (err = WriteMacValue(bfpb, vertex.pLat)) goto done;
 		if (err = WriteMacValue(bfpb, vertex.pLong)) goto done;
 	}
+	
+	if (err = WriteMacValue(bfpb, bIsCOOPSWaterMask)) goto done;
 	
 done:
 	if(err)
@@ -114,6 +116,8 @@ OSErr NetCDFWindMoverCurv::Read(BFPB *bfpb)
 		INDEXH(fVertexPtsH, i) = vertex;
 	}
 	
+	if (version > 1) {if (err = ReadMacValue(bfpb, &bIsCOOPSWaterMask)) goto done;}
+
 done:
 	if(err)
 	{

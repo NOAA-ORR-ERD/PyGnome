@@ -47,8 +47,9 @@ class Renderer(Outputter, MapCanvas):
     """
     Map Renderer
 
-    class that writes map images for GNOME results:
-        writes the frames for the LE "movies", etc.
+    class that writes map images for GNOME results.
+
+    Writes the frames for the LE "movies", etc.
     """
     # This defines the colors used for the map
     #   -- they can then be referenced by name in the rest of the code.
@@ -129,18 +130,15 @@ class Renderer(Outputter, MapCanvas):
         """
         Init the image renderer.
 
-        :param map_filename=None: name of file for basemap (BNA)
-        :type map_filename: string
+        :param str map_filename=None: name of file for basemap (BNA)
+        :type map_filename: str
 
-        :param output_dir='./': directory to output the images
-        :type output_dir: string
+        :param str output_dir='./': directory to output the images
 
-        :param image_size=(800, 600): size of images to output
-        :type image_size: 2-tuple of integers
+        :param 2-tuple image_size=(800, 600): size of images to output
 
         :param projection=None: projection instance to use:
-                                if None, set to
-                                projections.FlatEarthProjection()
+                                if None, set to projections.FlatEarthProjection()
         :type projection: a gnome.utilities.projection.Projection instance
 
         :param viewport: viewport of map -- what gets drawn and on what scale.
@@ -331,6 +329,7 @@ class Renderer(Outputter, MapCanvas):
         These details are stored as a dict.
 
         Recognized attributes:
+
         :param on: Turn the draw function on or off
         :type on: Boolean
 
@@ -346,15 +345,14 @@ class Renderer(Outputter, MapCanvas):
         :type color: String
 
         :param size: Size of the font
-        :type size: One of: ('tiny', 'small', 'medium', 'large', 'giant')
+        :type size: One of 'tiny', 'small', 'medium', 'large', 'giant'
 
         :param position: x, y pixel coordinates of where to draw the timestamp.
         :type position :tuple
 
         :param align: The reference point of the text bounding box.
-        :type align: One of: ('lt'(left top), 'ct', 'rt',
-                              'l', 'r',
-                              'rb', 'cb', 'lb')
+        :type align: One of: ('lt'(left top), 'ct', 'rt','l', 'r','rb', 'cb', 'lb')
+
         """
         self.timestamp_attribs.update(kwargs)
 
@@ -466,22 +464,23 @@ class Renderer(Outputter, MapCanvas):
         Draws the land map to the internal background image.
         """
         for poly in self.land_polygons:
-            if poly.metadata[1].strip().lower() == 'map bounds':
+            metadata = poly.metadata
+
+            if metadata[1].strip().lower() == 'map bounds':
                 if self.draw_map_bounds:
                     self.draw_polygon(poly,
                                       line_color='map_bounds',
                                       fill_color=None,
                                       line_width=2,
                                       background=True)
-            elif poly.metadata[1].strip().lower().replace(' ', '') == 'spillablearea':
+            elif metadata[1].strip().lower().replace(' ', '') == 'spillablearea':
                 if self.draw_spillable_area:
                     self.draw_polygon(poly,
                                       line_color='spillable_area',
                                       fill_color=None,
                                       line_width=2,
                                       background=True)
-
-            elif poly.metadata[2] == '2':
+            elif metadata[2] == '2':
                 # this is a lake
                 self.draw_polygon(poly, fill_color='lake', background=True)
             else:
@@ -532,20 +531,22 @@ class Renderer(Outputter, MapCanvas):
         """
         if self.raster_map is not None:
             raster_map = self.raster_map
+            projection = raster_map.projection
             w, h = raster_map.basebitmap.shape
+
             if self.raster_map_outline:
                 # vertical lines
                 for i in range(w):
-                    coords = raster_map.projection.to_lonlat(np.array(((i, 0.0),
-                                                                       (i, h)),
-                                                                      dtype=np.float64))
+                    coords = projection.to_lonlat(np.array(((i, 0.0),
+                                                            (i, h)),
+                                                           dtype=np.float64))
                     self.draw_polyline(coords, background=True,
                                        line_color='raster_map_outline')
                 # horizontal lines
                 for i in range(h):
-                    coords = raster_map.projection.to_lonlat(np.array(((0.0, i),
-                                                                       (w, i)),
-                                                                      dtype=np.float64))
+                    coords = projection.to_lonlat(np.array(((0.0, i),
+                                                            (w, i)),
+                                                           dtype=np.float64))
                     self.draw_polyline(coords, background=True,
                                        line_color='raster_map_outline')
 
@@ -553,13 +554,11 @@ class Renderer(Outputter, MapCanvas):
                 for i in range(w):
                     for j in range(h):
                         if raster_map.basebitmap[i, j] == 1:
-                            rect = raster_map.projection.to_lonlat(np.array(((i, j),
-                                                                             (i +
-                                                                              1, j),
-                                                                             (i + 1,
-                                                                              j + 1),
-                                                                             (i, j + 1)),
-                                                                            dtype=np.float64))
+                            rect = projection.to_lonlat(np.array(((i, j),
+                                                                  (i + 1, j),
+                                                                  (i + 1, j + 1),
+                                                                  (i, j + 1)),
+                                                                 dtype=np.float64))
                             self.draw_polygon(rect, fill_color='raster_map',
                                               background=True)
 

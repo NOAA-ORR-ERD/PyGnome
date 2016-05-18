@@ -7,21 +7,18 @@ These will output images for use in the Web client / OpenLayers
 import os
 import copy
 import collections
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 
-from gnome.utilities.serializable import Serializable, Field
+from gnome.utilities.serializable import Field
 from gnome.utilities.time_utils import date_to_sec
 
 from gnome.utilities.map_canvas import MapCanvas
 
-from gnome.persist import class_from_objtype, References
-from gnome.persist.base_schema import CollectionItemsList
+from gnome.persist import class_from_objtype
 
 from . import Outputter, BaseSchema
-
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2, width=120)
 
 
 class IceImageSchema(BaseSchema):
@@ -68,15 +65,18 @@ class IceImageOutput(Outputter):
         self.map_canvas.add_colors([('black', (0, 0, 0))])
 
         self.set_gradient_colors('thickness',
-                                 color_range=((0, 0, 0x7f),  # dark blue
-                                              (0, 0xff, 0xff)),  # cyan
-                                 scale=(0.0, 10.0),
-                                 num_colors=16)
+                                 color_range=((0, 0, 0x7f, 0x7f),  # dark blue
+                                              (0, 0, 0x7f, 0x3f),  # dark blue
+                                              (0, 0, 0x7f, 0x00),  # dark blue
+                                              (0xff, 0, 0, 0x00)),  # red
+                                 scale=(0.0, 6.0),
+                                 num_colors=64)
+
         self.set_gradient_colors('concentration',
-                                 color_range=((0, 0x40, 0x60),  # dark blue
-                                              (0x80, 0xc0, 0xd0)),  # sky blue
-                                 scale=(0.0, 10.0),
-                                 num_colors=16)
+                                 color_range=((0x80, 0xc0, 0xd0, 0x7f),  # sky blue
+                                              (0, 0x40, 0x60, 0x00)),  # dark blue
+                                 scale=(0.0, 1.0),
+                                 num_colors=64)
 
         super(IceImageOutput, self).__init__(**kwargs)
 
@@ -109,7 +109,7 @@ class IceImageOutput(Outputter):
             :type scale: A 2 element sequence of float
 
             :param num_colors: The number of colors to use for the gradient.
-            :type num_colors: int
+            :type num_colors: Number
         '''
         color_names = self.add_gradient_to_canvas(color_range,
                                                   gradient_name, num_colors)
@@ -121,15 +121,38 @@ class IceImageOutput(Outputter):
             Add a color gradient to our palette
 
             NOTE: Probably not the most efficient way to do this.
+
+            :param color_range: The colors that we would like to use to
+                                generate our gradient
+            :type color_range: A sequence of 2 or more 3-tuples
+
+            :param color_prefix: The prefix that will be used in the naming
+                                 of the colors in the gradient
+            :type color_prefix: str
+
+            :param num_colors: The number of gradient colors to generate
+            :type num_colors: Number
         '''
-        low, high = color_range[:2]
-        r_grad = np.linspace(low[0], high[0], num_colors).round().astype(int)
-        g_grad = np.linspace(low[1], high[1], num_colors).round().astype(int)
-        b_grad = np.linspace(low[2], high[2], num_colors).round().astype(int)
+        color_range_idx = range(len(color_range))
+        color_space = np.linspace(color_range_idx[0], color_range_idx[-1],
+                                  num=num_colors)
+
+        r_grad = np.interp(color_space, color_range_idx,
+                           [c[0] for c in color_range])
+        g_grad = np.interp(color_space, color_range_idx,
+                           [c[1] for c in color_range])
+        b_grad = np.interp(color_space, color_range_idx,
+                           [c[2] for c in color_range])
+
+        if all([len(c) >= 4 for c in color_range]):
+            a_grad = np.interp(color_space, color_range_idx,
+                               [c[3] for c in color_range])
+        else:
+            a_grad = np.array([0.] * num_colors)
 
         new_colors = []
-        for i, (r, g, b) in enumerate(zip(r_grad, g_grad, b_grad)):
-            new_colors.append(('{}{}'.format(color_prefix, i), (r, g, b)))
+        for i, (r, g, b, a) in enumerate(zip(r_grad, g_grad, b_grad, a_grad)):
+            new_colors.append(('{}{}'.format(color_prefix, i), (r, g, b, a)))
 
         self.map_canvas.add_colors(new_colors)
 
@@ -144,7 +167,9 @@ class IceImageOutput(Outputter):
         scale_range = high_val - low_val
         q_step_range = scale_range / len(color_names)
 
-        idx = np.floor(values / q_step_range).astype(int)
+        idx = (np.floor(values / q_step_range)
+               .astype(int)
+               .clip(0, len(color_names) - 1))
 
         return color_names[idx]
 
@@ -164,19 +189,20 @@ class IceImageOutput(Outputter):
         # fixme -- doing all this cache stuff just to get the timestep..
         # maybe timestep should be passed in.
         for sc in self.cache.load_timestep(step_num).items():
-            pass
+            model_time = date_to_sec(sc.current_time_stamp)
+            iso_time = sc.current_time_stamp.isoformat()
 
-        model_time = date_to_sec(sc.current_time_stamp)
-
-        thick_image, conc_image = self.render_images(model_time)
+        thick_image, conc_image, bb = self.render_images(model_time)
 
         # info to return to the caller
+        web_mercator = 'EPSG:3857'
+        equirectangular = 'EPSG:32662'
         output_dict = {'step_num': step_num,
-                       'time_stamp': sc.current_time_stamp.isoformat(),
+                       'time_stamp': iso_time,
                        'thickness_image': thick_image,
                        'concentration_image': conc_image,
-                       'bounding_box': self.map_canvas.viewport,
-                       'projection': ("EPSG:3857"),
+                       'bounding_box': bb,
+                       'projection': equirectangular,
                        }
 
         return output_dict
@@ -203,20 +229,30 @@ class IceImageOutput(Outputter):
         """
         canvas = self.map_canvas
 
-        # Here is where we render....
+        # We kinda need to figure our our bounding box before doing the
+        # rendering.  We will try to be efficient about it mainly by not
+        # grabbing our grid data twice.
+        mover_grid_bb = None
+        mover_grids = []
         for mover in self.ice_movers:
-            mover_grid = mover.get_grid_data()
+            mover_grids.append(mover.get_grid_data())
+            mover_grid_bb = mover.get_grid_bounding_box(mover_grids[-1],
+                                                        mover_grid_bb)
 
-            print 'mover_grid (shape = {}):'.format(mover_grid.shape)
-            pp.pprint(mover_grid)
+        canvas.viewport = mover_grid_bb
+        canvas.clear_background()
 
-            print 'bounding rectangle:'
-            pp.pprint(mover.get_grid_bounding_rect(mover_grid))
+        # Here is where we draw our grid data....
+        for mover, mover_grid in zip(self.ice_movers, mover_grids):
+            mover_grid_bb = mover.get_grid_bounding_box(mover_grid,
+                                                        mover_grid_bb)
 
-            ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
+            concentration, thickness = mover.get_ice_fields(model_time)
 
             thickness_colors = self.lookup_gradient_color('thickness',
-                                                          ice_thickness)
+                                                          thickness)
+            concentration_colors = self.lookup_gradient_color('concentration',
+                                                              concentration)
 
             dtype = mover_grid.dtype.descr
             unstructured_type = dtype[0][1]
@@ -225,59 +261,46 @@ class IceImageOutput(Outputter):
                           .view(dtype=unstructured_type)
                           .reshape(*new_shape))
 
-            for poly, color in zip(mover_grid, thickness_colors):
-                canvas.draw_polygon(poly, fill_color=color)
-
-            # self.get_coverage_fc(ice_coverage, mover_triangles)
-            # self.get_thickness_fc(ice_thickness, mover_triangles)
+            for poly, tc, cc in zip(mover_grid,
+                                    thickness_colors, concentration_colors):
+                canvas.draw_polygon(poly, fill_color=tc)
+                canvas.draw_polygon(poly, fill_color=cc, background=True)
 
         # diagnostic so we can see what we have rendered.
-        canvas.draw_graticule(False)
-        canvas.save_background('background.png')
-        canvas.save_foreground('foreground.png')
+        # print '\ndrawing reference objects...'
+        # canvas.draw_graticule(False)
+        # canvas.draw_tags(False)
+        # canvas.save_background('background.png')
+        # canvas.save_foreground('foreground.png')
 
-        return ("data:image/png;base64,{}".format(self.get_sample_image()),
-                "data:image/png;base64,{}".format(self.get_sample_image()))
+        # py_gd does not currently have the capability to generate a .png
+        # formatted buffer in memory. (libgd can be made to do this, but
+        # the wrapper is yet to be written)
+        # So we will just write to a tempfile and then read it back.
+        with NamedTemporaryFile() as fp:
+            canvas.save_foreground(fp.name)
+            fp.seek(0)
+            thickness_image = fp.read().encode('base64')
 
-    def get_rounded_ice_values(self, coverage, thickness):
-        return np.vstack((coverage.round(decimals=2),
-                          thickness.round(decimals=1))).T
+        with NamedTemporaryFile() as fp:
+            canvas.save_background(fp.name)
+            fp.seek(0)
+            coverage_image = fp.read().encode('base64')
 
-    def get_unique_ice_values(self, ice_values):
-        '''
-            In order to make numpy perform this function fast, we will use a
-            contiguous structured array using a view of a void type that
-            joins the whole row into a single item.
-        '''
-        dtype = np.dtype((np.void,
-                          ice_values.dtype.itemsize * ice_values.shape[1]))
-        voidtype_array = np.ascontiguousarray(ice_values).view(dtype)
-
-        _, idx = np.unique(voidtype_array, return_index=True)
-
-        return ice_values[idx]
-
-    def get_matching_ice_values(self, ice_values, v):
-        return np.where((ice_values == v).all(axis=1))
+        return ("data:image/png;base64,{}".format(thickness_image),
+                "data:image/png;base64,{}".format(coverage_image),
+                mover_grid_bb)
 
     def rewind(self):
         'remove previously written files'
         super(IceImageOutput, self).rewind()
 
-    def serialize(self, json_='webapi'):
-        """
-        Serialize this outputter to JSON
-        """
-        dict_ = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        json_out = schema.serialize(dict_)
-
-        if self.ice_mover is not None:
-            json_out['ice_mover'] = self.ice_mover.serialize(json_)
-        else:
-            json_out['ice_mover'] = None
-
-        return json_out
+    def ice_movers_to_dict(self):
+        '''
+        a dict containing 'obj_type' and 'id' for each object in
+        list/collection
+        '''
+        return self._collection_to_dict(self.ice_movers)
 
     @classmethod
     def deserialize(cls, json_):
@@ -287,8 +310,12 @@ class IceImageOutput(Outputter):
         schema = cls._schema()
         _to_dict = schema.deserialize(json_)
 
-        if 'ice_mover' in json_ and json_['ice_mover'] is not None:
-            cm_cls = class_from_objtype(json_['ice_mover']['obj_type'])
-            cm_dict = cm_cls.deserialize(json_['ice_mover'])
-            _to_dict['ice_mover'] = cm_dict
+        if 'ice_movers' in json_:
+            _to_dict['ice_movers'] = []
+            for i, cm in enumerate(json_['ice_movers']):
+                cm_cls = class_from_objtype(cm['obj_type'])
+                cm_dict = cm_cls.deserialize(json_['ice_movers'][i])
+
+                _to_dict['ice_movers'].append(cm_dict)
+
         return _to_dict

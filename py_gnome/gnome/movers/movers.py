@@ -1,8 +1,7 @@
 import copy
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-import numpy
-np = numpy
+import numpy as np
 
 from colander import (SchemaNode, MappingSchema, Bool, drop)
 
@@ -18,6 +17,7 @@ from gnome.utilities import inf_datetime
 from gnome.utilities import time_utils, serializable
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome import AddLogger
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 
 class ProcessSchema(MappingSchema):
@@ -29,6 +29,10 @@ class ProcessSchema(MappingSchema):
     active_start = SchemaNode(LocalDateTime(), missing=drop,
                               validator=convertible_to_seconds)
     active_stop = SchemaNode(LocalDateTime(), missing=drop,
+                             validator=convertible_to_seconds)
+    real_data_start = SchemaNode(LocalDateTime(), missing=drop,
+                              validator=convertible_to_seconds)
+    real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
                              validator=convertible_to_seconds)
 
 
@@ -42,8 +46,8 @@ class Process(AddLogger):
     a class level _schema attribute.
     """
     _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add(update=['on', 'active_start', 'active_stop'],
-               save=['on', 'active_start', 'active_stop'],
+    _state.add(update=['on', 'active_start', 'active_stop', 'real_data_start', 'real_data_stop'],
+               save=['on', 'active_start', 'active_stop', 'real_data_start', 'real_data_stop'],
                read=['active'])
 
     def __init__(self, **kwargs):   # default min + max values for timespan
@@ -55,6 +59,8 @@ class Process(AddLogger):
         :param on: boolean as to whether the object is on or not. Default is on
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
+        :param real_data_start: datetime when the mover first has data (not including extrapolation)
+        :param real_data_stop: datetime after which the mover has no data (not including extrapolation)
         """
         self.on = kwargs.pop('on', True)  # turn the mover on / off for the run
         self._active = self.on  # initial value
@@ -64,10 +70,21 @@ class Process(AddLogger):
         active_stop = kwargs.pop('active_stop',
                                  inf_datetime.InfDateTime('inf'))
 
+        real_data_start = kwargs.pop('real_data_start',
+                                  inf_datetime.InfDateTime('-inf'))
+        real_data_stop = kwargs.pop('real_data_stop',
+                                 inf_datetime.InfDateTime('inf'))
+
         self._check_active_startstop(active_start, active_stop)
 
-        self.active_start = active_start
-        self.active_stop = active_stop
+        self._active_start = active_start
+        self._active_stop = active_stop
+
+                # not sure if we would ever pass this in...
+        self._check_active_startstop(real_data_start, real_data_stop)
+
+        self.real_data_start = real_data_start
+        self.real_data_stop = real_data_stop
 
         # empty dict since no array_types required for all movers at present
         self.array_types = set()
@@ -75,15 +92,44 @@ class Process(AddLogger):
         self.make_default_refs = kwargs.pop('make_default_refs', True)
 
     def _check_active_startstop(self, active_start, active_stop):
-        if active_stop <= active_start:
-            msg = 'active_start {0} should be smaller than active_stop {1}'
-            raise ValueError(msg.format(active_start, active_stop))
+        # there are no swapped-argument versions of the comare operations,
+        # so it seems that InfTime and MinusInfTime cannot simply be fixed
+        # to work with datetime when they are on the right side of a compare
+        # operation.  So we have to put this kludge in.
+        if (isinstance(active_start, datetime) and
+                isinstance(active_stop, (InfTime, MinusInfTime))):
+            if active_stop <= active_start:
+                msg = 'active_start {0} should be smaller than active_stop {1}'
+                raise ValueError(msg.format(active_start, active_stop))
+        else:
+            if active_start >= active_stop:
+                msg = 'active_start {0} should be smaller than active_stop {1}'
+                raise ValueError(msg.format(active_start, active_stop))
+
         return True
 
     # Methods for active property definition
     @property
     def active(self):
         return self._active
+
+    @property
+    def active_start(self):
+        return self._active_start
+
+    @active_start.setter
+    def active_start(self, value):
+        self._check_active_startstop(value, self._active_stop)
+        self._active_start = value
+
+    @property
+    def active_stop(self):
+        return self._active_stop
+
+    @active_stop.setter
+    def active_stop(self, value):
+        self._check_active_startstop(self._active_start, value)
+        self._active_stop = value
 
     def datetime_to_seconds(self, model_time):
         """
@@ -219,9 +265,14 @@ class CyMover(Mover):
                 uncertain_spill_size = np.array((sc.num_released, ),
                                                 dtype=np.int32)
 
-            self.mover.prepare_for_model_step(
+            err = self.mover.prepare_for_model_step(
                         self.datetime_to_seconds(model_time_datetime),
                         time_step, uncertain_spill_count, uncertain_spill_size)
+
+            if err != 0:
+                msg = "No available data in the time interval that is being modeled"
+                self.logger.error(msg)
+                raise RuntimeError(msg)
 
     def get_move(self, sc, time_step, model_time_datetime):
         """

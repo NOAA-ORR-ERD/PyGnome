@@ -14,6 +14,7 @@ from gnome.persist.base_schema import ObjType, WorldPoint
 from gnome.movers import CyMover, ProcessSchema
 from gnome import environment
 from gnome.utilities import serializable
+from gnome.utilities import time_utils
 
 from gnome import basic_types
 from gnome.cy_gnome.cy_cats_mover import CyCatsMover
@@ -391,12 +392,13 @@ class GridCurrentMoverSchema(CurrentMoversBaseSchema):
     uncertain_cross = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
+    is_data_on_cells = SchemaNode(Bool(), missing=drop)
 
 
 class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
 
-    _update = ['uncertain_cross', 'uncertain_along', 'current_scale']
-    _save = ['uncertain_cross', 'uncertain_along', 'current_scale']
+    _update = ['uncertain_cross', 'uncertain_along', 'current_scale', 'extrapolate', 'time_offset']
+    _save = ['uncertain_cross', 'uncertain_along', 'current_scale', 'extrapolate', 'time_offset']
     _state = copy.deepcopy(CurrentMoversBase._state)
 
     _state.add(update=_update, save=_save)
@@ -405,7 +407,9 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                                          test_for_eq=False),
                       serializable.Field('topology_file',
                                          save=True, read=True, isdatafile=True,
-                                         test_for_eq=False)])
+                                         test_for_eq=False),
+                      serializable.Field('is_data_on_cells',
+                                         save=True, read=True)])
     _schema = GridCurrentMoverSchema
 
     def __init__(self, filename,
@@ -456,6 +460,8 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                 raise ValueError('Path for Topology file does not exist: {0}'
                                  .format(topology_file))
 
+        super(GridCurrentMover, self).__init__(**kwargs)
+
         # check if this is stored with cy_gridcurrent_mover?
         self.filename = filename
         self.name = os.path.split(filename)[1]
@@ -466,11 +472,14 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         self.uncertain_along = uncertain_along
         self.uncertain_across = uncertain_across
         self.mover.text_read(filename, topology_file)
+        if type(self) != CurrentCycleMover:
+            self.real_data_start = time_utils.sec_to_datetime(self.mover.get_start_time())
+            self.real_data_stop = time_utils.sec_to_datetime(self.mover.get_end_time())
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
         self.num_method = num_method
 
-        super(GridCurrentMover, self).__init__(**kwargs)
+        #super(GridCurrentMover, self).__init__(**kwargs)
 
         if self.topology_file is None:
             self.topology_file = filename + '.dat'
@@ -527,6 +536,10 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                           lambda self, val: setattr(self.mover,
                                                     'num_method',
                                                     val))
+
+    @property
+    def is_data_on_cells(self):
+        return self.mover._is_data_on_cells()
 
     def get_grid_data(self):
         """
@@ -597,6 +610,18 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                               (hours).
         """
         return (self.mover.get_offset_time()) / 3600.
+
+    def get_start_time(self):
+        """
+        :this will be the real_data_start time (seconds).
+        """
+        return (self.mover.get_start_time())
+
+    def get_end_time(self):
+        """
+        :this will be the real_data_stop time (seconds).
+        """
+        return (self.mover.get_end_time())
 
     def get_num_method(self):
         return self.mover.num_method
@@ -740,7 +765,21 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         else:
             return self.get_cells()
 
-    def get_grid_bounding_rect(self, grid_data=None):
+    def get_grid_bounding_box(self, grid_data=None, box_to_merge=None):
+        '''
+            Return a bounding box surrounding the grid data.
+
+            :param grid_data: The point data of our grid.
+            :type grid_data: A sequence of 3-tuples or 4-tuples containing
+                             (long, lat) pairs.
+
+            :param box_to_merge: A bounding box to surround in combination
+                                 with our grid data.  This allows us to pad
+                                 the bounding box that we generate.
+            :type box_to_merge: A bounding box (extent) of the form:
+                                ((left, bottom),
+                                 (right, top))
+        '''
         if grid_data is None:
             grid_data = self.get_grid_data()
 
@@ -754,13 +793,23 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
                 .view(dtype=unstructured_type)
                 .reshape(-1, len(dtype))[:, 1])
 
-        left_top = (longs.min(), lats.max())
-        right_top = (longs.max(), lats.max())
-        right_bottom = (longs.max(), lats.min())
-        left_bottom = (longs.min(), lats.min())
+        left, right = longs.min(), longs.max()
+        bottom, top = lats.min(), lats.max()
 
-        return [left_top, right_top,
-                right_bottom, left_bottom]
+        if (box_to_merge is not None and
+                len(box_to_merge) == 2 and
+                [len(p) for p in box_to_merge] == [2, 2]):
+            if left > box_to_merge[0][0]:
+                left = box_to_merge[0][0]
+            if right < box_to_merge[1][0]:
+                right = box_to_merge[1][0]
+
+            if bottom > box_to_merge[0][1]:
+                bottom = box_to_merge[0][1]
+            if top < box_to_merge[1][1]:
+                top = box_to_merge[1][1]
+
+        return ((left, bottom), (right, top))
 
     def get_center_points(self):
         if self.mover._is_triangle_grid():

@@ -55,10 +55,8 @@ def make_model():
     model.movers += c_ice_mover
 
     model.outputters += IceImageOutput(c_ice_mover,
-                                       viewport=[(-175.0, 75.05),
-                                                 (-145.0, 75.05),
-                                                 (-145.0, 65.0),
-                                                 (-175.0, 65.0)]
+                                       viewport=((-175.0, 65.0),
+                                                 (-145.0, 75.05))
                                        )
 
     return model
@@ -73,6 +71,22 @@ def test_init():
 
     assert isinstance(o.map_canvas.projection, FlatEarthProjection)
     assert o.map_canvas.viewport == ((-180, -90), (180, 90))
+
+
+def test_init_with_image_size():
+    'simple initialization passes'
+    c_ice_mover = IceMover(curr_file, topology_file)
+    o = IceImageOutput(c_ice_mover, image_size=(1000, 1000))
+
+    assert o.map_canvas.image_size == (1000, 1000)
+
+
+def test_init_with_viewport():
+    'simple initialization passes'
+    c_ice_mover = IceMover(curr_file, topology_file)
+    o = IceImageOutput(c_ice_mover, viewport=((-90, -90), (90, 90)))
+
+    assert o.map_canvas.viewport == ((-90, -90), (90, 90))
 
 
 def test_init_with_projection():
@@ -101,10 +115,7 @@ def test_ice_image_output():
         print '\n\ngot step at: ', time.time() - begin
 
         ice_output = step['IceImageOutput']
-        # print ice_output['time_stamp']
-        # print ice_output['concentration_image'][:50] # could be really big!
-        # print ice_output['bounding_box']
-        # print ice_output['projection']
+
         for key in ('time_stamp',
                     'thickness_image',
                     'concentration_image',
@@ -112,7 +123,11 @@ def test_ice_image_output():
                     'projection'):
             assert key in ice_output
 
-    # not sure what to assert here -- at least it runs!
+        print 'bounding box:', ice_output['bounding_box']
+        print 'thickness img size:', len(ice_output['thickness_image'])
+        print 'concentration img size:', len(ice_output['concentration_image'])
+
+    # not sure what else to check here
 
 
 def test_ice_image_mid_run():
@@ -136,20 +151,17 @@ def test_ice_image_mid_run():
     step = model.step()
 
     # now add the outputter
-    model.outputters += IceImageOutput(c_ice_mover)
+    model.outputters += IceImageOutput(c_ice_mover,
+                                       viewport=((-175.0, 65.0),
+                                                 (-145.0, 75.05))
+                                       )
 
     # and run some more:
-
     step = model.step()
     step = model.step()
 
     # and check the output
     ice_output = step['IceImageOutput']
-
-    # print ice_output['time_stamp']
-    # print ice_output['concentration_image'][:50] # could be really big!
-    # print ice_output['bounding_box']
-    # print ice_output['projection']
 
     for key in ('time_stamp',
                 'thickness_image',
@@ -158,12 +170,15 @@ def test_ice_image_mid_run():
                 'projection'):
         assert key in ice_output
 
+        print 'thickness img size:', len(ice_output['thickness_image'])
+        print 'concentration img size:', len(ice_output['concentration_image'])
+
     # not sure what else to assert here -- at least it runs!
 
 
 # def test_ice_image_output_1step():
 #     '''
-#     Test image outputter with a model 
+#     Test image outputter with a model
 #     NOTE: could it be tested with just a mover, and not a full model?
 #       -- that gets tricky with the cache and timesteps...
 #     '''
@@ -188,7 +203,7 @@ def test_ice_image_mid_run():
 
 # def test_ice_image_output_1step():
 #     '''
-#     Test image outputter with a model 
+#     Test image outputter with a model
 
 #     This only runs the first step
 
@@ -218,7 +233,7 @@ def test_ice_image_mid_run():
 
 # def test_ice_image_output2():
 #     '''
-#     Test image outputter without a model 
+#     Test image outputter without a model
 #        -- not working -- need time step to real time adjustment somehow.
 #     '''
 #     iio = IceImageOutput(c_ice_mover)
@@ -234,26 +249,3 @@ def test_ice_image_mid_run():
 #                 'bounding_box',
 #                 'projection'):
 #         assert key in ice_output
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

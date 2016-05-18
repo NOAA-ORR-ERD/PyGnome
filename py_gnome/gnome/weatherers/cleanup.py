@@ -496,6 +496,15 @@ class Burn(CleanUpBase, Serializable):
             self._area_units = value
 
     @property
+    def active_start(self):
+        return self._active_start
+
+    @active_start.setter
+    def active_start(self, value):
+        self._active_start = value
+        self._init_rate_duration()
+
+    @property
     def thickness(self):
         return self._thickness
 
@@ -587,7 +596,7 @@ class Burn(CleanUpBase, Serializable):
                 uc.Convert('Length', self.thickness_units, 'm', self.thickness)
             mass_to_remove = self._get_mass(substance,
                                             _si_area * _si_thickness,
-                                            'm^3')
+                                            'm^3') * self.efficiency
             self._update_LE_status_codes(sc, bt_fate.burn,
                                          substance, mass_to_remove)
 
@@ -690,14 +699,17 @@ class Burn(CleanUpBase, Serializable):
             vol_oil_burned = \
                 self._oil_vol_burnrate * self.efficiency * self._timestep
             rm_mass = self._get_mass(substance, vol_oil_burned, 'm^3')
+            if rm_mass > data['mass'].sum():
+                rm_mass = data['mass'].sum()
             rm_mass_frac = rm_mass / data['mass'].sum()
             data['mass_components'] = \
                 (1 - rm_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
 
             # new thickness of oil/water mixture
-            self._oilwater_thickness -= \
-                (self._oilwater_thick_burnrate * self._timestep)
+            # decided not to update thickness, just use burn rate and duration
+            #self._oilwater_thickness -= \
+                #(self._oilwater_thick_burnrate * self._timestep)
 
             sc.mass_balance['burned'] += rm_mass
             self.logger.debug('{0} amount burned for {1}: {2}'
@@ -824,7 +836,8 @@ class ChemicalDispersion(CleanUpBase, Serializable):
         if (sc['fate_status'] == bt_fate.disperse).sum() == 0:
             substance = self._get_substance(sc)
             mass = sum([spill.get_mass() for spill in sc.spills])
-            rm_total_mass_si = mass * self.fraction_sprayed
+            rm_total_mass_si = mass * self.fraction_sprayed * self.efficiency
+            #rm_total_mass_si = mass * self.fraction_sprayed
 
             # the mass to remove is actual oil mass not mass of oil/water
             # mixture
@@ -862,7 +875,8 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                     continue
 
                 self._set_efficiency(model_time)
-                rm_mass = self._rate * self._timestep * self.efficiency
+                #rm_mass = self._rate * self._timestep * self.efficiency
+                rm_mass = self._rate * self._timestep # rate includes efficiency
 
                 total_mass = data['mass'].sum()
                 rm_mass_frac = min(rm_mass / total_mass, 1.0)

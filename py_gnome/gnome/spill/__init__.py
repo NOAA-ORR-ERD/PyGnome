@@ -1,4 +1,6 @@
-from spill import Spill, SpillSchema, point_line_release_spill, continuous_release_spill
+from spill import (Spill, SpillSchema,
+                   point_line_release_spill,
+                   continuous_release_spill)
 from release import (Release,
                      ReleaseSchema,
                      PointLineReleaseSchema,

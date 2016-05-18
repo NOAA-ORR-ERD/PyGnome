@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import shutil
 
 import pytest
@@ -12,7 +14,10 @@ import unit_conversion
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
+from gnome.utilities.timeseries import TimeseriesError
 from gnome.environment import Wind, constant_wind
+
+# from colander import Invalid
 
 from ..conftest import testdata
 
@@ -49,18 +54,18 @@ def test_read_file_init():
     initialize from a long wind file
     """
     wm = Wind(filename=wind_file)
-    print
-    print '----------------------------------'
-    print 'Units: ' + str(wm.units)
-    assert True
+
+    # have to test something:
+    assert wm.units == 'knots'
 
 
 # tolerance for np.allclose(..) function.
 # Results are almost the same but not quite so needed to add tolerance.
-# The precision per numpy.spacing(1)=2.2e-16
-
-atol = 1e-14
-rtol = 0
+# numpy defaults:
+# rtol = 1e-05
+# atol = 1e-08
+rtol = 1e-14  # most of a float64's precision
+atol = 0  # zero must be exact in this case
 
 
 def test_units():
@@ -95,7 +100,7 @@ def test_init_timeseries():
     Wind(timeseries=np.asarray(constant, dtype=datetime_value_2d), units='mps')
     Wind(timeseries=np.asarray(ts, dtype=datetime_value_2d), units='mps')
 
-    with raises(ValueError):
+    with raises(TimeseriesError):
         Wind(timeseries=(1, 2), units='mps')
 
 
@@ -109,17 +114,19 @@ def test_wind_circ_fixture(wind_circ):
 
     gtime_val = wm.get_wind_data(format='uv').view(dtype=np.recarray)
     assert np.all(gtime_val.time == wind_circ['uv'].time)
-    assert np.allclose(gtime_val.value, wind_circ['uv'].value, atol, rtol)
+    assert np.allclose(gtime_val.value, wind_circ['uv'].value, rtol=rtol, atol=atol)
 
     # output is in meter per second
 
     gtime_val = wm.get_wind_data(format='uv', units='meter per second'
-                                  ).view(dtype=np.recarray)
-    expected = unit_conversion.convert('Velocity', wm.units,
-            'meter per second', wind_circ['uv'].value)
+                                 ).view(dtype=np.recarray)
+    expected = unit_conversion.convert('Velocity',
+                                       wm.units,
+                                       'meter per second',
+                                       wind_circ['uv'].value)
 
     assert np.all(gtime_val.time == wind_circ['uv'].time)
-    assert np.allclose(gtime_val.value, expected, atol, rtol)
+    assert np.allclose(gtime_val.value, expected, rtol=rtol, atol=atol)
 
 
 def test_get_value(wind_circ):
@@ -220,8 +227,9 @@ class TestWind:
 
         gtime_val = all_winds['wind'].get_wind_data()
         assert np.all(gtime_val['time'] == all_winds['rq'].time)
-        assert np.allclose(gtime_val['value'], all_winds['rq'].value,
-                           atol, rtol)
+        assert np.allclose(gtime_val['value'],
+                           all_winds['rq'].value,
+                           rtol=rtol, atol=atol)
 
     def test_set_wind_data(self, all_winds):
         """
@@ -240,7 +248,8 @@ class TestWind:
 
         # only matches to 10^-14
         assert np.allclose(wm.get_wind_data()['value'][:, 0],
-                           x['value'][:, 0], atol, rtol)
+                           x['value'][:, 0],
+                           rtol=rtol, atol=atol)
         assert np.all(wm.get_wind_data()['time'] == x['time'])
 
     def test_get_wind_data_rq(self, all_winds):
@@ -251,7 +260,8 @@ class TestWind:
 
         gtime_val = all_winds['wind'].get_wind_data(format='r-theta')
         assert np.all(gtime_val['time'] == all_winds['rq'].time)
-        assert np.allclose(gtime_val['value'], all_winds['rq'].value,
+        assert np.allclose(gtime_val['value'],
+                           all_winds['rq'].value,
                            atol, rtol)
 
     def test_get_wind_data_uv(self, all_winds):
@@ -262,19 +272,20 @@ class TestWind:
                      .get_wind_data(format='uv')
                      .view(dtype=np.recarray))
         assert np.all(gtime_val.time == all_winds['uv'].time)
-        assert np.allclose(gtime_val.value, all_winds['uv'].value, atol, rtol)
+        assert np.allclose(gtime_val.value,
+                           all_winds['uv'].value,
+                           rtol=rtol, atol=atol)
 
     def test_get_wind_data_by_time(self, all_winds):
         """
         get time series, but this time provide it with the datetime values
         for which you want timeseries
         """
-        gtime_val = (all_winds['wind']
-                     .get_wind_data(format='r-theta',
-                                     datetime=all_winds['rq'].time)
+        gtime_val = (all_winds['wind'].get_wind_data(format='r-theta',
+                                                     datetime=all_winds['rq'].time)
                      .view(dtype=np.recarray))
         assert np.all(gtime_val.time == all_winds['rq'].time)
-        assert np.allclose(gtime_val.value, all_winds['rq'].value, atol, rtol)
+        assert np.allclose(gtime_val.value, all_winds['rq'].value, rtol=rtol, atol=atol)
 
     def test_get_wind_data_by_time_scalar(self, all_winds):
         """
@@ -393,17 +404,23 @@ def test_eq():
     assert w == w2
 
 
-def test_timeseries_res_sec():
-    '''check the timeseries resolution is changed to minutes.
-    Drop seconds from datetime, if given'''
-    ts = np.zeros((3,), dtype=datetime_value_2d)
-    ts[:] = [(datetime(2014, 1, 1, 10, 10, 30), (1, 10)),
-             (datetime(2014, 1, 1, 11, 10, 10), (2, 10)),
-             (datetime(2014, 1, 1, 12, 10), (3, 10))]
-    w = Wind(timeseries=ts, units='m/s')
-    # check that seconds resolution has been dropped
-    for ix, dt in enumerate(w.timeseries['time'].astype(datetime)):
-        assert ts['time'][ix].astype(datetime).replace(second=0) == dt
+# removed -- no longer doing the minutes truncation
+#  not sure why we ever did.
+# def test_timeseries_res_sec():
+#     '''
+#     check the timeseries resolution is changed to minutes.
+#     Drop seconds from datetime, if given
+#     '''
+#     ts = np.zeros((3,), dtype=datetime_value_2d)
+#     ts[:] = [(datetime(2014, 1, 1, 10, 10, 30), (1, 10)),
+#              (datetime(2014, 1, 1, 11, 10, 10), (2, 10)),
+#              (datetime(2014, 1, 1, 12, 10), (3, 10))]
+#     w = Wind(timeseries=ts, units='m/s')
+#     # check that seconds resolution has been dropped
+#     for dt1, dt2 in zip(ts['time'].astype(datetime),
+#                         w.timeseries['time'].astype(datetime)):
+#         print dt1, dt2
+#         assert dt1.replace(second=0) == dt2
 
 
 def test_update_from_dict():
@@ -441,3 +458,118 @@ def test_update_from_dict():
     for key in wind_json:
         if key != 'obj_type':
             assert new_w[key] == wind_json[key]
+
+
+def gen_timeseries_for_dst(which='spring'):
+    """utility for doing the dst tests: need 24 hours to make it work"""
+
+    num_hours = 2
+
+    if which == 'spring':
+        transition_date = datetime(2016, 3, 13, 2)
+    elif which == 'fall':
+        transition_date = datetime(2016, 11, 6, 2)
+    else:
+        raise ValueError("Only 'spring' and 'fall' are supported")
+
+    vel = (1.0, 45.0)  # just to have some data there.
+
+    start_dt = transition_date - timedelta(hours=num_hours)
+    end_dt = transition_date + timedelta(hours=num_hours)
+    timeseries = []
+    dt = start_dt
+    while dt <= end_dt:
+        timeseries.append((dt.isoformat(), vel))
+        dt += timedelta(minutes=30)
+
+    return timeseries
+
+
+def test_update_from_dict_with_dst_spring_transition():
+    """
+    checking a time series crossing over a DST transition.
+
+    NOTE: the ofset is ignored! so there is no way to do this "right"
+    """
+    timeseries = gen_timeseries_for_dst('spring')
+    wind_json = {'obj_type': 'gnome.environment.Wind',
+                 'description': 'dst transition test',
+                 'latitude': 90,
+                 'longitude': 90,
+                 'updated_at': '2016-03-12T12:52:45.385126',
+                 'source_type': u'manual',
+                 'source_id': u'unknown',
+                 'timeseries': timeseries,
+                 'units': 'knots',
+                 'json_': u'webapi'
+                 }
+
+    wind_dict = Wind.deserialize(wind_json)
+    wind = Wind.new_from_dict(wind_dict)
+
+    assert wind.description == 'dst transition test'
+    assert wind.units == 'knots'
+
+    ts = wind.get_timeseries()
+
+    # this should raise if there is a problem
+    wind._check_timeseries(ts)
+
+    assert True # if we got here, the test passed.
+
+
+
+def test_new_from_dict_with_dst_fall_transition():
+    """
+    checking a time series crossing over fall DST transition.
+
+    This creates duplicate times, which we can't deal with.
+    """
+    wind_json = {'obj_type': 'gnome.environment.Wind',
+                 'description': 'fall dst transition test',
+                 'latitude': 90,
+                 'longitude': 90,
+                 'updated_at': '2016-03-12T12:52:45.385126',
+                 'source_type': u'manual',
+                 'source_id': u'unknown',
+                 'timeseries': gen_timeseries_for_dst('fall'),
+                 'units': 'knots',
+                 'json_': u'webapi'
+                 }
+
+    wind_dict = Wind.deserialize(wind_json)
+    wind = Wind.new_from_dict(wind_dict)
+
+    assert wind.description == 'fall dst transition test'
+    assert wind.units == 'knots'
+
+
+def test_roundtrip_dst_spring_transition():
+    """
+    checking the round trip trhough serializing for time series
+    crossing over the spring DST transition.
+    """
+    timeseries = gen_timeseries_for_dst('spring')
+    wind_json = {'obj_type': 'gnome.environment.wind.Wind',
+                 'description': 'dst transition test',
+                 'latitude': 90,
+                 'longitude': 90,
+                 'updated_at': '2016-03-12T12:52:45.385126',
+                 'source_type': u'manual',
+                 'source_id': u'unknown',
+                 'timeseries': timeseries,
+                 'units': 'knots',
+                 'json_': u'webapi'
+                 }
+
+    wind_dict = Wind.deserialize(wind_json)
+    wind = Wind.new_from_dict(wind_dict.copy())  # new munges the dict! (pop?)
+
+    # now re-serialize:
+    wind_dict2 = wind.serialize('webapi')
+
+    # now make one from the new dict...
+    wind_dict2 = Wind.deserialize(wind_json)
+    wind2 = Wind.new_from_dict(wind_dict2.copy())
+
+    assert wind2 == wind

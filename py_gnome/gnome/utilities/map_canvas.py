@@ -386,7 +386,7 @@ class MapCanvas(object):
             self.draw_polyline(line, 'black', 1, background)
 
     def draw_tags(self, draw_to_back=True):
-        self.draw_text(self.graticule.get_tags(), draw_to_back=True)
+        self.draw_text(self.graticule.get_tags(), draw_to_back=draw_to_back)
 
     def save_background(self, filename, file_type='png'):
         self.back_image.save(filename, file_type)
@@ -496,7 +496,6 @@ class GridLines(object):
                              'grid lines')
         self.projection = projection
 
-        self.type = type
         if DegMinSec:
             self.STEPS = self.DMS_STEPS
             self.STEP_COUNT = self.DMS_COUNT
