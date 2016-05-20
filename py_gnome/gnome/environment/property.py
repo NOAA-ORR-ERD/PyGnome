@@ -24,7 +24,8 @@ class EnvProp(object):
                  name=None,
                  units=None,
                  time=None,
-                 data=None):
+                 data=None,
+                 **kwargs):
         '''
         EnvProp base class constructor
         :param name: Name
@@ -42,6 +43,8 @@ class EnvProp(object):
             raise ValueError('Units of {0} are not supported'.format(units))
         self.data = data
         self.time = time
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
 
     '''
     Subclasses should override\add any attribute property function getter/setters as needed

@@ -14,7 +14,6 @@ import unit_conversion
 import collections
 
 
-
 class GriddedProp(EnvProp):
     '''
     This class represents a phenomenon using gridded data
@@ -27,7 +26,8 @@ class GriddedProp(EnvProp):
                  data=None,
                  grid=None,
                  data_file=None,
-                 grid_file=None):
+                 grid_file=None,
+                 varname):
 
         self._grid = self._data_file = self._grid_file = None
 
@@ -117,7 +117,8 @@ class GriddedProp(EnvProp):
         if varname not in df.variables.keys():
             raise ValueError("Data file does not contain variable name {0}".format(varname))
         data = df[varname]
-        name = varname if name is None else name
+        self.varname = varname
+        name = data_file+varname if name is None else name
         units = data.units if units is None else units
         timevar=None
         if time is None:

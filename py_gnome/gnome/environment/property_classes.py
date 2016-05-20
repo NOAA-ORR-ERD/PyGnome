@@ -143,71 +143,7 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
         dict_.pop('data')
         dict_['variables'] = vars
         return super(VelocityTS, cls).new_from_dict(dict_)
-
-
-class VelocityGridSchema(PropertySchema):
-    data_file = SchemaNode(String(), missing=drop)
-    grid_file = SchemaNode(String(), missing=drop)
-
-
-class VelocityGrid(GridVectorProp, serializable.Serializable):
-    _state = copy.deepcopy(serializable.Serializable._state)
-
-    _schema = VelocityGridSchema
-
-    _state.add_field([serializable.Field('units', save=True, update=True),
-                serializable.Field('varnames', save=True, update=True),
-                serializable.Field('time', save=True, update=True),
-                serializable.Field('data_file', save=True, update=True),
-                serializable.Field('grid_file', save=True, update=True)])
-
-    def __init__(self,
-                 name=None,
-                 units=None,
-                 time = None,
-                 grid = None,
-                 variables = None,
-                 data_file=None,
-                 grid_file=None,
-                 **kwargs):
-
-        if len(variables) > 2:
-            raise ValueError('Only 2 dimensional velocities are supported')
-        GridVectorProp.__init__(self,
-                                name=name,
-                                units=units,
-                                time=time,
-                                grid=grid,
-                                variables=variables,
-                                data_file = data_file,
-                                grid_file = grid_file)
-
-    def __eq__(self, o):
-        t1 = (self.name == o.name and
-              self.units == o.units and
-              self.time == o.time)
-        t2 = True
-        for i in range(0, len(self._variables)):
-            if self._variables[i] != o._variables[i]:
-                t2=False
-                break
-
-        return t1 and t2
-
-    def __str__(self):
-        return self.serialize(json_='save').__repr__()
-
-#     def serialize(self, json_='webapi'):
-#         pass
-#
-#     @classmethod
-#     def deserialize(cls, json_):
-#         pass
-#
-#     @classmethod
-#     def new_from_dict(cls, dict_):
-#         pass
-
+    
 
 class WindTS(VelocityTS, Environment):
 
@@ -256,32 +192,63 @@ class WindTS(VelocityTS, Environment):
         v = speed * np.sin(direction * np.pi/180)
         return cls(name=name, units=units, time = [t], variables = [[u],[v]])
 
+class IceConcSchema(PropertySchema):
+    varname = SchemaNode(String(), missing=drop)
+    data_file = SchemaNode(String(), missing=drop)
+    grid_file = SchemaNode(String(), missing=drop)
 
-class GridCurrent(VelocityGrid, Environment):
-    _ref_as = 'current'
+class IceConcentration(GriddedProp, serializable.Serializable):
+    _state = copy.deepcopy(serializable.Serializable._state)
+
+    _schema = IceConcSchema
+
+    _state.add_field([serializable.Field('units', save=True, update=True),
+                serializable.Field('varname', save=True, update=False),
+                serializable.Field('time', save=True, update=True),
+                serializable.Field('data_file', save=True, update=True),
+                serializable.Field('grid_file', save=True, update=True)])
+
+
+class IceThickness(GriddedProp, serializable.Serializable):
+    def __init__(self):
+
+
+class VelocityGridSchema(PropertySchema):
+    data_file = SchemaNode(String(), missing=drop)
+    grid_file = SchemaNode(String(), missing=drop)
+
+
+class VelocityGrid(GridVectorProp, serializable.Serializable):
+    _state = copy.deepcopy(serializable.Serializable._state)
+
+    _schema = VelocityGridSchema
+
+    _state.add_field([serializable.Field('units', save=True, update=True),
+                serializable.Field('varnames', save=True, update=True),
+                serializable.Field('time', save=True, update=True),
+                serializable.Field('data_file', save=True, update=True),
+                serializable.Field('grid_file', save=True, update=True)])
 
     def __init__(self,
                  name=None,
                  units=None,
-                 time=None,
-                 variables=None,
-                 grid=None,
+                 time = None,
+                 grid = None,
+                 variables = None,
+                 data_file=None,
                  grid_file=None,
-                 data_file=None):
-        VelocityGrid.__init__(self,
-                              name=name,
-                              units=units,
-                              time=time,
-                              variables=variables,
-                              grid=grid,
-                              grid_file=grid_file,
-                              data_file=data_file)
-        self.angle = None
-        df = nc4.Dataset(data_file)
-        if 'angle' in df.variables.keys():
-            #Unrotated ROMS Grid!
-            self.angle = GriddedProp(name='angle',units='radians',time=[self.time.time[0]], grid=self.grid, data=df['angle'])
+                 **kwargs):
 
+        if len(variables) > 2:
+            raise ValueError('Only 2 dimensional velocities are supported')
+        GridVectorProp.__init__(self,
+                                name=name,
+                                units=units,
+                                time=time,
+                                grid=grid,
+                                variables=variables,
+                                data_file = data_file,
+                                grid_file = grid_file)
 
     @classmethod
     def from_netCDF(cls,
@@ -312,6 +279,58 @@ class GridCurrent(VelocityGrid, Environment):
 
         return retval
 
+    def __eq__(self, o):
+        t1 = (self.name == o.name and
+              self.units == o.units and
+              self.time == o.time)
+        t2 = True
+        for i in range(0, len(self._variables)):
+            if self._variables[i] != o._variables[i]:
+                t2=False
+                break
+
+        return t1 and t2
+
+    def __str__(self):
+        return self.serialize(json_='save').__repr__()
+
+#     def serialize(self, json_='webapi'):
+#         pass
+#
+#     @classmethod
+#     def deserialize(cls, json_):
+#         pass
+#
+#     @classmethod
+#     def new_from_dict(cls, dict_):
+#         pass
+
+
+class GridCurrent(VelocityGrid, Environment):
+    _ref_as = 'current'
+
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time=None,
+                 variables=None,
+                 grid=None,
+                 grid_file=None,
+                 data_file=None):
+        VelocityGrid.__init__(self,
+                              name=name,
+                              units=units,
+                              time=time,
+                              variables=variables,
+                              grid=grid,
+                              grid_file=grid_file,
+                              data_file=data_file)
+        self.angle = None
+        df = nc4.Dataset(data_file)
+        if 'angle' in df.variables.keys():
+            #Unrotated ROMS Grid!
+            self.angle = GriddedProp(name='angle',units='radians',time=[self.time.time[0]], grid=self.grid, data=df['angle'])
+
     @classmethod
     def _gen_varnames(cls, filename):
         '''
@@ -327,57 +346,6 @@ class GridCurrent(VelocityGrid, Environment):
                 return n
         return None
 
-
-    @classmethod
-    def _gen_topology(cls, filename):
-        '''
-        Function to determine create the correct default topology if it is not provided
-
-        :param filename: Name of file that will be searched for variables
-        :return: List of default variable names, or None if none are found
-        '''
-        gf = nc4.Dataset(filename)
-        gt = {}
-        node_coord_names = [['node_lon','node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
-        face_var_names = ['nv']
-        center_coord_names = [['center_lon', 'center_lat'], ['lon_rho', 'lat_rho']]
-        edge1_coord_names = [['edge1_lon', 'edge1_lat'], ['lon_u', 'lat_u']]
-        edge2_coord_names = [['edge2_lon', 'edge2_lat'], ['lon_v', 'lat_v']]
-        for n in node_coord_names:
-            if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-                gt['node_lon'] = n[0]
-                gt['node_lat'] = n[1]
-                break
-
-        if 'node_lon' not in gt:
-            raise NameError('Default node topology names are not in the grid file')
-
-        for n in face_var_names:
-            if n in gf.variables.keys():
-                gt['faces'] = n
-                break
-
-        if 'faces' in gt.keys():
-            #UGRID
-            return gt
-        else:
-            for n in center_coord_names:
-                if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-                    gt['center_lon'] = n[0]
-                    gt['center_lat'] = n[1]
-                    break
-            for n in edge1_coord_names:
-                if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-                    gt['edge1_lon'] = n[0]
-                    gt['edge1_lat'] = n[1]
-                    break
-            for n in edge2_coord_names:
-                if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-                    gt['edge2_lon'] = n[0]
-                    gt['edge2_lat'] = n[1]
-                    break
-        return gt
-
     def at(self, points, time, units=None, extrapolate=False):
         value = super(GridCurrent,self).at(points, time, units, extrapolate=extrapolate)
         if self.angle is not None:
@@ -387,6 +355,56 @@ class GridCurrent(VelocityGrid, Environment):
             value[:,0] = x
             value[:,1] = y
         return value
+
+
+class AirVelocity(VelocityGrid):
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time=None,
+                 variables=None,
+                 grid=None,
+                 grid_file=None,
+                 data_file=None):
+        VelocityGrid.__init__(self,
+                              name=name,
+                              units=units,
+                              time=time,
+                              variables=variables,
+                              grid=grid,
+                              grid_file=grid_file,
+                              data_file=data_file)
+        self.angle = None
+        df = nc4.Dataset(data_file)
+        if 'angle' in df.variables.keys():
+            #Unrotated ROMS Grid!
+            self.angle = GriddedProp(name='angle',units='radians',time=[self.time.time[0]], grid=self.grid, data=df['angle'])
+
+    @classmethod
+    def _gen_varnames(cls, filename):
+        '''
+        Function to find the default variable names if they are not provided
+
+        :param filename: Name of file that will be searched for variables
+        :return: List of default variable names, or None if none are found
+        '''
+        df = nc4.Dataset(filename)
+        comp_names=[['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
+        for n in comp_names:
+            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
+                return n
+        return None
+
+    def at(self, points, time, units=None, extrapolate=False):
+        value = super(AirVelocity,self).at(points, time, units, extrapolate=extrapolate)
+        if self.angle is not None:
+            angs = self.angle.at(points, time, extrapolate=extrapolate)
+            x = value[:,0] * np.cos(angs) - value[:,1] * np.sin(angs)
+            y = value[:,0] * np.sin(angs) + value[:,1] * np.cos(angs)
+            value[:,0] = x
+            value[:,1] = y
+        return value
+
 
 if __name__ == "__main__":
     import datetime as dt
