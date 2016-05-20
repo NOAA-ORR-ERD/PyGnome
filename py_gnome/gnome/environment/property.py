@@ -5,12 +5,22 @@ import netCDF4 as nc4
 import numpy as np
 
 from datetime import datetime, timedelta
-from dateutil import parser
+from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
+from gnome.persist.base_schema import ObjType
+from gnome.utilities import serializable
+from gnome.movers import ProcessSchema
+from gnome.persist import base_schema
 
 import pyugrid
 import pysgrid
 import unit_conversion
 import collections
+
+
+class PropertySchema(base_schema.ObjType):
+    name = SchemaNode(String(), missing='default')
+    units = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String(), missing=drop),SchemaNode(String(), missing=drop)])
+    time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
 
 
 class EnvProp(object):

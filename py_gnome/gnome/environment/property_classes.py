@@ -14,16 +14,11 @@ from gnome.persist import base_schema
 import pyugrid
 import pysgrid
 import unit_conversion
+from gnome.environment.property import Time, PropertySchema
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
-from gnome.environment.grid_property import GridVectorProp, GriddedProp
+from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema
 from gnome.environment import Environment
-from astropy.vo.validator import tstquery
 
-class PropertySchema(base_schema.ObjType):
-    name = SchemaNode(String(), missing='default')
-    units = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String(), missing=drop),SchemaNode(String(), missing=drop)])
-    time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
-    varnames = SequenceSchema(SchemaNode(String(), missing=drop))
 
 class TemperatureTSSchema(PropertySchema):
     timeseries = SequenceSchema(
@@ -33,6 +28,7 @@ class TemperatureTSSchema(PropertySchema):
                                                       ],
                                             missing=drop)
                                 )
+    varnames = SequenceSchema(SchemaNode(String(), missing=drop))
 
 class VelocityTSSchema(PropertySchema):
     timeseries = SequenceSchema(
@@ -46,6 +42,7 @@ class VelocityTSSchema(PropertySchema):
                                                       ],
                                             missing=drop)
                                 )
+    varnames = SequenceSchema(SchemaNode(String(), missing=drop))
 
 
 class VelocityTS(TSVectorProp, serializable.Serializable):
@@ -143,7 +140,7 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
         dict_.pop('data')
         dict_['variables'] = vars
         return super(VelocityTS, cls).new_from_dict(dict_)
-    
+
 
 class WindTS(VelocityTS, Environment):
 
@@ -192,15 +189,10 @@ class WindTS(VelocityTS, Environment):
         v = speed * np.sin(direction * np.pi/180)
         return cls(name=name, units=units, time = [t], variables = [[u],[v]])
 
-class IceConcSchema(PropertySchema):
-    varname = SchemaNode(String(), missing=drop)
-    data_file = SchemaNode(String(), missing=drop)
-    grid_file = SchemaNode(String(), missing=drop)
-
 class IceConcentration(GriddedProp, serializable.Serializable):
     _state = copy.deepcopy(serializable.Serializable._state)
 
-    _schema = IceConcSchema
+    _schema = GridPropSchema
 
     _state.add_field([serializable.Field('units', save=True, update=True),
                 serializable.Field('varname', save=True, update=False),
@@ -208,9 +200,37 @@ class IceConcentration(GriddedProp, serializable.Serializable):
                 serializable.Field('data_file', save=True, update=True),
                 serializable.Field('grid_file', save=True, update=True)])
 
+    def __init__(self,
+             name=None,
+             units=None,
+             time = None,
+             grid = None,
+             data = None,
+             data_file=None,
+             grid_file=None,
+             varname=None,
+             **kwargs):
+        GriddedProp.__init__(self,
+                        name=name,
+                        units=units,
+                        time=time,
+                        grid=grid,
+                        data=data,
+                        data_file = data_file,
+                        grid_file = grid_file,
+                        varname=varname)
+
 
 class IceThickness(GriddedProp, serializable.Serializable):
-    def __init__(self):
+    _state = copy.deepcopy(serializable.Serializable._state)
+
+    _schema = GridPropSchema
+
+    _state.add_field([serializable.Field('units', save=True, update=True),
+                serializable.Field('varname', save=True, update=False),
+                serializable.Field('time', save=True, update=True),
+                serializable.Field('data_file', save=True, update=True),
+                serializable.Field('grid_file', save=True, update=True)])
 
 
 class VelocityGridSchema(PropertySchema):

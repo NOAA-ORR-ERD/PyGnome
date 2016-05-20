@@ -13,6 +13,11 @@ import pysgrid
 import unit_conversion
 import collections
 
+class GridPropSchema(PropertySchema):
+    varname = SchemaNode(String(), missing=drop)
+    data_file = SchemaNode(String(), missing=drop)
+    grid_file = SchemaNode(String(), missing=drop)
+
 
 class GriddedProp(EnvProp):
     '''
@@ -27,7 +32,7 @@ class GriddedProp(EnvProp):
                  grid=None,
                  data_file=None,
                  grid_file=None,
-                 varname):
+                 varname=None):
 
         self._grid = self._data_file = self._grid_file = None
 
@@ -117,7 +122,6 @@ class GriddedProp(EnvProp):
         if varname not in df.variables.keys():
             raise ValueError("Data file does not contain variable name {0}".format(varname))
         data = df[varname]
-        self.varname = varname
         name = data_file+varname if name is None else name
         units = data.units if units is None else units
         timevar=None
@@ -134,7 +138,8 @@ class GriddedProp(EnvProp):
                    data=data,
                    grid=grid,
                    data_file=data_file,
-                   grid_file=grid_file)
+                   grid_file=grid_file,
+                   varname=varname)
         return prop
 
 

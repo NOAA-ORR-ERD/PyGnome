@@ -446,7 +446,7 @@ class SField(VectorField):
             s2.append(depth)
             s3.append(depth)
             s4.append(depth)
-            
+
         sg = False
 
         u0 = self.grid.interpolate_var_to_points(points, self.u, slices=s1, slice_grid=sg, memo=mem)
