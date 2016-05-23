@@ -21,6 +21,10 @@ from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
+from gnome.movers.py_wind_movers import PyWindMover
+from gnome.environment.property_classes import WindTS, GridCurrent
+from gnome.movers.py_current_movers import PyGridCurrentMover
+
 from gnome.outputters import Renderer
 from gnome.environment.vector_field import ice_field
 from gnome.movers import PyIceMover
@@ -62,30 +66,35 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
     spill1 = point_line_release_spill(num_elements=10000,
-                                      start_position=(200.5,
-                                                      70.5,
+                                      start_position=(-163.75,
+                                                      69.75,
                                                       0.0),
                                       release_time=start_time)
 
     model.spills += spill1
 
     print 'adding a RandomMover:'
-    model.movers += RandomMover(diffusion_coef=100000)
+    model.movers += RandomMover(diffusion_coef=1000)
 
     print 'adding a wind mover:'
 
 #     model.movers += constant_wind_mover(0.5, 0, units='m/s')
 
     print 'adding a current mover:'
+    curr = GridCurrent.from_netCDF(name='water_u',
+                                   filename='arctic_avg2_0001_gnome.nc',
+                                   varnames=['air_u','air_v'],
+                                   grid_topology={'node_lon':'lon',
+                                                  'node_lat':'lat'})
+    curr.grid.node_lon = curr.grid.node_lon[:]-360
+    curr.grid.build_celltree()
+#     renderer.add_grid(curr.grid)
+    renderer.add_vec_prop(curr)
 
-    ice, water, air = ice_field(
-        'N:\\Users\\Dylan.Righi\\OutBox\\ArcticROMS\\arctic_avg2_0001_gnome.nc')
-    ice_mover = PyIceMover(ice, water, air)
-    model.movers += ice_mover
-    ice.set_appearance(on=True)
-    renderer.grids += [ice]
-    renderer.delay = 25
+    c_mover = PyGridCurrentMover(curr, extrapolate = False)
 
+    model.movers += c_mover
+#     renderer.set_viewport(((-190.9, 60), (-72, 89)))
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
     # c_mover = GridCurrentMover(curr_file)
     # model.movers += c_mover
@@ -100,11 +109,12 @@ if __name__ == "__main__":
     model = make_model()
     print "doing full run"
     rend = model.outputters[0]
-    field = rend.grids[0]
 #     rend.graticule.set_DMS(True)
     for step in model:
-        #         if step['step_num'] == 0:
-        #             rend.set_viewport(((-165, 69.5), (-162.5, 70)))
+#         if step['step_num'] == 0:
+#             rend.set_viewport(((-165, 69.5), (-162.5, 70)))
+        if step['step_num'] == 0:
+            rend.set_viewport(((-175, 65), (-160, 70)))
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     print datetime.now() - startTime

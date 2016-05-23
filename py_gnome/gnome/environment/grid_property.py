@@ -39,9 +39,7 @@ class GriddedProp(EnvProp):
         if any([units is None, time is None, grid is None, data is None]):
             raise ValueError("All attributes except name MUST be defined if variables is not a list of GriddedProp objects")
         if not hasattr(data, 'shape'):
-            if isinstance(grid, pyugrid.UGrid) and not grid.fits_data(data):
-                raise ValueError('Data must be able to fit to the grid')
-            if isinstance(grid,pysgrid.SGrid) and grid.infer_grid(data) is None:
+            if grid.infer_location is None:
                 raise ValueError('Data must be able to fit to the grid')
         super(GriddedProp, self).__init__(name=name, units=units, time=time, data=data)
         self._grid = grid
@@ -127,7 +125,7 @@ class GriddedProp(EnvProp):
         timevar=None
         if time is None:
             try:
-                timevar = data.time
+                timevar = data.time if data.time == data.dimensions[0] else data.dimensions[0]
             except AttributeError:
                 timevar = data.dimensions[0]
             time = Time(df[timevar])
@@ -166,7 +164,7 @@ class GriddedProp(EnvProp):
     def data(self, d):
         if self.time is not None and len(d) != len(self.time):
             raise ValueError("Data/time interval mismatch")
-        if self.grid is not None and self.grid.infer_grid(d) is None:
+        if self.grid is not None and self.grid.infer_location(d) is None:
             raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(d.shape, grid.shape))
         self._data = d
 
@@ -178,7 +176,7 @@ class GriddedProp(EnvProp):
     def grid(self, g):
         if not (isinstance(g, (pyugrid.UGrid, pysgrid.SGrid))):
             raise ValueError('Grid must be set with a pyugrid.UGrid or pysgrid.SGrid object')
-        if self.data is not None and g.infer_grid(self.data) is None:
+        if self.data is not None and g.infer_location(self.data) is None:
             raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(d.shape, grid.shape))
         self._grid = g
 
@@ -188,7 +186,7 @@ class GriddedProp(EnvProp):
 
     @property
     def is_data_on_nodes(self):
-        return self.grid.infer_grid(self._data) == 'node'
+        return self.grid.infer_location(self._data) == 'node'
 
     def set_attr(self,
                  name=None,
@@ -205,12 +203,12 @@ class GriddedProp(EnvProp):
                 raise ValueError("Time provided is incompatible with data source time dimension")
             self.time = time
         if data is not None:
-            if (grid and grid.infer_grid(data) is None) or self.grid.infer_grid(data) is None:
+            if (grid and grid.infer_location(data) is None) or self.grid.infer_location(data) is None:
                 raise ValueError("Data shape is incompatible with grid shape.")
             self._data = data
         if grid is not None:
             if data is None:
-                if grid.infer_grid(self.data) is None:
+                if grid.infer_location(self.data) is None:
                     raise ValueError("Grid shape is incompatible with current data shape.")
             self._grid = grid
         self.grid_file = grid_file if grid_file is not None else self.grid_file
@@ -263,17 +261,9 @@ class GriddedProp(EnvProp):
                 if len(self.data.shape) == 4:
                     s0.append(depth)
                     s1.append(depth)
-
-                #THIS WILL BE REMOVED WHEN PYUGRID AND SGRID API IS CLOSER
-                if isinstance(self.grid, pysgrid.SGrid):
-                    v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, slice_grid=True, memo=True)
-                    v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s1, slice_grid=True, memo=True)
-                    value = v0 + (v1 - v0) * t_alphas
-                else:
-                    v0 = self.grid.interpolate_var_to_points(points, self.data[t_index])
-                    v1 = self.grid.interpolate_var_to_points(points, self.data[t_index])
-                    value = v0 + (v1 - v0) * t_alphas
-                #THIS WILL BE REMOVED WHEN PYUGRID AND SGRID API IS CLOSER
+                v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, slice_grid=True, memo=True)
+                v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s1, slice_grid=True, memo=True)
+                value = v0 + (v1 - v0) * t_alphas
 
         if units is not None and units != self.units:
             value = unit_conversion.convert(None, self.units, units, value)
@@ -378,7 +368,7 @@ class GridVectorProp(VectorProp):
         if not (isinstance(g, (pyugrid.UGrid, pysgrid.SGrid))):
             raise ValueError('Grid must be set with a pyugrid.UGrid or pysgrid.SGrid object')
         if self._variables is not None:
-            if g.infer_grid(self.variables[0]) is None:
+            if g.infer_location(self.variables[0]) is None:
                 raise ValueError("Grid with shape {0} not compatible with data of shape {1}".format(g.shape, self.data_shape))
             for v in self.variables:
                 v.grid = g
@@ -400,7 +390,7 @@ class GridVectorProp(VectorProp):
             if not isinstance(var, GriddedProp):
                 if (isinstance(var, (collections.Iterable, nc4.Variable)) and
                     len(var) == len(self.time) and
-                    self.grid.infer_grid(var) is not None):
+                    self.grid.infer_location(var) is not None):
                     new_vars.append(GriddedProp(name='var{0}'.format(i),
                                     units=self.units,
                                     time=self.time,
@@ -417,7 +407,7 @@ class GridVectorProp(VectorProp):
 
     @property
     def is_data_on_nodes(self):
-        return self.grid.infer_grid(self.variables[0].data) == 'node'
+        return self.grid.infer_location(self.variables[0].data) == 'node'
 
     @property
     def time(self):

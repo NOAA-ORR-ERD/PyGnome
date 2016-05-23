@@ -189,6 +189,7 @@ class WindTS(VelocityTS, Environment):
         v = speed * np.sin(direction * np.pi/180)
         return cls(name=name, units=units, time = [t], variables = [[u],[v]])
 
+
 class IceConcentration(GriddedProp, serializable.Serializable):
     _state = copy.deepcopy(serializable.Serializable._state)
 
@@ -231,6 +232,26 @@ class IceThickness(GriddedProp, serializable.Serializable):
                 serializable.Field('time', save=True, update=True),
                 serializable.Field('data_file', save=True, update=True),
                 serializable.Field('grid_file', save=True, update=True)])
+
+    def __init__(self,
+             name=None,
+             units=None,
+             time = None,
+             grid = None,
+             data = None,
+             data_file=None,
+             grid_file=None,
+             varname=None,
+             **kwargs):
+        GriddedProp.__init__(self,
+                        name=name,
+                        units=units,
+                        time=time,
+                        grid=grid,
+                        data=data,
+                        data_file = data_file,
+                        grid_file = grid_file,
+                        varname=varname)
 
 
 class VelocityGridSchema(PropertySchema):
@@ -291,7 +312,7 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
             if varnames is None:
                 raise NameError('Default current names are not in the data file')
 
-        retval = super(GridCurrent, cls).from_netCDF(name=name,
+        retval = super(VelocityGrid,cls).from_netCDF(name=name,
                                                      varnames=varnames,
                                                      grid_topology=grid_topology,
                                                      grid_file = grid_file,

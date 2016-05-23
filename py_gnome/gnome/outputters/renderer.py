@@ -771,12 +771,15 @@ class GridPropVisLayer:
         t_alphas = self.prop.time.interp_alpha(time, extrapolate=True)
         data_u = data_u + t_alphas * (data_u2 - data_u)
         data_v = data_v + t_alphas * (data_v2 - data_v)
+        data_u = data_u.reshape(-1)
+        data_v = data_v.reshape(-1)
         start=end=None
 #         if self.prop.grid.infer_grid(data_u) == 'centers':
 #             start = self.prop.grid.centers
 #         else:
         try:
-            start = self.prop.grid.nodes.copy()
+            start = self.prop.grid.nodes.copy().reshape(-1,2)
+
         except AttributeError:
             start = np.column_stack((self.prop.grid.node_lon,
                                      self.prop.grid.node_lat))
@@ -789,6 +792,7 @@ class GridPropVisLayer:
         end = start.copy()
         end[:,0] += data_u
         end[:,1] += data_v
+        end[data_u.mask] = [0.,0.]
         bounds = self.projection.image_box
         pt1 = ((bounds[0][0] <= start[:, 0]) * (start[:, 0] <= bounds[1][0]) *
                (bounds[0][1] <= start[:, 1]) * (start[:, 1] <= bounds[1][1]))

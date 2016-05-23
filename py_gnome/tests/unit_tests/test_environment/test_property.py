@@ -390,11 +390,11 @@ class TestGriddedProp:
 
         gp.set_attr(grid = test_grid)
         assert gp.grid == test_grid
-        assert gp.grid.infer_grid(gp.data) == 'node'
+        assert gp.grid.infer_location(gp.data) == 'node'
 
         gp.set_attr(data = grid_u, grid = test_grid)
         assert gp.data == grid_u
-        assert gp.grid.infer_grid(gp.data) == 'node'
+        assert gp.grid.infer_location(gp.data) == 'node'
 
         gp.set_attr(data_file = 'f', grid_file = 'f')
         assert gp.data_file == 'f'
