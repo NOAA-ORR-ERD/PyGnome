@@ -13,9 +13,10 @@ from gnome.basic_types import (world_point,
 class PyIceMover(movers.Mover):
 
     def __init__(self,
-                 ice_field=None,
-                 water_field=None,
-                 air_field=None,
+                 filename=None,
+                 ice_prop=None,
+                 water_prop=None,
+                 air_prop=None,
                  extrapolate=False,
                  time_offset=0,
                  current_scale=1,
@@ -25,9 +26,9 @@ class PyIceMover(movers.Mover):
                  uncertain_across=.25,
                  uncertain_cross=.25,
                  num_method=0):
-        self.ice_field = ice_field
-        self.water_field = water_field
-        self.air_field = air_field
+        self.ice_prop = ice_prop
+        self.water_prop = water_prop
+        self.air_prop = air_prop
         self.current_scale = current_scale
         self.uncertain_along = uncertain_along
         self.uncertain_across = uncertain_across
@@ -64,28 +65,6 @@ class PyIceMover(movers.Mover):
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions'][:, 0:2] + [180, 0]
 
-        indices = self.ice_field.grid.locate_faces(positions)
-
-        # compute alphas once instead of four times
-        pos_alpha = self.ice_field.grid.interpolation_alphas(
-            positions, np.copy(indices), location='node')
-        pos_alphas = (pos_alpha, pos_alpha)
-
-        ice_vel = self.ice_field.interpolated_velocities(model_time, positions, np.copy(indices))
-        water_vel = self.water_field.interpolated_velocities(model_time, positions, np.copy(indices))
-        air_vel = self.air_field.interpolated_velocities(model_time, positions, np.copy(indices))
-
-        ice_coverage = self.get_ice_coverage(positions, model_time,
-                                             indices=indices, alphas=pos_alphas[0])
-        follow_ice = ice_coverage > 0.8
-        partial_follow_ice = np.logical_xor(ice_coverage > 0.2, follow_ice)
-        partial_alphas = (ice_coverage[partial_follow_ice] - 0.2) * 1.66667
-
-        water_vel[follow_ice] = ice_vel[follow_ice]
-        if partial_follow_ice.any():
-            water_vel[partial_follow_ice] = np.einsum('ij,i->ij', water_vel[partial_follow_ice], (1 - partial_alphas)) + \
-                np.einsum(
-                    'ij,i->ij', ice_vel[partial_follow_ice], partial_alphas)
 
         deltas = np.zeros_like(sc['positions'], dtype=np.float64)
         deltas[:, 0:2] = water_vel * time_step

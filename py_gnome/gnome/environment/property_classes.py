@@ -16,7 +16,7 @@ import pysgrid
 import unit_conversion
 from gnome.environment.property import Time, PropertySchema
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
-from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema
+from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema, init_grid
 from gnome.environment import Environment
 
 
@@ -221,37 +221,31 @@ class IceConcentration(GriddedProp, serializable.Serializable):
                         grid_file = grid_file,
                         varname=varname)
 
+    @classmethod
+    def _gen_varname(cls, filename):
+        '''
+        Function to find the default variable names if they are not provided
 
-class IceThickness(GriddedProp, serializable.Serializable):
-    _state = copy.deepcopy(serializable.Serializable._state)
+        :param filename: Name of file that will be searched for variables
+        :return: List of default variable names, or None if none are found
+        '''
+        df = nc4.Dataset(filename)
+        comp_names=['ice_fraction',]
+        for n in comp_names:
+            if n in df.variables.keys():
+                return n
+        return None
 
-    _schema = GridPropSchema
+    def __eq__(self, o):
+        t1 = (self.name == o.name and
+              self.units == o.units and
+              self.time == o.time and
+              self.varname == o.varname)
+        t2 = self.data == o.data
+        return t1 and t2
 
-    _state.add_field([serializable.Field('units', save=True, update=True),
-                serializable.Field('varname', save=True, update=False),
-                serializable.Field('time', save=True, update=True),
-                serializable.Field('data_file', save=True, update=True),
-                serializable.Field('grid_file', save=True, update=True)])
-
-    def __init__(self,
-             name=None,
-             units=None,
-             time = None,
-             grid = None,
-             data = None,
-             data_file=None,
-             grid_file=None,
-             varname=None,
-             **kwargs):
-        GriddedProp.__init__(self,
-                        name=name,
-                        units=units,
-                        time=time,
-                        grid=grid,
-                        data=data,
-                        data_file = data_file,
-                        grid_file = grid_file,
-                        varname=varname)
+    def __str__(self):
+        return self.serialize(json_='save').__repr__()
 
 
 class VelocityGridSchema(PropertySchema):
@@ -290,35 +284,6 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
                                 variables=variables,
                                 data_file = data_file,
                                 grid_file = grid_file)
-
-    @classmethod
-    def from_netCDF(cls,
-                    filename=None,
-                    varnames=None,
-                    grid_topology=None,
-                    name=None,
-                    units=None,
-                    time=None,
-                    grid=None,
-                    data_file=None,
-                    grid_file=None):
-        if filename is not None:
-            grid_file=filename
-            data_file=filename
-        retval = None
-        if varnames is None:
-            #test for default varnames
-            varnames = cls._gen_varnames(data_file)
-            if varnames is None:
-                raise NameError('Default current names are not in the data file')
-
-        retval = super(VelocityGrid,cls).from_netCDF(name=name,
-                                                     varnames=varnames,
-                                                     grid_topology=grid_topology,
-                                                     grid_file = grid_file,
-                                                     data_file = data_file)
-
-        return retval
 
     def __eq__(self, o):
         t1 = (self.name == o.name and
@@ -445,6 +410,143 @@ class AirVelocity(VelocityGrid):
             value[:,0] = x
             value[:,1] = y
         return value
+
+
+class IceVelocity(VelocityGrid):
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time=None,
+                 variables=None,
+                 grid=None,
+                 grid_file=None,
+                 data_file=None):
+        VelocityGrid.__init__(self,
+                              name=name,
+                              units=units,
+                              time=time,
+                              variables=variables,
+                              grid=grid,
+                              grid_file=grid_file,
+                              data_file=data_file)
+
+    @classmethod
+    def _gen_varnames(cls, filename):
+        '''
+        Function to find the default variable names if they are not provided
+
+        :param filename: Name of file that will be searched for variables
+        :return: List of default variable names, or None if none are found
+        '''
+        df = nc4.Dataset(filename)
+        comp_names=[['ice_u', 'ice_v',],]
+        for n in comp_names:
+            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
+                return n
+        return None
+
+class IceAwareCurrent(object):
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time=None,
+                 ice_var=None,
+                 water_var=None,
+                 ice_conc_var=None,
+                 grid=None,
+                 grid_file=None,
+                 data_file=None):
+        self.name=name
+        self.units=units
+        self.time=time
+        self.ice_var=ice_var
+        self.water_var=water_var
+        self.ice_conc_var=ice_conc_var
+        self.grid=grid
+        self.grid_file=grid_file
+        self.data_file=data_file
+
+    def _check_consistency(self):
+        '''
+        Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
+        '''
+        if self.units is None or self.time is None or self.grid is None:
+            return
+        for v in [self.ice_var, self.water_var]:
+            if v.units != self.units:
+                raise ValueError("Variable {0} did not have units consistent with what was specified. Got: {1} Expected {2}".format(v.name,v.units, self.units))
+            if v.time != self.time:
+                raise ValueError("Variable {0} did not have time consistent with what was specified Got: {1} Expected {2}".format(v.name,v.time, self.time))
+            if v.grid != self.grid:
+                raise ValueError("Variable {0} did not have grid consistent with what was specified Got: {1} Expected {2}".format(v.name,v.grid, self.grid))
+            if v.grid_file != self.grid_file:
+                raise ValueError("Variable {0} did not have grid_file consistent with what was specified Got: {1} Expected {2}".format(v.name,v.grid_file, self.grid_file))
+            if v.data_file != self.data_file:
+                raise ValueError("Variable {0} did not have data_file consistent with what was specified Got: {1} Expected {2}".format(v.name,v.data_file, self.data_file))
+
+    @classmethod
+    def from_netCDF(cls,
+                    filename=None,
+                    grid_topology=None,
+                    name=None,
+                    units=None,
+                    time=None,
+                    ice_var=None,
+                    water_var=None,
+                    ice_conc_var=None,
+                    grid=None,
+                    grid_file=None,
+                    data_file=None):
+        if filename is not None:
+            data_file = filename
+            grid_file = filename
+        if grid is None:
+            grid = init_grid(grid_file,
+                             grid_topology=grid_topology)
+        if ice_var is None:
+            ice_var = IceVelocity.from_netCDF(filename,
+                                              grid=grid)
+        if time is None:
+            time = ice_var.time
+        if water_var is None:
+            water_var = GridCurrent.from_netCDF(filename,
+                                                time=time,
+                                                grid=grid)
+        if ice_conc_var is None:
+            ice_conc_var = IceConcentration.from_netCDF(filename,
+                                                        time=time,
+                                                        grid=grid)
+        if name is None:
+            name = data_file + ' ' + 'IceAwareCurrent'
+        if units is None:
+            units = water_var.units
+        return cls(name=name,
+                   units=units,
+                   time=time,
+                   ice_var=ice_var,
+                   water_var=water_var,
+                   ice_conc_var=ice_conc_var,
+                   grid=grid,
+                   grid_file=grid_file,
+                   data_file=data_file)
+
+    def at(self, points, time, units=None, extrapolate=False):
+        interp = self.ice_conc_var.at(points, time, extrapolate=extrapolate)
+        interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
+        water_mask = interp < 0.2
+        ice_mask = interp >= 0.8
+
+        water_v = self.water_var.at(points, time, units, extrapolate)
+        ice_v = self.ice_var.at(points, time, units, extrapolate)
+        interp -= 0.2
+        interp *= 1.25
+
+        vels = water_v.copy()
+        vels[ice_mask] = ice_v[ice_mask]
+        diff_v = ice_v
+        diff_v -= water_v
+        vels[interp_mask] += diff_v[interp_mask]
+        return vels
 
 
 if __name__ == "__main__":

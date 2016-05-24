@@ -3,6 +3,7 @@ import numpy as np
 import datetime
 import copy
 from gnome import basic_types
+from gnome.environment.property_classes import GridCurrent
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
@@ -30,14 +31,13 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
                  uncertain_time_delay=0,
                  uncertain_along=.5,
                  uncertain_across=.25,
-                 uncertain_cross=.25,
-                 num_method=0):
+                 uncertain_cross=.25):
         self.current=current
+        self.filename=filename
         self.extrapolate=extrapolate
         self.current_scale = current_scale
         self.uncertain_along = uncertain_along
         self.uncertain_across = uncertain_across
-        self.num_method = num_method
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.model_time = 0
@@ -49,6 +49,28 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
         self.spill_type = 0
 
         movers.Mover.__init__(self)
+
+    @classmethod
+    def from_netCDF(cls,
+                    filename=None,
+                    extrapolate=False,
+                    time_offset=0,
+                    current_scale=1,
+                    uncertain_duration=24 * 3600,
+                    uncertain_time_delay=0,
+                    uncertain_along=.5,
+                    uncertain_across=.25,
+                    uncertain_cross=.25):
+        current = GridCurrent.from_netCDF(filename)
+        return cls(current=current,
+                   filename=filename,
+                   extrapolate=extrapolate,
+                   time_offset=time_offset,
+                   current_scale=current_scale,
+                   uncertain_along=uncertain_along,
+                   uncertain_across=uncertain_across,
+                   uncertain_cross=uncertain_cross)
+
 
     def get_scaled_velocities(self, time):
         """

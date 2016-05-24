@@ -36,7 +36,7 @@ class GriddedProp(EnvProp):
 
         self._grid = self._data_file = self._grid_file = None
 
-        if any([units is None, time is None, grid is None, data is None]):
+        if any([time is None, grid is None, data is None]):
             raise ValueError("All attributes except name MUST be defined if variables is not a list of GriddedProp objects")
         if not hasattr(data, 'shape'):
             if grid.infer_location is None:
@@ -56,72 +56,26 @@ class GriddedProp(EnvProp):
                     time=None,
                     grid=None,
                     data_file=None,
-                    grid_file=None):
+                    grid_file=None
+                    ):
         if filename is not None:
             data_file = filename
             grid_file = filename
-        gt = grid_topology
-        gf = nc4.Dataset(grid_file)
-        df = gf
-        if data_file != grid_file:
-            df = nc4.Dataset(data_file)
         if grid is None:
-            if gt is None:
-                try:
-                    grid = pyugrid.UGrid.from_nc_dataset(gf)
-                except ValueError:
-                    grid = pysgrid.SGrid.load_grid(gf)
-            else:
-                nodes = node_lon = node_lat = None
-                if 'nodes' not in gt:
-                    if 'node_lon' not in gt and 'node_lat' not in gt:
-                        raise ValueError('Nodes must be specified with either the "nodes" or "node_lon" and "node_lat" keys')
-                    node_lon = gf[gt['node_lon']]
-                    node_lat = gf[gt['node_lat']]
-                else:
-                    nodes = gf[gt['nodes']]
-                if 'faces' in gt and gf[gt['faces']]:
-                    #UGrid
-                    faces = gf[gt['faces']]
-                    if faces.shape[0] == 3:
-                        faces=np.ascontiguousarray(np.array(faces).T - 1)
-                    if nodes is None:
-                        nodes = np.column_stack((node_lon, node_lat))
-                    grid = pyugrid.UGrid(nodes = nodes, faces=faces)
-                else:
-                    #SGrid
-                    center_lon = center_lat = edge1_lon = edge1_lat = edge2_lon = edge2_lat = None
-                    if node_lon is None:
-                        node_lon = nodes[:,0]
-                    if node_lat is None:
-                        node_lat = nodes[:,1]
-                    if 'center_lon' in gt:
-                        center_lon = gf[gt['center_lon']]
-                    if 'center_lat' in gt:
-                        center_lat = gf[gt['center_lat']]
-                    if 'edge1_lon' in gt:
-                        edge1_lon = gf[gt['edge1_lon']]
-                    if 'edge1_lat' in gt:
-                        edge1_lat = gf[gt['edge1_lat']]
-                    if 'edge2_lon' in gt:
-                        edge2_lon = gf[gt['edge2_lon']]
-                    if 'edge2_lat' in gt:
-                        edge2_lat = gf[gt['edge2_lat']]
-                    grid = pysgrid.SGrid(node_lon = node_lon,
-                                         node_lat = node_lat,
-                                         center_lon = center_lon,
-                                         center_lat = center_lat,
-                                         edge1_lon = edge1_lon,
-                                         edge1_lat = edge1_lat,
-                                         edge2_lon = edge2_lon,
-                                         edge2_lat = edge2_lat)
+            grid = init_grid(grid_file,
+                             grid_topology=grid_topology)
         if varname is None:
-            raise ValueError("Must supply variable name")
-        if varname not in df.variables.keys():
-            raise ValueError("Data file does not contain variable name {0}".format(varname))
+            varname = cls._gen_varname(data_file)
+            if varname is None:
+                raise NameError('Default current names are not in the data file, must supply variable name')
+        df = nc4.Dataset(data_file)
         data = df[varname]
-        name = data_file+varname if name is None else name
-        units = data.units if units is None else units
+        name = data_file+' '+varname if name is None else name
+        if units is None:
+            try:
+                units = data.units
+            except AttributeError:
+                units = None
         timevar=None
         if time is None:
             try:
@@ -129,17 +83,17 @@ class GriddedProp(EnvProp):
             except AttributeError:
                 timevar = data.dimensions[0]
             time = Time(df[timevar])
-
-        prop = cls(name=name,
+        return cls(name=name,
                    units=units,
                    time=time,
                    data=data,
                    grid=grid,
-                   data_file=data_file,
                    grid_file=grid_file,
-                   varname=varname)
-        return prop
+                   data_file=data_file)
 
+    @classmethod
+    def _gen_varname(cls, filename):
+        raise NotImplementedError()
 
     @property
     def time(self):
@@ -147,7 +101,7 @@ class GriddedProp(EnvProp):
 
     @time.setter
     def time(self, t):
-        if self.data is not None and len(t) != len(self.data) and len(t) > 1:
+        if self.data is not None and len(t) != self.data.shape[0] and len(t) > 1:
             raise ValueError("Data/time interval mismatch")
         if isinstance(t, Time):
             self._time = t
@@ -317,12 +271,25 @@ class GridVectorProp(VectorProp):
                     data_file=None,
                     grid_file=None
                     ):
-        variables = []
         if filename is not None:
             data_file = filename
             grid_file = filename
-        grid = init_grid(grid_file,
-                                       grid_topology=grid_topology)
+        if grid is None:
+            grid = init_grid(grid_file,
+                             grid_topology=grid_topology)
+        if varnames is None:
+            varnames = cls._gen_varnames(data_file)
+        df = nc4.Dataset(data_file)
+        name = data_file if name is None else name
+        timevar=None
+        data = df[varnames[0]]
+        if time is None:
+            try:
+                timevar = data.time if data.time == data.dimensions[0] else data.dimensions[0]
+            except AttributeError:
+                timevar = data.dimensions[0]
+            time = Time(df[timevar])
+        variables = []
         for vn in varnames:
             variables.append(GriddedProp.from_netCDF(filename=filename,
                                                      varname=vn,
@@ -340,6 +307,9 @@ class GridVectorProp(VectorProp):
                    grid_file=grid_file,
                    data_file=data_file)
 
+    @classmethod
+    def _gen_varnames(cls, filename):
+        raise NotImplementedError
 
     def _check_consistency(self):
         '''
@@ -493,11 +463,11 @@ def init_grid(filename,
     if gt is None:
         try:
             grid = pyugrid.UGrid.from_nc_dataset(gf)
-        except ValueError:
+        except (ValueError, NameError):
             pass
         try:
             grid = pysgrid.SGrid.load_grid(gf)
-        except ValueError:
+        except (ValueError, NameError):
             gt = _gen_topology(filename)
     if grid is None:
         nodes = node_lon = node_lat = None

@@ -47,10 +47,11 @@ class EnvProp(object):
         self.name = self._units = self._time = self._data = None
 
         self.name = name
-        if units in unit_conversion.unit_data.supported_units:
-            self._units = units
-        else:
-            raise ValueError('Units of {0} are not supported'.format(units))
+        if units is not None:
+            if units in unit_conversion.unit_data.supported_units:
+                self._units = units
+            else:
+                raise ValueError('Units of {0} are not supported'.format(units))
         self.data = data
         self.time = time
         for k in kwargs:
