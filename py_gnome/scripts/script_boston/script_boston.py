@@ -14,11 +14,13 @@ This one uses:
 and netcdf and kml output
 """
 
+
 import os
 from datetime import datetime, timedelta
 
 import numpy as np
 
+import gnome
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
 
@@ -35,8 +37,10 @@ from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 
 from gnome.outputters import Renderer, NetCDFOutput, KMZOutput
 
-# define base directory
+# let's get the console log working:
+gnome.initialize_console_log()
 
+# define base directory
 base_dir = os.path.dirname(__file__)
 
 

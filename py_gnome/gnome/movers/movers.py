@@ -254,8 +254,7 @@ class CyMover(Mover):
         Uses super to invoke Mover class prepare_for_model_step and does a
         couple more things specific to CyMover.
         """
-        super(CyMover, self).prepare_for_model_step(sc, time_step,
-                                                    model_time_datetime)
+        super(CyMover, self).prepare_for_model_step(sc, time_step, model_time_datetime)
         if self.active:
             uncertain_spill_count = 0
             uncertain_spill_size = np.array((0, ), dtype=np.int32)
@@ -270,7 +269,11 @@ class CyMover(Mover):
                         time_step, uncertain_spill_count, uncertain_spill_size)
 
             if err != 0:
-                msg = "No available data in the time interval that is being modeled"
+                msg = ["No available data in the time interval that is being modeled"]
+                msg.append("Model time: %s" % model_time_datetime)
+                msg.append("Mover: %s of type %s" % (self.name, self.__class__))
+                msg.append("Data available from %s to %s" % (self.real_data_start, self.real_data_stop))
+                msg = "\n".join(msg)
                 self.logger.error(msg)
                 raise RuntimeError(msg)
 

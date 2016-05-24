@@ -4,7 +4,8 @@ __init__.py for the gnome package
 """
 from itertools import chain
 
-import logging.config
+import sys
+import logging
 import json
 
 import unit_conversion as uc
@@ -19,6 +20,11 @@ def initialize_log(config, logfile=None):
     '''
     helper function to initialize a log - done by the application using PyGnome
     config can be a file containing json or it can be a Python dict
+
+    it needs to be inthe dictcnfig format used by logging.dictConfig:
+
+    https://docs.python.org/2/library/logging.config.html#logging-config-dictschema
+
     '''
     if isinstance(config, basestring):
         config = json.load(open(config, 'r'))
@@ -27,6 +33,19 @@ def initialize_log(config, logfile=None):
         config['handlers']['file']['filename'] = logfile
 
     logging.config.dictConfig(config)
+
+
+def initialize_console_log():
+    '''
+    Initializes the logger to simply log everything to the console (stdout)
+
+    Likely what you want for scripting use
+    '''
+    format_str = '%(levelname)s - %(module)8s - line:%(lineno)d - %(message)s'
+    logging.basicConfig(stream=sys.stdout,
+                        level=logging.DEBUG,
+                        format=format_str,
+                        )
 
 
 def _valid_units(unit_name):

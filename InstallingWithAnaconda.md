@@ -87,6 +87,37 @@ and to add the NOAA-ORR-ERD binstar channel to Anaconda:
 
 Now conda will know to go look in our anaconda channel for the packages you need.
 
+### conda environments
+
+The conda system supports isolated "environments" that can be used to maintain different versions of various packages. For more information see: [conda environments http://conda.pydata.org/docs/using/envs.html] If you are using Anaconda for other project that might depend on specific versions of specific libraries (like numpy, scipy, etc), then you may want create an environment for PyGnome:
+
+```
+conda create --name gnome python=2
+```
+
+This will create an environment called "gnome" with Python2 and the core pieces you need to run conda. To use that environment, you activate it with:
+
+```
+source activate gnome
+```
+
+or on Windows:
+
+```
+activate gnome
+```
+
+and when you are done, you can deactivate it with:
+
+```
+source deactivate
+```
+
+After activating the environment, you can proceed with these instructions, and all the packages PyGmone needs will be installed into that environment, and kept separate from your main Anaconda install.
+
+You will need to active the environment any time you want to work with PyGnome in the future
+
+
 ## Download GNOME
 
 At this point you will need some files from the PyGnome sources.
@@ -108,18 +139,6 @@ To install all the packages pygnome needs:
 
 To get the whole setup, this file has a full dump of a conda environment
 with all the dependencies.
-
-conda supports "environments" -- walled off setups for a complete set of
-packages of a particular version. If you are using python and conda for
-multiple projects that may require different versions of various packages,
-you can set up a conda environment for py_gnome with:
-
-```
-> conda create -n py_gnome --file conda_packages.txt`
-```
-
-Note that if you are using python primarily for py_gnome, you don't need to
-create a separate environment.
 
 
 ## Compilers

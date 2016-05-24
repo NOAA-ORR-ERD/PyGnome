@@ -164,6 +164,32 @@ class Model(Serializable):
         model.logger.info(msg)
         return model
 
+    @classmethod
+    def load_savefile(cls, filename):
+        """
+        load a model instance from a save file
+
+        :param filename: the filename of the save file -- usually a zip file,
+                         but can also be a directry with the full contents of
+                         a zip file
+
+        :returns: a model instance all set up from the savefile.
+
+        This is simply a utility wrapper around:
+        ``gnome.persist.save_load.load()``
+
+        """
+        model = gnome.persist.save_load.load(filename)
+
+        # check that this actually loaded a model object
+        #  load() will load any gnome object from json...
+        if not isinstance(model, cls):
+            msg = "This does not appear to be a save file for a model\n"
+            msg += "loaded a %s instead" % type(model)
+            raise ValueError(msg)
+        else:
+            return model
+
     def __init__(self,
                  time_step=None,
                  start_time=round_time(datetime.now(), 3600),
@@ -175,7 +201,6 @@ class Model(Serializable):
                  name=None,
                  mode=None):
         '''
-
         Initializes a model.
         All arguments have a default.
 

@@ -15,7 +15,7 @@ from gnome.basic_types import datetime_value_2d
 from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
 from gnome.utilities.timeseries import TimeseriesError
-from gnome.environment import Wind, constant_wind
+from gnome.environment import Wind, constant_wind, wind_from_values
 
 # from colander import Invalid
 
@@ -573,3 +573,37 @@ def test_roundtrip_dst_spring_transition():
     wind2 = Wind.new_from_dict(wind_dict2.copy())
 
     assert wind2 == wind
+
+def test_wind_from_values():
+    """
+    simple test for the utility
+    """
+    values = [(datetime(2016, 5, 10, 12,  0), 5, 45),
+              (datetime(2016, 5, 10, 12, 20), 6, 50),
+              (datetime(2016, 5, 10, 12, 40), 7, 55),
+              ]
+
+    wind = wind_from_values(values)
+
+    # see if it's got the correct data
+    for dt, r, theta in values:
+        vals = wind.get_value(dt)
+        assert np.allclose(vals[0], r)
+        assert np.allclose(vals[1],theta)
+
+def test_wind_from_values_knots():
+    """
+    simple test for the utility == passing in knots
+    """
+    values = [(datetime(2016, 5, 10, 12,  0), 5, 45),
+              (datetime(2016, 5, 10, 12, 20), 6, 50),
+              (datetime(2016, 5, 10, 12, 40), 7, 55),
+              ]
+
+    wind = wind_from_values(values, units='knot')
+
+    # see if it's got the correct data
+    for dt, r, theta in values:
+        vals = wind.get_value(dt)
+        assert np.allclose(vals[0], unit_conversion.convert('velocity', 'knot', 'm/s', r))
+        assert np.allclose(vals[1], theta)
