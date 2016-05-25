@@ -43,7 +43,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
     renderer = Renderer(output_dir=images_dir,
-                        #size=(800, 600),
+                        # size=(800, 600),
                         output_timestep=timedelta(hours=1),
                         draw_ontop='uncertain')
     renderer.viewport = ((-76.5, 37.), (-75.8, 38.))
@@ -68,24 +68,26 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                              min_=.0002)  # 200 micron min
     end_time = start_time + timedelta(hours=24)
     # spill = point_line_release_spill(num_elements=10,
-                                     # amount=90,  # default volume_units=m^3
-                                     # units='m^3',
-                                     # start_position=(-76.126872, 37.680952,
-                                                     # 1700),
-                                     # release_time=start_time,
-                                     # end_release_time=end_time,
-                                     # element_type=plume(distribution=wd,
-                                                        # density=600)
-                                     # )
+    #                                  amount=90,  # default volume_units=m^3
+    #                                  units='m^3',
+    #                                  start_position=(-76.126872, 37.680952,
+    #                                                  1700),
+    #                                  release_time=start_time,
+    #                                  end_release_time=end_time,
+    #                                  element_type=plume(distribution=wd,
+    #                                                     density=600)
+    #                                  )
+
     spill = subsurface_plume_spill(num_elements=10,
-                                     start_position=(-76.126872, 37.680952,1700),
-                                     release_time=start_time,
-                                     distribution=wd,
-                                     amount=90,  # default volume_units=m^3
-                                     units='m^3',
-                                     end_release_time=end_time,
-                                     density=600)
-                                     
+                                   start_position=(-76.126872, 37.680952,
+                                                   1700),
+                                   release_time=start_time,
+                                   distribution=wd,
+                                   amount=90,  # default volume_units=m^3
+                                   units='m^3',
+                                   end_release_time=end_time,
+                                   density=600)
+
     model.spills += spill
 
     wd = WeibullDistribution(alpha=1.8, lambda_=.00456,
@@ -135,4 +137,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     scripting.make_images_dir()
 #     for step in model:
 #         print step
-#         print model.get_spill_data('spill_num && positions', 'age < 8000 && spill_num == 1 || mass < 8100')
+#         print model.get_spill_data('spill_num && positions',
+#                                    ('age < 8000 && '
+#                                     'spill_num == 1 || '
+#                                     'mass < 8100')
+#                                    )
