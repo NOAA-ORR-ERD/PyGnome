@@ -22,7 +22,7 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.movers.py_wind_movers import PyWindMover
-from gnome.environment.property_classes import WindTS, GridCurrent
+from gnome.environment.property_classes import WindTS, IceAwareCurrent, IceAwareWind
 from gnome.movers.py_current_movers import PyGridCurrentMover
 
 from gnome.outputters import Renderer
@@ -81,19 +81,23 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     model.movers += constant_wind_mover(0.5, 0, units='m/s')
 
     print 'adding a current mover:'
-    curr = GridCurrent.from_netCDF(name='water_u',
-                                   filename='arctic_avg2_0001_gnome.nc',
-                                   varnames=['air_u','air_v'],
-                                   grid_topology={'node_lon':'lon',
-                                                  'node_lat':'lat'})
-    curr.grid.node_lon = curr.grid.node_lon[:]-360
-    curr.grid.build_celltree()
+    fn='arctic_avg2_0001_gnome.nc'
+
+    ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn)
+    ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
+                                              grid = ice_aware_curr.grid,)
+
+    i_c_mover = PyGridCurrentMover(current=ice_aware_curr)
+    i_w_mover = PyWindMover(wind = ice_aware_wind)
+
+    ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:]-360
+    ice_aware_curr.grid.build_celltree()
+    model.movers += i_c_mover
+    model.movers += i_w_mover
 #     renderer.add_grid(curr.grid)
-    renderer.add_vec_prop(curr)
+#     renderer.add_vec_prop(curr)
 
-    c_mover = PyGridCurrentMover(curr, extrapolate = False)
 
-    model.movers += c_mover
 #     renderer.set_viewport(((-190.9, 60), (-72, 89)))
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
     # c_mover = GridCurrentMover(curr_file)

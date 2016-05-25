@@ -69,11 +69,7 @@ class PyWindMover(movers.Mover, serializable.Serializable):
 
     @wind.setter
     def wind(self, value):
-        if not isinstance(value, VectorProp):
-            raise TypeError('wind must be of type gnome.environment.property.VectorProp')
-        else:
-            # update reference to underlying cython object
-            self._wind = value
+        self._wind = value
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """

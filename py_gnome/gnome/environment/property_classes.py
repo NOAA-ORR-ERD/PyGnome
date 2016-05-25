@@ -363,7 +363,9 @@ class GridCurrent(VelocityGrid, Environment):
         return value
 
 
-class AirVelocity(VelocityGrid):
+class GridWind(VelocityGrid, Environment):
+
+    _ref_as = 'wind'
     def __init__(self,
                  name=None,
                  units=None,
@@ -402,7 +404,7 @@ class AirVelocity(VelocityGrid):
         return None
 
     def at(self, points, time, units=None, extrapolate=False):
-        value = super(AirVelocity,self).at(points, time, units, extrapolate=extrapolate)
+        value = super(GridWind,self).at(points, time, units, extrapolate=extrapolate)
         if self.angle is not None:
             angs = self.angle.at(points, time, extrapolate=extrapolate)
             x = value[:,0] * np.cos(angs) - value[:,1] * np.sin(angs)
@@ -445,7 +447,17 @@ class IceVelocity(VelocityGrid):
                 return n
         return None
 
-class IceAwareCurrent(object):
+
+class IceAwareCurrent(serializable.Serializable):
+    _state = copy.deepcopy(serializable.Serializable._state)
+
+    _schema = VelocityGridSchema
+
+    _state.add_field([serializable.Field('units', save=True, update=True),
+#                 serializable.Field('varnames', save=True, update=True),
+                serializable.Field('time', save=True, update=True),
+                serializable.Field('data_file', save=True, update=True),
+                serializable.Field('grid_file', save=True, update=True)])
     def __init__(self,
                  name=None,
                  units=None,
@@ -548,6 +560,119 @@ class IceAwareCurrent(object):
         vels[interp_mask] += diff_v[interp_mask]
         return vels
 
+
+class IceAwareWind(serializable.Serializable, Environment):
+    _state = copy.deepcopy(serializable.Serializable._state)
+
+    _schema = VelocityGridSchema
+
+    _state.add_field([serializable.Field('units', save=True, update=True),
+#                 serializable.Field('varnames', save=True, update=True),
+                serializable.Field('time', save=True, update=True),
+                serializable.Field('data_file', save=True, update=True),
+                serializable.Field('grid_file', save=True, update=True)])
+    _ref_as = 'wind'
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time=None,
+                 ice_var=None,
+                 wind_var=None,
+                 ice_conc_var=None,
+                 grid=None,
+                 grid_file=None,
+                 data_file=None):
+        self.name=name
+        self.units=units
+        self.time=time
+        self.ice_var=ice_var
+        self.wind_var=wind_var
+        self.ice_conc_var=ice_conc_var
+        self.grid=grid
+        self.grid_file=grid_file
+        self.data_file=data_file
+
+    def _check_consistency(self):
+        '''
+        Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
+        '''
+        if self.units is None or self.time is None or self.grid is None:
+            return
+        for v in [self.ice_var, self.wind_var]:
+            if v.units != self.units:
+                raise ValueError("Variable {0} did not have units consistent with what was specified. Got: {1} Expected {2}".format(v.name,v.units, self.units))
+            if v.time != self.time:
+                raise ValueError("Variable {0} did not have time consistent with what was specified Got: {1} Expected {2}".format(v.name,v.time, self.time))
+            if v.grid != self.grid:
+                raise ValueError("Variable {0} did not have grid consistent with what was specified Got: {1} Expected {2}".format(v.name,v.grid, self.grid))
+            if v.grid_file != self.grid_file:
+                raise ValueError("Variable {0} did not have grid_file consistent with what was specified Got: {1} Expected {2}".format(v.name,v.grid_file, self.grid_file))
+            if v.data_file != self.data_file:
+                raise ValueError("Variable {0} did not have data_file consistent with what was specified Got: {1} Expected {2}".format(v.name,v.data_file, self.data_file))
+
+    @classmethod
+    def from_netCDF(cls,
+                    filename=None,
+                    grid_topology=None,
+                    name=None,
+                    units=None,
+                    time=None,
+                    ice_var=None,
+                    wind_var=None,
+                    ice_conc_var=None,
+                    grid=None,
+                    grid_file=None,
+                    data_file=None):
+        if filename is not None:
+            data_file = filename
+            grid_file = filename
+        if grid is None:
+            grid = init_grid(grid_file,
+                             grid_topology=grid_topology)
+        if ice_var is None:
+            ice_var = IceVelocity.from_netCDF(filename,
+                                              grid=grid)
+        if time is None:
+            time = ice_var.time
+        if wind_var is None:
+            wind_var = GridWind.from_netCDF(filename,
+                                                time=time,
+                                                grid=grid)
+        if ice_conc_var is None:
+            ice_conc_var = IceConcentration.from_netCDF(filename,
+                                                        time=time,
+                                                        grid=grid)
+        if name is None:
+            name = data_file + ' ' + 'IceAwareCurrent'
+        if units is None:
+            units = wind_var.units
+        return cls(name=name,
+                   units=units,
+                   time=time,
+                   ice_var=ice_var,
+                   wind_var=wind_var,
+                   ice_conc_var=ice_conc_var,
+                   grid=grid,
+                   grid_file=grid_file,
+                   data_file=data_file)
+
+    def at(self, points, time, units=None, extrapolate=False):
+        interp = self.ice_conc_var.at(points, time, extrapolate=extrapolate)
+        interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
+        wind_mask = interp < 0.2
+        ice_mask = interp >= 0.8
+
+        wind_v = self.wind_var.at(points, time, units, extrapolate)
+        ice_v = self.ice_var.at(points, time, units, extrapolate)
+        interp -= 0.2
+        interp *= 1.25
+
+        vels = wind_v.copy()
+        vels[ice_mask] = ice_v[ice_mask]
+        diff_v = ice_v
+        diff_v -= wind_v
+        vels[interp_mask] += diff_v[interp_mask]
+        return vels
 
 if __name__ == "__main__":
     import datetime as dt
