@@ -1404,15 +1404,19 @@ class Model(Serializable):
             if spill.get('release_time') > self.start_time:
                 msg = ('{0} has release time after model start time'.
                        format(spill.name))
+                self.logger.warning(msg)
+                msgs.append(self._warn_pre + msg)
 
             elif spill.get('release_time') < self.start_time:
                 msg = ('{0} has release time before model start time'
                        .format(spill.name))
+                self.logger.error(msg)
+                msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
 
-            if msg is not None:
-                self.logger.warning(msg)
-                msgs.append(self._warn_pre + msg)
-
+#             if msg is not None:
+#                 self.logger.warning(msg)
+#                 msgs.append(self._warn_pre + msg)
+# 
         return (msgs, isvalid)
 
     def _validate_env_coll(self, refs, raise_exc=False):
