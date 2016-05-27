@@ -86,7 +86,7 @@ class TimeSeriesProp(EnvProp):
         if len(self.time) == 1:
             #single time time series (constant)
             value = np.full((points.shape[0], 1), self.data)
-            value = unit_conversion.convert(None, self.units, units, value)
+            value = unit_conversion.convert(self.units, units, value)
             return value
 
         if not extrapolate:
@@ -103,7 +103,7 @@ class TimeSeriesProp(EnvProp):
             d1 = self.data[t_index]
             value = d0 + (d1 - d0) * t_alphas
         if units is not None and units != self.units:
-            value = unit_conversion.convert(None, self.units, units, value)
+            value = unit_conversion.convert(self.units, units, value)
 
         return np.full((points.shape[0], 1), value)
 

@@ -25,7 +25,7 @@ from gnome.movers.py_wind_movers import PyWindMover
 from gnome.environment.property_classes import WindTS, IceAwareCurrent, IceAwareWind
 from gnome.movers.py_current_movers import PyGridCurrentMover
 
-from gnome.outputters import Renderer
+from gnome.outputters import Renderer, NetCDFOutput
 from gnome.environment.vector_field import ice_field
 from gnome.movers import PyIceMover
 import gnome.utilities.profiledeco as pd
@@ -50,15 +50,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding the map'
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
 
+    print 'adding outputters'
+
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
-    renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
+#     renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
 #     renderer.viewport = ((-180, -90), (180, 90))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
+#     model.outputters += renderer
+    netcdf_file = os.path.join(base_dir, 'script_ice.nc')
+    scripting.remove_netcdf(netcdf_file)
 
-    print 'adding outputters'
-    model.outputters += renderer
+    model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
     print 'adding a spill'
     # for now subsurface spill stays on initial layer
@@ -107,20 +111,20 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
 if __name__ == "__main__":
-    pd.profiler.enable()
-    startTime = datetime.now()
     scripting.make_images_dir()
     model = make_model()
     print "doing full run"
-    rend = model.outputters[0]
+#     rend = model.outputters[0]
 #     rend.graticule.set_DMS(True)
+    startTime = datetime.now()
+    pd.profiler.enable()
     for step in model:
 #         if step['step_num'] == 0:
 #             rend.set_viewport(((-165, 69.5), (-162.5, 70)))
-        if step['step_num'] == 0:
-            rend.set_viewport(((-175, 65), (-160, 70)))
+#         if step['step_num'] == 0:
+#             rend.set_viewport(((-175, 65), (-160, 70)))
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     print datetime.now() - startTime
     pd.profiler.disable()
-    pd.print_stats(0.2)
+    pd.print_stats(0.3)

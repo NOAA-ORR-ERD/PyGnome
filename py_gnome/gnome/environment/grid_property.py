@@ -180,7 +180,7 @@ class GriddedProp(EnvProp):
                 else:
                     value = self.data
             if units is not None and units != self.units:
-                value = unit_conversion.convert(None, self.units, units, value)
+                value = unit_conversion.convert(self.units, units, value)
         else:
             t_index = self.time.index_of(time, extrapolate)
             centers = self.grid.get_center_points()
@@ -220,7 +220,7 @@ class GriddedProp(EnvProp):
                 value = v0 + (v1 - v0) * t_alphas
 
         if units is not None and units != self.units:
-            value = unit_conversion.convert(None, self.units, units, value)
+            value = unit_conversion.convert(self.units, units, value)
         return value
 
 

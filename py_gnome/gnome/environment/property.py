@@ -47,11 +47,7 @@ class EnvProp(object):
         self.name = self._units = self._time = self._data = None
 
         self.name = name
-        if units is not None:
-            if units in unit_conversion.unit_data.supported_units:
-                self._units = units
-            else:
-                raise ValueError('Units of {0} are not supported'.format(units))
+        self.units=units
         self.data = data
         self.time = time
         for k in kwargs:
@@ -71,10 +67,10 @@ class EnvProp(object):
 
     @units.setter
     def units(self, unit):
-        if unit in unit_conversion.unit_data.supported_units:
-            self._units = unit
-        else:
-            raise ValueError('Units of {0} are not supported'.format(unit))
+        if unit is not None:
+            if not unit_conversion.unit_conversion.is_supported(unit):
+                raise ValueError('Units of {0} are not supported'.format(unit))
+        self._units = unit
 
     @property
     def time(self):
@@ -99,7 +95,7 @@ class EnvProp(object):
         '''
         cpy = copy.copy(self)
         if hasattr(cpy.data, '__mul__'):
-            cpy.data = unit_conversion.Convert(None, cpy.units, unit, cpy.data)
+            cpy.data = unit_conversion.convert(cpy.units, unit, cpy.data)
         else:
             warnings.warn('Data was not converted to new units and was not copied because it does not support multiplication')
         cpy._units = unit
@@ -155,10 +151,13 @@ class VectorProp(object):
 
     @units.setter
     def units(self, unit):
-        if unit in unit_conversion.unit_data.supported_units:
-            self._units = unit
-        else:
-            raise ValueError(5,'Units of {0} are not supported'.format(unit))
+        if unit is not None:
+            if not unit_conversion.unit_conversion.is_supported(unit):
+                raise ValueError('Units of {0} are not supported'.format(unit))
+        self._units = unit
+        if self.variables is not None:
+            for v in self.variables:
+                v.units = unit
 
     @property
     def varnames(self):
