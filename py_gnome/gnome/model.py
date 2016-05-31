@@ -846,6 +846,10 @@ class Model(Serializable):
 
             # let each object raise appropriate error if obj is incomplete
             # validate and send validation flag if model is invalid
+            (msgs, isvalid) = self.check_inputs()
+            if not isvalid:
+               raise RuntimeError("Setup model run complete but model "
+                                   "is invalid", msgs)
             # (msgs, isvalid) = self.validate()
             # if not isvalid:
             #    raise StopIteration("Setup model run complete but model "
@@ -1353,6 +1357,44 @@ class Model(Serializable):
         # force rewind after merge?
         self.rewind()
 
+    def check_inputs(self):
+        '''
+        check the user inputs before running the model
+        raise an exception if user can't run the model
+        todo: check if all spills start after model ends
+        '''
+        msgs = []
+        isvalid = True
+        someSpillIntersectsModel = False
+        num_spills = len(self.spills)
+        for spill in self.spills:
+            msg = None
+            if spill.get('release_time') < self.start_time + self.duration:
+                someSpillIntersectsModel = True
+            if spill.get('release_time') > self.start_time:
+                msg = ('{0} has release time after model start time'.
+                       format(spill.name))
+                self.logger.warning(msg)
+                msgs.append(self._warn_pre + msg)
+
+            elif spill.get('release_time') < self.start_time:
+                msg = ('{0} has release time before model start time'
+                       .format(spill.name))
+                self.logger.error(msg)
+                msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
+                isvalid = False
+
+        if num_spills > 0 and not someSpillIntersectsModel:
+            if num_spills > 1:
+                msg = ('All of the spills are released after the time interval being modeled.')
+            else:
+                msg = ('The spill is released after the time interval being modeled.')
+            self.logger.error(msg)
+            msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
+            isvalid = False
+
+        return (msgs, isvalid)
+
     def validate(self):
         '''
         invoke validate for all gnome objects contained in model
@@ -1412,6 +1454,7 @@ class Model(Serializable):
                        .format(spill.name))
                 self.logger.error(msg)
                 msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
+                isvalid = False
 
 #             if msg is not None:
 #                 self.logger.warning(msg)
