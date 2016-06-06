@@ -554,8 +554,11 @@ class PointLineRelease(Release, Serializable):
         else:
             # if num_elements given, _delta_pos only set if it is None
             if self._delta_pos is None:
-                self._delta_pos = ((self.end_position - self.start_position) /
-                                   (self.num_elements - 1))
+                if self.num_elements == 1:
+                    self._delta_pos = (self.end_position - self.start_position)
+                else:
+                    self._delta_pos = ((self.end_position - self.start_position) /
+                                       (self.num_elements - 1))
 
     def _get_start_end_position(self,
                                 num_new_particles,
