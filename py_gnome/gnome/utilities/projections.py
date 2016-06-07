@@ -360,11 +360,11 @@ class FlatEarthProjection(GeoProjection):
                                 (delta-lon, delta-lat, delta-z)
         """
         # make a copy -- don't change meters
-        delta_lon_lat = np.array(meters, dtype=np.float64).reshape(-1, 3)
+        delta_lon_lat = np.array(meters, dtype=np.float64)
 
         # reference is possible for reference positions
         ref_positions = np.asarray(ref_positions,
-                                   dtype=np.float64).reshape(-1, 3)
+                                   dtype=np.float64)
 
         delta_lon_lat[:, :2] *= 8.9992801e-06
         delta_lon_lat[:, 0] /= np.cos(np.deg2rad(ref_positions[:, 1]))

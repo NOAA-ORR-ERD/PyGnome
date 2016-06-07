@@ -31,7 +31,8 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
                  uncertain_time_delay=0,
                  uncertain_along=.5,
                  uncertain_across=.25,
-                 uncertain_cross=.25):
+                 uncertain_cross=.25,
+                 default_num_method='RK4',):
         self.current=current
         self.filename=filename
         self.extrapolate=extrapolate
@@ -44,6 +45,9 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
         self.positions = np.zeros((0, 3), dtype=world_point_type)
         self.delta = np.zeros((0, 3), dtype=world_point_type)
         self.status_codes = np.zeros((0, 1), dtype=status_code_type)
+        self.num_methods = {'RK4': self.get_delta_RK4,
+                            'Euler': self.get_delta_Euler}
+        self.default_num_method=default_num_method
 
         # either a 1, or 2 depending on whether spill is certain or not
         self.spill_type = 0
@@ -85,7 +89,7 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
 
         return vels
 
-    def get_move(self, sc, time_step, model_time_datetime):
+    def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
         Compute the move in (long,lat,z) space. It returns the delta move
         for each element of the spill as a numpy array of size
@@ -102,14 +106,45 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
 
         All movers must implement get_move() since that's what the model calls
         """
+        method = None
+        if num_method is None:
+            method = self.num_methods[self.default_num_method]
+        else:
+            method = self.num_method[num_method]
+        return method(sc, time_step, model_time_datetime)
+
+    def get_delta_Euler(self, sc, time_step, model_time):
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
 
-        vels = self.current.at(positions[:, 0:2], model_time_datetime, extrapolate=self.extrapolate)
+        vels = self.current.at(positions[:, 0:2], model_time, extrapolate=self.extrapolate)
         deltas = np.zeros_like(positions)
-        deltas[:] = 0.
         deltas[:, 0:2] = vels * time_step
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)
-        pass
+        return deltas
+
+    def get_delta_RK4(self, sc, time_step, model_time):
+        status = sc['status_codes'] != oil_status.in_water
+        positions = sc['positions']
+        deltas = np.zeros_like(positions)
+
+        pos = positions[:, 0:2]
+
+
+        dt = datetime.timedelta(seconds=time_step)
+        dt_s = dt.seconds
+        t = model_time
+
+
+        v0 = self.current.at(pos, t, extrapolate=self.extrapolate).data
+        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s/2, positions)
+        v1 = self.current.at(pos + d0, t + dt/2, extrapolate=self.extrapolate).data
+        d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s/2, positions)
+        v2 = self.current.at(pos + d1, t + dt/2, extrapolate=self.extrapolate).data
+        d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, positions)
+        v3 = self.current.at(pos + d2, t + dt, extrapolate=self.extrapolate).data
+        deltas[:, 0:2] = dt_s/6 * (v0 + 2*v1 + 2*v2 + v3)
+        deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
+        deltas[status] = (0, 0, 0)
         return deltas
