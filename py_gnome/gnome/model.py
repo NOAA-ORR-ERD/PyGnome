@@ -1389,9 +1389,10 @@ class Model(Serializable):
                 msg = ('All of the spills are released after the time interval being modeled.')
             else:
                 msg = ('The spill is released after the time interval being modeled.')
-            self.logger.error(msg)
+            self.logger.warning(msg)	# for now make this a warning
+            #self.logger.error(msg)	
             msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
-            isvalid = False
+            #isvalid = False
 
         return (msgs, isvalid)
 
