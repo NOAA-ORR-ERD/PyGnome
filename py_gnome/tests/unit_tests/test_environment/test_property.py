@@ -9,6 +9,7 @@ from gnome.environment.grid_property import GriddedProp, GridVectorProp
 from gnome.environment.ts_property import TimeSeriesProp, TSVectorProp
 from gnome.environment.property_classes import VelocityTS, VelocityGrid, WindTS
 from gnome.utilities.remote_data import get_datafile
+from unit_conversion import NotSupportedUnitError
 import netCDF4 as nc
 import unit_conversion
 
@@ -128,7 +129,7 @@ class TestTSprop:
         assert t.data is not v_data
         assert round(t.data[0],2) == 7.2
 
-        with pytest.raises(unit_conversion.UnitConversionError):
+        with pytest.raises(unit_conversion.NotSupportedUnitError):
             # mismatched data and dates length
             t = u.in_units('nm/hr')
 
@@ -229,7 +230,7 @@ class TestTSVectorProp:
         nvp = vp.in_units('km/hr')
         assert round(nvp.variables[0].data[0],2) == 7.2
 
-        with pytest.raises(unit_conversion.UnitConversionError):
+        with pytest.raises(unit_conversion.NotSupportedUnitError):
             # mismatched data and dates length
             nvp = vp.in_units('nm/hr')
 

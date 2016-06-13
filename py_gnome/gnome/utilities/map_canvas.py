@@ -385,6 +385,10 @@ class MapCanvas(object):
         for line in self.graticule.get_lines():
             self.draw_polyline(line, 'black', 1, background)
 
+    def draw_grid(self):
+        #Not Implemeneted in MapCanvas
+        return None
+
     def draw_tags(self, draw_to_back=True):
         self.draw_text(self.graticule.get_tags(), draw_to_back=draw_to_back)
 

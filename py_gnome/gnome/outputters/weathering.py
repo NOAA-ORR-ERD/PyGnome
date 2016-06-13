@@ -83,6 +83,9 @@ class WeatheringOutput(Outputter, Serializable):
         # weathering outputter should only apply to forecast spill_container
         sc = self.cache.load_timestep(step_num).items()[0]
 
+        dict_ = {}
+        dict_.update(sc.mass_balance)
+
         output_info = {'time_stamp': sc.current_time_stamp.isoformat()}
         output_info.update(sc.mass_balance)
 

@@ -18,12 +18,13 @@ from gnome.model import Model
 
 from gnome.map import MapFromBNA
 from gnome.environment import Wind
+from gnome.environment.property_classes import GridCurrent
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.outputters import Renderer
 from gnome.environment.vector_field import roms_field
-from gnome.movers import UGridCurrentMover
+from gnome.movers.py_current_movers import PyGridCurrentMover
 import gnome.utilities.profiledeco as pd
 
 # define base directory
@@ -83,11 +84,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
 #     cf = roms_field('nos.tbofs.fields.n000.20160406.t00z_sgrid.nc')
-    cf = roms_field(url)
-    cf.set_appearance(on=True)
-    renderer.grids += [cf]
+    cf = GridCurrent.from_netCDF(url)
+    renderer.add_grid(cf.grid)
     renderer.delay = 25
-    u_mover = UGridCurrentMover(cf)
+    u_mover = PyGridCurrentMover(cf)
     model.movers += u_mover
 
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
