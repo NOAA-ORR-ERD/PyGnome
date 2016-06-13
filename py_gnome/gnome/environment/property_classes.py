@@ -332,10 +332,11 @@ class GridCurrent(VelocityGrid, Environment):
                               grid_file=grid_file,
                               data_file=data_file)
         self.angle = None
-        df = nc4.Dataset(data_file)
-        if 'angle' in df.variables.keys():
-            #Unrotated ROMS Grid!
-            self.angle = GriddedProp(name='angle',units='radians',time=[self.time.time[0]], grid=self.grid, data=df['angle'])
+        if data_file is not None:
+            df = nc4.Dataset(data_file)
+            if 'angle' in df.variables.keys():
+                #Unrotated ROMS Grid!
+                self.angle = GriddedProp(name='angle',units='radians',time=None, grid=self.grid, data=df['angle'])
 
     @classmethod
     def _gen_varnames(cls, filename):
@@ -355,7 +356,7 @@ class GridCurrent(VelocityGrid, Environment):
     def at(self, points, time, units=None, extrapolate=False):
         value = super(GridCurrent,self).at(points, time, units, extrapolate=extrapolate)
         if self.angle is not None:
-            angs = self.angle.at(points, time, extrapolate=extrapolate)
+            angs = self.angle.at(points, time, extrapolate=extrapolate,)
             x = value[:,0] * np.cos(angs) - value[:,1] * np.sin(angs)
             y = value[:,0] * np.sin(angs) + value[:,1] * np.cos(angs)
             value[:,0] = x

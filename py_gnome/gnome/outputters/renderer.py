@@ -765,9 +765,9 @@ class GridPropVisLayer:
             return
         t0 = self.prop.time.index_of(time, extrapolate=True) - 1
         data_u = self.prop.variables[0].data[t0]
-        data_u2 = self.prop.variables[0].data[t0+1]
+        data_u2 = self.prop.variables[0].data[t0+1] if len(self.prop.time)> 1 else data_u
         data_v = self.prop.variables[1].data[t0]
-        data_v2 = self.prop.variables[1].data[t0+1]
+        data_v2 = self.prop.variables[1].data[t0+1] if len(self.prop.time)> 1 else data_v
         t_alphas = self.prop.time.interp_alpha(time, extrapolate=True)
         data_u = data_u + t_alphas * (data_u2 - data_u)
         data_v = data_v + t_alphas * (data_v2 - data_v)
@@ -785,14 +785,16 @@ class GridPropVisLayer:
                                      self.prop.grid.node_lat))
 
 #         deltas = FlatEarthProjection.meters_to_lonlat(data*self.scale, lines[:0])
-        start[data_u.mask] = [0.,0.]
+        if hasattr(data_u, 'mask'):
+            start[data_u.mask] = [0.,0.]
         data_u *= self.scale * 8.9992801e-06
         data_v *= self.scale * 8.9992801e-06
         data_u /= np.cos(np.deg2rad(start[:,1]))
         end = start.copy()
         end[:,0] += data_u
         end[:,1] += data_v
-        end[data_u.mask] = [0.,0.]
+        if hasattr(data_u, 'mask'):
+            end[data_u.mask] = [0.,0.]
         bounds = self.projection.image_box
         pt1 = ((bounds[0][0] <= start[:, 0]) * (start[:, 0] <= bounds[1][0]) *
                (bounds[0][1] <= start[:, 1]) * (start[:, 1] <= bounds[1][1]))

@@ -43,7 +43,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
                   duration=timedelta(hours=96),
-                  time_step=3600*4)
+                  time_step=3600)
 
     mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
 
@@ -67,13 +67,20 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = point_line_release_spill(num_elements=500,
+    spill1 = point_line_release_spill(num_elements=10000,
                                       start_position=(-163.75,
                                                       69.75,
                                                       0.0),
                                       release_time=start_time)
+#
+#     spill2 = point_line_release_spill(num_elements=5000,
+#                                       start_position=(-163.75,
+#                                                       69.5,
+#                                                       0.0),
+#                                       release_time=start_time)
 
     model.spills += spill1
+#     model.spills += spill2
 
     print 'adding a RandomMover:'
     model.movers += RandomMover(diffusion_coef=1000)
@@ -90,11 +97,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                               grid = ice_aware_curr.grid,)
 
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr)
-    i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Euler')
+#     i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Euler')
+    i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Trapezoid')
     i_w_mover = PyWindMover(wind = ice_aware_wind)
 
     ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:]-360
-    ice_aware_curr.grid.build_celltree()
+#     ice_aware_curr.grid.build_celltree()
     model.movers += i_c_mover
     model.movers += i_w_mover
     renderer.add_grid(ice_aware_curr.grid)

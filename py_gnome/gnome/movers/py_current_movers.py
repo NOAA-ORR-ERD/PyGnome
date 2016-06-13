@@ -46,7 +46,8 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
         self.delta = np.zeros((0, 3), dtype=world_point_type)
         self.status_codes = np.zeros((0, 1), dtype=status_code_type)
         self.num_methods = {'RK4': self.get_delta_RK4,
-                            'Euler': self.get_delta_Euler}
+                            'Euler': self.get_delta_Euler,
+                            'Trapezoid':self.get_delta_Trapezoid}
         self.default_num_method=default_num_method
 
         # either a 1, or 2 depending on whether spill is certain or not
@@ -120,6 +121,26 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
         vels = self.current.at(positions[:, 0:2], model_time, extrapolate=self.extrapolate)
         deltas = np.zeros_like(positions)
         deltas[:, 0:2] = vels * time_step
+        deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
+        deltas[status] = (0, 0, 0)
+        return deltas
+
+    def get_delta_Trapezoid(self, sc, time_step, model_time):
+        status = sc['status_codes'] != oil_status.in_water
+        positions = sc['positions']
+        deltas = np.zeros_like(positions)
+
+        pos = positions[:, 0:2]
+
+
+        dt = datetime.timedelta(seconds=time_step)
+        dt_s = dt.seconds
+        t = model_time
+
+        v0 = self.current.at(pos, t, extrapolate=self.extrapolate).data
+        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, positions)
+        v1 = self.current.at(pos + d0, t + dt, extrapolate=self.extrapolate).data
+        deltas[:, 0:2] = dt_s/2 * (v0 + v1)
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)
         return deltas

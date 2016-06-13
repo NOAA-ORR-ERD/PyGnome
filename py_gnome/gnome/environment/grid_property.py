@@ -36,8 +36,8 @@ class GriddedProp(EnvProp):
 
         self._grid = self._data_file = self._grid_file = None
 
-        if any([time is None, grid is None, data is None]):
-            raise ValueError("All attributes except name MUST be defined if variables is not a list of GriddedProp objects")
+        if any([grid is None, data is None]):
+            raise ValueError("Grid and Data must be defined")
         if not hasattr(data, 'shape'):
             if grid.infer_location is None:
                 raise ValueError('Data must be able to fit to the grid')
@@ -101,6 +101,9 @@ class GriddedProp(EnvProp):
 
     @time.setter
     def time(self, t):
+        if t is None:
+            self._time = None
+            return
         if self.data is not None and len(t) != self.data.shape[0] and len(t) > 1:
             raise ValueError("Data/time interval mismatch")
         if isinstance(t, Time):
@@ -194,12 +197,19 @@ class GriddedProp(EnvProp):
         :param time: A datetime object. May be None; if this is so, the variable is assumed to be gridded
         but time-invariant
         '''
+
+        sg = True
+        if self.time is None:
+            #special case! prop has no time variance
+            v0 = self.grid.interpolate_var_to_points(points, self.data, slices=None, slice_grid=sg, memo=True)
+            return v0
+
         t_alphas = t_index = s0 = s1 = value = None
         if not extrapolate:
             self.time.valid_time(time)
         t_index = self.time.index_of(time, extrapolate)
         if len(self.time) == 1:
-            value = self.grid.interpolate_var_to_points(points, self.data, slices=s0, memo=True)
+            value = self.grid.interpolate_var_to_points(points, self.data, slices=[0], memo=True)
         else:
             if time > self.time.max_time:
                 value = self.data[-1]
@@ -215,8 +225,8 @@ class GriddedProp(EnvProp):
                 if len(self.data.shape) == 4:
                     s0.append(depth)
                     s1.append(depth)
-                v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, slice_grid=True, memo=True)
-                v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s1, slice_grid=True, memo=True)
+                v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, slice_grid=sg, memo=True)
+                v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s1, slice_grid=sg, memo=True)
                 value = v0 + (v1 - v0) * t_alphas
 
         if units is not None and units != self.units:
