@@ -213,7 +213,10 @@ class GeoProjection(object):
 
         coords = np.asarray(coords)
         if len(coords.shape) == 1:
-            raise ValueError('input array cannot be flat')
+            if coords.shape[0] == 2:
+                coords = coords.reshape(1,2)
+            else:
+                coords = coords.reshape(1,3)
 
         # shift to center:
         coords = coords[:, :2] - self.center
@@ -246,8 +249,11 @@ class GeoProjection(object):
                       so you can have fractional pixels
         """
         coords = np.asarray(coords)
-        if coords.shape[1] != 2:
-            raise ValueError("input coords to to_pixel_2D must be Nx2 array")
+        if len(coords.shape) == 1:
+            if coords.shape[0] == 2:
+                coords = coords.reshape(1,2)
+            else:
+                coords = coords.reshape(1,3)
 
         # shift to center:
         coords = coords - self.center
@@ -361,10 +367,20 @@ class FlatEarthProjection(GeoProjection):
         """
         # make a copy -- don't change meters
         delta_lon_lat = np.array(meters, dtype=np.float64)
-
+        if len(delta_lon_lat.shape) == 1:
+            if delta_lon_lat.shape[0] == 2:
+                delta_lon_lat = delta_lon_lat.reshape(1,2)
+            else:
+                delta_lon_lat = delta_lon_lat.reshape(1,3)
         # reference is possible for reference positions
         ref_positions = np.asarray(ref_positions,
                                    dtype=np.float64)
+
+        if len(ref_positions.shape) == 1:
+            if ref_positions.shape[0] == 2:
+                ref_positions = ref_positions.reshape(1,2)
+            else:
+                ref_positions = ref_positions.reshape(1,3)
 
         delta_lon_lat[:, :2] *= 8.9992801e-06
         delta_lon_lat[:, 0] /= np.cos(np.deg2rad(ref_positions[:, 1]))
