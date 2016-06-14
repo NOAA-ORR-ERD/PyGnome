@@ -170,6 +170,13 @@ class VectorProp(object):
         raise NotImplementedError()
 
     def at(self, *args, **kwargs):
+        '''
+        Find the value of the property at positions P at times T
+        :param points: Nx2 array of coordinates
+        :param time: datetime object representing a time
+        :param units: units the values will be returned in (or converted to
+        :param extrapolate: if True, extrapolation will be supported
+        '''
         return np.column_stack([var.at(*args, **kwargs) for var in self._variables])
 
 
@@ -241,8 +248,9 @@ class Time(object):
     def index_of(self, time, extrapolate):
         '''
         Returns the index of the provided time with respect to the time intervals in the file.
-        :param time:
-        :return:
+        :param time: datetime object representing a time
+        :param extrapolate: if True, extrapolation will be supported
+        :return: index of first time before specified time
         '''
         if not (extrapolate or len(self.time) == 1):
             self.valid_time(time)
@@ -250,6 +258,12 @@ class Time(object):
         return index
 
     def interp_alpha(self, time, extrapolate=False):
+        '''
+        Returns interpolation alpha for the specified time
+        :param time: datetime object representing a time
+        :param extrapolate: if True, extrapolation will be supported
+        :return: interpolation alpha
+        '''
         if not len(self.time) == 1 or not extrapolate:
             self.valid_time(time)
         i0 = self.index_of(time, extrapolate)
