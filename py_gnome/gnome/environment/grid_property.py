@@ -527,7 +527,7 @@ def init_grid(filename,
 
 def _gen_topology(filename):
     '''
-    Function to determine create the correct default topology if it is not provided
+    Function to create the correct default topology if it is not provided
 
     :param filename: Name of file that will be searched for variables
     :return: List of default variable names, or None if none are found
