@@ -163,7 +163,9 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                        }
 
         if self.output_dir:
-            output_filename = self.output_to_file(geojson, step_num)
+            output_filename = self.output_to_file(c_geojson, step_num)
+            output_info.update({'output_filename': output_filename})
+            output_filename = self.output_to_file(uc_geojson, step_num)
             output_info.update({'output_filename': output_filename})
 
         return output_info
@@ -173,7 +175,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         filename = os.path.join(self.output_dir,
                                 file_format.format(step_num))
 
-        with open(filename, 'w') as outfile:
+        with open(filename, 'w+') as outfile:
             dump(json_content, outfile, indent=True)
 
         return filename
