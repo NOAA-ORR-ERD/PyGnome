@@ -1,7 +1,6 @@
 '''
 environment module
 '''
-
 from environment import Environment, Water, WaterSchema
 from waves import Waves, WavesSchema
 from tide import Tide, TideSchema

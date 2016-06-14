@@ -27,6 +27,7 @@ from gnome.utilities import projections
 
 from gnome.basic_types import oil_status
 
+from gnome.utilities.projections import FlatEarthProjection
 
 class RendererSchema(BaseSchema):
 
@@ -61,6 +62,8 @@ class Renderer(Outputter, MapCanvas):
                   ('spillable_area', (255, 0, 0)),  # red
                   ('raster_map', (51, 102, 0)),  # dark green
                   ('raster_map_outline', (0, 0, 0)),  # black
+                  ('grid_1', (51, 78, 0)),
+                  ('grid_2', (175, 175, 175)),
                   ]
 
     background_map_name = 'background_map.png'
@@ -152,7 +155,7 @@ class Renderer(Outputter, MapCanvas):
 
         Following args are passed to base class Outputter's init:
 
-        :param cache: sets the cache object from which to read data. The model
+        :param cache: sets the cache object from which to read prop. The model
             will automatically set this param
 
         :param output_timestep: default is None in which case everytime the
@@ -246,6 +249,8 @@ class Renderer(Outputter, MapCanvas):
         self.repeat = True
         self.timestamp_attribs = {}
         self.set_timestamp_attrib(**timestamp_attrib)
+        self.grids = []
+        self.props = []
 
     @property
     def delay(self):
@@ -407,6 +412,52 @@ class Renderer(Outputter, MapCanvas):
             self.draw_raster_map()
         self.draw_graticule()
         self.draw_tags()
+        self.draw_grids()
+
+    def add_grid(self, grid,
+                 on=True,
+                 color='grid_1',
+                 width=2):
+        layer = GridVisLayer(grid, self.projection, on, color, width)
+        self.grids.append(layer)
+
+    def draw_grids(self):
+        for grid in self.grids:
+            grid.draw_to_image(self.back_image)
+
+    def add_vec_prop(self,
+                     prop,
+                     on=True,
+                     color='LE',
+                     mask_color='uncert_LE',
+                     size=3,
+                     width=1,
+                     scale=1000):
+        layer = GridPropVisLayer(prop, self.projection, on, color, mask_color, size, width, scale)
+        self.props.append(layer)
+
+    def draw_props(self, time):
+        for prop in self.props:
+            prop.draw_to_image(self.fore_image, time)
+
+    def draw_masked_nodes(self, grid, time):
+        if grid.appearance['on'] and grid.appearance['mask'] is not None:
+            var = grid.appearance['mask']
+            masked_nodes = grid.masked_nodes(time, var)
+            dia = grid.appearance['n_size']
+            unmasked_nodes = np.ascontiguousarray(
+                masked_nodes.compressed().reshape(-1, 2))
+            self.draw_points(unmasked_nodes, dia, 'black')
+            masked = np.ascontiguousarray(
+                masked_nodes[masked_nodes.mask].prop.reshape(-1, 2))
+            self.draw_points(masked, dia, 'uncert_LE')
+#             for i in range(0, grid.nodes.shape[0]):
+#                 if masked_nodes.mask[i, 0] and masked_nodes.mask[i, 1]:
+#                     self.draw_points(
+#                         grid.nodes[i], diameter=dia, color='uncert_LE')
+#                 else:
+#                     self.draw_points(
+#                         grid.nodes[i], diameter=dia, color='black')
 
     def draw_land(self):
         """
@@ -531,7 +582,7 @@ class Renderer(Outputter, MapCanvas):
 
         use super to call base class write_output method
 
-        If this is last step, then data is written; otherwise
+        If this is last step, then prop is written; otherwise
         prepare_for_model_step determines whether to write the output for
         this step based on output_timestep
         """
@@ -549,7 +600,7 @@ class Renderer(Outputter, MapCanvas):
         if self.draw_back_to_fore:
             self.copy_back_to_fore()
 
-        # draw data for self.draw_ontop second so it draws on top
+        # draw prop for self.draw_ontop second so it draws on top
         scp = self.cache.load_timestep(step_num).items()
         if len(scp) == 1:
             self.draw_elements(scp[0])
@@ -563,6 +614,8 @@ class Renderer(Outputter, MapCanvas):
 
         time_stamp = scp[0].current_time_stamp
         self.draw_timestamp(time_stamp)
+        self.draw_props(time_stamp)
+
         for ftype in self.formats:
             if ftype == 'gif':
                 self.animation.add_frame(self.fore_image, self.delay)
@@ -580,11 +633,11 @@ class Renderer(Outputter, MapCanvas):
 
     def _draw(self, step_num):
         """
-        create a small function so data arrays are garbage collected from
+        create a small function so prop arrays are garbage collected from
         memory after this function exits - it returns current_time_stamp
         """
 
-        # draw data for self.draw_ontop second so it draws on top
+        # draw prop for self.draw_ontop second so it draws on top
         scp = self.cache.load_timestep(step_num).items()
         if len(scp) == 1:
             self.draw_elements(scp[0])
@@ -647,3 +700,116 @@ class Renderer(Outputter, MapCanvas):
                                                json_data['output_dir'])
 
         return super(Renderer, cls).loads(json_data, saveloc, references)
+
+
+class GridVisLayer:
+
+    def __init__(self,
+                 grid,
+                 projection,
+                 on=True,
+                 color='grid_1',
+                 width=1
+                 ):
+        self.grid = grid
+        self.projection=projection
+        self.lines = self.grid.get_lines()
+        self.on = on
+        self.color = color
+        self.width = width
+
+    def draw_to_image(self, img):
+        '''
+        Draws the grid to the image
+        '''
+        if not self.on:
+            return
+
+        lines = self.projection.to_pixel_multipoint(self.lines, asint=True)
+        for l in lines:
+            img.draw_polyline(l,
+                              line_color=self.color,
+                              line_width=self.width)
+        if len(lines[0]) > 2:
+            #curvilinear grid; ugrids never have line segments greater than 2 points
+            for l in lines.transpose((1,0,2)).copy():
+                img.draw_polyline(l,
+                                  line_color=self.color,
+                                  line_width=self.width)
+
+
+
+class GridPropVisLayer:
+
+    def __init__(self,
+                 prop,
+                 projection,
+                 on=True,
+                 color='LE',
+                 mask_color='uncert_LE',
+                 size=3,
+                 width=1,
+                 scale=1000
+                 ):
+        self.prop = prop
+        self.projection=projection
+        self.on=on
+        self.color=color
+        self.mask_color=mask_color
+        self.size=size
+        self.width=width
+        self.scale=scale
+
+    def draw_to_image(self, img, time):
+        if not self.on:
+            return
+        t0 = self.prop.time.index_of(time, extrapolate=True) - 1
+        data_u = self.prop.variables[0].data[t0]
+        data_u2 = self.prop.variables[0].data[t0+1] if len(self.prop.time)> 1 else data_u
+        data_v = self.prop.variables[1].data[t0]
+        data_v2 = self.prop.variables[1].data[t0+1] if len(self.prop.time)> 1 else data_v
+        t_alphas = self.prop.time.interp_alpha(time, extrapolate=True)
+        data_u = data_u + t_alphas * (data_u2 - data_u)
+        data_v = data_v + t_alphas * (data_v2 - data_v)
+        data_u = data_u.reshape(-1)
+        data_v = data_v.reshape(-1)
+        start=end=None
+#         if self.prop.grid.infer_grid(data_u) == 'centers':
+#             start = self.prop.grid.centers
+#         else:
+        try:
+            start = self.prop.grid.nodes.copy().reshape(-1,2)
+
+        except AttributeError:
+            start = np.column_stack((self.prop.grid.node_lon,
+                                     self.prop.grid.node_lat))
+
+#         deltas = FlatEarthProjection.meters_to_lonlat(data*self.scale, lines[:0])
+        if hasattr(data_u, 'mask'):
+            start[data_u.mask] = [0.,0.]
+        data_u *= self.scale * 8.9992801e-06
+        data_v *= self.scale * 8.9992801e-06
+        data_u /= np.cos(np.deg2rad(start[:,1]))
+        end = start.copy()
+        end[:,0] += data_u
+        end[:,1] += data_v
+        if hasattr(data_u, 'mask'):
+            end[data_u.mask] = [0.,0.]
+        bounds = self.projection.image_box
+        pt1 = ((bounds[0][0] <= start[:, 0]) * (start[:, 0] <= bounds[1][0]) *
+               (bounds[0][1] <= start[:, 1]) * (start[:, 1] <= bounds[1][1]))
+        pt2 = ((bounds[0][0] <= end[:, 0]) * (end[:, 0] <= bounds[1][0]) *
+               (bounds[0][1] <= end[:, 1]) * (end[:, 1] <= bounds[1][1]))
+        start = start[pt1 * pt2]
+        end = end[pt1 * pt2]
+        start = self.projection.to_pixel_multipoint(start, asint=True)
+        end = self.projection.to_pixel_multipoint(end, asint=True)
+
+        img.draw_dots(start, diameter=self.size, color=self.color)
+        line = np.array([[0.,0.],[0.,0.]])
+        for i in xrange(0,len(start)):
+            line[0] = start[i]
+            line[1] = end[i]
+            img.draw_polyline(line,
+                              line_color = self.color,
+                              line_width = self.width)
