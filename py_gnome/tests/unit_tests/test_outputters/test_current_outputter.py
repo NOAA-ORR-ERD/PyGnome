@@ -12,7 +12,7 @@ from gnome.utilities import time_utils
 from gnome.environment import Tide
 from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.movers import CatsMover
-from gnome.outputters import CurrentGeoJsonOutput
+from gnome.outputters import CurrentJsonOutput
 
 from ..conftest import testdata
 
@@ -54,7 +54,7 @@ def model(sample_model, output_dir):
 
     model.movers += c_cats
 
-    model.outputters += CurrentGeoJsonOutput([c_cats])
+    model.outputters += CurrentJsonOutput([c_cats])
 
     model.rewind()
 
@@ -63,24 +63,24 @@ def model(sample_model, output_dir):
 
 def test_init():
     'simple initialization passes'
-    g = CurrentGeoJsonOutput([c_cats])
+    g = CurrentJsonOutput([c_cats])
     assert g.current_movers[0] == c_cats
 
 
-def test_current_grid_geojson_output(model):
+def test_current_grid_json_output(model):
     '''
         test geojson outputter with a model since simplest to do that
     '''
     # default is to round data
     model.rewind()
 
+
+
     for step in model:
         assert 'step_num' in step
-        assert 'CurrentGeoJsonOutput' in step
-        assert 'time_stamp' in step['CurrentGeoJsonOutput']
-        assert 'feature_collections' in step['CurrentGeoJsonOutput']
+        assert 'CurrentJsonOutput' in step
 
-        fcs = step['CurrentGeoJsonOutput']['feature_collections']
+        fcs = step['CurrentJsonOutput']
 
         # There should be only one key, but we will iterate anyway.
         # We just want to verify here that our keys exist in the movers
@@ -90,24 +90,8 @@ def test_current_grid_geojson_output(model):
 
         # Check that our structure is correct.
         for fc in fcs.values():
-            assert 'type' in fc
-            assert fc['type'] == 'FeatureCollection'
-            assert 'features' in fc
-            assert len(fc['features']) > 0
-
-            for feature in fc['features']:
-                assert 'type' in feature
-                assert feature['type'] == 'Feature'
-
-                assert 'properties' in feature
-                assert 'velocity' in feature['properties']
-
-                assert 'geometry' in feature
-                assert len(feature['geometry']) > 0
-
-                geometry = feature['geometry']
-                assert 'type' in geometry
-                assert geometry['type'] == 'MultiPoint'
-
-                assert 'coordinates' in geometry
-                assert len(geometry['coordinates']) > 0
+            assert 'direction' in fc
+            assert 'magnitude' in fc
+            assert len(fc['direction']) > 0
+            assert len(fc['magnitude']) > 0
+            assert len(fc['magnitude']) == len(fc['direction'])
