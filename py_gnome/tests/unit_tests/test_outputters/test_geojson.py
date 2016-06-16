@@ -126,8 +126,10 @@ def test_geojson_multipoint_output(model):
                 uncertain = False
 
             assert 'mass' in feature['properties']
-            print model.validate()
             assert feature['properties']['mass'] > 0
+
+            assert 'spill_num' in feature['properties']
+            assert type(feature['properties']['spill_num']) is int
 
             mask = np.where(model.spills.LE('status_codes', uncertain) ==
                             feature['properties']['status_code'])

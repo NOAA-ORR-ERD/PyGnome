@@ -134,6 +134,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
             status = self._dataarray_p_types(sc['status_codes'])
             mass = self._dataarray_p_types(sc['mass'])
             sc_type = 'uncertain' if sc.uncertain else 'forecast'
+            spill_num = self._dataarray_p_types(sc['spill_num'])
 
             # break elements into multipoint features based on their
             # status code
@@ -148,7 +149,8 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                     geometry=Point(pos[:2]), id=ix,
                     properties={'status_code': status[ix],
                                 'sc_type': sc_type,
-                                'mass': mass[ix]}
+                                'mass': mass[ix],
+                                'spill_num': spill_num[ix]}
                     )
                 if sc.uncertain:
                     uc_features.append(feature)
