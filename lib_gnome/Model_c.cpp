@@ -149,9 +149,15 @@ void Model_c::UpdateWindage(TLEList* theLEList)
 		//timeAfterModelStart = !(modelTime == model->GetStartTime());
 		timeAfterSpillStart = (modelTime > (dynamic_cast<TOLEList*>(theLEList))->GetSpillStartTime());
 	else
+	{
 		//timeAfterModelStart = !(modelTime == model->GetEndTime());
 		//timeAfterSpillStart = (modelTime < ((TOLEList*)theLEList)->GetSpillStartTime());
-		timeAfterSpillStart = (modelTime < (dynamic_cast<TOLEList*>(theLEList))->GetSpillEndTime());
+		if ((dynamic_cast<TOLEList*>(theLEList))->fSetSummary.bWantEndRelTime)
+			timeAfterSpillStart = (modelTime < (dynamic_cast<TOLEList*>(theLEList))->GetSpillEndTime());
+		else
+			timeAfterSpillStart = (modelTime < (dynamic_cast<TOLEList*>(theLEList))->GetSpillStartTime());
+		//timeAfterSpillStart = (modelTime < (dynamic_cast<TOLEList*>(theLEList))->GetSpillEndTime());
+	}
 	
 	
 	// new algorithm to eliminate dependence of spread on time step 12/22/00
