@@ -11,18 +11,27 @@ import pytest
 from gnome.outputters import TrajectoryGeoJsonOutput
 from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.basic_types import oil_status
+from gnome.environment import constant_wind, Water
+from gnome.weatherers import Evaporation
+from gnome.spill.elements import floating
 
-from ..conftest import sample_model
+from ..conftest import sample_model, sample_model_weathering, test_oil
 
 @pytest.fixture(scope='function')
 def model(sample_model, output_dir):
-    model = sample_model['model']
+    model = sample_model_weathering(sample_model, test_oil)
 
     rel_start_pos = sample_model['release_start_pos']
     rel_end_pos = sample_model['release_end_pos']
 
     model.cache_enabled = True
     model.uncertain = True
+
+    water, wind = Water(), constant_wind(1., 0)
+    model.environment += [water, wind]
+    model.weatherers += Evaporation(water, wind)
+
+    et = floating(substance=model.spills[0].get('substance').name)
 
     N = 10  # a line of ten points
     line_pos = np.zeros((N, 3), dtype=np.float64)
@@ -34,12 +43,10 @@ def model(sample_model, output_dir):
     model.spills += point_line_release_spill(1,
                                              start_position=rel_start_pos,
                                              release_time=model.start_time,
-                                             end_position=rel_end_pos)
-
-    release = SpatialRelease(start_position=line_pos,
-                             release_time=model.start_time)
-
-    model.spills += Spill(release)
+                                             end_position=rel_end_pos, 
+                                             element_type=et,
+                                             amount=100,
+                                             units='tons')
 
     model.outputters += TrajectoryGeoJsonOutput(output_dir=output_dir)
     model.rewind()
@@ -117,6 +124,10 @@ def test_geojson_multipoint_output(model):
                 uncertain = True
             else:
                 uncertain = False
+
+            assert 'mass' in feature['properties']
+            print model.validate()
+            assert feature['properties']['mass'] > 0
 
             mask = np.where(model.spills.LE('status_codes', uncertain) ==
                             feature['properties']['status_code'])

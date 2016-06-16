@@ -132,6 +132,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         for sc in self.cache.load_timestep(step_num).items():
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
+            mass = self._dataarray_p_types(sc['mass'])
             sc_type = 'uncertain' if sc.uncertain else 'forecast'
 
             # break elements into multipoint features based on their
@@ -146,7 +147,8 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                 feature = Feature(
                     geometry=Point(pos[:2]), id=ix,
                     properties={'status_code': status[ix],
-                                'sc_type': sc_type}
+                                'sc_type': sc_type,
+                                'mass': mass[ix]}
                     )
                 if sc.uncertain:
                     uc_features.append(feature)
