@@ -108,7 +108,9 @@ def test_geojson_multipoint_output(model):
     model.rewind()
     round_to = model.outputters[0].round_to
     for step in model:
-        fc = step['TrajectoryGeoJsonOutput']['feature_collection']['features']
+        uncertain_fc = step['TrajectoryGeoJsonOutput']['uncertain']['features']
+        certain_fc = step['TrajectoryGeoJsonOutput']['certain']['features']
+        fc = uncertain_fc + certain_fc
         assert 'output_filename' not in step['TrajectoryGeoJsonOutput']
         for feature in fc:
             if feature['properties']['sc_type'] == 'uncertain':
