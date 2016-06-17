@@ -69,6 +69,7 @@ OSErr NetCDFMoverCurv::Write (BFPB *bfpb)
 	}
 	
 	if (err = WriteMacValue(bfpb, bIsCOOPSWaterMask)) goto done;
+	
 done:
 	if(err)
 		TechError("NetCDFMoverCurv::Write(char* path)", " ", 0); 
@@ -288,11 +289,14 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
 	if (status != NC_NOERR) 
 	{	
-		status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		goto OLD;
+		// eventually try to support old format with new algorithm
+		// issues with mask
+		/*status = nc_inq_dimid(ncid, "y", &latIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto OLD;
-		}
+		}*/
 	}
 	bIsCOOPSWaterMask = true;
 	status = nc_inq_varid(ncid, "latc", &latid);
@@ -309,11 +313,12 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	status = nc_inq_dimid(ncid, "xc", &lonIndexid);	
 	if (status != NC_NOERR) 
 	{
-		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		err = -1; goto done;
+		/*status = nc_inq_dimid(ncid, "x", &lonIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto done;
-		}
+		}*/
 	}
 	status = nc_inq_varid(ncid, "lonc", &lonid);	
 	if (status != NC_NOERR) 
@@ -602,11 +607,11 @@ OLD:
 	status = nc_inq_varid(ncid, "mask", &mask_id);
 	if (status != NC_NOERR)	{isLandMask = false;}
 
-	//status = nc_inq_varid(ncid, "coops_mask", &mask_id);	// should only have one or the other
-	//if (status != NC_NOERR)	{isCoopsMask = false;}
-	//else {isCoopsMask = true; bIsCOOPSWaterMask = true;}
+	status = nc_inq_varid(ncid, "coops_mask", &mask_id);	// should only have one or the other
+	if (status != NC_NOERR)	{isCoopsMask = false;}
+	else {isCoopsMask = true; bIsCOOPSWaterMask = true;}
 	
-	if (isLandMask /*|| isCoopsMask*/)
+	if (isLandMask || isCoopsMask)
 	{	// no need to bother with the handle here...
 		// maybe should store the mask? we are using it in ReadTimeValues, do we need to?
 		landmask = new double[latLength*lonLength]; 
@@ -671,6 +676,7 @@ OLD:
 			//err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
 			//if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
 			if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+			else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg);
 			else if (bIsCOOPSWaterMask) err = ReorderPointsCOOPSNoMask(newMap,errmsg);
 			else if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
 			//else if (isCOOPSMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
@@ -700,6 +706,7 @@ OLD:
 			if(err) goto done;*/
 			//err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
 			if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+			else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg);
 			else if (bIsCOOPSWaterMask) err = ReorderPointsCOOPSNoMask(newMap,errmsg);
 			else if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
 			//if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
@@ -732,6 +739,7 @@ OLD:
 	if(err) goto done;*/
 	//if (isLandMask) err = ReorderPoints(velocityH,newMap,errmsg);
 	if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+	else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg);
 	else if (bIsCOOPSWaterMask) err = ReorderPointsCOOPSNoMask(newMap,errmsg);
 	else if (isLandMask) err = ReorderPoints(landmaskH,newMap,errmsg);
 	//if (isLandMask) err = ReorderPoints(landmaskH,newMap,errmsg);

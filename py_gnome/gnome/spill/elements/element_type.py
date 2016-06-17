@@ -288,7 +288,8 @@ def plume(distribution_type='droplet_size',
 
     :param gnome.utilities.distributions distribution=None:
 
-    :param tuple-of-floats windage_range=(.01, .04): minimum and maximum windage
+    :param windage_range=(.01, .04): minimum and maximum windage
+    :type windage_range: tuple-of-floats
 
     :param int windage_persist=900: persistance of windage in seconds
 
@@ -300,12 +301,12 @@ def plume(distribution_type='droplet_size',
 
     Distribution type Available options:
 
-    * 'droplet_size' Droplet size is sampled from the specified distribution.
-      Rise velocity is calculated.
-    * 'rise_velocity': rise velocity is directly sampled from the specified distribution.
-      No droplet size is computed.
+    * 'droplet_size': Droplet size is sampled from the specified distribution.
+                      No droplet size is computed.
+    * 'rise_velocity': Rise velocity is directly sampled from the specified
+                       distribution.  Rise velocity is calculated.
 
-    Distributions -- An object capable of generating a probability distribution.
+    Distributions - An object capable of generating a probability distribution.
     Right now, we have:
 
     * UniformDistribution
@@ -313,9 +314,9 @@ def plume(distribution_type='droplet_size',
     * LogNormalDistribution
     * WeibullDistribution
 
-    New distribution classes could be made.  The only requirement is they need to have a
-    ``set_values()`` method which accepts a NumPy array. (presumably, this function will also
-    modify the array in some way)
+    New distribution classes could be made.  The only requirement is they
+    need to have a ``set_values()`` method which accepts a NumPy array.
+    (presumably, this function will also modify the array in some way)
 
     .. note:: substance_name or density must be provided
 
@@ -323,11 +324,11 @@ def plume(distribution_type='droplet_size',
     # Add docstring from called classes
     # Note: following gives sphinx warnings on build, ignore for now.
 
-    plume.__doc__ += ("\nDocumentation of InitRiseVelFromDropletSizeFromDist:\n" +
+    plume.__doc__ += ("\nInitRiseVelFromDropletSizeFromDist Documentation:\n" +
                       InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
-                      "\nDocumentation of InitRiseVelFromDist:\n" +
+                      "\nInitRiseVelFromDist Documentation:\n" +
                       InitRiseVelFromDist.__init__.__doc__ +
-                      "\nDocumentation of InitWindages:\n" +
+                      "\nInitWindages Documentation:\n" +
                       InitWindages.__init__.__doc__
                       )
 
@@ -335,14 +336,16 @@ def plume(distribution_type='droplet_size',
         # Assume density is at 15 K - convert density to api
         api = uc.convert('density', density_units, 'API', density)
         if substance_name is not None:
-            substance = build_oil_props({'name': substance_name, 'api': api}, 2)
+            substance = build_oil_props({'name': substance_name, 'api': api},
+                                        2)
         else:
             substance = build_oil_props({'api': api}, 2)
     elif substance_name is not None:
         # model 2 cuts if fake oil
         substance = get_oil_props(substance_name, 2)
     else:
-        raise ValueError("plume substance density and/or name must be provided")
+        raise ValueError('plume substance density and/or name '
+                         'must be provided')
 
     if distribution_type == 'droplet_size':
         return ElementType([InitRiseVelFromDropletSizeFromDist(
@@ -355,7 +358,8 @@ def plume(distribution_type='droplet_size',
                             InitWindages(windage_range, windage_persist)],
                            substance)
     else:
-        raise TypeError('distribution_type must be either droplet_size or rise_velocity')
+        raise TypeError('distribution_type must be either droplet_size or '
+                        'rise_velocity')
 
 
 def plume_from_model(distribution_type='droplet_size',

@@ -1,3 +1,5 @@
+import numpy as np
+
 
 class DingFarmer(object):
     @classmethod
@@ -37,4 +39,4 @@ class DingFarmer(object):
                 cls.calm_between_wave_breaks(breaking_waves_frac,
                                              peak_wave_period))
 
-        return f_wc if f_wc <= 1.0 else 1.0
+        return np.clip(f_wc, 0.0, 1.0)

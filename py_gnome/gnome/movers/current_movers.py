@@ -392,6 +392,7 @@ class GridCurrentMoverSchema(CurrentMoversBaseSchema):
     uncertain_cross = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
+    is_data_on_cells = SchemaNode(Bool(), missing=drop)
 
 
 class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
@@ -406,7 +407,9 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                                          test_for_eq=False),
                       serializable.Field('topology_file',
                                          save=True, read=True, isdatafile=True,
-                                         test_for_eq=False)])
+                                         test_for_eq=False),
+                      serializable.Field('is_data_on_cells',
+                                         save=False, read=True)])
     _schema = GridCurrentMoverSchema
 
     def __init__(self, filename,
@@ -533,6 +536,10 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                           lambda self, val: setattr(self.mover,
                                                     'num_method',
                                                     val))
+
+    @property
+    def is_data_on_cells(self):
+        return self.mover._is_data_on_cells()
 
     def get_grid_data(self):
         """
@@ -991,6 +998,10 @@ class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
                             'for CurrentCycleMover.')
 
         self._tide = tide_obj
+
+    @property
+    def is_data_on_cells(self):
+        return None
 
     def serialize(self, json_='webapi'):
         """

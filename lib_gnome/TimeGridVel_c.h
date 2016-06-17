@@ -227,6 +227,7 @@ public:
 	OSErr 				ReorderPoints(DOUBLEH landmaskH, char* errmsg); 
 	OSErr 				ReorderPointsNoMask(char* errmsg); 
 	OSErr 				ReorderPointsCOOPSMask(DOUBLEH landmaskH, char* errmsg); 
+	OSErr 				ReorderPointsCOOPSMaskOld(DOUBLEH landmaskH, char* errmsg); 
 	OSErr 				ReorderPointsCOOPSNoMask(char* errmsg); 
 	Boolean				IsCOOPSFile();
 	

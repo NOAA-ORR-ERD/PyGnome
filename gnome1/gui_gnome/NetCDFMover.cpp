@@ -137,6 +137,8 @@ void ShowHideVerticalExtrapolationDialogItems(DialogPtr dialog)
 	{
 		if ((dynamic_cast<PtCurMap *>(map))->GetMaxDepth2() > 0 || sNetCDFDialogMover -> GetMaxDepth() > 0) okToExtrapolate = true;
 	} 
+
+	if (gNoaaVersion) okToExtrapolate = true;
 	
 	if (sNetCDFDialogMover->fVar.gridType!=TWO_D || !okToExtrapolate)	// if model has depth data assume that is what user wants to use
 	{
@@ -186,7 +188,7 @@ short NetCDFMoverSettingsClick(DialogPtr dialog, short itemNum, long lParam, VOI
 				{	// check if 3D grid is on universal map (or changed to view a depth on loading in, before mover was put on map)
 					maxDepth = sNetCDFDialogMover -> GetMaxDepth();
 				}
-				if (arrowDepth > maxDepth)
+				if (arrowDepth > maxDepth && !extrapolateVertically)
 				{
 					char errStr[64];
 					sprintf(errStr,"The maximum depth of the region is %g meters.",maxDepth);
