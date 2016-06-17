@@ -7,6 +7,7 @@ class DelvigneSweeney(object):
         breaking waves f_bw.  DS assumes no breaking waves for winds
         less than 10 knots.
     '''
+
     @classmethod
     def breaking_waves_frac(cls, wind_speed, peak_wave_period):
         '''
