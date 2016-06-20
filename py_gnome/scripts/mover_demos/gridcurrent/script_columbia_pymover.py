@@ -41,8 +41,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1 day of data in file
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
-                  duration=timedelta(hours=48),
-                  time_step=900)
+                  duration=timedelta(hours=47),
+                  time_step=300)
 
     mapfile = get_datafile(os.path.join(base_dir, 'columbia_river.bna'))
 
@@ -54,6 +54,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # default is 'forecast' LEs draw on top
     renderer = Renderer(
         mapfile, images_dir, image_size=(600, 1200))
+    renderer.delay=15
 #     renderer.viewport = ((-123.35, 45.6), (-122.68, 46.13))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
 
@@ -65,7 +66,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = continuous_release_spill(initial_elements=1000,
+    spill1 = continuous_release_spill(initial_elements=10000,
                                       num_elements=400,
                                       start_position=(-122.625,
                                                       45.609,
@@ -99,11 +100,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     curr_file = get_datafile('COOPSu_CREOFS24.nc')
     curr = GridCurrent.from_netCDF(name='gc2', filename=curr_file,)
 
-    c_mover = PyGridCurrentMover(curr, extrapolate = True)
+    c_mover = PyGridCurrentMover(curr, extrapolate = True, default_num_method='Trapezoid')
 
-    renderer.add_grid(curr.grid)
-    renderer.add_vec_prop(curr)
+#     renderer.add_grid(curr.grid)
+#     renderer.add_vec_prop(curr)
     model.movers += c_mover
+
+    print 'adding a random mover'
+    model.movers += RandomMover(diffusion_coef=1000)
 
 
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
@@ -124,13 +128,10 @@ if __name__ == "__main__":
     for step in model:
         if step['step_num'] == 0:
             rend.set_viewport(((-122.9, 45.6), (-122.6, 46.0)))
-        #             rend.set_viewport(((-123.25, 48.125), (-122.5, 48.75)))
-        if step['step_num'] == 18:
-            rend.set_viewport(((-122.8, 45.65), (-122.75, 45.7)))
+#             rend.set_viewport(((-123.25, 48.125), (-122.5, 48.75)))
+#         if step['step_num'] == 0:
+#             rend.set_viewport(((-122.8, 45.65), (-122.75, 45.7)))
 #             rend.set_viewport(((-123.1, 48.55), (-122.95, 48.65)))
-#         if step['step_num'] == 10:
-            # field.set_appearance(masked=True)
-#             rend.set_viewport(((-122.8, 45.75), (-122.75, 45.85)))
         # print step
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())

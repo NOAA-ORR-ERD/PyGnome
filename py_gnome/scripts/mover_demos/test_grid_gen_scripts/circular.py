@@ -26,11 +26,13 @@ from gnome.movers.py_current_movers import PyGridCurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
 x, y = np.mgrid[-30:30:61j, -30:30:61j]
-y = y.T
-x = x.T
+y = np.ascontiguousarray(y.T)
+x = np.ascontiguousarray(x.T)
+# y += np.sin(x) / 1
+# x += np.sin(x) / 5
 g = SGrid(node_lon=x,
           node_lat=y)
-
+g.build_celltree()
 t = datetime(2000,1,1,0,0)
 angs = -np.arctan2(y,x)
 mag = np.sqrt(x**2 + y**2)
@@ -63,7 +65,7 @@ base_dir = os.path.dirname(__file__)
 
 def make_model():
     duration_hrs=48
-    time_step=3600
+    time_step=900
     num_steps = duration_hrs * 3600 / time_step
     mod = Model(start_time=t,
                 duration=timedelta(hours=duration_hrs),
@@ -76,12 +78,14 @@ def make_model():
                                      release_time=t)
     mod.spills += spill
 
-    method='Euler'
+    method='Trapezoid'
     images_dir = method + '-' + str(time_step / 60) + 'min-' + str(num_steps) + 'steps'
     renderer = Renderer(output_dir=images_dir, image_size=(800,800))
     renderer.delay = 5
-#     renderer.add_grid(g)
+    renderer.add_grid(g)
     renderer.add_vec_prop(vg)
+
+    renderer.graticule.set_max_lines(max_lines=0)
     mod.outputters += renderer
 
     mod.movers += PyGridCurrentMover(current=vg, default_num_method=method, extrapolate=True)

@@ -32,7 +32,7 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
                  uncertain_along=.5,
                  uncertain_across=.25,
                  uncertain_cross=.25,
-                 default_num_method='RK4',):
+                 default_num_method='Trapezoid',):
         self.current=current
         self.filename=filename
         self.extrapolate=extrapolate
@@ -112,60 +112,40 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
             method = self.num_methods[self.default_num_method]
         else:
             method = self.num_method[num_method]
-        return method(sc, time_step, model_time_datetime)
 
-    def get_delta_Euler(self, sc, time_step, model_time):
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
-
-        vels = self.current.at(positions[:, 0:2], model_time, extrapolate=self.extrapolate)
         deltas = np.zeros_like(positions)
-        deltas[:, 0:2] = vels * time_step
+        pos = positions[:, 0:2]
+
+        deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos)
+
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)
         return deltas
 
-    def get_delta_Trapezoid(self, sc, time_step, model_time):
-        status = sc['status_codes'] != oil_status.in_water
-        positions = sc['positions']
-        deltas = np.zeros_like(positions)
+    def get_delta_Euler(self, sc, time_step, model_time, pos):
+        vels = self.current.at(pos[:, 0:2], model_time, extrapolate=self.extrapolate)
+        return vels * time_step
 
-        pos = positions[:, 0:2]
-
-
+    def get_delta_Trapezoid(self, sc, time_step, model_time, pos):
         dt = datetime.timedelta(seconds=time_step)
         dt_s = dt.seconds
         t = model_time
-
         v0 = self.current.at(pos, t, extrapolate=self.extrapolate).data
-        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, positions)
+        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
         v1 = self.current.at(pos + d0, t + dt, extrapolate=self.extrapolate).data
-        deltas[:, 0:2] = dt_s/2 * (v0 + v1)
-        deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
-        deltas[status] = (0, 0, 0)
-        return deltas
+        return  dt_s/2 * (v0 + v1)
 
-    def get_delta_RK4(self, sc, time_step, model_time):
-        status = sc['status_codes'] != oil_status.in_water
-        positions = sc['positions']
-        deltas = np.zeros_like(positions)
-
-        pos = positions[:, 0:2]
-
-
+    def get_delta_RK4(self, sc, time_step, model_time, pos):
         dt = datetime.timedelta(seconds=time_step)
         dt_s = dt.seconds
         t = model_time
-
-
         v0 = self.current.at(pos, t, extrapolate=self.extrapolate).data
-        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s/2, positions)
+        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s/2, pos)
         v1 = self.current.at(pos + d0, t + dt/2, extrapolate=self.extrapolate).data
-        d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s/2, positions)
+        d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s/2, pos)
         v2 = self.current.at(pos + d1, t + dt/2, extrapolate=self.extrapolate).data
-        d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, positions)
+        d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
         v3 = self.current.at(pos + d2, t + dt, extrapolate=self.extrapolate).data
-        deltas[:, 0:2] = dt_s/6 * (v0 + 2*v1 + 2*v2 + v3)
-        deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
-        deltas[status] = (0, 0, 0)
-        return deltas
+        return dt_s/6 * (v0 + 2*v1 + 2*v2 + v3)
