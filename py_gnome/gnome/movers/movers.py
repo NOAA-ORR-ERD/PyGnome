@@ -179,6 +179,31 @@ class Process(AddLogger):
         pass
 
 
+class PyMover(Process):
+    def get_move(self, sc, time_step, model_time_datetime):
+        """
+        Compute the move in (long,lat,z) space. It returns the delta move
+        for each element of the spill as a numpy array of size
+        (number_elements X 3) and dtype = gnome.basic_types.world_point_type
+
+        Base class returns an array of numpy.nan for delta to indicate the
+        get_move is not implemented yet.
+
+        Each class derived from Mover object must implement it's own get_move
+
+        :param sc: an instance of gnome.spill_container.SpillContainer class
+        :param time_step: time step in seconds
+        :param model_time_datetime: current model time as datetime object
+
+        All movers must implement get_move() since that's what the model calls
+        """
+        positions = sc['positions']
+        delta = np.zeros_like(positions)
+        delta[:] = np.nan
+
+        return delta
+
+
 class Mover(Process):
     def get_move(self, sc, time_step, model_time_datetime):
         """

@@ -21,6 +21,7 @@ import math
 from osgeo import ogr
 
 import py_gd
+from osgeo import ogr
 #import pyugrid
 
 import numpy as np
@@ -40,9 +41,9 @@ from gnome.utilities.projections import (FlatEarthProjection,
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file,
-                                                      ogr_layers,
-                                                      ogr_features)
+from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
+from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
+from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
 
 from gnome.utilities.geometry.polygons import PolygonSet
 from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
@@ -1082,6 +1083,10 @@ class MapFromBNA(RasterMap):
         BB = land_polys.bounding_box
 
         # create spillable area and  bounds if they weren't in the BNA
+
+        spillable_area = kwargs.pop('spillable_area', spillable_area)
+        map_bounds = kwargs.pop('map_bounds', map_bounds)
+
         if map_bounds is None:
             map_bounds = BB.AsPoly()
 
@@ -1094,8 +1099,6 @@ class MapFromBNA(RasterMap):
         # todo: should there be a check between spillable_area read from BNA
         # versus what the user entered. if this is within spillable_area for
         # BNA, then include it? else ignore
-        spillable_area = kwargs.pop('spillable_area', spillable_area)
-        map_bounds = kwargs.pop('map_bounds', map_bounds)
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
