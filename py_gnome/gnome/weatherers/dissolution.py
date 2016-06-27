@@ -2,7 +2,6 @@
 model dissolution process
 '''
 from __future__ import division
-from collections import Iterable
 import copy
 
 import numpy as np
@@ -13,9 +12,10 @@ from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.weathering import (LeeHuibers, Stokes,
                                         DingFarmer, DelvigneSweeney)
 
-from gnome.array_types import (viscosity,
+from gnome.array_types import (area,
                                mass,
                                density,
+                               viscosity,
                                partition_coeff,
                                droplet_avg_size)
 
@@ -41,9 +41,10 @@ class Dissolution(Weatherer, Serializable):
 
         super(Dissolution, self).__init__(**kwargs)
 
-        self.array_types.update({'viscosity': viscosity,
+        self.array_types.update({'area': area,
                                  'mass':  mass,
                                  'density': density,
+                                 'viscosity': viscosity,
                                  'partition_coeff': partition_coeff,
                                  'droplet_avg_size': droplet_avg_size
                                  })
@@ -85,24 +86,10 @@ class Dissolution(Weatherer, Serializable):
         '''
             Initialize the molar averaged oil/water partition coefficient.
 
-            Note: we are assuming that each substance gets a distinct
-                  slice from our data arrays (maybe not a good assumption)
+            Actually, there is nothing to do to initialize our partition
+            coefficient, as it is recalculated in dissolve_oil()
         '''
-        num_initialized = 0
-
-        for _substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['partition_coeff']) == 0:
-                # print 'no particles released yet...'
-                continue
-
-            mask = data['partition_coeff'] == 0
-
-            num_initialized += len(mask)
-
-            for s_num in np.unique(data['spill_num'][mask]):
-                s_mask = np.logical_and(mask, data['spill_num'] == s_num)
-
-                data['partition_coeff'][s_mask] = 0
+        pass
 
     def dissolve_oil(self, data, substance, **kwargs):
         '''
@@ -213,11 +200,13 @@ class Dissolution(Weatherer, Serializable):
 
         if len(masses.shape) == 1:
             # a single LE of mass components
-            return (masses / masses.sum() * densities).sum()
+            avg_rho = (masses / masses.sum() * densities).sum()
         else:
             # multiple LE mass components in a 2D array
-            return (((masses.T / masses.sum(axis=1).T).T * densities)
-                    .sum(axis=1))
+            avg_rho = (((masses.T / masses.sum(axis=1).T).T * densities)
+                       .sum(axis=1))
+
+        return np.nan_to_num(avg_rho)
 
     def oil_total_volume(self, masses, densities):
         # oil component count needs to match

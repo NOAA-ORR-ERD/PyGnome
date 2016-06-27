@@ -222,6 +222,9 @@ class Model(Serializable):
         self.outputters.register_callback(self._callback_add_outputter,
                                           ('add', 'replace'))
 
+        self.movers.register_callback(self._callback_add_spill,
+                                      ('add', 'replace', 'remove'))
+
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map,
                     name, mode):
@@ -987,6 +990,9 @@ class Model(Serializable):
         '''
         self._add_to_environ_collec(obj_added)
         self.rewind()  # rewind model if a new weatherer is added
+
+    def _callback_add_spill(self, obj_added):
+        self.rewind()
 
     def __eq__(self, other):
         check = super(Model, self).__eq__(other)
