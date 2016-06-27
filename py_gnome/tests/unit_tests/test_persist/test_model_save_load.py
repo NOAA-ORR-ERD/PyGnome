@@ -22,7 +22,7 @@ from gnome.persist import load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, IceMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
-from gnome.outputters import CurrentGeoJsonOutput, IceGeoJsonOutput
+from gnome.outputters import CurrentJsonOutput, IceJsonOutput
 
 from ..conftest import dump, testdata, test_oil
 
@@ -145,8 +145,8 @@ def make_model(uncertain=False, mode='gnome'):
                               efficiency=0.9)]
 
     model.outputters += \
-        CurrentGeoJsonOutput(model.find_by_attr('_ref_as', 'current_movers',
-                                                model.movers, allitems=True))
+        CurrentJsonOutput(model.find_by_attr('_ref_as', 'current_movers',
+                                             model.movers, allitems=True))
 
     return model
 
@@ -178,7 +178,7 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
     ice_mover = IceMover(testdata['IceMover']['ice_curr_curv'],
                          testdata['IceMover']['ice_top_curv'])
     model.movers += ice_mover
-    model.outputters += IceGeoJsonOutput([ice_mover])
+    model.outputters += IceJsonOutput([ice_mover])
 
     model.zipsave = zipsave
 

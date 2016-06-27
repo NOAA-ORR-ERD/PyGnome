@@ -247,6 +247,9 @@ class Model(Serializable):
         self.outputters.register_callback(self._callback_add_outputter,
                                           ('add', 'replace'))
 
+        self.movers.register_callback(self._callback_add_spill,
+                                      ('add', 'replace', 'remove'))
+
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map,
                     name, mode):
@@ -1013,6 +1016,9 @@ class Model(Serializable):
         self._add_to_environ_collec(obj_added)
         self.rewind()  # rewind model if a new weatherer is added
 
+    def _callback_add_spill(self, obj_added):
+        self.rewind()
+
     def __eq__(self, other):
         check = super(Model, self).__eq__(other)
         if check:
@@ -1414,9 +1420,10 @@ class Model(Serializable):
                 msg = ('All of the spills are released after the time interval being modeled.')
             else:
                 msg = ('The spill is released after the time interval being modeled.')
-            self.logger.error(msg)
+            self.logger.warning(msg)	# for now make this a warning
+            #self.logger.error(msg)	
             msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
-            isvalid = False
+            #isvalid = False
 
         return (msgs, isvalid)
 

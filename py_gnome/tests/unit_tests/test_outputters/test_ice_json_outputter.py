@@ -10,7 +10,7 @@ import pytest
 
 from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.movers import IceMover
-from gnome.outputters import IceRawJsonOutput
+from gnome.outputters import IceJsonOutput
 
 from ..conftest import testdata
 
@@ -48,7 +48,7 @@ def model(sample_model, output_dir):
 
     model.movers += c_ice_mover
 
-    model.outputters += IceRawJsonOutput([c_ice_mover])
+    model.outputters += IceJsonOutput([c_ice_mover])
 
     model.rewind()
 
@@ -57,7 +57,7 @@ def model(sample_model, output_dir):
 
 def test_init():
     'simple initialization passes'
-    g = IceRawJsonOutput([c_ice_mover])
+    g = IceJsonOutput([c_ice_mover])
     assert g.ice_movers[0] == c_ice_mover
 
 
@@ -73,11 +73,11 @@ def test_ice_geojson_output(model):
         print '\n\ngot step at: ', time.time() - begin
 
         assert 'step_num' in step
-        assert 'IceRawJsonOutput' in step
-        assert 'time_stamp' in step['IceRawJsonOutput']
-        assert 'feature_collections' in step['IceRawJsonOutput']
+        assert 'IceJsonOutput' in step
+        assert 'time_stamp' in step['IceJsonOutput']
+        assert 'data' in step['IceJsonOutput']
 
-        fcs = step['IceRawJsonOutput']['feature_collections']
+        fcs = step['IceJsonOutput']['data']
 
         # There should be only one key, but we will iterate anyway.
         # We just want to verify here that our keys exist in the movers
@@ -87,15 +87,10 @@ def test_ice_geojson_output(model):
 
         # Check that our structure is correct.
         for fc_list in fcs.values():
+            assert 'concentration' in fc_list
+            assert 'thickness' in fc_list
 
-            # our feature collection should be a list of all data
-            for feature in fc_list:
-                assert len(feature) == 3
-                print feature
-                assert isinstance(feature[0], Number)
-                assert isinstance(feature[1], Number)
+            assert len(fc_list['concentration']) > 0
+            assert len(fc_list['thickness']) > 0
+            assert len(fc_list['concentration']) == len(fc_list['thickness'])
 
-                assert len(feature[2]) == 4
-                assert [isinstance(n, Number) for c in feature[2] for n in c]
-
-        print 'checked step at: ', time.time() - begin

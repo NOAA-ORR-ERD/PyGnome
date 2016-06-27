@@ -55,6 +55,7 @@ public:
 	//OSErr 				ReorderPointsNoMask(VelocityFH velocityH, TMap **newMap, char* errmsg); 
 	OSErr 				ReorderPointsNoMask(TMap **newMap, char* errmsg); 
 	//OSErr 				ReorderPointsCOOPSMask(VelocityFH velocityH, TMap **newMap, char* errmsg); 
+	OSErr 				ReorderPointsCOOPSMaskOld(TMap **newMap, DOUBLEH landmaskH, char* errmsg) ;
 	OSErr 				ReorderPointsCOOPSMask(DOUBLEH landmaskH, TMap **newMap, char* errmsg); 
 	OSErr 				ReorderPointsCOOPSNoMask(TMap **newMap, char* errmsg); 
 	Boolean				IsCOOPSFile();
