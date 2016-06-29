@@ -14,7 +14,7 @@ from gnome.basic_types import (world_point,
                                status_code_type)
 
 
-class PyWindMover(movers.Mover, serializable.Serializable):
+class PyWindMover(movers.PyMover, serializable.Serializable):
 
     _state = copy.deepcopy(movers.Mover._state)
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
@@ -24,10 +24,14 @@ class PyWindMover(movers.Mover, serializable.Serializable):
 
     def __init__(self,
                  wind=None,
+                 filename=None,
+                 extrapolate=False,
+                 time_offset=0,
                  uncertain_duration=3,
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4,
+                 default_num_method='Trapezoid',
                  **kwargs):
         """
         Uses super to call CyMover base class __init__
@@ -42,13 +46,16 @@ class PyWindMover(movers.Mover, serializable.Serializable):
             to False since user provided a valid Wind and does not wish to
             use the default from the Model.
         """
-        movers.Mover.__init__(self,**kwargs)
+        movers.PyMover.__init__(self,
+                                default_num_method=default_num_method)
         self._wind = None
         if wind is not None:
             self.wind = wind
             kwargs['name'] = \
                 kwargs.pop('name', wind.name)
 
+        self.filename=filename
+        self.extrapolate=extrapolate
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.uncertain_speed_scale = uncertain_speed_scale
@@ -59,9 +66,30 @@ class PyWindMover(movers.Mover, serializable.Serializable):
         self.array_types.update({'windages',
                                  'windage_range',
                                  'windage_persist'})
-
-
         # set optional attributes
+
+    @classmethod
+    def from_netCDF(cls,
+                    filename=None,
+                    extrapolate=False,
+                    time_offset=0,
+                    current_scale=1,
+                    uncertain_duration=24 * 3600,
+                    uncertain_time_delay=0,
+                    uncertain_along=.5,
+                    uncertain_across=.25,
+                    uncertain_cross=.25,
+                    default_num_method='Trapezoid'):
+        wind = GridWind.from_netCDF(filename)
+        return cls(wind=wind,
+                   filename=filename,
+                   extrapolate=extrapolate,
+                   time_offset=time_offset,
+                   current_scale=current_scale,
+                   uncertain_along=uncertain_along,
+                   uncertain_across=uncertain_across,
+                   uncertain_cross=uncertain_cross,
+                   default_num_method=default_num_method)
 
     @property
     def wind(self):
@@ -94,7 +122,7 @@ class PyWindMover(movers.Mover, serializable.Serializable):
                                      sc['windage_persist'],
                                      time_step)
 
-    def get_move(self, sc, time_step, model_time_datetime):
+    def get_move(self, sc, time_step, model_time_datetime, num_method = None):
         """
         Compute the move in (long,lat,z) space. It returns the delta move
         for each element of the spill as a numpy array of size
@@ -111,17 +139,21 @@ class PyWindMover(movers.Mover, serializable.Serializable):
 
         All movers must implement get_move() since that's what the model calls
         """
+        method = None
+        if num_method is None:
+            method = self.num_methods[self.default_num_method]
+        else:
+            method = self.num_method[num_method]
+
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
-
-        vels = self.wind.at(positions[:, 0:2], model_time_datetime, units='m/s')
-        vels[:,0] *= sc['windages']
-        vels[:,1] *= sc['windages']
-
         deltas = np.zeros_like(positions)
-        deltas[:] = 0.
-        deltas[:, 0:2] = vels * time_step
+        pos = positions[:, 0:2]
+
+        deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos, self.wind)
+        deltas[:,0] *= sc['windages']
+        deltas[:,1] *= sc['windages']
+
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)
-        pass
         return deltas
