@@ -64,18 +64,22 @@ print vg.at(point,t)
 base_dir = os.path.dirname(__file__)
 
 def make_model():
-    duration_hrs=48
-    time_step=900
+    duration_hrs=3
+    time_step=30
     num_steps = duration_hrs * 3600 / time_step
     mod = Model(start_time=t,
                 duration=timedelta(hours=duration_hrs),
                 time_step=time_step)
 
-    spill = point_line_release_spill(num_elements=100,
+    spill = point_line_release_spill(num_elements=360,
+                                     amount=180,
+                                     units='kg',
                                      start_position=(0.5,
                                                   0.5,
                                                   0.0),
-                                     release_time=t)
+                                     release_time=t,
+                                     end_release_time=t+timedelta(hours=duration_hrs)
+                                     )
     mod.spills += spill
 
     method='Trapezoid'

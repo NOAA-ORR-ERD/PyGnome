@@ -14,7 +14,7 @@ from gnome.basic_types import (world_point,
                                status_code_type)
 
 
-class PyWindMover(movers.Mover, serializable.Serializable):
+class PyWindMover(movers.PyMover, serializable.Serializable):
 
     _state = copy.deepcopy(movers.Mover._state)
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
@@ -46,7 +46,8 @@ class PyWindMover(movers.Mover, serializable.Serializable):
             to False since user provided a valid Wind and does not wish to
             use the default from the Model.
         """
-        movers.Mover.__init__(self,**kwargs)
+        movers.PyMover.__init__(self,
+                                default_num_method=default_num_method)
         self._wind = None
         if wind is not None:
             self.wind = wind
@@ -65,13 +66,6 @@ class PyWindMover(movers.Mover, serializable.Serializable):
         self.array_types.update({'windages',
                                  'windage_range',
                                  'windage_persist'})
-
-        self.num_methods = {'RK4': self.get_delta_RK4,
-                            'Euler': self.get_delta_Euler,
-                            'Trapezoid':self.get_delta_Trapezoid}
-        self.default_num_method=default_num_method
-
-
         # set optional attributes
 
     @classmethod
@@ -84,7 +78,8 @@ class PyWindMover(movers.Mover, serializable.Serializable):
                     uncertain_time_delay=0,
                     uncertain_along=.5,
                     uncertain_across=.25,
-                    uncertain_cross=.25):
+                    uncertain_cross=.25,
+                    default_num_method='Trapezoid'):
         wind = GridWind.from_netCDF(filename)
         return cls(wind=wind,
                    filename=filename,
@@ -93,7 +88,8 @@ class PyWindMover(movers.Mover, serializable.Serializable):
                    current_scale=current_scale,
                    uncertain_along=uncertain_along,
                    uncertain_across=uncertain_across,
-                   uncertain_cross=uncertain_cross)
+                   uncertain_cross=uncertain_cross,
+                   default_num_method=default_num_method)
 
     @property
     def wind(self):
@@ -154,36 +150,10 @@ class PyWindMover(movers.Mover, serializable.Serializable):
         deltas = np.zeros_like(positions)
         pos = positions[:, 0:2]
 
-        deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos)
+        deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos, self.wind)
         deltas[:,0] *= sc['windages']
         deltas[:,1] *= sc['windages']
 
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)
         return deltas
-
-    def get_delta_Euler(self, sc, time_step, model_time, pos):
-        vels = self.wind.at(pos[:, 0:2], model_time, extrapolate=self.extrapolate)
-        return vels * time_step
-
-    def get_delta_Trapezoid(self, sc, time_step, model_time, pos):
-        dt = datetime.timedelta(seconds=time_step)
-        dt_s = dt.seconds
-        t = model_time
-        v0 = self.wind.at(pos, t, extrapolate=self.extrapolate).data
-        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
-        v1 = self.wind.at(pos + d0, t + dt, extrapolate=self.extrapolate).data
-        return  dt_s/2 * (v0 + v1)
-
-    def get_delta_RK4(self, sc, time_step, model_time, pos):
-        dt = datetime.timedelta(seconds=time_step)
-        dt_s = dt.seconds
-        t = model_time
-        v0 = self.wind.at(pos, t, extrapolate=self.extrapolate).data
-        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s/2, pos)
-        v1 = self.wind.at(pos + d0, t + dt/2, extrapolate=self.extrapolate).data
-        d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s/2, pos)
-        v2 = self.wind.at(pos + d1, t + dt/2, extrapolate=self.extrapolate).data
-        d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
-        v3 = self.wind.at(pos + d2, t + dt, extrapolate=self.extrapolate).data
-        return dt_s/6 * (v0 + 2*v1 + 2*v2 + v3)

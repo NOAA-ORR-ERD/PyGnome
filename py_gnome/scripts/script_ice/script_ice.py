@@ -67,7 +67,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = point_line_release_spill(num_elements=10000,
+    spill1 = point_line_release_spill(num_elements=1000,
                                       start_position=(-163.75,
                                                       69.75,
                                                       0.0),
@@ -95,18 +95,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn)
     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
                                               grid = ice_aware_curr.grid,)
+    method = 'Euler'
 
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr)
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Euler')
-    i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Trapezoid')
-    i_w_mover = PyWindMover(wind = ice_aware_wind)
+    i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method=method)
+    i_w_mover = PyWindMover(wind = ice_aware_wind, default_num_method=method)
 
     ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:]-360
 #     ice_aware_curr.grid.build_celltree()
     model.movers += i_c_mover
     model.movers += i_w_mover
     renderer.add_grid(ice_aware_curr.grid)
-#     renderer.add_vec_prop(ice_aware_curr.grid)
+#     renderer.add_vec_prop(ice_aware_curr)
 
 
     renderer.set_viewport(((-190.9, 60), (-72, 89)))
