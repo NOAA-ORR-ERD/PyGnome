@@ -1783,7 +1783,7 @@ void CGInit(DialogPtr dialog, VLISTPTR L)
 
 TCurrentMover *CreateAndInitLocationFileCurrentsMover (TMap *owner, char* givenPath,char* givenFileName,TMap **newMap, char* topFilePath)
 {
-	char path[256], s[256], fileName[32], fileNamesPath[256];
+	char path[256], s[256], fileName[128], fileNamesPath[256];
 	short item, gridType, selectedUnits;
 	TCurrentMover *newMover=nil;
 	TGridVel *grid = nil;
@@ -1994,7 +1994,7 @@ TCATSMover *CreateAndInitCatsCurrentsMover (TMap *owner, Boolean askForFile, cha
 
 TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char* givenPath,char* givenFileName,TMap **newMap)
 {
-	char path[256], s[256], fileName[64], fileNamesPath[256], topFilePath[256], outPath[256];
+	char path[256], s[256], fileName[128], fileNamesPath[256], topFilePath[256], outPath[256];
 	short item, gridType, selectedUnits;
 	Point where = CenteredDialogUpLeft(M38c);;
 	OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };

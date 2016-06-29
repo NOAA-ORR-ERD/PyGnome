@@ -633,8 +633,10 @@ def test_var_attr_spill_num(output_filename):
     exists in 'spills_map' attribute for NetCDF output variable 'spill_num'
     '''
     def _make_run_model(spill, nc_name):
-        'internal funtion'
-        m = Model()
+        'internal function'
+        release_time = spill.release.release_time
+
+        m = Model(start_time=release_time)
         m.outputters += NetCDFOutput(nc_name)
         m.spills += spill
 
