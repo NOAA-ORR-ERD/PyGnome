@@ -70,7 +70,7 @@ class GriddedProp(EnvProp):
                 raise NameError('Default current names are not in the data file, must supply variable name')
         df = _get_dataset(data_file)
         data = df[varname]
-        name = data_file+' '+varname if name is None else name
+        name = varname if name is None else name
         if units is None:
             try:
                 units = data.units

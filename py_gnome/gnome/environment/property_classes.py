@@ -530,7 +530,7 @@ class IceAwareCurrent(serializable.Serializable):
                                                         time=time,
                                                         grid=grid)
         if name is None:
-            name = data_file + ' ' + 'IceAwareCurrent'
+            name = 'IceAwareCurrent'
         if units is None:
             units = water_var.units
         return cls(name=name,
@@ -644,7 +644,7 @@ class IceAwareWind(serializable.Serializable, Environment):
                                                         time=time,
                                                         grid=grid)
         if name is None:
-            name = data_file + ' ' + 'IceAwareCurrent'
+            name = 'IceAwareCurrent'
         if units is None:
             units = wind_var.units
         return cls(name=name,

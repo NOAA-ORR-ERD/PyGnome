@@ -187,7 +187,7 @@ class Time(object):
         Functions for a time array
         :param time_seq: An ascending array of datetime objects of length N
         '''
-        if isinstance(time_seq, nc4.Variable):
+        if isinstance(time_seq, (nc4.Variable, nc4._netCDF4._Variable)):
             self.time = nc4.num2date(time_seq[:], units=time_seq.units)
         else:
             self.time = time_seq
