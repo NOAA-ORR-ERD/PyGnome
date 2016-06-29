@@ -16,7 +16,7 @@ import pysgrid
 import unit_conversion
 from gnome.environment.property import Time, PropertySchema
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
-from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema, init_grid
+from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema, init_grid, _get_dataset
 from gnome.environment import Environment
 
 
@@ -229,7 +229,7 @@ class IceConcentration(GriddedProp, serializable.Serializable):
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        df = nc4.Dataset(filename)
+        df = _get_dataset(filename)
         comp_names=['ice_fraction',]
         for n in comp_names:
             if n in df.variables.keys():
@@ -333,7 +333,7 @@ class GridCurrent(VelocityGrid, Environment):
                               data_file=data_file)
         self.angle = None
         if data_file is not None:
-            df = nc4.Dataset(data_file)
+            df = _get_dataset(data_file)
             if 'angle' in df.variables.keys():
                 #Unrotated ROMS Grid!
                 self.angle = GriddedProp(name='angle',units='radians',time=None, grid=self.grid, data=df['angle'])
@@ -346,7 +346,7 @@ class GridCurrent(VelocityGrid, Environment):
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        df = nc4.Dataset(filename)
+        df = _get_dataset(filename)
         comp_names=[['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]
         for n in comp_names:
             if n[0] in df.variables.keys() and n[1] in df.variables.keys():
@@ -384,7 +384,7 @@ class GridWind(VelocityGrid, Environment):
                               grid_file=grid_file,
                               data_file=data_file)
         self.angle = None
-        df = nc4.Dataset(data_file)
+        df = _get_dataset(data_file)
         if 'angle' in df.variables.keys():
             #Unrotated ROMS Grid!
             self.angle = GriddedProp(name='angle',units='radians',time=[self.time.time[0]], grid=self.grid, data=df['angle'])
@@ -397,7 +397,7 @@ class GridWind(VelocityGrid, Environment):
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        df = nc4.Dataset(filename)
+        df = _get_dataset(filename)
         comp_names=[['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
         for n in comp_names:
             if n[0] in df.variables.keys() and n[1] in df.variables.keys():
@@ -441,7 +441,7 @@ class IceVelocity(VelocityGrid):
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        df = nc4.Dataset(filename)
+        df = _get_dataset(filename)
         comp_names=[['ice_u', 'ice_v',],]
         for n in comp_names:
             if n[0] in df.variables.keys() and n[1] in df.variables.keys():
