@@ -68,7 +68,11 @@ class GriddedProp(EnvProp):
             varname = cls._gen_varname(data_file)
             if varname is None:
                 raise NameError('Default current names are not in the data file, must supply variable name')
-        df = nc4.Dataset(data_file)
+        df = None
+        if isinstance(data_file, basestring):
+            df = nc4.Dataset(data_file)
+        else:
+            df = nc4.MFDataset(data_file)
         data = df[varname]
         name = data_file+' '+varname if name is None else name
         if units is None:
@@ -290,7 +294,11 @@ class GridVectorProp(VectorProp):
                              grid_topology=grid_topology)
         if varnames is None:
             varnames = cls._gen_varnames(data_file)
-        df = nc4.Dataset(data_file)
+        df = None
+        if isinstance(data_file, basestring):
+            df = nc4.Dataset(data_file)
+        else:
+            df = nc4.MFDataset(data_file)
         name = data_file if name is None else name
         timevar=None
         data = df[varnames[0]]
@@ -469,7 +477,11 @@ class GridVectorProp(VectorProp):
 def init_grid(filename,
               grid_topology=None):
     gt = grid_topology
-    gf = nc4.Dataset(filename)
+    gf = None
+    if (isinstance(filename, basestring)):
+        gf = nc4.Dataset(filename)
+    else:
+        gf = nc4.MFDataset(filename)
     grid = None
     if gt is None:
         try:
@@ -533,7 +545,11 @@ def _gen_topology(filename):
     :param filename: Name of file that will be searched for variables
     :return: List of default variable names, or None if none are found
     '''
-    gf = nc4.Dataset(filename)
+    gf = None
+    if (isinstance(filename, basestring)):
+        gf = nc4.Dataset(filename)
+    else:
+        gf = nc4.MFDataset(filename)
     gt = {}
     node_coord_names = [['node_lon','node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
     face_var_names = ['nv']
