@@ -68,7 +68,7 @@ class EnvProp(object):
     @units.setter
     def units(self, unit):
         if unit is not None:
-            if not unit_conversion.unit_conversion.is_supported(unit):
+            if not unit_conversion.is_supported(unit):
                 raise ValueError('Units of {0} are not supported'.format(unit))
         self._units = unit
 
@@ -152,7 +152,7 @@ class VectorProp(object):
     @units.setter
     def units(self, unit):
         if unit is not None:
-            if not unit_conversion.unit_conversion.is_supported(unit):
+            if not unit_conversion.is_supported(unit):
                 raise ValueError('Units of {0} are not supported'.format(unit))
         self._units = unit
         if self.variables is not None:
