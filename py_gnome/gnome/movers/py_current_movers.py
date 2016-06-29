@@ -13,7 +13,7 @@ from gnome.basic_types import (world_point,
                                status_code_type)
 
 
-class PyGridCurrentMover(movers.Mover, serializable.Serializable):
+class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
 
     _state = copy.deepcopy(movers.Mover._state)
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
@@ -32,7 +32,8 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
                  uncertain_along=.5,
                  uncertain_across=.25,
                  uncertain_cross=.25,
-                 default_num_method='Trapezoid',):
+                 default_num_method='Trapezoid'
+                 ):
         self.current=current
         self.filename=filename
         self.extrapolate=extrapolate
@@ -45,15 +46,12 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
         self.positions = np.zeros((0, 3), dtype=world_point_type)
         self.delta = np.zeros((0, 3), dtype=world_point_type)
         self.status_codes = np.zeros((0, 1), dtype=status_code_type)
-        self.num_methods = {'RK4': self.get_delta_RK4,
-                            'Euler': self.get_delta_Euler,
-                            'Trapezoid':self.get_delta_Trapezoid}
-        self.default_num_method=default_num_method
 
         # either a 1, or 2 depending on whether spill is certain or not
         self.spill_type = 0
 
-        movers.Mover.__init__(self)
+        movers.PyMover.__init__(self,
+                                default_num_method=default_num_method)
 
     @classmethod
     def from_netCDF(cls,
@@ -118,34 +116,8 @@ class PyGridCurrentMover(movers.Mover, serializable.Serializable):
         deltas = np.zeros_like(positions)
         pos = positions[:, 0:2]
 
-        deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos)
+        deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos, self.current)
 
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)
         return deltas
-
-    def get_delta_Euler(self, sc, time_step, model_time, pos):
-        vels = self.current.at(pos[:, 0:2], model_time, extrapolate=self.extrapolate)
-        return vels * time_step
-
-    def get_delta_Trapezoid(self, sc, time_step, model_time, pos):
-        dt = datetime.timedelta(seconds=time_step)
-        dt_s = dt.seconds
-        t = model_time
-        v0 = self.current.at(pos, t, extrapolate=self.extrapolate).data
-        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
-        v1 = self.current.at(pos + d0, t + dt, extrapolate=self.extrapolate).data
-        return  dt_s/2 * (v0 + v1)
-
-    def get_delta_RK4(self, sc, time_step, model_time, pos):
-        dt = datetime.timedelta(seconds=time_step)
-        dt_s = dt.seconds
-        t = model_time
-        v0 = self.current.at(pos, t, extrapolate=self.extrapolate).data
-        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s/2, pos)
-        v1 = self.current.at(pos + d0, t + dt/2, extrapolate=self.extrapolate).data
-        d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s/2, pos)
-        v2 = self.current.at(pos + d1, t + dt/2, extrapolate=self.extrapolate).data
-        d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
-        v3 = self.current.at(pos + d2, t + dt, extrapolate=self.extrapolate).data
-        return dt_s/6 * (v0 + 2*v1 + 2*v2 + v3)
