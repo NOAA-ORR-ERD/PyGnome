@@ -640,10 +640,9 @@ class GridLines(object):
             else:
                 value = line[0][1]
                 hemi = 'N' if value > 0 else 'S'
-
             tag = (str(value)
                    if not self.DMS
-                   else uc.LatLongConverter.ToDegMinSec(value, ustring=False))
+                   else uc.lat_long.LatLongConverter.ToDegMinSec(value, ustring=False))
 
             if self.DMS:
                 degrees = int(abs(tag[0]))
