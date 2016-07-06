@@ -42,7 +42,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1 day of data in file
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
-                  duration=timedelta(hours=96),
+                  duration=timedelta(days=4),
                   time_step=3600)
 
     mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
@@ -55,8 +55,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
-    renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
-    model.outputters += renderer
+#     renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
+#     model.outputters += renderer
     netcdf_file = os.path.join(base_dir, 'script_ice.nc')
     scripting.remove_netcdf(netcdf_file)
 
@@ -67,7 +67,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = point_line_release_spill(num_elements=1000,
+    spill1 = point_line_release_spill(num_elements=10000,
                                       start_position=(-163.75,
                                                       69.75,
                                                       0.0),
@@ -90,12 +90,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     model.movers += constant_wind_mover(0.5, 0, units='m/s')
 
     print 'adding a current mover:'
-    fn='arctic_avg2_0001_gnome.nc'
 
-    ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn)
+    fn = ['N:\\Users\\Dylan.Righi\\OutBox\\ArcticROMS\\arctic_avg2_0001_gnome.nc',
+                 'N:\\Users\\Dylan.Righi\\OutBox\\ArcticROMS\\arctic_avg2_0002_gnome.nc']
+
+    gt = {'node_lon':'lon',
+          'node_lat':'lat'}
+#     fn='arctic_avg2_0001_gnome.nc'
+
+    ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
+                                                 grid_topology=gt)
     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
                                               grid = ice_aware_curr.grid,)
-    method = 'Euler'
+    method = 'Trapezoid'
 
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr)
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Euler')
@@ -106,11 +113,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     ice_aware_curr.grid.build_celltree()
     model.movers += i_c_mover
     model.movers += i_w_mover
-    renderer.add_grid(ice_aware_curr.grid)
+#     renderer.add_grid(ice_aware_curr.grid)
 #     renderer.add_vec_prop(ice_aware_curr)
 
 
-    renderer.set_viewport(((-190.9, 60), (-72, 89)))
+#     renderer.set_viewport(((-190.9, 60), (-72, 89)))
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
     # c_mover = GridCurrentMover(curr_file)
     # model.movers += c_mover
@@ -122,13 +129,13 @@ if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
     print "doing full run"
-    rend = model.outputters[0]
+#     rend = model.outputters[0]
 #     rend.graticule.set_DMS(True)
     startTime = datetime.now()
     pd.profiler.enable()
     for step in model:
-        if step['step_num'] == 0:
-            rend.set_viewport(((-165, 69.25), (-162.5, 70)))
+#         if step['step_num'] == 0:
+#             rend.set_viewport(((-165, 69.25), (-162.5, 70)))
 #         if step['step_num'] == 0:
 #             rend.set_viewport(((-175, 65), (-160, 70)))
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
