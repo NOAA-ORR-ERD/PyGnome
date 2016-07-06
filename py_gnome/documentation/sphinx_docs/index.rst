@@ -13,6 +13,7 @@ Contents
   installing
   structure
   scripting
+  logging
   serialization
   units
   reference

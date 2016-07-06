@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
+import gnome
 from gnome import scripting
 from gnome import utilities
 from gnome.basic_types import datetime_value_2d, numerical_methods
@@ -25,6 +26,7 @@ from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.outputters import Renderer
 
+import logging #(so you can use the logger)
 # define base directory
 base_dir = os.path.dirname(__file__)
 
@@ -93,6 +95,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
 if __name__ == "__main__":
+    # turn on the logger:
+    gnome.initialize_console_log(level='debug')
     startTime = datetime.now()
     scripting.make_images_dir()
     model = make_model()
