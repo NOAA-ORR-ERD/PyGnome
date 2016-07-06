@@ -198,7 +198,7 @@ class GriddedProp(EnvProp):
         but time-invariant
         '''
 
-        sg = True
+        sg = False
         m = True
         if self.time is None:
             #special case! prop has no time variance
@@ -291,7 +291,8 @@ class GridVectorProp(VectorProp):
         if varnames is None:
             varnames = cls._gen_varnames(data_file)
         df = _get_dataset(data_file)
-        name = data_file if name is None else name
+        if name is None:
+            name = 'GridVectorProp'
         timevar=None
         data = df[varnames[0]]
         if time is None:
