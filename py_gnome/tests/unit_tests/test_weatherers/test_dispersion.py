@@ -88,10 +88,10 @@ def test_dispersion_not_active(oil, temp, num_elems):
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'dispersed'),
-                         [('ABU SAFAH', 288.7, 34.909),
+                         [('ABU SAFAH', 288.7, 363.235),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
-                           288.7, 162.454),
-                          ('BAHIA', 288.7, 89.400)
+                           288.7, 598.8),
+                          ('BAHIA', 288.7, 528.527)
                           ]
                          )
 def test_full_run(sample_model_fcn2, oil, temp, dispersed):
