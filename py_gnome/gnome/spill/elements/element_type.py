@@ -17,7 +17,6 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitWindages,
                            InitMassFromPlume)
 from oil_library import get_oil_props
-from oil_library import build_oil_props
 from gnome.persist import base_schema, class_from_objtype
 import unit_conversion as uc
 
@@ -336,10 +335,11 @@ def plume(distribution_type='droplet_size',
         # Assume density is at 15 K - convert density to api
         api = uc.convert('density', density_units, 'API', density)
         if substance_name is not None:
-            substance = build_oil_props({'name': substance_name, 'api': api},
-                                        2)
+            substance = get_oil_props({'name': substance_name,
+                                       'api': api},
+                                      2)
         else:
-            substance = build_oil_props({'api': api}, 2)
+            substance = get_oil_props({'api': api}, 2)
     elif substance_name is not None:
         # model 2 cuts if fake oil
         substance = get_oil_props(substance_name, 2)
