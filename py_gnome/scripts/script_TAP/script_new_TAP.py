@@ -102,6 +102,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
                                                  grid_topology=gt)
     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
+                                              ice_var = ice_aware_curr.ice_var,
+                                              ice_conc_var=ice_aware_curr.ice_conc_var,
                                               grid = ice_aware_curr.grid,)
 
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr)
