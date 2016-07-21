@@ -190,11 +190,14 @@ class Beaching(RemoveMass, Weatherer, Serializable):
             dm = 0
             types = uc.FindUnitTypes()
             unit_type = types[self.units]
-            if unit_type == 'Mass':
+            if unit_type == 'mass':
                 dm = uc.convert('Mass', self.units, 'kg', dv)
-            elif unit_type == 'Volume':
+            elif unit_type == 'volume':
                 dm = (uc.convert('Volume', self.units, 'm^3', dv) *
                       substance.get_density())
+            else:
+                self.logger.error('unit_type must either be mass or volume')
+                raise ValueError('unit_type must either be mass or volume')
             self._rate = dm/dt
 
         # find rate for time interval (model_time, model_time + time_step)
