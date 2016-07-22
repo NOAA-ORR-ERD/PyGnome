@@ -1,4 +1,4 @@
-'''
+﻿'''
 model biodegradation process
 '''
 import numpy as np
@@ -8,6 +8,10 @@ from gnome.utilities.serializable import Serializable
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 
+from gnome.array_types import (mass, 
+                               droplet_avg_size)
+
+from math import exp, pi
 
 class Biodegradation(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
@@ -39,10 +43,30 @@ class Biodegradation(Weatherer, Serializable):
             return
 
 
-    def bio_degradate_oil(self, **kwargs):
+    def bio_degradate_oil(self, data, substance, **kwargs):
+        '''
+            1. Droplet distribution per LE should be calculated by the natural
+            dispersion process and saved in the data arrays before the 
+            biodegradation weathering process.
+            2. It must take into consideration aromatic mass fractions only.
         '''
 
-        '''
+        model_time = kwargs.get('model_time')
+        time_step = kwargs.get('time_step')
+
+        comp_masses = data['mass_components']
+        droplet_avg_sizes = data['droplet_avg_size']
+        arom_mask = substance._sara['type'] == 'Aromatics'
+
+        # calculate rate coefficient (K_comp_rate) for all aromatics
+        # K_comp_rate for non-aromatics are masked to 0.0
+
+        K_comp_rate = arom_mask * 0.7 # TODO - should use a real method call
+
+        mass_biodegradated = comp_masses * exp(-4.0 * pi * droplet_avg_sizes ** 2 * 
+                                               K_comp_rate * time_step / 
+                                               comp_masses.sum(axes=1))
+
         # TODO
 
 
@@ -56,7 +80,26 @@ class Biodegradation(Weatherer, Serializable):
         if sc.num_released == 0:
             return
 
-        # TODO
+        for substance, data in sc.itersubstancedata(self.array_types):
+            if len(data['mass']) is 0:
+                continue
+
+            bio_deg = self.bio_degradate_oil(model_time=model_time,
+                                             time_step=time_step,
+                                             data=data,
+                                             substance=substance)
+
+            data['mass_components'] -= bio_deg
+
+            sc.mass_balance['bio_degradation'] += bio_deg.sum()
+
+            data['mass'] = data['mass_components'].sum(1)
+
+            # log bio degradated amount
+            self.logger.debug('{0} Amount bio degradated for {1}: {2}'
+                              .format(self._pid,
+                                      substance.name,
+                                      sc.mass_balance['bio_degradation']))
 
         sc.update_from_fatedataview()
 

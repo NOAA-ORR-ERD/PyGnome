@@ -334,6 +334,9 @@
     <Compile Include="tests\unit_tests\test_utilities\test_weathering_algorithms.py" />
     <Compile Include="tests\unit_tests\test_utilities\__init__.py" />
     <Compile Include="tests\unit_tests\test_weatherers\conftest.py" />
+    <Compile Include="tests\unit_tests\test_weatherers\test_bio_degradation.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="tests\unit_tests\test_weatherers\test_cleanup.py" />
     <Compile Include="tests\unit_tests\test_weatherers\test_dispersion.py" />
     <Compile Include="tests\unit_tests\test_weatherers\test_dissolution.py" />
