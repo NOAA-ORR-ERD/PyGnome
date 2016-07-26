@@ -14,7 +14,6 @@ from gnome.persist import base_schema
 import pyugrid
 import pysgrid
 import unit_conversion
-from contextlib import closing
 from gnome.environment.property import Time, PropertySchema
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
 from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema, init_grid, _get_dataset
@@ -225,19 +224,25 @@ class IceConcentration(GriddedProp, serializable.Serializable):
                         varname=varname)
 
     @classmethod
-    def _gen_varname(cls, filename):
+    def _gen_varname(cls,
+                     filename=None,
+                     dataset=None):
         '''
         Function to find the default variable names if they are not provided
 
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        with closing (_get_dataset(filename)) as df:
-            comp_names=['ice_fraction',]
-            for n in comp_names:
-                if n in df.variables.keys():
-                    return n
-            return None
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
+        comp_names=['ice_fraction',]
+        for n in comp_names:
+            if n in df.variables.keys():
+                return n
+        return None
 
     def __eq__(self, o):
         t1 = (self.name == o.name and
@@ -351,19 +356,25 @@ class GridCurrent(VelocityGrid, Environment):
             self.angle = GriddedProp(name='angle',units='radians',time=None, grid=self.grid, data=df['angle'])
 
     @classmethod
-    def _gen_varnames(cls, filename=None):
+    def _gen_varnames(cls,
+                      filename=None,
+                      dataset=None):
         '''
         Function to find the default variable names if they are not provided
 
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        with closing (_get_dataset(filename)) as df:
-            comp_names=[['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]
-            for n in comp_names:
-                if n[0] in df.variables.keys() and n[1] in df.variables.keys():
-                    return n
-            return None
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
+        comp_names=[['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]
+        for n in comp_names:
+            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
+                return n
+        return None
 
     def at(self, points, time, units=None, extrapolate=False):
         value = super(GridCurrent,self).at(points, time, units, extrapolate=extrapolate)
@@ -417,12 +428,16 @@ class GridWind(VelocityGrid, Environment):
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        with closing (_get_dataset(filename)) as df:
-            comp_names=[['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
-            for n in comp_names:
-                if n[0] in df.variables.keys() and n[1] in df.variables.keys():
-                    return n
-            return None
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
+        comp_names=[['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
+        for n in comp_names:
+            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
+                return n
+        return None
 
     def at(self, points, time, units=None, extrapolate=False):
         value = super(GridWind,self).at(points, time, units, extrapolate=extrapolate)
@@ -465,12 +480,16 @@ class IceVelocity(VelocityGrid):
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        with closing (_get_dataset(filename)) as df:
-            comp_names=[['ice_u', 'ice_v',],]
-            for n in comp_names:
-                if n[0] in df.variables.keys() and n[1] in df.variables.keys():
-                    return n
-            return None
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
+        comp_names=[['ice_u', 'ice_v',],]
+        for n in comp_names:
+            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
+                return n
+        return None
 
 
 class IceAwareCurrent(serializable.Serializable):
