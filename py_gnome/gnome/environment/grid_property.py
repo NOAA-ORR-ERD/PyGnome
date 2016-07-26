@@ -12,6 +12,7 @@ import pyugrid
 import pysgrid
 import unit_conversion
 import collections
+from contextlib import closing
 
 class GridPropSchema(PropertySchema):
     varname = SchemaNode(String(), missing=drop)
@@ -80,8 +81,7 @@ class GriddedProp(EnvProp):
                              grid_topology=grid_topology,
                              dataset=dg)
         if varname is None:
-            varname = cls._gen_varname(data_file,
-                                       dataset=ds)
+            varname = cls._gen_varname(data_file)
             if varname is None:
                 raise NameError('Default current names are not in the data file, must supply variable name')
         data = ds[varname]
@@ -320,8 +320,7 @@ class GridVectorProp(VectorProp):
                              grid_topology=grid_topology,
                              dataset=dg)
         if varnames is None:
-            varnames = cls._gen_varnames(data_file,
-                                         dataset=ds)
+            varnames = cls._gen_varnames(data_file)
         if name is None:
             name = 'GridVectorProp'
         timevar=None
@@ -353,9 +352,7 @@ class GridVectorProp(VectorProp):
                    dataset=ds)
 
     @classmethod
-    def _gen_varnames(cls,
-                      filename,
-                      dataset=None):
+    def _gen_varnames(cls, filename):
         raise NotImplementedError
 
     def _check_consistency(self):
@@ -565,57 +562,54 @@ def init_grid(filename,
                                  edge2_lat = edge2_lat)
     return grid
 
-def _gen_topology(filename,
-                  dataset=None):
+def _gen_topology(filename):
     '''
     Function to create the correct default topology if it is not provided
 
     :param filename: Name of file that will be searched for variables
     :return: List of default variable names, or None if none are found
     '''
-    gf = dataset
-    if gf is None:
-        gf = _get_dataset(filename)
-    gt = {}
-    node_coord_names = [['node_lon','node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
-    face_var_names = ['nv']
-    center_coord_names = [['center_lon', 'center_lat'], ['lon_rho', 'lat_rho']]
-    edge1_coord_names = [['edge1_lon', 'edge1_lat'], ['lon_u', 'lat_u']]
-    edge2_coord_names = [['edge2_lon', 'edge2_lat'], ['lon_v', 'lat_v']]
-    for n in node_coord_names:
-        if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-            gt['node_lon'] = n[0]
-            gt['node_lat'] = n[1]
-            break
+    with closing (_get_dataset(filename)) as gf:
+        gt = {}
+        node_coord_names = [['node_lon','node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
+        face_var_names = ['nv']
+        center_coord_names = [['center_lon', 'center_lat'], ['lon_rho', 'lat_rho']]
+        edge1_coord_names = [['edge1_lon', 'edge1_lat'], ['lon_u', 'lat_u']]
+        edge2_coord_names = [['edge2_lon', 'edge2_lat'], ['lon_v', 'lat_v']]
+        for n in node_coord_names:
+            if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
+                gt['node_lon'] = n[0]
+                gt['node_lat'] = n[1]
+                break
 
-    if 'node_lon' not in gt:
-        raise NameError('Default node topology names are not in the grid file')
+        if 'node_lon' not in gt:
+            raise NameError('Default node topology names are not in the grid file')
 
-    for n in face_var_names:
-        if n in gf.variables.keys():
-            gt['faces'] = n
-            break
+        for n in face_var_names:
+            if n in gf.variables.keys():
+                gt['faces'] = n
+                break
 
-    if 'faces' in gt.keys():
-        #UGRID
+        if 'faces' in gt.keys():
+            #UGRID
+            return gt
+        else:
+            for n in center_coord_names:
+                if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
+                    gt['center_lon'] = n[0]
+                    gt['center_lat'] = n[1]
+                    break
+            for n in edge1_coord_names:
+                if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
+                    gt['edge1_lon'] = n[0]
+                    gt['edge1_lat'] = n[1]
+                    break
+            for n in edge2_coord_names:
+                if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
+                    gt['edge2_lon'] = n[0]
+                    gt['edge2_lat'] = n[1]
+                    break
         return gt
-    else:
-        for n in center_coord_names:
-            if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-                gt['center_lon'] = n[0]
-                gt['center_lat'] = n[1]
-                break
-        for n in edge1_coord_names:
-            if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-                gt['edge1_lon'] = n[0]
-                gt['edge1_lat'] = n[1]
-                break
-        for n in edge2_coord_names:
-            if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-                gt['edge2_lon'] = n[0]
-                gt['edge2_lat'] = n[1]
-                break
-    return gt
 
 def _get_dataset(filename):
     df = None
