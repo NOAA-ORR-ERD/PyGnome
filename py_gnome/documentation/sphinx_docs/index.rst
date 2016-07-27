@@ -12,6 +12,7 @@ Contents
   introduction
   installing
   structure
+  customizing
   scripting
   logging
   serialization
