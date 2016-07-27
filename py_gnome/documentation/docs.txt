@@ -8,8 +8,13 @@ http://sphinx.pocoo.org/
 
 Once installed, you can build the HTML docs with:
 
-sphinx-build -b html ./  HTML_DOCS
+sphinx-build -b html ./  HTML_DOCS 
 
-run in the sphinx_docs directory
+or:
+
+make html
+
+Run in the sphinx_docs directory. The first option will put HTML docs in a HTML_DOCS subfolder within sphinx_docs.
+The second option will put them in _build/html
 
 
