@@ -209,6 +209,7 @@ class IceConcentration(GriddedProp, serializable.Serializable):
              data = None,
              data_file=None,
              grid_file=None,
+             dataset=None,
              varname=None,
              **kwargs):
         GriddedProp.__init__(self,
@@ -219,17 +220,24 @@ class IceConcentration(GriddedProp, serializable.Serializable):
                         data=data,
                         data_file = data_file,
                         grid_file = grid_file,
+                        dataset=dataset,
                         varname=varname)
 
     @classmethod
-    def _gen_varname(cls, filename):
+    def _gen_varname(cls,
+                     filename=None,
+                     dataset=None):
         '''
         Function to find the default variable names if they are not provided
 
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        df = _get_dataset(filename)
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
         comp_names=['ice_fraction',]
         for n in comp_names:
             if n in df.variables.keys():
@@ -272,6 +280,7 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
                  variables = None,
                  data_file=None,
                  grid_file=None,
+                 dataset=None,
                  **kwargs):
 
         if len(variables) > 2:
@@ -283,7 +292,8 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
                                 grid=grid,
                                 variables=variables,
                                 data_file = data_file,
-                                grid_file = grid_file)
+                                grid_file = grid_file,
+                                dataset=dataset)
 
     def __eq__(self, o):
         if o is None:
@@ -324,7 +334,8 @@ class GridCurrent(VelocityGrid, Environment):
                  variables=None,
                  grid=None,
                  grid_file=None,
-                 data_file=None):
+                 data_file=None,
+                 dataset=None):
         VelocityGrid.__init__(self,
                               name=name,
                               units=units,
@@ -332,23 +343,33 @@ class GridCurrent(VelocityGrid, Environment):
                               variables=variables,
                               grid=grid,
                               grid_file=grid_file,
-                              data_file=data_file)
+                              data_file=data_file,
+                              dataset=dataset)
         self.angle = None
-        if data_file is not None:
+        df = None
+        if dataset is not None:
+            df = dataset
+        elif data_file is not None:
             df = _get_dataset(data_file)
-            if 'angle' in df.variables.keys():
-                #Unrotated ROMS Grid!
-                self.angle = GriddedProp(name='angle',units='radians',time=None, grid=self.grid, data=df['angle'])
+        if df is not None and 'angle' in df.variables.keys():
+            #Unrotated ROMS Grid!
+            self.angle = GriddedProp(name='angle',units='radians',time=None, grid=self.grid, data=df['angle'])
 
     @classmethod
-    def _gen_varnames(cls, filename):
+    def _gen_varnames(cls,
+                      filename=None,
+                      dataset=None):
         '''
         Function to find the default variable names if they are not provided
 
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        df = _get_dataset(filename)
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
         comp_names=[['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]
         for n in comp_names:
             if n[0] in df.variables.keys() and n[1] in df.variables.keys():
@@ -376,7 +397,8 @@ class GridWind(VelocityGrid, Environment):
                  variables=None,
                  grid=None,
                  grid_file=None,
-                 data_file=None):
+                 data_file=None,
+                 dataset=None):
         VelocityGrid.__init__(self,
                               name=name,
                               units=units,
@@ -384,22 +406,33 @@ class GridWind(VelocityGrid, Environment):
                               variables=variables,
                               grid=grid,
                               grid_file=grid_file,
-                              data_file=data_file)
+                              data_file=data_file,
+                              dataset=dataset)
         self.angle = None
-        df = _get_dataset(data_file)
-        if 'angle' in df.variables.keys():
+        df = None
+        if dataset is not None:
+            df = dataset
+        elif data_file is not None:
+            df = _get_dataset(data_file)
+        if df is not None and 'angle' in df.variables.keys():
             #Unrotated ROMS Grid!
-            self.angle = GriddedProp(name='angle',units='radians',time=[self.time.time[0]], grid=self.grid, data=df['angle'])
+            self.angle = GriddedProp(name='angle',units='radians',time=None, grid=self.grid, data=df['angle'])
 
     @classmethod
-    def _gen_varnames(cls, filename):
+    def _gen_varnames(cls,
+                      filename=None,
+                      dataset=None):
         '''
         Function to find the default variable names if they are not provided
 
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        df = _get_dataset(filename)
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
         comp_names=[['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
         for n in comp_names:
             if n[0] in df.variables.keys() and n[1] in df.variables.keys():
@@ -425,7 +458,8 @@ class IceVelocity(VelocityGrid):
                  variables=None,
                  grid=None,
                  grid_file=None,
-                 data_file=None):
+                 data_file=None,
+                 dataset=None):
         VelocityGrid.__init__(self,
                               name=name,
                               units=units,
@@ -433,17 +467,24 @@ class IceVelocity(VelocityGrid):
                               variables=variables,
                               grid=grid,
                               grid_file=grid_file,
-                              data_file=data_file)
+                              data_file=data_file,
+                              dataset=None)
 
     @classmethod
-    def _gen_varnames(cls, filename):
+    def _gen_varnames(cls,
+                      filename=None,
+                      dataset=None):
         '''
         Function to find the default variable names if they are not provided
 
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
         '''
-        df = _get_dataset(filename)
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
         comp_names=[['ice_u', 'ice_v',],]
         for n in comp_names:
             if n[0] in df.variables.keys() and n[1] in df.variables.keys():
@@ -510,27 +551,44 @@ class IceAwareCurrent(serializable.Serializable):
                     water_var=None,
                     ice_conc_var=None,
                     grid=None,
+                    dataset=None,
                     grid_file=None,
                     data_file=None):
         if filename is not None:
             data_file = filename
             grid_file = filename
+
+        ds = None
+        dg = None
+        if dataset is None:
+            if grid_file == data_file:
+                ds = dg = _get_dataset(grid_file)
+            else:
+                ds = _get_dataset(data_file)
+                dg = _get_dataset(grid_file)
+        else:
+            ds = dg = dataset
+
         if grid is None:
             grid = init_grid(grid_file,
-                             grid_topology=grid_topology)
+                             grid_topology=grid_topology,
+                             dataset=dg)
         if ice_var is None:
             ice_var = IceVelocity.from_netCDF(filename,
-                                              grid=grid)
+                                              grid=grid,
+                                              dataset=ds)
         if time is None:
             time = ice_var.time
         if water_var is None:
             water_var = GridCurrent.from_netCDF(filename,
                                                 time=time,
-                                                grid=grid)
+                                                grid=grid,
+                                                dataset=ds)
         if ice_conc_var is None:
             ice_conc_var = IceConcentration.from_netCDF(filename,
                                                         time=time,
-                                                        grid=grid)
+                                                        grid=grid,
+                                                        dataset=ds)
         if name is None:
             name = 'IceAwareCurrent'
         if units is None:
@@ -627,27 +685,43 @@ class IceAwareWind(serializable.Serializable, Environment):
                     wind_var=None,
                     ice_conc_var=None,
                     grid=None,
+                    dataset=None,
                     grid_file=None,
                     data_file=None):
         if filename is not None:
             data_file = filename
             grid_file = filename
+
+        ds = None
+        dg = None
+        if dataset is None:
+            if grid_file == data_file:
+                ds = dg = _get_dataset(grid_file)
+            else:
+                ds = _get_dataset(data_file)
+                dg = _get_dataset(grid_file)
+        else:
+            ds = dg = dataset
         if grid is None:
             grid = init_grid(grid_file,
-                             grid_topology=grid_topology)
+                             grid_topology=grid_topology,
+                             dataset=dg)
         if ice_var is None:
             ice_var = IceVelocity.from_netCDF(filename,
-                                              grid=grid)
+                                              grid=grid,
+                                              dataset=ds)
         if time is None:
             time = ice_var.time
         if wind_var is None:
             wind_var = GridWind.from_netCDF(filename,
                                                 time=time,
-                                                grid=grid)
+                                                grid=grid,
+                                                dataset=ds)
         if ice_conc_var is None:
             ice_conc_var = IceConcentration.from_netCDF(filename,
                                                         time=time,
-                                                        grid=grid)
+                                                        grid=grid,
+                                                        dataset=ds)
         if name is None:
             name = 'IceAwareCurrent'
         if units is None:
@@ -679,135 +753,6 @@ class IceAwareWind(serializable.Serializable, Environment):
             return vels
         else:
             return self.wind_var.at(points, time, units, extrapolate)
-
-
-class IceAwareCombo(serializable.Serializable, Environment):
-    _state = copy.deepcopy(serializable.Serializable._state)
-
-    _schema = VelocityGridSchema
-
-    _state.add_field([serializable.Field('units', save=True, update=True),
-#                 serializable.Field('varnames', save=True, update=True),
-                serializable.Field('time', save=True, update=True),
-                serializable.Field('data_file', save=True, update=True),
-                serializable.Field('grid_file', save=True, update=True)])
-    _ref_as = 'wind'
-    def __init__(self,
-                 name=None,
-                 units=None,
-                 time=None,
-                 ice_var=None,
-                 current_var=None,
-                 wind_var=None,
-                 ice_conc_var=None,
-                 grid=None,
-                 grid_file=None,
-                 data_file=None):
-        self.name=name
-        self.units=units
-        self.time=time
-        self.ice_var=ice_var
-        self.wind_var=wind_var
-        self.current_var=current_var
-        self.ice_conc_var=ice_conc_var
-        self.grid=grid
-        self.grid_file=grid_file
-        self.data_file=data_file
-
-    def _check_consistency(self):
-        '''
-        Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
-        '''
-        if self.units is None or self.time is None or self.grid is None:
-            return
-        for v in [self.ice_var, self.wind_var, self.current_var]:
-            if v.units != self.units:
-                raise ValueError("Variable {0} did not have units consistent with what was specified. Got: {1} Expected {2}".format(v.name,v.units, self.units))
-            if v.time != self.time:
-                raise ValueError("Variable {0} did not have time consistent with what was specified Got: {1} Expected {2}".format(v.name,v.time, self.time))
-            if v.grid != self.grid:
-                raise ValueError("Variable {0} did not have grid consistent with what was specified Got: {1} Expected {2}".format(v.name,v.grid, self.grid))
-            if v.grid_file != self.grid_file:
-                raise ValueError("Variable {0} did not have grid_file consistent with what was specified Got: {1} Expected {2}".format(v.name,v.grid_file, self.grid_file))
-            if v.data_file != self.data_file:
-                raise ValueError("Variable {0} did not have data_file consistent with what was specified Got: {1} Expected {2}".format(v.name,v.data_file, self.data_file))
-
-    @classmethod
-    def from_netCDF(cls,
-                    filename=None,
-                    grid_topology=None,
-                    name=None,
-                    units=None,
-                    time=None,
-                    ice_var=None,
-                    current_var=None,
-                    wind_var=None,
-                    ice_conc_var=None,
-                    grid=None,
-                    grid_file=None,
-                    data_file=None):
-        if filename is not None:
-            data_file = filename
-            grid_file = filename
-        if grid is None:
-            grid = init_grid(grid_file,
-                             grid_topology=grid_topology)
-        if ice_var is None:
-            ice_var = IceVelocity.from_netCDF(filename,
-                                              grid=grid)
-        if time is None:
-            time = ice_var.time
-        if wind_var is None:
-            wind_var = GridWind.from_netCDF(filename,
-                                            time=time,
-                                            grid=grid)
-        if current_var is None:
-            current_var = GridCurrent.from_netCDF(filename,
-                                                  time=time,
-                                                  grid=grid)
-        if ice_conc_var is None:
-            ice_conc_var = IceConcentration.from_netCDF(filename,
-                                                        time=time,
-                                                        grid=grid)
-        if name is None:
-            name = 'IceAwareCombo'
-        if units is None:
-            units = wind_var.units
-        return cls(name=name,
-                   units=units,
-                   time=time,
-                   ice_var=ice_var,
-                   wind_var=wind_var,
-                   ice_conc_var=ice_conc_var,
-                   grid=grid,
-                   grid_file=grid_file,
-                   data_file=data_file)
-
-    def at(self, points, time, units=None, extrapolate=False):
-        interp = self.ice_conc_var.at(points, time, extrapolate=extrapolate)
-        interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
-        vel_mask = interp < 0.2
-        ice_mask = interp >= 0.8
-
-        wind_v = self.wind_var.at(points, time, units, extrapolate)
-        current_v = self.current_var.at(points, time, units, extrapolate)
-        ice_v = self.ice_var.at(points, time, units, extrapolate)
-        interp -= 0.2
-        interp *= 1.25
-
-        w_vels = wind_v.copy()
-        w_vels[ice_mask] = ice_v[ice_mask]
-        diff_v = ice_v
-        diff_v -= wind_v
-        w_vels[interp_mask] += diff_v[interp_mask]
-
-        c_vels = current_v.copy()
-        c_vels[ice_mask] = ice_v[ice_mask]
-        diff_v = ice_v
-        diff_v -= wind_v
-        c_vels[interp_mask] += diff_v[interp_mask]
-        return (c_vels, w_vels)
-
 
 if __name__ == "__main__":
     import datetime as dt
