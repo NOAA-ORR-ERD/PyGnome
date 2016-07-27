@@ -12,8 +12,8 @@ Contents
   introduction
   installing
   structure
-  customizing
   scripting
+  customizing
   logging
   serialization
   units

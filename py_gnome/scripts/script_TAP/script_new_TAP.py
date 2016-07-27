@@ -46,7 +46,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   time_step=3600*2)
 
 #     mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
-    mapfile = get_datafile(os.path.join(base_dir, 'arctic_coast3.bna'))
+    mapfile = get_datafile('arctic_coast3.bna')
 
     print 'adding the map'
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
