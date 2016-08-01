@@ -137,6 +137,45 @@ model run and in subsequent steps the model moves and weathers elements.
     :members:
     :inherited-members:
 
+
+``gnome.environment.property`` -- PyGnome abstract property classes
+-------------------------------------------------------
+.. automodule:: gnome.environment.property
+.. autoclass:: EnvProp
+   :members:
+.. autoclass:: VectorProp
+   :members:
+.. autoclass:: Time
+   :members:    
+.. automodule:: gnome.environment.grid_property
+.. autoclass:: GriddedProp
+   :members:
+   :show-inheritance:
+   :inherited-members:
+.. autoclass:: GridVectorProp
+   :members:
+   :show-inheritance:
+   :inherited-members: 
+.. automodule:: gnome.environment.ts_property
+.. autoclass:: TimeSeriesProp
+   :members:
+   :show-inheritance:
+   :inherited-members:
+.. autoclass:: TSVectorProp
+   :members:
+   :show-inheritance:
+   :inherited-members:
+    
+``gnome.environment.property_classes`` -- PyGnome implemented property classes
+-------------------------------------------------------
+.. automodule:: gnome.environment.property_classes
+.. autoclass:: VelocityTS
+    :members:
+    :show-inheritance:
+.. autoclass:: VelocityGrid
+    :members:
+    :show-inheritance:
+
 ``gnome.outputter`` -- PyGnome outputters module
 ---------------------------------------------------
 .. automodule:: gnome.outputters

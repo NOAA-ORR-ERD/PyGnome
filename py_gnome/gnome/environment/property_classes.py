@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
 from gnome.persist.base_schema import ObjType
 from gnome.utilities import serializable
-from gnome.movers import ProcessSchema
 from gnome.persist import base_schema
 
 import pyugrid
@@ -227,12 +226,12 @@ class IceConcentration(GriddedProp, serializable.Serializable):
     def _gen_varname(cls,
                      filename=None,
                      dataset=None):
-        '''
+        """
         Function to find the default variable names if they are not provided
 
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
-        '''
+        """
         df = None
         if dataset is not None:
             df = dataset
@@ -359,12 +358,12 @@ class GridCurrent(VelocityGrid, Environment):
     def _gen_varnames(cls,
                       filename=None,
                       dataset=None):
-        '''
+        """
         Function to find the default variable names if they are not provided
 
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
-        '''
+        """
         df = None
         if dataset is not None:
             df = dataset
@@ -422,12 +421,12 @@ class GridWind(VelocityGrid, Environment):
     def _gen_varnames(cls,
                       filename=None,
                       dataset=None):
-        '''
+        """
         Function to find the default variable names if they are not provided
 
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
-        '''
+        """
         df = None
         if dataset is not None:
             df = dataset
@@ -468,18 +467,18 @@ class IceVelocity(VelocityGrid):
                               grid=grid,
                               grid_file=grid_file,
                               data_file=data_file,
-                              dataset=None)
+                              dataset=dataset)
 
     @classmethod
     def _gen_varnames(cls,
                       filename=None,
                       dataset=None):
-        '''
+        """
         Function to find the default variable names if they are not provided
 
         :param filename: Name of file that will be searched for variables
         :return: List of default variable names, or None if none are found
-        '''
+        """
         df = None
         if dataset is not None:
             df = dataset
@@ -523,9 +522,9 @@ class IceAwareCurrent(serializable.Serializable):
         self.data_file=data_file
 
     def _check_consistency(self):
-        '''
+        """
         Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
-        '''
+        """
         if self.units is None or self.time is None or self.grid is None:
             return
         for v in [self.ice_var, self.water_var]:
@@ -657,9 +656,9 @@ class IceAwareWind(serializable.Serializable, Environment):
         self.data_file=data_file
 
     def _check_consistency(self):
-        '''
+        """
         Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
-        '''
+        """
         if self.units is None or self.time is None or self.grid is None:
             return
         for v in [self.ice_var, self.wind_var]:

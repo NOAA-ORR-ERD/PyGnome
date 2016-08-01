@@ -20,9 +20,6 @@ class GridPropSchema(PropertySchema):
 
 
 class GriddedProp(EnvProp):
-    '''
-    This class represents a phenomenon using gridded data
-    '''
 
     def __init__(self,
                  name=None,
@@ -34,6 +31,26 @@ class GriddedProp(EnvProp):
                  grid_file=None,
                  dataset=None,
                  varname=None):
+        '''
+        This class represents a phenomenon using gridded data
+
+        :param name: Name
+        :param units: Units
+        :param time: Time axis of the data
+        :param data: Underlying data source
+        :param grid: Grid that the data corresponds with
+        :param data_file: Name of data source file
+        :param grid_file: Name of grid source file
+        :param varname: Name of the variable in the data source file
+        :type name: string
+        :type units: string
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+        :type data: netCDF4.Variable or numpy.array
+        :type grid: pysgrid or pyugrid
+        :type data_file: string
+        :type grid_file: string
+        :type varname: string
+        '''
 
         self._grid = self._data_file = self._grid_file = None
 
@@ -60,6 +77,30 @@ class GriddedProp(EnvProp):
                     data_file=None,
                     grid_file=None
                     ):
+        '''
+        Allows one-function creation of a GriddedProp from a file. All parameters optional
+
+        :param filename: Data source
+        :param varname: Name of the variable in the data source file
+        :param grid_topology: Description of the relationship between grid attributes and variable names.
+        :param name: Name of property
+        :param units: Units
+        :param time: Time axis of the data
+        :param data: Underlying data source
+        :param grid: Grid that the data corresponds with
+        :param data_file: Name of data source file
+        :param grid_file: Name of grid source file
+        :type filename: string
+        :type varname: string
+        :type grid_topology: {string : string, ...}
+        :type name: string
+        :type units: string
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+        :type data: netCDF4.Variable or numpy.array
+        :type grid: pysgrid or pyugrid
+        :type data_file: string
+        :type grid_file: string
+        '''
         if filename is not None:
             data_file = filename
             grid_file = filename
@@ -206,12 +247,6 @@ class GriddedProp(EnvProp):
         return value
 
     def at(self, points, time, units=None, depth = -1, extrapolate=False):
-        '''
-        Interpolates this property to the given points at the given time.
-        :param points: A Nx2 array of lon,lat points
-        :param time: A datetime object. May be None; if this is so, the variable is assumed to be gridded
-        but time-invariant
-        '''
 
         sg = False
         m = True
