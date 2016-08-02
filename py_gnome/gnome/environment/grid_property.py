@@ -251,6 +251,22 @@ class GriddedProp(EnvProp):
         return value
 
     def at(self, points, time, units=None, depth = -1, extrapolate=False):
+        '''
+        Find the value of the property at positions P at time T
+
+        :param points: Coordinates to be queried (P)
+        :param time: The time at which to query these points (T)
+        :param depth: Specifies the depth level of the variable
+        :param units: units the values will be returned in (or converted to)
+        :param extrapolate: if True, extrapolation will be supported
+        :type points: Nx2 array of double
+        :type time: datetime.datetime object
+        :type depth: integer
+        :type units: string such as ('m/s', 'knots', etc)
+        :type extrapolate: boolean (True or False)
+        :return: returns a Nx1 array of interpolated values
+        :rtype: double
+        '''
 
         sg = False
         m = True
