@@ -227,9 +227,14 @@ class IceConcentration(GriddedProp, serializable.Serializable):
                      filename=None,
                      dataset=None):
         """
-        Function to find the default variable names if they are not provided
+        Function to find the default variable names if they are not provided.
+
+        Default names: 'ice_fraction'
 
         :param filename: Name of file that will be searched for variables
+        :param dataset: Existing instance of a netCDF4.Dataset
+        :type filename: string
+        :type dataset: netCDF.Dataset
         :return: List of default variable names, or None if none are found
         """
         df = None
@@ -359,9 +364,14 @@ class GridCurrent(VelocityGrid, Environment):
                       filename=None,
                       dataset=None):
         """
-        Function to find the default variable names if they are not provided
+        Function to find the default variable names if they are not provided.
+
+        Default names: [['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]
 
         :param filename: Name of file that will be searched for variables
+        :param dataset: Existing instance of a netCDF4.Dataset
+        :type filename: string
+        :type dataset: netCDF.Dataset
         :return: List of default variable names, or None if none are found
         """
         df = None
@@ -422,9 +432,14 @@ class GridWind(VelocityGrid, Environment):
                       filename=None,
                       dataset=None):
         """
-        Function to find the default variable names if they are not provided
+        Function to find the default variable names if they are not provided.
+
+        Default names: [['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
 
         :param filename: Name of file that will be searched for variables
+        :param dataset: Existing instance of a netCDF4.Dataset
+        :type filename: string
+        :type dataset: netCDF.Dataset
         :return: List of default variable names, or None if none are found
         """
         df = None
@@ -474,9 +489,14 @@ class IceVelocity(VelocityGrid):
                       filename=None,
                       dataset=None):
         """
-        Function to find the default variable names if they are not provided
+        Function to find the default variable names if they are not provided.
+
+        Default names: [['ice_u', 'ice_v',],]
 
         :param filename: Name of file that will be searched for variables
+        :param dataset: Existing instance of a netCDF4.Dataset
+        :type filename: string
+        :type dataset: netCDF.Dataset
         :return: List of default variable names, or None if none are found
         """
         df = None
@@ -490,6 +510,102 @@ class IceVelocity(VelocityGrid):
                 return n
         return None
 
+class IceAwareProp(serializable.Serializable):
+    _state = copy.deepcopy(serializable.Serializable._state)
+
+    _schema = VelocityGridSchema
+
+    _state.add_field([serializable.Field('units', save=True, update=True),
+#                 serializable.Field('varnames', save=True, update=True),
+                serializable.Field('time', save=True, update=True),
+                serializable.Field('data_file', save=True, update=True),
+                serializable.Field('grid_file', save=True, update=True)])
+
+    def __init__(self,
+                 name=None,
+                 units=None,
+                 time=None,
+                 ice_var=None,
+                 water_var=None,
+                 ice_conc_var=None,
+                 grid=None,
+                 grid_file=None,
+                 data_file=None):
+        self.name=name
+        self.units=units
+        self.time=time
+        self.ice_var=ice_var
+        self.water_var=water_var
+        self.ice_conc_var=ice_conc_var
+        self.grid=grid
+        self.grid_file=grid_file
+        self.data_file=data_file
+
+    @classmethod
+    def from_netCDF(cls,
+                    filename=None,
+                    grid_topology=None,
+                    name=None,
+                    units=None,
+                    time=None,
+                    ice_var=None,
+                    water_var=None,
+                    ice_conc_var=None,
+                    grid=None,
+                    dataset=None,
+                    grid_file=None,
+                    data_file=None):
+        if filename is not None:
+            data_file = filename
+            grid_file = filename
+
+        ds = None
+        dg = None
+        if dataset is None:
+            if grid_file == data_file:
+                ds = dg = _get_dataset(grid_file)
+            else:
+                ds = _get_dataset(data_file)
+                dg = _get_dataset(grid_file)
+        else:
+            ds = dg = dataset
+
+        if grid is None:
+            grid = init_grid(grid_file,
+                             grid_topology=grid_topology,
+                             dataset=dg)
+        if ice_var is None:
+            ice_var = IceVelocity.from_netCDF(filename,
+                                              grid=grid,
+                                              dataset=ds)
+        if time is None:
+            time = ice_var.time
+        if water_var is None:
+            water_var = GridCurrent.from_netCDF(filename,
+                                                time=time,
+                                                grid=grid,
+                                                dataset=ds)
+        if ice_conc_var is None:
+            ice_conc_var = IceConcentration.from_netCDF(filename,
+                                                        time=time,
+                                                        grid=grid,
+                                                        dataset=ds)
+        if name is None:
+            name = 'IceAwareCurrent'
+        if units is None:
+            units = water_var.units
+        return cls(name=name,
+                   units=units,
+                   time=time,
+                   ice_var=ice_var,
+                   water_var=water_var,
+                   ice_conc_var=ice_conc_var,
+                   grid=grid,
+                   grid_file=grid_file,
+                   data_file=data_file)
+
+    def _scaling_function(self, *args, **kwargs):
+        raise NotImplementedError()
 
 class IceAwareCurrent(serializable.Serializable):
     _state = copy.deepcopy(serializable.Serializable._state)

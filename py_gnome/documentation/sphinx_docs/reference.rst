@@ -47,40 +47,40 @@ model run and in subsequent steps the model moves and weathers elements.
 
 .. automodule:: gnome.model
 .. autoclass:: Model
-   :members:
-   :undoc-members:
-   :show-inheritance:
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 ``gnome.map`` -- the PyGnome map class
 ---------------------------------------------------
 .. automodule:: gnome.map
-   :members:
+    :members:
 
 ``gnome.spill`` -- classes in the spill module
 ---------------------------------------------------
 .. automodule:: gnome.spill
 .. autoclass:: Spill
-   :members:
-   :inherited-members:
+    :members:
+    :inherited-members:
 .. autoclass:: Release
-   :members:
-   :inherited-members:
+    :members:
+    :inherited-members:
 .. autoclass:: PointLineRelease
-   :members:
-   :inherited-members:
+    :members:
+    :inherited-members:
 .. autoclass:: SpatialRelease
-   :members:
-   :inherited-members:
+    :members:
+    :inherited-members:
 .. autoclass:: VerticalPlumeRelease
-   :members:
-   :inherited-members:
+    :members:
+    :inherited-members:
 
 ``gnome.spill.elements`` -- classes in the elements module
 --------------------------------------------------------------
 .. automodule:: gnome.spill.elements.element_type
 .. autoclass:: ElementType
-   :members:
-   :inherited-members:
+    :members:
+    :inherited-members:
 .. autofunction:: floating
 .. autofunction:: plume
 
@@ -88,20 +88,20 @@ model run and in subsequent steps the model moves and weathers elements.
 ---------------------------------------------------
 .. automodule:: gnome.movers
 .. autoclass:: Process
-   :members:
+    :members:
 .. autoclass:: Mover
-   :members:
+    :members:
 .. autoclass:: CyMover
-   :members:
+    :members:
 .. autoclass:: RandomMover
-   :members:
-   :inherited-members:
+    :members:
+    :inherited-members:
 .. autoclass:: GridCurrentMover
     :members:
     :inherited-members:
 .. autoclass:: WindMover
-   :members:
-   :show-inheritance:
+    :members:
+    :show-inheritance:
 .. autoclass:: GridWindMover
     :members:
     :inherited-members:
@@ -120,8 +120,8 @@ model run and in subsequent steps the model moves and weathers elements.
     :members:
     :inherited-members:
 .. autoclass:: Skimmer
-   :members:
-   :show-inheritance:
+    :members:
+    :show-inheritance:
 .. autoclass:: Burn
     :members:
     :inherited-members:
@@ -137,44 +137,55 @@ model run and in subsequent steps the model moves and weathers elements.
     :members:
     :inherited-members:
 
+``gnome.environment.property_classes`` -- PyGnome implemented property classes
+--------------------------------------------------------------------------------
+.. automodule:: gnome.environment.property_classes
+.. autoclass:: IceConcentration
+    :members: from_netCDF, _gen_varname
+    :private-members:
+    :show-inheritance:
+.. autoclass:: GridCurrent
+    :members: from_netCDF, _gen_varnames
+    :private-members:
+    :show-inheritance:
+.. autoclass:: GridWind
+    :members: from_netCDF, _gen_varnames
+    :private-members:
+    :show-inheritance:
+.. autoclass:: IceVelocity
+    :members: from_netCDF, _gen_varnames
+    :private-members:
+    :show-inheritance:
 
 ``gnome.environment.property`` -- PyGnome abstract property classes
--------------------------------------------------------
+---------------------------------------------------------------------
 .. automodule:: gnome.environment.property
 .. autoclass:: EnvProp
-   :members:
+    :members:
 .. autoclass:: VectorProp
-   :members:
+    :members:
 .. autoclass:: Time
-   :members:    
+    :members:    
 .. automodule:: gnome.environment.grid_property
 .. autoclass:: GriddedProp
-   :members:
-   :show-inheritance:
-   :inherited-members:
+    :members:
+    :private-members: _gen_varname
+    :show-inheritance:
+    :inherited-members:
 .. autoclass:: GridVectorProp
-   :members:
-   :show-inheritance:
-   :inherited-members: 
+    :members:
+    :private-members: _gen_varnames
+    :show-inheritance:
+    :inherited-members: 
 .. automodule:: gnome.environment.ts_property
 .. autoclass:: TimeSeriesProp
-   :members:
-   :show-inheritance:
-   :inherited-members:
+    :members:
+    :show-inheritance:
+    :inherited-members:
 .. autoclass:: TSVectorProp
-   :members:
-   :show-inheritance:
-   :inherited-members:
-    
-``gnome.environment.property_classes`` -- PyGnome implemented property classes
--------------------------------------------------------
-.. automodule:: gnome.environment.property_classes
-.. autoclass:: VelocityTS
     :members:
     :show-inheritance:
-.. autoclass:: VelocityGrid
-    :members:
-    :show-inheritance:
+    :inherited-members:
 
 ``gnome.outputter`` -- PyGnome outputters module
 ---------------------------------------------------
@@ -231,8 +242,8 @@ model run and in subsequent steps the model moves and weathers elements.
 ``gnome.persist`` -- PyGnome persistance classes
 ---------------------------------------------------
 .. automodule:: gnome.persist.base_schema
-   :members:
+    :members:
 .. automodule:: gnome.persist.extend_colander
-   :members:
+    :members:
 .. automodule:: gnome.persist.validators
-   :members:
+    :members:

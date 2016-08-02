@@ -78,9 +78,9 @@ class GriddedProp(EnvProp):
                     grid_file=None
                     ):
         '''
-        Allows one-function creation of a GriddedProp from a file. All parameters optional
+        Allows one-function creation of a GriddedProp from a file.
 
-        :param filename: Data source
+        :param filename: Default data source. Parameters below take precedence
         :param varname: Name of the variable in the data source file
         :param grid_topology: Description of the relationship between grid attributes and variable names.
         :param name: Name of property
@@ -88,6 +88,7 @@ class GriddedProp(EnvProp):
         :param time: Time axis of the data
         :param data: Underlying data source
         :param grid: Grid that the data corresponds with
+        :param dataset: Instance of open Dataset
         :param data_file: Name of data source file
         :param grid_file: Name of grid source file
         :type filename: string
@@ -98,6 +99,7 @@ class GriddedProp(EnvProp):
         :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
         :type data: netCDF4.Variable or numpy.array
         :type grid: pysgrid or pyugrid
+        :type dataset: netCDF4.Dataset
         :type data_file: string
         :type grid_file: string
         '''
@@ -284,6 +286,24 @@ class GriddedProp(EnvProp):
             value = unit_conversion.convert(self.units, units, value)
         return value
 
+    @classmethod
+    def _gen_varname(self,
+                     filename=None,
+                     dataset=None,):
+        """
+        Function to find the default variable names if they are not provided. By implementing this
+        function in a subclass you can specify the different default variable names to search for,
+        or specify some other means to find them.
+
+        :param filename: Name of file that will be searched for variables
+        :param dataset: Existing instance of a netCDF4.Dataset
+        :type filename: string
+        :type dataset: netCDF.Dataset
+        :return: List of default variable names, or None if none are found
+        """
+
+        raise NotImplementedError()
+
 
 class GridVectorProp(VectorProp):
 
@@ -335,6 +355,32 @@ class GridVectorProp(VectorProp):
                     grid_file=None,
                     dataset=None
                     ):
+        '''
+        Allows one-function creation of a GridVectorProp from a file.
+
+        :param filename: Default data source. Parameters below take precedence
+        :param varname: Name of the variable in the data source file
+        :param grid_topology: Description of the relationship between grid attributes and variable names.
+        :param name: Name of property
+        :param units: Units
+        :param time: Time axis of the data
+        :param data: Underlying data source
+        :param grid: Grid that the data corresponds with
+        :param dataset: Instance of open Dataset
+        :param data_file: Name of data source file
+        :param grid_file: Name of grid source file
+        :type filename: string
+        :type varname: string
+        :type grid_topology: {string : string, ...}
+        :type name: string
+        :type units: string
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+        :type data: netCDF4.Variable or numpy.array
+        :type grid: pysgrid or pyugrid
+        :type dataset: netCDF4.Dataset
+        :type data_file: string
+        :type grid_file: string
+        '''
         if filename is not None:
             data_file = filename
             grid_file = filename
@@ -536,6 +582,24 @@ class GridVectorProp(VectorProp):
         self._grid = grid
         self.grid_file = grid_file
         self.grid_file = grid_file
+
+    @classmethod
+    def _gen_varname(self,
+                     filename=None,
+                     dataset=None,):
+        """
+        Function to find the default variable names if they are not provided. By implementing this
+        function in a subclass you can specify the different default variable names to search for,
+        or specify some other means to find them.
+
+        :param filename: Name of file that will be searched for variables
+        :param dataset: Existing instance of a netCDF4.Dataset
+        :type filename: string
+        :type dataset: netCDF.Dataset
+        :return: List of default variable names, or None if none are found
+        """
+
+        raise NotImplementedError()
 
 def init_grid(filename,
               grid_topology=None,

@@ -21,7 +21,16 @@ class TimeSeriesProp(EnvProp):
                  time=None,
                  data=None):
         '''
-        This class represents a scalar phenomenon using a time series
+        A class that represents a scalar natural phenomenon using a time series
+
+        :param name: Name
+        :param units: Units
+        :param time: Time axis of the data
+        :param data: Underlying data source
+        :type name: string
+        :type units: string
+        :type time: [] of datetime.datetime, netCDF4.Variable, or Time object
+        :type data: numpy.array, list, or other iterable
         '''
         if len(time) != len(data):
             raise ValueError("Time and data sequences are of different length.\n\
@@ -31,6 +40,11 @@ class TimeSeriesProp(EnvProp):
 
     @property
     def timeseries(self):
+        '''
+        Creates a representation of the time series
+
+        :rtype: list of (datetime, double) tuples
+        '''
         return map(lambda x,y:(x,y), self.time.time, self.data)
 
     @property
@@ -148,6 +162,15 @@ class TSVectorProp(VectorProp):
             if (v.units != self.units or
                 v.time != self.time):
                 raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
+
+    @property
+    def timeseries(self):
+        '''
+        Creates a representation of the time series
+
+        :rtype: list of (datetime, (double, double)) tuples
+        '''
+        return map(lambda x,y,z:(x,(y,z)), self.time.time, self.variables[0], self.variables[1])
 
     @property
     def variables(self):
