@@ -77,32 +77,44 @@ class Biodegradation(Weatherer, Serializable):
 
         # TODO
 
-    def get_K_comp_rates(self, substance, temperature):
+    def get_K_val(self, type_and_bp, arctic = False):
         '''
-            Calculate bio degradation rate coefficients
-            We calculate ones just for saturate and aromatics components
-            Also they are coming for two environment conditions - 
-            water temperature (temperature parameter)
-             1) Temperate conditions - 6 deg C and above
-             2) Arctic conditions - below 6 deg C
-            And they are defined by pseudo component boiling point (K)
+            Get bio degradation rate coefficient based on component type and 
+            its boiling point for temparate or arctic environment conditions
+            type_and_bp: a tuple ('type', 'boiling_point')
+                - 'type': component type, string
+                - 'boiling_point': float value
+            arctic: flag for arctic conditions ( below 6 deg C)
         '''
 
-        k_rate = [0.128807242,      # arctic conditions, saturate components
-                 0.941386396,       # temperate conditions, saturate components
-                 [0.126982603,      # arctic conditions, aromatic components, BP < 630K
-                  0.021054707],     # arctic conditions, aromatic components, BP >= 630K
-                 [0.575541103,      # temperate conditions, aromatic components, BP < 630K
-                  0.084840485]]     # temperate conditions, aromatic components, BP >= 630K
+        if type_and_bp[0] == 'Saturates':
+            if type_and_bp[1] < 722.85:     # 722.85 - boiling point for C30 saturate (K)
+                return 0.128807242 if arctic else 0.941386396
+            else:
+                return 0.0                  # no coefficients for C30 and above saturates
 
-        cond = temperature < 6  # 0 - arctic, 1 - temperate
+        elif type_and_bp[1] == 'Aromatics':
+            if type_and_bp[1] < 630.0:      # 
+                return 0.126982603 if arctics else 0.575541103
+            else:
+                return 0.021054707 if arctics else 0.084840485
+        else:
+            return 0.0
+        
 
-        comp = {
-            'Saturates': 0,
-            'Aromatics': 1
-            }.get(substance._sara['type'], 2)
+    def get_K_comp_rates(self, substance, arctic = False):
+        '''
+            Calculate bio degradation rate coefficient for each oil component
+            We calculate ones just for saturates below C30 and aromatics
+            Also they are coming for two environment conditions arctic or temperate 
+        '''
 
-        # TODO
+        assert 'boiling_point' in substance._sara.dtype.names
+
+        type_bp = substance._sara[['type','boiling_point']]     # 
+
+        return np.array(map(get_K_val, type_bp)
+
 
     def weather_elements(self, sc, time_step, model_time):
         '''
