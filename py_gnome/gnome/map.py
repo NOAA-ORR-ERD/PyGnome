@@ -18,8 +18,10 @@ Features:
 import copy
 import os
 import math
+from osgeo import ogr
 
 import py_gd
+from osgeo import ogr
 #import pyugrid
 
 import numpy as np
@@ -39,9 +41,9 @@ from gnome.utilities.projections import (FlatEarthProjection,
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file,
-                                                      ogr_layers,
-                                                      ogr_features)
+from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
+from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
+from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
 
 from gnome.utilities.geometry.polygons import PolygonSet
 from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
@@ -424,8 +426,8 @@ class ParamMap(GnomeMap):
         land_polys = PolygonSet((self.land_points, [0, 4], []))
         land_polys._MetaDataList = [('polygon', '1', '1')]
 
-        map_bounds = np.array(((-8 * d, -6 * d), (-8 * d, 6 * d),
-                               (8 * d, 6 * d), (8 * d, -6 * d)),
+        map_bounds = np.array(((-16 * d, -16 * d), (-16 * d, 16 * d),
+                               (16 * d, 16 * d), (16 * d, -16 * d)),
                               dtype=np.float64) + (center[0], center[1])
 
         GnomeMap.__init__(self, map_bounds=map_bounds, land_polys=land_polys)
@@ -1081,6 +1083,10 @@ class MapFromBNA(RasterMap):
         BB = land_polys.bounding_box
 
         # create spillable area and  bounds if they weren't in the BNA
+
+        spillable_area = kwargs.pop('spillable_area', spillable_area)
+        map_bounds = kwargs.pop('map_bounds', map_bounds)
+
         if map_bounds is None:
             map_bounds = BB.AsPoly()
 
@@ -1093,8 +1099,6 @@ class MapFromBNA(RasterMap):
         # todo: should there be a check between spillable_area read from BNA
         # versus what the user entered. if this is within spillable_area for
         # BNA, then include it? else ignore
-        spillable_area = kwargs.pop('spillable_area', spillable_area)
-        map_bounds = kwargs.pop('map_bounds', map_bounds)
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
@@ -1110,7 +1114,7 @@ class MapFromBNA(RasterMap):
                            viewport=BB)
         # color doesn't matter here, only index
         canvas.add_colors((('water', (0, 255, 255)),  # aqua
-                           ('land',  (255, 204, 153)),  # brown
+                           ('land', (255, 204, 153)),  # brown
                            ))
         canvas.clear_background()
 
@@ -1299,7 +1303,7 @@ class MapFromUGrid(RasterMap):
                            )
         # color doesn't matter here, only index
         canvas.add_colors((('water', (0, 255, 255)),  # aqua
-                           ('land',  (255, 204, 153)),  # brown
+                           ('land', (255, 204, 153)),  # brown
                            ))
         canvas.clear_background()
 

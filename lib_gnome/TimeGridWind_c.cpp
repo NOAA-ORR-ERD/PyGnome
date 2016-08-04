@@ -933,7 +933,8 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 			TechError("TimeGridWindCurv_c::TextRead()", "sscanf() == 8", 0);
 			goto done;
 		}
-		else {
+		//else 
+		{
 			// code goes here, trouble with the DAYS since 1900 format, since converts to seconds since 1904
 			if (time.year == 1900) {
 				time.year += 40;
@@ -955,11 +956,14 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
 	if (status != NC_NOERR) 
 	{	
-		status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		goto OLD;
+		// eventually try to support old format with new algorithm
+		// issues with mask
+		/*status = nc_inq_dimid(ncid, "y", &latIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto OLD;
-		}
+		}*/
 	}
 	bVelocitiesOnNodes = true;
 	status = nc_inq_varid(ncid, "latc", &latid);
@@ -976,11 +980,12 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 	status = nc_inq_dimid(ncid, "xc", &lonIndexid);	
 	if (status != NC_NOERR) 
 	{
-		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		err = -1; goto done;
+		/*status = nc_inq_dimid(ncid, "x", &lonIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto done;
-		}
+		}*/
 	}
 	status = nc_inq_varid(ncid, "lonc", &lonid);	
 	if (status != NC_NOERR) 

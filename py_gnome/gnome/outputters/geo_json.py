@@ -5,7 +5,7 @@ Does not contain a schema for persistence yet
 import copy
 import os
 from glob import glob
-from collections import defaultdict
+from collections import Iterable, defaultdict
 
 import numpy as np
 
@@ -127,12 +127,14 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         # one feature per element client; replaced with multipoint
         # because client performance is much more stable with one
         # feature per step rather than (n) features per step.features = []
-        features = []
+        c_features = []
+        uc_features = []
         for sc in self.cache.load_timestep(step_num).items():
-            time = date_to_sec(sc.current_time_stamp)
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
+            mass = self._dataarray_p_types(sc['mass'])
             sc_type = 'uncertain' if sc.uncertain else 'forecast'
+            spill_num = self._dataarray_p_types(sc['spill_num'])
 
             # break elements into multipoint features based on their
             # status code
@@ -142,35 +144,32 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
             #   off_maps : 7
             #   on_land : 3
             #   to_be_removed : 12
-            points = {}
             for ix, pos in enumerate(position):
-                st_code = status[ix]
-
-                if st_code not in points:
-                    points[st_code] = []
-
-                points[st_code].append(pos[:2])
-
-            for k in points:
-                feature = Feature(geometry=MultiPoint(points[k]), id="1",
-                                  properties={
-                                    'sc_type': sc_type,
-                                    'status_code': k,
-                                  })
+                feature = Feature(
+                    geometry=Point(pos[:2]), id=ix,
+                    properties={'status_code': status[ix],
+                                'sc_type': sc_type,
+                                'mass': mass[ix],
+                                'spill_num': spill_num[ix]}
+                    )
                 if sc.uncertain:
-                    features.insert(0, feature)
+                    uc_features.append(feature)
                 else:
-                    features.append(feature)
+                    c_features.append(feature)
 
-        geojson = FeatureCollection(features)
+        c_geojson = FeatureCollection(c_features)
+        uc_geojson = FeatureCollection(uc_features)
         # default geojson should not output data to file
         # read data from file and send it to web client
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'feature_collection': geojson
+                       'certain': c_geojson,
+                       'uncertain': uc_geojson
                        }
 
         if self.output_dir:
-            output_filename = self.output_to_file(geojson, step_num)
+            output_filename = self.output_to_file(c_geojson, step_num)
+            output_info.update({'output_filename': output_filename})
+            output_filename = self.output_to_file(uc_geojson, step_num)
             output_info.update({'output_filename': output_filename})
 
         return output_info
@@ -180,7 +179,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         filename = os.path.join(self.output_dir,
                                 file_format.format(step_num))
 
-        with open(filename, 'w') as outfile:
+        with open(filename, 'w+') as outfile:
             dump(json_content, outfile, indent=True)
 
         return filename
@@ -218,143 +217,13 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                 os.remove(f)
 
 
-class CurrentGeoJsonSchema(BaseSchema):
-    '''
-    Nothing is required for initialization
-    '''
-
-
-class CurrentGeoJsonOutput(Outputter, Serializable):
-    '''
-    Class that outputs GNOME current velocity results for each current mover
-    in a geojson format.  The output is a collection of Features.
-    Each Feature contains a Point object with associated properties.
-    Following is the output format - the data in <> are the results
-    for each element.
-    ::
-    
-        {
-         "time_stamp": <TIME IN ISO FORMAT>,
-         "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
-         "feature_collections": {<mover_id>: {"type": "FeatureCollection",
-                                              "features": [{"type": "Feature",
-                                                            "id": <PARTICLE_ID>,
-                                                            "properties": {"velocity": [u, v]
-                                                                           },
-                                                            "geometry": {"type": "Point",
-                                                                         "coordinates": [<LONG>, <LAT>]
-                                                                         },
-                                                        },
-                                                        ...
-                                                       ],
-                                          },
-                             ...
-                             }
-        }
-
-    '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('current_movers', save=True, update=True,
-                           iscollection=True))
-
-    _schema = CurrentGeoJsonSchema
-
-    def __init__(self, current_movers, **kwargs):
-        '''
-        :param list current_movers: A list or collection of current grid mover
-                                    objects.
-
-        use super to pass optional \*\*kwargs to base class __init__ method
-        '''
-        self.current_movers = current_movers
-
-        super(CurrentGeoJsonOutput, self).__init__(**kwargs)
-
-    def write_output(self, step_num, islast_step=False):
-        'dump data in geojson format'
-        super(CurrentGeoJsonOutput, self).write_output(step_num, islast_step)
-
-        if self.on is False or not self._write_step:
-            return None
-
-        for sc in self.cache.load_timestep(step_num).items():
-            pass
-
-        model_time = date_to_sec(sc.current_time_stamp)
-
-        geojson = {}
-        for cm in self.current_movers:
-            centers = cm.get_center_points()
-
-            velocities = cm.get_scaled_velocities(model_time)
-            velocities = self.get_rounded_velocities(velocities)
-
-            velocity_dict = defaultdict(list)
-            for k, v in zip(velocities, centers):
-                k = tuple(k)
-                v = list(v)
-                velocity_dict[k].append(v)
-
-            features = []
-            for v, cps in velocity_dict.items():
-                feature = Feature(geometry=MultiPoint(cps),
-                                  id="1",
-                                  properties={'velocity': v})
-                features.append(feature)
-
-            geojson[cm.id] = FeatureCollection(features)
-
-        # default geojson should not output data to file
-        # read data from file and send it to web client
-        output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'feature_collections': geojson
-                       }
-
-        return output_info
-
-    def get_rounded_velocities(self, velocities):
-        return np.vstack((velocities['u'].round(decimals=2),
-                          velocities['v'].round(decimals=2))).T
-
-    def get_unique_velocities(self, velocities):
-        '''
-        In order to make numpy perform this function fast, we will use a
-        contiguous structured array using a view of a void type that
-        joins the whole row into a single item.
-        '''
-        dtype = np.dtype((np.void,
-                          velocities.dtype.itemsize * velocities.shape[1]))
-        voidtype_array = np.ascontiguousarray(velocities).view(dtype)
-
-        _, idx = np.unique(voidtype_array, return_index=True)
-
-        return velocities[idx]
-
-    def get_matching_velocities(self, velocities, v):
-        return np.where((velocities == v).all(axis=1))
-
-    def rewind(self):
-        'remove previously written files'
-        super(CurrentGeoJsonOutput, self).rewind()
-
-    def current_movers_to_dict(self):
-        '''
-        a dict containing 'obj_type' and 'id' for each object in
-        list/collection
-        '''
-        return self._collection_to_dict(self.current_movers)
-
-
 class IceGeoJsonSchema(BaseSchema):
     '''
     Nothing is required for initialization
     '''
 
 
-class IceGeoJsonOutput(Outputter, Serializable):
+class IceGeoJsonOutput(Outputter):
     '''
     Class that outputs GNOME ice velocity results for each ice mover
     in a geojson format.  The output is a collection of Features.
@@ -363,27 +232,27 @@ class IceGeoJsonOutput(Outputter, Serializable):
     for each element.
     ::
 
-        {
-         "time_stamp": <TIME IN ISO FORMAT>,
-         "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
-         "feature_collections": {<mover_id>: {"type": "FeatureCollection",
-                                              "features": [{"type": "Feature",
-                                                            "id": <PARTICLE_ID>,
-                                                            "properties": {"ice_fraction": <FRACTION>,
-                                                                           "ice_thickness": <METERS>,
-                                                                           "water_velocity": [u, v],
-                                                                           "ice_velocity": [u, v]
-                                                                           },
-                                                            "geometry": {"type": "Point",
-                                                                         "coordinates": [<LONG>, <LAT>]
-                                                                         },
-                                                            },
-                                                            ...
-                                                           ],
-                                              },
-                                 ...
-                                 }
-        }
+    {
+     "time_stamp": <TIME IN ISO FORMAT>,
+     "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
+     "feature_collections": {<mover_id>: {"type": "FeatureCollection",
+                                          "features": [{"type": "Feature",
+                                                        "id": <PARTICLE_ID>,
+                                                        "properties": {"ice_fraction": <FRACTION>,
+                                                                       "ice_thickness": <METERS>,
+                                                                       "water_velocity": [u, v],
+                                                                       "ice_velocity": [u, v]
+                                                                       },
+                                                        "geometry": {"type": "Point",
+                                                                     "coordinates": [<LONG>, <LAT>]
+                                                                     },
+                                                        },
+                                                        ...
+                                                       ],
+                                          },
+                             ...
+                             }
+    }
     '''
     _state = copy.deepcopy(Outputter._state)
 
@@ -396,12 +265,19 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
     def __init__(self, ice_movers, **kwargs):
         '''
-        :param list current_movers: A list or collection of current grid mover
-                                    objects.
+            :param ice_movers: ice_movers associated with this outputter.
+            :type ice_movers: An ice_mover object or sequence of ice_mover
+                              objects.
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+            Use super to pass optional \*\*kwargs to base class __init__ method
         '''
-        self.ice_movers = ice_movers
+        if (isinstance(ice_movers, Iterable) and
+                not isinstance(ice_movers, str)):
+            self.ice_movers = ice_movers
+        elif ice_movers is not None:
+            self.ice_movers = (ice_movers,)
+        else:
+            self.ice_movers = tuple()
 
         super(IceGeoJsonOutput, self).__init__(**kwargs)
 
@@ -419,14 +295,14 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
         geojson = {}
         for mover in self.ice_movers:
-            mover_triangles = self.get_triangles(mover)
+            grid_data = mover.get_grid_data()
             ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
 
             geojson[mover.id] = []
             geojson[mover.id].append(self.get_coverage_fc(ice_coverage,
-                                                          mover_triangles))
+                                                          grid_data))
             geojson[mover.id].append(self.get_thickness_fc(ice_thickness,
-                                                           mover_triangles))
+                                                           grid_data))
 
         # default geojson should not output data to file
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
@@ -492,49 +368,6 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
     def get_matching_ice_values(self, ice_values, v):
         return np.where((ice_values == v).all(axis=1))
-
-    def get_triangles(self, mover):
-        '''
-        The triangle data that we get from the mover is in the form of
-        indices into the points array.
-        So we get our triangle data and points array, and then build our
-        triangle coordinates by reference.
-        '''
-        points = self.get_points(mover)
-
-        if mover.mover._is_triangle_grid():
-            data = self.get_triangle_data(mover)
-            dtype = data[0].dtype.descr
-            unstructured_type = dtype[0][1]
-            unstructured = (data.view(dtype=unstructured_type)
-                            .reshape(-1, len(dtype))[:, :3])
-
-            triangles = points[unstructured]
-            return triangles
-
-        else:
-            data = self.get_cell_data(mover)
-            dtype = data[0].dtype.descr
-            unstructured_type = dtype[0][1]
-            unstructured = (data.view(dtype=unstructured_type)
-                            .reshape(-1, len(dtype))[:, 1:])
-
-            cells = points[unstructured]
-            return cells
-
-    def get_triangle_data(self, mover):
-        return mover.mover._get_triangle_data()
-
-    def get_cell_data(self, mover):
-        return mover.mover._get_cell_data()
-
-    def get_points(self, mover):
-        points = (mover.mover._get_points()
-                  .astype([('long', '<f8'), ('lat', '<f8')]))
-        points['long'] /= 10 ** 6
-        points['lat'] /= 10 ** 6
-
-        return points
 
     def rewind(self):
         'remove previously written files'

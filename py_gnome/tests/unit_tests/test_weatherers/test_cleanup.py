@@ -4,8 +4,9 @@ tests for cleanup options
 from datetime import datetime, timedelta
 
 import numpy as np
-import unit_conversion as uc
 from pytest import raises, mark
+
+import unit_conversion as uc
 
 from gnome.basic_types import oil_status, fate
 
@@ -279,6 +280,7 @@ class TestBurn(ObjForTests):
                     active_stop=active_start,
                     name='test_burn',
                     on=False)   # this is ignored!
+
         # use burn constant for test - it isn't stored anywhere
         duration = (uc.convert('Length', burn.thickness_units, 'm',
                                burn.thickness) -
@@ -288,6 +290,32 @@ class TestBurn(ObjForTests):
                 burn.active_start + timedelta(seconds=duration))
         assert burn.name == 'test_burn'
         assert not burn.on
+
+    def test_update_active_start(self):
+        '''
+        active_stop should be updated if we update active_start or thickness
+        '''
+        burn = Burn(self.area,
+                    self.thick,
+                    active_start=active_start,
+                    active_stop=active_start,
+                    name='test_burn',
+                    on=False)   # this is ignored!
+
+        # use burn constant for test - it isn't stored anywhere
+        duration = ((uc.convert('Length', burn.thickness_units, 'm',
+                                burn.thickness) -
+                     burn._min_thickness) /
+                    burn._burn_constant)
+
+        assert (burn.active_stop ==
+                burn.active_start + timedelta(seconds=duration))
+
+        # after changing active_start, active_stop should still match the
+        # duration.
+        burn.active_start += timedelta(days=1)
+        assert (burn.active_stop ==
+                burn.active_start + timedelta(seconds=duration))
 
     @mark.parametrize(("area_units", "thickness_units"), [("m", "in"),
                                                           ("m^2", "l")])
@@ -424,6 +452,9 @@ class TestBurn(ObjForTests):
         exp_mass_remain = (burn._oilwater_thickness * (1 - avg_frac_water) *
                            burn.area * self.op.get_density())
         mass_remain_for_burn_LEs = self.sc['mass'][mask].sum()
+        # since we don't adjust the thickness anymore need to use min_thick
+        min_thick = .002
+        exp_mass_remain = min_thick * (1 - avg_frac_water) * burn.area * self.op.get_density()
         assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs)
 
         duration = (burn.active_stop-burn.active_start).total_seconds()/3600
@@ -588,8 +619,8 @@ class TestChemicalDispersion(ObjForTests):
     @mark.parametrize("efficiency", (0.5, 1.0))
     def test_prepare_for_model_step(self, efficiency):
         '''
-        efficiency does not impact the mass of LEs marked as having been
-        sprayed. precent_sprayed determines percent of LEs marked as disperse.
+        updated: efficiency now does impact the mass of LEs marked as having been
+        sprayed. precent_sprayed also impacts the mass of LEs marked as disperse.
         '''
         self.reset_and_release()
         self.c_disp.efficiency = efficiency
@@ -600,8 +631,8 @@ class TestChemicalDispersion(ObjForTests):
         self.c_disp.prepare_for_model_step(self.sc, time_step, active_start)
         d_mass = self.sc['mass'][self.sc['fate_status'] == fate.disperse].sum()
 
-        assert d_mass == self.c_disp.fraction_sprayed * self.spill.get_mass()
-        exp_mass = self.spill.get_mass() * self.c_disp.fraction_sprayed
+        assert d_mass == self.c_disp.fraction_sprayed * self.spill.get_mass() * efficiency
+        exp_mass = self.spill.get_mass() * self.c_disp.fraction_sprayed * efficiency
         assert d_mass - exp_mass < self.sc['mass'][0]
 
     @mark.parametrize("frac_water", (0.5, 0.0))

@@ -6,10 +6,9 @@ import copy
 import inspect
 import zipfile
 
-import numpy as np
-
 from colander import (SchemaNode,
-                      Float, Int, Bool, drop)
+                      String, Float, Int, Bool,
+                      drop, OneOf)
 
 from gnome.environment import Environment
 
@@ -34,9 +33,6 @@ from gnome.persist import (extend_colander,
 from gnome.persist.base_schema import (ObjType,
                                        CollectionItemsList)
 from gnome.exceptions import ReferencedObjectNotSet
-from select import select
-from sqlalchemy.sql.selectable import Select
-# from aifc import data
 
 
 class ModelSchema(ObjType):
@@ -51,6 +47,9 @@ class ModelSchema(ObjType):
     cache_enabled = SchemaNode(Bool(), missing=drop)
     num_time_steps = SchemaNode(Int(), missing=drop)
     make_default_refs = SchemaNode(Bool(), missing=drop)
+    mode = SchemaNode(String(),
+                      validator=OneOf(['gnome', 'adios']),
+                      missing=drop)
 
     def __init__(self, json_='webapi', *args, **kwargs):
         '''
@@ -85,13 +84,13 @@ class Model(Serializable):
                'duration',
                'uncertain',
                'cache_enabled',
-               'weathering_substeps',
+               'mode',
                'map',
                'movers',
                'weatherers',
                'environment',
-               'outputters'
-               ]
+               'outputters']
+
     _create = []
     _create.extend(_update)
     _state = copy.deepcopy(Serializable._state)
@@ -110,6 +109,8 @@ class Model(Serializable):
 
     # list of OrderedCollections
     _oc_list = ['movers', 'weatherers', 'environment', 'outputters']
+
+    modes = {'gnome', 'adios'}
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -171,28 +172,39 @@ class Model(Serializable):
                  map=None,
                  uncertain=False,
                  cache_enabled=False,
-                 name=None):
+                 name=None,
+                 mode=None):
         '''
 
         Initializes a model.
         All arguments have a default.
 
         :param time_step=timedelta(minutes=15): model time step in seconds
-            or as a timedelta object
+                                                or as a timedelta object
+
         :param start_time=datetime.now(): start time of model, datetime
-            object. Rounded to the nearest hour.
+                                          object. Rounded to the nearest hour.
+
         :param duration=timedelta(days=1): How long to run the model,
-            a timedelta object.
+                                           a timedelta object.
+
         :param int weathering_substeps=1: How many weathering substeps to
-            run inside a single model time step.
+                                          run inside a single model time step.
+
         :param map=gnome.map.GnomeMap(): The land-water map.
+
         :param uncertain=False: Flag for setting uncertainty.
+
         :param cache_enabled=False: Flag for setting whether the model should
-            cache results to disk.
+                                    cache results to disk.
+
+        :param mode='Gnome': The runtime 'mode' that the model should use.
+                             This is a value that the Web Client uses to
+                             decide which UI views it should present.
         '''
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
-                         uncertain, cache_enabled, map, name)
+                         uncertain, cache_enabled, map, name, mode)
 
         self._register_callbacks()
 
@@ -210,8 +222,12 @@ class Model(Serializable):
         self.outputters.register_callback(self._callback_add_outputter,
                                           ('add', 'replace'))
 
+        self.movers.register_callback(self._callback_add_spill,
+                                      ('add', 'replace', 'remove'))
+
     def __restore__(self, time_step, start_time, duration,
-                    weathering_substeps, uncertain, cache_enabled, map, name):
+                    weathering_substeps, uncertain, cache_enabled, map,
+                    name, mode):
         '''
         Take out initialization that does not register the callback here.
         This is because new_from_dict will use this to restore the model _state
@@ -238,8 +254,18 @@ class Model(Serializable):
         if not map:
             map = gnome.map.GnomeMap()
 
-        if name:
+        if name is not None:
             self.name = name
+
+        if mode is not None:
+            if mode in self.modes:
+                self.mode = mode
+            else:
+                raise ValueError('Model mode ({}) invalid, '
+                                 'should be one of {{{}}}'
+                                 .format(mode, ', '.join(self.modes)))
+        else:
+            self.mode = 'gnome'
 
         self._map = map
 
@@ -427,8 +453,8 @@ class Model(Serializable):
         if self.duration is not None and self.time_step is not None:
             initial_0th_step = 1
             self._num_time_steps = (initial_0th_step +
-                                    int(self.duration.total_seconds()
-                                        // self.time_step))
+                                    int(self.duration.total_seconds() //
+                                        self.time_step))
         else:
             self._num_time_steps = None
 
@@ -823,6 +849,10 @@ class Model(Serializable):
 
             # let each object raise appropriate error if obj is incomplete
             # validate and send validation flag if model is invalid
+            (msgs, isvalid) = self.check_inputs()
+            if not isvalid:
+               raise RuntimeError("Setup model run complete but model "
+                                   "is invalid", msgs)
             # (msgs, isvalid) = self.validate()
             # if not isvalid:
             #    raise StopIteration("Setup model run complete but model "
@@ -960,6 +990,9 @@ class Model(Serializable):
         '''
         self._add_to_environ_collec(obj_added)
         self.rewind()  # rewind model if a new weatherer is added
+
+    def _callback_add_spill(self, obj_added):
+        self.rewind()
 
     def __eq__(self, other):
         check = super(Model, self).__eq__(other)
@@ -1330,6 +1363,45 @@ class Model(Serializable):
         # force rewind after merge?
         self.rewind()
 
+    def check_inputs(self):
+        '''
+        check the user inputs before running the model
+        raise an exception if user can't run the model
+        todo: check if all spills start after model ends
+        '''
+        msgs = []
+        isvalid = True
+        someSpillIntersectsModel = False
+        num_spills = len(self.spills)
+        for spill in self.spills:
+            msg = None
+            if spill.get('release_time') < self.start_time + self.duration:
+                someSpillIntersectsModel = True
+            if spill.get('release_time') > self.start_time:
+                msg = ('{0} has release time after model start time'.
+                       format(spill.name))
+                self.logger.warning(msg)
+                msgs.append(self._warn_pre + msg)
+
+            elif spill.get('release_time') < self.start_time:
+                msg = ('{0} has release time before model start time'
+                       .format(spill.name))
+                self.logger.error(msg)
+                msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
+                isvalid = False
+
+        if num_spills > 0 and not someSpillIntersectsModel:
+            if num_spills > 1:
+                msg = ('All of the spills are released after the time interval being modeled.')
+            else:
+                msg = ('The spill is released after the time interval being modeled.')
+            self.logger.warning(msg)	# for now make this a warning
+            #self.logger.error(msg)	
+            msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
+            #isvalid = False
+
+        return (msgs, isvalid)
+
     def validate(self):
         '''
         invoke validate for all gnome objects contained in model
@@ -1381,15 +1453,20 @@ class Model(Serializable):
             if spill.get('release_time') > self.start_time:
                 msg = ('{0} has release time after model start time'.
                        format(spill.name))
+                self.logger.warning(msg)
+                msgs.append(self._warn_pre + msg)
 
             elif spill.get('release_time') < self.start_time:
                 msg = ('{0} has release time before model start time'
                        .format(spill.name))
+                self.logger.error(msg)
+                msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
+                isvalid = False
 
-            if msg is not None:
-                self.logger.warning(msg)
-                msgs.append(self._warn_pre + msg)
-
+#             if msg is not None:
+#                 self.logger.warning(msg)
+#                 msgs.append(self._warn_pre + msg)
+# 
         return (msgs, isvalid)
 
     def _validate_env_coll(self, refs, raise_exc=False):

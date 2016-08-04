@@ -4,9 +4,11 @@ from netcdf import NetCDFOutput, NetCDFOutputSchema
 from renderer import Renderer, RendererSchema
 from weathering import WeatheringOutput
 from geo_json import (TrajectoryGeoJsonOutput,
-                      CurrentGeoJsonOutput,
                       IceGeoJsonOutput)
+from json import (IceJsonOutput,
+                  CurrentJsonOutput)
+
 from kmz import KMZOutput
 from image import IceImageOutput
 
-## NOTE: no need for __all__ if you want export everything!
+# NOTE: no need for __all__ if you want export everything!

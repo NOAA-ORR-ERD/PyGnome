@@ -15,12 +15,15 @@ from gnome.array_types import (viscosity,
                                mass,
                                density,
                                fay_area,
-                               frac_water)
+                               frac_water,
+                               droplet_avg_size)
 
 from gnome.utilities.serializable import Serializable, Field
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
+
+g = constants.gravity  # the gravitational constant.
 
 
 class NaturalDispersion(Weatherer, Serializable):
@@ -47,6 +50,7 @@ class NaturalDispersion(Weatherer, Serializable):
                                  'density': density,
                                  'fay_area': fay_area,
                                  'frac_water': frac_water,
+                                 'droplet_avg_size': droplet_avg_size,
                                  })
 
     def prepare_for_model_run(self, sc):
@@ -67,7 +71,6 @@ class NaturalDispersion(Weatherer, Serializable):
         Set/update arrays used by dispersion module for this timestep:
 
         '''
-
         super(NaturalDispersion, self).prepare_for_model_step(sc,
                                                               time_step,
                                                               model_time)
@@ -107,6 +110,7 @@ class NaturalDispersion(Weatherer, Serializable):
 
             disp = np.zeros((len(data['mass'])), dtype=np.float64)
             sed = np.zeros((len(data['mass'])), dtype=np.float64)
+            droplet_avg_size = data['droplet_avg_size']
 
             disperse_oil(time_step,
                          data['frac_water'],
@@ -116,6 +120,7 @@ class NaturalDispersion(Weatherer, Serializable):
                          data['fay_area'],
                          disp,
                          sed,
+                         droplet_avg_size,
                          frac_breaking_waves,
                          disp_wave_energy,
                          wave_height,
@@ -157,6 +162,41 @@ class NaturalDispersion(Weatherer, Serializable):
                                       sc.mass_balance['natural_dispersion']))
 
         sc.update_from_fatedataview()
+
+    def disperse_oil(self, time_step,
+                     frac_water,
+                     mass,
+                     viscosity,
+                     density,
+                     fay_area,
+                     disp_out,
+                     sed_out,
+                     frac_breaking_waves,
+                     disp_wave_energy,
+                     wave_height,
+                     visc_w,
+                     rho_w,
+                     sediment,
+                     V_entrain,
+                     ka):
+        '''
+            Right now we just want to recreate what the lib_gnome dispersion
+            function is doing...but in python.
+            This will allow us to more easily refactor, and we can always
+            then put it back into lib_gnome if necessary.
+            (TODO: Not quite finished with the function yet.)
+        '''
+        D_e = disp_wave_energy
+        f_bw = frac_breaking_waves
+        H_rms = wave_height
+
+        # dispersion term at current time.
+        C_disp = D_e ** 0.57 * f_bw
+
+        for i, (rho, mass, visc, Y, A) in enumerate(zip(density, mass,
+                                                        viscosity, frac_water,
+                                                        fay_area)):
+            pass
 
     def serialize(self, json_='webapi'):
         """

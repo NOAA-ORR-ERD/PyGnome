@@ -113,6 +113,13 @@ cdef class CyWindMover(CyWindMoverBase):
         elif cmp == 3:
             return not self.__eq(other)
 
+    property extrapolate:
+        def __get__(self):
+            return self.wind.GetExtrapolationInTime()
+
+        def __set__(self, value):
+            self.wind.SetExtrapolationInTime(value)
+
     def get_move(self, model_time, step_len,
                  cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
                  cnp.ndarray[WorldPoint3D, ndim=1] delta,

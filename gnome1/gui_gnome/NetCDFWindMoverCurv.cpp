@@ -36,7 +36,7 @@ void NetCDFWindMoverCurv::Dispose ()
 }
 
 
-#define NetCDFWindMoverCurvREADWRITEVERSION 1 //JLM
+#define NetCDFWindMoverCurvREADWRITEVERSION 2 //JLM
 
 OSErr NetCDFWindMoverCurv::Write (BFPB *bfpb)
 {
@@ -69,6 +69,8 @@ OSErr NetCDFWindMoverCurv::Write (BFPB *bfpb)
 		if (err = WriteMacValue(bfpb, vertex.pLat)) goto done;
 		if (err = WriteMacValue(bfpb, vertex.pLong)) goto done;
 	}
+	
+	if (err = WriteMacValue(bfpb, bIsCOOPSWaterMask)) goto done;
 	
 done:
 	if(err)
@@ -114,6 +116,8 @@ OSErr NetCDFWindMoverCurv::Read(BFPB *bfpb)
 		INDEXH(fVertexPtsH, i) = vertex;
 	}
 	
+	if (version > 1) {if (err = ReadMacValue(bfpb, &bIsCOOPSWaterMask)) goto done;}
+
 done:
 	if(err)
 	{
@@ -259,7 +263,7 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 			//startTime2 = model->GetStartTime();	// default to model start time
 			err = -1; TechError("NetCDFWindMoverCurv::TextRead()", "sscanf() == 8", 0); goto done;
 		}
-		else
+		//else
 		{
 			// code goes here, trouble with the DAYS since 1900 format, since converts to seconds since 1904
 			if (time.year ==1900) {time.year += 40; time.day += 1; /*for the 1900 non-leap yr issue*/ yearShift = 40.;}
@@ -278,11 +282,14 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
 	if (status != NC_NOERR) 
 	{	
-		status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		goto OLD;
+		// eventually try to support old format with new algorithm
+		// issues with mask
+		/*status = nc_inq_dimid(ncid, "y", &latIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto OLD;
-		}
+		}*/
 	}
 	bIsCOOPSWaterMask = true;
 	status = nc_inq_varid(ncid, "latc", &latid);
@@ -299,11 +306,12 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 	status = nc_inq_dimid(ncid, "xc", &lonIndexid);	
 	if (status != NC_NOERR) 
 	{
-		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		err = -1; goto done;
+		/*status = nc_inq_dimid(ncid, "x", &lonIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto done;
-		}
+		}*/
 	}
 	status = nc_inq_varid(ncid, "lonc", &lonid);	
 	if (status != NC_NOERR) 

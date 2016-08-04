@@ -270,7 +270,6 @@ class MapCanvas(object):
             raise ValueError('only "round" and "x" are supported shapes')
 
         points = self.projection.to_pixel(points, asint=True)
-
         img = self.back_image if background else self.fore_image
 
         if shape == 'round':
@@ -302,8 +301,6 @@ class MapCanvas(object):
 
         :param background=False: whether to draw to the background image.
         :type background: bool
-
-
         """
         points = self.projection.to_pixel_2D(points, asint=True)
         img = self.back_image if background else self.fore_image
@@ -365,7 +362,7 @@ class MapCanvas(object):
         img = self.back_image if draw_to_back else self.fore_image
 
         for tag in text_list:
-            point = (tag[1][0], tag[1][1], 0)
+            point = np.array((tag[1][0], tag[1][1])).reshape(-1, 2)
             point = self.projection.to_pixel(point, asint=True)[0]
 
             img.draw_text(tag[0], point, size, color, align, background)
@@ -374,6 +371,7 @@ class MapCanvas(object):
         self.clear_background()
         self.draw_graticule()
         self.draw_tags()
+        self.draw_grid()
 
     def draw_land(self):
         return None
@@ -387,8 +385,12 @@ class MapCanvas(object):
         for line in self.graticule.get_lines():
             self.draw_polyline(line, 'black', 1, background)
 
+    def draw_grid(self):
+        #Not Implemeneted in MapCanvas
+        return None
+
     def draw_tags(self, draw_to_back=True):
-        self.draw_text(self.graticule.get_tags(), draw_to_back=True)
+        self.draw_text(self.graticule.get_tags(), draw_to_back=draw_to_back)
 
     def save_background(self, filename, file_type='png'):
         self.back_image.save(filename, file_type)
@@ -498,7 +500,6 @@ class GridLines(object):
                              'grid lines')
         self.projection = projection
 
-        self.type = type
         if DegMinSec:
             self.STEPS = self.DMS_STEPS
             self.STEP_COUNT = self.DMS_COUNT
@@ -678,6 +679,7 @@ class Viewport(object):
     class that defines and manages attribues for a viewport onto a flat 2D map.
     All points and measurements are in lon/lat
     """
+
     def __init__(self, BB=None, center=None, width=None, height=None):
         """
         Init the viewport.

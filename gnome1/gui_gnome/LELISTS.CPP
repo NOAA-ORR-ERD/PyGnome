@@ -4239,7 +4239,8 @@ OSErr OLESettingsDialog (TOLEList 	*thisLEList)
 	
 		if (sDispInfo.lassoSelectedLEsToDisperse) 
 			deleteLERecH = false;
-		sharedSet.density = sDensity;
+		if (sharedSet.pollutantType==CHEMICAL)
+			sharedSet.density = sDensity;
 		//SetChemicalHalfLife(sHalfLife);
 		sharedSet.halfLife = sHalfLife;
 		err = thisLEList -> Initialize (&sharedSet,deleteLERecH);
@@ -4356,7 +4357,8 @@ OSErr CreateLESet(WorldPoint *startPoint,WorldPoint *endPoint)
 		list -> SetDispersionInfo(sDispInfo);
 		strcpy(list -> fOilTypeName,sOilTypeName);
 
-		sharedSet.density = sDensity;
+		if (sharedSet.pollutantType==CHEMICAL)	// don't change it otherwise
+			sharedSet.density = sDensity;
 		//SetChemicalHalfLife(sHalfLife);
 		sharedSet.halfLife = sHalfLife;
 

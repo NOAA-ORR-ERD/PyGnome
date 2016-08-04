@@ -17,4 +17,4 @@ class Stokes(object):
 
             :returns: transfer velocity (m/s)
         '''
-        return 2.18e6 * oil_water_rho_delta * (diameter / 2.0) ** 2
+        return 544.814 * oil_water_rho_delta * diameter ** 2

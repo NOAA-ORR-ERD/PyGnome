@@ -18,7 +18,7 @@ from wind_movers import (WindMover,
                          IceWindMoverSchema,
                          IceWindMover)
 from ship_drift_mover import (ShipDriftMoverSchema,
-                         ShipDriftMover)
+                              ShipDriftMover)
 from random_movers import (RandomMoverSchema,
                            RandomMover,
                            RandomVerticalMoverSchema,
@@ -34,6 +34,10 @@ from current_movers import (CatsMoverSchema,
                             CurrentCycleMoverSchema,
                             CurrentCycleMover)
 from vertical_movers import RiseVelocityMoverSchema, RiseVelocityMover
+
+from ugrid_movers import UGridCurrentMover
+from py_ice_mover import PyIceMover
+from py_wind_movers import PyWindMover
 
 __all__ = [Mover,
            CyMover,

@@ -61,6 +61,9 @@ public:
 	virtual TimeValuePairH	GetTimeValueHandle () { return timeValues; }
 	virtual void			SetTimeValueHandle (TimeValuePairH t) ;
 	
+	OSErr					GetDataStartTime(Seconds *startTime);	
+	OSErr					GetDataEndTime(Seconds *endTime);	
+	
 	virtual WorldPoint3D	GetStationLocation (void) {return fStationPosition;}
 	virtual short			GetUserUnits(){return fUserUnits;}
 	virtual void			SetUserUnits(short userUnits){fUserUnits=userUnits;}

@@ -107,6 +107,10 @@ public:
 	virtual Seconds 		GetTimeValue(long index);
 	virtual OSErr		GetStartTime(Seconds *startTime);
 	virtual OSErr		GetEndTime(Seconds *endTime);
+	virtual OSErr		GetDataStartTime(Seconds *startTime);
+	virtual OSErr		GetDataEndTime(Seconds *endTime);
+	virtual OSErr 		GetFileStartTime(Seconds *startTime);
+	virtual OSErr 		GetFileEndTime(Seconds *endTime);
 	virtual double 	GetStartUVelocity(long index);
 	virtual double 	GetStartVVelocity(long index);
 	virtual double 	GetEndUVelocity(long index);
@@ -223,6 +227,7 @@ public:
 	OSErr 				ReorderPoints(DOUBLEH landmaskH, char* errmsg); 
 	OSErr 				ReorderPointsNoMask(char* errmsg); 
 	OSErr 				ReorderPointsCOOPSMask(DOUBLEH landmaskH, char* errmsg); 
+	OSErr 				ReorderPointsCOOPSMaskOld(DOUBLEH landmaskH, char* errmsg); 
 	OSErr 				ReorderPointsCOOPSNoMask(char* errmsg); 
 	Boolean				IsCOOPSFile();
 	

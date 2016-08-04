@@ -26,12 +26,15 @@ def test_riazi():
 
 
 def test_stokes():
-    assert np.isclose(Stokes.water_phase_xfer_velocity(0.1, 400.0 / 1e6),
-                      0.00872)
-    assert np.isclose(Stokes.water_phase_xfer_velocity(0.2, 400.0 / 1e6),
-                      0.01744)
-    assert np.isclose(Stokes.water_phase_xfer_velocity(0.3, 400.0 / 1e6),
-                      0.02616)
+    water_rho = 1000.0  # kg/m^3
+    droplet_diameter = 0.0002  # 200 microns
+
+    for oil_rho, expected in zip((900.0, 800.0, 700.0),
+                                 (0.00217926, 0.00435852, 0.00653778)):
+        delta_rho = water_rho - oil_rho
+        assert np.isclose(Stokes.water_phase_xfer_velocity(delta_rho,
+                                                           droplet_diameter),
+                          expected)
 
 
 def test_pierson_moskowitz():
@@ -51,7 +54,7 @@ def test_delvigne_sweeney():
 
 def test_ding_farmer():
     wind_speed = 10.0  # m/s
-    rdelta = 0.2  # oil/water density difference
+    rdelta = 200.0  # oil/water density difference (kg / m^3)
     droplet_diameter = 0.0002  # 200 microns
 
     wave_height = PiersonMoskowitz.significant_wave_height(wind_speed)
@@ -65,10 +68,10 @@ def test_ding_farmer():
     assert np.isclose(DingFarmer.calm_between_wave_breaks(f_bw, wave_period),
                       347.8125)
     assert np.isclose(DingFarmer.refloat_time(wave_height, k_w),
-                      385.90177)
+                      386.0328)
 
     assert np.isclose(DingFarmer.water_column_time_fraction(f_bw,
                                                             wave_period,
                                                             wave_height,
                                                             k_w),
-                      1.1095)
+                      1.0)
