@@ -2,6 +2,10 @@
 environment module
 '''
 from environment import Environment, Water, WaterSchema
+from property import EnvProp, VectorProp, Time
+from ts_property import TimeSeriesProp, TSVectorProp
+from grid_property import GriddedProp, GridVectorProp
+from property_classes import WindTS, VelocityTS, VelocityGrid, GridCurrent, GridWind, IceConcentration, WaterTemperature, IceAwareCurrent, IceAwareWind
 from waves import Waves, WavesSchema
 from tide import Tide, TideSchema
 from wind import Wind, WindSchema, constant_wind, wind_from_values
@@ -22,4 +26,14 @@ __all__ = [Environment,
            RunningAverageSchema,
            Grid,
            GridSchema,
-           constant_wind]
+           constant_wind,
+           WindTS,
+           VelocityTS,
+           VelocityGrid,
+           GridCurrent,
+           GridWind,
+           IceConcentration,
+           WaterTemperature,
+           IceAwareCurrent,
+           IceAwareWind
+           ]

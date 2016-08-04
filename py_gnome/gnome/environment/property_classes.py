@@ -13,10 +13,10 @@ from gnome.persist import base_schema
 import pyugrid
 import pysgrid
 import unit_conversion
+from gnome.environment import Environment
 from gnome.environment.property import Time, PropertySchema
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
 from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema, init_grid, _get_dataset
-from gnome.environment import Environment
 
 
 class TemperatureTSSchema(PropertySchema):

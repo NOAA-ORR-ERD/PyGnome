@@ -151,10 +151,6 @@ class GriddedProp(EnvProp):
                    grid_file=grid_file,
                    data_file=data_file)
 
-    @classmethod
-    def _gen_varname(cls, filename):
-        raise NotImplementedError()
-
     @property
     def time(self):
         return self._time
@@ -456,12 +452,6 @@ class GridVectorProp(VectorProp):
                    data_file=data_file,
                    dataset=ds)
 
-    @classmethod
-    def _gen_varnames(cls,
-                      filename,
-                      dataset=None):
-        raise NotImplementedError
-
     def _check_consistency(self):
         '''
         Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
@@ -607,7 +597,7 @@ class GridVectorProp(VectorProp):
         self.grid_file = grid_file
 
     @classmethod
-    def _gen_varname(cls,
+    def _gen_varnames(cls,
                      filename=None,
                      dataset=None):
         """
@@ -624,8 +614,9 @@ class GridVectorProp(VectorProp):
             df = dataset
         else:
             df = _get_dataset(filename)
-        for n in cls.default_names:
-            if n in df.variables.keys():
+        comp_names=[['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
+        for n in comp_names:
+            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
                 return n
         return None
 
