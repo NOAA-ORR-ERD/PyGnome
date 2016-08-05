@@ -87,7 +87,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     series = np.zeros((2, ), dtype=datetime_value_2d)
     series[0] = (start_time, (5, 180))
-    series[1] = (start_time + timedelta(hours=18), (5, 180))
+    series[1] = (start_time + timedelta(hours=25), (5, 180))
 
     w_mover = WindMover(Wind(timeseries=series, units='m/s'))
     model.movers += w_mover

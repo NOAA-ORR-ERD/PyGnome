@@ -140,22 +140,30 @@ model run and in subsequent steps the model moves and weathers elements.
 ``gnome.environment.property_classes`` -- PyGnome implemented property classes
 --------------------------------------------------------------------------------
 .. automodule:: gnome.environment.property_classes
+
 .. autoclass:: IceConcentration
-    :members: from_netCDF, _gen_varname
-    :private-members:
+    :members:
     :show-inheritance:
+    
+    .. autoattribute:: default_names
+    
 .. autoclass:: GridCurrent
-    :members: from_netCDF, _gen_varnames
-    :private-members:
+    :members:
     :show-inheritance:
+    
+    .. autoattribute:: default_names
+    
 .. autoclass:: GridWind
-    :members: from_netCDF, _gen_varnames
-    :private-members:
+    :members:
     :show-inheritance:
+    
+    .. autoattribute:: default_names
+    
 .. autoclass:: IceVelocity
-    :members: from_netCDF, _gen_varnames
-    :private-members:
+    :members:
     :show-inheritance:
+    
+    .. autoattribute:: default_names
 
 ``gnome.environment.property`` -- PyGnome abstract property classes
 ---------------------------------------------------------------------

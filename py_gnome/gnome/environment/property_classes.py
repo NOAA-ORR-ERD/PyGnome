@@ -13,10 +13,10 @@ from gnome.persist import base_schema
 import pyugrid
 import pysgrid
 import unit_conversion
+from gnome.environment import Environment
 from gnome.environment.property import Time, PropertySchema
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
 from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema, init_grid, _get_dataset
-from gnome.environment import Environment
 
 
 class TemperatureTSSchema(PropertySchema):
@@ -188,6 +188,9 @@ class WindTS(VelocityTS, Environment):
         v = speed * np.sin(direction * np.pi/180)
         return cls(name=name, units=units, time = [t], variables = [[u],[v]])
 
+class WaterTemperature(GriddedProp):
+    default_names = ['water_t', 'temp']
+
 
 class IceConcentration(GriddedProp, serializable.Serializable):
     _state = copy.deepcopy(serializable.Serializable._state)
@@ -200,53 +203,7 @@ class IceConcentration(GriddedProp, serializable.Serializable):
                 serializable.Field('data_file', save=True, update=True),
                 serializable.Field('grid_file', save=True, update=True)])
 
-    def __init__(self,
-             name=None,
-             units=None,
-             time = None,
-             grid = None,
-             data = None,
-             data_file=None,
-             grid_file=None,
-             dataset=None,
-             varname=None,
-             **kwargs):
-        GriddedProp.__init__(self,
-                        name=name,
-                        units=units,
-                        time=time,
-                        grid=grid,
-                        data=data,
-                        data_file = data_file,
-                        grid_file = grid_file,
-                        dataset=dataset,
-                        varname=varname)
-
-    @classmethod
-    def _gen_varname(cls,
-                     filename=None,
-                     dataset=None):
-        """
-        Function to find the default variable names if they are not provided.
-
-        Default names: 'ice_fraction'
-
-        :param filename: Name of file that will be searched for variables
-        :param dataset: Existing instance of a netCDF4.Dataset
-        :type filename: string
-        :type dataset: netCDF.Dataset
-        :return: List of default variable names, or None if none are found
-        """
-        df = None
-        if dataset is not None:
-            df = dataset
-        else:
-            df = _get_dataset(filename)
-        comp_names=['ice_fraction',]
-        for n in comp_names:
-            if n in df.variables.keys():
-                return n
-        return None
+    default_names = ['ice_fraction',]
 
     def __eq__(self, o):
         t1 = (self.name == o.name and
@@ -316,20 +273,11 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
     def __str__(self):
         return self.serialize(json_='save').__repr__()
 
-#     def serialize(self, json_='webapi'):
-#         pass
-#
-#     @classmethod
-#     def deserialize(cls, json_):
-#         pass
-#
-#     @classmethod
-#     def new_from_dict(cls, dict_):
-#         pass
-
 
 class GridCurrent(VelocityGrid, Environment):
     _ref_as = 'current'
+
+    default_names = [['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]
 
     def __init__(self,
                  name=None,
@@ -359,33 +307,23 @@ class GridCurrent(VelocityGrid, Environment):
             #Unrotated ROMS Grid!
             self.angle = GriddedProp(name='angle',units='radians',time=None, grid=self.grid, data=df['angle'])
 
-    @classmethod
-    def _gen_varnames(cls,
-                      filename=None,
-                      dataset=None):
-        """
-        Function to find the default variable names if they are not provided.
+    def at(self, points, time, units=None, depth=-1, extrapolate=False):
+        '''
+        Find the value of the property at positions P at time T
 
-        Default names: [['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]
-
-        :param filename: Name of file that will be searched for variables
-        :param dataset: Existing instance of a netCDF4.Dataset
-        :type filename: string
-        :type dataset: netCDF.Dataset
-        :return: List of default variable names, or None if none are found
-        """
-        df = None
-        if dataset is not None:
-            df = dataset
-        else:
-            df = _get_dataset(filename)
-        comp_names=[['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]
-        for n in comp_names:
-            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
-                return n
-        return None
-
-    def at(self, points, time, units=None, extrapolate=False):
+        :param points: Coordinates to be queried (P)
+        :param time: The time at which to query these points (T)
+        :param depth: Specifies the depth level of the variable
+        :param units: units the values will be returned in (or converted to)
+        :param extrapolate: if True, extrapolation will be supported
+        :type points: Nx2 array of double
+        :type time: datetime.datetime object
+        :type depth: integer
+        :type units: string such as ('m/s', 'knots', etc)
+        :type extrapolate: boolean (True or False)
+        :return: returns a Nx2 array of interpolated values
+        :rtype: double
+        '''
         value = super(GridCurrent,self).at(points, time, units, extrapolate=extrapolate)
         if self.angle is not None:
             angs = self.angle.at(points, time, extrapolate=extrapolate,)
@@ -399,6 +337,9 @@ class GridCurrent(VelocityGrid, Environment):
 class GridWind(VelocityGrid, Environment):
 
     _ref_as = 'wind'
+
+    default_names = [['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
+
     def __init__(self,
                  name=None,
                  units=None,
@@ -427,33 +368,23 @@ class GridWind(VelocityGrid, Environment):
             #Unrotated ROMS Grid!
             self.angle = GriddedProp(name='angle',units='radians',time=None, grid=self.grid, data=df['angle'])
 
-    @classmethod
-    def _gen_varnames(cls,
-                      filename=None,
-                      dataset=None):
-        """
-        Function to find the default variable names if they are not provided.
+    def at(self, points, time, units=None, depth=-1, extrapolate=False):
+        '''
+        Find the value of the property at positions P at time T
 
-        Default names: [['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
-
-        :param filename: Name of file that will be searched for variables
-        :param dataset: Existing instance of a netCDF4.Dataset
-        :type filename: string
-        :type dataset: netCDF.Dataset
-        :return: List of default variable names, or None if none are found
-        """
-        df = None
-        if dataset is not None:
-            df = dataset
-        else:
-            df = _get_dataset(filename)
-        comp_names=[['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
-        for n in comp_names:
-            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
-                return n
-        return None
-
-    def at(self, points, time, units=None, extrapolate=False):
+        :param points: Coordinates to be queried (P)
+        :param time: The time at which to query these points (T)
+        :param depth: Specifies the depth level of the variable
+        :param units: units the values will be returned in (or converted to)
+        :param extrapolate: if True, extrapolation will be supported
+        :type points: Nx2 array of double
+        :type time: datetime.datetime object
+        :type depth: integer
+        :type units: string such as ('m/s', 'knots', etc)
+        :type extrapolate: boolean (True or False)
+        :return: returns a Nx2 array of interpolated values
+        :rtype: double
+        '''
         value = super(GridWind,self).at(points, time, units, extrapolate=extrapolate)
         if self.angle is not None:
             angs = self.angle.at(points, time, extrapolate=extrapolate)
@@ -465,6 +396,9 @@ class GridWind(VelocityGrid, Environment):
 
 
 class IceVelocity(VelocityGrid):
+
+    default_names = [['ice_u', 'ice_v',],]
+
     def __init__(self,
                  name=None,
                  units=None,
@@ -484,31 +418,6 @@ class IceVelocity(VelocityGrid):
                               data_file=data_file,
                               dataset=dataset)
 
-    @classmethod
-    def _gen_varnames(cls,
-                      filename=None,
-                      dataset=None):
-        """
-        Function to find the default variable names if they are not provided.
-
-        Default names: [['ice_u', 'ice_v',],]
-
-        :param filename: Name of file that will be searched for variables
-        :param dataset: Existing instance of a netCDF4.Dataset
-        :type filename: string
-        :type dataset: netCDF.Dataset
-        :return: List of default variable names, or None if none are found
-        """
-        df = None
-        if dataset is not None:
-            df = dataset
-        else:
-            df = _get_dataset(filename)
-        comp_names=[['ice_u', 'ice_v',],]
-        for n in comp_names:
-            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
-                return n
-        return None
 
 class IceAwareProp(serializable.Serializable):
     _state = copy.deepcopy(serializable.Serializable._state)

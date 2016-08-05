@@ -7,6 +7,40 @@ or larval swimming.)
 
 Some examples and common use cases are shown here. For complete documentation see :mod:`gnome.movers`
 
+PyMovers
+----------
+
+This new type of mover includes the gnome.environment.PyGridCurrentMover and gnome.environment.PyWindMover. They are built to work with
+the Property objects, and also provide multiple types of numerical methods for moving the particles. ::
+
+    from gnome.environment.property_classes import GridCurrent
+    from gnome.movers import PyGridCurrentMover
+    fn = 'my_data.nc'
+    current = GridCurrent.from_netCDF(filename=fn)
+    curr_mover = PyGridCurrentMover(current)
+
+There are three types of numerical methods currently supported.
+
+1. Euler method ('Euler')
+2. Trapezoidal/Heun's 2nd order method ('Trapezoid')
+3. Runge-Kutta 4th order method ('RK4')
+
+To use them, set the 'default_num_method' argument when constructing a mover. Alternatively, you may alter the mover as follows: ::
+
+    fn = 'my_data.nc'
+    current = GridCurrent.from_netCDF(filename=fn)
+    curr_mover = PyGridCurrentMover(current, default_num_method = 'RK4')
+    
+    #RK4 is too slow, so lets go to the 2nd order method.
+    curr_mover.default_num_method = 'Trapezoid'
+    
+The get_move function has the same interface as previous movers. You may also pass in a numerical method here and it will use it instead
+of the default. ::
+
+    curr_mover.get_move(sc, time_step, model_time_datetime, num_method = 'Euler')
+    
+    
+
 Wind movers
 -----------
 

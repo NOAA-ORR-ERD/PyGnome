@@ -21,6 +21,8 @@ class GridPropSchema(PropertySchema):
 
 class GriddedProp(EnvProp):
 
+    default_names=[]
+
     def __init__(self,
                  name=None,
                  units=None,
@@ -149,10 +151,6 @@ class GriddedProp(EnvProp):
                    grid_file=grid_file,
                    data_file=data_file)
 
-    @classmethod
-    def _gen_varname(cls, filename):
-        raise NotImplementedError()
-
     @property
     def time(self):
         return self._time
@@ -249,6 +247,22 @@ class GriddedProp(EnvProp):
         return value
 
     def at(self, points, time, units=None, depth = -1, extrapolate=False):
+        '''
+        Find the value of the property at positions P at time T
+
+        :param points: Coordinates to be queried (P)
+        :param time: The time at which to query these points (T)
+        :param depth: Specifies the depth level of the variable
+        :param units: units the values will be returned in (or converted to)
+        :param extrapolate: if True, extrapolation will be supported
+        :type points: Nx2 array of double
+        :type time: datetime.datetime object
+        :type depth: integer
+        :type units: string such as ('m/s', 'knots', etc)
+        :type extrapolate: boolean (True or False)
+        :return: returns a Nx1 array of interpolated values
+        :rtype: double
+        '''
 
         sg = False
         m = True
@@ -287,13 +301,11 @@ class GriddedProp(EnvProp):
         return value
 
     @classmethod
-    def _gen_varname(self,
+    def _gen_varname(cls,
                      filename=None,
-                     dataset=None,):
+                     dataset=None):
         """
-        Function to find the default variable names if they are not provided. By implementing this
-        function in a subclass you can specify the different default variable names to search for,
-        or specify some other means to find them.
+        Function to find the default variable names if they are not provided.
 
         :param filename: Name of file that will be searched for variables
         :param dataset: Existing instance of a netCDF4.Dataset
@@ -301,8 +313,15 @@ class GriddedProp(EnvProp):
         :type dataset: netCDF.Dataset
         :return: List of default variable names, or None if none are found
         """
-
-        raise NotImplementedError()
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
+        for n in cls.default_names:
+            if n in df.variables.keys():
+                return n
+        return None
 
 
 class GridVectorProp(VectorProp):
@@ -359,7 +378,7 @@ class GridVectorProp(VectorProp):
         Allows one-function creation of a GridVectorProp from a file.
 
         :param filename: Default data source. Parameters below take precedence
-        :param varname: Name of the variable in the data source file
+        :param varnames: Names of the variables in the data source file
         :param grid_topology: Description of the relationship between grid attributes and variable names.
         :param name: Name of property
         :param units: Units
@@ -370,7 +389,7 @@ class GridVectorProp(VectorProp):
         :param data_file: Name of data source file
         :param grid_file: Name of grid source file
         :type filename: string
-        :type varname: string
+        :type varnames: [] of string
         :type grid_topology: {string : string, ...}
         :type name: string
         :type units: string
@@ -432,12 +451,6 @@ class GridVectorProp(VectorProp):
                    grid_file=grid_file,
                    data_file=data_file,
                    dataset=ds)
-
-    @classmethod
-    def _gen_varnames(cls,
-                      filename,
-                      dataset=None):
-        raise NotImplementedError
 
     def _check_consistency(self):
         '''
@@ -584,13 +597,11 @@ class GridVectorProp(VectorProp):
         self.grid_file = grid_file
 
     @classmethod
-    def _gen_varname(self,
+    def _gen_varnames(cls,
                      filename=None,
-                     dataset=None,):
+                     dataset=None):
         """
-        Function to find the default variable names if they are not provided. By implementing this
-        function in a subclass you can specify the different default variable names to search for,
-        or specify some other means to find them.
+        Function to find the default variable names if they are not provided.
 
         :param filename: Name of file that will be searched for variables
         :param dataset: Existing instance of a netCDF4.Dataset
@@ -598,8 +609,16 @@ class GridVectorProp(VectorProp):
         :type dataset: netCDF.Dataset
         :return: List of default variable names, or None if none are found
         """
-
-        raise NotImplementedError()
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
+        comp_names=[['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
+        for n in comp_names:
+            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
+                return n
+        return None
 
 def init_grid(filename,
               grid_topology=None,
