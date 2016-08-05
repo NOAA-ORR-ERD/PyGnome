@@ -80,6 +80,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     wind = Wind(timeseries=series, units='m/s')
     w_mover = WindMover(wind)
+    w_mover.extrapolate = True
     model.movers += w_mover
 
     print 'adding a cats shio mover:'

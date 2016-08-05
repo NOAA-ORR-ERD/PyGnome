@@ -20,9 +20,8 @@ class GridPropSchema(PropertySchema):
 
 
 class GriddedProp(EnvProp):
-    '''
-    This class represents a phenomenon using gridded data
-    '''
+
+    default_names=[]
 
     def __init__(self,
                  name=None,
@@ -32,7 +31,28 @@ class GriddedProp(EnvProp):
                  grid=None,
                  data_file=None,
                  grid_file=None,
+                 dataset=None,
                  varname=None):
+        '''
+        This class represents a phenomenon using gridded data
+
+        :param name: Name
+        :param units: Units
+        :param time: Time axis of the data
+        :param data: Underlying data source
+        :param grid: Grid that the data corresponds with
+        :param data_file: Name of data source file
+        :param grid_file: Name of grid source file
+        :param varname: Name of the variable in the data source file
+        :type name: string
+        :type units: string
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+        :type data: netCDF4.Variable or numpy.array
+        :type grid: pysgrid or pyugrid
+        :type data_file: string
+        :type grid_file: string
+        :type varname: string
+        '''
 
         self._grid = self._data_file = self._grid_file = None
 
@@ -55,21 +75,61 @@ class GriddedProp(EnvProp):
                     units=None,
                     time=None,
                     grid=None,
+                    dataset=None,
                     data_file=None,
                     grid_file=None
                     ):
+        '''
+        Allows one-function creation of a GriddedProp from a file.
+
+        :param filename: Default data source. Parameters below take precedence
+        :param varname: Name of the variable in the data source file
+        :param grid_topology: Description of the relationship between grid attributes and variable names.
+        :param name: Name of property
+        :param units: Units
+        :param time: Time axis of the data
+        :param data: Underlying data source
+        :param grid: Grid that the data corresponds with
+        :param dataset: Instance of open Dataset
+        :param data_file: Name of data source file
+        :param grid_file: Name of grid source file
+        :type filename: string
+        :type varname: string
+        :type grid_topology: {string : string, ...}
+        :type name: string
+        :type units: string
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+        :type data: netCDF4.Variable or numpy.array
+        :type grid: pysgrid or pyugrid
+        :type dataset: netCDF4.Dataset
+        :type data_file: string
+        :type grid_file: string
+        '''
         if filename is not None:
             data_file = filename
             grid_file = filename
+
+        ds = None
+        dg = None
+        if dataset is None:
+            if grid_file == data_file:
+                ds = dg = _get_dataset(grid_file)
+            else:
+                ds = _get_dataset(data_file)
+                dg = _get_dataset(grid_file)
+        else:
+            ds = dg = dataset
+
         if grid is None:
             grid = init_grid(grid_file,
-                             grid_topology=grid_topology)
+                             grid_topology=grid_topology,
+                             dataset=dg)
         if varname is None:
-            varname = cls._gen_varname(data_file)
+            varname = cls._gen_varname(data_file,
+                                       dataset=ds)
             if varname is None:
                 raise NameError('Default current names are not in the data file, must supply variable name')
-        df = _get_dataset(data_file)
-        data = df[varname]
+        data = ds[varname]
         name = varname if name is None else name
         if units is None:
             try:
@@ -82,7 +142,7 @@ class GriddedProp(EnvProp):
                 timevar = data.time if data.time == data.dimensions[0] else data.dimensions[0]
             except AttributeError:
                 timevar = data.dimensions[0]
-            time = Time(df[timevar])
+            time = Time(ds[timevar])
         return cls(name=name,
                    units=units,
                    time=time,
@@ -90,10 +150,6 @@ class GriddedProp(EnvProp):
                    grid=grid,
                    grid_file=grid_file,
                    data_file=data_file)
-
-    @classmethod
-    def _gen_varname(cls, filename):
-        raise NotImplementedError()
 
     @property
     def time(self):
@@ -192,10 +248,20 @@ class GriddedProp(EnvProp):
 
     def at(self, points, time, units=None, depth = -1, extrapolate=False):
         '''
-        Interpolates this property to the given points at the given time.
-        :param points: A Nx2 array of lon,lat points
-        :param time: A datetime object. May be None; if this is so, the variable is assumed to be gridded
-        but time-invariant
+        Find the value of the property at positions P at time T
+
+        :param points: Coordinates to be queried (P)
+        :param time: The time at which to query these points (T)
+        :param depth: Specifies the depth level of the variable
+        :param units: units the values will be returned in (or converted to)
+        :param extrapolate: if True, extrapolation will be supported
+        :type points: Nx2 array of double
+        :type time: datetime.datetime object
+        :type depth: integer
+        :type units: string such as ('m/s', 'knots', etc)
+        :type extrapolate: boolean (True or False)
+        :return: returns a Nx1 array of interpolated values
+        :rtype: double
         '''
 
         sg = False
@@ -234,6 +300,29 @@ class GriddedProp(EnvProp):
             value = unit_conversion.convert(self.units, units, value)
         return value
 
+    @classmethod
+    def _gen_varname(cls,
+                     filename=None,
+                     dataset=None):
+        """
+        Function to find the default variable names if they are not provided.
+
+        :param filename: Name of file that will be searched for variables
+        :param dataset: Existing instance of a netCDF4.Dataset
+        :type filename: string
+        :type dataset: netCDF.Dataset
+        :return: List of default variable names, or None if none are found
+        """
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
+        for n in cls.default_names:
+            if n in df.variables.keys():
+                return n
+        return None
+
 
 class GridVectorProp(VectorProp):
 
@@ -245,6 +334,7 @@ class GridVectorProp(VectorProp):
                  grid = None,
                  grid_file=None,
                  data_file=None,
+                 dataset=None,
                  varnames=None):
 
         self._grid = self._grid_file = self._data_file = None
@@ -265,6 +355,7 @@ class GridVectorProp(VectorProp):
                             time,
                             variables,
                             grid = grid,
+                            dataset=dataset,
                             data_file=data_file,
                             grid_file=grid_file)
 
@@ -280,27 +371,67 @@ class GridVectorProp(VectorProp):
                     time=None,
                     grid=None,
                     data_file=None,
-                    grid_file=None
+                    grid_file=None,
+                    dataset=None
                     ):
+        '''
+        Allows one-function creation of a GridVectorProp from a file.
+
+        :param filename: Default data source. Parameters below take precedence
+        :param varnames: Names of the variables in the data source file
+        :param grid_topology: Description of the relationship between grid attributes and variable names.
+        :param name: Name of property
+        :param units: Units
+        :param time: Time axis of the data
+        :param data: Underlying data source
+        :param grid: Grid that the data corresponds with
+        :param dataset: Instance of open Dataset
+        :param data_file: Name of data source file
+        :param grid_file: Name of grid source file
+        :type filename: string
+        :type varnames: [] of string
+        :type grid_topology: {string : string, ...}
+        :type name: string
+        :type units: string
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+        :type data: netCDF4.Variable or numpy.array
+        :type grid: pysgrid or pyugrid
+        :type dataset: netCDF4.Dataset
+        :type data_file: string
+        :type grid_file: string
+        '''
         if filename is not None:
             data_file = filename
             grid_file = filename
+
+        ds = None
+        dg = None
+        if dataset is None:
+            if grid_file == data_file:
+                ds = dg = _get_dataset(grid_file)
+            else:
+                ds = _get_dataset(data_file)
+                dg = _get_dataset(grid_file)
+        else:
+            ds = dg = dataset
+
         if grid is None:
             grid = init_grid(grid_file,
-                             grid_topology=grid_topology)
+                             grid_topology=grid_topology,
+                             dataset=dg)
         if varnames is None:
-            varnames = cls._gen_varnames(data_file)
-        df = _get_dataset(data_file)
+            varnames = cls._gen_varnames(data_file,
+                                         dataset=ds)
         if name is None:
             name = 'GridVectorProp'
         timevar=None
-        data = df[varnames[0]]
+        data = ds[varnames[0]]
         if time is None:
             try:
                 timevar = data.time if data.time == data.dimensions[0] else data.dimensions[0]
             except AttributeError:
                 timevar = data.dimensions[0]
-            time = Time(df[timevar])
+            time = Time(ds[timevar])
         variables = []
         for vn in varnames:
             variables.append(GriddedProp.from_netCDF(filename=filename,
@@ -310,18 +441,16 @@ class GridVectorProp(VectorProp):
                                                      time=time,
                                                      grid=grid,
                                                      data_file=data_file,
-                                                     grid_file=grid_file))
+                                                     grid_file=grid_file,
+                                                     dataset=ds))
         return cls(name,
                    units,
                    time,
                    variables,
                    grid=grid,
                    grid_file=grid_file,
-                   data_file=data_file)
-
-    @classmethod
-    def _gen_varnames(cls, filename):
-        raise NotImplementedError
+                   data_file=data_file,
+                   dataset=ds)
 
     def _check_consistency(self):
         '''
@@ -467,10 +596,37 @@ class GridVectorProp(VectorProp):
         self.grid_file = grid_file
         self.grid_file = grid_file
 
+    @classmethod
+    def _gen_varnames(cls,
+                     filename=None,
+                     dataset=None):
+        """
+        Function to find the default variable names if they are not provided.
+
+        :param filename: Name of file that will be searched for variables
+        :param dataset: Existing instance of a netCDF4.Dataset
+        :type filename: string
+        :type dataset: netCDF.Dataset
+        :return: List of default variable names, or None if none are found
+        """
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
+        comp_names=[['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
+        for n in comp_names:
+            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
+                return n
+        return None
+
 def init_grid(filename,
-              grid_topology=None):
+              grid_topology=None,
+              dataset = None,):
     gt = grid_topology
-    gf = _get_dataset(filename)
+    gf = dataset
+    if gf is None:
+        gf = _get_dataset(filename)
     grid = None
     if gt is None:
         try:
@@ -527,14 +683,17 @@ def init_grid(filename,
                                  edge2_lat = edge2_lat)
     return grid
 
-def _gen_topology(filename):
+def _gen_topology(filename,
+                  dataset=None):
     '''
     Function to create the correct default topology if it is not provided
 
     :param filename: Name of file that will be searched for variables
     :return: List of default variable names, or None if none are found
     '''
-    gf = _get_dataset(filename)
+    gf = dataset
+    if gf is None:
+        gf = _get_dataset(filename)
     gt = {}
     node_coord_names = [['node_lon','node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
     face_var_names = ['nv']

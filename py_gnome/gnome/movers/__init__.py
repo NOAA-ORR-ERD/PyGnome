@@ -39,6 +39,7 @@ from vertical_movers import RiseVelocityMoverSchema, RiseVelocityMover
 from ugrid_movers import UGridCurrentMover
 from py_ice_mover import PyIceMover
 from py_wind_movers import PyWindMover
+from py_current_movers import PyGridCurrentMover
 
 __all__ = [Mover,
            CyMover,
@@ -72,4 +73,6 @@ __all__ = [Mover,
            CurrentCycleMoverSchema,
            CurrentCycleMover,
            RiseVelocityMoverSchema,
-           RiseVelocityMover]
+           RiseVelocityMover,
+           PyWindMover,
+           PyGridCurrentMover]

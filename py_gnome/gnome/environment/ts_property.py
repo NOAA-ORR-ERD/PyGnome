@@ -13,15 +13,25 @@ import unit_conversion
 import collections
 
 class TimeSeriesProp(EnvProp):
-    '''
-    This class represents a phenomenon using a time series
-    '''
 
     def __init__(self,
+
                  name=None,
                  units=None,
                  time=None,
                  data=None):
+        '''
+        A class that represents a scalar natural phenomenon using a time series
+
+        :param name: Name
+        :param units: Units
+        :param time: Time axis of the data
+        :param data: Underlying data source
+        :type name: string
+        :type units: string
+        :type time: [] of datetime.datetime, netCDF4.Variable, or Time object
+        :type data: numpy.array, list, or other iterable
+        '''
         if len(time) != len(data):
             raise ValueError("Time and data sequences are of different length.\n\
             len(time) == {0}, len(data) == {1}".format(len(time), len(data)))
@@ -30,6 +40,11 @@ class TimeSeriesProp(EnvProp):
 
     @property
     def timeseries(self):
+        '''
+        Creates a representation of the time series
+
+        :rtype: list of (datetime, double) tuples
+        '''
         return map(lambda x,y:(x,y), self.time.time, self.data)
 
     @property
@@ -120,12 +135,16 @@ class TimeSeriesProp(EnvProp):
 
 class TSVectorProp(VectorProp):
 
+
     def __init__(self,
                  name=None,
                  units=None,
                  time=None,
                  variables=None,
                  varnames=None):
+        '''
+        This class represents a vector phenomenon using a time series
+        '''
 
         if any([units is None, time is None]) and not all([isinstance(v, TimeSeriesProp) for v in variables]):
             raise ValueError("All attributes except name, varnames MUST be defined if variables is not a list of TimeSeriesProp objects")
@@ -143,6 +162,15 @@ class TSVectorProp(VectorProp):
             if (v.units != self.units or
                 v.time != self.time):
                 raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
+
+    @property
+    def timeseries(self):
+        '''
+        Creates a representation of the time series
+
+        :rtype: list of (datetime, (double, double)) tuples
+        '''
+        return map(lambda x,y,z:(x,(y,z)), self.time.time, self.variables[0], self.variables[1])
 
     @property
     def variables(self):
