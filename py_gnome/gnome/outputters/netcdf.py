@@ -457,6 +457,9 @@ class NetCDFOutput(Outputter, Serializable):
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         spills, **kwargs)
+        if not self.on: 
+            return
+
         self.clean_output_files()
 
         self._update_var_attributes(spills)
@@ -591,7 +594,7 @@ class NetCDFOutput(Outputter, Serializable):
         """
         super(NetCDFOutput, self).write_output(step_num, islast_step)
 
-        if not self._write_step:
+        if self.on is False or not self._write_step:
             return None
 
         for sc in self.cache.load_timestep(step_num).items():
