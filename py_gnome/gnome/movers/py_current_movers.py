@@ -63,8 +63,9 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
                     uncertain_time_delay=0,
                     uncertain_along=.5,
                     uncertain_across=.25,
-                    uncertain_cross=.25):
-        current = GridCurrent.from_netCDF(filename)
+                    uncertain_cross=.25,
+                    **kwargs):
+        current = GridCurrent.from_netCDF(filename, **kwargs)
         return cls(current=current,
                    filename=filename,
                    extrapolate=extrapolate,

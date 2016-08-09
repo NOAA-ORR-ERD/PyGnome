@@ -48,11 +48,8 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
         """
         movers.PyMover.__init__(self,
                                 default_num_method=default_num_method)
-        self._wind = None
-        if wind is not None:
-            self.wind = wind
-            kwargs['name'] = \
-                kwargs.pop('name', wind.name)
+        self._wind = wind
+        self.make_default_refs = False
 
         self.filename=filename
         self.extrapolate=extrapolate
@@ -79,8 +76,10 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                     uncertain_along=.5,
                     uncertain_across=.25,
                     uncertain_cross=.25,
-                    default_num_method='Trapezoid'):
-        wind = GridWind.from_netCDF(filename)
+                    default_num_method='Trapezoid',
+                    **kwargs):
+
+        wind = GridWind.from_netCDF(filename, **kwargs)
         return cls(wind=wind,
                    filename=filename,
                    extrapolate=extrapolate,
