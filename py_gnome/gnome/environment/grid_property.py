@@ -321,7 +321,7 @@ class GriddedProp(EnvProp):
         for n in cls.default_names:
             if n in df.variables.keys():
                 return n
-        return None
+        raise ValueError("Default names not found.")
 
 
 class GridVectorProp(VectorProp):
@@ -614,11 +614,10 @@ class GridVectorProp(VectorProp):
             df = dataset
         else:
             df = _get_dataset(filename)
-        comp_names=[['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
-        for n in comp_names:
+        for n in cls.default_names:
             if n[0] in df.variables.keys() and n[1] in df.variables.keys():
                 return n
-        return None
+        raise ValueError("Default names not found.")
 
 def init_grid(filename,
               grid_topology=None,
