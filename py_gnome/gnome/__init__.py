@@ -12,9 +12,10 @@ import unit_conversion as uc
 
 from gnomeobject import GnomeId, init_obj_log, AddLogger
 
-__version__ = '0.1.1'
-# a few imports so that the basic stuff is there
+__version__ = '0.2.0'
 
+
+# a few imports so that the basic stuff is there
 
 def initialize_log(config, logfile=None):
     '''
