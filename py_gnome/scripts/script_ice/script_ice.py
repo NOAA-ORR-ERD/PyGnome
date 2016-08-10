@@ -93,7 +93,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a current mover:'
 
     fn = [get_datafile('arctic_avg2_0001_gnome.nc'),
-          get_datafile('arctic_avg2_0001_gnome.nc'),
+          get_datafile('arctic_avg2_0002_gnome.nc'),
           ]
 
     gt = {'node_lon': 'lon',

@@ -11,9 +11,13 @@ import subprocess
 import script_runner
 
 
-def run_all_with_script_runner():
+def run_all_with_script_runner(to_skip=[]):
     scripts = glob.glob(os.path.join(os.path.dirname(__file__),
                         'script_*/script_*.py'))
+    print scripts
+    for script in to_skip:
+        scripts = [s for s in scripts if script not in s]
+    print scripts
 
     for script in scripts:
         print 'Begin processing script: {0}'.format(script)
@@ -57,6 +61,7 @@ def run_all_with_script_runner():
         #           '\n\t{0}'.format(ex))
 
 def run_all_alone():
+    # fixme -- needs to be finished...
     scripts = glob.glob(os.path.join(os.path.dirname(__file__),
                         'script_*/script_*.py'))
 
@@ -76,10 +81,7 @@ def run_all_alone():
 
 if __name__ == "__main__":
     print sys.argv
-    if len(sys.argv) > 1:
-        if sys.argv[1] == 'alone':
-            run_all_alone()
-    else:
-        run_all_with_script_runner()
+    to_skip = sys.argv[1:]
+    run_all_with_script_runner(to_skip)
 
 
