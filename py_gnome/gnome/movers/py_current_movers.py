@@ -3,7 +3,7 @@ import numpy as np
 import datetime
 import copy
 from gnome import basic_types
-from gnome.environment.property_classes import GridCurrent
+from gnome.environment import GridCurrent
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status

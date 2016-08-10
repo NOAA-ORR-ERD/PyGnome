@@ -5,8 +5,7 @@ import copy
 from gnome import basic_types
 from gnome.utilities import serializable, rand
 from gnome.utilities.projections import FlatEarthProjection
-from gnome.environment.property_classes import WindTS
-from gnome.environment.property import VectorProp
+from gnome.environment import GridWind
 from gnome.basic_types import oil_status
 from gnome.basic_types import (world_point,
                                world_point_type,

@@ -23,7 +23,7 @@ from gnome.model import Model
 
 from gnome.map import MapFromBNA
 from gnome.environment import Wind
-from gnome.environment.property_classes import GridCurrent
+from gnome.environment import GridCurrent
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
