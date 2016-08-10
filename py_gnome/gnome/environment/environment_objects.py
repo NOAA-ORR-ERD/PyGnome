@@ -418,7 +418,14 @@ class IceVelocity(VelocityGrid, Environment):
                               dataset=dataset)
 
 
-class IceAwareProp(object):
+class IceAwareProp(serializable.Serializable, Environment):
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = VelocityGridSchema
+    _state.add_field([serializable.Field('units', save=True, update=True),
+#                 serializable.Field('varnames', save=True, update=True),
+                serializable.Field('time', save=True, update=True),
+                serializable.Field('data_file', save=True, update=True),
+                serializable.Field('grid_file', save=True, update=True)])
 
     def __init__(self,
                  name=None,
@@ -499,7 +506,7 @@ class IceAwareProp(object):
                    **kwargs)
 
 
-class IceAwareCurrent(GridCurrent, IceAwareProp):
+class IceAwareCurrent(IceAwareProp):
 
     def __init__(self,
                  name=None,
@@ -512,16 +519,6 @@ class IceAwareCurrent(GridCurrent, IceAwareProp):
                  grid_file=None,
                  data_file=None,
                  **kwargs):
-
-        GridCurrent.__init__(self,
-                             name=name,
-                             units=units,
-                             time=time,
-                             water_var=water_var,
-                             grid=grid,
-                             grid_file=grid_file,
-                             data_file=data_file)
-
         IceAwareProp.__init__(self,
                               name=name,
                               units=units,
