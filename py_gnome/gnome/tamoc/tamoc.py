@@ -6,67 +6,83 @@ assorted code for working with TAMOC
 
 __all__ = []
 
-def tamoc_spill(release_time,
-                start_position,
-                num_elements=None,
-                end_release_time=None,
-                name='TAMOC plume'):
-    '''
-    Helper function returns a Spill object for a spill from the TAMOC model
+# def tamoc_spill(release_time,
+#                 start_position,
+#                 num_elements=None,
+#                 end_release_time=None,
+#                 name='TAMOC plume'):
+#     '''
+#     Helper function returns a Spill object for a spill from the TAMOC model
 
-    This version is essentially a template -- it needs to be filled in with
-    access to the parameters from the "real" TAMOC model.
+#     This version is essentially a template -- it needs to be filled in with
+#     access to the parameters from the "real" TAMOC model.
 
-    Also, this version is for intert particles -- they will not change once released into gnome.
+#     Also, this version is for intert particles -- they will not change once released into gnome.
 
-    Future work: create a "proper" weatherable oil object.
+#     Future work: create a "proper" weatherable oil object.
 
-    :param release_time: start of plume release
-    :type release_time: datetime.datetime
+#     :param release_time: start of plume release
+#     :type release_time: datetime.datetime
 
-    :param start_position: location of initial release
-    :type start_position: 3-tuple of floats (long, lat, depth)
+#     :param start_position: location of initial release
+#     :type start_position: 3-tuple of floats (long, lat, depth)
 
-    :param num_elements: total number of elements to be released
-    :type num_elements: integer
+#     :param num_elements: total number of elements to be released
+#     :type num_elements: integer
 
-    :param end_release_time=None: End release time for a time varying release.
-                                  If None, then release runs for tehmodel duration
-    :type end_release_time: datetime.datetime
+#     :param end_release_time=None: End release time for a time varying release.
+#                                   If None, then release runs for tehmodel duration
+#     :type end_release_time: datetime.datetime
 
-    :param float flow_rate=None: rate of release mass or volume per time.
-    :param str units=None: must provide units for amount spilled.
-    :param tuple windage_range=(.01, .04): Percentage range for windage.
-                                           Active only for surface particles
-                                           when a mind mover is added
-    :param windage_persist=900: Persistence for windage values in seconds.
-                                Use -1 for inifinite, otherwise it is
-                                randomly reset on this time scale.
-    :param str name='TAMOC spill': a name for the spill.
-    '''
+#     :param float flow_rate=None: rate of release mass or volume per time.
+#     :param str units=None: must provide units for amount spilled.
+#     :param tuple windage_range=(.01, .04): Percentage range for windage.
+#                                            Active only for surface particles
+#                                            when a mind mover is added
+#     :param windage_persist=900: Persistence for windage values in seconds.
+#                                 Use -1 for inifinite, otherwise it is
+#                                 randomly reset on this time scale.
+#     :param str name='TAMOC spill': a name for the spill.
+#     '''
 
-    release = PointLineRelease(release_time=release_time,
-                               start_position=start_position,
-                               num_elements=num_elements,
-                               end_release_time=end_release_time)
+#     release = PointLineRelease(release_time=release_time,
+#                                start_position=start_position,
+#                                num_elements=num_elements,
+#                                end_release_time=end_release_time)
 
-    # This helper function is just passing parameters thru to the plume
-    # helper function which will do the work.
-    # But this way user can just specify all parameters for release and
-    # element_type in one go...
-    element_type = elements.plume(distribution_type=distribution_type,
-                                  distribution=distribution,
-                                  substance_name=substance,
-                                  windage_range=windage_range,
-                                  windage_persist=windage_persist,
-                                  density=density,
-                                  density_units=density_units)
+#     # This helper function is just passing parameters thru to the plume
+#     # helper function which will do the work.
+#     # But this way user can just specify all parameters for release and
+#     # element_type in one go...
+#     element_type = elements.plume(distribution_type=distribution_type,
+#                                   distribution=distribution,
+#                                   substance_name=substance,
+#                                   windage_range=windage_range,
+#                                   windage_persist=windage_persist,
+#                                   density=density,
+#                                   density_units=density_units)
 
-    return Spill(release,
-                 element_type=element_type,
-                 amount=amount,
-                 units=units,
-                 name=name)
+#     return Spill(release,
+#                  element_type=element_type,
+#                  amount=amount,
+#                  units=units,
+#                  name=name)
+
+
+class TamocDroplet():
+    """
+    Dummy class to show what we need from the TAMOC output
+    """
+    def __init__(self,
+                 mass_flux=1.0,  # kg/s
+                 radius=1e-6,  # meters
+                 density=900.0,  # kg/m^3 at 15degC
+                 ):
+
+        self.mass_flux = mass_flux
+        self.radius = radius
+        self.density = density
+
 
 
 class TamocSpill(serializable.Serializable):
@@ -103,8 +119,20 @@ class TamocSpill(serializable.Serializable):
 
         """
 
+        self.droplets = self.run_tamoc()
         self.on = on    # spill is active or not
         self.name = name
+
+    def run_tamoc():
+        """
+        this is the code that actually calls and runs tamoc_output
+
+        it returns a list of TAMOC droplet objects
+        (or fake ones)
+        """
+        return [TamocDroplet(radius=1e-6 * i) for i in range(10)]
+
+
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
