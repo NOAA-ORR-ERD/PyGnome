@@ -140,7 +140,15 @@ class TamocSpill(serializable.Serializable):
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
 
+    def _get_mass_distribution(self, mass_fluxes, time_step):
+        ts = time_step.total_seconds()
+        delta_masses = []
+        for i,flux in enumerate(mass_fluxes):
+            delta_masses.append(mass_fluxes * ts)
+        total_mass = sum(delta_masses)
+        proportions = [d_mass / total_mass for d_mass in delta_masses]
 
+        return (delta_masses, proportions, total_mass)
 
     def _elem_mass(self, num_new_particles, current_time, time_step):
         '''
@@ -278,7 +286,17 @@ class TamocSpill(serializable.Serializable):
         Also, the set_newparticle_values() method for all element_type gets
         called so each element_type sets the values for its own data correctly
         """
-        raise NotImplimentedError
+        mass_fluxes = [tam_drop.mass_flux for tam_drop in self.tamoc_arr]
+        delta_masses, proportions, total_mass = self._get_mass_distribution(mass_fluxes, time_step)
+
+        #set up LE distribution, the number of particles in each 'release point'
+        LE_distribution = [int(num_new_particles * p) for p in proportions]
+        diff = num_new_particles - sum(LE_distribution)
+        for i in range(0, diff):
+            LE_distribution[i % len(LE_distribution)] += 1
+
+
+        raise NotImplementedError
 
         # if self.element_type is not None:
         #     self.element_type.set_newparticle_values(num_new_particles, self,
@@ -294,4 +312,3 @@ class TamocSpill(serializable.Serializable):
         # if 'frac_coverage' in data_arrays:
         #     data_arrays['frac_coverage'][-num_new_particles:] = \
         #         self.frac_coverage
-
