@@ -5,6 +5,7 @@ assorted code for working with TAMOC
 """
 
 from gnome.utilities import serializable
+from gnome.utilities.projections import FlatEarthProjection
 
 
 __all__ = []
@@ -286,7 +287,7 @@ class TamocSpill(serializable.Serializable):
         Also, the set_newparticle_values() method for all element_type gets
         called so each element_type sets the values for its own data correctly
         """
-        mass_fluxes = [tam_drop.mass_flux for tam_drop in self.tamoc_arr]
+        mass_fluxes = [tam_drop.mass_flux for tam_drop in self.droplets]
         delta_masses, proportions, total_mass = self._get_mass_distribution(mass_fluxes, time_step)
 
         #set up LE distribution, the number of particles in each 'release point'
@@ -295,6 +296,20 @@ class TamocSpill(serializable.Serializable):
         for i in range(0, diff):
             LE_distribution[i % len(LE_distribution)] += 1
 
+
+        #compute release point location for each droplet
+        positions = [self.start_position + FlatEarthProjection.meters_to_lonlat(d.position, self.start_position) for d in self.droplets]
+
+        #for each release location, set the position of the elements released at that location
+        total_rel = 0
+        for n_LEs ,pos in (LE_distribution, positions):
+            start_idx = -num_new_particles + total_rel
+            end_idx = start_idx + n_LEs
+
+            data_arrays['positions'][start_idx:end_idx] = pos
+            total_rel += n_LEs
+
+        self.num_released += num_new_particles
 
         raise NotImplementedError
 
