@@ -4,6 +4,9 @@
 assorted code for working with TAMOC
 """
 
+from gnome.utilities import serializable
+
+
 __all__ = []
 
 # def tamoc_spill(release_time,
@@ -77,11 +80,13 @@ class TamocDroplet():
                  mass_flux=1.0,  # kg/s
                  radius=1e-6,  # meters
                  density=900.0,  # kg/m^3 at 15degC
+                 position= (10, 20, 100)  # (x, y, z) in meters
                  ):
 
         self.mass_flux = mass_flux
         self.radius = radius
         self.density = density
+        self.position = position
 
 
 
@@ -107,14 +112,13 @@ class TamocSpill(serializable.Serializable):
     # valid_mass_units = _valid_units('Mass')
 
     def __init__(self,
-                 release,
-                 element_type=None,
-                 substance=None,
+                 release_time,
+                 start_position,
+                 num_elements=None,
+                 end_release_time=None,
+                 name='TAMOC plume',
                  on=True,
-                 amount=None,   # could be volume or mass
-                 units=None,
-                 amount_uncertainty_scale=0.0,
-                 name='Spill'):
+                 ):
         """
 
         """
@@ -123,7 +127,7 @@ class TamocSpill(serializable.Serializable):
         self.on = on    # spill is active or not
         self.name = name
 
-    def run_tamoc():
+    def run_tamoc(self):
         """
         this is the code that actually calls and runs tamoc_output
 
@@ -131,7 +135,6 @@ class TamocSpill(serializable.Serializable):
         (or fake ones)
         """
         return [TamocDroplet(radius=1e-6 * i) for i in range(10)]
-
 
 
     def __repr__(self):
