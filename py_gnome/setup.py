@@ -430,8 +430,20 @@ extensions.append(Extension("gnome.utilities.file_tools.filescanner",
                             language="c",
                             ))
 
+
+def get_version():
+    """
+    return the version number from the __init__
+    """
+    for line in open("gnome/__init__.py"):
+        if line.startswith("__version__"):
+            version = line.strip().split('=')[1].strip().strip("'").strip('"')
+            return version
+    raise ValueError("can't find version string in __init__")
+
+
 setup(name='pyGnome',
-      version='0.0.2',
+      version=get_version(),
       ext_modules=extensions,
       packages=find_packages(),
       package_dir={'gnome': 'gnome'},

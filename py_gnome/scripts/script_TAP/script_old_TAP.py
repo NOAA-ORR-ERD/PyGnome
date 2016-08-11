@@ -1,8 +1,6 @@
 """
-Example of using gnome in "ice infested waters"
-
-With the ice and current data coming from a ROMS coupled ocean-ice model.
-
+Script to test GNOME with chesapeake bay data (netCDF 3D triangle grid)
+Eventually update to use Grid Map rather than BNA
 """
 
 import os
@@ -18,17 +16,18 @@ from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 
-from gnome.map import MapFromBNA
+from gnome.map import MapFromBNA, GnomeMap
 from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, constant_wind_mover
+from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
-from gnome.environment import IceAwareCurrent, IceAwareWind
 from gnome.movers.py_wind_movers import PyWindMover
+from gnome.environment.property_classes import WindTS, IceAwareCurrent, IceAwareWind
 from gnome.movers.py_current_movers import PyGridCurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
 from gnome.environment.vector_field import ice_field
+from gnome.movers import IceWindMover, IceMover
 import gnome.utilities.profiledeco as pd
 
 # define base directory
@@ -44,12 +43,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
                   duration=timedelta(days=4),
-                  time_step=3600)
+                  time_step=3600*2)
 
-    mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
+    mapfile = get_datafile(os.path.join(base_dir, 'arctic_coast3.bna'))
 
     print 'adding the map'
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
+#     model.map = GnomeMap()
 
     print 'adding outputters'
 
@@ -58,7 +58,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # default is 'forecast' LEs draw on top
 #     renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
 #     model.outputters += renderer
-    netcdf_file = os.path.join(base_dir, 'script_ice.nc')
+    netcdf_file = os.path.join(base_dir, 'script_old_TAPa.nc')
     scripting.remove_netcdf(netcdf_file)
 
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
@@ -69,7 +69,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
     spill1 = point_line_release_spill(num_elements=10000,
-                                      start_position=(-163.75,
+                                      start_position=(196.25,
                                                       69.75,
                                                       0.0),
                                       release_time=start_time)
@@ -87,33 +87,46 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += RandomMover(diffusion_coef=1000)
 
     print 'adding a wind mover:'
+     # winds from the ROMS Arctic run, provided by Walter Johnson
+    wind_file = os.path.join(base_dir, 'arctic_filelist.txt')
+    print wind_file
+    topology_file = os.path.join(base_dir, 'arctic_subset_newtopo2.DAT')
+    model.movers += IceWindMover(wind_file, topology_file)
+    # model.movers += GridWindMover(wind_file, topology_file)
+    # model.movers += GridWindMover(wind_file, topology_file)
 
-#     model.movers += constant_wind_mover(0.5, 0, units='m/s')
+    print 'adding an ice mover:'
+  # ice from the ROMS Arctic run, provided by Walter Johnson
+    ice_file = os.path.join(base_dir, 'arctic_filelist.txt')
+    topology_file = os.path.join(base_dir, 'arctic_subset_newtopo2.DAT')
+    model.movers += IceMover(ice_file, topology_file)
+    # model.movers += IceMover(ice_file)
+    print ice_file
 
     print 'adding a current mover:'
-
-    fn = [get_datafile('arctic_avg2_0001_gnome.nc'),
-          get_datafile('arctic_avg2_0002_gnome.nc'),
-          ]
-
-    gt = {'node_lon': 'lon',
-          'node_lat': 'lat'}
-
-    ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
-                                                 grid_topology=gt)
-    ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
-                                              grid=ice_aware_curr.grid,)
-    method = 'Trapezoid'
-
-#     i_c_mover = PyGridCurrentMover(current=ice_aware_curr)
-#     i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Euler')
-    i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method=method)
-    i_w_mover = PyWindMover(wind=ice_aware_wind, default_num_method=method)
-
-    ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:] - 360
-#     ice_aware_curr.grid.build_celltree()
-    model.movers += i_c_mover
-    model.movers += i_w_mover
+#
+#     fn = ['N:\\Users\\Dylan.Righi\\OutBox\\ArcticROMS\\arctic_avg2_0001_gnome.nc',
+#                  'N:\\Users\\Dylan.Righi\\OutBox\\ArcticROMS\\arctic_avg2_0002_gnome.nc']
+#
+#     gt = {'node_lon':'lon',
+#           'node_lat':'lat'}
+# #     fn='arctic_avg2_0001_gnome.nc'
+#
+#     ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
+#                                                  grid_topology=gt)
+#     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
+#                                               grid = ice_aware_curr.grid,)
+#     method = 'Trapezoid'
+#
+# #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr)
+# #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Euler')
+#     i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method=method)
+#     i_w_mover = PyWindMover(wind = ice_aware_wind, default_num_method=method)
+#
+#     ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:]-360
+# #     ice_aware_curr.grid.build_celltree()
+#     model.movers += i_c_mover
+#     model.movers += i_w_mover
 #     renderer.add_grid(ice_aware_curr.grid)
 #     renderer.add_vec_prop(ice_aware_curr)
 
@@ -122,7 +135,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
     # c_mover = GridCurrentMover(curr_file)
     # model.movers += c_mover
-
+    model.save('.')
     return model
 
 
@@ -130,11 +143,17 @@ if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
     print "doing full run"
+#     rend = model.outputters[0]
+#     rend.graticule.set_DMS(True)
     startTime = datetime.now()
-    # pd.profiler.enable()
+    pd.profiler.enable()
     for step in model:
+#         if step['step_num'] == 0:
+#             rend.set_viewport(((195, 65.25), (192.5, 70)))
+#         if step['step_num'] == 0:
+#             rend.set_viewport(((-175, 65), (-160, 70)))
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
-    print "it took %s to run" % (datetime.now() - startTime)
-    # pd.profiler.disable()
-    # pd.print_stats(0.1)
+    print datetime.now() - startTime
+    pd.profiler.disable()
+    pd.print_stats(0.1)

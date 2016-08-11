@@ -71,11 +71,15 @@ def make_model():
                 duration=timedelta(hours=duration_hrs),
                 time_step=time_step)
 
-    spill = point_line_release_spill(num_elements=100,
+    spill = point_line_release_spill(num_elements=1000,
+                                     amount=1600,
+                                     units='kg',
                                      start_position=(0.5,
                                                   0.5,
                                                   0.0),
-                                     release_time=t)
+                                     release_time=t,
+                                     end_release_time=t+timedelta(hours=4)
+                                     )
     mod.spills += spill
 
     method='Trapezoid'

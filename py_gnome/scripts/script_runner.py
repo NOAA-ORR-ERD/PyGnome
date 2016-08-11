@@ -12,6 +12,7 @@ import argparse
 import sys
 import imp
 
+
 from gnome import scripting
 from gnome.persist import load
 
@@ -120,7 +121,7 @@ if __name__ == '__main__':
     if args.do == 'run' or args.do == 'save':
         if not os.path.isfile(args.location):
             raise ValueError("{0} is not a file - provide a python script if"
-                   " action is to 'run' or 'save' model".format(args.location))
+                             " action is to 'run' or 'save' model".format(args.location))
 
         (model, imp_script) = load_model(args.location, args.images)
 

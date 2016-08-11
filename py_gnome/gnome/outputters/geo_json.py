@@ -145,13 +145,12 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
             #   on_land : 3
             #   to_be_removed : 12
             for ix, pos in enumerate(position):
-                feature = Feature(
-                    geometry=Point(pos[:2]), id=ix,
-                    properties={'status_code': status[ix],
-                                'sc_type': sc_type,
-                                'mass': mass[ix],
-                                'spill_num': spill_num[ix]}
-                    )
+                feature = Feature(geometry=Point(pos[:2]), id=ix,
+                                  properties={'status_code': status[ix],
+                                              'sc_type': sc_type,
+                                              'mass': mass[ix],
+                                              'spill_num': spill_num[ix]}
+                                  )
                 if sc.uncertain:
                     uc_features.append(feature)
                 else:
@@ -167,10 +166,8 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                        }
 
         if self.output_dir:
-            output_filename = self.output_to_file(c_geojson, step_num)
-            output_info.update({'output_filename': output_filename})
-            output_filename = self.output_to_file(uc_geojson, step_num)
-            output_info.update({'output_filename': output_filename})
+            output_info['output_filename'] = self.output_to_file(c_geojson, step_num)
+            self.output_to_file(uc_geojson, step_num)
 
         return output_info
 

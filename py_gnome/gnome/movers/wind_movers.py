@@ -172,10 +172,13 @@ class WindMoversBase(CyMover):
         self.prepare_data_for_get_move(sc, model_time_datetime)
 
         if self.active and len(self.positions) > 0:
-            self.mover.get_move(self.model_time, time_step,
-                                self.positions, self.delta,
+            self.mover.get_move(self.model_time,
+                                time_step,
+                                self.positions,
+                                self.delta,
                                 sc['windages'],
-                                self.status_codes, self.spill_type)
+                                self.status_codes,
+                                self.spill_type)
 
         return (self.delta.view(dtype=world_point_type)
                 .reshape((-1, len(world_point))))

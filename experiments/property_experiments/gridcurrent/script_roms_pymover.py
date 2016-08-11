@@ -104,6 +104,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.spills += spill4
     model.spills += spill5
     model.spills += spill6
+    model.spills._spill_container.spills.remove(0)
 
 
     print 'adding a current mover:'
@@ -113,8 +114,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     cf = GridCurrent.from_netCDF(filename=fn)
     u_mover = PyGridCurrentMover(cf, extrapolate=True)
+    #u_mover = GridCurrentMover(fn)
     renderer.add_grid(cf.grid)
-    #u_mover = GridCurrentMover(fn,extrapolate=True)
+#     renderer.add_vec_prop(cf)
     model.movers += u_mover
 
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))

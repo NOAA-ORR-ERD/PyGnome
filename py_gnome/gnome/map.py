@@ -738,10 +738,9 @@ class RasterMap(GnomeMap):
         base_h = self.basebitmap.shape[1]
 
         for ratio in self.ratios[:-1]:
-            genned_layer = np.zeros((math.ceil(float(base_w) / ratio),
-                                     math.ceil(float(base_h) / ratio)),
+            genned_layer = np.zeros((int(math.ceil(float(base_w) / ratio)),
+                                     int(math.ceil(float(base_h) / ratio))),
                                     dtype=np.uint8, order='C')
-            print genned_layer.shape
 
             for j in range(0, genned_layer.shape[1]):
                 for i in range(0, genned_layer.shape[0]):
