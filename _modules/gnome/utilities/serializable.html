@@ -1,79 +1,163 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>gnome.utilities.serializable &mdash; pyGNOME 0.1.1 documentation</title>
-    
-    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../../',
-        VERSION:     '0.1.1',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
-    </script>
-    <script type="text/javascript" src="../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
-    <link rel="up" title="Module code" href="../../index.html" /> 
-  </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../../../genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../../../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
-      </ul>
-    </div>  
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>gnome.utilities.serializable &mdash; pyGNOME 0.1.1 documentation</title>
+  
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> pyGNOME
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../units.html">Units used in GNOME / PyGNOME</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference.html">PyGnome Class Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">pyGNOME</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>gnome.utilities.serializable</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <h1>Source code for gnome.utilities.serializable</h1><div class="highlight"><pre>
-<span class="sd">&#39;&#39;&#39;</span>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">Created on Feb 15, 2013</span>
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">GnomeId</span>
-<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">Savable</span>
-<span class="kn">from</span> <span class="nn">gnome.utilities.orderedcollection</span> <span class="kn">import</span> <span class="n">OrderedCollection</span>
-<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">class_from_objtype</span>
-<span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="kn">import</span> <span class="n">CollectionItemsList</span>
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="k">import</span> <span class="n">GnomeId</span>
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="k">import</span> <span class="n">Savable</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.orderedcollection</span> <span class="k">import</span> <span class="n">OrderedCollection</span>
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="k">import</span> <span class="n">class_from_objtype</span>
+<span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="k">import</span> <span class="n">CollectionItemsList</span>
 
 
-<div class="viewcode-block" id="Field"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Field">[docs]</a><span class="k">class</span> <span class="nc">Field</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>  <span class="c"># ,serializable.Serializable):</span>
+<div class="viewcode-block" id="Field"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Field">[docs]</a><span class="k">class</span> <span class="nc">Field</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>  <span class="c1"># ,serializable.Serializable):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Class containing information about the property to be serialized</span>
 <span class="sd">    &#39;&#39;&#39;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span>
-                 <span class="n">isdatafile</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                 <span class="n">update</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                 <span class="n">save_reference</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                 <span class="n">iscollection</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                 <span class="n">test_for_eq</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+                 <span class="n">isdatafile</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">update</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">save_reference</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">iscollection</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Constructor for the Field object.</span>
 <span class="sd">        The Field object is used to describe the property of an object.</span>
@@ -134,33 +218,33 @@
 
     <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Field</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">return</span> <span class="kc">False</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">__dict__</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">return</span> <span class="kc">True</span>
 
-        <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span>
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s">&#39;unambiguous object representation&#39;</span>
-        <span class="n">attr_vals</span> <span class="o">=</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;{0}={1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="s1">&#39;unambiguous object representation&#39;</span>
+        <span class="n">attr_vals</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">=</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
                                <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
-        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;{0.__class__.__module__}.{0.__class__.__name__}&#39;</span>
-                <span class="s">&#39;({1})&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_vals</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0.__class__.__module__}</span><span class="s1">.</span><span class="si">{0.__class__.__name__}</span><span class="s1">&#39;</span>
+                <span class="s1">&#39;(</span><span class="si">{1}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_vals</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">attr_vals</span> <span class="o">=</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;{0}={1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="n">attr_vals</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">=</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
                                <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
-        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;Field Object: &#39;</span>
-                <span class="s">&#39;{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_vals</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;Field Object: &#39;</span>
+                <span class="s1">&#39;</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_vals</span><span class="p">))</span></div>
 
-</div>
+
 <span class="k">class</span> <span class="nc">State</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Object keeps the list of properties that are output by</span>
 <span class="sd">        Serializable.to_dict() method.</span>
@@ -197,10 +281,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="n">save</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">update</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="n">read</span><span class="p">)</span>
 
-        <span class="c"># define valid attributes for Field object</span>
-        <span class="c"># Field object is in flux - more properties were added so make</span>
-        <span class="c"># _valid_field_attr dynamic</span>
-        <span class="n">test_obj</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s">&#39;test&#39;</span><span class="p">)</span>
+        <span class="c1"># define valid attributes for Field object</span>
+        <span class="c1"># Field object is in flux - more properties were added so make</span>
+        <span class="c1"># _valid_field_attr dynamic</span>
+        <span class="n">test_obj</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span> <span class="o">=</span> <span class="n">test_obj</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
@@ -229,9 +313,9 @@
 <span class="sd">        serialized</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">return</span> <span class="kc">True</span>
 
-        <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">)</span>
@@ -263,7 +347,7 @@
 <span class="sd">        the attributes other than &#39;save&#39;,&#39;update&#39;,&#39;read&#39; can be set directly</span>
 <span class="sd">        when defining the Field object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">l_field</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">l_field</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l_field</span><span class="p">,</span> <span class="n">Field</span><span class="p">):</span>
@@ -274,21 +358,21 @@
 
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">names</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;List of field objects contains multiple &#39;</span>
-                                 <span class="s">&#39;fields with same name: &#39;</span>
-                                 <span class="s">&#39;{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">names</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">name</span><span class="p">))</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;List of field objects contains multiple &#39;</span>
+                                 <span class="s1">&#39;fields with same name: &#39;</span>
+                                 <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">names</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">name</span><span class="p">))</span>
 
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">state_fieldnames</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;A Field object with the name {0} already &#39;</span>
-                                 <span class="s">&#39;exists - cannot add another with the &#39;</span>
-                                 <span class="s">&#39;same name&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;A Field object with the name </span><span class="si">{0}</span><span class="s1"> already &#39;</span>
+                                 <span class="s1">&#39;exists - cannot add another with the &#39;</span>
+                                 <span class="s1">&#39;same name&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
 
-        <span class="c"># everything looks good, add the field</span>
+        <span class="c1"># everything looks good, add the field</span>
 
         <span class="k">for</span> <span class="n">field_</span> <span class="ow">in</span> <span class="n">l_field</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">field_</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Only checks to make sure &#39;read&#39; and &#39;update&#39; properties are disjoint.</span>
 <span class="sd">        Also makes sure everything is a list.</span>
@@ -315,36 +399,36 @@
         <span class="n">read</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_inputs</span><span class="p">(</span><span class="n">read</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">update</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">read</span><span class="p">)))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;update (read/write properties) and &#39;</span>
-                                 <span class="s">&#39;read (readonly props) lists lists &#39;</span>
-                                 <span class="s">&#39;must be disjoint&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;update (read/write properties) and &#39;</span>
+                                 <span class="s1">&#39;read (readonly props) lists lists &#39;</span>
+                                 <span class="s1">&#39;must be disjoint&#39;</span><span class="p">)</span>
 
         <span class="n">fields</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">update</span><span class="p">:</span>
-            <span class="n">f</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">save</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="n">save</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
             <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">save</span><span class="p">:</span>
-            <span class="n">f</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">read</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="n">read</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
             <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
-        <span class="p">[</span><span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Field</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">read</span><span class="p">]</span>
+        <span class="p">[</span><span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Field</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">read</span><span class="p">]</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span>  <span class="c"># now add these to self.fields</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span>  <span class="c1"># now add these to self.fields</span>
 
     <span class="k">def</span> <span class="nf">_check_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vals</span><span class="p">):</span>
-        <span class="s">&#39;check inputs and convert to a list&#39;</span>
-        <span class="k">if</span> <span class="n">vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="s1">&#39;check inputs and convert to a list&#39;</span>
+        <span class="k">if</span> <span class="n">vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
                 <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">vals</span><span class="p">]</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;inputs must be a list of strings&#39;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;inputs must be a list of strings&#39;</span><span class="p">)</span>
             <span class="n">vals</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">vals</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">vals</span> <span class="o">=</span> <span class="p">[]</span>
@@ -356,17 +440,17 @@
 <span class="sd">        l_names from the list.</span>
 <span class="sd">        l_names is a list containing the names (string) of properties.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l_names</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l_names</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
             <span class="n">l_names</span> <span class="o">=</span> <span class="n">l_names</span><span class="p">,</span>
 
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">l_names</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_field_by_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="p">[]:</span>
                 <span class="k">return</span>
-            <span class="c"># do not raise error - if field doesn&#39;t exist, do nothing</span>
-            <span class="c">#    raise ValueError(&#39;Cannot remove {0} since self.fields &#39;</span>
-            <span class="c">#                     &#39;does not contain a field &#39;</span>
-            <span class="c">#                     &#39;with this name&#39;.format(name))</span>
+            <span class="c1"># do not raise error - if field doesn&#39;t exist, do nothing</span>
+            <span class="c1">#    raise ValueError(&#39;Cannot remove {0} since self.fields &#39;</span>
+            <span class="c1">#                     &#39;does not contain a field &#39;</span>
+            <span class="c1">#                     &#39;with this name&#39;.format(name))</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
 
@@ -391,60 +475,60 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;{0} is not a valid attribute &#39;</span>
-                                     <span class="s">&#39;of Field object. &#39;</span>
-                                     <span class="s">&#39;It cannot be updated.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> is not a valid attribute &#39;</span>
+                                     <span class="s1">&#39;of Field object. &#39;</span>
+                                     <span class="s1">&#39;It cannot be updated.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
 
-        <span class="k">if</span> <span class="s">&#39;read&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="s">&#39;update&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;read&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;update&#39;</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;The &#39;read&#39; and &#39;update&#39; attribute &quot;</span>
-                                     <span class="s">&quot;cannot both be True&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;read&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="s1">&#39;update&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;read&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;The &#39;read&#39; and &#39;update&#39; attribute &quot;</span>
+                                     <span class="s2">&quot;cannot both be True&quot;</span><span class="p">)</span>
 
         <span class="n">l_field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_field_by_name</span><span class="p">(</span><span class="n">l_names</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l_field</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="n">l_field</span> <span class="o">=</span> <span class="p">[</span><span class="n">l_field</span><span class="p">]</span>
 
-        <span class="c"># need to make sure both read and update are not True for a field</span>
+        <span class="c1"># need to make sure both read and update are not True for a field</span>
 
-        <span class="n">read_</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;read&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-        <span class="n">update_</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="n">read_</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;read&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">update_</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">l_field</span><span class="p">:</span>
             <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
                 <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">read_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">update_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>  <span class="c"># change them both</span>
-                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">,</span> <span class="n">read_</span><span class="p">)</span>
-                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="n">update_</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">read_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">read_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">update_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># change them both</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;read&#39;</span><span class="p">,</span> <span class="n">read_</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="n">update_</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">read_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">update</span> <span class="ow">and</span> <span class="n">read_</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;The &#39;read&#39; and &#39;update&#39; attribute &quot;</span>
-                                         <span class="s">&quot;cannot both be True&quot;</span><span class="p">)</span>
-                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">,</span> <span class="n">read_</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">update_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;The &#39;read&#39; and &#39;update&#39; attribute &quot;</span>
+                                         <span class="s2">&quot;cannot both be True&quot;</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;read&#39;</span><span class="p">,</span> <span class="n">read_</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">update_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">read</span> <span class="ow">and</span> <span class="n">update_</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;The &#39;read&#39; and &#39;update&#39; attribute &quot;</span>
-                                         <span class="s">&quot;cannot both be True&quot;</span><span class="p">)</span>
-                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="n">update_</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;The &#39;read&#39; and &#39;update&#39; attribute &quot;</span>
+                                         <span class="s2">&quot;cannot both be True&quot;</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="n">update_</span><span class="p">)</span>
 
-        <span class="n">read_</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="k">if</span> <span class="s">&#39;read&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="n">read_</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;read&#39;</span><span class="p">)</span>
+        <span class="n">read_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s1">&#39;read&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">read_</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;read&#39;</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">l_field</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">read_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">,</span> <span class="n">read_</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">read_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;read&#39;</span><span class="p">,</span> <span class="n">read_</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s">&#39;update&#39;</span> <span class="ow">and</span> <span class="n">val</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">):</span>
-                        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;The &#39;read&#39; and &#39;update&#39; &quot;</span>
-                                             <span class="s">&quot;attribute cannot both be True&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;update&#39;</span> <span class="ow">and</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;read&#39;</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;The &#39;read&#39; and &#39;update&#39; &quot;</span>
+                                             <span class="s2">&quot;attribute cannot both be True&quot;</span><span class="p">)</span>
 
                 <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_field_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
-        <span class="s">&#39;get field object from list given a name or list of names&#39;</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="s1">&#39;get field object from list given a name or list of names&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
             <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">names</span><span class="p">]</span>
 
         <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span>
@@ -457,16 +541,16 @@
             <span class="k">return</span> <span class="n">out</span>
 
     <span class="k">def</span> <span class="nf">get_field_by_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
-        <span class="s">&#39;returns a list of fields where attr is true&#39;</span>
+        <span class="s1">&#39;returns a list of fields where attr is true&#39;</span>
         <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;{0} is not valid attribute. &#39;</span>
-                                 <span class="s">&#39;Field.__dict__ contains: &#39;</span>
-                                 <span class="s">&#39;{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> is not valid attribute. &#39;</span>
+                                 <span class="s1">&#39;Field.__dict__ contains: &#39;</span>
+                                 <span class="s1">&#39;</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span><span class="p">))</span>
 
         <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span> <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">attr</span><span class="p">)]</span>
         <span class="k">return</span> <span class="n">out</span>
 
-    <span class="k">def</span> <span class="nf">get_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the property names in self.fields. Can return all field names,</span>
 <span class="sd">        or fieldnames with an attribute equal to True.</span>
@@ -476,7 +560,7 @@
 <span class="sd">        &gt;&gt;&gt; _state.get_names([&#39;read&#39;,&#39;save&#39;])    # returns &#39;t0&#39;</span>
 <span class="sd">        &gt;&gt;&gt; _state.get_names(&#39;save&#39;)     # returns [&#39;t0&#39;, &#39;t1&#39;]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s">&#39;all&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[</span><span class="n">field_</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">field_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">]</span>
 
         <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
@@ -487,8 +571,8 @@
                               <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field_</span><span class="p">,</span> <span class="n">at</span><span class="p">)])</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;{0} is not valid attribute. &#39;</span>
-                                     <span class="s">&#39;Field.__dict__ contains: {1}&#39;</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> is not valid attribute. &#39;</span>
+                                     <span class="s1">&#39;Field.__dict__ contains: </span><span class="si">{1}</span><span class="s1">&#39;</span>
                                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span><span class="p">))</span>
 
             <span class="n">names</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">field_</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">field_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span>
@@ -527,8 +611,8 @@
 <span class="sd">    object as a string.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">_state</span> <span class="o">=</span> <span class="n">State</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">),</span> <span class="n">read</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s">&#39;id&#39;</span><span class="p">),</span>
-                   <span class="n">update</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,))</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">State</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">),</span> <span class="n">read</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">),</span>
+                   <span class="n">update</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,))</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_restore_attr_from_save</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">new_obj</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
@@ -537,21 +621,21 @@
 <span class="sd">        out some functionality of new_from_dict so when child classes override</span>
 <span class="sd">        it, they can make use of this as well</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="c"># remove following since they are not attributes of object</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s">&#39;id&#39;</span><span class="p">]:</span>
+        <span class="c1"># remove following since they are not attributes of object</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="p">:</span>
                 <span class="k">del</span> <span class="n">dict_</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
-        <span class="c"># set remaining attributes to restore state of object when it was</span>
-        <span class="c"># persisted to save files (ie could be mid-run)</span>
+        <span class="c1"># set remaining attributes to restore state of object when it was</span>
+        <span class="c1"># persisted to save files (ie could be mid-run)</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;{0} is not an attribute &#39;</span>
-                                     <span class="s">&#39;of {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> is not an attribute &#39;</span>
+                                     <span class="s1">&#39;of </span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="nb">setattr</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">dict_</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
             <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                <span class="k">print</span> <span class="s">&#39;failed to set attribute {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="nb">print</span> <span class="s1">&#39;failed to set attribute </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
                 <span class="k">raise</span>
 
     <span class="nd">@classmethod</span>
@@ -567,29 +651,29 @@
             <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">ismethod</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">__init__</span><span class="p">):</span>
                 <span class="n">kwargs</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">__init__</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span>
 
-                <span class="c"># pop kwargs for object creation into rqd dict</span>
+                <span class="c1"># pop kwargs for object creation into rqd dict</span>
                 <span class="n">rqd</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span>
                             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="p">})</span>
 
-        <span class="c"># create object with required input arguments</span>
+        <span class="c1"># create object with required input arguments</span>
         <span class="n">new_obj</span> <span class="o">=</span> <span class="n">cls</span><span class="p">(</span><span class="o">**</span><span class="n">rqd</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;json_&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;json_&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;save&#39;</span><span class="p">:</span>
             <span class="n">cls</span><span class="o">.</span><span class="n">_restore_attr_from_save</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">dict_</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c"># for webapi, ignore the readonly attributes and set only</span>
-            <span class="c"># attributes that are updatable. At present, the &#39;webapi&#39; uses</span>
-            <span class="c"># new_from_dict to create a new object only. It does not restore</span>
-            <span class="c"># the state of a previously persisted object</span>
+            <span class="c1"># for webapi, ignore the readonly attributes and set only</span>
+            <span class="c1"># attributes that are updatable. At present, the &#39;webapi&#39; uses</span>
+            <span class="c1"># new_from_dict to create a new object only. It does not restore</span>
+            <span class="c1"># the state of a previously persisted object</span>
             <span class="k">if</span> <span class="n">dict_</span><span class="p">:</span>
                 <span class="n">new_obj</span><span class="o">.</span><span class="n">update_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
 
-        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;constructed object {0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_obj</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;constructed object </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_obj</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
         <span class="n">new_obj</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">new_obj</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">new_obj</span>
-</div>
-    <span class="k">def</span> <span class="nf">_attrlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">do</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">new_obj</span></div>
+
+    <span class="k">def</span> <span class="nf">_attrlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">do</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="s1">&#39;read&#39;</span><span class="p">)):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        returns list of object attributes that need to be serialized. By</span>
 <span class="sd">        default all fields that have &#39;update&#39; == True are returned.</span>
@@ -597,15 +681,15 @@
 <span class="sd">        however, do=(&#39;save&#39;,) or do=(&#39;update&#39;,&#39;read&#39;) will return the dict</span>
 <span class="sd">        with the union of the corresponding lists.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">actions</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="s">&#39;save&#39;</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">}</span>
+        <span class="n">actions</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="s1">&#39;save&#39;</span><span class="p">,</span> <span class="s1">&#39;read&#39;</span><span class="p">}</span>
         <span class="n">list_</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">do</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">actions</span><span class="p">:</span>
                 <span class="n">list_</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="n">action</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;input not understood. String must be one of &quot;</span>
-                                 <span class="s">&quot;following: &#39;update&#39;, &#39;save&#39; or &#39;readonly&#39;.&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;input not understood. String must be one of &quot;</span>
+                                 <span class="s2">&quot;following: &#39;update&#39;, &#39;save&#39; or &#39;readonly&#39;.&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">list_</span>
 
@@ -625,38 +709,38 @@
 <span class="sd">        serialization is for</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">list_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s">&#39;all&#39;</span><span class="p">)</span>
+        <span class="n">list_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">list_</span><span class="p">:</span>
             <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_to_dict</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;to_dict&#39;</span><span class="p">):</span>
-                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>  <span class="c"># recursive call</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;to_dict&#39;</span><span class="p">):</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>  <span class="c1"># recursive call</span>
 
-            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="c"># some issue in colander monkey patch and the Wind schema</span>
-                <span class="c"># if None values are not pruned - take them out for now</span>
-                <span class="c"># this also means the default values will not be applied</span>
-                <span class="c"># on serialized -- that&#39;s ok though since we don&#39;t define</span>
-                <span class="c"># defaults in colander</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># some issue in colander monkey patch and the Wind schema</span>
+                <span class="c1"># if None values are not pruned - take them out for now</span>
+                <span class="c1"># this also means the default values will not be applied</span>
+                <span class="c1"># on serialized -- that&#39;s ok though since we don&#39;t define</span>
+                <span class="c1"># defaults in colander</span>
                 <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
 
-        <span class="k">return</span> <span class="n">data</span>
-</div>
+        <span class="k">return</span> <span class="n">data</span></div>
+
 <div class="viewcode-block" id="Serializable.attr_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.attr_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">attr_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        refactor to_dict&#39;s functionality so child classes can convert a</span>
 <span class="sd">        single attribute to_dict instead of doing a whole list of fields</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">to_dict_fn_name</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">_to_dict&#39;</span> <span class="o">%</span> <span class="n">name</span>
+        <span class="n">to_dict_fn_name</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_to_dict&#39;</span> <span class="o">%</span> <span class="n">name</span>
 
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_dict_fn_name</span><span class="p">):</span>
             <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_dict_fn_name</span><span class="p">)()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">value</span>
-</div>
+        <span class="k">return</span> <span class="n">value</span></div>
+
 <div class="viewcode-block" id="Serializable.update_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.update_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">update_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update the attributes of this object using the dictionary ``data`` by</span>
@@ -685,54 +769,70 @@
 <span class="sd">            that the &#39;wind&#39; object was updated by calling its own</span>
 <span class="sd">            update_from_dict then added to this dict as the updated object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">list_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s">&#39;update&#39;</span><span class="p">)</span>
-        <span class="n">updated</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">list_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">)</span>
+        <span class="n">updated</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;active_start&#39;</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">and</span>
+                <span class="s1">&#39;active_stop&#39;</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">and</span>
+                <span class="s1">&#39;active_stop&#39;</span> <span class="ow">in</span> <span class="n">list_</span><span class="p">):</span>
+            <span class="c1"># special case: these attributes employ range checking,</span>
+            <span class="c1"># so we would like to make sure that we evaluate</span>
+            <span class="c1"># active_stop before active_start if we are setting the active</span>
+            <span class="c1"># range outside and above the original range,</span>
+            <span class="c1"># and we would like to evaluate active_start before active_stop</span>
+            <span class="c1"># if we are setting the active range outside and below the</span>
+            <span class="c1"># original range.</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_check_active_startstop</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;active_start&#39;</span><span class="p">],</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="n">list_</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">list_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">list_</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;active_stop&#39;</span><span class="p">)))</span>
 
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">list_</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
                 <span class="k">continue</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_attr</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]):</span>
-                <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">updated</span> <span class="o">=</span> <span class="kc">True</span>
 
-        <span class="k">return</span> <span class="n">updated</span>
-</div>
+        <span class="k">return</span> <span class="n">updated</span></div>
+
     <span class="k">def</span> <span class="nf">_attr_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_value</span><span class="p">,</span> <span class="n">received_value</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Checks if an attribute passed back in a dict_ from client has changed.</span>
 <span class="sd">        Returns True if changed, else False</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="c"># first, we normalize our left and right args</span>
+        <span class="c1"># first, we normalize our left and right args</span>
         <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span>
                 <span class="nb">isinstance</span><span class="p">(</span><span class="n">received_value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))):</span>
             <span class="n">received_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">received_value</span><span class="p">)</span>
 
-        <span class="c"># For a nested object, check if it data contains a new object. If</span>
-        <span class="c"># object in data &#39;is&#39; current_value then &#39;self&#39; state has not</span>
-        <span class="c"># changed. Even if current_value == data[key], we still must update</span>
-        <span class="c"># it because it now references a new object</span>
+        <span class="c1"># For a nested object, check if it data contains a new object. If</span>
+        <span class="c1"># object in data &#39;is&#39; current_value then &#39;self&#39; state has not</span>
+        <span class="c1"># changed. Even if current_value == data[key], we still must update</span>
+        <span class="c1"># it because it now references a new object</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">current_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">received_value</span><span class="p">:</span>
-                <span class="k">return</span> <span class="bp">True</span>
+                <span class="k">return</span> <span class="kc">True</span>
 
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">OrderedCollection</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_value</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">received_value</span><span class="p">):</span>
-                <span class="k">return</span> <span class="bp">True</span>
+                <span class="k">return</span> <span class="kc">True</span>
             <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">current_value</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">received_value</span><span class="p">[</span><span class="n">ix</span><span class="p">]:</span>
-                    <span class="k">return</span> <span class="bp">True</span>
+                    <span class="k">return</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">current_value</span> <span class="o">!=</span> <span class="n">received_value</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="bp">True</span>
+                    <span class="k">return</span> <span class="kc">True</span>
             <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-                <span class="c"># maybe an iterable - checking for</span>
-                <span class="c"># isinstance(current_value, collections.Iterable) fails for</span>
-                <span class="c"># string so just do a try/except</span>
+                <span class="c1"># maybe an iterable - checking for</span>
+                <span class="c1"># isinstance(current_value, collections.Iterable) fails for</span>
+                <span class="c1"># string so just do a try/except</span>
                 <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">current_value</span> <span class="o">!=</span> <span class="n">received_value</span><span class="p">):</span>
-                    <span class="k">return</span> <span class="bp">True</span>
+                    <span class="k">return</span> <span class="kc">True</span>
 
-        <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
 <div class="viewcode-block" id="Serializable.update_attr"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.update_attr">[docs]</a>    <span class="k">def</span> <span class="nf">update_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -753,26 +853,26 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">OrderedCollection</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_orderedcoll_attr</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
-        <span class="n">from_dict_fn_name</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">_update_from_dict&#39;</span> <span class="o">%</span> <span class="n">name</span>
+        <span class="n">from_dict_fn_name</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_update_from_dict&#39;</span> <span class="o">%</span> <span class="n">name</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_dict_fn_name</span><span class="p">):</span>
             <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_dict_fn_name</span><span class="p">)(</span><span class="n">value</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attr_changed</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-            <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">return</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">False</span>
-</div>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
     <span class="k">def</span> <span class="nf">_update_orderedcoll_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">curr_oc</span><span class="p">,</span> <span class="n">l_new_oc</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        update attribute of type OrderedCollection with items in list l_new_oc</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">updated</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">updated</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l_new_oc</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">curr_oc</span><span class="p">):</span>
-            <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">updated</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">elif</span> <span class="nb">any</span><span class="p">([</span><span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">curr_oc</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">l_new_oc</span><span class="p">)]):</span>
-            <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">updated</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="k">if</span> <span class="n">updated</span><span class="p">:</span>
             <span class="n">curr_oc</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
@@ -785,17 +885,17 @@
 <span class="sd">        returns object type to save in dict.</span>
 <span class="sd">        This is base implementation and can be over-ridden</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s">&#39;{0.__module__}.{0.__class__.__name__}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-</div>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{0.__module__}</span><span class="s1">.</span><span class="si">{0.__class__.__name__}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
     <span class="k">def</span> <span class="nf">_check_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="s">&#39;check basic type equality&#39;</span>
+        <span class="s1">&#39;check basic type equality&#39;</span>
         <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">other</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">return</span> <span class="kc">True</span>
 
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">return</span> <span class="kc">True</span>
 
-        <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -821,9 +921,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">return</span> <span class="kc">False</span>
 
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s1">&#39;save&#39;</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">test_for_eq</span><span class="p">:</span>
                 <span class="k">continue</span>
 
@@ -831,31 +931,31 @@
                 <span class="n">self_attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
                 <span class="n">other_attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="c"># not an attribute, let attr_to_dict call appropriate function</span>
-                <span class="c"># and check the dicts are equal</span>
+                <span class="c1"># not an attribute, let attr_to_dict call appropriate function</span>
+                <span class="c1"># and check the dicts are equal</span>
                 <span class="n">self_attr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_to_dict</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
                 <span class="n">other_attr</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">attr_to_dict</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">self_attr</span> <span class="o">-</span> <span class="n">other_attr</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-10</span><span class="p">:</span>
-                        <span class="k">return</span> <span class="bp">False</span>
+                    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">self_attr</span> <span class="o">-</span> <span class="n">other_attr</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">10</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="kc">False</span>
                 <span class="k">elif</span> <span class="n">self_attr</span> <span class="o">!=</span> <span class="n">other_attr</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="bp">False</span>
+                    <span class="k">return</span> <span class="kc">False</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">other_attr</span><span class="p">)):</span>
-                    <span class="k">return</span> <span class="bp">False</span>
+                    <span class="k">return</span> <span class="kc">False</span>
 
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="n">other_attr</span><span class="p">,</span>
-                                   <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">):</span>
-                    <span class="k">return</span> <span class="bp">False</span>
+                                   <span class="n">rtol</span><span class="o">=</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">4</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="kc">False</span>
 
-        <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span>
 
-<div class="viewcode-block" id="Serializable.to_serialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.to_serialize">[docs]</a>    <span class="k">def</span> <span class="nf">to_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.to_serialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.to_serialize">[docs]</a>    <span class="k">def</span> <span class="nf">to_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s1">&#39;webapi&#39;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Invoke to_dict() which converts all attributes defined in _state to</span>
 <span class="sd">        dict.</span>
@@ -863,31 +963,31 @@
 <span class="sd">        If json_=&#39;webapi&#39;, it subselects Fields with (update=True, read=True)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">dict_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span><span class="p">:</span>
             <span class="n">attrlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attrlist</span><span class="p">()</span>
-        <span class="k">elif</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
-            <span class="n">attrlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attrlist</span><span class="p">(</span><span class="n">do</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">,))</span>
+        <span class="k">elif</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;save&#39;</span><span class="p">:</span>
+            <span class="n">attrlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attrlist</span><span class="p">(</span><span class="n">do</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;save&#39;</span><span class="p">,))</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;desired json_ payload must be either for webapi &quot;</span>
-                             <span class="s">&quot;or for save files: (&#39;webapi&#39;, &#39;save&#39;)&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;desired json_ payload must be either for webapi &quot;</span>
+                             <span class="s2">&quot;or for save files: (&#39;webapi&#39;, &#39;save&#39;)&quot;</span><span class="p">)</span>
 
         <span class="n">toserial</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">attrlist</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="p">:</span>
-                <span class="c"># if attribute is None, then dict_ does not contain it</span>
+                <span class="c1"># if attribute is None, then dict_ does not contain it</span>
                 <span class="k">if</span> <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="ow">and</span>
-                        <span class="nb">hasattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span> <span class="s">&#39;to_serialize&#39;</span><span class="p">)):</span>
-                    <span class="c"># recursively call for nested objects</span>
+                        <span class="nb">hasattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span> <span class="s1">&#39;to_serialize&#39;</span><span class="p">)):</span>
+                    <span class="c1"># recursively call for nested objects</span>
                     <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
                     <span class="n">toserial</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">attr</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="c"># not a nested object</span>
+                    <span class="c1"># not a nested object</span>
                     <span class="n">toserial</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">dict_</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
-        <span class="n">toserial</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json_</span>
-        <span class="k">return</span> <span class="n">toserial</span>
-</div>
-<div class="viewcode-block" id="Serializable.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="n">toserial</span><span class="p">[</span><span class="s1">&#39;json_&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json_</span>
+        <span class="k">return</span> <span class="n">toserial</span></div>
+
+<div class="viewcode-block" id="Serializable.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s1">&#39;webapi&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convert the dict returned by object&#39;s to_dict method to valid json</span>
 <span class="sd">        format via colander schema</span>
@@ -902,23 +1002,23 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
-        <span class="n">c_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;iscollection&#39;</span><span class="p">)</span>
+        <span class="n">c_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;iscollection&#39;</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span><span class="p">:</span>
             <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
-            <span class="c"># check for collections</span>
+            <span class="c1"># check for collections</span>
             <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
                 <span class="n">serial</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> \
                     <span class="bp">self</span><span class="o">.</span><span class="n">serialize_oc</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">json_</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;save&#39;</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
-                <span class="c"># add a node for each collection, then serialize</span>
+                <span class="c1"># add a node for each collection, then serialize</span>
                 <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">CollectionItemsList</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
             <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">serial</span>
-</div>
+        <span class="k">return</span> <span class="n">serial</span></div>
+
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Serializable.is_sparse"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.is_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">is_sparse</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -927,13 +1027,13 @@
 <span class="sd">            an obj_type and an id.  This is a valid payload that the</span>
 <span class="sd">            Web Client will send.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">r_attr_list</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s">&#39;read&#39;</span><span class="p">)</span>
-        <span class="n">r_attr_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;json_&#39;</span><span class="p">)</span>
+        <span class="n">r_attr_list</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s1">&#39;read&#39;</span><span class="p">)</span>
+        <span class="n">r_attr_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;json_&#39;</span><span class="p">)</span>
         <span class="n">attr_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">attr</span> <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">json_</span> <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">r_attr_list</span><span class="p">]</span>
 
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">attr_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
-</div>
-<div class="viewcode-block" id="Serializable.serialize_oc"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.serialize_oc">[docs]</a>    <span class="k">def</span> <span class="nf">serialize_oc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coll</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">attr_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="Serializable.serialize_oc"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.serialize_oc">[docs]</a>    <span class="k">def</span> <span class="nf">serialize_oc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coll</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s1">&#39;webapi&#39;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Serialize Model attributes of type ordered collection or list - an</span>
 <span class="sd">        iterable containing serializable objects</span>
@@ -941,8 +1041,8 @@
         <span class="n">json_out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">coll</span><span class="p">:</span>
             <span class="n">json_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">json_out</span>
-</div>
+        <span class="k">return</span> <span class="n">json_out</span></div>
+
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Serializable.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -954,28 +1054,28 @@
 <span class="sd">            not treat them, but just send them back.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
-            <span class="c"># if there are collections in object, dynamically update schema</span>
+            <span class="c1"># if there are collections in object, dynamically update schema</span>
             <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
-            <span class="n">c_fields</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;iscollection&#39;</span><span class="p">)</span>
+            <span class="n">c_fields</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;iscollection&#39;</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">json_</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">json_</span><span class="p">[</span><span class="s1">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span><span class="p">:</span>
                 <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
                         <span class="n">_to_dict</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> \
                             <span class="n">cls</span><span class="o">.</span><span class="n">deserialize_oc</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
-            <span class="k">elif</span> <span class="n">json_</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">json_</span><span class="p">[</span><span class="s1">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;save&#39;</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
-                        <span class="c"># add a node for each collection, then deserialize</span>
+                        <span class="c1"># add a node for each collection, then deserialize</span>
                         <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">CollectionItemsList</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
                 <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
 
             <span class="k">return</span> <span class="n">_to_dict</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">json_</span>
-</div>
+            <span class="k">return</span> <span class="n">json_</span></div>
+
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Serializable.deserialize_oc"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize_oc">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize_oc</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -989,16 +1089,16 @@
             <span class="n">d_item</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_deserialize_nested_obj</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
             <span class="n">deserial</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d_item</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">deserial</span>
-</div>
+        <span class="k">return</span> <span class="n">deserial</span></div>
+
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_deserialize_nested_obj</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">json_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">py_class</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;obj_type&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">json_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">py_class</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;obj_type&#39;</span><span class="p">])</span>
 
             <span class="k">return</span> <span class="n">py_class</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">None</span>
+            <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">_collection_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coll</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -1013,53 +1113,72 @@
 
         <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">coll</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">obj_type</span> <span class="o">=</span> <span class="s">&#39;{0.__module__}.{0.__class__.__name__}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="n">obj_type</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0.__module__}</span><span class="s1">.</span><span class="si">{0.__class__.__name__}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                <span class="n">obj_type</span> <span class="o">=</span> <span class="s">&#39;{0.__class__.__name__}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-            <span class="n">item</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;obj_type&#39;</span><span class="p">:</span> <span class="n">obj_type</span><span class="p">,</span> <span class="s">&#39;id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">)}</span>
+                <span class="n">obj_type</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0.__class__.__name__}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;obj_type&#39;</span><span class="p">:</span> <span class="n">obj_type</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">)}</span>
             <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">items</span></div>
 </pre></div>
 
+           </div>
           </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="../../../search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
-    </p>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../../../genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="../../../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
         &copy; Copyright 2012, NOAA Emergecny Response Division.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
-    </div>
-  </body>
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
 </html>

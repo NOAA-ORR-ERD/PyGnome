@@ -1,57 +1,149 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>PyGnome Class Reference &mdash; pyGNOME 0.1.1 documentation</title>
-    
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '0.1.1',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html" />
-    <link rel="next" title="Units used in GNOME / PyGNOME" href="units.html" />
-    <link rel="prev" title="A subsurface (mixed layer) release" href="scripting/mixedlayer_release.html" /> 
-  </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="units.html" title="Units used in GNOME / PyGNOME"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="scripting/mixedlayer_release.html" title="A subsurface (mixed layer) release"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li> 
-      </ul>
-    </div>  
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyGnome Class Reference &mdash; pyGNOME 0.1.1 documentation</title>
+  
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html"/>
+        <link rel="prev" title="Units used in GNOME / PyGNOME" href="units.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> pyGNOME
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installing.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structure.html">GNOME Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="units.html">Units used in GNOME / PyGNOME</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PyGnome Class Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#gnome-model-the-pygnome-model-class"><code class="docutils literal"><span class="pre">gnome.model</span></code> &#8211; the PyGnome model class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-gnome.map"><code class="docutils literal"><span class="pre">gnome.map</span></code> &#8211; the PyGnome map class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-gnome.spill"><code class="docutils literal"><span class="pre">gnome.spill</span></code> &#8211; classes in the spill module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-gnome.spill.elements.element_type"><code class="docutils literal"><span class="pre">gnome.spill.elements</span></code> &#8211; classes in the elements module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-gnome.movers"><code class="docutils literal"><span class="pre">gnome.movers</span></code> &#8211; PyGnome mover classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-gnome.weatherers"><code class="docutils literal"><span class="pre">gnome.weatherers</span></code> &#8211; PyGnome/Adios weathering/mass removal classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-gnome.environment"><code class="docutils literal"><span class="pre">gnome.environment</span></code> &#8211; PyGnome environment classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-gnome.environment.property_classes"><code class="docutils literal"><span class="pre">gnome.environment.property_classes</span></code> &#8211; PyGnome implemented property classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-gnome.environment.property"><code class="docutils literal"><span class="pre">gnome.environment.property</span></code> &#8211; PyGnome abstract property classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-gnome.outputters"><code class="docutils literal"><span class="pre">gnome.outputter</span></code> &#8211; PyGnome outputters module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-gnome.utilities.distributions"><code class="docutils literal"><span class="pre">gnome.utilities</span></code> &#8211; PyGnome utilities module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-gnome.persist.base_schema"><code class="docutils literal"><span class="pre">gnome.persist</span></code> &#8211; PyGnome persistance classes</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">pyGNOME</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>PyGnome Class Reference</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/reference.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="pygnome-class-reference">
 <h1>PyGnome Class Reference<a class="headerlink" href="#pygnome-class-reference" title="Permalink to this headline">¶</a></h1>
@@ -72,7 +164,7 @@ you aren&#8217;t doing a full-on oil spill model. The model contains:</p>
 </ul>
 <p>In pseudocode, the model loop is defined below. In the first step, it sets up the
 model run and in subsequent steps the model moves and weathers elements.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">start_at_step_num</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">start_at_step_num</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
 
 <span class="k">if</span> <span class="n">step_num</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span>
     <span class="n">setup_model_run</span><span class="p">()</span>
@@ -86,11 +178,11 @@ model run and in subsequent steps the model moves and weathers elements.</p>
 <span class="n">step_num</span> <span class="o">+=</span> <span class="mi">1</span>
 
 <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="n">num</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">release_elements</span><span class="p">()</span>     <span class="c"># initialize mover data arrays</span>
+    <span class="n">num</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">release_elements</span><span class="p">()</span>     <span class="c1"># initialize mover data arrays</span>
 
     <span class="k">if</span> <span class="n">num</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weatherers</span><span class="p">:</span>
-            <span class="n">w</span><span class="o">.</span><span class="n">initialize_data</span><span class="p">()</span>     <span class="c"># initialize weatherer data arrays</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">initialize_data</span><span class="p">()</span>     <span class="c1"># initialize weatherer data arrays</span>
 
 <span class="n">o</span> <span class="o">=</span> <span class="n">write_output</span><span class="p">()</span>
 
@@ -99,7 +191,7 @@ model run and in subsequent steps the model moves and weathers elements.</p>
 </div>
 <span class="target" id="module-gnome.model"></span><dl class="class">
 <dt id="gnome.model.Model">
-<em class="property">class </em><code class="descclassname">gnome.model.</code><code class="descname">Model</code><span class="sig-paren">(</span><em>time_step=None</em>, <em>start_time=datetime.datetime(2016</em>, <em>1</em>, <em>20</em>, <em>16</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>weathering_substeps=1</em>, <em>map=None</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.model.</code><code class="descname">Model</code><span class="sig-paren">(</span><em>time_step=None</em>, <em>start_time=datetime.datetime(2016</em>, <em>8</em>, <em>11</em>, <em>16</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>weathering_substeps=1</em>, <em>map=None</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>name=None</em>, <em>mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
 <p>PyGnome Model Class</p>
 <p>Initializes a model.
@@ -121,15 +213,43 @@ run inside a single model time step.</li>
 <li><strong>uncertain=False</strong> &#8211; Flag for setting uncertainty.</li>
 <li><strong>cache_enabled=False</strong> &#8211; Flag for setting whether the model should
 cache results to disk.</li>
+<li><strong>mode='Gnome'</strong> &#8211; The runtime &#8216;mode&#8217; that the model should use.
+This is a value that the Web Client uses to
+decide which UI views it should present.</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
+<dl class="attribute">
+<dt id="gnome.model.Model.modes">
+<code class="descname">modes</code><em class="property"> = set(['gnome', 'adios'])</em><a class="headerlink" href="#gnome.model.Model.modes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="classmethod">
 <dt id="gnome.model.Model.new_from_dict">
 <em class="property">classmethod </em><code class="descname">new_from_dict</code><span class="sig-paren">(</span><em>dict_</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model.new_from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model.new_from_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Restore model from previously persisted _state</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gnome.model.Model.load_savefile">
+<em class="property">classmethod </em><code class="descname">load_savefile</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model.load_savefile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model.load_savefile" title="Permalink to this definition">¶</a></dt>
+<dd><p>load a model instance from a save file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> &#8211; the filename of the save file &#8211; usually a zip file,
+but can also be a directry with the full contents of
+a zip file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a model instance all set up from the savefile.</td>
+</tr>
+</tbody>
+</table>
+<p>This is simply a utility wrapper around:
+<code class="docutils literal"><span class="pre">gnome.persist.save_load.load()</span></code></p>
 </dd></dl>
 
 <dl class="method">
@@ -437,6 +557,14 @@ it will pass a references object. It is not required.</td>
 </dd></dl>
 
 <dl class="method">
+<dt id="gnome.model.Model.check_inputs">
+<code class="descname">check_inputs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model.check_inputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model.check_inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>check the user inputs before running the model
+raise an exception if user can&#8217;t run the model
+todo: check if all spills start after model ends</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gnome.model.Model.validate">
 <code class="descname">validate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model.validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model.validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>invoke validate for all gnome objects contained in model
@@ -562,11 +690,11 @@ False otherwise</td>
 </tr>
 </tbody>
 </table>
-<dl class="docutils">
-<dt>Note:</dt>
-<dd>coord is 3-d, but the concept of &#8220;on the map&#8221; is 2-d in this context,
-so depth is ignored.</dd>
-</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">coord is 3-d, but the concept of &#8220;on the map&#8221; is 2-d in this context,
+so depth is ignored.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -788,7 +916,7 @@ then land was hit.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coord</strong> (<em>3-tuple of floats &#8211; (long, lat, depth)</em>) &#8211; (long, lat, depth) location &#8211; depth is ignored here.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coord</strong> (<em>3-tuple of floats -- (long, lat, depth)</em>) &#8211; (long, lat, depth) location &#8211; depth is ignored here.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
 <li>1 if point on land</li>
@@ -1328,13 +1456,6 @@ called so each element_type sets the values for its own data correctly</p>
 Need to add node for release object and element_type object</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="gnome.spill.Spill.attr_to_dict">
-<code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.spill.Spill.attr_to_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>refactor to_dict&#8217;s functionality so child classes can convert a
-single attribute to_dict instead of doing a whole list of fields</p>
-</dd></dl>
-
 <dl class="classmethod">
 <dt id="gnome.spill.Spill.deserialize">
 <em class="property">classmethod </em><code class="descname">deserialize</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.deserialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.deserialize" title="Permalink to this definition">¶</a></dt>
@@ -1342,6 +1463,13 @@ single attribute to_dict instead of doing a whole list of fields</p>
 deserialization, call nested object&#8217;s serialize/deserialize methods</p>
 <p>We also need to accept sparse json objects, in which case we will
 not treat them, but just send them back.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.spill.Spill.attr_to_dict">
+<code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.spill.Spill.attr_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>refactor to_dict&#8217;s functionality so child classes can convert a
+single attribute to_dict instead of doing a whole list of fields</p>
 </dd></dl>
 
 <dl class="method">
@@ -2054,7 +2182,7 @@ with their initial positions pre-specified</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>release_time</strong> (<em>datetime.datetime</em>) &#8211; time the LEs are released</li>
 <li><strong>start_positions</strong> (<em>(num_elements, 3) numpy array of float64
-&#8211; (long, lat, z)</em>) &#8211; locations the LEs are released</li>
+-- (long, lat, z)</em>) &#8211; locations the LEs are released</li>
 </ul>
 </td>
 </tr>
@@ -2376,24 +2504,12 @@ flexible looping and list comprehension behavior.</p>
 <li><strong>start_position</strong> (<em>3-tuple of floats (long, lat, z)</em>) &#8211; initial location the elements are released</li>
 <li><strong>release_time</strong> (<em>datetime.datetime</em>) &#8211; time the LEs are released</li>
 <li><strong>start_positions</strong> (<em>(num_elements, 3) numpy array of float64
-&#8211; (long, lat, z)</em>) &#8211; locations the LEs are released</li>
+-- (long, lat, z)</em>) &#8211; locations the LEs are released</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<dl class="method">
-<dt id="gnome.spill.VerticalPlumeRelease.num_elements_to_release">
-<code class="descname">num_elements_to_release</code><span class="sig-paren">(</span><em>current_time</em>, <em>time_step</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/release.html#VerticalPlumeRelease.num_elements_to_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.VerticalPlumeRelease.num_elements_to_release" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return number of particles released in current_time + time_step</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.spill.VerticalPlumeRelease.set_newparticle_positions">
-<code class="descname">set_newparticle_positions</code><span class="sig-paren">(</span><em>num_new_particles</em>, <em>current_time</em>, <em>time_step</em>, <em>data_arrays</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/release.html#VerticalPlumeRelease.set_newparticle_positions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.VerticalPlumeRelease.set_newparticle_positions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set positions for new elements added by the SpillContainer</p>
-</dd></dl>
-
 <dl class="method">
 <dt id="gnome.spill.VerticalPlumeRelease.attr_to_dict">
 <code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.spill.VerticalPlumeRelease.attr_to_dict" title="Permalink to this definition">¶</a></dt>
@@ -2675,6 +2791,18 @@ but if called from prepare_for_model_run, we want to use error and
 raise exception.</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="gnome.spill.VerticalPlumeRelease.num_elements_to_release">
+<code class="descname">num_elements_to_release</code><span class="sig-paren">(</span><em>current_time</em>, <em>time_step</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/release.html#VerticalPlumeRelease.num_elements_to_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.VerticalPlumeRelease.num_elements_to_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return number of particles released in current_time + time_step</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.spill.VerticalPlumeRelease.set_newparticle_positions">
+<code class="descname">set_newparticle_positions</code><span class="sig-paren">(</span><em>num_new_particles</em>, <em>current_time</em>, <em>time_step</em>, <em>data_arrays</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/release.html#VerticalPlumeRelease.set_newparticle_positions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.VerticalPlumeRelease.set_newparticle_positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set positions for new elements added by the SpillContainer</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -2702,7 +2830,7 @@ weather.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>initializers</strong> (<em>iterbale</em>) &#8211; a list/tuple of initializer classes used
+<li><strong>initializers</strong> (<em>iterable</em>) &#8211; a list/tuple of initializer classes used
 to initialize these data arrays upon release. If this is not an
 iterable, then just append &#8216;initializer&#8217; to list of initializers
 assuming it is just a single initializer object</li>
@@ -3044,89 +3172,55 @@ ElementType constructor</td>
 <dl class="function">
 <dt id="gnome.spill.elements.element_type.plume">
 <code class="descclassname">gnome.spill.elements.element_type.</code><code class="descname">plume</code><span class="sig-paren">(</span><em>distribution_type='droplet_size'</em>, <em>distribution=None</em>, <em>windage_range=(0.01</em>, <em>0.04)</em>, <em>windage_persist=900</em>, <em>substance_name=None</em>, <em>density=None</em>, <em>density_units='kg/m^3'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/elements/element_type.html#plume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.elements.element_type.plume" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div><p>Helper function returns an ElementType object containing &#8216;rise_vel&#8217;
+<dd><p>Helper function returns an ElementType object containing &#8216;rise_vel&#8217;
 and &#8216;windages&#8217; initialized with user specified parameters for distribution.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name" colspan="2">param str distribution_type:</th></tr>
-<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><dl class="first docutils">
-<dt>default is &#8216;droplet_size&#8217; available options:</dt>
-<dd><ul class="first last">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>distribution_type='droplet_size'</strong> (<em>str</em>) &#8211; type of distribution</li>
+<li><strong>distribution=None</strong> (<a class="reference internal" href="#module-gnome.utilities.distributions" title="gnome.utilities.distributions"><em>gnome.utilities.distributions</em></a>) &#8211; </li>
+<li><strong>04)</strong> (<em>windage_range=(.01,</em>) &#8211; minimum and maximum windage</li>
+<li><strong>windage_persist=900</strong> (<em>int</em>) &#8211; persistance of windage in seconds</li>
+<li><strong>substance_name=None</strong> (<em>str</em>) &#8211; </li>
+<li><strong>density = None</strong> (<em>float</em>) &#8211; </li>
+<li><strong>density_units='kg/m^3'</strong> (<em>str</em>) &#8211; </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Distribution type Available options:</p>
+<ul>
 <li><dl class="first docutils">
-<dt>&#8216;droplet_size&#8217;: Droplet size is samples from the specified</dt>
-<dd><p class="first last">distribution. Rise velocity is calculated.</p>
+<dt>&#8216;droplet_size&#8217;: Droplet size is sampled from the specified distribution.</dt>
+<dd><p class="first last">No droplet size is computed.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="first docutils">
-<dt>&#8216;rise_velocity&#8217;: rise velocity is directly sampled from the specified</dt>
-<dd><p class="first last">distribution. No droplet size is computed.</p>
+<dt>&#8216;rise_velocity&#8217;: Rise velocity is directly sampled from the specified</dt>
+<dd><p class="first last">distribution.  Rise velocity is calculated.</p>
 </dd>
 </dl>
 </li>
 </ul>
-</dd>
-</dl>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name" colspan="2">param distribution=None:</th></tr>
-<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first">An object capable of generating a probability
-distribution.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name" colspan="2">type gnome.utilities.distributions:</th></tr>
-<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"><dl class="first docutils">
-<dt>Right now, we have:</dt>
-<dd><ul class="first last simple">
+<p>Distributions - An object capable of generating a probability distribution.
+Right now, we have:</p>
+<ul class="simple">
 <li>UniformDistribution</li>
 <li>NormalDistribution</li>
 <li>LogNormalDistribution</li>
 <li>WeibullDistribution</li>
 </ul>
-</dd>
-</dl>
-<p>New distribution classes could be made.  The only
-requirement is they need to have a set_values()
-method which accepts a NumPy array.
-(presumably, this function will also modify
-the array in some way)</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name" colspan="2">param windage_range=(.01, .04):</th></tr>
-<tr class="field-even field"><td>&nbsp;</td><td class="field-body"></td>
-</tr>
-<tr class="field-odd field"><th class="field-name" colspan="2">param windage_persist=900:</th></tr>
-<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-</div></blockquote>
-<dl class="docutils">
-<dt>#    :param substance_name=&#8217;oil_conservative&#8217;:</dt>
-<dd><table class="first docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name" colspan="2">param substance_name=None:</th></tr>
-<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"></td>
-</tr>
-<tr class="field-even field"><th class="field-name" colspan="2">param float density = None:</th></tr>
-<tr class="field-even field"><td>&nbsp;</td><td class="field-body"></td>
-</tr>
-<tr class="field-odd field"><th class="field-name" colspan="2">param str density_units=&#8217;kg/m^3&#8217;:</th></tr>
-<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<div class="last admonition note">
+<p>New distribution classes could be made.  The only requirement is they
+need to have a <code class="docutils literal"><span class="pre">set_values()</span></code> method which accepts a NumPy array.
+(presumably, this function will also modify the array in some way)</p>
+<div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">substance_name or density must be provided</p>
 </div>
-</dd>
-</dl>
 </dd></dl>
 
 </div>
@@ -3150,6 +3244,8 @@ a class level _schema attribute.</p>
 <li><strong>on</strong> &#8211; boolean as to whether the object is on or not. Default is on</li>
 <li><strong>active_start</strong> &#8211; datetime when the mover should be active</li>
 <li><strong>active_stop</strong> &#8211; datetime after which the mover should be inactive</li>
+<li><strong>real_data_start</strong> &#8211; datetime when the mover first has data (not including extrapolation)</li>
+<li><strong>real_data_stop</strong> &#8211; datetime after which the mover has no data (not including extrapolation)</li>
 </ul>
 </td>
 </tr>
@@ -3219,6 +3315,8 @@ subclassed movers.</p>
 <li><strong>on</strong> &#8211; boolean as to whether the object is on or not. Default is on</li>
 <li><strong>active_start</strong> &#8211; datetime when the mover should be active</li>
 <li><strong>active_stop</strong> &#8211; datetime after which the mover should be inactive</li>
+<li><strong>real_data_start</strong> &#8211; datetime when the mover first has data (not including extrapolation)</li>
+<li><strong>real_data_stop</strong> &#8211; datetime after which the mover has no data (not including extrapolation)</li>
 </ul>
 </td>
 </tr>
@@ -3866,6 +3964,18 @@ before and after file data.</td>
 </dd></dl>
 
 <dl class="method">
+<dt id="gnome.movers.GridCurrentMover.get_start_time">
+<code class="descname">get_start_time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/current_movers.html#GridCurrentMover.get_start_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.GridCurrentMover.get_start_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>:this will be the real_data_start time (seconds).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridCurrentMover.get_end_time">
+<code class="descname">get_end_time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/current_movers.html#GridCurrentMover.get_end_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.GridCurrentMover.get_end_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>:this will be the real_data_stop time (seconds).</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gnome.movers.GridCurrentMover.attr_to_dict">
 <code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.movers.GridCurrentMover.attr_to_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>refactor to_dict&#8217;s functionality so child classes can convert a
@@ -4268,7 +4378,7 @@ raise exception.</p>
 
 <dl class="class">
 <dt id="gnome.movers.WindMover">
-<em class="property">class </em><code class="descclassname">gnome.movers.</code><code class="descname">WindMover</code><span class="sig-paren">(</span><em>wind=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/wind_movers.html#WindMover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.WindMover" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.movers.</code><code class="descname">WindMover</code><span class="sig-paren">(</span><em>wind=None</em>, <em>extrapolate=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/wind_movers.html#WindMover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.WindMover" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.movers.wind_movers.WindMoversBase</span></code>, <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
 <p>Python wrapper around the Cython wind_mover module.
 This class inherits from CyMover and contains CyWindMover</p>
@@ -4382,6 +4492,18 @@ and after file data.</td>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.get_start_time">
+<code class="descname">get_start_time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/wind_movers.html#GridWindMover.get_start_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.GridWindMover.get_start_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>:this will be the real_data_start time (seconds).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.get_end_time">
+<code class="descname">get_end_time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/wind_movers.html#GridWindMover.get_end_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.GridWindMover.get_end_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>:this will be the real_data_stop time (seconds).</p>
 </dd></dl>
 
 <dl class="method">
@@ -4823,34 +4945,34 @@ Assumes all spills have the same type of oil</p>
 this as we add more weatherers and perhaps density gets set elsewhere</li>
 </ul>
 <p>Following diff eq models rate of change each pseudocomponent of oil:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">dm</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">/</span><span class="n">dt</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">fw</span><span class="p">)</span> <span class="o">*</span> <span class="n">A</span><span class="o">/</span><span class="n">B</span> <span class="o">*</span> <span class="n">m</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dm</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">/</span><span class="n">dt</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">fw</span><span class="p">)</span> <span class="o">*</span> <span class="n">A</span><span class="o">/</span><span class="n">B</span> <span class="o">*</span> <span class="n">m</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Over a time-step, A, B, C are assumed constant. m(t) is the component
 mass at beginning of timestep; m(t + Dt) is mass at end of timestep:</p>
-<div class="highlight-python"><div class="highlight"><pre>m(t + Dt) = m(t) * exp(-L * Dt)
-L := (1 - fw) * A/B
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">m</span><span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="n">Dt</span><span class="p">)</span> <span class="o">=</span> <span class="n">m</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">L</span> <span class="o">*</span> <span class="n">Dt</span><span class="p">)</span>
+<span class="n">L</span> <span class="p">:</span><span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">fw</span><span class="p">)</span> <span class="o">*</span> <span class="n">A</span><span class="o">/</span><span class="n">B</span>
 </pre></div>
 </div>
 <p>Define properties for each pseudocomponent of oil and constants:</p>
-<div class="highlight-python"><div class="highlight"><pre>vp: vapor pressure
-mw: molecular weight
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">vp</span><span class="p">:</span> <span class="n">vapor</span> <span class="n">pressure</span>
+<span class="n">mw</span><span class="p">:</span> <span class="n">molecular</span> <span class="n">weight</span>
 </pre></div>
 </div>
 <p>The following quantities are defined for a given blob of oil. The
 thickness of the blob is same for all LEs regardless of how many LEs
 are used to model the blob:</p>
-<div class="highlight-python"><div class="highlight"><pre>area: area computed from fay spreading
-m_i: mass of component &#39;i&#39;
-sum_m_mw: sum(m_i/mw_i) over all components
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">area</span><span class="p">:</span> <span class="n">area</span> <span class="n">computed</span> <span class="kn">from</span> <span class="nn">fay</span> <span class="n">spreading</span>
+<span class="n">m_i</span><span class="p">:</span> <span class="n">mass</span> <span class="n">of</span> <span class="n">component</span> <span class="s1">&#39;i&#39;</span>
+<span class="n">sum_m_mw</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m_i</span><span class="o">/</span><span class="n">mw_i</span><span class="p">)</span> <span class="n">over</span> <span class="nb">all</span> <span class="n">components</span>
 </pre></div>
 </div>
 <p>effect of wind - mass transport coefficient:</p>
-<div class="highlight-python"><div class="highlight"><pre>K: See _mass_transport_coeff()
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">K</span><span class="p">:</span> <span class="n">See</span> <span class="n">_mass_transport_coeff</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>Finally, Evaporation of component &#8216;i&#8217; for blob of oil:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">A</span> <span class="o">=</span> <span class="n">area</span> <span class="o">*</span> <span class="n">K</span> <span class="o">*</span> <span class="n">vp</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="n">area</span> <span class="o">*</span> <span class="n">K</span> <span class="o">*</span> <span class="n">vp</span>
 <span class="n">B</span> <span class="o">=</span> <span class="n">gas_constant</span> <span class="o">*</span> <span class="n">water_temp</span> <span class="o">*</span> <span class="n">sum_m_mw</span>
 </pre></div>
 </div>
@@ -5240,6 +5362,16 @@ Assumes all spills have the same type of oil</p>
 <code class="descname">weather_elements</code><span class="sig-paren">(</span><em>sc</em>, <em>time_step</em>, <em>model_time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/weatherers/natural_dispersion.html#NaturalDispersion.weather_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.weatherers.NaturalDispersion.weather_elements" title="Permalink to this definition">¶</a></dt>
 <dd><p>weather elements over time_step
 - sets &#8216;natural_dispersion&#8217; and &#8216;sedimentation&#8217; in sc.mass_balance</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.weatherers.NaturalDispersion.disperse_oil">
+<code class="descname">disperse_oil</code><span class="sig-paren">(</span><em>time_step</em>, <em>frac_water</em>, <em>mass</em>, <em>viscosity</em>, <em>density</em>, <em>fay_area</em>, <em>disp_out</em>, <em>sed_out</em>, <em>frac_breaking_waves</em>, <em>disp_wave_energy</em>, <em>wave_height</em>, <em>visc_w</em>, <em>rho_w</em>, <em>sediment</em>, <em>V_entrain</em>, <em>ka</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/weatherers/natural_dispersion.html#NaturalDispersion.disperse_oil"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.weatherers.NaturalDispersion.disperse_oil" title="Permalink to this definition">¶</a></dt>
+<dd><p>Right now we just want to recreate what the lib_gnome dispersion
+function is doing...but in python.
+This will allow us to more easily refactor, and we can always
+then put it back into lib_gnome if necessary.
+(TODO: Not quite finished with the function yet.)</p>
 </dd></dl>
 
 <dl class="method">
@@ -5920,7 +6052,7 @@ raise exception.</p>
 <p>environment module</p>
 <dl class="class">
 <dt id="gnome.environment.Tide">
-<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">Tide</code><span class="sig-paren">(</span><em>filename</em>, <em>yeardata='/Users/chris.barker/HAZMAT/GNOME2-git/GitLab/pygnome/py_gnome/gnome/data/yeardata'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/tide.html#Tide"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.Tide" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">Tide</code><span class="sig-paren">(</span><em>filename</em>, <em>yeardata='/Users/chris.barker/HAZMAT/GNOME-dev/GitLab/pygnome/py_gnome/gnome/data/yeardata'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/tide.html#Tide"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.Tide" title="Permalink to this definition">¶</a></dt>
 <dd><p>todo: baseclass called ScaleTimeseries (or something like that)
 ScaleCurrent
 Define the tide for a spill</p>
@@ -6251,7 +6383,7 @@ raise exception.</p>
 <dl class="class">
 <dt id="gnome.environment.Wind">
 <em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">Wind</code><span class="sig-paren">(</span><em>timeseries=None</em>, <em>units=None</em>, <em>filename=None</em>, <em>format='r-theta'</em>, <em>latitude=None</em>, <em>longitude=None</em>, <em>speed_uncertainty_scale=0.0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/wind.html#Wind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.Wind" title="Permalink to this definition">¶</a></dt>
-<dd><p>Defines the Wind conditions for a spill</p>
+<dd><p>Defines the Wind conditions for a single point</p>
 <p>todo: update docstrings!</p>
 <dl class="attribute">
 <dt id="gnome.environment.Wind.name">
@@ -6295,63 +6427,6 @@ Internally all data is stored in SI units.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="gnome.environment.Wind.attr_to_dict">
-<code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.Wind.attr_to_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>refactor to_dict&#8217;s functionality so child classes can convert a
-single attribute to_dict instead of doing a whole list of fields</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.environment.Wind.deserialize">
-<code class="descname">deserialize</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.Wind.deserialize" title="Permalink to this definition">¶</a></dt>
-<dd><p>classmethod takes json structure as input, deserializes it using a
-colander schema then invokes the new_from_dict method to create an
-instance of the object described by the json schema.</p>
-<p>We also need to accept sparse json objects, in which case we will
-not treat them, but just send them back.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.environment.Wind.deserialize_oc">
-<code class="descname">deserialize_oc</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.Wind.deserialize_oc" title="Permalink to this definition">¶</a></dt>
-<dd><p>check contents of orderered collections to figure out what schema to
-use.
-Basically, the json serialized ordered collection looks like a regular
-list.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.environment.Wind.get_timeseries">
-<code class="descname">get_timeseries</code><span class="sig-paren">(</span><em>datetime=None</em>, <em>format='uv'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.Wind.get_timeseries" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the timeseries in requested format. If datetime=None,
-then the original timeseries that was entered is returned.
-If datetime is a list containing datetime objects, then the value
-for each of those date times is determined by the underlying
-C++ object and the timeseries is returned.</p>
-<p>The output format is defined by the strings &#8216;r-theta&#8217;, &#8216;uv&#8217;</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>datetime</strong> (<em>datetime object</em>) &#8211; [optional] datetime object or list of datetime
-objects for which the value is desired</li>
-<li><strong>format</strong> (<em>either string or integer value defined by
-basic_types.ts_format.* (see cy_basic_types.pyx)</em>) &#8211; output format for the times series:
-either &#8216;r-theta&#8217; or &#8216;uv&#8217;</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">numpy array containing dtype=basic_types.datetime_value_2d.
-Contains user specified datetime and the corresponding
-values in user specified ts_format</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
 <dt id="gnome.environment.Wind.get_wind_data">
 <code class="descname">get_wind_data</code><span class="sig-paren">(</span><em>datetime=None</em>, <em>units=None</em>, <em>format='r-theta'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/wind.html#Wind.get_wind_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.Wind.get_wind_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the timeseries in the requested format. If datetime=None,
@@ -6389,6 +6464,75 @@ Override this method to define the derived object&#8217;s unit conversion
 functionality</p>
 </div>
 <p>todo: return data in appropriate significant digits</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.Wind.attr_to_dict">
+<code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.Wind.attr_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>refactor to_dict&#8217;s functionality so child classes can convert a
+single attribute to_dict instead of doing a whole list of fields</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.Wind.deserialize">
+<code class="descname">deserialize</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.Wind.deserialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>classmethod takes json structure as input, deserializes it using a
+colander schema then invokes the new_from_dict method to create an
+instance of the object described by the json schema.</p>
+<p>We also need to accept sparse json objects, in which case we will
+not treat them, but just send them back.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.Wind.deserialize_oc">
+<code class="descname">deserialize_oc</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.Wind.deserialize_oc" title="Permalink to this definition">¶</a></dt>
+<dd><p>check contents of orderered collections to figure out what schema to
+use.
+Basically, the json serialized ordered collection looks like a regular
+list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.Wind.get_end_time">
+<code class="descname">get_end_time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.Wind.get_end_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>:this will be the real_data_stop time (seconds).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.Wind.get_start_time">
+<code class="descname">get_start_time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.Wind.get_start_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>:this will be the real_data_start time (seconds).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.Wind.get_timeseries">
+<code class="descname">get_timeseries</code><span class="sig-paren">(</span><em>datetime=None</em>, <em>format='uv'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.Wind.get_timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the timeseries in requested format. If datetime=None,
+then the original timeseries that was entered is returned.
+If datetime is a list containing datetime objects, then the value
+for each of those date times is determined by the underlying
+C++ object and the timeseries is returned.</p>
+<p>The output format is defined by the strings &#8216;r-theta&#8217;, &#8216;uv&#8217;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>datetime</strong> (<em>datetime object</em>) &#8211; [optional] datetime object or list of datetime
+objects for which the value is desired</li>
+<li><strong>format</strong> (<em>either string or integer value defined by
+basic_types.ts_format.* (see cy_basic_types.pyx)</em>) &#8211; output format for the times series:
+either &#8216;r-theta&#8217; or &#8216;uv&#8217;</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">numpy array containing dtype=basic_types.datetime_value_2d.
+Contains user specified datetime and the corresponding
+values in user specified ts_format</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -6546,6 +6690,33 @@ basic_types.format.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="gnome.environment.Wind.set_wind_data">
+<code class="descname">set_wind_data</code><span class="sig-paren">(</span><em>wind_data</em>, <em>units</em>, <em>format='r-theta'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/wind.html#Wind.set_wind_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.Wind.set_wind_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the timeseries of the Wind object to the new value given by
+a numpy array.  The format for the input data defaults to
+basic_types.format.magnitude_direction but can be changed by the user.
+Units are also required with the data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>datetime_value_2d</strong> (<em>numpy array of dtype
+basic_types.datetime_value_2d</em>) &#8211; timeseries of wind data defined in a
+numpy array</li>
+<li><strong>units</strong> &#8211; units associated with the data. Valid units defined in
+Wind.valid_vel_units list</li>
+<li><strong>format</strong> (<em>either string or integer value defined by
+basic_types.format.* (see cy_basic_types.pyx)</em>) &#8211; output format for the times series; as defined by
+basic_types.format.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="gnome.environment.Wind.to_dict">
 <code class="descname">to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.Wind.to_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>returns a dictionary containing the serialized representation of this
@@ -6599,33 +6770,6 @@ raise exception.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="gnome.environment.Wind.set_wind_data">
-<code class="descname">set_wind_data</code><span class="sig-paren">(</span><em>wind_data</em>, <em>units</em>, <em>format='r-theta'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/wind.html#Wind.set_wind_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.Wind.set_wind_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets the timeseries of the Wind object to the new value given by
-a numpy array.  The format for the input data defaults to
-basic_types.format.magnitude_direction but can be changed by the user.
-Units are also required with the data.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>datetime_value_2d</strong> (<em>numpy array of dtype
-basic_types.datetime_value_2d</em>) &#8211; timeseries of wind data defined in a
-numpy array</li>
-<li><strong>units</strong> &#8211; units associated with the data. Valid units defined in
-Wind.valid_vel_units list</li>
-<li><strong>format</strong> (<em>either string or integer value defined by
-basic_types.format.* (see cy_basic_types.pyx)</em>) &#8211; output format for the times series; as defined by
-basic_types.format.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
 <dt id="gnome.environment.Wind.get_value">
 <code class="descname">get_value</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/wind.html#Wind.get_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.Wind.get_value" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the value at specified time and location. Wind timeseries are
@@ -6674,6 +6818,848 @@ we should probably do this only once.</p>
 <dt id="gnome.environment.Wind.validate">
 <code class="descname">validate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/wind.html#Wind.validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.Wind.validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>only issues warning - object is always valid</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-gnome.environment.property_classes">
+<span id="gnome-environment-property-classes-pygnome-implemented-property-classes"></span><h2><code class="docutils literal"><span class="pre">gnome.environment.property_classes</span></code> &#8211; PyGnome implemented property classes<a class="headerlink" href="#module-gnome.environment.property_classes" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="gnome.environment.property_classes.IceConcentration">
+<em class="property">class </em><code class="descclassname">gnome.environment.property_classes.</code><code class="descname">IceConcentration</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>data=None</em>, <em>grid=None</em>, <em>data_file=None</em>, <em>grid_file=None</em>, <em>dataset=None</em>, <em>varname=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.IceConcentration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.environment.grid_property.GriddedProp" title="gnome.environment.grid_property.GriddedProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.grid_property.GriddedProp</span></code></a>, <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
+<p>This class represents a phenomenon using gridded data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>string</em>) &#8211; Name</li>
+<li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
+<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4 Variable, or Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>netCDF4.Variable or numpy.array</em>) &#8211; Underlying data source</li>
+<li><strong>grid</strong> (<em>pysgrid or pyugrid</em>) &#8211; Grid that the data corresponds with</li>
+<li><strong>data_file</strong> (<em>string</em>) &#8211; Name of data source file</li>
+<li><strong>grid_file</strong> (<em>string</em>) &#8211; Name of grid source file</li>
+<li><strong>varname</strong> (<em>string</em>) &#8211; Name of the variable in the data source file</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="gnome.environment.property_classes.IceConcentration.default_names">
+<code class="descname">default_names</code><em class="property"> = ['ice_fraction']</em><a class="headerlink" href="#gnome.environment.property_classes.IceConcentration.default_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.environment.property_classes.GridCurrent">
+<em class="property">class </em><code class="descclassname">gnome.environment.property_classes.</code><code class="descname">GridCurrent</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>grid=None</em>, <em>grid_file=None</em>, <em>data_file=None</em>, <em>dataset=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.GridCurrent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property_classes.VelocityGrid</span></code>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
+<dl class="attribute">
+<dt id="gnome.environment.property_classes.GridCurrent.default_names">
+<code class="descname">default_names</code><em class="property"> = [['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]</em><a class="headerlink" href="#gnome.environment.property_classes.GridCurrent.default_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.property_classes.GridCurrent.at">
+<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>depth=-1</em>, <em>extrapolate=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.GridCurrent.at" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the value of the property at positions P at time T</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
+<li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
+<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
+<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">returns a Nx2 array of interpolated values</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">double</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.environment.property_classes.GridWind">
+<em class="property">class </em><code class="descclassname">gnome.environment.property_classes.</code><code class="descname">GridWind</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>grid=None</em>, <em>grid_file=None</em>, <em>data_file=None</em>, <em>dataset=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.GridWind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property_classes.VelocityGrid</span></code>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
+<dl class="attribute">
+<dt id="gnome.environment.property_classes.GridWind.default_names">
+<code class="descname">default_names</code><em class="property"> = [['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]</em><a class="headerlink" href="#gnome.environment.property_classes.GridWind.default_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.property_classes.GridWind.at">
+<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>depth=-1</em>, <em>extrapolate=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.GridWind.at" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the value of the property at positions P at time T</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
+<li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
+<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
+<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">returns a Nx2 array of interpolated values</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">double</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.environment.property_classes.IceVelocity">
+<em class="property">class </em><code class="descclassname">gnome.environment.property_classes.</code><code class="descname">IceVelocity</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>grid=None</em>, <em>grid_file=None</em>, <em>data_file=None</em>, <em>dataset=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.IceVelocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property_classes.VelocityGrid</span></code></p>
+<dl class="attribute">
+<dt id="gnome.environment.property_classes.IceVelocity.default_names">
+<code class="descname">default_names</code><em class="property"> = [['ice_u', 'ice_v']]</em><a class="headerlink" href="#gnome.environment.property_classes.IceVelocity.default_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-gnome.environment.property">
+<span id="gnome-environment-property-pygnome-abstract-property-classes"></span><h2><code class="docutils literal"><span class="pre">gnome.environment.property</span></code> &#8211; PyGnome abstract property classes<a class="headerlink" href="#module-gnome.environment.property" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="gnome.environment.property.EnvProp">
+<em class="property">class </em><code class="descclassname">gnome.environment.property.</code><code class="descname">EnvProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>data=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#EnvProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.EnvProp" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class that represents a natural phenomenon and provides an interface to get
+the value of the phenomenon at a position in space and time. EnvProp is the base
+class, and returns only a single value regardless of the time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>string</em>) &#8211; Name</li>
+<li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
+<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4.Variable, or Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>netCDF4.Variable or numpy.array</em>) &#8211; Value of the property</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="gnome.environment.property.EnvProp.data">
+<code class="descname">data</code><a class="headerlink" href="#gnome.environment.property.EnvProp.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Underlying data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">netCDF4.Variable or numpy.array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.property.EnvProp.units">
+<code class="descname">units</code><a class="headerlink" href="#gnome.environment.property.EnvProp.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Units of underlying data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.property.EnvProp.time">
+<code class="descname">time</code><a class="headerlink" href="#gnome.environment.property.EnvProp.time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Time axis of data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#gnome.environment.property.Time" title="gnome.environment.property.Time">gnome.environment.property.Time</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.property.EnvProp.at">
+<code class="descname">at</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#EnvProp.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.EnvProp.at" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the value of the property at positions P at time T</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
+<li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
+<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
+<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">returns a Nx1 array of interpolated values</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">double</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.property.EnvProp.in_units">
+<code class="descname">in_units</code><span class="sig-paren">(</span><em>unit</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#EnvProp.in_units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.EnvProp.in_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a full cpy of this property in the units specified.
+WARNING: This will cpy the data of the original property!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>units</strong> (<em>string</em>) &#8211; Units to convert to</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Copy of self converted to new units</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Same as self</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.environment.property.VectorProp">
+<em class="property">class </em><code class="descclassname">gnome.environment.property.</code><code class="descname">VectorProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#VectorProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.VectorProp" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class that represents a vector natural phenomenon and provides an interface to get the value of
+the phenomenon at a position in space and time. VectorProp is the base class</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>string</em>) &#8211; Name of the Property</li>
+<li><strong>units</strong> (<em>string</em>) &#8211; Unit of the underlying data</li>
+<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4.Variable, or Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>variables</strong> (<em>[] of EnvProp or numpy.array (Max len=2)</em>) &#8211; component data arrays</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="gnome.environment.property.VectorProp.time">
+<code class="descname">time</code><a class="headerlink" href="#gnome.environment.property.VectorProp.time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Time axis of data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#gnome.environment.property.Time" title="gnome.environment.property.Time">gnome.environment.property.Time</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.property.VectorProp.units">
+<code class="descname">units</code><a class="headerlink" href="#gnome.environment.property.VectorProp.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Units of underlying data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.property.VectorProp.varnames">
+<code class="descname">varnames</code><a class="headerlink" href="#gnome.environment.property.VectorProp.varnames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Names of underlying variables</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">[] of strings</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.property.VectorProp.at">
+<code class="descname">at</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#VectorProp.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.VectorProp.at" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the value of the property at positions P at time T</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
+<li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
+<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
+<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">returns a Nx2 array of interpolated values</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">double</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.environment.property.Time">
+<em class="property">class </em><code class="descclassname">gnome.environment.property.</code><code class="descname">Time</code><span class="sig-paren">(</span><em>time_seq</em>, <em>tz_offset=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#Time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.Time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Representation of a time axis. Provides interpolation alphas and indexing.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>time_seq</strong> (<em>netCDF4.Variable or [] of datetime.datetime</em>) &#8211; Ascending list of times to use</li>
+<li><strong>tz_offset</strong> (<em>datetime.timedelta</em>) &#8211; offset to compensate for time zone shifts</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="gnome.environment.property.Time.min_time">
+<code class="descname">min_time</code><a class="headerlink" href="#gnome.environment.property.Time.min_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>First time in series</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">datetime.datetime</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.property.Time.max_time">
+<code class="descname">max_time</code><a class="headerlink" href="#gnome.environment.property.Time.max_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Last time in series</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">datetime.datetime</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.property.Time.time_in_bounds">
+<code class="descname">time_in_bounds</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#Time.time_in_bounds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.Time.time_in_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if time provided is within the bounds represented by this object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time</strong> (<em>datetime.datetime</em>) &#8211; time to be queried</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">boolean</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.property.Time.index_of">
+<code class="descname">index_of</code><span class="sig-paren">(</span><em>time</em>, <em>extrapolate</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#Time.index_of"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.Time.index_of" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the index of the provided time with respect to the time intervals in the file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>time</strong> (<em>datetime.datetime</em>) &#8211; Time to be queried</li>
+<li><strong>extrapolate</strong> (<em>boolean</em>) &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">index of first time before specified time</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">integer</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.property.Time.interp_alpha">
+<code class="descname">interp_alpha</code><span class="sig-paren">(</span><em>time</em>, <em>extrapolate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#Time.interp_alpha"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.Time.interp_alpha" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns interpolation alpha for the specified time</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>time</strong> (<em>datetime.datetime</em>) &#8211; Time to be queried</li>
+<li><strong>extrapolate</strong> (<em>boolean</em>) &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">interpolation alpha</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">double (0 &lt;= r &lt;= 1)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-gnome.environment.grid_property"></span><dl class="class">
+<dt id="gnome.environment.grid_property.GriddedProp">
+<em class="property">class </em><code class="descclassname">gnome.environment.grid_property.</code><code class="descname">GriddedProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>data=None</em>, <em>grid=None</em>, <em>data_file=None</em>, <em>grid_file=None</em>, <em>dataset=None</em>, <em>varname=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.environment.property.EnvProp" title="gnome.environment.property.EnvProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property.EnvProp</span></code></a></p>
+<p>This class represents a phenomenon using gridded data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>string</em>) &#8211; Name</li>
+<li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
+<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4 Variable, or Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>netCDF4.Variable or numpy.array</em>) &#8211; Underlying data source</li>
+<li><strong>grid</strong> (<em>pysgrid or pyugrid</em>) &#8211; Grid that the data corresponds with</li>
+<li><strong>data_file</strong> (<em>string</em>) &#8211; Name of data source file</li>
+<li><strong>grid_file</strong> (<em>string</em>) &#8211; Name of grid source file</li>
+<li><strong>varname</strong> (<em>string</em>) &#8211; Name of the variable in the data source file</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="classmethod">
+<dt id="gnome.environment.grid_property.GriddedProp.from_netCDF">
+<em class="property">classmethod </em><code class="descname">from_netCDF</code><span class="sig-paren">(</span><em>filename=None</em>, <em>varname=None</em>, <em>grid_topology=None</em>, <em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>grid=None</em>, <em>dataset=None</em>, <em>data_file=None</em>, <em>grid_file=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp.from_netCDF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.from_netCDF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows one-function creation of a GriddedProp from a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<em>string</em>) &#8211; Default data source. Parameters below take precedence</li>
+<li><strong>varname</strong> (<em>string</em>) &#8211; Name of the variable in the data source file</li>
+<li><strong>grid_topology</strong> (<em>{string : string, ...}</em>) &#8211; Description of the relationship between grid attributes and variable names.</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; Name of property</li>
+<li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
+<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4 Variable, or Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>netCDF4.Variable or numpy.array</em>) &#8211; Underlying data source</li>
+<li><strong>grid</strong> (<em>pysgrid or pyugrid</em>) &#8211; Grid that the data corresponds with</li>
+<li><strong>dataset</strong> (<em>netCDF4.Dataset</em>) &#8211; Instance of open Dataset</li>
+<li><strong>data_file</strong> (<em>string</em>) &#8211; Name of data source file</li>
+<li><strong>grid_file</strong> (<em>string</em>) &#8211; Name of grid source file</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.at">
+<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>depth=-1</em>, <em>extrapolate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.at" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the value of the property at positions P at time T</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
+<li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
+<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
+<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">returns a Nx1 array of interpolated values</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">double</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gnome.environment.grid_property.GriddedProp._gen_varname">
+<em class="property">classmethod </em><code class="descname">_gen_varname</code><span class="sig-paren">(</span><em>filename=None</em>, <em>dataset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp._gen_varname"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._gen_varname" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to find the default variable names if they are not provided.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filename</strong> (<em>string</em>) &#8211; Name of file that will be searched for variables</li>
+<li><strong>dataset</strong> (<em>netCDF.Dataset</em>) &#8211; Existing instance of a netCDF4.Dataset</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List of default variable names, or None if none are found</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.in_units">
+<code class="descname">in_units</code><span class="sig-paren">(</span><em>unit</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.in_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a full cpy of this property in the units specified.
+WARNING: This will cpy the data of the original property!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>units</strong> (<em>string</em>) &#8211; Units to convert to</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Copy of self converted to new units</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Same as self</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GriddedProp.units">
+<code class="descname">units</code><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Units of underlying data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.environment.grid_property.GridVectorProp">
+<em class="property">class </em><code class="descclassname">gnome.environment.grid_property.</code><code class="descname">GridVectorProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>grid=None</em>, <em>grid_file=None</em>, <em>data_file=None</em>, <em>dataset=None</em>, <em>varnames=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GridVectorProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.environment.property.VectorProp" title="gnome.environment.property.VectorProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property.VectorProp</span></code></a></p>
+<dl class="classmethod">
+<dt id="gnome.environment.grid_property.GridVectorProp.from_netCDF">
+<em class="property">classmethod </em><code class="descname">from_netCDF</code><span class="sig-paren">(</span><em>filename=None</em>, <em>varnames=None</em>, <em>grid_topology=None</em>, <em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>grid=None</em>, <em>data_file=None</em>, <em>grid_file=None</em>, <em>dataset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GridVectorProp.from_netCDF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.from_netCDF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows one-function creation of a GridVectorProp from a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<em>string</em>) &#8211; Default data source. Parameters below take precedence</li>
+<li><strong>varnames</strong> (<em>[] of string</em>) &#8211; Names of the variables in the data source file</li>
+<li><strong>grid_topology</strong> (<em>{string : string, ...}</em>) &#8211; Description of the relationship between grid attributes and variable names.</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; Name of property</li>
+<li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
+<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4 Variable, or Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>netCDF4.Variable or numpy.array</em>) &#8211; Underlying data source</li>
+<li><strong>grid</strong> (<em>pysgrid or pyugrid</em>) &#8211; Grid that the data corresponds with</li>
+<li><strong>dataset</strong> (<em>netCDF4.Dataset</em>) &#8211; Instance of open Dataset</li>
+<li><strong>data_file</strong> (<em>string</em>) &#8211; Name of data source file</li>
+<li><strong>grid_file</strong> (<em>string</em>) &#8211; Name of grid source file</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._check_consistency">
+<code class="descname">_check_consistency</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GridVectorProp._check_consistency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._check_consistency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.at">
+<code class="descname">at</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.at" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the value of the property at positions P at time T</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
+<li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
+<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
+<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">returns a Nx2 array of interpolated values</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">double</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GridVectorProp.units">
+<code class="descname">units</code><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Units of underlying data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GridVectorProp.varnames">
+<code class="descname">varnames</code><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.varnames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Names of underlying variables</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">[] of strings</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gnome.environment.grid_property.GridVectorProp._gen_varnames">
+<em class="property">classmethod </em><code class="descname">_gen_varnames</code><span class="sig-paren">(</span><em>filename=None</em>, <em>dataset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GridVectorProp._gen_varnames"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._gen_varnames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to find the default variable names if they are not provided.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filename</strong> (<em>string</em>) &#8211; Name of file that will be searched for variables</li>
+<li><strong>dataset</strong> (<em>netCDF.Dataset</em>) &#8211; Existing instance of a netCDF4.Dataset</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List of default variable names, or None if none are found</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-gnome.environment.ts_property"></span><dl class="class">
+<dt id="gnome.environment.ts_property.TimeSeriesProp">
+<em class="property">class </em><code class="descclassname">gnome.environment.ts_property.</code><code class="descname">TimeSeriesProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/ts_property.html#TimeSeriesProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.environment.property.EnvProp" title="gnome.environment.property.EnvProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property.EnvProp</span></code></a></p>
+<p>A class that represents a scalar natural phenomenon using a time series</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>string</em>) &#8211; Name</li>
+<li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
+<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4.Variable, or Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>numpy.array, list, or other iterable</em>) &#8211; Underlying data source</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.timeseries">
+<code class="descname">timeseries</code><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a representation of the time series</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list of (datetime, double) tuples</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.at">
+<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>extrapolate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/ts_property.html#TimeSeriesProp.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.at" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolates this property to the given points at the given time with the units specified
+:param points: A Nx2 array of lon,lat points
+:param time: A datetime object. May be None; if this is so, the variable is assumed to be gridded
+but time-invariant
+:param units: The units that the result would be converted to</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.in_units">
+<code class="descname">in_units</code><span class="sig-paren">(</span><em>unit</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.in_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a full cpy of this property in the units specified.
+WARNING: This will cpy the data of the original property!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>units</strong> (<em>string</em>) &#8211; Units to convert to</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Copy of self converted to new units</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Same as self</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.units">
+<code class="descname">units</code><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Units of underlying data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.environment.ts_property.TSVectorProp">
+<em class="property">class </em><code class="descclassname">gnome.environment.ts_property.</code><code class="descname">TSVectorProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>varnames=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/ts_property.html#TSVectorProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.environment.property.VectorProp" title="gnome.environment.property.VectorProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property.VectorProp</span></code></a></p>
+<p>This class represents a vector phenomenon using a time series</p>
+<dl class="attribute">
+<dt id="gnome.environment.ts_property.TSVectorProp.timeseries">
+<code class="descname">timeseries</code><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a representation of the time series</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list of (datetime, (double, double)) tuples</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.at">
+<code class="descname">at</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.at" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the value of the property at positions P at time T</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
+<li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
+<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
+<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">returns a Nx2 array of interpolated values</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">double</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.ts_property.TSVectorProp.units">
+<code class="descname">units</code><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Units of underlying data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.ts_property.TSVectorProp.varnames">
+<code class="descname">varnames</code><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.varnames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Names of underlying variables</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">[] of strings</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.in_units">
+<code class="descname">in_units</code><span class="sig-paren">(</span><em>units</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/ts_property.html#TSVectorProp.in_units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.in_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a full copy of this property in the units specified.
+WARNING: This will copy the data of the original property!</p>
 </dd></dl>
 
 </dd></dl>
@@ -6760,7 +7746,7 @@ so just set them here</p>
 Do what you need to do to prepare for a new model step</p>
 <p>base class method checks to see if data for model_time should be output
 Set self._write_step flag to true if:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">model_time</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dt_since_lastoutput</span> <span class="o">&lt;=</span> <span class="n">model_time</span> <span class="o">+</span> <span class="n">time_step</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">model_time</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dt_since_lastoutput</span> <span class="o">&lt;=</span> <span class="n">model_time</span> <span class="o">+</span> <span class="n">time_step</span>
 </pre></div>
 </div>
 <p>It also updates the _dt_since_lastoutput internal variable if the data
@@ -6864,7 +7850,7 @@ here are those required by prepare_for_model_run() for an outputter</p>
 If None, it will use the one already set up.</li>
 <li><strong>uncertain</strong> (<em>bool</em>) &#8211; is there uncertain data to write. Used by
 NetCDFOutput to setup attributes for uncertain data file</li>
-<li><strong>spills</strong> (<em>This is the Model&#8217;s spills attribute which refers to the
+<li><strong>spills</strong> (<em>This is the Model's spills attribute which refers to the
 SpillContainerPair object</em>) &#8211; SpillContainerPair object containing spill information
 Used by both the NetCDFOutput and by GeoJson to obtain spill_id
 from spill_num</li>
@@ -6883,22 +7869,19 @@ from spill_num</li>
 <em class="property">class </em><code class="descclassname">gnome.outputters.</code><code class="descname">Renderer</code><span class="sig-paren">(</span><em>map_filename=None, output_dir='./', image_size=(800, 600), projection=None, viewport=None, map_BB=None, land_polygons=None, draw_back_to_fore=True, draw_map_bounds=False, draw_spillable_area=False, cache=None, output_timestep=None, output_zero_step=True, output_last_step=True, draw_ontop='forecast', name=None, on=True, formats=['png', 'gif'], timestamp_attrib={}, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/renderer.html#Renderer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.Renderer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.outputter.Outputter</span></code>, <a class="reference internal" href="#gnome.utilities.map_canvas.MapCanvas" title="gnome.utilities.map_canvas.MapCanvas"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.map_canvas.MapCanvas</span></code></a></p>
 <p>Map Renderer</p>
-<dl class="docutils">
-<dt>class that writes map images for GNOME results:</dt>
-<dd>writes the frames for the LE &#8220;movies&#8221;, etc.</dd>
-</dl>
+<p>class that writes map images for GNOME results.</p>
+<p>Writes the frames for the LE &#8220;movies&#8221;, etc.</p>
 <p>Init the image renderer.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>map_filename=None</strong> &#8211; name of file for basemap (BNA)</li>
-<li><strong>output_dir='./'</strong> &#8211; directory to output the images</li>
-<li><strong>600)</strong> (<em>image_size=(800,</em>) &#8211; size of images to output</li>
+<li><strong>map_filename=None</strong> (<em>str</em>) &#8211; name of file for basemap (BNA)</li>
+<li><strong>output_dir='./'</strong> (<em>str</em>) &#8211; directory to output the images</li>
+<li><strong>image_size=(800, 600)</strong> (<em>2-tuple</em>) &#8211; size of images to output</li>
 <li><strong>projection=None</strong> &#8211; projection instance to use:
-if None, set to
-projections.FlatEarthProjection()</li>
+if None, set to projections.FlatEarthProjection()</li>
 <li><strong>viewport</strong> (<em>pair of (lon, lat) tuples ( lower_left, upper right )</em>) &#8211; viewport of map &#8211; what gets drawn and on what scale.
 Default is full globe: (((-180, -90), (180, 90)))</li>
 <li><strong>map_BB=None</strong> &#8211; bounding box of map if None, it will use the
@@ -6917,7 +7900,7 @@ the images each time step.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>cache</strong> &#8211; sets the cache object from which to read data. The model
+<li><strong>cache</strong> &#8211; sets the cache object from which to read prop. The model
 will automatically set this param</li>
 <li><strong>output_timestep</strong> (<em>timedelta object</em>) &#8211; default is None in which case everytime the
 write_output is called, output is written. If set, then output is
@@ -6963,20 +7946,19 @@ should be set.</p>
 <code class="descname">set_timestamp_attrib</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/renderer.html#Renderer.set_timestamp_attrib"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.Renderer.set_timestamp_attrib" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to set details of the timestamp&#8217;s appearance when printed.
 These details are stored as a dict.</p>
-<p>Recognized attributes:
-:param on: Turn the draw function on or off
-:type on: Boolean</p>
+<p>Recognized attributes:</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>on</strong> (<em>Boolean</em>) &#8211; Turn the draw function on or off</li>
 <li><strong>dt_format</strong> (<em>String</em>) &#8211; Format string for strftime to format the timestamp</li>
 <li><strong>background</strong> (<em>String</em>) &#8211; Color of the text background.
 Color must be present in foreground palette</li>
 <li><strong>color</strong> (<em>String</em>) &#8211; Color of the font. Note that the color must be present
 in the foreground palette</li>
-<li><strong>size</strong> (<em>One of: (&#8216;tiny&#8217;, &#8216;small&#8217;, &#8216;medium&#8217;, &#8216;large&#8217;, &#8216;giant&#8217;)</em>) &#8211; Size of the font</li>
+<li><strong>size</strong> (<em>One of 'tiny', 'small', 'medium', 'large', 'giant'</em>) &#8211; Size of the font</li>
 <li><strong>position</strong> &#8211; x, y pixel coordinates of where to draw the timestamp.</li>
 </ul>
 </td>
@@ -6988,9 +7970,7 @@ in the foreground palette</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>align</strong> (<em>One of: (&#8216;lt&#8217;(left top), &#8216;ct&#8217;, &#8216;rt&#8217;,
-&#8216;l&#8217;, &#8216;r&#8217;,
-&#8216;rb&#8217;, &#8216;cb&#8217;, &#8216;lb&#8217;)</em>) &#8211; The reference point of the text bounding box.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>align</strong> (<em>One of: ('lt'(left top), 'ct', 'rt','l', 'r','rb', 'cb', 'lb')</em>) &#8211; The reference point of the text bounding box.</td>
 </tr>
 </tbody>
 </table>
@@ -7073,7 +8053,7 @@ is to be output, None otherwise.
 </tbody>
 </table>
 <p>use super to call base class write_output method</p>
-<p>If this is last step, then data is written; otherwise
+<p>If this is last step, then prop is written; otherwise
 prepare_for_model_step determines whether to write the output for
 this step based on output_timestep</p>
 </dd></dl>
@@ -7114,7 +8094,7 @@ then call super to load object</p>
 It inherits from Outputter class and implements the same interface.</p>
 <p>This class is meant to be used within the Model, to be added to list of
 outputters.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">gnome</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">gnome</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">outputters</span> <span class="o">+=</span> <span class="n">gnome</span><span class="o">.</span><span class="n">netcdf_outputter</span><span class="o">.</span><span class="n">NetCDFOutput</span><span class="p">(</span>
 <span class="go">            os.path.join(base_dir,&#39;sample_model.nc&#39;), which_data=&#39;most&#39;)</span>
 </pre></div>
@@ -7190,17 +8170,12 @@ final step is written regardless of output_timestep</li>
 <dt>
 <code class="descname">prepare_for_model_run(model_start_time,</code></dt>
 <dt>
-<code class="descname">cache=None,</code></dt>
-<dt>
-<code class="descname">uncertain=False,</code></dt>
-<dt>
-<code class="descname">spills=None,</code></dt>
+<code class="descname">spills,</code></dt>
 <dt>
 <code class="descname">**kwargs)</code></dt>
 <dd></dd></dl>
 
-<p>Write global attributes and define dimensions and variables for NetCDF
-file.
+<p>Write global attributes and define dimensions and variables for NetCDF file.
 This must be done in prepare_for_model_run because if model _state
 changes, it is rewound and re-run from the beginning.</p>
 <p>If there are existing output files, they are deleted here.</p>
@@ -7210,7 +8185,7 @@ argument cannot follow default argument. Since cache is already 2nd
 positional argument for Renderer object, the required non-default
 arguments must be defined following &#8216;cache&#8217;.</p>
 <p>If uncertainty is on, then SpillContainerPair object contains
-identical _data_arrays in both certain and uncertain SpillContainer&#8217;s,
+identical _data_arrays in both certain and uncertain SpillContainers,
 the data itself is different, but they contain the same type of data
 arrays. If uncertain, then datay arrays for uncertain spill container
 are written to netcdf_filename + &#8216;_uncertain.nc&#8217;</p>
@@ -7454,30 +8429,30 @@ internal variables.</p>
 collection of Features. Each Feature contains a Point object with
 associated properties. Following is the format for a particle - the
 data in &lt;&gt; are the results for each element.</p>
-<div class="highlight-python"><div class="highlight"><pre>{
-&quot;type&quot;: &quot;FeatureCollection&quot;,
-&quot;features&quot;: [
-    {
-        &quot;geometry&quot;: {
-            &quot;type&quot;: &quot;Point&quot;,
-            &quot;coordinates&quot;: [
-                &lt;LONGITUDE&gt;,
-                &lt;LATITUDE&gt;
-            ]
-        },
-        &quot;type&quot;: &quot;Feature&quot;,
-        &quot;id&quot;: &lt;PARTICLE_ID&gt;,
-        &quot;properties&quot;: {
-            &quot;current_time&quot;: &lt;TIME IN SEC SINCE EPOCH&gt;,
-            &quot;status_code&quot;: &lt;&gt;,
-            &quot;spill_id&quot;: &lt;UUID OF SPILL OBJECT THAT RELEASED PARTICLE&gt;,
-            &quot;depth&quot;: &lt;DEPTH&gt;,
-            &quot;spill_type&quot;: &lt;FORECAST OR UNCERTAIN&gt;,
-            &quot;step_num&quot;: &lt;OUTPUT ASSOCIATED WITH THIS STEP NUMBER&gt;
-        }
-    },
-    ...
-}
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;FeatureCollection&quot;</span><span class="p">,</span>
+<span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;geometry&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;Point&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;coordinates&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="o">&lt;</span><span class="n">LONGITUDE</span><span class="o">&gt;</span><span class="p">,</span>
+                <span class="o">&lt;</span><span class="n">LATITUDE</span><span class="o">&gt;</span>
+            <span class="p">]</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;Feature&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">PARTICLE_ID</span><span class="o">&gt;</span><span class="p">,</span>
+        <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;current_time&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">TIME</span> <span class="n">IN</span> <span class="n">SEC</span> <span class="n">SINCE</span> <span class="n">EPOCH</span><span class="o">&gt;</span><span class="p">,</span>
+            <span class="s2">&quot;status_code&quot;</span><span class="p">:</span> <span class="o">&lt;&gt;</span><span class="p">,</span>
+            <span class="s2">&quot;spill_id&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">UUID</span> <span class="n">OF</span> <span class="n">SPILL</span> <span class="n">OBJECT</span> <span class="n">THAT</span> <span class="n">RELEASED</span> <span class="n">PARTICLE</span><span class="o">&gt;</span><span class="p">,</span>
+            <span class="s2">&quot;depth&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">DEPTH</span><span class="o">&gt;</span><span class="p">,</span>
+            <span class="s2">&quot;spill_type&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">FORECAST</span> <span class="n">OR</span> <span class="n">UNCERTAIN</span><span class="o">&gt;</span><span class="p">,</span>
+            <span class="s2">&quot;step_num&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">OUTPUT</span> <span class="n">ASSOCIATED</span> <span class="n">WITH</span> <span class="n">THIS</span> <span class="n">STEP</span> <span class="n">NUMBER</span><span class="o">&gt;</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="o">...</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
@@ -7519,115 +8494,59 @@ the same for all outputters, define <a href="#id1"><span class="problematic" id=
 </dd></dl>
 
 <dl class="class">
-<dt id="gnome.outputters.CurrentGeoJsonOutput">
-<em class="property">class </em><code class="descclassname">gnome.outputters.</code><code class="descname">CurrentGeoJsonOutput</code><span class="sig-paren">(</span><em>current_movers</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/geo_json.html#CurrentGeoJsonOutput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.CurrentGeoJsonOutput" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.outputter.Outputter</span></code>, <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
-<p>Class that outputs GNOME current velocity results for each current mover
-in a geojson format.  The output is a collection of Features.
-Each Feature contains a Point object with associated properties.
-Following is the output format - the data in &lt;&gt; are the results
-for each element.</p>
-<div class="highlight-python"><div class="highlight"><pre>{
- &quot;time_stamp&quot;: &lt;TIME IN ISO FORMAT&gt;,
- &quot;step_num&quot;: &lt;OUTPUT ASSOCIATED WITH THIS STEP NUMBER&gt;,
- &quot;feature_collections&quot;: {&lt;mover_id&gt;: {&quot;type&quot;: &quot;FeatureCollection&quot;,
-                                      &quot;features&quot;: [{&quot;type&quot;: &quot;Feature&quot;,
-                                                    &quot;id&quot;: &lt;PARTICLE_ID&gt;,
-                                                    &quot;properties&quot;: {&quot;velocity&quot;: [u, v]
-                                                                   },
-                                                    &quot;geometry&quot;: {&quot;type&quot;: &quot;Point&quot;,
-                                                                 &quot;coordinates&quot;: [&lt;LONG&gt;, &lt;LAT&gt;]
-                                                                 },
-                                                },
-                                                ...
-                                               ],
-                                  },
-                     ...
-                     }
-}
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>current_movers</strong> (<em>list</em>) &#8211; A list or collection of current grid mover
-objects.</td>
-</tr>
-</tbody>
-</table>
-<p>use super to pass optional **kwargs to base class __init__ method</p>
-<dl class="method">
-<dt id="gnome.outputters.CurrentGeoJsonOutput.write_output">
-<code class="descname">write_output</code><span class="sig-paren">(</span><em>step_num</em>, <em>islast_step=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/geo_json.html#CurrentGeoJsonOutput.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.CurrentGeoJsonOutput.write_output" title="Permalink to this definition">¶</a></dt>
-<dd><p>dump data in geojson format</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.outputters.CurrentGeoJsonOutput.get_unique_velocities">
-<code class="descname">get_unique_velocities</code><span class="sig-paren">(</span><em>velocities</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/geo_json.html#CurrentGeoJsonOutput.get_unique_velocities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.CurrentGeoJsonOutput.get_unique_velocities" title="Permalink to this definition">¶</a></dt>
-<dd><p>In order to make numpy perform this function fast, we will use a
-contiguous structured array using a view of a void type that
-joins the whole row into a single item.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.outputters.CurrentGeoJsonOutput.rewind">
-<code class="descname">rewind</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/geo_json.html#CurrentGeoJsonOutput.rewind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.CurrentGeoJsonOutput.rewind" title="Permalink to this definition">¶</a></dt>
-<dd><p>remove previously written files</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.outputters.CurrentGeoJsonOutput.current_movers_to_dict">
-<code class="descname">current_movers_to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/geo_json.html#CurrentGeoJsonOutput.current_movers_to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.CurrentGeoJsonOutput.current_movers_to_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>a dict containing &#8216;obj_type&#8217; and &#8216;id&#8217; for each object in
-list/collection</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
 <dt id="gnome.outputters.IceGeoJsonOutput">
 <em class="property">class </em><code class="descclassname">gnome.outputters.</code><code class="descname">IceGeoJsonOutput</code><span class="sig-paren">(</span><em>ice_movers</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/geo_json.html#IceGeoJsonOutput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.IceGeoJsonOutput" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.outputter.Outputter</span></code>, <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.outputter.Outputter</span></code></p>
 <p>Class that outputs GNOME ice velocity results for each ice mover
 in a geojson format.  The output is a collection of Features.
 Each Feature contains a Point object with associated properties.
 Following is the output format - the data in &lt;&gt; are the results
 for each element.</p>
-<div class="highlight-python"><div class="highlight"><pre>{
- &quot;time_stamp&quot;: &lt;TIME IN ISO FORMAT&gt;,
- &quot;step_num&quot;: &lt;OUTPUT ASSOCIATED WITH THIS STEP NUMBER&gt;,
- &quot;feature_collections&quot;: {&lt;mover_id&gt;: {&quot;type&quot;: &quot;FeatureCollection&quot;,
-                                      &quot;features&quot;: [{&quot;type&quot;: &quot;Feature&quot;,
-                                                    &quot;id&quot;: &lt;PARTICLE_ID&gt;,
-                                                    &quot;properties&quot;: {&quot;ice_fraction&quot;: &lt;FRACTION&gt;,
-                                                                   &quot;ice_thickness&quot;: &lt;METERS&gt;,
-                                                                   &quot;water_velocity&quot;: [u, v],
-                                                                   &quot;ice_velocity&quot;: [u, v]
-                                                                   },
-                                                    &quot;geometry&quot;: {&quot;type&quot;: &quot;Point&quot;,
-                                                                 &quot;coordinates&quot;: [&lt;LONG&gt;, &lt;LAT&gt;]
-                                                                 },
-                                                    },
-                                                    ...
-                                                   ],
-                                      },
-                         ...
-                         }
-}
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
 </pre></div>
 </div>
+<blockquote>
+<div><p>&#8220;time_stamp&#8221;: &lt;TIME IN ISO FORMAT&gt;,
+&#8220;step_num&#8221;: &lt;OUTPUT ASSOCIATED WITH THIS STEP NUMBER&gt;,
+&#8220;feature_collections&#8221;: {&lt;mover_id&gt;: {&#8220;type&#8221;: &#8220;FeatureCollection&#8221;,</p>
+<blockquote>
+<div><blockquote>
+<div><dl class="docutils">
+<dt>&#8220;features&#8221;: [{&#8220;type&#8221;: &#8220;Feature&#8221;,</dt>
+<dd><blockquote class="first">
+<div><p>&#8220;id&#8221;: &lt;PARTICLE_ID&gt;,
+&#8220;properties&#8221;: {&#8220;ice_fraction&#8221;: &lt;FRACTION&gt;,</p>
+<blockquote>
+<div>&#8220;ice_thickness&#8221;: &lt;METERS&gt;,
+&#8220;water_velocity&#8221;: [u, v],
+&#8220;ice_velocity&#8221;: [u, v]
+},</div></blockquote>
+<dl class="docutils">
+<dt>&#8220;geometry&#8221;: {&#8220;type&#8221;: &#8220;Point&#8221;,</dt>
+<dd>&#8220;coordinates&#8221;: [&lt;LONG&gt;, &lt;LAT&gt;]
+},</dd>
+</dl>
+</div></blockquote>
+<p class="last">],</p>
+</dd>
+</dl>
+<p>},</p>
+</div></blockquote>
+<p>...
+}</p>
+</div></blockquote>
+</div></blockquote>
+<p>}</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>current_movers</strong> (<em>list</em>) &#8211; A list or collection of current grid mover
-objects.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ice_movers</strong> (<em>An ice_mover object or sequence of ice_mover
+objects.</em>) &#8211; ice_movers associated with this outputter.</td>
 </tr>
 </tbody>
 </table>
-<p>use super to pass optional **kwargs to base class __init__ method</p>
+<p>Use super to pass optional **kwargs to base class __init__ method</p>
 <dl class="method">
 <dt id="gnome.outputters.IceGeoJsonOutput.write_output">
 <code class="descname">write_output</code><span class="sig-paren">(</span><em>step_num</em>, <em>islast_step=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/geo_json.html#IceGeoJsonOutput.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.IceGeoJsonOutput.write_output" title="Permalink to this definition">¶</a></dt>
@@ -7640,15 +8559,6 @@ objects.</td>
 <dd><p>In order to make numpy perform this function fast, we will use a
 contiguous structured array using a view of a void type that
 joins the whole row into a single item.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.outputters.IceGeoJsonOutput.get_triangles">
-<code class="descname">get_triangles</code><span class="sig-paren">(</span><em>mover</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/geo_json.html#IceGeoJsonOutput.get_triangles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.IceGeoJsonOutput.get_triangles" title="Permalink to this definition">¶</a></dt>
-<dd><p>The triangle data that we get from the mover is in the form of
-indices into the points array.
-So we get our triangle data and points array, and then build our
-triangle coordinates by reference.</p>
 </dd></dl>
 
 <dl class="method">
@@ -7993,8 +8903,8 @@ in the list</p>
 <code class="descname">to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/orderedcollection.html#OrderedCollection.to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.orderedcollection.OrderedCollection.to_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method takes the instance of ordered collection and outputs a list of
 dicts, each with two fields:</p>
-<div class="highlight-python"><div class="highlight"><pre>{obj_type: object type &lt;module.class&gt;,
-id: IDs of each object}
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">obj_type</span><span class="p">:</span> <span class="nb">object</span> <span class="nb">type</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">.</span><span class="n">class</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="nb">id</span><span class="p">:</span> <span class="n">IDs</span> <span class="n">of</span> <span class="n">each</span> <span class="nb">object</span><span class="p">}</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -8098,8 +9008,7 @@ custom serialize/deserialize &#8211; but do this for now</p>
 <dl class="attribute">
 <dt id="gnome.utilities.map_canvas.MapCanvas.viewport">
 <code class="descname">viewport</code><a class="headerlink" href="#gnome.utilities.map_canvas.MapCanvas.viewport" title="Permalink to this definition">¶</a></dt>
-<dd><p>returns the current value of viewport of map:
-the bounding box of the image</p>
+<dd><p><em>returns the current value of viewport of map</em> &#8211; the bounding box of the image</p>
 </dd></dl>
 
 <dl class="method">
@@ -8267,13 +9176,13 @@ into one)</em>) &#8211; sequence of points</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>text_list</strong> (<em>[&#8216;string&#8217;, (lon, lat)]</em>) &#8211; sequence of strings to be printed, and the locations
+<li><strong>text_list</strong> (<em>['string', (lon, lat)]</em>) &#8211; sequence of strings to be printed, and the locations
 they are to be located</li>
 <li><strong>size</strong> (<em>one of the following strings:
-{&#8216;tiny&#8217;, &#8216;small&#8217;, &#8216;medium&#8217;, &#8216;large&#8217;, &#8216;giant&#8217;}</em>) &#8211; size of the text to be printed</li>
+{'tiny', 'small', 'medium', 'large', 'giant'}</em>) &#8211; size of the text to be printed</li>
 <li><strong>color</strong> (<em>a valid color string in the py_gd Image color palettes</em>) &#8211; color of the text to be printed</li>
 <li><strong>align</strong> (<em>one of the following strings:
-{&#8216;lt&#8217;, &#8216;ct&#8217;, &#8216;rt&#8217;, &#8216;r&#8217;, &#8216;rb&#8217;, &#8216;cb&#8217;, &#8216;lb&#8217;, &#8216;l&#8217;}</em>) &#8211; sets the principal point of the text bounding box.</li>
+{'lt', 'ct', 'rt', 'r', 'rb', 'cb', 'lb', 'l'}</em>) &#8211; sets the principal point of the text bounding box.</li>
 </ul>
 </td>
 </tr>
@@ -8298,10 +9207,29 @@ they are to be located</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<em>string</em>) &#8211; full path of file to be saved to</li>
-<li><strong>draw_back_to_fore=True</strong> &#8211; whether to add the background image
-to the foreground before saving.</li>
 <li><strong>file_type</strong> (<em>one of the following:
-{&#8216;png&#8217;, &#8216;gif&#8217;, &#8216;jpeg&#8217;, &#8216;bmp&#8217;}</em>) &#8211; type of file to save</li>
+{'png', 'gif', 'jpeg', 'bmp'}</em>) &#8211; type of file to save</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.utilities.map_canvas.MapCanvas.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>filename</em>, <em>file_type='png'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/map_canvas.html#MapCanvas.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.map_canvas.MapCanvas.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>save the map image to the specified filename</p>
+<p>This copies the foreground image on top of the
+background image and saves teh whole thing.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<em>string</em>) &#8211; full path of file to be saved to</li>
+<li><strong>file_type</strong> (<em>one of the following:
+{'png', 'gif', 'jpeg', 'bmp'}</em>) &#8211; type of file to save</li>
 </ul>
 </td>
 </tr>
@@ -8466,6 +9394,27 @@ NOTE: Bounding box takes precedence over any previous parameters</p>
 <dt>NOTE: all coordinates are takes as (lon, lat, depth)</dt>
 <dd>even though depth is always ignored</dd>
 </dl>
+<dl class="function">
+<dt id="gnome.utilities.projections.to_2d_coords">
+<code class="descclassname">gnome.utilities.projections.</code><code class="descname">to_2d_coords</code><span class="sig-paren">(</span><em>coords</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#to_2d_coords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.to_2d_coords" title="Permalink to this definition">¶</a></dt>
+<dd><p>utility function to take whatever the heck someone may pass in
+for coordinates and make it an Nx2 array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>input</strong> &#8211; the input coordinates. they should be one of:
+a (lon, lat) pair
+a (lon, lat, depth) triple
+a Nx2 array-like object of (lon,lat) pairs
+a Nx3 array-like object of (lon, lat, depth) triples</td>
+</tr>
+</tbody>
+</table>
+<p>The depth is ignored in all cases</p>
+<p>This is probably overly convenient, but the legacy is there...</p>
+</dd></dl>
+
 <dl class="class">
 <dt id="gnome.utilities.projections.NoProjection">
 <em class="property">class </em><code class="descclassname">gnome.utilities.projections.</code><code class="descname">NoProjection</code><span class="sig-paren">(</span><em>bounding_box=None</em>, <em>image_size=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#NoProjection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.NoProjection" title="Permalink to this definition">¶</a></dt>
@@ -8483,15 +9432,15 @@ NOTE: Bounding box takes precedence over any previous parameters</p>
 <dl class="method">
 <dt id="gnome.utilities.projections.NoProjection.to_pixel">
 <code class="descname">to_pixel</code><span class="sig-paren">(</span><em>coords</em>, <em>asint=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#NoProjection.to_pixel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.NoProjection.to_pixel" title="Permalink to this definition">¶</a></dt>
-<dd><p>returns the same (lon, lat) coords, but as an np.array, if they aren&#8217;t already</p>
+<dd><p>returns the same (lon, lat) coords, but as an np.array, if they aren&#8217;t
+already</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>coords</strong> &#8211; &#8211; the coords to project (Nx3 numpy array or compatible sequence)
-(lon, lat, depth)</li>
-<li><strong>asint</strong> &#8211; &#8211; flag to set whether to convert to a integer or not
+<li><strong>coords</strong> (<em>Nx3 numpy array or compatible sequence (lon, lat, depth)</em>) &#8211; The coords to project</li>
+<li><strong>asint</strong> &#8211; Flag to set whether to convert to a integer or not
 default is to leave it as the same type it came in,
 so you can have fractional pixels</li>
 </ul>
@@ -8510,10 +9459,8 @@ so you can have fractional pixels</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>coords</strong> &#8211; &#8211; the coords to project
-(Nx2 numpy array or compatible sequence)
-(lon, lat)</li>
-<li><strong>asint</strong> &#8211; &#8211; flag to set whether to convert to a integer or not
+<li><strong>coords</strong> (<em>Nx2 numpy array or compatible sequence (lon, lat)</em>) &#8211; The coords to project</li>
+<li><strong>asint</strong> &#8211; flag to set whether to convert to a integer or not
 default is to leave it as the same type it came in,
 so you can have fractional pixels</li>
 </ul>
@@ -8536,36 +9483,27 @@ if they aren&#8217;t already</p>
 <dt id="gnome.utilities.projections.GeoProjection">
 <em class="property">class </em><code class="descclassname">gnome.utilities.projections.</code><code class="descname">GeoProjection</code><span class="sig-paren">(</span><em>bounding_box=None</em>, <em>image_size=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#GeoProjection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.GeoProjection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>This acts as the base class for a projection</p>
+<p>This acts as the base class for other projections</p>
 <p>This one doesn&#8217;t really project, but does convert to pixel coords
 i.e. &#8220;geo-coordinates&#8221;</p>
-<p>create a new projection</p>
+<p>Create a new projection</p>
 <p>Projection(bounding_box, image_size)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>bounding_box</strong> &#8211; <p>the bounding box of the map:
-( (min_long, min_lat),</p>
-<blockquote>
-<div>(max_lon,  max_lat) )</div></blockquote>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>bounding_box</strong> &#8211; The bounding box of the map</li>
+<li><strong>image_size</strong> (<em>Struct of the form (width, height)</em>) &#8211; The size of the map image</li>
+</ul>
 </td>
-</tr>
-</tbody>
-</table>
-<p>(or a BoundingBox Object)</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>image_size</strong> &#8211; the size of the map image &#8211; (width, height)</td>
 </tr>
 </tbody>
 </table>
 <dl class="method">
 <dt id="gnome.utilities.projections.GeoProjection.set_scale">
 <code class="descname">set_scale</code><span class="sig-paren">(</span><em>bounding_box</em>, <em>image_size=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#GeoProjection.set_scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.GeoProjection.set_scale" title="Permalink to this definition">¶</a></dt>
-<dd><p>set the scaling, etc. of the projection</p>
+<dd><p>Set the scaling, etc. of the projection</p>
 <p>This should be called whenever the bounding box of the map,
 or the size of the image is changed</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -8573,12 +9511,9 @@ or the size of the image is changed</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>bounding_box</strong> &#8211; <p>bounding box of the visual portion of the map
-in the form:  ( (min_long, min_lat),</p>
-<blockquote>
-<div>(max_long, max_lat) )</div></blockquote>
-</li>
-<li><strong>image_size=None</strong> &#8211; the size of the image that will be drawn to.
+<li><strong>bounding_box</strong> (<em>Struct of the form: ((min_long, min_lat),
+(max_long, max_lat))</em>) &#8211; bounding box of the visual portion of the map</li>
+<li><strong>image_size=None</strong> &#8211; The size of the image that will be drawn to.
 if not given, the previous size will be used.</li>
 </ul>
 </td>
@@ -8590,47 +9525,38 @@ if not given, the previous size will be used.</li>
 <dl class="method">
 <dt id="gnome.utilities.projections.GeoProjection.to_pixel">
 <code class="descname">to_pixel</code><span class="sig-paren">(</span><em>coords</em>, <em>asint=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#GeoProjection.to_pixel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.GeoProjection.to_pixel" title="Permalink to this definition">¶</a></dt>
-<dd><p>converts input coordinates to pixel coords</p>
-<p>param: coords &#8211;  an array of coordinates &#8211; NX3:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="p">(</span> <span class="p">(</span><span class="n">long1</span><span class="p">,</span> <span class="n">lat1</span><span class="p">,</span> <span class="n">z1</span><span class="p">),</span>
-  <span class="p">(</span><span class="n">long2</span><span class="p">,</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">z2</span><span class="p">),</span>
-  <span class="p">(</span><span class="n">long3</span><span class="p">,</span> <span class="n">lat3</span><span class="p">,</span> <span class="n">z3</span><span class="p">),</span>
-   <span class="o">...</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>(z is ignored, and there is no z in the returned array)</p>
-<p>returns:  the pixel coords as a similar Nx2 array of integer x,y coordinates
-(using the y = 0 at the top, and y increasing down)</p>
+<dd><p>Converts input coordinates to pixel coords</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> &#8211; An array of coordinates</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The pixel coords as a similar Nx2 array of integer
+x,y coordinates
+(using the y = 0 at the top, and y increasing down)</td>
+</tr>
+</tbody>
+</table>
 <dl class="docutils">
-<dt>NOTE: the values between the minimum of a pixel value to less than the</dt>
+<dt>NOTE: The values between the minimum of a pixel value to less than the</dt>
 <dd>max of a pixel range are in that pixel, so  a point exactly at
 the minimum of the bounding box will be in the zeroth pixel, but
-a point  exactly at the max of the bounding box will be considered
-outside the map</dd>
+a point  exactly at the max of the bounding box will be
+considered outside the map</dd>
 </dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="gnome.utilities.projections.GeoProjection.to_pixel_2D">
 <code class="descname">to_pixel_2D</code><span class="sig-paren">(</span><em>coords</em>, <em>asint=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#GeoProjection.to_pixel_2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.GeoProjection.to_pixel_2D" title="Permalink to this definition">¶</a></dt>
-<dd><p>same as to_pixel, but expects only (lon, lat) coords as input.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>coords</strong> &#8211; &#8211; the coords to project
-(Nx2 numpy array or compatible sequence)
-(lon, lat)</li>
-<li><strong>asint</strong> &#8211; &#8211; flag to set whether to convert to a integer or not
-default is to leave it as the same type it came in,
-so you can have fractional pixels</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
+<dd><p># Fixme: depreciated, as we have to_2d_coords</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.utilities.projections.GeoProjection.to_pixel_multipoint">
+<code class="descname">to_pixel_multipoint</code><span class="sig-paren">(</span><em>coords</em>, <em>asint=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#GeoProjection.to_pixel_multipoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.GeoProjection.to_pixel_multipoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>does the to_pixel operation, but on a generic shaped array</p>
 </dd></dl>
 
 <dl class="method">
@@ -8641,47 +9567,20 @@ so you can have fractional pixels</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> &#8211; <ul>
-<li>an array of pixel coordinates (usually integer type)
-NX2: ( (long1, lat1),<blockquote>
-<div><blockquote>
-<div><blockquote>
-<div>(long2, lat2),
-(long3, lat3),</div></blockquote>
-</div></blockquote>
-<p>)</p>
-</div></blockquote>
-</li>
-</ul>
-<p>(as produced by to_pixel)</p>
-</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> &#8211; An array of pixel coordinates (usually integer type</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The pixel coords as a similar Nx2 array of floating point
+x,y coordinates
+(using the y = 0 at the top, and y increasing down)</td>
 </tr>
 </tbody>
 </table>
 <p>NOTE: there is not depth in input &#8211; pixels are always 2-d!</p>
-<p>Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.
-If the input is integers, a 0.5 is added to &#8220;shift&#8221; the location to mid-pixel.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">the pixel coords as a similar Nx2 array of floating point x,y coordinates</td>
-</tr>
-</tbody>
-</table>
-<p>(using the y = 0 at the top, and y increasing down)</p>
-<p>Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.
-If the input is integers, a 0.5 is added to &#8220;shift&#8221; the location to
-mid-pixel.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">the pixel coords as a similar Nx2 array of floating point
-x,y coordinates (using the y = 0 at the top, and y increasing down)</td>
-</tr>
-</tbody>
-</table>
+<dl class="docutils">
+<dt>NOTE: to_lonlat(to_pixel(coords)) != coords, due to rounding.</dt>
+<dd>If the input is integers, a 0.5 is added to &#8220;shift&#8221; the location
+to mid-pixel.</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -8696,59 +9595,49 @@ x,y coordinates (using the y = 0 at the top, and y increasing down)</td>
 <p>not conforming to equal area, distance, bearing, or any other nifty
 map properties &#8211; but easy to compute, and it looks OK.</p>
 </div></blockquote>
-<p>create a new projection</p>
+<p>Create a new projection</p>
 <p>Projection(bounding_box, image_size)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>bounding_box</strong> &#8211; <p>the bounding box of the map:
-( (min_long, min_lat),</p>
-<blockquote>
-<div>(max_lon,  max_lat) )</div></blockquote>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>bounding_box</strong> &#8211; The bounding box of the map</li>
+<li><strong>image_size</strong> (<em>Struct of the form (width, height)</em>) &#8211; The size of the map image</li>
+</ul>
 </td>
-</tr>
-</tbody>
-</table>
-<p>(or a BoundingBox Object)</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>image_size</strong> &#8211; the size of the map image &#8211; (width, height)</td>
 </tr>
 </tbody>
 </table>
 <dl class="staticmethod">
 <dt id="gnome.utilities.projections.FlatEarthProjection.meters_to_lonlat">
 <em class="property">static </em><code class="descname">meters_to_lonlat</code><span class="sig-paren">(</span><em>meters</em>, <em>ref_positions</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#FlatEarthProjection.meters_to_lonlat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.FlatEarthProjection.meters_to_lonlat" title="Permalink to this definition">¶</a></dt>
-<dd><p>Converts from delta meters to delta latitude-longitude, using the Flat-Earth projection.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>meters</strong> &#8211; NX3 numpy array of (dx, dy, dz) distances in meters (dz is passed through untouched)</li>
-<li><strong>ref_positions</strong> &#8211; NX3, numpy array of reference positions in degrees (Only lat is used here)</li>
-<li><strong>meters</strong> &#8211; NX3 numpy array of (dx, dy, dz) distances in meters
-(dz is passed through untouched)</li>
-<li><strong>ref_positions</strong> &#8211; NX3, numpy array of reference positions
-in degrees (Only lat is used here)</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name" colspan="2">Returns delta_lon_lat:</th></tr>
-<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first last">Nx3 numpy array of
-(delta-lon, delta-lat, delta-z) triples</p>
-</td>
-</tr>
-</tbody>
-</table>
+<dd><p>Converts from delta meters to delta latitude-longitude,
+using the Flat-Earth projection.</p>
 <p>dlat = dy * 8.9992801e-06
 dlon = dy * 8.9992801e-06 * cos(ref_lat)
 (based on previous GNOME value: and/or average radius of the earth of</p>
 <blockquote>
 <div>6366706.989  m)</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>meters</strong> (<em>NX3 numpy array of (dx, dy, dz)
+(dz is passed through untouched)</em>) &#8211; Distances in meters</li>
+<li><strong>ref_positions</strong> (<em>NX3, numpy array (Only lat is used here)</em>) &#8211; Reference positions in degrees</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns delta_lon_lat:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first last">Differential (delta) positional values
+Nx3 numpy array of
+(delta-lon, delta-lat, delta-z)</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="staticmethod">
@@ -8757,34 +9646,35 @@ dlon = dy * 8.9992801e-06 * cos(ref_lat)
 <dd><p>Converts from delta longitude-latitude to delta meters, using the
 Flat-Earth projection. This should be a reversal of meters_to_latlon.</p>
 <p>This function mainly used for testing</p>
+<p>dy = dlon / 8.9992801e-06
+dx = dlat / ( 8.9992801e-06 * cos(ref_lat) )</p>
+<dl class="docutils">
+<dt>(based on previous GNOME value: and/or average radius of the earth</dt>
+<dd>of 6366706.989 m)</dd>
+<dt>NOTE: the input is in units of longitude and latitude, but they are</dt>
+<dd>relative &#8211; no absolute &#8211; so 0 means zero distance,
+not on the equator</dd>
+</dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lon_lat</strong> &#8211; NX3 numpy array of (dlon, dlat, dz) distances in meters
-(dz is passed through untouched)</li>
-<li><strong>ref_positions</strong> &#8211; NX3, numpy array of (lon,lat,z)
-reference positions in degrees
-(Only lat is used here)</li>
+<li><strong>lon_lat</strong> (<em>NX3 numpy array of (dlon, dlat, dz)
+(dz is passed through untouched)</em>) &#8211; Distances in meters</li>
+<li><strong>ref_positions</strong> (<em>NX3, numpy array of (lon,lat,z)
+(Only lat is used here)</em>) &#8211; Reference positions in degrees</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name" colspan="2">Returns delta_meters:</th></tr>
-<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first last">Nx3 numpy array of (delta-x, delta-y, delta-z)
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first last">Differential (delta) positional values in meters
+Nx3 numpy array of (delta-x, delta-y, delta-z)
 triples</p>
 </td>
 </tr>
 </tbody>
 </table>
-<dl class="docutils">
-<dt>NOTE: the input is in units of longitude and latitude, but they are</dt>
-<dd>relative &#8211; no absolute &#8211; so 0 means zero distance,
-not on the equator</dd>
-</dl>
-<p>dy = dlon / 8.9992801e-06
-dx = dlat / ( 8.9992801e-06 * cos(ref_lat) )</p>
-<p>(based on previous GNOME value: and/or average radius of the earth of 6366706.989  m)</p>
 </dd></dl>
 
 <dl class="staticmethod">
@@ -8812,7 +9702,10 @@ assuming a spherical earth. Similar to how GNOME does it.</p>
 </tbody>
 </table>
 <p>Code from Brian Zelenke</p>
-<p>NOTE: performance could be improved a lot here if need be (lots of data copies)</p>
+<dl class="docutils">
+<dt>NOTE: performance could be improved a lot here if need be</dt>
+<dd>(lots of data copies)</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -8826,11 +9719,8 @@ or the size of the image is changed</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>bounding_box</strong> &#8211; <p>bounding box of the visual portion of the map
-in the form:  ( (min_long, min_lat),</p>
-<blockquote>
-<div>(max_long, max_lat) )</div></blockquote>
-</li>
+<li><strong>bounding_box</strong> (<em>Structure of the form: ((min_long, min_lat),
+(max_long, max_lat))</em>) &#8211; bounding box of the visual portion of the map</li>
 <li><strong>image_size=None</strong> &#8211; the size of the image that will be drawn to.
 if not given, the previous size will be used.</li>
 </ul>
@@ -8846,13 +9736,13 @@ if not given, the previous size will be used.</li>
 <dt id="gnome.utilities.projections.RectangularGridProjection">
 <em class="property">class </em><code class="descclassname">gnome.utilities.projections.</code><code class="descname">RectangularGridProjection</code><span class="sig-paren">(</span><em>longitude</em>, <em>latitude</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#RectangularGridProjection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.RectangularGridProjection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.utilities.projections.NoProjection" title="gnome.utilities.projections.NoProjection"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.projections.NoProjection</span></code></a></p>
-<p>projection for lat-lon to pixel and back for a rectangular but not regular
+<p>Projection for lat-lon to pixel and back for a rectangular but not regular
 grid.</p>
 <dl class="docutils">
-<dt>i.e a rectangular grid that can be defined by a single vector each of</dt>
+<dt>i.e. a rectangular grid that can be defined by a single vector each of</dt>
 <dd>latitude and longitude</dd>
 </dl>
-<p>This is a totally different type of projection &#8211; it requires a linear
+<p>This is a totally different type of projection.  It requires a linear
 interpolation for the latitude and longitude.</p>
 <p>Primarily used for making a raster land-water map from a non-regular
 rectangular grid.</p>
@@ -8869,8 +9759,8 @@ rectangular grid.</p>
 </tr>
 </tbody>
 </table>
-<p>It is assumed that the largest and smallest
-values define the bounds of the raster.</p>
+<p>It is assumed that the largest and smallest values define the
+bounds of the raster.</p>
 <dl class="method">
 <dt id="gnome.utilities.projections.RectangularGridProjection.set_scale">
 <code class="descname">set_scale</code><span class="sig-paren">(</span><em>bounding_box</em>, <em>image_size=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#RectangularGridProjection.set_scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.RectangularGridProjection.set_scale" title="Permalink to this definition">¶</a></dt>
@@ -8880,15 +9770,15 @@ values define the bounds of the raster.</p>
 <dl class="method">
 <dt id="gnome.utilities.projections.RectangularGridProjection.to_pixel">
 <code class="descname">to_pixel</code><span class="sig-paren">(</span><em>coords</em>, <em>asint=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#RectangularGridProjection.to_pixel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.RectangularGridProjection.to_pixel" title="Permalink to this definition">¶</a></dt>
-<dd><p>returns the pixel coordintes in the gird for teh given lat-lon location.</p>
+<dd><p>Returns the pixel coordinates in the grid for the given
+lat-lon location.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>coords</strong> &#8211; &#8211; the coords to project (Nx3 numpy array or compatible sequence)
-(lon, lat, depth)</li>
-<li><strong>asint</strong> &#8211; &#8211; flag to set whether to convert to a integer or not
+<li><strong>coords</strong> (<em>Nx3 numpy array or compatible sequence (lon, lat, depth)</em>) &#8211; The coords to project</li>
+<li><strong>asint</strong> &#8211; Flag to set whether to convert to a integer or not
 default is to leave it as the same type it came in,
 so you can have fractional pixels</li>
 </ul>
@@ -8907,10 +9797,8 @@ so you can have fractional pixels</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>coords</strong> &#8211; &#8211; the coords to project
-(Nx2 numpy array or compatible sequence)
-(lon, lat)</li>
-<li><strong>asint</strong> &#8211; &#8211; flag to set whether to convert to a integer or not
+<li><strong>coords</strong> (<em>Nx2 numpy array or compatible sequence (lon, lat)</em>) &#8211; The coords to project</li>
+<li><strong>asint</strong> &#8211; Flag to set whether to convert to a integer or not
 default is to leave it as the same type it came in,
 so you can have fractional pixels</li>
 </ul>
@@ -8923,32 +9811,25 @@ so you can have fractional pixels</li>
 <dl class="method">
 <dt id="gnome.utilities.projections.RectangularGridProjection.to_lonlat">
 <code class="descname">to_lonlat</code><span class="sig-paren">(</span><em>coords</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#RectangularGridProjection.to_lonlat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.RectangularGridProjection.to_lonlat" title="Permalink to this definition">¶</a></dt>
-<dd><p>converts pixel coords to long-lat coords</p>
-<dl class="docutils">
-<dt>param: coords  - an array of pixel coordinates (usually integer type)</dt>
-<dd><blockquote class="first">
-<div><dl class="docutils">
-<dt>NX2: ( (long1, lat1),</dt>
-<dd><blockquote class="first">
-<div><blockquote>
-<div>(long2, lat2),
-(long3, lat3),</div></blockquote>
-</div></blockquote>
-<p class="last">)</p>
-</dd>
-</dl>
-</div></blockquote>
-<p class="last">(as produced by to_pixel)</p>
-</dd>
-</dl>
+<dd><p>Converts pixel coords to long-lat coords</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> &#8211; An array of pixel coordinates (as produced by to_pixel)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the pixel coords as a similar Nx2 array of floating point
+x,y coordinates
+(using the y = 0 at the top, and y increasing down)</td>
+</tr>
+</tbody>
+</table>
 <p>NOTE: there is not depth in input &#8211; pixels are always 2-d!</p>
-<p>Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.
-If the input is integers, a 0.5 is added to &#8220;shift&#8221; the location
-to mid-pixel.
-returns: the pixel coords as a similar Nx2 array of floating point</p>
-<blockquote>
-<div>x,y coordinates
-(using the y = 0 at the top, and y increasing down)</div></blockquote>
+<dl class="docutils">
+<dt>NOTE: to_lonlat(to_pixel(coords)) != coords, due to rounding.</dt>
+<dd>If the input is integers, a 0.5 is added to &#8220;shift&#8221; the location
+to mid-pixel.</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -8963,33 +9844,24 @@ match the bounding box aspect ratio &#8211; it simply uses the one
 already defined by the grid.</p>
 <p>You  could use a RectangularGridProjection here as well, but this is
 simpler and should be faster.</p>
-<p>create a new projection</p>
+<p>Create a new projection</p>
 <p>Projection(bounding_box, image_size)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>bounding_box</strong> &#8211; <p>the bounding box of the map:
-( (min_long, min_lat),</p>
-<blockquote>
-<div>(max_lon,  max_lat) )</div></blockquote>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>bounding_box</strong> &#8211; The bounding box of the map</li>
+<li><strong>image_size</strong> (<em>Struct of the form (width, height)</em>) &#8211; The size of the map image</li>
+</ul>
 </td>
-</tr>
-</tbody>
-</table>
-<p>(or a BoundingBox Object)</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>image_size</strong> &#8211; the size of the map image &#8211; (width, height)</td>
 </tr>
 </tbody>
 </table>
 <dl class="method">
 <dt id="gnome.utilities.projections.RegularGridProjection.set_scale">
 <code class="descname">set_scale</code><span class="sig-paren">(</span><em>bounding_box</em>, <em>image_size=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/projections.html#RegularGridProjection.set_scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.projections.RegularGridProjection.set_scale" title="Permalink to this definition">¶</a></dt>
-<dd><p>set the scaling, etc. of the projection</p>
+<dd><p>Set the scaling, etc. of the projection</p>
 <p>This should be called whenever the bounding box of the map,
 or the size of the image is changed</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -8997,12 +9869,9 @@ or the size of the image is changed</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>bounding_box</strong> &#8211; <p>bounding box of the visual portion of the map
-in the form:  ( (min_long, min_lat),</p>
-<blockquote>
-<div>(max_long, max_lat) )</div></blockquote>
-</li>
-<li><strong>image_size=None</strong> &#8211; the size of the image that will be drawn to.
+<li><strong>bounding_box</strong> (<em>Structure of the form: ((min_long, min_lat),
+(max_long, max_lat))</em>) &#8211; Bounding box of the visual portion of the map</li>
+<li><strong>image_size=None</strong> &#8211; The size of the image that will be drawn to.
 if not given, the previous size will be used.</li>
 </ul>
 </td>
@@ -9048,6 +9917,27 @@ variables:</p>
 <p>min_datetime
 max_datetime</p>
 <p>or a MinusInfTime or InfTime object.</p>
+<p>create a new InfDateTime object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>year</strong> &#8211; integer year of datetime object.
+year can also be &#8220;inf&#8221; or &#8220;-inf&#8221;, and you&#8217;ll get a special
+MinusInfTime or InfTime object.</li>
+<li><strong>month</strong> &#8211; integer month of datetime</li>
+<li><strong>day</strong> &#8211; integer day of datetime</li>
+<li><strong>hour=0</strong> &#8211; integer hour of datetime</li>
+<li><strong>minute=0</strong> &#8211; integer minute of datetime</li>
+<li><strong>second=0</strong> &#8211; integer second of datetime</li>
+<li><strong>microsecond=0</strong> &#8211; integer microsecond of datetime</li>
+<li><strong>tzinfo=None</strong> &#8211; timzoneinfo object.  See datetime docs for details.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <span class="target" id="module-gnome.utilities.cache"></span><p>cache system for caching element data on disk for
@@ -9061,7 +9951,7 @@ accessing again for output, etc.</p>
 
 <dl class="function">
 <dt id="gnome.utilities.cache.clean_up_cache">
-<code class="descclassname">gnome.utilities.cache.</code><code class="descname">clean_up_cache</code><span class="sig-paren">(</span><em>dir_name='/var/folders/7t/137hx7xn4s1fdqvjj1bhtdhskm0vyc/T/tmpq2R_Bi'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/cache.html#clean_up_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.cache.clean_up_cache" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gnome.utilities.cache.</code><code class="descname">clean_up_cache</code><span class="sig-paren">(</span><em>dir_name='/var/folders/7t/137hx7xn4s1fdqvjj1bhtdhskm0vyc/T/tmp1dO9OR'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/cache.html#clean_up_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.cache.clean_up_cache" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deletes a cache dir.</p>
 <p>Designed to be called at program exit. and/or when
 individual cache objects are deleted</p>
@@ -9265,79 +10155,70 @@ are in ascending order</p>
 </div>
 
 
+           </div>
           </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">PyGnome Class Reference</a><ul>
-<li><a class="reference internal" href="#gnome-model-the-pygnome-model-class"><code class="docutils literal"><span class="pre">gnome.model</span></code> &#8211; the PyGnome model class</a></li>
-<li><a class="reference internal" href="#module-gnome.map"><code class="docutils literal"><span class="pre">gnome.map</span></code> &#8211; the PyGnome map class</a></li>
-<li><a class="reference internal" href="#module-gnome.spill"><code class="docutils literal"><span class="pre">gnome.spill</span></code> &#8211; classes in the spill module</a></li>
-<li><a class="reference internal" href="#module-gnome.spill.elements.element_type"><code class="docutils literal"><span class="pre">gnome.spill.elements</span></code> &#8211; classes in the elements module</a></li>
-<li><a class="reference internal" href="#module-gnome.movers"><code class="docutils literal"><span class="pre">gnome.movers</span></code> &#8211; PyGnome mover classes</a></li>
-<li><a class="reference internal" href="#module-gnome.weatherers"><code class="docutils literal"><span class="pre">gnome.weatherers</span></code> &#8211; PyGnome/Adios weathering/mass removal classes</a></li>
-<li><a class="reference internal" href="#module-gnome.environment"><code class="docutils literal"><span class="pre">gnome.environment</span></code> &#8211; PyGnome environment classes</a></li>
-<li><a class="reference internal" href="#module-gnome.outputters"><code class="docutils literal"><span class="pre">gnome.outputter</span></code> &#8211; PyGnome outputters module</a></li>
-<li><a class="reference internal" href="#module-gnome.utilities.distributions"><code class="docutils literal"><span class="pre">gnome.utilities</span></code> &#8211; PyGnome utilities module</a></li>
-<li><a class="reference internal" href="#module-gnome.persist.base_schema"><code class="docutils literal"><span class="pre">gnome.persist</span></code> &#8211; PyGnome persistance classes</a></li>
-</ul>
-</li>
-</ul>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="units.html" class="btn btn-neutral" title="Units used in GNOME / PyGNOME" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="scripting/mixedlayer_release.html"
-                        title="previous chapter">A subsurface (mixed layer) release</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="units.html"
-                        title="next chapter">Units used in GNOME / PyGNOME</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/reference.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+
     </p>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="units.html" title="Units used in GNOME / PyGNOME"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="scripting/mixedlayer_release.html" title="A subsurface (mixed layer) release"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &copy; Copyright 2012, NOAA Emergecny Response Division.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
 </html>

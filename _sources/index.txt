@@ -13,10 +13,12 @@ Contents
   installing
   structure
   scripting
-  reference
+  customizing
+  logging
+  serialization
   units
+  reference
   
-
 
 Indices and tables
 ------------------
