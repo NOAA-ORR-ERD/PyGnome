@@ -1354,7 +1354,7 @@ class TestValidateModel():
                             self.start_time - timedelta(hours=1))
         (msgs, isvalid) = model.validate()
 
-        assert len(msgs) == 1 and isvalid
+        assert len(msgs) == 1 and not isvalid
         assert ('Spill has release time before model start time' in msgs[0])
 
     def make_model_incomplete_waves(self):

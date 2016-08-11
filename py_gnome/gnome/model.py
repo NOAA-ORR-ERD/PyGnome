@@ -247,6 +247,9 @@ class Model(Serializable):
         self.outputters.register_callback(self._callback_add_outputter,
                                           ('add', 'replace'))
 
+        self.movers.register_callback(self._callback_add_spill,
+                                      ('add', 'replace', 'remove'))
+
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map,
                     name, mode):
@@ -873,8 +876,8 @@ class Model(Serializable):
             # validate and send validation flag if model is invalid
             (msgs, isvalid) = self.check_inputs()
             if not isvalid:
-               raise RuntimeError("Setup model run complete but model "
-                                   "is invalid", msgs)
+                raise RuntimeError("Setup model run complete but model "
+                                    "is invalid", msgs)
             # (msgs, isvalid) = self.validate()
             # if not isvalid:
             #    raise StopIteration("Setup model run complete but model "
@@ -1012,6 +1015,9 @@ class Model(Serializable):
         '''
         self._add_to_environ_collec(obj_added)
         self.rewind()  # rewind model if a new weatherer is added
+
+    def _callback_add_spill(self, obj_added):
+        self.rewind()
 
     def __eq__(self, other):
         check = super(Model, self).__eq__(other)
@@ -1414,9 +1420,10 @@ class Model(Serializable):
                 msg = ('All of the spills are released after the time interval being modeled.')
             else:
                 msg = ('The spill is released after the time interval being modeled.')
-            self.logger.error(msg)
+            self.logger.warning(msg)	# for now make this a warning
+            #self.logger.error(msg)
             msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
-            isvalid = False
+            #isvalid = False
 
         return (msgs, isvalid)
 
@@ -1484,7 +1491,7 @@ class Model(Serializable):
 #             if msg is not None:
 #                 self.logger.warning(msg)
 #                 msgs.append(self._warn_pre + msg)
-# 
+#
         return (msgs, isvalid)
 
     def _validate_env_coll(self, refs, raise_exc=False):
@@ -1561,12 +1568,12 @@ class Model(Serializable):
 
         def test_phrase(phrase):
             for sub_cond in phrase:
-                    cond = sub_cond.rsplit()
-                    prop_val = elem_val(cond[0], i)
-                    op = cond[1]
-                    test_num = cond[2]
-                    if test(prop_val, op, test_num):
-                        return True
+                cond = sub_cond.rsplit()
+                prop_val = elem_val(cond[0], i)
+                op = cond[1]
+                test_num = cond[2]
+                if test(prop_val, op, test_num):
+                    return True
 
             return False
 

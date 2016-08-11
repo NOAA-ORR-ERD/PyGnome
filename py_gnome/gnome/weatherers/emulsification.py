@@ -126,9 +126,7 @@ class Emulsification(Weatherer, Serializable):
             if data['mass'].sum() > 0:
                 sc.mass_balance['water_content'] = \
                     np.sum(data['mass']/data['mass'].sum() * data['frac_water'])
-                #np.sum(data['frac_water'][:]*data['mass'][:]) / np.sum(data['mass'])
-                #np.sum(data['frac_water'][:]) / len(data['frac_water']
-                #np.sum(data['frac_water'][:]) / sc.num_released
+
             self.logger.debug(self._pid + 'water_content for {0}: {1}'.
                               format(substance.name,
                                      sc.mass_balance['water_content']))

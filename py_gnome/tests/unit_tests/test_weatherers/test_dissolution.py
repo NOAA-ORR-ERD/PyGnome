@@ -173,8 +173,8 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'expected_mb', 'on'),
-                         [('ABU SAFAH', 311.15, 3, 121.4e-6, True),
-                          ('BAHIA', 311.15, 3, 104.94e-6, True),
+                         [('ABU SAFAH', 311.15, 3, 0.0, True),
+                          ('BAHIA', 311.15, 3, 0.0, True),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
                            np.nan, False)])
 def test_dissolution_mass_balance(oil, temp, num_elems, expected_mb, on):
@@ -208,10 +208,14 @@ def test_dissolution_mass_balance(oil, temp, num_elems, expected_mb, on):
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
-                         [('ABU SAFAH', 288.7, 2451.49),
+                         [('ABU SAFAH', 288.7, 2044.152),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 288.7,
-                           2399.79),
-                          ('BAHIA', 288.7, 1925.87)])
+                           1770.5167),
+                          ('BAHIA', 288.7, 1618.882),
+                          ('ALASKA NORTH SLOPE, OIL & GAS', 279.261,
+                           2468.827),
+                          ]
+                         )
 def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json
@@ -226,6 +230,10 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     for sc in model.spills.items():
         print sc.__dict__.keys()
         print sc._data_arrays
+
+        print 'num spills:', len(sc.spills)
+        print 'spill[0] amount:', sc.spills[0].amount
+        original_amount = sc.spills[0].amount
 
     # set make_default_refs to True for objects contained in model after adding
     # objects to the model
@@ -248,6 +256,9 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
             #        format(sc._data_arrays['mass']))
             # print ("Mass Components: {0}".
             #        format(sc._data_arrays['mass_components']))
+
+    print ('Fraction dissolved after full run: {}'
+           .format(dissolved[-1] / original_amount))
 
     assert dissolved[0] == 0.0
     assert np.isclose(dissolved[-1], expected_balance)

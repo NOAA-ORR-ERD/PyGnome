@@ -2259,7 +2259,15 @@ bool ReadLinesInFile(const char *name, vector<string> &stringList, size_t linesT
 		}
 	}
 	catch(...) {
+#ifdef pyGNOME
 		printError("We are unable to open or read from the file. \nBreaking from ReadLinesInFile().\n");
+#else
+#ifdef MAC
+		printNote("We are unable to open or read from the file. Check file name length is < 32 characters.");
+#else
+		printError("We are unable to open or read from the file. \nBreaking from ReadLinesInFile().\n");
+#endif
+#endif
 		return false;
 	}
 	return true;

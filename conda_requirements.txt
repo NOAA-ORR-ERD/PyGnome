@@ -1,31 +1,38 @@
-# Documents the packages required for PyGnome
+# Documents the conda packages required for PyGnome
 #  this cover py_gnome and the oil_library
-# This should be the minimal conda install
+#  This should be the minimal conda install
+#  install with:
+#  conda install --file conda_requirements.txt
 
-setuptools
-numpy
-scipy
-ipython      
-matplotlib
-netCDF4
-py_gd
-gsw
-pyzmq
-cython
+setuptools>=23.0
+numpy>=1.11
+scipy>=0.17
+netCDF4>=1.2.2
+py_gd>=0.1.5
+gsw>=3.0.3
+pyzmq>=15.2
+cython>=0.24
+psutil>=4.3
+progressbar>=2.3
+six>=1.10
+geojson>=1.3.2
+repoze.lru >= 0.6 
+unit_conversion>=2.5.2
+colander>=1.2
+sqlalchemy>=0.7.6
+zope.interface>=4.1
+zope.sqlalchemy>=0.7.6
+gdal>=2.0
+awesome-slugify>=1.6
+regex>=2014.12
+unidecode>=0.04.19
+cell_tree2d>=0.1.3
+pyugrid>=0.2.1
+pysgrid>=0.3.1
+
+# nice to have for development, not required to run
 pytest
 testfixtures
-psutil
+matplotlib
 sphinx
-progressbar
-six
-geojson
-repoze.lru 
-unit_conversion
-colander
-sqlalchemy
-zope.interface
-zope.sqlalchemy
-gdal
-awesome-slugify
-regex
-unidecode
+ipython

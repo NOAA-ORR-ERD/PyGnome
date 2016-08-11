@@ -409,7 +409,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
                       serializable.Field('is_data_on_cells',
-                                         save=True, read=True)])
+                                         save=False, read=True)])
     _schema = GridCurrentMoverSchema
 
     def __init__(self, filename,
@@ -998,6 +998,10 @@ class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
                             'for CurrentCycleMover.')
 
         self._tide = tide_obj
+
+    @property
+    def is_data_on_cells(self):
+        return None
 
     def serialize(self, json_='webapi'):
         """

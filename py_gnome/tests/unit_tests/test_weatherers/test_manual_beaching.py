@@ -87,9 +87,7 @@ class TestBeaching(ObjForTests):
 
         assert self.sc.mass_balance['observed_beached'] == 0.0
 
-        while (model_time <
-               self.b.active_stop + timedelta(seconds=time_step)):
-
+        while (model_time < self.b.active_stop + timedelta(seconds=time_step)):
             amt = self.sc.mass_balance['observed_beached']
 
             self.release_elements(time_step, model_time)

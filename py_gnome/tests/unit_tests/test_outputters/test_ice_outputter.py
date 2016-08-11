@@ -12,7 +12,7 @@ from gnome.utilities import time_utils
 
 from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.movers import IceMover
-from gnome.outputters import IceGeoJsonOutput
+from gnome.outputters import IceGeoJsonOutput, IceJsonOutput
 
 from ..conftest import testdata
 

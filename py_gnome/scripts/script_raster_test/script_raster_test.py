@@ -106,5 +106,4 @@ if __name__ == "__main__":
             rend.set_timestamp_attrib(on=True)
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
-    print datetime.now() - startTime
-    pd.print_stats(5)
+    print "it took %s to run" % (datetime.now() - startTime)

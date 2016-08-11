@@ -12,18 +12,21 @@ import unit_conversion as uc
 
 from gnomeobject import GnomeId, init_obj_log, AddLogger
 
-__version__ = '0.1.1'
-# a few imports so that the basic stuff is there
+__version__ = '0.2.0'
 
+
+# a few imports so that the basic stuff is there
 
 def initialize_log(config, logfile=None):
     '''
     helper function to initialize a log - done by the application using PyGnome
     config can be a file containing json or it can be a Python dict
 
-    it needs to be inthe dictcnfig format used by logging.dictConfig:
+    :param config: logging configuration as a json file or config dict
+                   it needs to be in the dict config format used by ``logging.dictConfig``:
+                   https://docs.python.org/2/library/logging.config.html#logging-config-dictschema
 
-    https://docs.python.org/2/library/logging.config.html#logging-config-dictschema
+    :param logfile=None: optional name of file to log to
 
     '''
     if isinstance(config, basestring):
@@ -35,15 +38,29 @@ def initialize_log(config, logfile=None):
     logging.config.dictConfig(config)
 
 
-def initialize_console_log():
+def initialize_console_log(level='debug'):
     '''
     Initializes the logger to simply log everything to the console (stdout)
 
     Likely what you want for scripting use
+
+    :param level='debug': the level you want your log to show. options are,
+                          in order of importance: "debug", "info", "warning",
+                          "error", "critical"
+
+    You will only get the logging messages at or above the level you set.
+
     '''
+    levels = {"debug": logging.DEBUG,
+              "info": logging.INFO,
+              "warning": logging.WARNING,
+              "error": logging.ERROR,
+              "critical": logging.CRITICAL,
+              }
+    level = levels[level.lower()]
     format_str = '%(levelname)s - %(module)8s - line:%(lineno)d - %(message)s'
     logging.basicConfig(stream=sys.stdout,
-                        level=logging.DEBUG,
+                        level=level,
                         format=format_str,
                         )
 
