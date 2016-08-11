@@ -208,12 +208,12 @@ def test_dissolution_mass_balance(oil, temp, num_elems, expected_mb, on):
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
-                         [('ABU SAFAH', 288.7, 1129.56),
+                         [('ABU SAFAH', 288.7, 2044.152),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 288.7,
-                           937.67),
-                          ('BAHIA', 288.7, 556.69),
+                           1770.5167),
+                          ('BAHIA', 288.7, 1618.882),
                           ('ALASKA NORTH SLOPE, OIL & GAS', 279.261,
-                           1451.58),
+                           2468.827),
                           ]
                          )
 def test_full_run(sample_model_fcn2, oil, temp, expected_balance):

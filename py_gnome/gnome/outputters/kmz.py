@@ -29,7 +29,7 @@ class KMZSchema(BaseSchema):
     '''
 #    round_data = SchemaNode(Bool(), missing=drop)
 #    round_to = SchemaNode(Int(), missing=drop)
-    output_dir = SchemaNode(String(), missing=drop)
+    filename = SchemaNode(String(), missing=drop)
 
 
 class KMZOutput(Outputter, Serializable):
@@ -43,7 +43,7 @@ class KMZOutput(Outputter, Serializable):
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
-    _state += [Field('output_dir', update=True, save=True),]
+    _state += [Field('filename', update=True, save=True),]
     _schema = KMZSchema
 
     time_formatter = '%m/%d/%Y %H:%M'

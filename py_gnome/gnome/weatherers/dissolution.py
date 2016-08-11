@@ -10,7 +10,8 @@ import gnome  # required by deserialize
 
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.weathering import (LeeHuibers, Stokes,
-                                        DingFarmer, DelvigneSweeney)
+                                        DingFarmer, DelvigneSweeney,
+                                        PiersonMoskowitz)
 
 from gnome.array_types import (area,
                                mass,
@@ -246,9 +247,11 @@ class Dissolution(Weatherer, Serializable):
 
     def water_column_time_fraction(self, model_time,
                                    water_phase_xfer_velocity):
-        wave_period = self.waves.peak_wave_period(model_time)
+        #wave_period = self.waves.peak_wave_period(model_time)
         wave_height = self.waves.get_value(model_time)[0]
-        wind_speed = self.waves.wind.get_value(model_time)[0]
+        #wind_speed = self.waves.wind.get_value(model_time)[0]
+        wind_speed = max(.1, self.waves.wind.get_value(model_time)[0])
+        wave_period = PiersonMoskowitz.peak_wave_period(wind_speed)
 
         f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
 
@@ -259,8 +262,10 @@ class Dissolution(Weatherer, Serializable):
 
     def calm_between_wave_breaks(self, model_time, time_step,
                                  time_spent_in_wc=0.0):
-        wave_period = self.waves.peak_wave_period(model_time)
-        wind_speed = self.waves.wind.get_value(model_time)[0]
+        #wave_period = self.waves.peak_wave_period(model_time) PiersonMoskowitz.peak_wave_period(U)
+        #wind_speed = self.waves.wind.get_value(model_time)[0]
+        wind_speed = max(.1, self.waves.wind.get_value(model_time)[0])
+        wave_period = PiersonMoskowitz.peak_wave_period(wind_speed)
 
         f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
 
@@ -304,7 +309,8 @@ class Dissolution(Weatherer, Serializable):
         assert oil_concentration.shape[-1] == partition_coeff.shape[-1]
         assert len(partition_coeff.shape) == 1  # single dimension
 
-        U_10 = self.waves.wind.get_value(model_time)[0]
+        U_10 = max(.1, self.waves.wind.get_value(model_time)[0])
+        #U_10 = self.waves.wind.get_value(model_time)[0]
         c_oil = oil_concentration
         k_ow = partition_coeff
 

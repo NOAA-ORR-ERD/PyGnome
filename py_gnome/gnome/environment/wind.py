@@ -297,6 +297,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
     def _write_timeseries_to_fd(self, fd):
         '''
         Takes a general file descriptor as input and writes data to it.
+
+        Writes the "OSSM format" with the full header
         '''
         if self.units in ossm_wind_units.values():
             data_units = self.units
@@ -521,3 +523,22 @@ def constant_wind(speed, direction, units='m/s'):
     wind_vel['value'][0] = (speed, direction)
 
     return Wind(timeseries=wind_vel, format='r-theta', units=units)
+
+
+def wind_from_values(values, units='m/s'):
+    """
+    creates a Wind object directly from data.
+
+    :param values: list of (datetime, speed, direction) tuples
+
+    :returns: A Wind timeseries object that can be used for a wind mover, etc.
+    """
+    wind_vel = np.zeros((len(values), ), dtype=basic_types.datetime_value_2d)
+
+    for i, record in enumerate(values):
+        wind_vel['time'][i] = record[0]
+        wind_vel['value'][i] = tuple(record[1:3])
+
+    return Wind(timeseries=wind_vel, format='r-theta', units=units)
+
+

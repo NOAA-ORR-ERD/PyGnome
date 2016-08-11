@@ -63,9 +63,6 @@ class TestTime:
         t = Time(dates2.copy(), tz_offset=dt.timedelta(hours=1))
         assert t.time[0] == dt.datetime(2000, 1, 1, 1)
 
-        t = Time(dates2.copy(), offset = {'seconds':3600})
-        assert t.time[0] == dt.datetime(2000, 1, 1, 1)
-
     def test_extrapolation(self, ts):
         before = dt.datetime(1999,12,31,23)
         after = dt.datetime(2000,1,1,9)

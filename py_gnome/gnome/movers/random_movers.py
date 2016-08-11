@@ -3,6 +3,7 @@ Movers using diffusion as the forcing function
 '''
 
 import copy
+import numpy as np
 
 from colander import (SchemaNode, Float, drop)
 
@@ -11,7 +12,13 @@ from gnome.utilities.serializable import Serializable
 from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
-
+from gnome.environment.property_classes import IceConcentration
+from gnome.utilities.projections import FlatEarthProjection
+from gnome.basic_types import oil_status
+from gnome.basic_types import (world_point,
+                               world_point_type,
+                               spill_type,
+                               status_code_type)
 
 class RandomMoverSchema(ObjType, ProcessSchema):
     diffusion_coef = SchemaNode(Float(), missing=drop)
@@ -70,6 +77,57 @@ class RandomMover(CyMover, Serializable):
                 'active_start={2}, active_stop={3}, '
                 'on={4})'.format(self.diffusion_coef, self.uncertain_factor,
                                  self.active_start, self.active_stop, self.on))
+
+
+class IceAwareRandomMover(RandomMover):
+    def __init__(self, *args, **kwargs):
+        if 'ice_conc_var' in kwargs.keys():
+            self.ice_conc_var = kwargs.pop('ice_conc_var')
+        super(IceAwareRandomMover, self).__init__(**kwargs)
+
+    @classmethod
+    def from_netCDF(cls, filename=None,
+                    grid_topology=None,
+                    units=None,
+                    time=None,
+                    ice_conc_var=None,
+                    grid=None,
+                    grid_file=None,
+                    data_file=None,
+                    **kwargs):
+        if filename is not None:
+            data_file = filename
+            grid_file = filename
+        if grid is None:
+            grid = init_grid(grid_file,
+                             grid_topology=grid_topology)
+        if ice_conc_var is None:
+            ice_conc_var = IceConcentration.from_netCDF(filename,
+                                                        time=time,
+                                                        grid=grid)
+        return cls(ice_conc_var=ice_conc_var, **kwargs)
+    def get_move(self, sc, time_step, model_time_datetime):
+        status = sc['status_codes'] != oil_status.in_water
+        positions = sc['positions']
+        deltas = np.zeros_like(positions)
+        pos = positions[:, 0:2]
+        interp = self.ice_conc_var.at(pos, model_time_datetime, extrapolate=True)
+        interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
+        if len(np.where(interp_mask)[0]) != 0:
+            ice_mask = interp >= 0.8
+
+            deltas = super(IceAwareRandomMover,self).get_move(sc, time_step, model_time_datetime)
+            interp -= 0.2
+            interp *= 1.25
+            interp *= 1.3333333333
+
+            deltas[:,0:2][ice_mask] = 0
+            deltas[:,0:2][interp_mask] *= (1 - interp[interp_mask][:,np.newaxis]) # scale winds from 100-0% depending on ice coverage
+            deltas[status] = (0, 0, 0)
+            return deltas
+        else:
+            return super(IceAwareRandomMover,self).get_move(sc, time_step, model_time_datetime)
+
 
 
 class RandomVerticalMoverSchema(ObjType, ProcessSchema):

@@ -1,4 +1,5 @@
-# PyGnome #
+# PyGnome
+
 
 ## [Project Documentation](http://noaa-orr-erd.github.io/PyGnome/) ##
 ## [FAQ -- Troubleshoot](https://github.com/NOAA-ORR-ERD/GNOME2/wiki/FAQ---Troubleshoot) ##
@@ -31,8 +32,8 @@ First, there are two python distributions that we currently support.
 Their respective installation guides are here:
 
 - Install using the
-[Official Python Release](./NormalInstall.md)
-- Install using [Anaconda](./InstallingWithAnaconda.md),
+[Official Python Release](./NormalInstall.rst)
+- Install using [Anaconda](./InstallingWithAnaconda.rst),
 a Python release specifically geared for scientific, engineering,
 and math applications _(this one is a bit easier, we have found)_
 
