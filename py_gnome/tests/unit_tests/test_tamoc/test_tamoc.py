@@ -6,7 +6,10 @@ test code for the tamoc module
 so far, only dummy input, etc.
 """
 
+
 from datetime import datetime
+
+
 from gnome.tamoc import tamoc
 
 

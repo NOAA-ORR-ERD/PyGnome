@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 """
-assorted code for working with TAMOC
+Assorted code for working with TAMOC
 """
 
 from datetime import timedelta
+
+import numpy as np
 
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
@@ -84,7 +86,7 @@ class TamocDroplet():
                  mass_flux=1.0,  # kg/s
                  radius=1e-6,  # meters
                  density=900.0,  # kg/m^3 at 15degC
-                 position= (10, 20, 100)  # (x, y, z) in meters
+                 position=(10, 20, 100)  # (x, y, z) in meters
                  ):
 
         self.mass_flux = mass_flux
@@ -92,6 +94,26 @@ class TamocDroplet():
         self.density = density
         self.position = np.asanyarray(position)
 
+
+def test_tamoc_results():
+    """
+    fixture for providing a tamoc result set
+
+    at this point, it is a simple list of TamocDroplet objects
+    """
+    num_droplets = 10
+
+    mass_flux = np.ones((num_droplets,)) * 1.0  # kg/s
+    radius = np.linspace(1e-6, 100, num_droplets)
+    density = np.ones((num_droplets,)) * 900  # kg/m^3 at 15degC
+    position = np.ones((num_droplets, 3)) * (10, 20, 100)  # (x, y, z) in meters
+
+    results = [TamocDroplet(*params) for params in zip(mass_flux,
+                                                       radius,
+                                                       density,
+                                                       position)]
+
+    return results
 
 
 class TamocSpill(serializable.Serializable):
@@ -132,17 +154,17 @@ class TamocSpill(serializable.Serializable):
         self.start_position = start_position
         self.num_elements = num_elements
         self.end_release_time = end_release_time
-        self.num_released=0
-        self.amount_released=0
+        self.num_released = 0
+        self.amount_released = 0
 
-        self.tamoc_interval = datetime.timedelta(hrs=TAMOC_interval)
+        self.tamoc_interval = timedelta(hours=TAMOC_interval)
         self.last_tamoc_time = release_time
-        self.droplets=None
+        self.droplets = None
         self.on = on    # spill is active or not
         self.name = name
 
     def run_tamoc(self, current_time, time_step):
-        #runs TAMOC if no droplets have been initialized or if current_time has reached last_tamoc_run + interval
+        # runs TAMOC if no droplets have been initialized or if current_time has reached last_tamoc_run + interval
         if self.on:
             if (self.droplets is None or
                self.current_time > release_time and last_tamoc_time is None or
@@ -155,9 +177,8 @@ class TamocSpill(serializable.Serializable):
         this is the code that actually calls and runs tamoc_output
 
         it returns a list of TAMOC droplet objects
-        (or fake ones)
         """
-        return [TamocDroplet(radius=1e-6 * i) for i in range(10)]
+        return test_tamoc_results()
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
