@@ -27,8 +27,7 @@ You will only get the logging messages at or above the level you set.
 ``gnome.initialize_log(config, logfile=None)``
 ..............................................
 
-Helper function to initialize a log - this should be called by the application using PyGnome.
-This is used to set up the log for the WEbGNOME API, for instance. ``config`` can be a file containing json or it can be a Python dict -- in the dict config format used by ``logging.dictConfig``:
+Helper function to initialize a log - this should be called by the application using PyGnome. This is used to set up the log for the WEbGNOME API, for instance. ``config`` can be a file containing json or it can be a Python dict -- in the dict config format used by ``logging.dictConfig``:
 
 https://docs.python.org/2/library/logging.config.html#logging-config-dictschema
 
@@ -45,11 +44,11 @@ If you want to use the logger in your scripts (or are writing your own mover, et
 
 and then use the regular logging functions, passing in the message you want to log::
 
-	logger.debug("this is info you'd only want for debugging")
-	logger.info("this is some arbitrary information")
-	logger.warning("this is just a friendly warning")
-	logger.error("oh oh! an error occurred")
-	logger.critical("whoops! a critical error -- you really don't want to miss this!" )
+    logger.debug("this is info you'd only want for debugging")
+    logger.info("this is some arbitrary information")
+    logger.warning("this is just a friendly warning")
+    logger.error("oh oh! an error occurred")
+    logger.critical("whoops! a critical error -- you really don't want to miss this!" )
 
 These are in order of importance -- debug is not important, critical is critically important.
 
