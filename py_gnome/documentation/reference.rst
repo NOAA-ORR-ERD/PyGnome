@@ -144,25 +144,25 @@ model run and in subsequent steps the model moves and weathers elements.
 .. autoclass:: IceConcentration
     :members:
     :show-inheritance:
-    
+
     .. autoattribute:: default_names
-    
+
 .. autoclass:: GridCurrent
     :members:
     :show-inheritance:
-    
+
     .. autoattribute:: default_names
-    
+
 .. autoclass:: GridWind
     :members:
     :show-inheritance:
-    
+
     .. autoattribute:: default_names
-    
+
 .. autoclass:: IceVelocity
     :members:
     :show-inheritance:
-    
+
     .. autoattribute:: default_names
 
 ``gnome.environment.property`` -- PyGnome abstract property classes
@@ -173,7 +173,7 @@ model run and in subsequent steps the model moves and weathers elements.
 .. autoclass:: VectorProp
     :members:
 .. autoclass:: Time
-    :members:    
+    :members:
 .. automodule:: gnome.environment.grid_property
 .. autoclass:: GriddedProp
     :members:
@@ -184,7 +184,7 @@ model run and in subsequent steps the model moves and weathers elements.
     :members:
     :private-members: _gen_varnames
     :show-inheritance:
-    :inherited-members: 
+    :inherited-members:
 .. automodule:: gnome.environment.ts_property
 .. autoclass:: TimeSeriesProp
     :members:
@@ -211,9 +211,6 @@ model run and in subsequent steps the model moves and weathers elements.
     :members:
     :show-inheritance:
 .. autoclass:: TrajectoryGeoJsonOutput
-    :members:
-    :show-inheritance:
-.. autoclass:: CurrentGeoJsonOutput
     :members:
     :show-inheritance:
 .. autoclass:: IceGeoJsonOutput

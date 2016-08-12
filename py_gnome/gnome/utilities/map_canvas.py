@@ -13,6 +13,7 @@ GNOME-specific.
 
 This version used libgd and py_gd instead of PIL for the rendering
 """
+
 import bisect
 
 import numpy as np
@@ -133,17 +134,21 @@ class MapCanvas(object):
         or by bounding box
 
         :param center: The point around which the viewport is centered
-        :type a tuple containing an x/y coordinate
+        :type center: tuple of floats (lon, lat)
 
         :param width: Width of the viewport in meters
+        :type width: float
 
         :param height: height of the viewport in meters
+        :type height: float
 
         :param BB: Bounding box of the viewport
                    (overrides all previous parameters)
-        :type a list of tuples containing of the lower left and top right
-              coordinates
+
+        :type BB: a list of tuples containing of the lower left and top right
+              coordinates: ((min_x, min_y),(max_x, max_y))
         """
+
         if BB is None:
             self._viewport.center = center
 
@@ -189,9 +194,8 @@ class MapCanvas(object):
         """
         Add a list of colors to the pallette
 
-        :param color_list: list of colors
-                           - each elemnt of the list is a 2-tuple:
-                             ('color_name', (r,g,b))
+        :param color_list: list of colors:
+                           each elemnt of the list is a 2-tuple: ('color_name', (r,g,b))
         """
         self.fore_image.add_colors(color_list)
         self.back_image.add_colors(color_list)
@@ -506,10 +510,12 @@ class GridLines(object):
                           dimension of the viewport. Graticule will scale up
                           or down only when the number of lines in the viewport
                           falls outside the range.
+
         :type max_lines: tuple of integers, (max, min)
 
         :param DegMinSec: Whether to scale by Degrees/Minute/Seconds,
                           or decimal lon/lat
+
         :type bool
         """
         if viewport is None:
@@ -614,11 +620,14 @@ class GridLines(object):
 
         :param max_lines: the maximum number of lines drawn.
                           (Note: this is NOT the number of lines on the screen
-                                 at any given time.  That is determined by
-                                 the computed interval and the size/location
-                                 of the viewport)
+                          at any given time.  That is determined by
+                          the computed interval and the size/location
+                          of the viewport)
+
         :type max_lines: int
+
         """
+
         if max_lines is not None:
             self.max_lines = max_lines
 
@@ -704,18 +713,19 @@ class Viewport(object):
     def __init__(self, BB=None, center=None, width=None, height=None):
         """
         Init the viewport.
+
         Can initialize with center/width/height, and/or with bounding box.
         NOTE: Bounding box takes precedence over any previous parameters
 
         :param center: The point around which the viewport is centered
-        :type a tuple containing an lon/lat coordinate
+        :type center: a tuple containing an lon/lat coordinate
 
         :param width: Width of the viewport (lon)
 
         :param height: height of the viewport (lat)
 
         :param BB: Bounding box of the viewport (overrides previous parameters)
-        :type a list of lon/lat tuples containing the lower left and top right
+        :type BB:  a list of lon/lat tuples containing the lower left and top right
               coordinates
         """
         self._BB = None
