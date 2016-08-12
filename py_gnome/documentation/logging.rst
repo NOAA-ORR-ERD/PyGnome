@@ -13,7 +13,7 @@ Configuring the logger
 The logger can be initialized and configured in the usual way with the python ``logging`` module. However, pygnome comes with a couple utilities to make it easy to do standard configuration:
 
 ``gnome.initialize_console_log(level='debug')``
-..............................................
+................................................
 
 Initializes the logger to simply log everything to the console (stdout). Likely what you want for scripting use.
 
@@ -57,15 +57,15 @@ Logging levels in WebGNOME
 
 In WebGNOME, The logger is used to pass information to the Web client through the WebAPI. In this case, the logging levels are used to tell the client how to process the log message:
 
-``logger.debug``: 
+``logger.debug``:
 
-``logger.info``: 
+``logger.info``:
 
-``logger.warning``: 
+``logger.warning``:
 
-``logger.error``: 
+``logger.error``:
 
-``logger.critical``: 
+``logger.critical``:
 
 
 
