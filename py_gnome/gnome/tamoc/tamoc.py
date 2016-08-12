@@ -87,7 +87,7 @@ class TamocDroplet():
         self.mass_flux = mass_flux
         self.radius = radius
         self.density = density
-        self.position = position
+        self.position = np.asanyarray(position)
 
 
 
@@ -118,6 +118,7 @@ class TamocSpill(serializable.Serializable):
                  num_elements=None,
                  end_release_time=None,
                  name='TAMOC plume',
+                 TAMOC_interval=24,
                  on=True,
                  ):
         """
@@ -128,12 +129,25 @@ class TamocSpill(serializable.Serializable):
         self.start_position = start_position
         self.num_elements = num_elements
         self.end_release_time = end_release_time
+        self.num_released=0
+        self.amount_released=0
 
-        self.droplets = self.run_tamoc()
+        self.tamoc_interval = datetime.timedelta(hrs=TAMOC_interval)
+        self.last_tamoc_time = release_time
+        self.droplets=None
         self.on = on    # spill is active or not
         self.name = name
 
-    def run_tamoc(self):
+    def run_tamoc(self, current_time, time_step):
+        #runs TAMOC if no droplets have been initialized or if current_time has reached last_tamoc_run + interval
+        if self.on:
+            if (self.droplets is None or
+               self.current_time > release_time and last_tamoc_time is None or
+               self.current_time > self.last_tamoc_time + self.tamoc_interval):
+                return self._run_tamoc()
+        return self.droplets
+
+    def _run_tamoc(self):
         """
         this is the code that actually calls and runs tamoc_output
 
@@ -202,15 +216,9 @@ class TamocSpill(serializable.Serializable):
         If volume is given, then use density to find mass. Density is always
         at 15degC, consistent with API definition
         '''
-        if self.amount is None:
-            return self.amount
-
         # first convert amount to 'kg'
         if self.units in self.valid_mass_units:
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
-        elif self.units in self.valid_vol_units:
-            vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = self.element_type.substance.get_density() * vol
 
         if units is None or units == 'kg':
             return mass
@@ -244,7 +252,10 @@ class TamocSpill(serializable.Serializable):
         rewinds the release to original status (before anything has been
         released).
         """
-        raise NotImplementedError
+        self.num_released = 0
+        self.amount_released = 0
+        self.droplets = self.run_tamoc()
+
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -264,12 +275,16 @@ class TamocSpill(serializable.Serializable):
         """
         if ~self.on:
             return 0
+
         if current_time < self.release_time or current_time > self.end_release_time:
             return 0
-        dur = (self.end_release_time - self.release_time).total_seconds()
-        if dur is 0:
-            dur = 1
-        LE_release_rate = self.num_elements / dur
+
+        self.droplets = self.run_tamoc(current_time, time_step)
+
+        duration = (self.end_release_time - self.release_time).total_seconds()
+        if duration is 0:
+            duration = 1
+        LE_release_rate = self.num_elements / duration
         num_to_release = int(LE_release_rate * time_step.total_seconds())
         if num_released + num_to_release > num_elements:
             num_to_release = num_elements - num_released
@@ -328,8 +343,7 @@ class TamocSpill(serializable.Serializable):
             total_rel += n_LEs
 
         self.num_released += num_new_particles
-
-        raise NotImplementedError
+        self.amount += total_mass
 
         # if self.element_type is not None:
         #     self.element_type.set_newparticle_values(num_new_particles, self,
