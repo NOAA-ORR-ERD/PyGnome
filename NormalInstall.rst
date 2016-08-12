@@ -17,7 +17,7 @@ You may also want to consider using conda environments.
 There is C++/Cython code that must be built - you will need the corect C compiler and recent setuptools, etc.
 
 python.org
-----------
+==========
 
 The following has been tested against `Python
 2.7 <https://www.python.org/downloads/>`__
@@ -29,7 +29,7 @@ For Linux use appropriate package manager (apt-get on ubuntu) to
 download/install binary dependencies.
 
 Binary Dependencies
-~~~~~~~~~~~~~~~~~~~
+...................
 
 1. setuptools is required.
     ``> sudo apt-get install python-setuptools``
@@ -81,7 +81,7 @@ See `Build PyGnome <#build-pygnome>`__ section below.
 
 
 Windows 7 (64-bit, using VS-2008 express edition)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------------------------
 
 For compiling python extensions on Windows, you need the correct version of teh MS compiler:  "Visual Studio 2008". Microsoft has made a versin of this compiler al properly set up for python extensions:
 
@@ -92,7 +92,7 @@ https://www.microsoft.com/en-us/download/details.aspx?id=44266
 This compiler should work for both 32 bit and 64 bit Windows.
 
 Binary Dependencies
-^^^^^^^^^^^^^^^^^^^
+...................
 
 Download and install the newest Windows executable distribution of
 `Python 2.7 <http://www.python.org/download/>`__ (*note: we are not
@@ -160,14 +160,15 @@ The remaining dependencies are python packages and can be installed using the co
 See `Build PyGnome <#build-pygnome>`__ section below.
 
 Windows 7 (64-bit, using VS-2008 express edition)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.................................................
 
 Building GNOME for 64 bit Windows is similar to the 32 bit Windows
 build, and has similar binary dependencies. There are however some extra
 steps you need to perform in order to build py\_gnome.
 
+
 Build PyGnome
-~~~~~~~~~~~~~
+-------------
 
 1. Clone the PyGnome repository::
 

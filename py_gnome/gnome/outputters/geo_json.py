@@ -105,7 +105,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         Parameters passed to base class (use super): model_start_time, cache
 
         Does not take any other input arguments; however, to keep the interface
-        the same for all outputters, define **kwargs and pass into base class
+        the same for all outputters, define `**kwargs` and pass into base class
 
         In this case, it cleans out previous written data files
 
@@ -226,30 +226,29 @@ class IceGeoJsonOutput(Outputter):
     in a geojson format.  The output is a collection of Features.
     Each Feature contains a Point object with associated properties.
     Following is the output format - the data in <> are the results
-    for each element.
-    ::
+    for each element::
 
-    {
-     "time_stamp": <TIME IN ISO FORMAT>,
-     "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
-     "feature_collections": {<mover_id>: {"type": "FeatureCollection",
-                                          "features": [{"type": "Feature",
-                                                        "id": <PARTICLE_ID>,
-                                                        "properties": {"ice_fraction": <FRACTION>,
-                                                                       "ice_thickness": <METERS>,
-                                                                       "water_velocity": [u, v],
-                                                                       "ice_velocity": [u, v]
-                                                                       },
-                                                        "geometry": {"type": "Point",
-                                                                     "coordinates": [<LONG>, <LAT>]
-                                                                     },
-                                                        },
-                                                        ...
-                                                       ],
-                                          },
-                             ...
-                             }
-    }
+        {
+         "time_stamp": <TIME IN ISO FORMAT>,
+         "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
+         "feature_collections": {<mover_id>: {"type": "FeatureCollection",
+                                              "features": [{"type": "Feature",
+                                                            "id": <PARTICLE_ID>,
+                                                            "properties": {"ice_fraction": <FRACTION>,
+                                                                           "ice_thickness": <METERS>,
+                                                                           "water_velocity": [u, v],
+                                                                           "ice_velocity": [u, v]
+                                                                           },
+                                                            "geometry": {"type": "Point",
+                                                                         "coordinates": [<LONG>, <LAT>]
+                                                                         },
+                                                            },
+                                                            ...
+                                                           ],
+                                              },
+                                 ...
+                                 }
+        }
     '''
     _state = copy.deepcopy(Outputter._state)
 
