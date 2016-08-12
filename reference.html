@@ -85,6 +85,9 @@
 <li class="toctree-l1"><a class="reference internal" href="installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="customizing.html">Customizing pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">The logging system</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serialization.html">Notes on serialization / deserialization:</a></li>
 <li class="toctree-l1"><a class="reference internal" href="units.html">Units used in GNOME / PyGNOME</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">PyGnome Class Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#gnome-model-the-pygnome-model-class"><code class="docutils literal"><span class="pre">gnome.model</span></code> &#8211; the PyGnome model class</a></li>
@@ -191,7 +194,7 @@ model run and in subsequent steps the model moves and weathers elements.</p>
 </div>
 <span class="target" id="module-gnome.model"></span><dl class="class">
 <dt id="gnome.model.Model">
-<em class="property">class </em><code class="descclassname">gnome.model.</code><code class="descname">Model</code><span class="sig-paren">(</span><em>time_step=None</em>, <em>start_time=datetime.datetime(2016</em>, <em>8</em>, <em>12</em>, <em>12</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>weathering_substeps=1</em>, <em>map=None</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>name=None</em>, <em>mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.model.</code><code class="descname">Model</code><span class="sig-paren">(</span><em>time_step=None</em>, <em>start_time=datetime.datetime(2016</em>, <em>8</em>, <em>12</em>, <em>15</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>weathering_substeps=1</em>, <em>map=None</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>name=None</em>, <em>mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
 <p>PyGnome Model Class</p>
 <p>Initializes a model.
@@ -7954,11 +7957,11 @@ These details are stored as a dict.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>on</strong> (<em>Boolean</em>) &#8211; Turn the draw function on or off</li>
 <li><strong>dt_format</strong> (<em>String</em>) &#8211; Format string for strftime to format the timestamp</li>
-<li><strong>background</strong> (<em>String</em>) &#8211; Color of the text background.
+<li><strong>background</strong> (<em>str</em>) &#8211; Color of the text background.
 Color must be present in foreground palette</li>
-<li><strong>color</strong> (<em>String</em>) &#8211; Color of the font. Note that the color must be present
+<li><strong>color</strong> (<em>str</em>) &#8211; Color of the font. Note that the color must be present
 in the foreground palette</li>
-<li><strong>size</strong> (<em>One of 'tiny', 'small', 'medium', 'large', 'giant'</em>) &#8211; Size of the font</li>
+<li><strong>size</strong> (<em>str</em>) &#8211; Size of the font, one of &#8216;tiny&#8217;, &#8216;small&#8217;, &#8216;medium&#8217;, &#8216;large&#8217;, &#8216;giant&#8217;</li>
 <li><strong>position</strong> &#8211; x, y pixel coordinates of where to draw the timestamp.</li>
 </ul>
 </td>
@@ -7970,7 +7973,8 @@ in the foreground palette</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>align</strong> (<em>One of: ('lt'(left top), 'ct', 'rt','l', 'r','rb', 'cb', 'lb')</em>) &#8211; The reference point of the text bounding box.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>align</strong> (<em>str</em>) &#8211; The reference point of the text bounding box.
+One of: &#8216;lt&#8217;(left top), &#8216;ct&#8217;, &#8216;rt&#8217;,&#8217;l&#8217;, &#8216;r&#8217;,&#8217;rb&#8217;, &#8216;cb&#8217;, &#8216;lb&#8217;</td>
 </tr>
 </tbody>
 </table>
@@ -8071,7 +8075,7 @@ serializable</p>
 <dl class="method">
 <dt id="gnome.outputters.Renderer.save">
 <code class="descname">save</code><span class="sig-paren">(</span><em>saveloc</em>, <em>references=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/renderer.html#Renderer.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.Renderer.save" title="Permalink to this definition">¶</a></dt>
-<dd><p>update the &#8216;output_dir&#8217; key in the <a href="#id3"><span class="problematic" id="id4">json_</span></a> to point to directory
+<dd><p>update the &#8216;output_dir&#8217; key in the json to point to directory
 inside saveloc, then save the json - do not copy image files or
 image directory over</p>
 </dd></dl>
@@ -8480,7 +8484,7 @@ write_output_post_run(), this must be set</li>
 <dd><p>prepares the outputter for a model run.</p>
 <p>Parameters passed to base class (use super): model_start_time, cache</p>
 <p>Does not take any other input arguments; however, to keep the interface
-the same for all outputters, define <a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs and pass into base class</p>
+the same for all outputters, define <cite>**kwargs</cite> and pass into base class</p>
 <p>In this case, it cleans out previous written data files</p>
 <p>If you want to keep them, a new output_dir should be set</p>
 </dd></dl>
@@ -8501,42 +8505,30 @@ the same for all outputters, define <a href="#id1"><span class="problematic" id=
 in a geojson format.  The output is a collection of Features.
 Each Feature contains a Point object with associated properties.
 Following is the output format - the data in &lt;&gt; are the results
-for each element.</p>
+for each element:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+ <span class="s2">&quot;time_stamp&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">TIME</span> <span class="n">IN</span> <span class="n">ISO</span> <span class="n">FORMAT</span><span class="o">&gt;</span><span class="p">,</span>
+ <span class="s2">&quot;step_num&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">OUTPUT</span> <span class="n">ASSOCIATED</span> <span class="n">WITH</span> <span class="n">THIS</span> <span class="n">STEP</span> <span class="n">NUMBER</span><span class="o">&gt;</span><span class="p">,</span>
+ <span class="s2">&quot;feature_collections&quot;</span><span class="p">:</span> <span class="p">{</span><span class="o">&lt;</span><span class="n">mover_id</span><span class="o">&gt;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;FeatureCollection&quot;</span><span class="p">,</span>
+                                      <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;Feature&quot;</span><span class="p">,</span>
+                                                    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">PARTICLE_ID</span><span class="o">&gt;</span><span class="p">,</span>
+                                                    <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;ice_fraction&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">FRACTION</span><span class="o">&gt;</span><span class="p">,</span>
+                                                                   <span class="s2">&quot;ice_thickness&quot;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">METERS</span><span class="o">&gt;</span><span class="p">,</span>
+                                                                   <span class="s2">&quot;water_velocity&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">],</span>
+                                                                   <span class="s2">&quot;ice_velocity&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">]</span>
+                                                                   <span class="p">},</span>
+                                                    <span class="s2">&quot;geometry&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;Point&quot;</span><span class="p">,</span>
+                                                                 <span class="s2">&quot;coordinates&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">LONG</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">LAT</span><span class="o">&gt;</span><span class="p">]</span>
+                                                                 <span class="p">},</span>
+                                                    <span class="p">},</span>
+                                                    <span class="o">...</span>
+                                                   <span class="p">],</span>
+                                      <span class="p">},</span>
+                         <span class="o">...</span>
+                         <span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
-<blockquote>
-<div><p>&#8220;time_stamp&#8221;: &lt;TIME IN ISO FORMAT&gt;,
-&#8220;step_num&#8221;: &lt;OUTPUT ASSOCIATED WITH THIS STEP NUMBER&gt;,
-&#8220;feature_collections&#8221;: {&lt;mover_id&gt;: {&#8220;type&#8221;: &#8220;FeatureCollection&#8221;,</p>
-<blockquote>
-<div><blockquote>
-<div><dl class="docutils">
-<dt>&#8220;features&#8221;: [{&#8220;type&#8221;: &#8220;Feature&#8221;,</dt>
-<dd><blockquote class="first">
-<div><p>&#8220;id&#8221;: &lt;PARTICLE_ID&gt;,
-&#8220;properties&#8221;: {&#8220;ice_fraction&#8221;: &lt;FRACTION&gt;,</p>
-<blockquote>
-<div>&#8220;ice_thickness&#8221;: &lt;METERS&gt;,
-&#8220;water_velocity&#8221;: [u, v],
-&#8220;ice_velocity&#8221;: [u, v]
-},</div></blockquote>
-<dl class="docutils">
-<dt>&#8220;geometry&#8221;: {&#8220;type&#8221;: &#8220;Point&#8221;,</dt>
-<dd>&#8220;coordinates&#8221;: [&lt;LONG&gt;, &lt;LAT&gt;]
-},</dd>
-</dl>
-</div></blockquote>
-<p class="last">],</p>
-</dd>
-</dl>
-<p>},</p>
-</div></blockquote>
-<p>...
-}</p>
-</div></blockquote>
-</div></blockquote>
-<p>}</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -9020,29 +9012,18 @@ or by bounding box</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>center</strong> &#8211; The point around which the viewport is centered</td>
-</tr>
-</tbody>
-</table>
-<p>:type a tuple containing an x/y coordinate</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>width</strong> &#8211; Width of the viewport in meters</li>
-<li><strong>height</strong> &#8211; height of the viewport in meters</li>
-<li><strong>BB</strong> &#8211; Bounding box of the viewport
+<li><strong>center</strong> (<em>tuple of floats (lon, lat)</em>) &#8211; The point around which the viewport is centered</li>
+<li><strong>width</strong> (<em>float</em>) &#8211; Width of the viewport in meters</li>
+<li><strong>height</strong> (<em>float</em>) &#8211; height of the viewport in meters</li>
+<li><strong>BB</strong> (<em>a list of tuples containing of the lower left and top right
+coordinates: ((min_x, min_y),(max_x, max_y))</em>) &#8211; Bounding box of the viewport
 (overrides all previous parameters)</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<dl class="docutils">
-<dt>:type a list of tuples containing of the lower left and top right</dt>
-<dd>coordinates</dd>
-</dl>
 </dd></dl>
 
 <dl class="method">
@@ -9067,11 +9048,8 @@ Should be called whenever the viewport changes</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>color_list</strong> &#8211; <p>list of colors
-- each elemnt of the list is a 2-tuple:</p>
-<blockquote>
-<div>(&#8216;color_name&#8217;, (r,g,b))</div></blockquote>
-</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>color_list</strong> &#8211; list of colors:
+each elemnt of the list is a 2-tuple: (&#8216;color_name&#8217;, (r,g,b))</td>
 </tr>
 </tbody>
 </table>
@@ -9304,13 +9282,11 @@ This should be called whenever the viewport changes.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>max_lines</strong> (<em>int</em>) &#8211; <p>the maximum number of lines drawn.
-(Note: this is NOT the number of lines on the screen</p>
-<blockquote>
-<div>at any given time.  That is determined by
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>max_lines</strong> (<em>int</em>) &#8211; the maximum number of lines drawn.
+(Note: this is NOT the number of lines on the screen
+at any given time.  That is determined by
 the computed interval and the size/location
-of the viewport)</div></blockquote>
-</td>
+of the viewport)</td>
 </tr>
 </tbody>
 </table>
@@ -9348,35 +9324,24 @@ if the aspect ratio of the image and viewport are identical.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>class that defines and manages attribues for a viewport onto a flat 2D map.
 All points and measurements are in lon/lat</p>
-<p>Init the viewport.
-Can initialize with center/width/height, and/or with bounding box.
+<p>Init the viewport.</p>
+<p>Can initialize with center/width/height, and/or with bounding box.
 NOTE: Bounding box takes precedence over any previous parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>center</strong> &#8211; The point around which the viewport is centered</td>
-</tr>
-</tbody>
-</table>
-<p>:type a tuple containing an lon/lat coordinate</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>center</strong> (<em>a tuple containing an lon/lat coordinate</em>) &#8211; The point around which the viewport is centered</li>
 <li><strong>width</strong> &#8211; Width of the viewport (lon)</li>
 <li><strong>height</strong> &#8211; height of the viewport (lat)</li>
-<li><strong>BB</strong> &#8211; Bounding box of the viewport (overrides previous parameters)</li>
+<li><strong>BB</strong> (<em>a list of lon/lat tuples containing the lower left and top right
+coordinates</em>) &#8211; Bounding box of the viewport (overrides previous parameters)</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<dl class="docutils">
-<dt>:type a list of lon/lat tuples containing the lower left and top right</dt>
-<dd>coordinates</dd>
-</dl>
 </dd></dl>
 
 <span class="target" id="module-gnome.utilities.projections"></span><p>Module to hold classes and supporting code for projections used in GNOME.</p>
@@ -9530,11 +9495,27 @@ if not given, the previous size will be used.</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> &#8211; An array of coordinates</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> (<em>Sequence of NX3</em>) &#8211; An array of coordinates</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The pixel coords as a similar Nx2 array of integer
-x,y coordinates
-(using the y = 0 at the top, and y increasing down)</td>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>::</dt>
+<dd><dl class="first last docutils">
+<dt>((long1, lat1, z1),</dt>
+<dd>(long2, lat2, z2),
+(long3, lat3, z3),
+)</dd>
+</dl>
+</dd>
+</dl>
+<p>(z is ignored, and there is no z in the returned array)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The pixel coords as a similar Nx2 array of integer
+x,y coordinates (using the y = 0 at the top, and y increasing down)</td>
 </tr>
 </tbody>
 </table>
@@ -9567,9 +9548,21 @@ considered outside the map</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> &#8211; An array of pixel coordinates (usually integer type</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> (<em>Sequence of NX2::
+((long1, lat1),
+(long2, lat2),
+(long3, lat3),
+...
+)</em>) &#8211; An array of pixel coordinates (usually integer type</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The pixel coords as a similar Nx2 array of floating point
+</tbody>
+</table>
+<p>(as produced by to_pixel)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The pixel coords as a similar Nx2 array of floating point
 x,y coordinates
 (using the y = 0 at the top, and y increasing down)</td>
 </tr>
@@ -9616,9 +9609,8 @@ map properties &#8211; but easy to compute, and it looks OK.</p>
 using the Flat-Earth projection.</p>
 <p>dlat = dy * 8.9992801e-06
 dlon = dy * 8.9992801e-06 * cos(ref_lat)
-(based on previous GNOME value: and/or average radius of the earth of</p>
-<blockquote>
-<div>6366706.989  m)</div></blockquote>
+(based on previous GNOME value: and/or average radius of the earth of
+6366706.989  m)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -9632,8 +9624,7 @@ dlon = dy * 8.9992801e-06 * cos(ref_lat)
 </tr>
 <tr class="field-even field"><th class="field-name" colspan="2">Returns delta_lon_lat:</th></tr>
 <tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first last">Differential (delta) positional values
-Nx3 numpy array of
-(delta-lon, delta-lat, delta-z)</p>
+Nx3 numpy array of (delta-lon, delta-lat, delta-z)</p>
 </td>
 </tr>
 </tbody>
@@ -9816,7 +9807,12 @@ so you can have fractional pixels</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> &#8211; An array of pixel coordinates (as produced by to_pixel)</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> (<em>Sequence of Nx2 (usually integer type)::
+((long1, lat1),
+(long2, lat2),
+(long3, lat3),
+...
+)</em>) &#8211; An array of pixel coordinates (as produced by to_pixel)</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the pixel coords as a similar Nx2 array of floating point
 x,y coordinates
@@ -9951,7 +9947,7 @@ accessing again for output, etc.</p>
 
 <dl class="function">
 <dt id="gnome.utilities.cache.clean_up_cache">
-<code class="descclassname">gnome.utilities.cache.</code><code class="descname">clean_up_cache</code><span class="sig-paren">(</span><em>dir_name='/var/folders/7t/137hx7xn4s1fdqvjj1bhtdhskm0vyc/T/tmpBJ5aJv'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/cache.html#clean_up_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.cache.clean_up_cache" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gnome.utilities.cache.</code><code class="descname">clean_up_cache</code><span class="sig-paren">(</span><em>dir_name='/var/folders/7t/137hx7xn4s1fdqvjj1bhtdhskm0vyc/T/tmp64VJry'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/cache.html#clean_up_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.cache.clean_up_cache" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deletes a cache dir.</p>
 <p>Designed to be called at program exit. and/or when
 individual cache objects are deleted</p>

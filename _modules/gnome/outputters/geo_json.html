@@ -85,6 +85,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../units.html">Units used in GNOME / PyGNOME</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../reference.html">PyGnome Class Reference</a></li>
 </ul>
@@ -239,7 +242,7 @@
 <span class="sd">        Parameters passed to base class (use super): model_start_time, cache</span>
 
 <span class="sd">        Does not take any other input arguments; however, to keep the interface</span>
-<span class="sd">        the same for all outputters, define **kwargs and pass into base class</span>
+<span class="sd">        the same for all outputters, define `**kwargs` and pass into base class</span>
 
 <span class="sd">        In this case, it cleans out previous written data files</span>
 
@@ -360,30 +363,29 @@
 <span class="sd">    in a geojson format.  The output is a collection of Features.</span>
 <span class="sd">    Each Feature contains a Point object with associated properties.</span>
 <span class="sd">    Following is the output format - the data in &lt;&gt; are the results</span>
-<span class="sd">    for each element.</span>
-<span class="sd">    ::</span>
+<span class="sd">    for each element::</span>
 
-<span class="sd">    {</span>
-<span class="sd">     &quot;time_stamp&quot;: &lt;TIME IN ISO FORMAT&gt;,</span>
-<span class="sd">     &quot;step_num&quot;: &lt;OUTPUT ASSOCIATED WITH THIS STEP NUMBER&gt;,</span>
-<span class="sd">     &quot;feature_collections&quot;: {&lt;mover_id&gt;: {&quot;type&quot;: &quot;FeatureCollection&quot;,</span>
-<span class="sd">                                          &quot;features&quot;: [{&quot;type&quot;: &quot;Feature&quot;,</span>
-<span class="sd">                                                        &quot;id&quot;: &lt;PARTICLE_ID&gt;,</span>
-<span class="sd">                                                        &quot;properties&quot;: {&quot;ice_fraction&quot;: &lt;FRACTION&gt;,</span>
-<span class="sd">                                                                       &quot;ice_thickness&quot;: &lt;METERS&gt;,</span>
-<span class="sd">                                                                       &quot;water_velocity&quot;: [u, v],</span>
-<span class="sd">                                                                       &quot;ice_velocity&quot;: [u, v]</span>
-<span class="sd">                                                                       },</span>
-<span class="sd">                                                        &quot;geometry&quot;: {&quot;type&quot;: &quot;Point&quot;,</span>
-<span class="sd">                                                                     &quot;coordinates&quot;: [&lt;LONG&gt;, &lt;LAT&gt;]</span>
-<span class="sd">                                                                     },</span>
-<span class="sd">                                                        },</span>
-<span class="sd">                                                        ...</span>
-<span class="sd">                                                       ],</span>
-<span class="sd">                                          },</span>
-<span class="sd">                             ...</span>
-<span class="sd">                             }</span>
-<span class="sd">    }</span>
+<span class="sd">        {</span>
+<span class="sd">         &quot;time_stamp&quot;: &lt;TIME IN ISO FORMAT&gt;,</span>
+<span class="sd">         &quot;step_num&quot;: &lt;OUTPUT ASSOCIATED WITH THIS STEP NUMBER&gt;,</span>
+<span class="sd">         &quot;feature_collections&quot;: {&lt;mover_id&gt;: {&quot;type&quot;: &quot;FeatureCollection&quot;,</span>
+<span class="sd">                                              &quot;features&quot;: [{&quot;type&quot;: &quot;Feature&quot;,</span>
+<span class="sd">                                                            &quot;id&quot;: &lt;PARTICLE_ID&gt;,</span>
+<span class="sd">                                                            &quot;properties&quot;: {&quot;ice_fraction&quot;: &lt;FRACTION&gt;,</span>
+<span class="sd">                                                                           &quot;ice_thickness&quot;: &lt;METERS&gt;,</span>
+<span class="sd">                                                                           &quot;water_velocity&quot;: [u, v],</span>
+<span class="sd">                                                                           &quot;ice_velocity&quot;: [u, v]</span>
+<span class="sd">                                                                           },</span>
+<span class="sd">                                                            &quot;geometry&quot;: {&quot;type&quot;: &quot;Point&quot;,</span>
+<span class="sd">                                                                         &quot;coordinates&quot;: [&lt;LONG&gt;, &lt;LAT&gt;]</span>
+<span class="sd">                                                                         },</span>
+<span class="sd">                                                            },</span>
+<span class="sd">                                                            ...</span>
+<span class="sd">                                                           ],</span>
+<span class="sd">                                              },</span>
+<span class="sd">                                 ...</span>
+<span class="sd">                                 }</span>
+<span class="sd">        }</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Outputter</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
 

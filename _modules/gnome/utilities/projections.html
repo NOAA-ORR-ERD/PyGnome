@@ -85,6 +85,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../units.html">Units used in GNOME / PyGNOME</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../reference.html">PyGnome Class Reference</a></li>
 </ul>
@@ -152,7 +155,7 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">profiledeco</span> <span class="k">as</span> <span class="nn">pd</span>
+
 
 <div class="viewcode-block" id="to_2d_coords"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.projections.to_2d_coords">[docs]</a><span class="k">def</span> <span class="nf">to_2d_coords</span><span class="p">(</span><span class="n">coords</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -164,6 +167,7 @@
 <span class="sd">                  a (lon, lat, depth) triple</span>
 <span class="sd">                  a Nx2 array-like object of (lon,lat) pairs</span>
 <span class="sd">                  a Nx3 array-like object of (lon, lat, depth) triples</span>
+
 <span class="sd">    The depth is ignored in all cases</span>
 
 <span class="sd">    This is probably overly convenient, but the legacy is there...</span>
@@ -262,14 +266,18 @@
 <span class="sd">        Projection(bounding_box, image_size)</span>
 
 <span class="sd">        :param bounding_box: The bounding box of the map</span>
-<span class="sd">        :type bounding_box: Struct of the form:</span>
+<span class="sd">        :type bounding_box: Struct of the form::</span>
+
 <span class="sd">                                ((min_long, min_lat),</span>
 <span class="sd">                                 (max_lon,  max_lat))</span>
+
 <span class="sd">                            or a BoundingBox Object</span>
 
 <span class="sd">        :param image_size: The size of the map image</span>
 <span class="sd">        :type image_size: Struct of the form (width, height)</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="kc">None</span>
@@ -351,22 +359,24 @@
 
 <span class="sd">        :param coords: An array of coordinates</span>
 <span class="sd">        :type coords: Sequence of NX3</span>
-<span class="sd">                          ((long1, lat1, z1),</span>
-<span class="sd">                           (long2, lat2, z2),</span>
-<span class="sd">                           (long3, lat3, z3),</span>
-<span class="sd">                           ...</span>
-<span class="sd">                          )</span>
-<span class="sd">                      (z is ignored, and there is no z in the returned array)</span>
+
+<span class="sd">        ::</span>
+<span class="sd">            ((long1, lat1, z1),</span>
+<span class="sd">             (long2, lat2, z2),</span>
+<span class="sd">             (long3, lat3, z3),</span>
+<span class="sd">             )</span>
+
+<span class="sd">        (z is ignored, and there is no z in the returned array)</span>
 
 <span class="sd">        :returns: The pixel coords as a similar Nx2 array of integer</span>
-<span class="sd">                  x,y coordinates</span>
-<span class="sd">                  (using the y = 0 at the top, and y increasing down)</span>
+<span class="sd">                  x,y coordinates (using the y = 0 at the top, and y increasing down)</span>
 
 <span class="sd">        NOTE: The values between the minimum of a pixel value to less than the</span>
 <span class="sd">              max of a pixel range are in that pixel, so  a point exactly at</span>
 <span class="sd">              the minimum of the bounding box will be in the zeroth pixel, but</span>
 <span class="sd">              a point  exactly at the max of the bounding box will be</span>
 <span class="sd">              considered outside the map</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">coords</span> <span class="o">=</span> <span class="n">to_2d_coords</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>  <span class="c1"># strip off depth, if it&#39;s there</span>
 
@@ -415,12 +425,14 @@
 <span class="sd">        converts pixel coords to long-lat coords</span>
 
 <span class="sd">        :param coords: An array of pixel coordinates (usually integer type</span>
-<span class="sd">        :type coords: Sequence of NX2: ((long1, lat1),</span>
-<span class="sd">                                        (long2, lat2),</span>
-<span class="sd">                                        (long3, lat3),</span>
-<span class="sd">                                        ...</span>
-<span class="sd">                                        )</span>
-<span class="sd">                      (as produced by to_pixel)</span>
+<span class="sd">        :type coords: Sequence of NX2::</span>
+<span class="sd">                          ((long1, lat1),</span>
+<span class="sd">                          (long2, lat2),</span>
+<span class="sd">                          (long3, lat3),</span>
+<span class="sd">                          ...</span>
+<span class="sd">                          )</span>
+
+<span class="sd">        (as produced by to_pixel)</span>
 
 <span class="sd">        :returns: The pixel coords as a similar Nx2 array of floating point</span>
 <span class="sd">                  x,y coordinates</span>
@@ -473,7 +485,7 @@
 <span class="sd">        dlat = dy * 8.9992801e-06</span>
 <span class="sd">        dlon = dy * 8.9992801e-06 * cos(ref_lat)</span>
 <span class="sd">        (based on previous GNOME value: and/or average radius of the earth of</span>
-<span class="sd">         6366706.989  m)</span>
+<span class="sd">        6366706.989  m)</span>
 
 <span class="sd">        :param meters: Distances in meters</span>
 <span class="sd">        :type meters: NX3 numpy array of (dx, dy, dz)</span>
@@ -483,9 +495,9 @@
 <span class="sd">        :type ref_positions: NX3, numpy array (Only lat is used here)</span>
 
 <span class="sd">        :returns delta_lon_lat: Differential (delta) positional values</span>
-<span class="sd">                                Nx3 numpy array of</span>
-<span class="sd">                                (delta-lon, delta-lat, delta-z)</span>
+<span class="sd">                                Nx3 numpy array of (delta-lon, delta-lat, delta-z)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="c1"># make a copy -- don&#39;t change meters</span>
         <span class="n">delta_lon_lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">meters</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">delta_lon_lat</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -785,12 +797,12 @@
 <span class="sd">        Converts pixel coords to long-lat coords</span>
 
 <span class="sd">        :param coords: An array of pixel coordinates (as produced by to_pixel)</span>
-<span class="sd">        :type coords: Sequence of Nx2 (usually integer type)</span>
+<span class="sd">        :type coords: Sequence of Nx2 (usually integer type)::</span>
 <span class="sd">                          ((long1, lat1),</span>
-<span class="sd">                           (long2, lat2),</span>
-<span class="sd">                           (long3, lat3),</span>
-<span class="sd">                           ...</span>
-<span class="sd">                           )</span>
+<span class="sd">                          (long2, lat2),</span>
+<span class="sd">                          (long3, lat3),</span>
+<span class="sd">                          ...</span>
+<span class="sd">                          )</span>
 
 <span class="sd">        :returns: the pixel coords as a similar Nx2 array of floating point</span>
 <span class="sd">                  x,y coordinates</span>

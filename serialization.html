@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Units used in GNOME / PyGNOME &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>Notes on serialization / deserialization: &mdash; pyGNOME 0.1.1 documentation</title>
   
 
   
@@ -31,8 +31,8 @@
 
   
     <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html"/>
-        <link rel="next" title="PyGnome Class Reference" href="reference.html"/>
-        <link rel="prev" title="Notes on serialization / deserialization:" href="serialization.html"/> 
+        <link rel="next" title="Units used in GNOME / PyGNOME" href="units.html"/>
+        <link rel="prev" title="The logging system" href="logging.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -88,8 +88,13 @@
 <li class="toctree-l1"><a class="reference internal" href="scripting.html">Scripting pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="logging.html">The logging system</a></li>
-<li class="toctree-l1"><a class="reference internal" href="serialization.html">Notes on serialization / deserialization:</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Units used in GNOME / PyGNOME</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Notes on serialization / deserialization:</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#methods">Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#making-a-new-object-serializable">Making a new object serializable</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="units.html">Units used in GNOME / PyGNOME</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">PyGnome Class Reference</a></li>
 </ul>
 
@@ -121,11 +126,11 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Units used in GNOME / PyGNOME</li>
+    <li>Notes on serialization / deserialization:</li>
       <li class="wy-breadcrumbs-aside">
         
           
-            <a href="_sources/units.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/serialization.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -135,36 +140,36 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="units-used-in-gnome-pygnome">
-<span id="units"></span><h1>Units used in GNOME / PyGNOME<a class="headerlink" href="#units-used-in-gnome-pygnome" title="Permalink to this headline">¶</a></h1>
-<p>GNOME is a model of physical processes, and thus most of the things computed are in various physical units.</p>
-<p>To keep things clean, the internal computational code is all handled in a consistent set of units. All values are stored in floating point types, generally 64 bit (<code class="docutils literal"><span class="pre">double</span></code>) unless otherwise noted.</p>
-<p>Conversion is done on I/O or occasionally within a class (i.e the class may store data in the units the user gave, but return values in the standard unit to other parts of the code) So unless otherwise noted, pass data into methods in the following standard units:</p>
+  <div class="section" id="notes-on-serialization-deserialization">
+<h1>Notes on serialization / deserialization:<a class="headerlink" href="#notes-on-serialization-deserialization" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The process involves multiple steps:</p>
 <dl class="docutils">
-<dt>Time</dt>
-<dd><p class="first">Time is expressed in integer seconds &#8211; stored in a C <code class="docutils literal"><span class="pre">unsigned</span> <span class="pre">long</span></code></p>
-<p>Date-times are in seconds since 1904 (1904-01-01T00:00) &#8211; stored in a C <code class="docutils literal"><span class="pre">unsigned</span> <span class="pre">long</span></code></p>
-<p class="last">(NOTE: much of the Python code uses <code class="docutils literal"><span class="pre">datetime.datetime</span></code> objects and/or numpy <code class="docutils literal"><span class="pre">datetime64</span></code> objects, but the internal C++ code uses integer seconds)</p>
+<dt>Serializing:</dt>
+<dd><ul class="first last simple">
+<li>From Object to a json-compatible dict</li>
+<li>From json-compatible dict to actual json</li>
+</ul>
 </dd>
-<dt>Length</dt>
-<dd>Lengths are in meters</dd>
-<dt>Mass</dt>
-<dd>Mass is in  grams</dd>
-<dt>Volume</dt>
-<dd>Volume is in cubic meters</dd>
-<dt>Density</dt>
-<dd>Density is in grams per cubic centimeter (g/cm^3)</dd>
-<dt>Velocity</dt>
-<dd>Velocities are in meters per second</dd>
-<dt>Latitude-Longitude</dt>
-<dd>Lat-long is in floating point degrees  &#8211; range generally -360 to 360, so we can do stuff across the date line.</dd>
-<dt>Diffusion Coefficients</dt>
-<dd>Diffusion coefficients (for both vertical and horizontal random diffusion) are given in units of square centimeters per second cm^2/s</dd>
-<dt>Droplet Diameter</dt>
-<dd>Droplet Diameter is given and returned in meters</dd>
-<dt>Viscosity</dt>
-<dd>Viscosity is usually kinematic viscosity, and is in units of m^2/s</dd>
+<dt>Deserializing:</dt>
+<dd><ul class="first last simple">
+<li>From actual json to a json-compatible dict</li>
+<li>From a json-compatible dict to a Object-compatible dict.</li>
+<li>From an object compatible dict to an Object.</li>
+</ul>
+</dd>
 </dl>
+<p>This is a &#8220;cycle&#8221;, so could be in a different order depending on where you start!</p>
+<p>Also &#8211; &#8220;deserializing&#8221; can be createing a new object from json, or updating teh object from json.</p>
+</div>
+<div class="section" id="methods">
+<h2>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">Object.serialize()</span></code> returns a &#8220;json-compatible&#8221; dict.</p>
+</div>
+<div class="section" id="making-a-new-object-serializable">
+<h2>Making a new object serializable<a class="headerlink" href="#making-a-new-object-serializable" title="Permalink to this headline">¶</a></h2>
+</div>
 </div>
 
 
@@ -174,10 +179,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="reference.html" class="btn btn-neutral float-right" title="PyGnome Class Reference" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="units.html" class="btn btn-neutral float-right" title="Units used in GNOME / PyGNOME" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="serialization.html" class="btn btn-neutral" title="Notes on serialization / deserialization:" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="logging.html" class="btn btn-neutral" title="The logging system" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

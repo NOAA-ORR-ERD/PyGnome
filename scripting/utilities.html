@@ -94,12 +94,16 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="maps.html">Maps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="spills.html">Spills</a></li>
+<li class="toctree-l2"><a class="reference internal" href="property_objects.html">Property Objects</a></li>
 <li class="toctree-l2"><a class="reference internal" href="movers.html">Movers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="weatherers.html">Weatherers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="outputters.html">Outputters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="scripting_examples.html">Examples</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../units.html">Units used in GNOME / PyGNOME</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">PyGnome Class Reference</a></li>
 </ul>
@@ -288,36 +292,16 @@ randomly reset on this time scale</li>
 <li><strong>num_elements</strong> (<em>integer</em>) &#8211; total number of elements to be released</li>
 <li><strong>start_position</strong> (<em>3-tuple of floats (long, lat, z)</em>) &#8211; initial location the elements are released</li>
 <li><strong>release_time</strong> (<em>datetime.datetime</em>) &#8211; time the LEs are released (datetime object)</li>
-<li><strong>distribution=None</strong> &#8211; <p>An object capable of generating a probability
-distribution.  Right now, we have:</p>
-<blockquote>
-<div><ul>
-<li>UniformDistribution</li>
-<li>NormalDistribution</li>
-<li>LogNormalDistribution</li>
-<li>WeibullDistribution</li>
-</ul>
-</div></blockquote>
-</li>
-<li><strong>distribution_type=droplet_size</strong> (<em>str</em>) &#8211; <p>What is being sampled from the
-distribution.  Options are:</p>
-<blockquote>
-<div><ul>
-<li><dl class="first docutils">
-<dt>droplet_size - Rise velocity</dt>
-<dd>is then
-calculated</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>rise_velocity - No droplet</dt>
-<dd>size is
-computed</dd>
-</dl>
-</li>
-</ul>
-</div></blockquote>
-</li>
+<li><strong>distribution=None</strong> &#8211; An object capable of generating a probability
+distribution.  Right now, we have:
+* UniformDistribution
+* NormalDistribution
+* LogNormalDistribution
+* WeibullDistribution</li>
+<li><strong>distribution_type=droplet_size</strong> (<em>str</em>) &#8211; What is being sampled from the
+distribution.  Options are:
+* droplet_size - Rise velocity is then calculated
+* rise_velocity - No droplet size is computed</li>
 <li><strong>end_release_time=None</strong> &#8211; End release time for a time varying release.
 If None, then release is instantaneous</li>
 <li><strong>substance='None'</strong> &#8211; Required unless density specified.

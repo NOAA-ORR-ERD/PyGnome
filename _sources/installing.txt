@@ -6,16 +6,16 @@ PyGnome consists of compiled C++ code (`libgnome`), compiled Cython code (`*.pyx
 It can be installed either from source, in which case you'll need an appropriate compiler, or from binaries provided by NOAA
 
 Dependencies
-------------
+============
 pyGNOME depends on a number of third party packages -- the complete list can be found in the `requirements.txt` file.
 
 There are many dependencies that can be hard to build, so the easiest way is to use the conda package manager, but you can do it by hand as well -- see below.
 
 
-.. include:: ../../../InstallingWithAnaconda.rst
+.. include:: ../../InstallingWithAnaconda.rst
 
 
-.. include:: ../../../NormalInstall.rst 
+.. include:: ../../NormalInstall.rst 
 
 
 

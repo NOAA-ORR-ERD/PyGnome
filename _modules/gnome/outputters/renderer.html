@@ -85,6 +85,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../units.html">Units used in GNOME / PyGNOME</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../reference.html">PyGnome Class Reference</a></li>
 </ul>
@@ -472,23 +475,30 @@
 
 <span class="sd">        :param background: Color of the text background.</span>
 <span class="sd">                           Color must be present in foreground palette</span>
-<span class="sd">        :type background: String</span>
+
+<span class="sd">        :type background: str</span>
 
 <span class="sd">        :param color: Color of the font. Note that the color must be present</span>
 <span class="sd">                      in the foreground palette</span>
-<span class="sd">        :type color: String</span>
 
-<span class="sd">        :param size: Size of the font</span>
-<span class="sd">        :type size: One of &#39;tiny&#39;, &#39;small&#39;, &#39;medium&#39;, &#39;large&#39;, &#39;giant&#39;</span>
+<span class="sd">        :type color: str</span>
+
+<span class="sd">        :param size: Size of the font, one of &#39;tiny&#39;, &#39;small&#39;, &#39;medium&#39;, &#39;large&#39;, &#39;giant&#39;</span>
+
+<span class="sd">        :type size: str</span>
 
 <span class="sd">        :param position: x, y pixel coordinates of where to draw the timestamp.</span>
+
 <span class="sd">        :type position :tuple</span>
 
 <span class="sd">        :param align: The reference point of the text bounding box.</span>
-<span class="sd">        :type align: One of: (&#39;lt&#39;(left top), &#39;ct&#39;, &#39;rt&#39;,&#39;l&#39;, &#39;r&#39;,&#39;rb&#39;, &#39;cb&#39;, &#39;lb&#39;)</span>
+<span class="sd">                      One of: &#39;lt&#39;(left top), &#39;ct&#39;, &#39;rt&#39;,&#39;l&#39;, &#39;r&#39;,&#39;rb&#39;, &#39;cb&#39;, &#39;lb&#39;</span>
+
+<span class="sd">        :type align: str</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timestamp_attribs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span></div>
+
 
 <div class="viewcode-block" id="Renderer.draw_timestamp"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.Renderer.draw_timestamp">[docs]</a>    <span class="k">def</span> <span class="nf">draw_timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -807,7 +817,7 @@
 
 <div class="viewcode-block" id="Renderer.save"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.Renderer.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        update the &#39;output_dir&#39; key in the json_ to point to directory</span>
+<span class="sd">        update the &#39;output_dir&#39; key in the json to point to directory</span>
 <span class="sd">        inside saveloc, then save the json - do not copy image files or</span>
 <span class="sd">        image directory over</span>
 <span class="sd">        &#39;&#39;&#39;</span>

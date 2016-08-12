@@ -85,6 +85,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../units.html">Units used in GNOME / PyGNOME</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../reference.html">PyGnome Class Reference</a></li>
 </ul>
@@ -845,42 +848,54 @@
 
 <span class="sd">    :param num_elements: total number of elements to be released</span>
 <span class="sd">    :type num_elements: integer</span>
+
 <span class="sd">    :param start_position: initial location the elements are released</span>
 <span class="sd">    :type start_position: 3-tuple of floats (long, lat, z)</span>
+
 <span class="sd">    :param release_time: time the LEs are released (datetime object)</span>
 <span class="sd">    :type release_time: datetime.datetime</span>
+
 <span class="sd">    :param distribution=None: An object capable of generating a probability</span>
 <span class="sd">                              distribution.  Right now, we have:</span>
-<span class="sd">                               * UniformDistribution</span>
-<span class="sd">                               * NormalDistribution</span>
-<span class="sd">                               * LogNormalDistribution</span>
-<span class="sd">                               * WeibullDistribution</span>
+<span class="sd">                              * UniformDistribution</span>
+<span class="sd">                              * NormalDistribution</span>
+<span class="sd">                              * LogNormalDistribution</span>
+<span class="sd">                              * WeibullDistribution</span>
+
 <span class="sd">    :type distribution: gnome.utilities.distribution</span>
+
 <span class="sd">    :param str distribution_type=droplet_size: What is being sampled from the</span>
-<span class="sd">                                               distribution.  Options are:</span>
-<span class="sd">                                                * droplet_size - Rise velocity</span>
-<span class="sd">                                                                 is then</span>
-<span class="sd">                                                                 calculated</span>
-<span class="sd">                                                * rise_velocity - No droplet</span>
-<span class="sd">                                                                  size is</span>
-<span class="sd">                                                                  computed</span>
+<span class="sd">                    distribution.  Options are:</span>
+<span class="sd">                    * droplet_size - Rise velocity is then calculated</span>
+<span class="sd">                    * rise_velocity - No droplet size is computed</span>
+
 <span class="sd">    :param end_release_time=None: End release time for a time varying release.</span>
 <span class="sd">                                  If None, then release is instantaneous</span>
+
 <span class="sd">    :type end_release_time: datetime.datetime</span>
+
 <span class="sd">    :param substance=&#39;None&#39;: Required unless density specified.</span>
 <span class="sd">                             Type of oil spilled.</span>
+
 <span class="sd">    :type substance: str or OilProps</span>
+
 <span class="sd">    :param float density=None: Required unless substance specified.</span>
 <span class="sd">                               Density of spilled material.</span>
+
 <span class="sd">    :param str density_units=&#39;kg/m^3&#39;:</span>
+
 <span class="sd">    :param float amount=None: mass or volume of oil spilled.</span>
+
 <span class="sd">    :param str units=None: must provide units for amount spilled.</span>
+
 <span class="sd">    :param tuple windage_range=(.01, .04): Percentage range for windage.</span>
 <span class="sd">                                           Active only for surface particles</span>
 <span class="sd">                                           when a mind mover is added</span>
+
 <span class="sd">    :param windage_persist=900: Persistence for windage values in seconds.</span>
 <span class="sd">                                Use -1 for inifinite, otherwise it is</span>
 <span class="sd">                                randomly reset on this time scale.</span>
+
 <span class="sd">    :param str name=&#39;Surface Point/Line Release&#39;: a name for the spill.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
 

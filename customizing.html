@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Units used in GNOME / PyGNOME &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>Customizing pygnome &mdash; pyGNOME 0.1.1 documentation</title>
   
 
   
@@ -31,8 +31,8 @@
 
   
     <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html"/>
-        <link rel="next" title="PyGnome Class Reference" href="reference.html"/>
-        <link rel="prev" title="Notes on serialization / deserialization:" href="serialization.html"/> 
+        <link rel="next" title="The logging system" href="logging.html"/>
+        <link rel="prev" title="A subsurface (mixed layer) release" href="scripting/mixedlayer_release.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -86,10 +86,14 @@
 <li class="toctree-l1"><a class="reference internal" href="installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scripting.html">Scripting pygnome</a></li>
-<li class="toctree-l1"><a class="reference internal" href="customizing.html">Customizing pygnome</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Customizing pygnome</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#writing-a-custom-mover">Writing a custom mover</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#writing-a-custom-weatherer">Writing a custom weatherer</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="serialization.html">Notes on serialization / deserialization:</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Units used in GNOME / PyGNOME</a></li>
+<li class="toctree-l1"><a class="reference internal" href="units.html">Units used in GNOME / PyGNOME</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">PyGnome Class Reference</a></li>
 </ul>
 
@@ -121,11 +125,11 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Units used in GNOME / PyGNOME</li>
+    <li>Customizing pygnome</li>
       <li class="wy-breadcrumbs-aside">
         
           
-            <a href="_sources/units.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/customizing.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -135,36 +139,23 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="units-used-in-gnome-pygnome">
-<span id="units"></span><h1>Units used in GNOME / PyGNOME<a class="headerlink" href="#units-used-in-gnome-pygnome" title="Permalink to this headline">¶</a></h1>
-<p>GNOME is a model of physical processes, and thus most of the things computed are in various physical units.</p>
-<p>To keep things clean, the internal computational code is all handled in a consistent set of units. All values are stored in floating point types, generally 64 bit (<code class="docutils literal"><span class="pre">double</span></code>) unless otherwise noted.</p>
-<p>Conversion is done on I/O or occasionally within a class (i.e the class may store data in the units the user gave, but return values in the standard unit to other parts of the code) So unless otherwise noted, pass data into methods in the following standard units:</p>
-<dl class="docutils">
-<dt>Time</dt>
-<dd><p class="first">Time is expressed in integer seconds &#8211; stored in a C <code class="docutils literal"><span class="pre">unsigned</span> <span class="pre">long</span></code></p>
-<p>Date-times are in seconds since 1904 (1904-01-01T00:00) &#8211; stored in a C <code class="docutils literal"><span class="pre">unsigned</span> <span class="pre">long</span></code></p>
-<p class="last">(NOTE: much of the Python code uses <code class="docutils literal"><span class="pre">datetime.datetime</span></code> objects and/or numpy <code class="docutils literal"><span class="pre">datetime64</span></code> objects, but the internal C++ code uses integer seconds)</p>
-</dd>
-<dt>Length</dt>
-<dd>Lengths are in meters</dd>
-<dt>Mass</dt>
-<dd>Mass is in  grams</dd>
-<dt>Volume</dt>
-<dd>Volume is in cubic meters</dd>
-<dt>Density</dt>
-<dd>Density is in grams per cubic centimeter (g/cm^3)</dd>
-<dt>Velocity</dt>
-<dd>Velocities are in meters per second</dd>
-<dt>Latitude-Longitude</dt>
-<dd>Lat-long is in floating point degrees  &#8211; range generally -360 to 360, so we can do stuff across the date line.</dd>
-<dt>Diffusion Coefficients</dt>
-<dd>Diffusion coefficients (for both vertical and horizontal random diffusion) are given in units of square centimeters per second cm^2/s</dd>
-<dt>Droplet Diameter</dt>
-<dd>Droplet Diameter is given and returned in meters</dd>
-<dt>Viscosity</dt>
-<dd>Viscosity is usually kinematic viscosity, and is in units of m^2/s</dd>
-</dl>
+  <div class="section" id="customizing-pygnome">
+<h1>Customizing pygnome<a class="headerlink" href="#customizing-pygnome" title="Permalink to this headline">¶</a></h1>
+<p>The pygnome Mover and Weatherer APIs are defined so that you can write your own movers and/or weatherers.</p>
+<div class="section" id="writing-a-custom-mover">
+<h2>Writing a custom mover<a class="headerlink" href="#writing-a-custom-mover" title="Permalink to this headline">¶</a></h2>
+<p>Here&#8217;s how to do this.</p>
+<p>And here&#8217;s some example code doing this:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="k">import</span> <span class="n">Model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>That doesn&#8217;t do much. You can find out more in <a class="reference internal" href="reference.html#module-gnome.movers" title="gnome.movers"><code class="xref py py-mod docutils literal"><span class="pre">gnome.movers</span></code></a></p>
+</div>
+<div class="section" id="writing-a-custom-weatherer">
+<h2>Writing a custom weatherer<a class="headerlink" href="#writing-a-custom-weatherer" title="Permalink to this headline">¶</a></h2>
+<p>And here&#8217;s how to do this...</p>
+</div>
 </div>
 
 
@@ -174,10 +165,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="reference.html" class="btn btn-neutral float-right" title="PyGnome Class Reference" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="logging.html" class="btn btn-neutral float-right" title="The logging system" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="serialization.html" class="btn btn-neutral" title="Notes on serialization / deserialization:" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="scripting/mixedlayer_release.html" class="btn btn-neutral" title="A subsurface (mixed layer) release" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
