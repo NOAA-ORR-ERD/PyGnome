@@ -136,11 +136,8 @@ class TamocSpill(serializable.Serializable):
         """
         return [TamocDroplet(radius=1e-6 * i) for i in range(10)]
 
-
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
-
-
 
     def _elem_mass(self, num_new_particles, current_time, time_step):
         '''
