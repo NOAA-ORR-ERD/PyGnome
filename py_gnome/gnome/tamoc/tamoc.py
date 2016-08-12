@@ -4,7 +4,10 @@
 assorted code for working with TAMOC
 """
 
+from datetime import timedelta
+
 from gnome.utilities import serializable
+from gnome.utilities.projections import FlatEarthProjection
 
 
 __all__ = []
@@ -20,7 +23,8 @@ __all__ = []
 #     This version is essentially a template -- it needs to be filled in with
 #     access to the parameters from the "real" TAMOC model.
 
-#     Also, this version is for intert particles -- they will not change once released into gnome.
+#     Also, this version is for inert particles only a size and density.
+#     They will not change once released into gnome.
 
 #     Future work: create a "proper" weatherable oil object.
 
@@ -86,7 +90,7 @@ class TamocDroplet():
         self.mass_flux = mass_flux
         self.radius = radius
         self.density = density
-        self.position = position
+        self.position = np.asanyarray(position)
 
 
 
@@ -117,17 +121,36 @@ class TamocSpill(serializable.Serializable):
                  num_elements=None,
                  end_release_time=None,
                  name='TAMOC plume',
+                 TAMOC_interval=24,
                  on=True,
                  ):
         """
 
         """
 
-        self.droplets = self.run_tamoc()
+        self.release_time = release_time
+        self.start_position = start_position
+        self.num_elements = num_elements
+        self.end_release_time = end_release_time
+        self.num_released=0
+        self.amount_released=0
+
+        self.tamoc_interval = datetime.timedelta(hrs=TAMOC_interval)
+        self.last_tamoc_time = release_time
+        self.droplets=None
         self.on = on    # spill is active or not
         self.name = name
 
-    def run_tamoc(self):
+    def run_tamoc(self, current_time, time_step):
+        #runs TAMOC if no droplets have been initialized or if current_time has reached last_tamoc_run + interval
+        if self.on:
+            if (self.droplets is None or
+               self.current_time > release_time and last_tamoc_time is None or
+               self.current_time > self.last_tamoc_time + self.tamoc_interval):
+                return self._run_tamoc()
+        return self.droplets
+
+    def _run_tamoc(self):
         """
         this is the code that actually calls and runs tamoc_output
 
@@ -138,6 +161,16 @@ class TamocSpill(serializable.Serializable):
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
+
+    def _get_mass_distribution(self, mass_fluxes, time_step):
+        ts = time_step.total_seconds()
+        delta_masses = []
+        for i,flux in enumerate(mass_fluxes):
+            delta_masses.append(mass_fluxes * ts)
+        total_mass = sum(delta_masses)
+        proportions = [d_mass / total_mass for d_mass in delta_masses]
+
+        return (delta_masses, proportions, total_mass)
 
     def _elem_mass(self, num_new_particles, current_time, time_step):
         '''
@@ -185,15 +218,9 @@ class TamocSpill(serializable.Serializable):
         If volume is given, then use density to find mass. Density is always
         at 15degC, consistent with API definition
         '''
-        if self.amount is None:
-            return self.amount
-
         # first convert amount to 'kg'
         if self.units in self.valid_mass_units:
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
-        elif self.units in self.valid_vol_units:
-            vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = self.element_type.substance.get_density() * vol
 
         if units is None or units == 'kg':
             return mass
@@ -227,7 +254,10 @@ class TamocSpill(serializable.Serializable):
         rewinds the release to original status (before anything has been
         released).
         """
-        raise NotImplimentedError
+        self.num_released = 0
+        self.amount_released = 0
+        self.droplets = self.run_tamoc()
+
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -245,7 +275,23 @@ class TamocSpill(serializable.Serializable):
         :returns: the number of elements that will be released. This is taken
             by SpillContainer to initialize all data_arrays.
         """
-        raise NotImplimentedError
+        if ~self.on:
+            return 0
+
+        if current_time < self.release_time or current_time > self.end_release_time:
+            return 0
+
+        self.droplets = self.run_tamoc(current_time, time_step)
+
+        duration = (self.end_release_time - self.release_time).total_seconds()
+        if duration is 0:
+            duration = 1
+        LE_release_rate = self.num_elements / duration
+        num_to_release = int(LE_release_rate * time_step.total_seconds())
+        if num_released + num_to_release > num_elements:
+            num_to_release = num_elements - num_released
+
+        return num_to_release
 
         #return self.release.num_elements_to_release(current_time, time_step)
 
@@ -275,7 +321,31 @@ class TamocSpill(serializable.Serializable):
         Also, the set_newparticle_values() method for all element_type gets
         called so each element_type sets the values for its own data correctly
         """
-        raise NotImplimentedError
+        mass_fluxes = [tam_drop.mass_flux for tam_drop in self.droplets]
+        delta_masses, proportions, total_mass = self._get_mass_distribution(mass_fluxes, time_step)
+
+        #set up LE distribution, the number of particles in each 'release point'
+        LE_distribution = [int(num_new_particles * p) for p in proportions]
+        diff = num_new_particles - sum(LE_distribution)
+        for i in range(0, diff):
+            LE_distribution[i % len(LE_distribution)] += 1
+
+
+        #compute release point location for each droplet
+        positions = [self.start_position + FlatEarthProjection.meters_to_lonlat(d.position, self.start_position) for d in self.droplets]
+
+        #for each release location, set the position and mass of the elements released at that location
+        total_rel = 0
+        for mass_dist, n_LEs ,pos in (delta_masses, LE_distribution, positions):
+            start_idx = -num_new_particles + total_rel
+            end_idx = start_idx + n_LEs
+
+            data_arrays['positions'][start_idx:end_idx] = pos
+            data_arrays['mass'][start_idx:end_idx] = mass_dist / n_LEs
+            total_rel += n_LEs
+
+        self.num_released += num_new_particles
+        self.amount += total_mass
 
         # if self.element_type is not None:
         #     self.element_type.set_newparticle_values(num_new_particles, self,
@@ -291,4 +361,3 @@ class TamocSpill(serializable.Serializable):
         # if 'frac_coverage' in data_arrays:
         #     data_arrays['frac_coverage'][-num_new_particles:] = \
         #         self.frac_coverage
-

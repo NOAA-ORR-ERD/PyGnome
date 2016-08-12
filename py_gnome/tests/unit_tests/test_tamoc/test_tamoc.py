@@ -34,4 +34,3 @@ def test_TamocSpill_init():
                           on=True,)
 
     assert ts.on
-
