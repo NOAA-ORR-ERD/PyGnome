@@ -124,6 +124,11 @@ class TamocSpill(serializable.Serializable):
 
         """
 
+        self.release_time = release_time
+        self.start_position = start_position
+        self.num_elements = num_elements
+        self.end_release_time = end_release_time
+
         self.droplets = self.run_tamoc()
         self.on = on    # spill is active or not
         self.name = name
@@ -239,7 +244,7 @@ class TamocSpill(serializable.Serializable):
         rewinds the release to original status (before anything has been
         released).
         """
-        raise NotImplimentedError
+        raise NotImplementedError
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -257,7 +262,19 @@ class TamocSpill(serializable.Serializable):
         :returns: the number of elements that will be released. This is taken
             by SpillContainer to initialize all data_arrays.
         """
-        raise NotImplimentedError
+        if ~self.on:
+            return 0
+        if current_time < self.release_time or current_time > self.end_release_time:
+            return 0
+        dur = (self.end_release_time - self.release_time).total_seconds()
+        if dur is 0:
+            dur = 1
+        LE_release_rate = self.num_elements / dur
+        num_to_release = int(LE_release_rate * time_step.total_seconds())
+        if num_released + num_to_release > num_elements:
+            num_to_release = num_elements - num_released
+
+        return num_to_release
 
         #return self.release.num_elements_to_release(current_time, time_step)
 
@@ -300,13 +317,14 @@ class TamocSpill(serializable.Serializable):
         #compute release point location for each droplet
         positions = [self.start_position + FlatEarthProjection.meters_to_lonlat(d.position, self.start_position) for d in self.droplets]
 
-        #for each release location, set the position of the elements released at that location
+        #for each release location, set the position and mass of the elements released at that location
         total_rel = 0
-        for n_LEs ,pos in (LE_distribution, positions):
+        for mass_dist, n_LEs ,pos in (delta_masses, LE_distribution, positions):
             start_idx = -num_new_particles + total_rel
             end_idx = start_idx + n_LEs
 
             data_arrays['positions'][start_idx:end_idx] = pos
+            data_arrays['mass'][start_idx:end_idx] = mass_dist / n_LEs
             total_rel += n_LEs
 
         self.num_released += num_new_particles
