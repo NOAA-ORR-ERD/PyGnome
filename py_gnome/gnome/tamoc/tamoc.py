@@ -6,7 +6,7 @@ assorted code for working with TAMOC
 
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
-
+from .. import _valid_units
 
 __all__ = []
 
@@ -141,9 +141,9 @@ class TamocSpill(serializable.Serializable):
     def run_tamoc(self, current_time, time_step):
         #runs TAMOC if no droplets have been initialized or if current_time has reached last_tamoc_run + interval
         if self.on:
-            if (self.droplets is None or
-               self.current_time > release_time and last_tamoc_time is None or
-               self.current_time > self.last_tamoc_time + self.tamoc_interval):
+            if (self.current_time > release_time and (last_tamoc_time is None or self.droplets is None) or
+                self.current_time > self.last_tamoc_time + self.tamoc_interval and self.current_time < end_release_time):
+                self.last_tamoc_time = current_time
                 return self._run_tamoc()
         return self.droplets
 
@@ -207,6 +207,39 @@ class TamocSpill(serializable.Serializable):
 
         return le_mass
 
+    @property
+    def units(self):
+        """
+        Default units in which amount of oil spilled was entered by user.
+        The 'amount' property is returned in these 'units'
+        """
+        return self._units
+
+    @units.setter
+    def units(self, units):
+        """
+        set default units in which volume data is returned
+        """
+        self._check_units(units)  # check validity before setting
+        self._units = units
+
+    def _check_units(self, units):
+        """
+        Checks the user provided units are in list of valid volume
+        or mass units
+        """
+
+        if (units in self.valid_vol_units or
+                units in self.valid_mass_units):
+            return True
+        else:
+            msg = ('Units for amount spilled must be in volume or mass units. '
+                   'Valid units for volume: {0}, for mass: {1} ').format(
+                       self.valid_vol_units, self.valid_mass_units)
+            ex = uc.InvalidUnitError(msg)
+            self.logger.exception(ex, exc_info=True)
+            raise ex  # this should be raised since run will fail otherwise
+
     # what is this for??
     def get_mass(self, units=None):
         '''
@@ -218,7 +251,7 @@ class TamocSpill(serializable.Serializable):
         '''
         # first convert amount to 'kg'
         if self.units in self.valid_mass_units:
-            mass = uc.convert('Mass', self.units, 'kg', self.amount)
+            mass = uc.convert('Mass', self.units, 'kg', self.amount_released)
 
         if units is None or units == 'kg':
             return mass
@@ -340,6 +373,7 @@ class TamocSpill(serializable.Serializable):
 
             data_arrays['positions'][start_idx:end_idx] = pos
             data_arrays['mass'][start_idx:end_idx] = mass_dist / n_LEs
+            data_arrays['init_mass'][start_idx:end_idx] = mass_dist / n_LEs
             total_rel += n_LEs
 
         self.num_released += num_new_particles

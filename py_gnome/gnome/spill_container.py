@@ -21,6 +21,7 @@ from gnome.array_types import (positions,
                                spill_num,
                                id,
                                mass,
+                               init_mass,
                                age,
                                density,
                                substance,
@@ -410,6 +411,7 @@ class SpillContainer(AddLogger, SpillContainerData):
                              'spill_num': spill_num,
                              'id': id,
                              'mass': mass,
+                             'init_mass': init_mass,
                              'age': age}
         self._data_arrays = {}
 
