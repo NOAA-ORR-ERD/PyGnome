@@ -13,6 +13,15 @@ from datetime import timedelta
 
 from gnome.tamoc import tamoc
 
+def init_spill():
+    return tamoc.TamocSpill(release_time=datetime(2016, 8, 12, 12),
+                            start_position=(28, -76, 2000),
+                            num_elements=10000,
+                            end_release_time=datetime(2016, 12, 12, 12),
+                            name='TAMOC plume',
+                            TAMOC_interval=24,
+                            on=True,)
+
 
 def test_TamocDroplet():
     """
@@ -40,15 +49,9 @@ def test_TamocSpill_init():
 
     assert ts.on
 
-def test_TamocSpill_run():
+def test_TamocSpill_run_tamoc():
     rt = datetime(2016, 8, 12, 12)
-    ts = tamoc.TamocSpill(release_time=rt,
-                          start_position=(28, -76, 2000),
-                          num_elements=10000,
-                          end_release_time=datetime(2016, 12, 12, 12),
-                          name='TAMOC plume',
-                          TAMOC_interval=24,
-                          on=True,)
+    ts = init_spill()
 
     drops = ts.run_tamoc(rt, 900)
     drops2 = ts.run_tamoc(rt + timedelta(hours = 23), 900)
@@ -58,5 +61,15 @@ def test_TamocSpill_run():
     drops4 = ts.run_tamoc(rt + timedelta(hours = 25), 900)
     assert drops4 is drops3
 
+def test_TamocSpill_num_elements_to_release():
+    ts = init_spill()
+
+    ts.end_release_time = ts.release_time + timedelta(hours=10)
+    num_elem = ts.num_elements_to_release(ts.release_time, 3600)
+    assert num_elem == 1000
+
+
+
 if __name__ == '__main__':
     test_TamocSpill_run()
+    test_TamocSpill_release_elems()

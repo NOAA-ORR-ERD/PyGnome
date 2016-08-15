@@ -298,7 +298,7 @@ class TamocSpill(serializable.Serializable):
         :returns: the number of elements that will be released. This is taken
             by SpillContainer to initialize all data_arrays.
         """
-        if ~self.on:
+        if not self.on:
             return 0
 
         if current_time < self.release_time or current_time > self.end_release_time:
@@ -310,9 +310,9 @@ class TamocSpill(serializable.Serializable):
         if duration is 0:
             duration = 1
         LE_release_rate = self.num_elements / duration
-        num_to_release = int(LE_release_rate * time_step.total_seconds())
-        if num_released + num_to_release > num_elements:
-            num_to_release = num_elements - num_released
+        num_to_release = int(LE_release_rate * time_step)
+        if self.num_released + num_to_release > self.num_elements:
+            num_to_release = self.num_elements - self.num_released
 
         return num_to_release
 
