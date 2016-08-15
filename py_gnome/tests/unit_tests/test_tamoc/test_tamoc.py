@@ -9,6 +9,7 @@ so far, only dummy input, etc.
 
 from datetime import datetime
 
+import numpy as np
 
 from gnome.tamoc import tamoc
 
@@ -22,6 +23,11 @@ def test_TamocDroplet():
     td = tamoc.TamocDroplet(radius=1e-5)
 
     assert td.radius == 1e-5
+    # jsut mamking sure they exist
+    assert td.mass_flux >= 0.0
+    assert td.radius >= 0.0  # zero radius may be OK -- for dissolved?
+    pos = td.position
+    assert len(pos) == 3
 
 
 def test_TamocSpill_init():
@@ -38,3 +44,17 @@ def test_TamocSpill_init():
                           on=True,)
 
     assert ts.on
+
+
+def test_fake_tamoc_results():
+    """
+    this is probably temporary, but useful for testing anyway
+
+    not much tested here, but at least it runs.
+    """
+
+    results = tamoc.fake_tamoc_results(12)
+
+    assert len(results) == 12
+    assert np.isclose(sum([drop.mass_flux for drop in results]), 10.0)
+
