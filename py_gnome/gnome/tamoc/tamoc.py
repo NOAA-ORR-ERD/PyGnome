@@ -10,6 +10,9 @@ import numpy as np
 
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
+
+from gnome.utilities.distributions import WeibullDistribution
+
 from .. import _valid_units
 
 __all__ = []
@@ -97,16 +100,22 @@ class TamocDroplet():
 
 def test_tamoc_results():
     """
-    fixture for providing a tamoc result set
+    utility for providing a tamoc result set
 
-    at this point, it is a simple list of TamocDroplet objects
+    a simple list of TamocDroplet objects
     """
     num_droplets = 10
 
     mass_flux = np.ones((num_droplets,)) * 1.0  # kg/s
+
     radius = np.linspace(1e-6, 100, num_droplets)
     density = np.ones((num_droplets,)) * 900  # kg/m^3 at 15degC
-    position = np.ones((num_droplets, 3)) * (10, 20, 100)  # (x, y, z) in meters
+
+    # linear release
+    position = np.empty((num_droplets, 3), dtype=np.float64)
+    position[:, 0] = np.linspace(10, 50, num_droplets)  # x
+    position[:, 0] = np.linspace(5, 25, num_droplets)  # y
+    position[:, 0] = np.linspace(20, 100, num_droplets)  # z
 
     results = [TamocDroplet(*params) for params in zip(mass_flux,
                                                        radius,
@@ -186,7 +195,7 @@ class TamocSpill(serializable.Serializable):
     def _get_mass_distribution(self, mass_fluxes, time_step):
         ts = time_step.total_seconds()
         delta_masses = []
-        for i,flux in enumerate(mass_fluxes):
+        for i, flux in enumerate(mass_fluxes):
             delta_masses.append(mass_fluxes * ts)
         total_mass = sum(delta_masses)
         proportions = [d_mass / total_mass for d_mass in delta_masses]
