@@ -143,7 +143,7 @@ class TamocSpill(serializable.Serializable):
                  num_elements=None,
                  end_release_time=None,
                  name='TAMOC plume',
-                 TAMOC_interval=24,
+                 TAMOC_interval=None,
                  on=True,
                  ):
         """
@@ -157,7 +157,7 @@ class TamocSpill(serializable.Serializable):
         self.num_released = 0
         self.amount_released = 0
 
-        self.tamoc_interval = timedelta(hours=TAMOC_interval)
+        self.tamoc_interval = timedelta(hours=TAMOC_interval) if TAMOC_interval is not None else None
         self.last_tamoc_time = release_time
         self.droplets = None
         self.on = on    # spill is active or not
@@ -166,10 +166,16 @@ class TamocSpill(serializable.Serializable):
     def run_tamoc(self, current_time, time_step):
         # runs TAMOC if no droplets have been initialized or if current_time has reached last_tamoc_run + interval
         if self.on:
+            if self.tamoc_interval is None:
+                if self.last_tamoc_time is None:
+                    self.last_tamoc_time = current_time
+                    self.droplets = self._run_tamoc()
+                return self.droplets
+
             if (self.current_time > release_time and (last_tamoc_time is None or self.droplets is None) or
                 self.current_time > self.last_tamoc_time + self.tamoc_interval and self.current_time < end_release_time):
                 self.last_tamoc_time = current_time
-                return self._run_tamoc()
+                self.droplets =  self._run_tamoc()
         return self.droplets
 
     def _run_tamoc(self):

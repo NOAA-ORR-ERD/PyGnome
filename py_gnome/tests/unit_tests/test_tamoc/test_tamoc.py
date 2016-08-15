@@ -34,6 +34,7 @@ def test_TamocSpill_init():
                           num_elements=10000,
                           end_release_time=datetime(2016, 2, 12, 12),
                           name='TAMOC plume',
+                          TAMOC_interval=24,
                           on=True,)
 
     assert ts.on
