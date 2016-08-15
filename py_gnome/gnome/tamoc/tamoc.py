@@ -10,7 +10,6 @@ import numpy as np
 
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
-from .. import _valid_units
 
 __all__ = []
 
