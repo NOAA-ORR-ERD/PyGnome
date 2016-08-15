@@ -152,7 +152,7 @@ class TamocSpill(serializable.Serializable):
                  num_elements=None,
                  end_release_time=None,
                  name='TAMOC plume',
-                 TAMOC_interval=24,
+                 TAMOC_interval=None,
                  on=True,
                  ):
         """
@@ -166,7 +166,7 @@ class TamocSpill(serializable.Serializable):
         self.num_released = 0
         self.amount_released = 0
 
-        self.tamoc_interval = timedelta(hours=TAMOC_interval)
+        self.tamoc_interval = timedelta(hours=TAMOC_interval) if TAMOC_interval is not None else None
         self.last_tamoc_time = release_time
         self.droplets = None
         self.on = on    # spill is active or not
@@ -175,10 +175,16 @@ class TamocSpill(serializable.Serializable):
     def run_tamoc(self, current_time, time_step):
         # runs TAMOC if no droplets have been initialized or if current_time has reached last_tamoc_run + interval
         if self.on:
+            if self.tamoc_interval is None:
+                if self.last_tamoc_time is None:
+                    self.last_tamoc_time = current_time
+                    self.droplets = self._run_tamoc()
+                return self.droplets
+
             if (self.current_time > release_time and (last_tamoc_time is None or self.droplets is None) or
                 self.current_time > self.last_tamoc_time + self.tamoc_interval and self.current_time < end_release_time):
                 self.last_tamoc_time = current_time
-                return self._run_tamoc()
+                self.droplets =  self._run_tamoc()
         return self.droplets
 
     def _run_tamoc(self):
@@ -201,43 +207,6 @@ class TamocSpill(serializable.Serializable):
         proportions = [d_mass / total_mass for d_mass in delta_masses]
 
         return (delta_masses, proportions, total_mass)
-
-    def _elem_mass(self, num_new_particles, current_time, time_step):
-        '''
-        get the mass of each element released in duration specified by
-        'time_step'
-        Function is only called if num_new_particles > 0 - no check is made
-        for this case
-        '''
-        # set 'mass' data array if amount is given
-        le_mass = 0.
-        _mass = self.get_mass('kg')
-        self.logger.debug(self._pid + "spill mass (kg): {0}".format(_mass))
-
-        if _mass is not None:
-            rd_sec = self.get('release_duration')
-            if rd_sec == 0:
-                try:
-                    le_mass = _mass / self.get('num_elements')
-                except TypeError:
-                    le_mass = _mass / self.get('num_per_timestep')
-            else:
-                time_at_step_end = current_time + timedelta(seconds=time_step)
-                if self.get('release_time') > current_time:
-                    # first time_step in which particles are released
-                    time_step = (time_at_step_end -
-                                 self.get('release_time')).total_seconds()
-
-                if self.get('end_release_time') < time_at_step_end:
-                    time_step = (self.get('end_release_time') -
-                                 current_time).total_seconds()
-
-                _mass_in_ts = _mass / rd_sec * time_step
-                le_mass = _mass_in_ts / num_new_particles
-
-        self.logger.debug(self._pid + "LE mass (kg): {0}".format(le_mass))
-
-        return le_mass
 
     @property
     def units(self):
