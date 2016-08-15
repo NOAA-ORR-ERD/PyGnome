@@ -12,7 +12,7 @@ Simple map (no land) and simple current mover (steady uniform current)
 
 Rise velocity and vertical diffusion
 
-But it's enough to see if the coupleing with TAMOC works.
+But it's enough to see if the coupling with TAMOC works.
 
 """
 
@@ -35,6 +35,7 @@ from gnome.movers import (RandomMover,
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
+from gnome.tamoc import tamoc
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -43,6 +44,7 @@ base_dir = os.path.dirname(__file__)
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
+    # set up the modeling environment
     start_time = datetime(2004, 12, 31, 13, 0)
     model = Model(start_time=start_time,
                   duration=timedelta(days=3),
@@ -50,86 +52,58 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   uncertain=False)
 
     print 'adding the map'
-    model.map = GnomeMap()
+    model.map = GnomeMap()  # this is a "water world -- no land anywhere"
 
+    # renderere is only top-down view on 2d -- but it's something
     renderer = Renderer(output_dir=images_dir,
-                        # size=(800, 600),
+                        size=(1024, 768),
                         output_timestep=timedelta(hours=1),
-                        draw_ontop='uncertain')
-    renderer.viewport = ((-76.5, 37.), (-75.8, 38.))
+                        )
+    renderer.viewport = ((-76.5, 37.), (-75.5, 38.))
 
     print 'adding outputters'
     model.outputters += renderer
 
+    # Also going to write the results out to a netcdf file
     netcdf_file = os.path.join(base_dir, 'script_plume.nc')
     scripting.remove_netcdf(netcdf_file)
 
-    model.outputters += NetCDFOutput(netcdf_file, which_data='most',
+    model.outputters += NetCDFOutput(netcdf_file,
+                                     which_data='most',
+                                     # output most of the data associated with the elements
                                      output_timestep=timedelta(hours=2))
 
-    print 'adding two spills'
-    # Break the spill into two spills, first with the larger droplets
-    # and second with the smaller droplets.
-    # Split the total spill volume (100 m^3) to have most
-    # in the larger droplet spill.
-    # Smaller droplets start at a lower depth than larger
+    print "adding Horizontal and Vertical diffusion"
 
-    wd = WeibullDistribution(alpha=1.8,
-                             lambda_=.00456,
-                             min_=.0002)  # 200 micron min
-    end_time = start_time + timedelta(hours=24)
-
-    spill = subsurface_plume_spill(num_elements=10,
-                                   start_position=(-76.126872, 37.680952, 1700),
-                                   release_time=start_time,
-                                   distribution=wd,
-                                   amount=90,  # default volume_units=m^3
-                                   units='m^3',
-                                   end_release_time=end_time,
-                                   density=600)
-
-    model.spills += spill
-
-    wd = WeibullDistribution(alpha=1.8,
-                             lambda_=.00456,
-                             max_=.0002)  # 200 micron max
-
-    spill = point_line_release_spill(num_elements=10, amount=90,
-                                     units='m^3',
-                                     start_position=(-76.126872, 37.680952, 1800),
-                                     release_time=start_time,
-                                     element_type=plume(distribution=wd,
-                                                        substance_name='oil_crude')
-                                     )
-    model.spills += spill
-
-    print 'adding a RandomMover:'
+    # Horizontal Diffusion
     model.movers += RandomMover(diffusion_coef=50000)
-
-    print 'adding a RiseVelocityMover:'
-    model.movers += RiseVelocityMover()
-
-    print 'adding a RandomVerticalMover:'
+    # vertical diffusion (different above and below the mixed layer)
     model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=5,
                                         vertical_diffusion_coef_below_ml=.11,
                                         mixed_layer_depth=10)
 
-    # print 'adding a wind mover:'
+    print 'adding Rise Velocity'
+    # droplets rise as a function of their density and radius
+    model.movers += RiseVelocityMover()
 
-    # series = np.zeros((2, ), dtype=gnome.basic_types.datetime_value_2d)
-    # series[0] = (start_time, (30, 90))
-    # series[1] = (start_time + timedelta(hours=23), (30, 90))
+    print 'adding a stady uniform current'
+    # This is .3 m/s south
+    model.movers += SimpleMover(velocity=(0.0, -.3, 0.0))
 
-    # wind = Wind(timeseries=series, units='knot')
-    #
-    # default is .4 radians
-    # w_mover = gnome.movers.WindMover(wind, uncertain_angle_scale=0)
-    #
-    # model.movers += w_mover
+    # Now to add in the TAMOC "spill"
+    print "Adding TAMOC spill"
 
-    print 'adding a simple mover:'
-    s_mover = SimpleMover(velocity=(0.0, -.3, 0.0))
-    model.movers += s_mover
+    end_time = start_time + timedelta(hours=24)
+
+    tamoc.TamocSpill(release_time=start_time,
+                     start_position=(-76, 37.5, 1000),
+                     num_elements=10000,
+                     end_release_time=start_time + timedelta(days=1),
+                     name='TAMOC plume',
+                     TAMOC_interval=None,  # how often to re-run TAMOC
+                     )
+
+    model.spills += spill
 
     return model
 
@@ -140,4 +114,4 @@ if __name__ == "__main__":
     print "about to start running the model"
     for step in model:
         print step
-        model.
+        #model.

@@ -208,7 +208,7 @@ class TamocSpill(serializable.Serializable):
 
         it returns a list of TAMOC droplet objects
         """
-        return test_tamoc_results()
+        return fake_tamoc_results()
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))

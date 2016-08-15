@@ -135,4 +135,3 @@ if __name__ == "__main__":
     print "about to start running the model"
     for step in model:
         print step
-        model.
