@@ -169,7 +169,7 @@ class TamocSpill(serializable.Serializable):
             if self.tamoc_interval is None:
                 if self.last_tamoc_time is None:
                     self.last_tamoc_time = current_time
-                    self.droplets = self.run_tamoc()
+                    self.droplets = self._run_tamoc()
                 return self.droplets
 
             if (self.current_time > release_time and (last_tamoc_time is None or self.droplets is None) or
