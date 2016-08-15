@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 """
-Script to test GNOME with plume element type
- - weibull droplet size distribution
+Script to test GNOME with:
 
-Simple map and simple current mover
+TAMOC - Texas A&M Oilspill Calculator
+
+https://github.com/socolofs/tamoc
+
+This is a very simpile environment:
+
+Simple map (no land) and simple current mover (steady uniform current)
 
 Rise velocity and vertical diffusion
 
-This is simply making a point source with a given distribution of droplet sizes
+But it's enough to see if the coupleing with TAMOC works.
 
 """
 

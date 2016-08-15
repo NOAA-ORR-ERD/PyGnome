@@ -4,16 +4,12 @@
 Assorted code for working with TAMOC
 """
 
-from __future__ import division
-
 from datetime import timedelta
 
 import numpy as np
 
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
-
-
 from .. import _valid_units
 
 __all__ = []
@@ -200,8 +196,8 @@ class TamocSpill(serializable.Serializable):
                     self.droplets = self._run_tamoc()
                 return self.droplets
 
-            if (self.current_time > release_time and (last_tamoc_time is None or self.droplets is None) or
-                self.current_time > self.last_tamoc_time + self.tamoc_interval and self.current_time < end_release_time):
+            if (current_time >= self.release_time and (self.last_tamoc_time is None or self.droplets is None) or
+                current_time >= self.last_tamoc_time + self.tamoc_interval and current_time < self.end_release_time):
                 self.last_tamoc_time = current_time
                 self.droplets =  self._run_tamoc()
         return self.droplets
@@ -218,10 +214,10 @@ class TamocSpill(serializable.Serializable):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
 
     def _get_mass_distribution(self, mass_fluxes, time_step):
-        ts = time_step.total_seconds()
+        ts = time_step
         delta_masses = []
-        for i, flux in enumerate(mass_fluxes):
-            delta_masses.append(mass_fluxes * ts)
+        for i,flux in enumerate(mass_fluxes):
+            delta_masses.append(mass_fluxes[i] * ts)
         total_mass = sum(delta_masses)
         proportions = [d_mass / total_mass for d_mass in delta_masses]
 
@@ -326,7 +322,7 @@ class TamocSpill(serializable.Serializable):
         :returns: the number of elements that will be released. This is taken
             by SpillContainer to initialize all data_arrays.
         """
-        if ~self.on:
+        if not self.on:
             return 0
 
         if current_time < self.release_time or current_time > self.end_release_time:
@@ -338,9 +334,9 @@ class TamocSpill(serializable.Serializable):
         if duration is 0:
             duration = 1
         LE_release_rate = self.num_elements / duration
-        num_to_release = int(LE_release_rate * time_step.total_seconds())
-        if num_released + num_to_release > num_elements:
-            num_to_release = num_elements - num_released
+        num_to_release = int(LE_release_rate * time_step)
+        if self.num_released + num_to_release > self.num_elements:
+            num_to_release = self.num_elements - self.num_released
 
         return num_to_release
 
@@ -387,7 +383,7 @@ class TamocSpill(serializable.Serializable):
 
         #for each release location, set the position and mass of the elements released at that location
         total_rel = 0
-        for mass_dist, n_LEs ,pos in (delta_masses, LE_distribution, positions):
+        for mass_dist, n_LEs, pos in zip(delta_masses, LE_distribution, positions):
             start_idx = -num_new_particles + total_rel
             end_idx = start_idx + n_LEs
 
@@ -397,7 +393,7 @@ class TamocSpill(serializable.Serializable):
             total_rel += n_LEs
 
         self.num_released += num_new_particles
-        self.amount += total_mass
+        self.amount_released += total_mass
 
         # if self.element_type is not None:
         #     self.element_type.set_newparticle_values(num_new_particles, self,
