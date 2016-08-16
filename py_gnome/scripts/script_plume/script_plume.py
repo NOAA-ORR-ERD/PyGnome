@@ -139,8 +139,3 @@ if __name__ == "__main__":
     model = make_model()
     for step in model:
         print step
-        print model.get_spill_data('spill_num && positions',
-                                   ('age < 8000 && '
-                                    'spill_num == 1 || '
-                                    'mass < 8100')
-                                   )
