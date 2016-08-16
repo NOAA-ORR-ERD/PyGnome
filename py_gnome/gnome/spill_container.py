@@ -466,7 +466,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         for spill in self.spills:
             if not spill.on:
                 continue
-            new_subs = spill.get('substance')
+            new_subs = spill.substance
             if new_subs in subs:
                 # substance already defined for another spill
                 ix = subs.index(new_subs)

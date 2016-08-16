@@ -34,6 +34,7 @@ class BaseSpill(serializable.Serializable, object):
         inititlaize -- sub-classes will probably have a lot more
         """
         self.release_time = release_time
+        self.substance = None
 
 
     def __repr__(self):
@@ -145,28 +146,29 @@ class BaseSpill(serializable.Serializable, object):
 
         return False
 
-    def get(self, prop=None):
-        # Fixme! this should probably not be here at all
-        # but it could be replaces with __getattr__ to make it a lot more Pythonic
-        """
-        for get(), return all properties of embedded release object and
-        element_type initializer objects. If 'prop' is not None, then return
-        the property
+    # def get(self, prop=None):
+    #     # Fixme! this should probably not be here at all
+    #     # but it could be replaces with __getattr__ to make it a lot more Pythonic
+    #     """
+    #     for get(), return all properties of embedded release object and
+    #     element_type initializer objects. If 'prop' is not None, then return
+    #     the property
 
-        For example: get('windage_range') returns the 'windage_range' assuming
-        the element_type = floating()
+    #     For example: get('windage_range') returns the 'windage_range' assuming
+    #     the element_type = floating()
 
-        .. todo::
-            There is an issue in that if two initializers have the same
-            property - could be the case if they both define a 'distribution',
-            then it does not know which one to return
-        """
-        # nothing returned, then property was not found - raise exception or
-        # return None?
-        print "in BaseSpill get:", prop
-        self.logger.warning("{0} attribute does not exist in element_type"
-                            " or release object or initializers".format(prop))
-        return None
+    #     .. todo::
+    #         There is an issue in that if two initializers have the same
+    #         property - could be the case if they both define a 'distribution',
+    #         then it does not know which one to return
+    #     """
+    #     # nothing returned, then property was not found - raise exception or
+    #     # return None?
+    #     print "in BaseSpill get:", prop
+    #     self.logger.warning("{0} attribute does not exist in element_type"
+    #                         " or release object or initializers".format(prop))
+    #     return None
+
 
 
 class SpillSchema(ObjType):
@@ -446,13 +448,17 @@ class Spill(BaseSpill):
                                         'in element_type or release object'
                                         .format(prop))
 
-    def get(self, prop=None):
+    def __getattr__(self, prop=None):
         """
-        for get(), return all properties of embedded release object and
+        imp imenting this so that attributes can be pulled from the enclosed objects
+
+        this replaces the old "get()" method
+
+        Return all properties of embedded release object and
         element_type initializer objects. If 'prop' is not None, then return
         the property
 
-        For example: get('windage_range') returns the 'windage_range' assuming
+        For example: Spill.windage_range returns the 'windage_range' from element_type assuming
         the element_type = floating()
 
         .. todo::
@@ -460,8 +466,7 @@ class Spill(BaseSpill):
             property - could be the case if they both define a 'distribution',
             then it does not know which one to return
         """
-        'Return all properties'
-        if prop is None:
+        if prop is None: # why??
             return self._get_all_props()
 
         try:
@@ -485,6 +490,47 @@ class Spill(BaseSpill):
         self.logger.warning("{0} attribute does not exist in element_type"
                             " or release object or initializers".format(prop))
         return None
+
+
+    # def get(self, prop=None):
+    #     """
+    #     for get(), return all properties of embedded release object and
+    #     element_type initializer objects. If 'prop' is not None, then return
+    #     the property
+
+    #     For example: get('windage_range') returns the 'windage_range' assuming
+    #     the element_type = floating()
+
+    #     .. todo::
+    #         There is an issue in that if two initializers have the same
+    #         property - could be the case if they both define a 'distribution',
+    #         then it does not know which one to return
+    #     """
+    #     'Return all properties'
+    #     if prop is None:
+    #         return self._get_all_props()
+
+    #     try:
+    #         return getattr(self.release, prop)
+    #     except AttributeError:
+    #         pass
+
+    #     try:
+    #         return getattr(self.element_type, prop)
+    #     except AttributeError:
+    #         pass
+
+    #     for init in self.element_type.initializers:
+    #         try:
+    #             return getattr(init, prop)
+    #         except AttributeError:
+    #             pass
+
+    #     # nothing returned, then property was not found - raise exception or
+    #     # return None?
+    #     self.logger.warning("{0} attribute does not exist in element_type"
+    #                         " or release object or initializers".format(prop))
+    #     return None
 
     def get_initializer_by_name(self, name):
         ''' get first initializer in list whose name matches 'name' '''

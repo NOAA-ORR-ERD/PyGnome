@@ -1400,15 +1400,15 @@ class Model(Serializable):
         num_spills = len(self.spills)
         for spill in self.spills:
             msg = None
-            if spill.get('release_time') < self.start_time + self.duration:
+            if spill.release_time < self.start_time + self.duration:
                 someSpillIntersectsModel = True
-            if spill.get('release_time') > self.start_time:
+            if spill.release_time > self.start_time:
                 msg = ('{0} has release time after model start time'.
                        format(spill.name))
                 self.logger.warning(msg)
                 msgs.append(self._warn_pre + msg)
 
-            elif spill.get('release_time') < self.start_time:
+            elif spill.release_time < self.start_time:
                 msg = ('{0} has release time before model start time'
                        .format(spill.name))
                 self.logger.error(msg)
@@ -1475,13 +1475,13 @@ class Model(Serializable):
 
         for spill in self.spills:
             msg = None
-            if spill.get('release_time') > self.start_time:
+            if spill.release_time > self.start_time:
                 msg = ('{0} has release time after model start time'.
                        format(spill.name))
                 self.logger.warning(msg)
                 msgs.append(self._warn_pre + msg)
 
-            elif spill.get('release_time') < self.start_time:
+            elif spill.release_time < self.start_time:
                 msg = ('{0} has release time before model start time'
                        .format(spill.name))
                 self.logger.error(msg)
