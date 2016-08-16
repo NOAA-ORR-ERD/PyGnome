@@ -12,7 +12,7 @@ from gnome.utilities.serializable import Serializable
 from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
-from gnome.environment.property_classes import IceConcentration
+from gnome.environment import IceConcentration
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
 from gnome.basic_types import (world_point,
