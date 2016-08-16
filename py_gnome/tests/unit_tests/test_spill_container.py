@@ -100,12 +100,12 @@ def assert_sc_single_spill(sc):
     # only one spill in SpillContainer
     for spill in sc.spills:
         assert np.array_equal(sc['positions'][0], spill.release.start_position)
-        if spill.get('end_position') is None:
+        if spill.end_position is None:
             assert np.array_equal(sc['positions'][-1],
-                                  spill.get('start_position'))
+                                  spill.start_position)
         else:
             assert np.allclose(sc['positions'][-1],
-                               spill.get('end_position'), atol=1e-10)
+                               spill.end_position, atol=1e-10)
 
 
 def test_test_spill_container():
@@ -130,7 +130,7 @@ def test_one_simple_spill(spill):
     time_step = 3600
 
     sc.prepare_for_model_run(windage_at)
-    if spill.get('end_release_time') is None:
+    if spill.end_release_time is None:
         num_steps = 0
     else:
         num_steps = ((spill.release.end_release_time -
@@ -219,13 +219,13 @@ def test_rewind():
 
     assert sc.num_released == num_elements * len(spills)
     for spill in spills:
-        assert spill.get('num_released') == spill.release.num_elements
+        assert spill.num_released == spill.release.num_elements
 
     sc.rewind()
     assert sc.num_released == 0
     assert_dataarray_shape_size(sc)
     for spill in spills:
-        assert spill.get('num_released') == 0
+        assert spill.num_released == 0
         assert spill.release.start_time_invalid is None
 
 
@@ -624,8 +624,7 @@ class TestSpillContainerPairBasicTests:
         (forecast_sc, uncertain_sc) = scp.items()
         assert forecast_sc.spills == uncertain_sc.spills
 
-        forecast_sc.spills[0].set('release_time',
-                                  release_time + timedelta(hours=1))
+        forecast_sc.spills[0].release_time = release_time + timedelta(hours=1)
         (forecast_sc, uncertain_sc) = scp.items()
         assert forecast_sc.spills != uncertain_sc.spills
 

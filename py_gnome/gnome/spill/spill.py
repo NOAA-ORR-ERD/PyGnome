@@ -664,7 +664,14 @@ class Spill(BaseSpill):
 
     @property
     def substance(self):
-        return self.element_type.substance
+        try:
+            return self.element_type.substance
+        except AttributeError:
+            raise
+            return None
+    @substance.setter
+    def substance(self, subs):
+        self.element_type.substance = subs
 
     def get_mass(self, units=None):
 
