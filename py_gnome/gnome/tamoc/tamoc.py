@@ -400,12 +400,12 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         self.num_released += num_new_particles
         self.amount_released += total_mass
 
-    def get(self, prop=None):
-        print "in get:", prop
-        try:
-            return getattr(self, prop)
-        except AttributeError:
-            super(TamocSpill, self).get(prop)
+    # def get(self, prop=None):
+    #     print "in get:", prop
+    #     try:
+    #         return getattr(self, prop)
+    #     except AttributeError:
+    #         super(TamocSpill, self).get(prop)
 
 
         # if self.element_type is not None:

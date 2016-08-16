@@ -18,11 +18,15 @@ But it's enough to see if the coupling with TAMOC works.
 
 
 import os
+import numpy as np
+from pysgrid import SGrid
 from datetime import datetime, timedelta
 
 from gnome import scripting
 from gnome.spill.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
+from gnome.environment.grid_property import GriddedProp
+from gnome.environment import GridCurrent
 
 from gnome.model import Model
 from gnome.map import GnomeMap
@@ -31,7 +35,8 @@ from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
                           RiseVelocityMover,
                           RandomVerticalMover,
-                          SimpleMover)
+                          SimpleMover,
+                          PyGridCurrentMover)
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
@@ -39,6 +44,26 @@ from gnome.tamoc import tamoc
 
 # define base directory
 base_dir = os.path.dirname(__file__)
+
+x, y = np.mgrid[-30:30:61j, -30:30:61j]
+y = np.ascontiguousarray(y.T)
+x = np.ascontiguousarray(x.T)
+# y += np.sin(x) / 1
+# x += np.sin(x) / 5
+g = SGrid(node_lon=x,
+          node_lat=y)
+g.build_celltree()
+t = datetime(2000,1,1,0,0)
+angs = -np.arctan2(y,x)
+mag = np.sqrt(x**2 + y**2)
+vx = np.cos(angs) * mag
+vy = np.sin(angs) * mag
+vx = vx[np.newaxis,:] * 5
+vy = vy[np.newaxis,:] * 5
+
+vels_x = GriddedProp(name='v_x',units='m/s',time=[t], grid=g, data=vx)
+vels_y = GriddedProp(name='v_y',units='m/s',time=[t], grid=g, data=vy)
+vg = GridCurrent(variables = [vels_y, vels_x], time=[t], grid=g, units='m/s')
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
@@ -59,7 +84,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         size=(1024, 768),
                         output_timestep=timedelta(hours=1),
                         )
-    renderer.viewport = ((-76.5, 37.), (-75.5, 38.))
+    renderer.viewport = ((-.25, -.25), (.25, .25))
 
     print 'adding outputters'
     model.outputters += renderer
@@ -86,15 +111,16 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # droplets rise as a function of their density and radius
     model.movers += RiseVelocityMover()
 
-    print 'adding a stady uniform current'
+    print 'adding a circular current and southward current'
     # This is .3 m/s south
-    model.movers += SimpleMover(velocity=(0.0, -.3, 0.0))
+    model.movers += PyGridCurrentMover(current=vg, default_num_method='Trapezoid', extrapolate=True)
+    model.movers += SimpleMover(velocity=(0.0, -1, 0.0))
 
     # Now to add in the TAMOC "spill"
     print "Adding TAMOC spill"
 
     model.spills += tamoc.TamocSpill(release_time=start_time,
-                                     start_position=(-76, 37.5, 1000),
+                                     start_position=(0, 0, 1000),
                                      num_elements=10000,
                                      end_release_time=start_time + timedelta(days=1),
                                      name='TAMOC plume',
