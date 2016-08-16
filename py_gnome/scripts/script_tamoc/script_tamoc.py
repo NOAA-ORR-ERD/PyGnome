@@ -93,17 +93,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # Now to add in the TAMOC "spill"
     print "Adding TAMOC spill"
 
-    end_time = start_time + timedelta(hours=24)
-
-    tamoc.TamocSpill(release_time=start_time,
-                     start_position=(-76, 37.5, 1000),
-                     num_elements=10000,
-                     end_release_time=start_time + timedelta(days=1),
-                     name='TAMOC plume',
-                     TAMOC_interval=None,  # how often to re-run TAMOC
-                     )
-
-    model.spills += spill
+    model.spills += tamoc.TamocSpill(release_time=start_time,
+                                     start_position=(-76, 37.5, 1000),
+                                     num_elements=10000,
+                                     end_release_time=start_time + timedelta(days=1),
+                                     name='TAMOC plume',
+                                     TAMOC_interval=None,  # how often to re-run TAMOC
+                                     )
 
     return model
 
