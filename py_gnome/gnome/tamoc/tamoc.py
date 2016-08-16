@@ -95,18 +95,42 @@ class TamocDroplet():
         self.position = np.asanyarray(position)
 
 
-def test_tamoc_results():
+def log_normal_pdf(x, mean, std):
     """
-    fixture for providing a tamoc result set
+    Utility  to compute the log normal CDF
 
-    at this point, it is a simple list of TamocDroplet objects
+    used to get "realistic" distributin of droplet sizes
+
     """
-    num_droplets = 10
 
-    mass_flux = np.ones((num_droplets,)) * 1.0  # kg/s
-    radius = np.linspace(1e-6, 100, num_droplets)
-    density = np.ones((num_droplets,)) * 900  # kg/m^3 at 15degC
-    position = np.ones((num_droplets, 3)) * (10, 20, 100)  # (x, y, z) in meters
+    sigma = np.sqrt(np.log(1 + std**2 / mean**2))
+    mu = np.log(mean) + sigma**2 / 2
+    return ((1 / (x * sigma * np.sqrt(2 * np.pi))) *
+            np.exp(-((np.log(x) - mu)**2 / (2 * sigma**2))))
+
+
+def fake_tamoc_results(num_droplets=10):
+    """
+    utility for providing a tamoc result set
+
+    a simple list of TamocDroplet objects
+    """
+
+    # sizes from 10 to 1000 microns
+    radius = np.linspace(10, 300, num_droplets) * 1e-6  # meters
+
+    mass_flux = log_normal_pdf(2 * radius, 2e-4, 1.5e-4) * 0.1
+    # normalize to 10 kg/s (about 5000 bbl per day)
+    mass_flux *= 10.0 / mass_flux.sum()
+
+    # give it a range, why not?
+    density = np.linspace(900, 850, num_droplets)  # kg/m^3 at 15degC
+
+    # linear release
+    position = np.empty((num_droplets, 3), dtype=np.float64)
+    position[:, 0] = np.linspace(10, 50, num_droplets)  # x
+    position[:, 1] = np.linspace(5, 25, num_droplets)  # y
+    position[:, 2] = np.linspace(20, 100, num_droplets)  # z
 
     results = [TamocDroplet(*params) for params in zip(mass_flux,
                                                        radius,
@@ -184,16 +208,16 @@ class TamocSpill(serializable.Serializable):
 
         it returns a list of TAMOC droplet objects
         """
-        return test_tamoc_results()
+        return fake_tamoc_results()
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
 
     def _get_mass_distribution(self, mass_fluxes, time_step):
-        ts = time_step.total_seconds()
+        ts = time_step
         delta_masses = []
         for i,flux in enumerate(mass_fluxes):
-            delta_masses.append(mass_fluxes * ts)
+            delta_masses.append(mass_fluxes[i] * ts)
         total_mass = sum(delta_masses)
         proportions = [d_mass / total_mass for d_mass in delta_masses]
 
@@ -359,7 +383,7 @@ class TamocSpill(serializable.Serializable):
 
         #for each release location, set the position and mass of the elements released at that location
         total_rel = 0
-        for mass_dist, n_LEs ,pos in (delta_masses, LE_distribution, positions):
+        for mass_dist, n_LEs, pos in zip(delta_masses, LE_distribution, positions):
             start_idx = -num_new_particles + total_rel
             end_idx = start_idx + n_LEs
 
@@ -369,7 +393,7 @@ class TamocSpill(serializable.Serializable):
             total_rel += n_LEs
 
         self.num_released += num_new_particles
-        self.amount += total_mass
+        self.amount_released += total_mass
 
         # if self.element_type is not None:
         #     self.element_type.set_newparticle_values(num_new_particles, self,

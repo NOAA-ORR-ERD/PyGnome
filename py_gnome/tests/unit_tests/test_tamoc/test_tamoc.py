@@ -9,6 +9,7 @@ so far, only dummy input, etc.
 
 from datetime import datetime
 from datetime import timedelta
+import numpy as np
 
 
 from gnome.tamoc import tamoc
@@ -32,6 +33,11 @@ def test_TamocDroplet():
     td = tamoc.TamocDroplet(radius=1e-5)
 
     assert td.radius == 1e-5
+    # jsut mamking sure they exist
+    assert td.mass_flux >= 0.0
+    assert td.radius >= 0.0  # zero radius may be OK -- for dissolved?
+    pos = td.position
+    assert len(pos) == 3
 
 
 def test_TamocSpill_init():
@@ -48,6 +54,18 @@ def test_TamocSpill_init():
                           on=True,)
 
     assert ts.on
+
+def test_fake_tamoc_results():
+    """
+    this is probably temporary, but useful for testing anyway
+
+    not much tested here, but at least it runs.
+    """
+
+    results = tamoc.fake_tamoc_results(12)
+
+    assert len(results) == 12
+    assert np.isclose(sum([drop.mass_flux for drop in results]), 10.0)
 
 def test_TamocSpill_run_tamoc():
     rt = datetime(2016, 8, 12, 12)
@@ -68,8 +86,37 @@ def test_TamocSpill_num_elements_to_release():
     num_elem = ts.num_elements_to_release(ts.release_time, 3600)
     assert num_elem == 1000
 
+def test_TamocSpill_set_newparticle_values():
+
+    #release 1k particles over 1 hour, at an overall rate of 10kg/sec
+    data_arrays = {}
+    data_arrays['mass'] = np.zeros((1000))
+    data_arrays['positions'] = np.zeros((1000,3))
+    data_arrays['init_mass'] = np.zeros((1000))
+
+    ts = init_spill()
+    ts.end_release_time = ts.release_time + timedelta(hours=10)
+    num_elem = ts.num_elements_to_release(ts.release_time, 3600)
+    ts.set_newparticle_values(num_elem, ts.release_time, 3600, data_arrays)
+    assert abs(ts.amount_released - 36000) > 0.00001
+
+    #eventually we will need to test several release scenarios
+    data_arrays = {}
+    data_arrays['mass'] = np.zeros((1000))
+    data_arrays['positions'] = np.zeros((1000,3))
+    data_arrays['init_mass'] = np.zeros((1000))
+
+    ts = init_spill()
+    ts.tamoc_interval = 1
+    ts.end_release_time = ts.release_time + timedelta(hours=10)
+    num_elem = ts.num_elements_to_release(ts.release_time, 3600)
+    ts.set_newparticle_values(num_elem, ts.release_time, 3600, data_arrays)
+    assert abs(ts.amount_released - 36000) > 0.00001
+#     assert data_arrays['mass'][0] == 36
+
 
 
 if __name__ == '__main__':
-    test_TamocSpill_run()
-    test_TamocSpill_release_elems()
+    test_TamocSpill_run_tamoc()
+    test_TamocSpill_num_elements_to_release()
+    test_TamocSpill_set_newparticle_values()
