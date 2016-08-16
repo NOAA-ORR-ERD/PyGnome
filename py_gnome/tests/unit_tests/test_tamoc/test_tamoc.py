@@ -14,9 +14,10 @@ import numpy as np
 
 from gnome.tamoc import tamoc
 
+
 def init_spill():
     return tamoc.TamocSpill(release_time=datetime(2016, 8, 12, 12),
-                            start_position=(28, -76, 2000),
+                            start_position=(-76.0, 28.0, 1000),
                             num_elements=10000,
                             end_release_time=datetime(2016, 12, 12, 12),
                             name='TAMOC plume',
@@ -55,6 +56,7 @@ def test_TamocSpill_init():
 
     assert ts.on
 
+
 def test_fake_tamoc_results():
     """
     this is probably temporary, but useful for testing anyway
@@ -67,17 +69,19 @@ def test_fake_tamoc_results():
     assert len(results) == 12
     assert np.isclose(sum([drop.mass_flux for drop in results]), 10.0)
 
+
 def test_TamocSpill_run_tamoc():
     rt = datetime(2016, 8, 12, 12)
     ts = init_spill()
 
     drops = ts.run_tamoc(rt, 900)
-    drops2 = ts.run_tamoc(rt + timedelta(hours = 23), 900)
-    assert  drops is drops2
-    drops3 = ts.run_tamoc(rt + timedelta(hours = 25), 900)
+    drops2 = ts.run_tamoc(rt + timedelta(hours=23), 900)
+    assert drops is drops2
+    drops3 = ts.run_tamoc(rt + timedelta(hours=25), 900)
     assert drops is not drops3
-    drops4 = ts.run_tamoc(rt + timedelta(hours = 25), 900)
+    drops4 = ts.run_tamoc(rt + timedelta(hours=25), 900)
     assert drops4 is drops3
+
 
 def test_TamocSpill_num_elements_to_release():
     ts = init_spill()
@@ -86,12 +90,13 @@ def test_TamocSpill_num_elements_to_release():
     num_elem = ts.num_elements_to_release(ts.release_time, 3600)
     assert num_elem == 1000
 
+
 def test_TamocSpill_set_newparticle_values():
 
-    #release 1k particles over 1 hour, at an overall rate of 10kg/sec
+    # release 1k particles over 1 hour, at an overall rate of 10kg/sec
     data_arrays = {}
     data_arrays['mass'] = np.zeros((1000))
-    data_arrays['positions'] = np.zeros((1000,3))
+    data_arrays['positions'] = np.zeros((1000, 3))
     data_arrays['init_mass'] = np.zeros((1000))
 
     ts = init_spill()
@@ -100,10 +105,10 @@ def test_TamocSpill_set_newparticle_values():
     ts.set_newparticle_values(num_elem, ts.release_time, 3600, data_arrays)
     assert abs(ts.amount_released - 36000) > 0.00001
 
-    #eventually we will need to test several release scenarios
+    # eventually we will need to test several release scenarios
     data_arrays = {}
     data_arrays['mass'] = np.zeros((1000))
-    data_arrays['positions'] = np.zeros((1000,3))
+    data_arrays['positions'] = np.zeros((1000, 3))
     data_arrays['init_mass'] = np.zeros((1000))
 
     ts = init_spill()
@@ -113,7 +118,6 @@ def test_TamocSpill_set_newparticle_values():
     ts.set_newparticle_values(num_elem, ts.release_time, 3600, data_arrays)
     assert abs(ts.amount_released - 36000) > 0.00001
 #     assert data_arrays['mass'][0] == 36
-
 
 
 if __name__ == '__main__':

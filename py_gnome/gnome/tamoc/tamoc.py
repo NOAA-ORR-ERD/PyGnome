@@ -8,9 +8,9 @@ from datetime import timedelta
 
 import numpy as np
 
+import gnome
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
-from .. import _valid_units
 
 __all__ = []
 
@@ -140,7 +140,7 @@ def fake_tamoc_results(num_droplets=10):
     return results
 
 
-class TamocSpill(serializable.Serializable):
+class TamocSpill(gnome.spill.spill.BaseSpill):
     """
     Models a spill
     """
@@ -173,13 +173,15 @@ class TamocSpill(serializable.Serializable):
         """
 
         """
+        super(TamocSpill, self).__init__(release_time=release_time,
+                                         name=name)
 
         self.release_time = release_time
         self.start_position = start_position
         self.num_elements = num_elements
         self.end_release_time = end_release_time
         self.num_released = 0
-        self.amount_released = 0
+        self.amount_released = 0.0
 
         self.tamoc_interval = timedelta(hours=TAMOC_interval) if TAMOC_interval is not None else None
         self.last_tamoc_time = release_time
@@ -188,7 +190,10 @@ class TamocSpill(serializable.Serializable):
         self.name = name
 
     def run_tamoc(self, current_time, time_step):
-        # runs TAMOC if no droplets have been initialized or if current_time has reached last_tamoc_run + interval
+        """
+        runs TAMOC if no droplets have been initialized or if current_time has
+        reached last_tamoc_run + interval
+        """
         if self.on:
             if self.tamoc_interval is None:
                 if self.last_tamoc_time is None:
@@ -199,7 +204,7 @@ class TamocSpill(serializable.Serializable):
             if (current_time >= self.release_time and (self.last_tamoc_time is None or self.droplets is None) or
                 current_time >= self.last_tamoc_time + self.tamoc_interval and current_time < self.end_release_time):
                 self.last_tamoc_time = current_time
-                self.droplets =  self._run_tamoc()
+                self.droplets = self._run_tamoc()
         return self.droplets
 
     def _run_tamoc(self):
@@ -216,7 +221,7 @@ class TamocSpill(serializable.Serializable):
     def _get_mass_distribution(self, mass_fluxes, time_step):
         ts = time_step
         delta_masses = []
-        for i,flux in enumerate(mass_fluxes):
+        for i, flux in enumerate(mass_fluxes):
             delta_masses.append(mass_fluxes[i] * ts)
         total_mass = sum(delta_masses)
         proportions = [d_mass / total_mass for d_mass in delta_masses]
@@ -303,8 +308,8 @@ class TamocSpill(serializable.Serializable):
         """
         self.num_released = 0
         self.amount_released = 0
-        self.droplets = self.run_tamoc()
-
+        # don't want to run tamoc on every rewind! self.droplets = self.run_tamoc()
+        self.last_tamoc_time = None
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -378,10 +383,10 @@ class TamocSpill(serializable.Serializable):
             LE_distribution[i % len(LE_distribution)] += 1
 
 
-        #compute release point location for each droplet
+        # compute release point location for each droplet
         positions = [self.start_position + FlatEarthProjection.meters_to_lonlat(d.position, self.start_position) for d in self.droplets]
 
-        #for each release location, set the position and mass of the elements released at that location
+        # for each release location, set the position and mass of the elements released at that location
         total_rel = 0
         for mass_dist, n_LEs, pos in zip(delta_masses, LE_distribution, positions):
             start_idx = -num_new_particles + total_rel
@@ -394,6 +399,14 @@ class TamocSpill(serializable.Serializable):
 
         self.num_released += num_new_particles
         self.amount_released += total_mass
+
+    def get(self, prop=None):
+        print "in get:", prop
+        try:
+            return getattr(self, prop)
+        except AttributeError:
+            super(TamocSpill, self).get(prop)
+
 
         # if self.element_type is not None:
         #     self.element_type.set_newparticle_values(num_new_particles, self,
