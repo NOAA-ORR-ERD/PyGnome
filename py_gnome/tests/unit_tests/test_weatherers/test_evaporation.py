@@ -23,7 +23,7 @@ def test_evaporation_no_wind():
     evap = Evaporation(Water(), wind=constant_wind(0., 0))
     (sc, time_step) = weathering_data_arrays(evap.array_types, evap.water)[:2]
 
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     evap.prepare_for_model_run(sc)
@@ -50,7 +50,7 @@ def test_evaporation(oil, temp, num_elems, on):
 
     sc = weathering_data_arrays(evap.array_types, evap.water, time_step, et)[0]
 
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     evap.prepare_for_model_run(sc)
@@ -151,10 +151,10 @@ class TestDecayConst:
         if end_time_delay.total_seconds() == 0:
             num_les_one_per_ts = 1
         else:
-            num_les_one_per_ts = end_time_delay.total_seconds()/900.
+            num_les_one_per_ts = end_time_delay.total_seconds() / 900.
 
         (m1, m2) = self.setup_test(end_time_delay, (num_les_one_per_ts,
-                                                    4*num_les_one_per_ts))
+                                                    4 * num_les_one_per_ts))
 
         for ix in xrange(m1.num_time_steps):
             w1 = m1.step()['WeatheringOutput']
@@ -175,7 +175,7 @@ def assert_helper(sc, new_p):
 
     for substance, data in sc.itersubstancedata(arrays):
         if len(sc) > new_p:
-            old_le = len(sc)-new_p
+            old_le = len(sc) - new_p
             inwater = data['status_codes'][:old_le] == oil_status.in_water
             assert np.all(data['evap_decay_constant'][:old_le, :][inwater] <
                           0.0)
@@ -208,8 +208,8 @@ def test_full_run(oil, temp):
     model.weatherers += [Evaporation(model.environment[-2],
                                      model.environment[-1])]
     released = 0
-    init_rho = model.spills[0].get('substance').get_density(temp)
-    init_vis = model.spills[0].get('substance').get_viscosity(temp)
+    init_rho = model.spills[0].substance.get_density(temp)
+    init_vis = model.spills[0].substance.get_viscosity(temp)
     for step in model:
         for sc in model.spills.items():
             assert_helper(sc, sc.num_released - released)

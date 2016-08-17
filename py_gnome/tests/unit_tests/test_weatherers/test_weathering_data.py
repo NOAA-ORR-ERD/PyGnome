@@ -335,15 +335,15 @@ class TestWeatheringData:
         '''
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd, spread) = self.sample_sc_wd_spreading(1, rel_time)
-        sc.spills[0].set('end_release_time', None)
+        sc.spills[0].end_release_time = None
         sc.spills += point_line_release_spill(1, (0, 0, 0),
                                               rel_time,
                                               amount=10,
                                               units='kg',
                                               substance=test_oil)
-        op = sc.spills[0].get('substance')
+        op = sc.spills[0].substance
         rho = op.get_density(wd.water.temperature)
-        b_init_vol = [spill.get_mass()/rho for spill in sc.spills]
+        b_init_vol = [spill.get_mass() / rho for spill in sc.spills]
         print b_init_vol
 
         sc.prepare_for_model_run(wd.array_types)
