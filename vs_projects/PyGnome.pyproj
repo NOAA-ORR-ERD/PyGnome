@@ -182,7 +182,7 @@
     <Compile Include="gnome\utilities\weathering\stokes.py" />
     <Compile Include="gnome\utilities\weathering\__init__.py" />
     <Compile Include="gnome\utilities\__init__.py" />
-    <Compile Include="gnome\weatherers\bio_degradataion.py" />
+    <Compile Include="gnome\weatherers\bio_degradation.py" />
     <Compile Include="gnome\weatherers\cleanup.py" />
     <Compile Include="gnome\weatherers\core.py" />
     <Compile Include="gnome\weatherers\dissolution.py" />

@@ -1,9 +1,14 @@
 ﻿'''
 model biodegradation process
 '''
+
+from __future__ import division
+import copy
+
 import numpy as np
 
-from gnome.utilities.serializable import Serializable
+import gnome  # required by deserialize
+from gnome.utilities.serializable import Serializable, Field
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
@@ -15,14 +20,18 @@ from math import exp, pi
 
 class Biodegradation(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
+    _state += [Field('waves', save=True, update=True, save_reference=True)]
+
     _schema = WeathererSchema
 
-    def __init__(self, **kwargs):
+    def __init__(self, waves=None, **kwargs):
 
         if 'arctic' not in kwargs:
             self.arctic = False # default is a temperate conditions (>6 deg C)
         else:
             self.arctic = kwargs.pop('arctic')
+
+        self.waves = waves
 
         super(Biodegradation, self).__init__(**kwargs)
 
@@ -194,6 +203,10 @@ class Biodegradation(Weatherer, Serializable):
         schema = self.__class__._schema()
         serial = schema.serialize(toserial)
 
+        if json_ == 'webapi':
+            if self.waves:
+                serial['waves'] = self.waves.serialize(json_)
+
         return serial
 
     @classmethod
@@ -202,6 +215,11 @@ class Biodegradation(Weatherer, Serializable):
         if not cls.is_sparse(json_):
             schema = cls._schema()
             dict_ = schema.deserialize(json_)
+
+            if 'waves' in json_:
+                obj = json_['waves']['obj_type']
+                dict_['waves'] = (eval(obj).deserialize(json_['waves']))
+
             return dict_
         else:
             return json_
