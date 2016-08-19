@@ -106,8 +106,7 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
     print 'num spills:', len(sc.spills)
     print 'spill[0] amount:', sc.spills[0].amount
 
-    model_time = (sc.spills[0].get('release_time') +
-                  timedelta(seconds=time_step))
+    model_time = (sc.spills[0].release_time + timedelta(seconds=time_step))
 
     diss.on = on
     diss.prepare_for_model_run(sc)
@@ -148,7 +147,7 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
     print 'spill[0] amount:', sc.spills[0].amount, sc.spills[0].units
 
     model_time = (sc.spills[0]
-                  .get('release_time') + timedelta(seconds=time_step))
+                  .release_time + timedelta(seconds=time_step))
     print 'model_time = ', model_time
     print 'time_step = ', time_step
 
@@ -191,7 +190,7 @@ def test_dissolution_mass_balance(oil, temp, num_elems, expected_mb, on):
     print 'num spills:', len(sc.spills)
     print 'spill[0] amount:', sc.spills[0].amount
 
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     diss.on = on

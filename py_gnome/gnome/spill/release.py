@@ -333,6 +333,7 @@ class PointLineRelease(Release, Serializable):
         '''
         duration over which particles are released in seconds
         '''
+        print "acsessing release_duration property:", self.end_release_time
         if self.end_release_time is None:
             return 0
         else:
@@ -672,8 +673,12 @@ class ContinuousRelease(Release, Serializable):
 
         self.initial_release = PointLineRelease(
             release_time, start_position, initial_elements)
-        self.continuous = PointLineRelease(
-            release_time, start_position, num_elements, num_per_timestep, end_release_time, end_position)
+        self.continuous = PointLineRelease(release_time,
+                                           start_position,
+                                           num_elements,
+                                           num_per_timestep,
+                                           end_release_time,
+                                           end_position)
 
         self._next_release_pos = self.start_position
 

@@ -100,10 +100,8 @@ class TestWeatheringData:
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         spill = sc.spills[0]
-        init_dens = \
-            spill.get('substance').get_density(wd.water.temperature)
-        init_visc = \
-            spill.get('substance').get_viscosity(wd.water.temperature)
+        init_dens = spill.substance.get_density(wd.water.temperature)
+        init_visc = spill.substance.get_viscosity(wd.water.temperature)
 
         num = sc.release_elements(default_ts, rel_time)
         wd.initialize_data(sc, num)
@@ -135,9 +133,9 @@ class TestWeatheringData:
         (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         spill = sc.spills[0]
         init_dens = \
-            spill.get('substance').get_density(wd.water.temperature)
+            spill.substance.get_density(wd.water.temperature)
         init_visc = \
-            spill.get('substance').get_viscosity(wd.water.temperature)
+            spill.substance.get_viscosity(wd.water.temperature)
 
         num = sc.release_elements(default_ts, rel_time)
         wd.initialize_data(sc, num)
@@ -328,7 +326,7 @@ class TestWeatheringData:
 
     def test_bulk_init_volume_fay_area_two_spills(self):
         '''
-        for two different spills, ensure bulk_init_volume and fay_aray is set
+        for two different spills, ensure bulk_init_volume and fay_area is set
         correctly based on the blob of volume released from each spill.
         The volume of the blob should be associated only with its own spill and
         it should be based on water temperature at release time.
@@ -344,7 +342,6 @@ class TestWeatheringData:
         op = sc.spills[0].substance
         rho = op.get_density(wd.water.temperature)
         b_init_vol = [spill.get_mass() / rho for spill in sc.spills]
-        print b_init_vol
 
         sc.prepare_for_model_run(wd.array_types)
         for w in (wd, spread):
@@ -385,7 +382,7 @@ class TestWeatheringData:
         wd.water.set('temperature', 288, 'K')
         wd.water.set('salinity', 0, 'psu')
         new_subs = 'TEXTRACT, STAR ENTERPRISE'
-        sc.spills[0].set('substance', new_subs)
+        sc.spills[0].substance = new_subs
 
         # substance changed - do a rewind
         sc.rewind()
@@ -418,7 +415,7 @@ class TestWeatheringData:
         '''
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd) = self.sample_sc_intrinsic(1, rel_time)
-        sc.spills[0].set('substance', None)
+        sc.spills[0].substance = None
         # substance changed - do a rewind
         sc.rewind()
         sc.prepare_for_model_run(wd.array_types)

@@ -260,6 +260,7 @@ class Spill(BaseSpill):
         """
 
         self.release = release
+        print "release is:", release
 
         if element_type is None:
             element_type = elements.floating(substance=substance)
@@ -388,12 +389,14 @@ class Spill(BaseSpill):
         for this case
         '''
         # set 'mass' data array if amount is given
+        print "_elem_mass:", num_new_particles, current_time, time_step
         le_mass = 0.
         _mass = self.get_mass('kg')
         self.logger.debug(self._pid + "spill mass (kg): {0}".format(_mass))
 
         if _mass is not None:
             rd_sec = self.release_duration
+            print "release duration", rd_sec
             if rd_sec == 0:
                 try:
                     le_mass = _mass / self.num_elements
@@ -428,48 +431,48 @@ class Spill(BaseSpill):
 
         return False
 
-    # def __setattr__(self, prop, val):
+    def __setattr__(self, prop, val):
 
-    #     """
-    #     Sets an existing property. The property could be of one of the
-    #     contained objects like 'Release' or 'ElementType'
+        """
+        Sets an existing property that really  belong onone of the
+        contained objects like 'Release' or 'ElementType'
 
-    #     It can also be a property of one of the initializers contained in
-    #     the 'ElementType' object. This maps it to look like a regular
-    #     attribute of a Spill object.
+        It can also be a property of one of the initializers contained in
+        the 'ElementType' object. This maps it to look like a regular
+        attribute of a Spill object.
 
-    #     If the property doesn't exist for any of these, then an error is raised
-    #     since user cannot set a property that does not exist using this method
+        If the property doesn't exist for any of these, then an error is raised
+        since user cannot set a property that does not exist using this method
 
-    #     For example: set('windage_range', (0.4, 0.4)) sets the windage_range
-    #     assuming the element_type is floating
+        For example: set('windage_range', (0.4, 0.4)) sets the windage_range
+        assuming the element_type is floating
 
-    #     .. todo::
-    #         There is an issue in that if two initializers have the same
-    #         property - could be the case if they both define a 'distribution',
-    #         then it does not know which one to return
-    #     """
-    #     print "in Spill.__setattr__ -- setting: %s to %s" % (prop, val)
-    #     if prop == 'num_released':
-    #         self.logger.warning("cannot set 'num_released' attribute")
+        .. todo::
+            There is an issue in that if two initializers have the same
+            property - could be the case if they both define a 'distribution',
+            then it does not know which one to return
+        """
+        print "in Spill.__setattr__ -- setting: %s to %s" % (prop, val)
+        if prop == 'num_released':
+            self.logger.warning("cannot set 'num_released' attribute")
 
-    #     # we don't want to add an attribute that doesn't already exist
-    #     # first check to see that the attribute exists, then change it else
-    #     # raise error
-    #     # if hasattr(self.release, prop):
-    #     #     setattr(self.release, prop, val)
+        # we don't want to add an attribute that doesn't already exist
+        # first check to see that the attribute exists, then change it else
+        # raise error
+        if hasattr(self.release, prop):
+            setattr(self.release, prop, val)
 
-    #     if hasattr(self.element_type, prop):
-    #         setattr(self.element_type, prop, val)
-    #     else:
-    #         for init in self.element_type.initializers:
-    #             if hasattr(init, prop):
-    #                 setattr(init, prop, val)
-    #                 break
-    #             else:
-    #                 self.logger.warning('{0} attribute does not exist '
-    #                                     'in element_type or release object'
-    #                                     .format(prop))
+        if hasattr(self.element_type, prop):
+            setattr(self.element_type, prop, val)
+        else:
+            for init in self.element_type.initializers:
+                if hasattr(init, prop):
+                    setattr(init, prop, val)
+                    break
+                else:
+                    self.logger.warning('{0} attribute does not exist '
+                                        'in element_type or release object'
+                                        .format(prop))
 
     def __getattr__(self, prop=None):
         """
@@ -493,6 +496,7 @@ class Spill(BaseSpill):
         if prop is None:  # why -- should this be a separate call or not used?
             return self._get_all_props()
 
+        print "in __getattr__:, getting", prop
         try:
             return getattr(self.release, prop)
         except AttributeError:

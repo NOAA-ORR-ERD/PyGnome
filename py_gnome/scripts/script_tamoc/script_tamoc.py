@@ -84,7 +84,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         size=(1024, 768),
                         output_timestep=timedelta(hours=1),
                         )
-    renderer.viewport = ((-.25, -.25), (.25, .25))
+    renderer.viewport = ((-.15, -.35), (.15, .35))
 
     print 'adding outputters'
     model.outputters += renderer

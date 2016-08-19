@@ -1119,6 +1119,40 @@ def test_setget():
     assert spill.windage_range == [0.4, 0.4]
 
 
+def test_set_end_to_none():
+        '''
+        for two different spills, ensure that release_time and end_release_time
+        all work, even if end_release_tiem is None.
+        '''
+        rel_time = datetime.now().replace(microsecond=0)
+        end_time = rel_time + timedelta(hours=1)
+        # (sc, wd, spread) = self.sample_sc_wd_spreading(1, rel_time)
+        # sc.spills[0].end_release_time = None
+        spill = point_line_release_spill(1,
+                                         (0, 0, 0),
+                                         rel_time,
+                                         end_release_time=end_time,
+                                         amount=100,
+                                         units='kg',
+                                         )
+
+        print "release is", spill.release
+        # now change the end_release_time
+        spill.end_release_time = None
+
+        num_new_particles = 10
+        current_time = rel_time
+        time_step = 900
+        data_arrays = {'mass': np.zeros((num_new_particles,), dtype=np.float64),
+                       'positions': np.zeros((num_new_particles, 3), dtype=np.float64),
+                       }
+        print "release_duration:", spill.release_duration
+        spill.set_newparticle_values(num_new_particles,
+                                     current_time,
+                                     time_step,
+                                     data_arrays)
+
+
 if __name__ == '__main__':
 
     # TC = Test_PointSourceSurfaceRelease()

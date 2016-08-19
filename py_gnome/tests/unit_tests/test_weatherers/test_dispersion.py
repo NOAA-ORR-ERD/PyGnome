@@ -38,7 +38,7 @@ def test_dispersion(oil, temp, num_elems, on):
     (sc, time_step) = weathering_data_arrays(disp.array_types,
                                              water,
                                              element_type=et)[:2]
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     disp.on = on
@@ -71,12 +71,12 @@ def test_dispersion_not_active(oil, temp, num_elems):
                                water,
                                element_type=floating(substance=oil))[:2]
     sc.amount = 10000
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     disp.prepare_for_model_run(sc)
 
-    new_model_time = (sc.spills[0].get('release_time') +
+    new_model_time = (sc.spills[0].release_time +
                       timedelta(seconds=3600))
 
     disp.active_start = new_model_time
@@ -100,7 +100,7 @@ def test_full_run(sample_model_fcn2, oil, temp, dispersed):
     for 'weathering_model.json' in dump directory
     '''
     model = sample_model_weathering2(sample_model_fcn2, oil, temp)
-    model.environment += [Water(temp), wind,  waves]
+    model.environment += [Water(temp), wind, waves]
     model.weatherers += Evaporation()
     model.weatherers += Emulsification(waves)
     model.weatherers += NaturalDispersion()
