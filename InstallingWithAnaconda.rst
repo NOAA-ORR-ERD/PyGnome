@@ -77,7 +77,7 @@ or if you have Miniconda...::
 which will update only conda itself (and dependencies)
 
 Setting up anaconda.org channels
-.................................
+................................
 
 `anaconda.org <http://anaconda.org>`__ is a web service where people can
 host conda packages for download. The way this is done is through

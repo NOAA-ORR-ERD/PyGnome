@@ -13,6 +13,8 @@ empty_BW_image.png
 .DS_Store
 .cache/
 
+*.ipynb_checkpoints/
+
 # ignore binaries generated during build
 *.egg-info
 py_gnome/build/**/*

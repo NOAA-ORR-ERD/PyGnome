@@ -948,42 +948,54 @@ def subsurface_plume_spill(num_elements,
 
     :param num_elements: total number of elements to be released
     :type num_elements: integer
+
     :param start_position: initial location the elements are released
     :type start_position: 3-tuple of floats (long, lat, z)
+
     :param release_time: time the LEs are released (datetime object)
     :type release_time: datetime.datetime
+
     :param distribution=None: An object capable of generating a probability
                               distribution.  Right now, we have:
-                               * UniformDistribution
-                               * NormalDistribution
-                               * LogNormalDistribution
-                               * WeibullDistribution
+                              * UniformDistribution
+                              * NormalDistribution
+                              * LogNormalDistribution
+                              * WeibullDistribution
+
     :type distribution: gnome.utilities.distribution
+
     :param str distribution_type=droplet_size: What is being sampled from the
-                                               distribution.  Options are:
-                                                * droplet_size - Rise velocity
-                                                                 is then
-                                                                 calculated
-                                                * rise_velocity - No droplet
-                                                                  size is
-                                                                  computed
+                    distribution.  Options are:
+                    * droplet_size - Rise velocity is then calculated
+                    * rise_velocity - No droplet size is computed
+
     :param end_release_time=None: End release time for a time varying release.
                                   If None, then release is instantaneous
+
     :type end_release_time: datetime.datetime
+
     :param substance='None': Required unless density specified.
                              Type of oil spilled.
+
     :type substance: str or OilProps
+
     :param float density=None: Required unless substance specified.
                                Density of spilled material.
+
     :param str density_units='kg/m^3':
+
     :param float amount=None: mass or volume of oil spilled.
+
     :param str units=None: must provide units for amount spilled.
+
     :param tuple windage_range=(.01, .04): Percentage range for windage.
                                            Active only for surface particles
                                            when a mind mover is added
+
     :param windage_persist=900: Persistence for windage values in seconds.
                                 Use -1 for inifinite, otherwise it is
                                 randomly reset on this time scale.
+
     :param str name='Surface Point/Line Release': a name for the spill.
     '''
 
