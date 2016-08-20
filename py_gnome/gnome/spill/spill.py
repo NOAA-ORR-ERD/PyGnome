@@ -5,6 +5,7 @@ A "spill" is essentially a source of elements. These classes provide
 the logic about where an when the elements are released
 
 """
+from pprint import pprint
 
 import copy
 from inspect import getmembers, ismethod
@@ -39,6 +40,7 @@ class BaseSpill(serializable.Serializable, object):
     @property
     def release_time(self):
         return self._release_time
+
     @release_time.setter
     def release_time(self, rt):
         self._release_time = rt
@@ -180,7 +182,6 @@ class BaseSpill(serializable.Serializable, object):
     #     return None
 
 
-
 class SpillSchema(ObjType):
     'Spill class schema'
     on = SchemaNode(Bool(), default=True, missing=True,
@@ -192,7 +193,7 @@ class SpillSchema(ObjType):
 
 class Spill(BaseSpill):
     """
-    Models a spill
+    Models a spill by combining Release and ElementType objects
     """
     _update = ['on', 'release',
                'amount', 'units', 'amount_uncertainty_scale']
@@ -210,6 +211,11 @@ class Spill(BaseSpill):
 
     valid_vol_units = _valid_units('Volume')
     valid_mass_units = _valid_units('Mass')
+    # attributes that need to be there for the __setattr__ magic to work
+    # release = None  # just to make sure it's there.
+    # element_type = None
+    # this is so the properties in teh base classes work -- arrgg!
+    # _name = 'Spill'
 
     def __init__(self,
                  release,
@@ -258,9 +264,8 @@ class Spill(BaseSpill):
             If amount property is None, then just floating elements
             (ie. 'windages')
         """
-
+        print "about to set release in __init__"
         self.release = release
-        print "release is:", release
 
         if element_type is None:
             element_type = elements.floating(substance=substance)
@@ -271,7 +276,9 @@ class Spill(BaseSpill):
         self.element_type = element_type
 
         self.on = on    # spill is active or not
-        self._units = None
+        # raise Exception("stopping")
+
+        self.units = None
         self.amount = amount
 
         if amount is not None:
@@ -286,14 +293,15 @@ class Spill(BaseSpill):
         fraction of area covered by oil
         '''
         self.frac_coverage = 1.0
+        print "setting name in init"
         self.name = name
 
     @property
     def release_time(self):
         return self.release.release_time
+
     @release_time.setter
     def release_time(self, rt):
-        print "in the release_time setter"
         self.release.release_time = rt
 
     def __repr__(self):
@@ -339,7 +347,7 @@ class Spill(BaseSpill):
         Checks the user provided units are in list of valid volume
         or mass units
         """
-
+        print "in check_units:", units
         if (units in self.valid_vol_units or
                 units in self.valid_mass_units):
             return True
@@ -347,7 +355,7 @@ class Spill(BaseSpill):
             msg = ('Units for amount spilled must be in volume or mass units. '
                    'Valid units for volume: {0}, for mass: {1} ').format(
                        self.valid_vol_units, self.valid_mass_units)
-            ex = uc.InvalidUnitError(msg)
+            ex = ValueError(msg)
             self.logger.exception(ex, exc_info=True)
             raise ex  # this should be raised since run will fail otherwise
 
@@ -389,14 +397,12 @@ class Spill(BaseSpill):
         for this case
         '''
         # set 'mass' data array if amount is given
-        print "_elem_mass:", num_new_particles, current_time, time_step
         le_mass = 0.
         _mass = self.get_mass('kg')
         self.logger.debug(self._pid + "spill mass (kg): {0}".format(_mass))
 
         if _mass is not None:
             rd_sec = self.release_duration
-            print "release duration", rd_sec
             if rd_sec == 0:
                 try:
                     le_mass = _mass / self.num_elements
@@ -431,48 +437,67 @@ class Spill(BaseSpill):
 
         return False
 
-    def __setattr__(self, prop, val):
+    # # __setattr overrides everything! so have to re-impliment properties, etc.
+    # # so NOT the way to go
+    # def __setattr__(self, prop, val):
 
-        """
-        Sets an existing property that really  belong onone of the
-        contained objects like 'Release' or 'ElementType'
+    #     """
+    #     Sets an existing property that really  belong onone of the
+    #     contained objects like 'Release' or 'ElementType'
 
-        It can also be a property of one of the initializers contained in
-        the 'ElementType' object. This maps it to look like a regular
-        attribute of a Spill object.
+    #     It can also be a property of one of the initializers contained in
+    #     the 'ElementType' object. This maps it to look like a regular
+    #     attribute of a Spill object.
 
-        If the property doesn't exist for any of these, then an error is raised
-        since user cannot set a property that does not exist using this method
+    #     If the property doesn't exist for any of these, then an error is raised
+    #     since user cannot set a property that does not exist using this method
 
-        For example: set('windage_range', (0.4, 0.4)) sets the windage_range
-        assuming the element_type is floating
+    #     For example: set('windage_range', (0.4, 0.4)) sets the windage_range
+    #     assuming the element_type is floating
 
-        .. todo::
-            There is an issue in that if two initializers have the same
-            property - could be the case if they both define a 'distribution',
-            then it does not know which one to return
-        """
-        print "in Spill.__setattr__ -- setting: %s to %s" % (prop, val)
-        if prop == 'num_released':
-            self.logger.warning("cannot set 'num_released' attribute")
+    #     .. todo::
+    #         There is an issue in that if two initializers have the same
+    #         property - could be the case if they both define a 'distribution',
+    #         then it does not know which one to return
+    #     """
 
-        # we don't want to add an attribute that doesn't already exist
-        # first check to see that the attribute exists, then change it else
-        # raise error
-        if hasattr(self.release, prop):
-            setattr(self.release, prop, val)
-
-        if hasattr(self.element_type, prop):
-            setattr(self.element_type, prop, val)
-        else:
-            for init in self.element_type.initializers:
-                if hasattr(init, prop):
-                    setattr(init, prop, val)
-                    break
-                else:
-                    self.logger.warning('{0} attribute does not exist '
-                                        'in element_type or release object'
-                                        .format(prop))
+    #     # Essentially having to re-impliment properties!
+    #     if prop == "units":
+    #         self._check_units(val)  # check validity before setting
+    #         self.__dict__['units'] = val
+    #         return None
+    #     if prop == 'num_released':
+    #         self.logger.warning("cannot set 'num_released' attribute")
+    #         return None
+    #     # we don't want to add an attribute that doesn't already exist
+    #     # first check to see that the attribute exists, then change it else
+    #     # raise error
+    #     # setting properties on the Spill object
+    #     print "setting: %s in Spill to %s" % (prop, val)
+    #     if hasattr(self, prop):
+    #         print "Spill has the %s attribute -- setting it in the dict" % prop
+    #         # fixme: this may override properties!
+    #         self.__dict__[prop] = val
+    #         pprint(self.__dict__)
+    #         return None
+    #     if hasattr(self.release, prop):
+    #         setattr(self.release, prop, val)
+    #         return None
+    #     if hasattr(self.element_type, prop):
+    #         setattr(self.element_type, prop, val)
+    #         return None
+    #     else:
+    #         if self.element_type is not None:
+    #             for init in self.element_type.initializers:
+    #                 if hasattr(init, prop):
+    #                     setattr(init, prop, val)
+    #                     return None
+    #     # self.logger.warning('{0} attribute does not exist '
+    #     #                     'in element_type or release object'
+    #     #                                 .format(prop)
+    #     # if it's  not in any of the sub-objects, set it on the Spill
+    #     # here we have to re-impliment properties!!!
+    #     self.__dict__[prop] = val
 
     def __getattr__(self, prop=None):
         """
@@ -492,11 +517,7 @@ class Spill(BaseSpill):
             property - could be the case if they both define a 'distribution',
             then it does not know which one to return
         """
-        # fixme -- this wont work with __getattr__
-        if prop is None:  # why -- should this be a separate call or not used?
-            return self._get_all_props()
-
-        print "in __getattr__:, getting", prop
+        print "in __getattr__, getting: %s" % prop
         try:
             return getattr(self.release, prop)
         except AttributeError:
@@ -668,11 +689,12 @@ class Spill(BaseSpill):
 
     @property
     def substance(self):
-        try:
-            return self.element_type.substance
-        except AttributeError:
-            raise
-            return None
+        return self.element_type.substance
+        # try:
+        #     return self.element_type.substance
+        # except AttributeError:
+        #     return None
+
     @substance.setter
     def substance(self, subs):
         self.element_type.substance = subs
@@ -696,11 +718,14 @@ class Spill(BaseSpill):
         elif self.units in self.valid_vol_units:
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
             mass = self.element_type.substance.get_density() * vol
+        else:
+            raise ValueError("%s is not a valid mass or Volume unit" % self.units)
 
         if units is None or units == 'kg':
             return mass
         else:
             self._check_units(units)
+            print "calling _check_units:", units
             return uc.convert('Mass', 'kg', units, mass)
 
     def uncertain_copy(self):
@@ -1072,10 +1097,12 @@ def point_line_release_spill(num_elements,
                                num_elements=num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
-    return Spill(release,
-                 element_type,
-                 substance,
-                 on,
-                 amount,
-                 units,
-                 name=name)
+    spill = Spill(release,
+                  element_type,
+                  substance,
+                  on,
+                  amount,
+                  units,
+                  name=name)
+    print " ** ", spill.release
+    return spill

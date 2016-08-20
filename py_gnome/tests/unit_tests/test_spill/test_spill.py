@@ -39,7 +39,8 @@ arr_types = mock_sc_array_types({'positions', 'mass'})
 @pytest.mark.parametrize(("element_type", "amount"), [(None, None),
                                                       (None, 10.0),
                                                       (ElementType(), None),
-                                                      (ElementType(), 1.0)])
+                                                      (ElementType(), 1.0),
+                                                      ])
 def test_init(element_type, amount):
     '''
     Test various initializtions
@@ -223,6 +224,7 @@ class Test_point_line_release_spill:
                                       release_time=self.release_time)
 
         release = sp.release
+        print "in test_init: release", release
         assert release.num_elements == self.num_elements
         assert (np.all(release.start_position == self.start_position) and
                 np.all(release.end_position is None))
