@@ -120,6 +120,7 @@ class Renderer(Outputter, MapCanvas):
                  output_timestep=None,
                  output_zero_step=True,
                  output_last_step=True,
+                 output_start_time=None,
                  draw_ontop='forecast',
                  name=None,
                  on=True,
@@ -209,6 +210,7 @@ class Renderer(Outputter, MapCanvas):
                            output_timestep,
                            output_zero_step,
                            output_last_step,
+                           output_start_time,
                            name,
                            output_dir
                            )
