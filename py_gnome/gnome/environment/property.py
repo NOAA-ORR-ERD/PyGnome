@@ -18,7 +18,7 @@ import collections
 
 class PropertySchema(base_schema.ObjType):
     name = SchemaNode(String(), missing='default')
-    units = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String(), missing=drop),SchemaNode(String(), missing=drop)])
+    units = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String(), missing=drop), SchemaNode(String(), missing=drop)])
     time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
 
 
@@ -48,7 +48,7 @@ class EnvProp(object):
         self.name = self._units = self._time = self._data = None
 
         self.name = name
-        self.units=units
+        self.units = units
         self.data = data
         self.time = time
         for k in kwargs:
@@ -96,7 +96,7 @@ class EnvProp(object):
     def time(self, t):
         if isinstance(t, Time):
             self._time = t
-        elif isinstance(t,collections.Iterable):
+        elif isinstance(t, collections.Iterable):
             self._time = Time(t)
         else:
             raise ValueError("Object being assigned must be an iterable or a Time object")
@@ -123,7 +123,7 @@ class EnvProp(object):
 
     def in_units(self, unit):
         '''
-        Returns a full cpy of this property in the units specified. 
+        Returns a full cpy of this property in the units specified.
         WARNING: This will cpy the data of the original property!
 
         :param units: Units to convert to
@@ -149,7 +149,7 @@ class VectorProp(object):
                  variables=None,
                  **kwargs):
         '''
-        A class that represents a vector natural phenomenon and provides an interface to get the value of 
+        A class that represents a vector natural phenomenon and provides an interface to get the value of
         the phenomenon at a position in space and time. VectorProp is the base class
 
         :param name: Name of the Property
@@ -173,7 +173,7 @@ class VectorProp(object):
             time = variables[0].time if time is None else time
             for v in variables:
                 if (v.units != units or
-                    v.time != time):
+                        v.time != time):
                     raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
 
         if units is None:
@@ -181,7 +181,7 @@ class VectorProp(object):
         self._units = units
         if variables is None or len(variables) < 2:
             raise ValueError('Variables must be an array-like of 2 or more Property objects')
-        self.time=time
+        self.time = time
         for k in kwargs:
             setattr(self, k, kwargs[k])
         self.variables = variables
