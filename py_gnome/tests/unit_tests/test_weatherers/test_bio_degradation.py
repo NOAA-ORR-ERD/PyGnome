@@ -68,17 +68,17 @@ def test_serialize_deseriailize():
 def test_prepare_for_model_run():
 
     et = floating(substance='ABU SAFAH')
-    bio_deg = Biodegradation()
+    bio_deg = Biodegradation(waves)
 
     (sc, time_step) = weathering_data_arrays(bio_deg.array_types,
                                              water,
                                              element_type=et)[:2]
 
-    assert 'biodegradation' not in sc.mass_balance
+    assert 'bio_degradation' not in sc.mass_balance
 
     bio_deg.prepare_for_model_run(sc)
 
-    assert 'biodegradation' in sc.mass_balance
+    assert 'bio_degradation' in sc.mass_balance
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'expected_mb', 'on'),
@@ -89,7 +89,7 @@ def test_prepare_for_model_run():
 def test_bio_degradation_mass_balance(oil, temp, num_elems, expected_mb, on):
 
     et = floating(substance=oil)
-    bio_deg = Biodegradation()
+    bio_deg = Biodegradation(waves)
     (sc, time_step) = weathering_data_arrays(bio_deg.array_types,
                                              water,
                                              element_type=et,
@@ -144,3 +144,19 @@ def test_bio_degradation_full_run(sample_model_fcn2, oil, temp, expected_balance
     # objects to the model
     model.set_make_default_refs(True)
     model.setup_model_run()
+
+    bio_degradated = []
+    for step in model:
+        for sc in model.spills.items():
+            if step['step_num'] > 0:
+                assert (sc.mass_balance['bio_degradation'] > 0)
+                assert (sc.mass_balance['natural_dispersion'] > 0)
+                assert (sc.mass_balance['sedimentation'] > 0)
+
+            bio_degradated.append(sc.mass_balance['bio_degradation'])
+
+    print ('Fraction bio degradated after full run: {}'
+           .format(bio_degradated[-1] / original_amount))
+
+    assert bio_degradated[0] == 0.0
+    assert np.isclose(bio_degradated[-1], expected_balance)

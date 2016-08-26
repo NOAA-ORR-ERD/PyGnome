@@ -13,7 +13,8 @@ from gnome.utilities.serializable import Serializable, Field
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 
-from gnome.array_types import (mass, 
+from gnome.array_types import (mass,
+                               mass_components,
                                droplet_avg_size)
 
 from math import exp, pi
@@ -36,6 +37,7 @@ class Biodegradation(Weatherer, Serializable):
         super(Biodegradation, self).__init__(**kwargs)
 
         self.array_types.update({'mass':  mass,
+                                 'mass_components': mass_components,
                                  'droplet_avg_size': droplet_avg_size
                                  })
 
@@ -53,8 +55,16 @@ class Biodegradation(Weatherer, Serializable):
             sc.mass_balance['bio_degradation'] = 0.0
 
             # we need initial psedocomponent masses for further calculations
-            self.comp_masses_at_time0 = sc['mass_components']
-            #self.K_comp_rates.shape  = sc['mass_components'].shape
+            self.comp_masses_at_time0 = []
+
+            for substance, data in sc.itersubstancedata(self.array_types):
+                if len(data['mass']) is 0:
+                    # data does not contain any surface_weathering LEs
+                    continue
+
+                self.comp_masses_at_time0.append(data['mass_components'])
+
+            self.comp_masses_at_time0 = np.asarray(self.comp_masses_at_time0)
 
 
     def initialize_data(self, sc, num_released):
@@ -89,12 +99,15 @@ class Biodegradation(Weatherer, Serializable):
             assert 'boiling_point' in substance._sara.dtype.names
             type_bp = substance._sara[['type','boiling_point']]
   
+            #for _ in range(len(data['mass_components'])):  # use num_released instead???
             k_comp_rates.append(map(self.get_K_comp_rates, type_bp))
 
         # convert list to numpy array
         self.K_comp_rates = np.asarray(k_comp_rates)
 
-        assert self.K_comp_rates.shape == sc['mass_components'].shape
+        #assert self.K_comp_rates[0].shape == sc['mass_components'][0].shape
+        #assert len(self.K_comp_rates) == len(sc['mass'])
+        #assert len(self.K_comp_rates[:,0]) == len(sc.get_substances())
 
 
     def prepare_for_model_step(self, sc, time_step, model_time):
@@ -126,8 +139,8 @@ class Biodegradation(Weatherer, Serializable):
 
         # 
         mass_biodegradated = (self.comp_masses_at_time0 *
-                              exp(-pi * droplet_avg_sizes ** 2 * # droplet_avg_sizes - droplet diameter
-                              K / comp_masses.sum(axes=1)))
+                              np.exp(np.outer(-pi * droplet_avg_sizes ** 2 / # droplet_avg_sizes - droplet diameter
+                              comp_masses.sum(1), K)))
 
         return mass_biodegradated
 
@@ -148,7 +161,7 @@ class Biodegradation(Weatherer, Serializable):
             else:
                 return 0.0                  # zero rate for C30 and above saturates
 
-        elif type_and_bp[1] == 'Aromatics':
+        elif type_and_bp[0] == 'Aromatics':
             if type_and_bp[1] < 630.0:      # 
                 return 0.126982603 if self.arctic else 0.575541103
             else:
@@ -182,7 +195,7 @@ class Biodegradation(Weatherer, Serializable):
             bio_deg = self.bio_degradate_oil(K, data=data, substance=substance)
 
             # calculate mass ballance for bio degradation process - mass loss
-            sc.mass_balance['bio_degradation'] += data['mass'] - bio_deg.sum(1)
+            sc.mass_balance['bio_degradation'] += data['mass'].sum() - bio_deg.sum()
 
             # update masses
             data['mass_components'] = bio_deg
