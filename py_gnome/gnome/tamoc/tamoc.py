@@ -6,7 +6,9 @@ Assorted code for working with TAMOC
 
 from datetime import timedelta
 
+import copy
 import numpy as np
+import unit_conversion as uc
 
 import gnome
 from gnome.utilities import serializable
@@ -103,10 +105,10 @@ def log_normal_pdf(x, mean, std):
 
     """
 
-    sigma = np.sqrt(np.log(1 + std**2 / mean**2))
-    mu = np.log(mean) + sigma**2 / 2
-    return ((1 / (x * sigma * np.sqrt(2 * np.pi))) *
-            np.exp(-((np.log(x) - mu)**2 / (2 * sigma**2))))
+    sigma = np.sqrt(np.log(1 + std ** 2 / mean ** 2))
+    mu = np.log(mean) + sigma ** 2 / 2
+    return ((1 / (x * sigma * np.sqrt(2 * np.pi))) * 
+            np.exp(-((np.log(x) - mu) ** 2 / (2 * sigma ** 2))))
 
 
 def fake_tamoc_results(num_droplets=10):
@@ -186,7 +188,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         self.tamoc_interval = timedelta(hours=TAMOC_interval) if TAMOC_interval is not None else None
         self.last_tamoc_time = release_time
         self.droplets = None
-        self.on = on    # spill is active or not
+        self.on = on  # spill is active or not
         self.name = name
 
     def run_tamoc(self, current_time, time_step):
@@ -202,7 +204,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                 return self.droplets
 
             if (current_time >= self.release_time and (self.last_tamoc_time is None or self.droplets is None) or
-                current_time >= self.last_tamoc_time + self.tamoc_interval and current_time < self.end_release_time):
+                    current_time >= self.last_tamoc_time + self.tamoc_interval and current_time < self.end_release_time):
                 self.last_tamoc_time = current_time
                 self.droplets = self._run_tamoc()
         return self.droplets
@@ -221,8 +223,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
     def _get_mass_distribution(self, mass_fluxes, time_step):
         ts = time_step
         delta_masses = []
-        for i, flux in enumerate(mass_fluxes):
-            delta_masses.append(mass_fluxes[i] * ts)
+        for flux in mass_fluxes:
+            delta_masses.append(flux * ts)
         total_mass = sum(delta_masses)
         proportions = [d_mass / total_mass for d_mass in delta_masses]
 
@@ -345,7 +347,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         return num_to_release
 
-        #return self.release.num_elements_to_release(current_time, time_step)
+        # return self.release.num_elements_to_release(current_time, time_step)
 
     def set_newparticle_values(self, num_new_particles, current_time,
                                time_step, data_arrays):
@@ -376,12 +378,11 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         mass_fluxes = [tam_drop.mass_flux for tam_drop in self.droplets]
         delta_masses, proportions, total_mass = self._get_mass_distribution(mass_fluxes, time_step)
 
-        #set up LE distribution, the number of particles in each 'release point'
+        # set up LE distribution, the number of particles in each 'release point'
         LE_distribution = [int(num_new_particles * p) for p in proportions]
         diff = num_new_particles - sum(LE_distribution)
         for i in range(0, diff):
             LE_distribution[i % len(LE_distribution)] += 1
-
 
         # compute release point location for each droplet
         positions = [self.start_position + FlatEarthProjection.meters_to_lonlat(d.position, self.start_position) for d in self.droplets]
@@ -406,7 +407,6 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
     #         return getattr(self, prop)
     #     except AttributeError:
     #         super(TamocSpill, self).get(prop)
-
 
         # if self.element_type is not None:
         #     self.element_type.set_newparticle_values(num_new_particles, self,

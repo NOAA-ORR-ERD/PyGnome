@@ -136,7 +136,7 @@ class Dissolution(Weatherer, Serializable):
         # for each LE.
         # K_ow for non-aromatics are masked to 0.0
         K_ow_comp = arom_mask * LeeHuibers.partition_coeff(mol_wt, rho)
-        data['partition_coeff'] = ((fmasses * K_ow_comp / mol_wt).sum(axis=1) /
+        data['partition_coeff'] = ((fmasses * K_ow_comp / mol_wt).sum(axis=1) / 
                                    (fmasses / mol_wt).sum(axis=1))
 
         avg_rhos = self.oil_avg_density(fmasses, rho)
@@ -162,13 +162,13 @@ class Dissolution(Weatherer, Serializable):
         assert np.alltrue(T_wc_i + T_calm_i <= float(time_step))
 
         aromatic_masses_i = fmasses * arom_mask
-        aromatic_fractions_i = (aromatic_masses_i.T /
+        aromatic_fractions_i = (aromatic_masses_i.T / 
                                 aromatic_masses_i.sum(axis=1)).T
 
         #
         # OK, here it is, the mass dissolved in the water column.
         #
-        mass_dissolved_in_wc = np.nan_to_num((aromatic_fractions_i.T *
+        mass_dissolved_in_wc = np.nan_to_num((aromatic_fractions_i.T * 
                                               dX_dt_i * T_wc_i).T)
 
         oil_concentrations = self.oil_concentration(fmasses, rho)
@@ -190,7 +190,7 @@ class Dissolution(Weatherer, Serializable):
 
         # adjust any masses that might go negative
         total_mass_dissolved += np.clip(fmasses - total_mass_dissolved,
-                                        -np.inf, 0.0)
+                                        - np.inf, 0.0)
 
         return total_mass_dissolved
 
@@ -247,9 +247,9 @@ class Dissolution(Weatherer, Serializable):
 
     def water_column_time_fraction(self, model_time,
                                    water_phase_xfer_velocity):
-        #wave_period = self.waves.peak_wave_period(model_time)
+        # wave_period = self.waves.peak_wave_period(model_time)
         wave_height = self.waves.get_value(model_time)[0]
-        #wind_speed = self.waves.wind.get_value(model_time)[0]
+        # wind_speed = self.waves.wind.get_value(model_time)[0]
         wind_speed = max(.1, self.waves.wind.get_value(model_time)[0])
         wave_period = PiersonMoskowitz.peak_wave_period(wind_speed)
 
@@ -262,8 +262,8 @@ class Dissolution(Weatherer, Serializable):
 
     def calm_between_wave_breaks(self, model_time, time_step,
                                  time_spent_in_wc=0.0):
-        #wave_period = self.waves.peak_wave_period(model_time) PiersonMoskowitz.peak_wave_period(U)
-        #wind_speed = self.waves.wind.get_value(model_time)[0]
+        # wave_period = self.waves.peak_wave_period(model_time) PiersonMoskowitz.peak_wave_period(U)
+        # wind_speed = self.waves.wind.get_value(model_time)[0]
         wind_speed = max(.1, self.waves.wind.get_value(model_time)[0])
         wave_period = PiersonMoskowitz.peak_wave_period(wind_speed)
 
@@ -310,22 +310,22 @@ class Dissolution(Weatherer, Serializable):
         assert len(partition_coeff.shape) == 1  # single dimension
 
         U_10 = max(.1, self.waves.wind.get_value(model_time)[0])
-        #U_10 = self.waves.wind.get_value(model_time)[0]
+        # U_10 = self.waves.wind.get_value(model_time)[0]
         c_oil = oil_concentration
         k_ow = partition_coeff
 
         if len(c_oil.shape) == 1:
             # a single LE of mass components
             # mass xfer rate (per unit area)
-            N_s_a = (0.01 *
-                     (U_10 / 3600.0) *
+            N_s_a = (0.01 * 
+                     (U_10 / 3600.0) * 
                      (c_oil / k_ow))
 
             N_s = N_s_a * slick_area
         else:
             # multiple LE mass components in a 2D array
-            N_s_a = (0.01 *
-                     (U_10 / 3600.0) *
+            N_s_a = (0.01 * 
+                     (U_10 / 3600.0) * 
                      (c_oil / k_ow))
 
             N_s = (N_s_a.T * slick_area).T
