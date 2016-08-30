@@ -41,8 +41,19 @@ class Biodegradation(Weatherer, Serializable):
                                  'droplet_avg_size': droplet_avg_size
                                  })
 
-        self.comp_masses_at_time0 = None
-        self.K_comp_rates = None
+        # we need to keep previous time step mass ratio (d**2 / M)
+        # for interative bio degradation formula:
+        #
+        #    m(j,n+1) = m(j,n) * exp(-pi * K(j) * 
+        #               (d(n) ** 2 / M(n) - d(n-1)**2 / M(n-1)))
+        # 
+        #  where 
+        #    m(j, t) - mass of pseudocomponent j at time t
+        #    K(j) - biodegradation rate constant for pseudocomponent j
+        #    d(t) - droplet size diameter at time t
+        #    M(t) - total mass of oil at time t
+        self.prev_mass_ratio = None
+
 
     def prepare_for_model_run(self, sc):
         '''
@@ -54,17 +65,7 @@ class Biodegradation(Weatherer, Serializable):
             super(Biodegradation, self).prepare_for_model_run(sc)
             sc.mass_balance['bio_degradation'] = 0.0
 
-            # we need initial psedocomponent masses for further calculations
-            self.comp_masses_at_time0 = []
-
-            for substance, data in sc.itersubstancedata(self.array_types):
-                if len(data['mass']) is 0:
-                    # data does not contain any surface_weathering LEs
-                    continue
-
-                self.comp_masses_at_time0.append(data['mass_components'])
-
-            self.comp_masses_at_time0 = np.asarray(self.comp_masses_at_time0)
+            self.prev_mass_ratio = 0.0
 
 
     def initialize_data(self, sc, num_released):
@@ -73,8 +74,6 @@ class Biodegradation(Weatherer, Serializable):
         '''
         if not self.on:
             return
-
-        self.initialize_K_comp_rates(sc, num_released)
 
         pass
 
@@ -105,6 +104,7 @@ class Biodegradation(Weatherer, Serializable):
         # convert list to numpy array
         self.K_comp_rates = np.asarray(k_comp_rates)
 
+        # TODO asserting
         #assert self.K_comp_rates[0].shape == sc['mass_components'][0].shape
         #assert len(self.K_comp_rates) == len(sc['mass'])
         #assert len(self.K_comp_rates[:,0]) == len(sc.get_substances())
@@ -122,7 +122,7 @@ class Biodegradation(Weatherer, Serializable):
             return
 
 
-    def bio_degradate_oil(self, K, data, substance, **kwargs):
+    def bio_degradate_oil(self, K, data, mass_ratio):
         '''
             Calculate oil bio degradation
             1. K - biodegradation rate coefficients are calculated for temperate or 
@@ -135,12 +135,11 @@ class Biodegradation(Weatherer, Serializable):
          '''
 
         comp_masses = data['mass_components']
-        droplet_avg_sizes = data['droplet_avg_size']
 
         # 
-        mass_biodegradated = (self.comp_masses_at_time0 *
-                              np.exp(np.outer(-pi * droplet_avg_sizes ** 2 / # droplet_avg_sizes - droplet diameter
-                              comp_masses.sum(1), K)))
+        mass_biodegradated = (comp_masses *
+                              np.exp(np.outer(mass_ratio - self.prev_mass_ratio,
+                              -pi * K)))
 
         return mass_biodegradated
 
@@ -189,10 +188,19 @@ class Biodegradation(Weatherer, Serializable):
             indx = sc._substances_spills.substances.index(substance)
 
             # get bio degradation rate coefficient array for this substance
-            K = self.K_comp_rates[indx]
+            # we are going to calculate bio degradation rate coefficients
+            # (K_comp_rates) just for saturates below C30 and aromatics 
+            # components - other ones are masked to 0.0
+
+            assert 'boiling_point' in substance._sara.dtype.names
+            type_bp = substance._sara[['type','boiling_point']]
+            K_comp_rates = np.asarray(map(self.get_K_comp_rates, type_bp))
 
             # calculate the mass over time step
-            bio_deg = self.bio_degradate_oil(K, data=data, substance=substance)
+            mass_ratio = data['droplet_avg_size'] ** 2 / data['mass_components'].sum(1)
+            bio_deg = self.bio_degradate_oil(K_comp_rates, data, mass_ratio)
+            # update mass ration for the next time step
+            self.prev_mass_ratio = mass_ratio
 
             # calculate mass ballance for bio degradation process - mass loss
             sc.mass_balance['bio_degradation'] += data['mass'].sum() - bio_deg.sum()
