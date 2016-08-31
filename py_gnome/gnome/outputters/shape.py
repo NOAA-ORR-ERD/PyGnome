@@ -30,7 +30,7 @@ class ShapeOutput(Outputter, Serializable):
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
-    _state += [Field('filename', update=True, save=True),]
+    _state += [Field('filename', update=True, save=True), ]
     _schema = ShapeSchema
 
     time_formatter = '%m/%d/%Y %H:%M'
@@ -40,13 +40,13 @@ class ShapeOutput(Outputter, Serializable):
         :param str output_dir=None: output directory for shape files
         uses super to pass optional \*\*kwargs to base class __init__ method
         '''
-        ## a little check:
+        # # a little check:
         self._check_filename(filename)
 
         filename = filename.split(".zip")[0].split(".shp")[0]
 
-        self.shpfilename = filename
-        self.shpfiledir = os.path.dirname(filename)
+        self.filename = filename
+        self.filedir = os.path.dirname(filename)
         
         super(ShapeOutput, self).__init__(**kwargs)
 
@@ -91,7 +91,7 @@ class ShapeOutput(Outputter, Serializable):
 
         self.delete_output_files()
         # shouldn't be required if the above worked!
-        self._file_exists_error(self.shpfilename + '.zip')
+        self._file_exists_error(self.filename + '.zip')
 
         # info for prj file
         epsg = 'GEOGCS["WGS 84",'
@@ -137,7 +137,7 @@ class ShapeOutput(Outputter, Serializable):
             if sc.uncertain: 
                 uncertain = True
                 for k, p in enumerate(sc['positions']):
-                    self.w_u.point(p[0],p[1])
+                    self.w_u.point(p[0], p[1])
                     self.w_u.record(curr_time.year,
                         curr_time.month,
                         curr_time.day,
@@ -149,7 +149,7 @@ class ShapeOutput(Outputter, Serializable):
                         sc['status_codes'][k])
             else:
                 for k, p in enumerate(sc['positions']):
-                    self.w.point(p[0],p[1])
+                    self.w.point(p[0], p[1])
                     self.w.record(curr_time.year,
                         curr_time.month,
                         curr_time.day,
@@ -160,12 +160,12 @@ class ShapeOutput(Outputter, Serializable):
                         sc['age'][k],
                         sc['status_codes'][k])
        
-        if islast_step: # now we really write the files:
+        if islast_step:  # now we really write the files:
             
             if uncertain:
-                shapefilenames = [self.shpfilename,self.shpfilename + '_uncert']
+                shapefilenames = [self.filename, self.filename + '_uncert']
             else:
-                shapefilenames = [self.shpfilename]
+                shapefilenames = [self.filename]
             
             for fn in shapefilenames:
 
@@ -180,14 +180,14 @@ class ShapeOutput(Outputter, Serializable):
                 prj_file.close()
                 
                 zipf = zipfile.ZipFile(zfilename, 'w')
-                for suf in ['shp','prj','dbf','shx']:
+                for suf in ['shp', 'prj', 'dbf', 'shx']:
                     f = os.path.split(fn)[-1] + '.' + suf
-                    zipf.write(os.path.join(self.shpfiledir, f), arcname=f)
+                    zipf.write(os.path.join(self.filedir, f), arcname=f)
                     os.remove(fn + '.' + suf)
                 zipf.close()
                 
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'output_filename': self.shpfilename + '.zip'}
+                       'output_filename': self.filename + '.zip'}
 
         return output_info
 
@@ -211,10 +211,10 @@ class ShapeOutput(Outputter, Serializable):
         here in case it needs to be called from elsewhere
         '''
         try:
-            os.remove(self.shpfilename + '.zip')
-            os.remove(self.shpfilename + '_uncert.zip')
+            os.remove(self.filename + '.zip')
+            os.remove(self.filename + '_uncert.zip')
         except OSError:
-            pass # it must not be there
+            pass  # it must not be there
 
 
 
