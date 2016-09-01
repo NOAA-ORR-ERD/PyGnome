@@ -128,7 +128,7 @@ class ShapeOutput(Outputter, Serializable):
 
         super(ShapeOutput, self).write_output(step_num, islast_step)
 
-        if not self._write_step:
+        if not self.on or not self._write_step:
             return None
 
         uncertain = False
