@@ -87,11 +87,10 @@ def test_prepare_for_model_run():
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'k_ow', 'on'),
-                         [('ABU SAFAH', 311.15, 3, 462.711, True),
-                          ('BAHIA', 311.15, 3, 511.445, True),
+                         [('ABU SAFAH', 311.15, 3, 1.47796613e+17, True),
+                          ('ALGERIAN BLEND', 311.15, 3, 2.13773899e+08, True),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
                            311.15, 3, 0.0, False)])
-@pytest.mark.xfail
 def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
     '''
         Here we are testing that the molar averaged oil/water partition
@@ -122,15 +121,14 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'drop_size', 'on'),
                          [('ABU SAFAH', 311.15, 3,
-                           [235.41e-6, 221.24e-6, 207.6e-6],
+                           [235.41e-6, 230.97e-6, 226.53e-6],
                            True),
                           ('BAHIA', 311.15, 3,
-                           [231.19e-6, 218.27e-6, 205.68e-6],
+                           [231.19e-6, 226.31e-6, 221.43e-6],
                            True),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
                            [0.0, 0.0, 0.0],
                            False)])
-@pytest.mark.xfail
 def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
     '''
         Here we are testing that the molar averaged oil/water partition
@@ -210,15 +208,14 @@ def test_dissolution_mass_balance(oil, temp, num_elems, expected_mb, on):
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
-                         [('ABU SAFAH', 288.7, 2044.152),
+                         [('ABU SAFAH', 288.7, 2.98716),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 288.7,
-                           1770.5167),
-                          ('BAHIA', 288.7, 1618.882),
+                           2.74815),
+                          ('BAHIA', 288.7, 5.340128),
                           ('ALASKA NORTH SLOPE, OIL & GAS', 279.261,
-                           2468.827),
+                           5.43758),
                           ]
                          )
-@pytest.mark.xfail
 def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json
