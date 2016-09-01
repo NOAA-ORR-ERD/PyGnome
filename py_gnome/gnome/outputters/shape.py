@@ -89,6 +89,9 @@ class ShapeOutput(Outputter, Serializable):
                                                      spills,
                                                      **kwargs)
 
+        if not self.on:
+            return
+
         self.delete_output_files()
         # shouldn't be required if the above worked!
         self._file_exists_error(self.filename + '.zip')

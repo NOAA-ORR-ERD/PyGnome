@@ -295,7 +295,7 @@ class NetCDFOutput(Outputter, Serializable):
             raise AttributeError('This attribute cannot be changed in the '
                                  'middle of a run')
         else:
-            self._check_netcdf_filename(new_name)
+            self._check_filename(new_name)
             self._netcdf_filename = new_name
 
     @property
@@ -457,7 +457,7 @@ class NetCDFOutput(Outputter, Serializable):
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         spills, **kwargs)
-        if not self.on: 
+        if not self.on:
             return
 
         self.clean_output_files()
@@ -474,6 +474,8 @@ class NetCDFOutput(Outputter, Serializable):
 
             # create the netcdf files and write the standard stuff:
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
+
+                print(rootgrp)
 
                 self._initialize_rootgrp(rootgrp, sc)
 
