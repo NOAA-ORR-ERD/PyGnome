@@ -13,6 +13,7 @@ import pysgrid
 import unit_conversion
 import collections
 
+
 class GridPropSchema(PropertySchema):
     varname = SchemaNode(String(), missing=drop)
     data_file = SchemaNode(String(), missing=drop)
@@ -21,7 +22,7 @@ class GridPropSchema(PropertySchema):
 
 class GriddedProp(EnvProp):
 
-    default_names=[]
+    default_names = []
 
     def __init__(self,
                  name=None,
@@ -136,7 +137,7 @@ class GriddedProp(EnvProp):
                 units = data.units
             except AttributeError:
                 units = None
-        timevar=None
+        timevar = None
         if time is None:
             try:
                 timevar = data.time if data.time == data.dimensions[0] else data.dimensions[0]
@@ -164,7 +165,7 @@ class GriddedProp(EnvProp):
             raise ValueError("Data/time interval mismatch")
         if isinstance(t, Time):
             self._time = t
-        elif isinstance(t,collections.Iterable) or isinstance(t, nc4.Variable):
+        elif isinstance(t, collections.Iterable) or isinstance(t, nc4.Variable):
             self._time = Time(t)
         else:
             raise ValueError("Time must be set with an iterable container or netCDF variable")
@@ -178,7 +179,7 @@ class GriddedProp(EnvProp):
         if self.time is not None and len(d) != len(self.time):
             raise ValueError("Data/time interval mismatch")
         if self.grid is not None and self.grid.infer_location(d) is None:
-            raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(d.shape, grid.shape))
+            raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(d.shape, self.grid.shape))
         self._data = d
 
     @property
@@ -190,7 +191,7 @@ class GriddedProp(EnvProp):
         if not (isinstance(g, (pyugrid.UGrid, pysgrid.SGrid))):
             raise ValueError('Grid must be set with a pyugrid.UGrid or pysgrid.SGrid object')
         if self.data is not None and g.infer_location(self.data) is None:
-            raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(d.shape, grid.shape))
+            raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(self.data.shape, self.grid.shape))
         self._grid = g
 
     @property
@@ -203,7 +204,6 @@ class GriddedProp(EnvProp):
 
     def set_attr(self,
                  name=None,
-#                  units=None,
                  time=None,
                  data=None,
                  data_file=None,
@@ -228,25 +228,24 @@ class GriddedProp(EnvProp):
         self.data_file = data_file if data_file is not None else self.data_file
 
     def center_values(self, time, units=None, extrapolate=False):
-        #NOT COMPLETE
+        # NOT COMPLETE
         if not extrapolate:
             self.time.valid_time(time)
         if len(self.time) == 1:
             if len(self.data.shape) == 2:
                 if isinstance(self.grid, pysgrid.sgrid):
-                    #curv grid
-                    value = self.data[0:1:-2,1:-2]
+                    # curv grid
+                    value = self.data[0:1:-2, 1:-2]
                 else:
                     value = self.data
             if units is not None and units != self.units:
                 value = unit_conversion.convert(self.units, units, value)
         else:
-            t_index = self.time.index_of(time, extrapolate)
             centers = self.grid.get_center_points()
             value = self.at(centers, time, units)
         return value
 
-    def at(self, points, time, units=None, depth = -1, extrapolate=False):
+    def at(self, points, time, units=None, depth=-1, extrapolate=False):
         '''
         Find the value of the property at positions P at time T
 
@@ -267,11 +266,11 @@ class GriddedProp(EnvProp):
         sg = False
         m = True
         if self.time is None:
-            #special case! prop has no time variance
+            # special case! prop has no time variance
             v0 = self.grid.interpolate_var_to_points(points, self.data, slices=None, slice_grid=sg, _memo=m)
             return v0
 
-        t_alphas = t_index = s0 = s1 = value = None
+        t_alphas = s0 = s1 = value = None
         if not extrapolate:
             self.time.valid_time(time)
         t_index = self.time.index_of(time, extrapolate)
@@ -331,7 +330,7 @@ class GridVectorProp(VectorProp):
                  units=None,
                  time=None,
                  variables=None,
-                 grid = None,
+                 grid=None,
                  grid_file=None,
                  data_file=None,
                  dataset=None,
@@ -354,7 +353,7 @@ class GridVectorProp(VectorProp):
                             units,
                             time,
                             variables,
-                            grid = grid,
+                            grid=grid,
                             dataset=dataset,
                             data_file=data_file,
                             grid_file=grid_file)
@@ -424,7 +423,7 @@ class GridVectorProp(VectorProp):
                                          dataset=ds)
         if name is None:
             name = 'GridVectorProp'
-        timevar=None
+        timevar = None
         data = ds[varnames[0]]
         if time is None:
             try:
@@ -460,15 +459,15 @@ class GridVectorProp(VectorProp):
             return
         for v in self.variables:
             if v.units != self.units:
-                raise ValueError("Variable {0} did not have units consistent with what was specified. Got: {1} Expected {2}".format(v.name,v.units, self.units))
+                raise ValueError("Variable {0} did not have units consistent with what was specified. Got: {1} Expected {2}".format(v.name, v.units, self.units))
             if v.time != self.time:
-                raise ValueError("Variable {0} did not have time consistent with what was specified Got: {1} Expected {2}".format(v.name,v.time, self.time))
+                raise ValueError("Variable {0} did not have time consistent with what was specified Got: {1} Expected {2}".format(v.name, v.time, self.time))
             if v.grid != self.grid:
-                raise ValueError("Variable {0} did not have grid consistent with what was specified Got: {1} Expected {2}".format(v.name,v.grid, self.grid))
+                raise ValueError("Variable {0} did not have grid consistent with what was specified Got: {1} Expected {2}".format(v.name, v.grid, self.grid))
             if v.grid_file != self.grid_file:
-                raise ValueError("Variable {0} did not have grid_file consistent with what was specified Got: {1} Expected {2}".format(v.name,v.grid_file, self.grid_file))
+                raise ValueError("Variable {0} did not have grid_file consistent with what was specified Got: {1} Expected {2}".format(v.name, v.grid_file, self.grid_file))
             if v.data_file != self.data_file:
-                raise ValueError("Variable {0} did not have data_file consistent with what was specified Got: {1} Expected {2}".format(v.name,v.data_file, self.data_file))
+                raise ValueError("Variable {0} did not have data_file consistent with what was specified Got: {1} Expected {2}".format(v.name, v.data_file, self.data_file))
 
     @property
     def grid(self):
@@ -486,27 +485,26 @@ class GridVectorProp(VectorProp):
         else:
             self._grid = g
 
-
     @property
     def variables(self):
         return self._variables
 
     @variables.setter
-    def variables(self, vars):
-        if vars is None:
+    def variables(self, vs):
+        if vs is None:
             self._variables = None
             return
         new_vars = []
-        for i, var in enumerate(vars):
+        for i, var in enumerate(vs):
             if not isinstance(var, GriddedProp):
                 if (isinstance(var, (collections.Iterable, nc4.Variable)) and
-                    len(var) == len(self.time) and
-                    self.grid.infer_location(var) is not None):
+                        len(var) == len(self.time) and
+                        self.grid.infer_location(var) is not None):
                     new_vars.append(GriddedProp(name='var{0}'.format(i),
                                     units=self.units,
                                     time=self.time,
-                                    grid = self.grid,
-                                    data = vars[i],
+                                    grid=self.grid,
+                                    data=vs[i],
                                     grid_file=self.grid_file,
                                     data_file=self.data_file))
                 else:
@@ -531,12 +529,12 @@ class GridVectorProp(VectorProp):
                 try:
                     v.time = t
                 except ValueError as e:
-                    raise ValueError('''Time was not compatible with variables. 
+                    raise ValueError('''Time was not compatible with variables.
                     Set variables attribute to None to allow changing other attributes
                     Original error: {0}'''.format(str(e)))
         if isinstance(t, Time):
             self._time = t
-        elif isinstance(t,collections.Iterable) or isinstance(t, nc4.Variable):
+        elif isinstance(t, collections.Iterable) or isinstance(t, nc4.Variable):
             self._time = Time(t)
         else:
             raise ValueError("Time must be set with an iterable container or netCDF variable")
@@ -553,7 +551,7 @@ class GridVectorProp(VectorProp):
                  units=None,
                  time=None,
                  variables=None,
-                 grid = None,
+                 grid=None,
                  grid_file=None,
                  data_file=None,):
 
@@ -578,18 +576,18 @@ class GridVectorProp(VectorProp):
             else:
                 nv = variables[i]
             var.set_attr(units=units,
-                         time = time,
-                         data = nv,
-                         grid = grid,
-                         grid_file = grid_file,
-                         data_file = data_file,)
+                         time=time,
+                         data=nv,
+                         grid=grid,
+                         grid_file=grid_file,
+                         data_file=data_file,)
         else:
             for i, var in enumerate(self.variables):
                 var.set_attr(units=units,
                              time=time,
-                             grid = grid,
-                             grid_file = grid_file,
-                             data_file = data_file,)
+                             grid=grid,
+                             grid_file=grid_file,
+                             data_file=data_file,)
         self._units = units
         self._time = time
         self._grid = grid
@@ -598,8 +596,8 @@ class GridVectorProp(VectorProp):
 
     @classmethod
     def _gen_varnames(cls,
-                     filename=None,
-                     dataset=None):
+                      filename=None,
+                      dataset=None):
         """
         Function to find the default variable names if they are not provided.
 
@@ -619,9 +617,10 @@ class GridVectorProp(VectorProp):
                 return n
         raise ValueError("Default names not found.")
 
+
 def init_grid(filename,
               grid_topology=None,
-              dataset = None,):
+              dataset=None,):
     gt = grid_topology
     gf = dataset
     if gf is None:
@@ -646,20 +645,20 @@ def init_grid(filename,
         else:
             nodes = gf[gt['nodes']]
         if 'faces' in gt and gf[gt['faces']]:
-            #UGrid
+            # UGrid
             faces = gf[gt['faces']]
             if faces.shape[0] == 3:
-                faces=np.ascontiguousarray(np.array(faces).T - 1)
+                faces = np.ascontiguousarray(np.array(faces).T - 1)
             if nodes is None:
                 nodes = np.column_stack((node_lon, node_lat))
-            grid = pyugrid.UGrid(nodes = nodes, faces=faces)
+            grid = pyugrid.UGrid(nodes=nodes, faces=faces)
         else:
-            #SGrid
+            # SGrid
             center_lon = center_lat = edge1_lon = edge1_lat = edge2_lon = edge2_lat = None
             if node_lon is None:
-                node_lon = nodes[:,0]
+                node_lon = nodes[:, 0]
             if node_lat is None:
-                node_lat = nodes[:,1]
+                node_lat = nodes[:, 1]
             if 'center_lon' in gt:
                 center_lon = gf[gt['center_lon']]
             if 'center_lat' in gt:
@@ -672,15 +671,16 @@ def init_grid(filename,
                 edge2_lon = gf[gt['edge2_lon']]
             if 'edge2_lat' in gt:
                 edge2_lat = gf[gt['edge2_lat']]
-            grid = pysgrid.SGrid(node_lon = node_lon,
-                                 node_lat = node_lat,
-                                 center_lon = center_lon,
-                                 center_lat = center_lat,
-                                 edge1_lon = edge1_lon,
-                                 edge1_lat = edge1_lat,
-                                 edge2_lon = edge2_lon,
-                                 edge2_lat = edge2_lat)
+            grid = pysgrid.SGrid(node_lon=node_lon,
+                                 node_lat=node_lat,
+                                 center_lon=center_lon,
+                                 center_lat=center_lat,
+                                 edge1_lon=edge1_lon,
+                                 edge1_lat=edge1_lat,
+                                 edge2_lon=edge2_lon,
+                                 edge2_lat=edge2_lat)
     return grid
+
 
 def _gen_topology(filename,
                   dataset=None):
@@ -694,7 +694,7 @@ def _gen_topology(filename,
     if gf is None:
         gf = _get_dataset(filename)
     gt = {}
-    node_coord_names = [['node_lon','node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
+    node_coord_names = [['node_lon', 'node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
     face_var_names = ['nv']
     center_coord_names = [['center_lon', 'center_lat'], ['lon_rho', 'lat_rho']]
     edge1_coord_names = [['edge1_lon', 'edge1_lat'], ['lon_u', 'lat_u']]
@@ -714,7 +714,7 @@ def _gen_topology(filename,
             break
 
     if 'faces' in gt.keys():
-        #UGRID
+        # UGRID
         return gt
     else:
         for n in center_coord_names:
@@ -733,6 +733,7 @@ def _gen_topology(filename,
                 gt['edge2_lat'] = n[1]
                 break
     return gt
+
 
 def _get_dataset(filename):
     df = None

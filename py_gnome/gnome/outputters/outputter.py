@@ -15,7 +15,7 @@ from datetime import timedelta
 from colander import SchemaNode, MappingSchema, Bool, drop
 
 
-from gnome.persist import base_schema, extend_colander
+from gnome.persist import base_schema, extend_colander, validators
 from gnome.utilities.serializable import Serializable, Field
 
 
@@ -25,6 +25,9 @@ class BaseSchema(base_schema.ObjType, MappingSchema):
     output_zero_step = SchemaNode(Bool())
     output_last_step = SchemaNode(Bool())
     output_timestep = SchemaNode(extend_colander.TimeDelta(), missing=drop)
+    output_start_time = SchemaNode(extend_colander.LocalDateTime(),
+                            validator=validators.convertible_to_seconds,
+                            missing=drop)
 
 
 class Outputter(Serializable):
@@ -37,7 +40,8 @@ class Outputter(Serializable):
     _state += (Field('on', save=True, update=True),
                Field('output_zero_step', save=True, update=True),
                Field('output_last_step', save=True, update=True),
-               Field('output_timestep', save=True, update=True))
+               Field('output_timestep', save=True, update=True),
+               Field('output_start_time', save=True, update=True))
     _schema = BaseSchema
 
     def __init__(self,
@@ -46,6 +50,7 @@ class Outputter(Serializable):
                  output_timestep=None,
                  output_zero_step=True,
                  output_last_step=True,
+                 output_start_time=None,
                  name='',
                  output_dir=None):
         """
@@ -68,6 +73,10 @@ class Outputter(Serializable):
             final step is written regardless of output_timestep
         :type output_last_step: boolean
 
+        :param output_start_time: default is None in which case it is set to
+            the model time
+        :type output_start_time: datetime object
+
         :param name='': name for outputter
 
         :param output_dir=None: directory to dump ouput in, if it needs to
@@ -82,6 +91,10 @@ class Outputter(Serializable):
             self._output_timestep = int(output_timestep.total_seconds())
         else:
             self._output_timestep = None
+        if output_start_time:
+            self.output_start_time = output_start_time
+        else:
+            self.output_start_time = None
 
         self.sc_pair = None     # set in prepare_for_model_run
 
@@ -166,6 +179,8 @@ class Outputter(Serializable):
 
         self._model_start_time = model_start_time
         self.model_timestep = model_time_step
+        if self.output_start_time is None:
+            self.output_start_time = model_start_time
         self.sc_pair = spills
         cache = kwargs.pop('cache', None)
         if cache is not None:
@@ -197,6 +212,21 @@ class Outputter(Serializable):
            update the _dt_since_lastoutput variable
 
         """
+        d = timedelta(seconds=time_step)
+        if self.output_start_time != self._model_start_time:
+            if model_time + d < self.output_start_time:
+                self._write_step = False
+                return
+            if model_time + d == self.output_start_time:
+                self._write_step = True
+                self._is_first_output = False
+                return
+            if model_time + d > self.output_start_time:
+                if self._is_first_output:
+                    self._write_step = True
+                    self._is_first_output = False
+                    return
+
         if self._output_timestep is not None:
             self._write_step = False
             self._dt_since_lastoutput += time_step
@@ -227,8 +257,11 @@ class Outputter(Serializable):
         :type islast_step: bool
 
         """
-        if (step_num == 0 and self.output_zero_step):
-            self._write_step = True
+        if step_num == 0:
+            if self.output_zero_step:
+                self._write_step = True	# this is the default
+            else:
+                self._write_step = False
 
         if (islast_step and self.output_last_step):
             self._write_step = True
@@ -259,6 +292,7 @@ class Outputter(Serializable):
         self._model_start_time = None
         self._dt_since_lastoutput = None
         self._write_step = True
+        self._is_first_output = True
 
     def write_output_post_run(self,
                               model_start_time,

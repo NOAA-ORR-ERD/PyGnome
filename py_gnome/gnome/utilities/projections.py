@@ -18,7 +18,7 @@ NOTE: all coordinates are takes as (lon, lat, depth)
 from __future__ import division
 
 import numpy as np
-import profiledeco as pd
+
 
 def to_2d_coords(coords):
     """
@@ -30,6 +30,7 @@ def to_2d_coords(coords):
                   a (lon, lat, depth) triple
                   a Nx2 array-like object of (lon,lat) pairs
                   a Nx3 array-like object of (lon, lat, depth) triples
+
     The depth is ignored in all cases
 
     This is probably overly convenient, but the legacy is there...
@@ -128,14 +129,18 @@ class GeoProjection(object):
         Projection(bounding_box, image_size)
 
         :param bounding_box: The bounding box of the map
-        :type bounding_box: Struct of the form:
+        :type bounding_box: Struct of the form::
+
                                 ((min_long, min_lat),
                                  (max_lon,  max_lat))
+
                             or a BoundingBox Object
 
         :param image_size: The size of the map image
         :type image_size: Struct of the form (width, height)
+
         """
+
         self.center = None
         self.offset = None
         self.scale = None
@@ -217,22 +222,24 @@ class GeoProjection(object):
 
         :param coords: An array of coordinates
         :type coords: Sequence of NX3
-                          ((long1, lat1, z1),
-                           (long2, lat2, z2),
-                           (long3, lat3, z3),
-                           ...
-                          )
-                      (z is ignored, and there is no z in the returned array)
+
+        ::
+            ((long1, lat1, z1),
+             (long2, lat2, z2),
+             (long3, lat3, z3),
+             )
+
+        (z is ignored, and there is no z in the returned array)
 
         :returns: The pixel coords as a similar Nx2 array of integer
-                  x,y coordinates
-                  (using the y = 0 at the top, and y increasing down)
+                  x,y coordinates (using the y = 0 at the top, and y increasing down)
 
         NOTE: The values between the minimum of a pixel value to less than the
               max of a pixel range are in that pixel, so  a point exactly at
               the minimum of the bounding box will be in the zeroth pixel, but
               a point  exactly at the max of the bounding box will be
               considered outside the map
+
         """
         coords = to_2d_coords(coords)  # strip off depth, if it's there
 
@@ -281,12 +288,14 @@ class GeoProjection(object):
         converts pixel coords to long-lat coords
 
         :param coords: An array of pixel coordinates (usually integer type
-        :type coords: Sequence of NX2: ((long1, lat1),
-                                        (long2, lat2),
-                                        (long3, lat3),
-                                        ...
-                                        )
-                      (as produced by to_pixel)
+        :type coords: Sequence of NX2::
+                          ((long1, lat1),
+                          (long2, lat2),
+                          (long3, lat3),
+                          ...
+                          )
+
+        (as produced by to_pixel)
 
         :returns: The pixel coords as a similar Nx2 array of floating point
                   x,y coordinates
@@ -339,7 +348,7 @@ class FlatEarthProjection(GeoProjection):
         dlat = dy * 8.9992801e-06
         dlon = dy * 8.9992801e-06 * cos(ref_lat)
         (based on previous GNOME value: and/or average radius of the earth of
-         6366706.989  m)
+        6366706.989  m)
 
         :param meters: Distances in meters
         :type meters: NX3 numpy array of (dx, dy, dz)
@@ -349,9 +358,9 @@ class FlatEarthProjection(GeoProjection):
         :type ref_positions: NX3, numpy array (Only lat is used here)
 
         :returns delta_lon_lat: Differential (delta) positional values
-                                Nx3 numpy array of
-                                (delta-lon, delta-lat, delta-z)
+                                Nx3 numpy array of (delta-lon, delta-lat, delta-z)
         """
+
         # make a copy -- don't change meters
         delta_lon_lat = np.array(meters, dtype=np.float64)
         if len(delta_lon_lat.shape) == 1:
@@ -651,12 +660,12 @@ class RectangularGridProjection(NoProjection):
         Converts pixel coords to long-lat coords
 
         :param coords: An array of pixel coordinates (as produced by to_pixel)
-        :type coords: Sequence of Nx2 (usually integer type)
+        :type coords: Sequence of Nx2 (usually integer type)::
                           ((long1, lat1),
-                           (long2, lat2),
-                           (long3, lat3),
-                           ...
-                           )
+                          (long2, lat2),
+                          (long3, lat3),
+                          ...
+                          )
 
         :returns: the pixel coords as a similar Nx2 array of floating point
                   x,y coordinates

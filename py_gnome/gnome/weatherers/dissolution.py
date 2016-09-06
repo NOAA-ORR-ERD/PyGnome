@@ -9,7 +9,7 @@ import numpy as np
 import gnome  # required by deserialize
 
 from gnome.utilities.serializable import Serializable, Field
-from gnome.utilities.weathering import (LeeHuibers, Stokes,
+from gnome.utilities.weathering import (BanerjeeHuibers, Stokes,
                                         DingFarmer, DelvigneSweeney,
                                         PiersonMoskowitz)
 
@@ -135,7 +135,7 @@ class Dissolution(Weatherer, Serializable):
         # calculate the partition coefficient (K_ow) for all aromatics
         # for each LE.
         # K_ow for non-aromatics are masked to 0.0
-        K_ow_comp = arom_mask * LeeHuibers.partition_coeff(mol_wt, rho)
+        K_ow_comp = arom_mask * BanerjeeHuibers.partition_coeff(mol_wt, rho)
         data['partition_coeff'] = ((fmasses * K_ow_comp / mol_wt).sum(axis=1) / 
                                    (fmasses / mol_wt).sum(axis=1))
 

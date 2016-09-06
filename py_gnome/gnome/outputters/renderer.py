@@ -120,6 +120,7 @@ class Renderer(Outputter, MapCanvas):
                  output_timestep=None,
                  output_zero_step=True,
                  output_last_step=True,
+                 output_start_time=None,
                  draw_ontop='forecast',
                  name=None,
                  on=True,
@@ -209,6 +210,7 @@ class Renderer(Outputter, MapCanvas):
                            output_timestep,
                            output_zero_step,
                            output_last_step,
+                           output_start_time,
                            name,
                            output_dir
                            )
@@ -338,23 +340,30 @@ class Renderer(Outputter, MapCanvas):
 
         :param background: Color of the text background.
                            Color must be present in foreground palette
-        :type background: String
+
+        :type background: str
 
         :param color: Color of the font. Note that the color must be present
                       in the foreground palette
-        :type color: String
 
-        :param size: Size of the font
-        :type size: One of 'tiny', 'small', 'medium', 'large', 'giant'
+        :type color: str
+
+        :param size: Size of the font, one of 'tiny', 'small', 'medium', 'large', 'giant'
+
+        :type size: str
 
         :param position: x, y pixel coordinates of where to draw the timestamp.
+
         :type position :tuple
 
         :param align: The reference point of the text bounding box.
-        :type align: One of: ('lt'(left top), 'ct', 'rt','l', 'r','rb', 'cb', 'lb')
+                      One of: 'lt'(left top), 'ct', 'rt','l', 'r','rb', 'cb', 'lb'
+
+        :type align: str
 
         """
         self.timestamp_attribs.update(kwargs)
+
 
     def draw_timestamp(self, time):
         """
@@ -673,7 +682,7 @@ class Renderer(Outputter, MapCanvas):
 
     def save(self, saveloc, references=None, name=None):
         '''
-        update the 'output_dir' key in the json_ to point to directory
+        update the 'output_dir' key in the json to point to directory
         inside saveloc, then save the json - do not copy image files or
         image directory over
         '''

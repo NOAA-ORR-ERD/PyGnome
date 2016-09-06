@@ -5,6 +5,7 @@
     for calculating behavior due to weathering.
 '''
 from .lee_huibers import LeeHuibers
+from .banerjee_huibers import BanerjeeHuibers
 from .riazi import Riazi
 from .stokes import Stokes
 from .pierson_moskowitz import PiersonMoskowitz
