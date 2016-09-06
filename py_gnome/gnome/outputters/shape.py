@@ -1,5 +1,5 @@
 """
-kmz  outputter
+shapefile  outputter
 """
 
 import copy
