@@ -78,7 +78,9 @@ class GriddedProp(EnvProp):
                     grid=None,
                     dataset=None,
                     data_file=None,
-                    grid_file=None
+                    grid_file=None,
+                    load_all=False,
+                    **kwargs
                     ):
         '''
         Allows one-function creation of a GriddedProp from a file.
@@ -144,6 +146,8 @@ class GriddedProp(EnvProp):
             except AttributeError:
                 timevar = data.dimensions[0]
             time = Time(ds[timevar])
+        if load_all:
+            data = data[:]
         return cls(name=name,
                    units=units,
                    time=time,
@@ -282,7 +286,7 @@ class GriddedProp(EnvProp):
             if time <= self.time.min_time:
                 value = self.data[0]
             if extrapolate and t_index == len(self.time.time):
-                s0 = [t_index]
+                s0 = [t_index - 1]
                 value = self.grid.interpolate_var_to_points(points, self.data, slices=s0, _memo=m)
             else:
                 t_alphas = self.time.interp_alpha(time, extrapolate)
@@ -371,7 +375,9 @@ class GridVectorProp(VectorProp):
                     grid=None,
                     data_file=None,
                     grid_file=None,
-                    dataset=None
+                    dataset=None,
+                    load_all=False,
+                    **kwargs
                     ):
         '''
         Allows one-function creation of a GridVectorProp from a file.
@@ -441,7 +447,8 @@ class GridVectorProp(VectorProp):
                                                      grid=grid,
                                                      data_file=data_file,
                                                      grid_file=grid_file,
-                                                     dataset=ds))
+                                                     dataset=ds,
+                                                     load_all=load_all))
         return cls(name,
                    units,
                    time,

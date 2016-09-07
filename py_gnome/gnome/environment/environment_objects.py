@@ -407,7 +407,8 @@ class IceVelocity(VelocityGrid, Environment):
                  grid=None,
                  grid_file=None,
                  data_file=None,
-                 dataset=None):
+                 dataset=None,
+                 **kwargs):
         VelocityGrid.__init__(self,
                               name=name,
                               units=units,
@@ -416,7 +417,8 @@ class IceVelocity(VelocityGrid, Environment):
                               grid=grid,
                               grid_file=grid_file,
                               data_file=data_file,
-                              dataset=dataset)
+                              dataset=dataset,
+                              **kwargs)
 
 
 class IceAwareProp(serializable.Serializable, Environment):
@@ -482,7 +484,8 @@ class IceAwareProp(serializable.Serializable, Environment):
         if ice_var is None:
             ice_var = IceVelocity.from_netCDF(filename,
                                               grid=grid,
-                                              dataset=ds)
+                                              dataset=ds,
+                                              **kwargs)
         if time is None:
             time = ice_var.time
 
@@ -490,7 +493,8 @@ class IceAwareProp(serializable.Serializable, Environment):
             ice_conc_var = IceConcentration.from_netCDF(filename,
                                                         time=time,
                                                         grid=grid,
-                                                        dataset=ds)
+                                                        dataset=ds,
+                                                        **kwargs)
         if name is None:
             name = 'IceAwareProp'
         if units is None:
@@ -571,7 +575,8 @@ class IceAwareCurrent(IceAwareProp):
             water_var = GridCurrent.from_netCDF(filename,
                                                 time=time,
                                                 grid=grid,
-                                                dataset=ds)
+                                                dataset=ds,
+                                                **kwargs)
 
         return super(IceAwareCurrent, cls).from_netCDF(grid_topology=grid_topology,
                                                        name=name,
@@ -671,7 +676,8 @@ class IceAwareWind(IceAwareProp):
             wind_var = GridWind.from_netCDF(filename,
                                             time=time,
                                             grid=grid,
-                                            dataset=ds)
+                                            dataset=ds,
+                                            **kwargs)
 
         return super(IceAwareWind, cls).from_netCDF(grid_topology=grid_topology,
                                                     name=name,
