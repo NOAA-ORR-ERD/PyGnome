@@ -264,6 +264,60 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     assert np.isclose(dissolved[-1], expected_balance)
 
 
+@pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
+                         #[(_sample_oils['benzene'], 288.7, 2.98716)
+                         [('benzene', 288.7, 9729.56707)
+                          ]
+                         )
+def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
+    '''
+    test dissolution outputs post step for a full run of model. Dump json
+    for 'weathering_model.json' in dump directory
+    '''
+    low_wind = constant_wind(1., 270, 'knots')
+    low_waves = Waves(low_wind, Water(temp))
+    model = sample_model_weathering2(sample_model_fcn2, oil, temp)
+    model.environment += [Water(temp), low_wind,  low_waves]
+    #model.weatherers += Evaporation(Water(temp), low_wind)
+    model.weatherers += NaturalDispersion(low_waves,Water(temp))
+    model.weatherers += Dissolution(low_waves)
+
+    for sc in model.spills.items():
+        print sc.__dict__.keys()
+        print sc._data_arrays
+
+        print 'num spills:', len(sc.spills)
+        print 'spill[0] amount:', sc.spills[0].amount
+        original_amount = sc.spills[0].amount
+
+    # set make_default_refs to True for objects contained in model after adding
+    # objects to the model
+    model.set_make_default_refs(True)
+    model.setup_model_run()
+
+    dissolved = []
+    for step in model:
+        for sc in model.spills.items():
+            if step['step_num'] > 0:
+                assert (sc.mass_balance['dissolution'] > 0)
+                assert (sc.mass_balance['natural_dispersion'] > 0)
+                assert (sc.mass_balance['sedimentation'] > 0)
+
+            dissolved.append(sc.mass_balance['dissolution'])
+
+            print ("\nDissolved: {0}".
+                   format(sc.mass_balance['dissolution']))
+            print ("Mass: {0}".
+                   format(sc._data_arrays['mass']))
+            print ("Mass Components: {0}".
+                   format(sc._data_arrays['mass_components']))
+
+    print ('Fraction dissolved after full run: {}'
+           .format(dissolved[-1] / original_amount))
+
+    assert dissolved[0] == 0.0
+    assert np.isclose(dissolved[-1], expected_balance)
+
 def test_full_run_dissolution_not_active(sample_model_fcn):
     'no water/wind/waves object and no evaporation'
     model = sample_model_weathering(sample_model_fcn, 'oil_6')
