@@ -126,11 +126,11 @@ def test_bio_degradation_full_run(sample_model_fcn2, oil, temp, expected_balance
     for 'weathering_model.json' in dump directory
     '''
     model = sample_model_weathering2(sample_model_fcn2, oil, temp)
-    model.duration = timedelta(days=5)
+    #model.duration = timedelta(days=5)
     model.environment += [Water(temp), wind,  waves]
     model.weatherers += Evaporation()
     model.weatherers += NaturalDispersion()
-    model.weatherers += Dissolution(waves)
+    #model.weatherers += Dissolution(waves)
     model.weatherers += Biodegradation()
 
     for sc in model.spills.items():
