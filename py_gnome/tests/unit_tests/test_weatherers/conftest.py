@@ -15,10 +15,12 @@ from ..conftest import sample_model_fcn, sample_model_fcn2
 
 def weathering_data_arrays(n_arrays,
                            water=None,
-                           time_step=15.*60,
+                           time_step=15. * 60,
                            element_type=None,
                            langmuir=False,
-                           num_elements=2):
+                           num_elements=2,
+                           units='g',
+                           amount_per_element=1.0):
     '''
     function to initialize data_arrays set by WeatheringData. Weatherer tests
     can use this function to release elements and initialize data without
@@ -38,7 +40,10 @@ def weathering_data_arrays(n_arrays,
     sc = sample_sc_release(num_elements=num_elements,
                            element_type=element_type,
                            arr_types=arrays,
-                           time_step=time_step)
+                           time_step=time_step,
+                           units=units,
+                           amount_per_element=amount_per_element
+                           )
     for wd in rqd_weatherers:
         wd.prepare_for_model_run(sc)
         wd.initialize_data(sc, sc.num_released)

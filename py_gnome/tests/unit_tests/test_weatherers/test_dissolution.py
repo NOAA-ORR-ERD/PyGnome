@@ -121,10 +121,10 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'drop_size', 'on'),
                          [('ABU SAFAH', 311.15, 3,
-                           [235.41e-6, 230.97e-6, 226.53e-6],
+                           [235.41e-6, 229.26e-6, 223.09e-6],
                            True),
                           ('BAHIA', 311.15, 3,
-                           [231.19e-6, 226.31e-6, 221.43e-6],
+                           [231.19e-6, 221.54e-6, 212.02e-6],
                            True),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
                            [0.0, 0.0, 0.0],
@@ -173,47 +173,74 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'expected_mb', 'on'),
-                         [('ABU SAFAH', 311.15, 3, 0.0, True),
-                          ('BAHIA', 311.15, 3, 0.0, True),
+                         [('ABU SAFAH', 311.15, 3, 1.35363e-3, True),
+                          ('BAHIA', 311.15, 3, 4.075e-3, True),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
                            np.nan, False)])
 def test_dissolution_mass_balance(oil, temp, num_elems, expected_mb, on):
     '''
+    Test a single dissolution step.
+    - for this, we need a dispersion weatherer to give us a droplet size
+      distribution.
     Fuel Oil #6 does not exist...
     '''
     et = floating(substance=oil)
+    disp = NaturalDispersion(waves, water)
     diss = Dissolution(waves)
-    (sc, time_step) = weathering_data_arrays(diss.array_types,
+
+    all_array_types = diss.array_types.union(disp.array_types)
+
+    (sc, time_step) = weathering_data_arrays(all_array_types,
                                              water,
                                              element_type=et,
-                                             num_elements=num_elems)[:2]
+                                             num_elements=num_elems,
+                                             units='kg',
+                                             amount_per_element=1.0
+                                             )[:2]
 
+    print 'time_step: {}'.format(time_step)
     print 'num spills:', len(sc.spills)
-    print 'spill[0] amount:', sc.spills[0].amount
+    print 'spill[0] amount: {} {}'.format(sc.spills[0].amount,
+                                          sc.spills[0].units)
 
+    initial_amount = sc.spills[0].amount
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
+
+    disp.on = on
+    disp.prepare_for_model_run(sc)
+    disp.initialize_data(sc, sc.num_released)
 
     diss.on = on
     diss.prepare_for_model_run(sc)
     diss.initialize_data(sc, sc.num_released)
 
+    disp.prepare_for_model_step(sc, time_step, model_time)
     diss.prepare_for_model_step(sc, time_step, model_time)
+
+    disp.weather_elements(sc, time_step, model_time)
     diss.weather_elements(sc, time_step, model_time)
 
     if on:
+        print ('fraction dissolved: {}'
+               .format(sc.mass_balance['dissolution'] / initial_amount)
+               )
+        print ('fraction dissolved: {:.2%}'
+               .format(sc.mass_balance['dissolution'] / initial_amount)
+               )
+        print sc.mass_balance['dissolution'], expected_mb
         assert np.isclose(sc.mass_balance['dissolution'], expected_mb)
     else:
         assert 'dissolution' not in sc.mass_balance
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
-                         [('ABU SAFAH', 288.7, 2.98716),
+                         [('ABU SAFAH', 288.7, 122.278),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 288.7,
-                           2.74815),
-                          ('BAHIA', 288.7, 5.340128),
+                           38.1926),
+                          ('BAHIA', 288.7, 119.831),
                           ('ALASKA NORTH SLOPE, OIL & GAS', 279.261,
-                           5.43758),
+                           227.603),
                           ]
                          )
 def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
@@ -317,6 +344,7 @@ def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
 
     assert dissolved[0] == 0.0
     assert np.isclose(dissolved[-1], expected_balance)
+
 
 def test_full_run_dissolution_not_active(sample_model_fcn):
     'no water/wind/waves object and no evaporation'
