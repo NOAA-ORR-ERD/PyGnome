@@ -301,8 +301,8 @@ class GridCurrent(VelocityGrid, Environment):
         df = None
         if dataset is not None:
             df = dataset
-        elif data_file is not None:
-            df = _get_dataset(data_file)
+        elif grid_file is not None:
+            df = _get_dataset(grid_file)
         if df is not None and 'angle' in df.variables.keys():
             # Unrotated ROMS Grid!
             self.angle = GriddedProp(name='angle', units='radians', time=None, grid=self.grid, data=df['angle'])
@@ -362,8 +362,8 @@ class GridWind(VelocityGrid, Environment):
         df = None
         if dataset is not None:
             df = dataset
-        elif data_file is not None:
-            df = _get_dataset(data_file)
+        elif grid_file is not None:
+            df = _get_dataset(grid_file)
         if df is not None and 'angle' in df.variables.keys():
             # Unrotated ROMS Grid!
             self.angle = GriddedProp(name='angle', units='radians', time=None, grid=self.grid, data=df['angle'])
