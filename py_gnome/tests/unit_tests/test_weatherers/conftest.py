@@ -2,7 +2,8 @@
 import all fixtures from ../conftest.py so if user runs tests from this
 directory, all fixtures are found
 '''
-from gnome.environment import Water
+from gnome.environment import constant_wind, Water, Waves
+
 from gnome.weatherers import WeatheringData, FayGravityViscous
 from gnome.spill.elements import floating
 
@@ -49,3 +50,12 @@ def weathering_data_arrays(n_arrays,
         wd.initialize_data(sc, sc.num_released)
 
     return (sc, time_step, rqd_weatherers)
+
+
+def build_waves_obj(wind_speed, wind_units, direction_deg):
+    # also test with lower wind no dispersion
+    wind = constant_wind(wind_speed, direction_deg, wind_units)
+    water = Water()
+    waves = Waves(wind, water)
+
+    return waves

@@ -14,7 +14,7 @@ from gnome.weatherers import (Evaporation,
                               Dissolution,
                               weatherer_sort)
 
-from conftest import weathering_data_arrays
+from conftest import weathering_data_arrays, build_waves_obj
 from ..conftest import (sample_model_weathering,
                         sample_model_weathering2)
 
@@ -22,9 +22,9 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2, width=120)
 
 # also test with lower wind no dispersion
-wind = constant_wind(15., 270, 'knots')
-water = Water()
-waves = Waves(wind, water)
+waves = build_waves_obj(15., 'knots', 270)
+water = waves.water
+wind = waves.wind
 
 
 def test_init():
@@ -172,12 +172,24 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
         assert np.allclose(sc._data_arrays['droplet_avg_size'], drop_size[i])
 
 
-@pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'expected_mb', 'on'),
-                         [('ABU SAFAH', 311.15, 3, 1.35363e-3, True),
-                          ('BAHIA', 311.15, 3, 4.075e-3, True),
-                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
-                           np.nan, False)])
-def test_dissolution_mass_balance(oil, temp, num_elems, expected_mb, on):
+mb_param_names = ('oil', 'temp', 'wind_speed',
+                  'num_elems', 'expected_mb', 'on')
+mb_params = [
+             ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 15.,
+              3, np.nan, False),
+             ('ABU SAFAH', 288.15, 10., 3, 7.2398e-4, True),
+             ('ABU SAFAH', 288.15, 15., 3, 1.35363e-3, True),
+             ('ABU SAFAH', 288.15, 20., 3, 2.30783e-3, True),
+             ('BAHIA',     288.15,  5., 3, 1.08305e-3, True),
+             ('BAHIA',     288.15, 10., 3, 2.3048e-3, True),
+             ('BAHIA',     288.15, 15., 3, 4.075e-3,   True),
+             ('BAHIA',     288.15, 20., 3, 6.8851e-3,   True),
+             ]
+
+
+@pytest.mark.parametrize(mb_param_names, mb_params)
+def test_dissolution_mass_balance(oil, temp, wind_speed,
+                                  num_elems, expected_mb, on):
     '''
     Test a single dissolution step.
     - for this, we need a dispersion weatherer to give us a droplet size
@@ -185,6 +197,10 @@ def test_dissolution_mass_balance(oil, temp, num_elems, expected_mb, on):
     Fuel Oil #6 does not exist...
     '''
     et = floating(substance=oil)
+
+    waves = build_waves_obj(wind_speed, 'knots', 270)
+    water = waves.water
+
     disp = NaturalDispersion(waves, water)
     diss = Dissolution(waves)
 
@@ -202,6 +218,10 @@ def test_dissolution_mass_balance(oil, temp, num_elems, expected_mb, on):
     print 'num spills:', len(sc.spills)
     print 'spill[0] amount: {} {}'.format(sc.spills[0].amount,
                                           sc.spills[0].units)
+    print 'wind = ',
+    print '\n'.join(['\t{} {}'.format(ts[1][0], waves.wind.units)
+                       for ts in waves.wind.timeseries])
+    print
 
     initial_amount = sc.spills[0].amount
     model_time = (sc.spills[0].get('release_time') +
@@ -232,6 +252,9 @@ def test_dissolution_mass_balance(oil, temp, num_elems, expected_mb, on):
         assert np.isclose(sc.mass_balance['dissolution'], expected_mb)
     else:
         assert 'dissolution' not in sc.mass_balance
+
+    if oil == 'BAHIA':
+        assert False
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),

@@ -153,8 +153,10 @@ class Dissolution(Weatherer, Serializable):
 
         f_wc_i = self.water_column_time_fraction(model_time, k_w_i)
         T_wc_i = f_wc_i * time_step
+        print 'T_wc_i = ', T_wc_i
 
         T_calm_i = self.calm_between_wave_breaks(model_time, time_step, T_wc_i)
+        print 'T_calm_i = ', T_calm_i
 
         assert np.alltrue(T_calm_i <= float(time_step))
         assert np.alltrue(T_wc_i <= float(time_step))
@@ -190,6 +192,8 @@ class Dissolution(Weatherer, Serializable):
         # OK, here it is, the mass dissolved in the slick.
         #
         mass_dissolved_in_slick = (N_s_i.T * T_calm_i).T
+
+        print 'mass_dissolved_in_slick = ', mass_dissolved_in_slick
 
         mass_dissolved_in_wc = np.vstack(mass_dissolved_in_wc)
         mass_dissolved_in_slick = np.vstack(mass_dissolved_in_slick)
@@ -273,10 +277,6 @@ class Dissolution(Weatherer, Serializable):
         f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
 
         T_calm = DingFarmer.calm_between_wave_breaks(f_bw, wave_period)
-
-        print 'f_bw = ', f_bw
-        print 'T_calm = ', T_calm
-        print 'time_spent_in_wc = ', time_spent_in_wc
 
         return np.clip(T_calm, 0.0, float(time_step) - time_spent_in_wc)
 
