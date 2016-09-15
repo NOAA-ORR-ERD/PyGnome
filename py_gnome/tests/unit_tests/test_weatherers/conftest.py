@@ -52,10 +52,10 @@ def weathering_data_arrays(n_arrays,
     return (sc, time_step, rqd_weatherers)
 
 
-def build_waves_obj(wind_speed, wind_units, direction_deg):
+def build_waves_obj(wind_speed, wind_units, direction_deg, temperature):
     # also test with lower wind no dispersion
     wind = constant_wind(wind_speed, direction_deg, wind_units)
-    water = Water()
+    water = Water(temperature=temperature)
     waves = Waves(wind, water)
 
     return waves

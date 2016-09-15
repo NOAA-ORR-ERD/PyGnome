@@ -22,7 +22,7 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2, width=120)
 
 # also test with lower wind no dispersion
-waves = build_waves_obj(15., 'knots', 270)
+waves = build_waves_obj(15., 'knots', 270, 300.0)
 water = waves.water
 wind = waves.wind
 
@@ -177,13 +177,19 @@ mb_param_names = ('oil', 'temp', 'wind_speed',
 mb_params = [
              ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 15.,
               3, np.nan, False),
-             ('ABU SAFAH', 288.15, 10., 3, 7.2398e-4, True),
-             ('ABU SAFAH', 288.15, 15., 3, 1.35363e-3, True),
-             ('ABU SAFAH', 288.15, 20., 3, 2.30783e-3, True),
-             ('BAHIA',     288.15,  5., 3, 1.08305e-3, True),
-             ('BAHIA',     288.15, 10., 3, 2.3048e-3, True),
-             ('BAHIA',     288.15, 15., 3, 4.075e-3,   True),
-             ('BAHIA',     288.15, 20., 3, 6.8851e-3,   True),
+             ('ABU SAFAH', 288.15, 10., 3, 6.2507e-4, True),
+             ('ABU SAFAH', 288.15, 15., 3, 1.1669e-3, True),
+             ('ABU SAFAH', 288.15, 20., 3, 1.9919e-3, True),
+             # wind speed trends
+             ('BAHIA',     288.15,  5., 3, 9.4939e-4, True),
+             ('BAHIA',     288.15, 10., 3, 2.0235e-3, True),
+             ('BAHIA',     288.15, 15., 3, 3.6257e-3, True),
+             ('BAHIA',     288.15, 20., 3, 6.1431e-3, True),
+             # temperature trends
+             ('BAHIA',     273.15, 15., 3, 2.6162e-3, True),
+             ('BAHIA',     283.15, 15., 3, 3.3753e-3, True),
+             ('BAHIA',     293.15, 15., 3, 3.8341e-3, True),
+             ('BAHIA',     303.15, 15., 3, 4.1734e-3, True),
              ]
 
 
@@ -198,7 +204,7 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     '''
     et = floating(substance=oil)
 
-    waves = build_waves_obj(wind_speed, 'knots', 270)
+    waves = build_waves_obj(wind_speed, 'knots', 270, temp)
     water = waves.water
 
     disp = NaturalDispersion(waves, water)
@@ -218,9 +224,10 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     print 'num spills:', len(sc.spills)
     print 'spill[0] amount: {} {}'.format(sc.spills[0].amount,
                                           sc.spills[0].units)
+    print 'temperature = ', temp
     print 'wind = ',
     print '\n'.join(['\t{} {}'.format(ts[1][0], waves.wind.units)
-                       for ts in waves.wind.timeseries])
+                     for ts in waves.wind.timeseries])
     print
 
     initial_amount = sc.spills[0].amount
@@ -253,7 +260,12 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     else:
         assert 'dissolution' not in sc.mass_balance
 
-    if oil == 'BAHIA':
+    # Here we stop the test to check on wind speed trends
+    # if oil == 'BAHIA' and temp == 288.15:
+    #     assert False
+
+    # Here we stop the test to check on temperature trends
+    if oil == 'BAHIA' and wind_speed == 15.0:
         assert False
 
 
@@ -315,7 +327,7 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
-                         #[(_sample_oils['benzene'], 288.7, 2.98716)
+                         # [(_sample_oils['benzene'], 288.7, 2.98716)
                          [('benzene', 288.7, 9729.56707)
                           ]
                          )
@@ -328,8 +340,8 @@ def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
     low_waves = Waves(low_wind, Water(temp))
     model = sample_model_weathering2(sample_model_fcn2, oil, temp)
     model.environment += [Water(temp), low_wind,  low_waves]
-    #model.weatherers += Evaporation(Water(temp), low_wind)
-    model.weatherers += NaturalDispersion(low_waves,Water(temp))
+    # model.weatherers += Evaporation(Water(temp), low_wind)
+    model.weatherers += NaturalDispersion(low_waves, Water(temp))
     model.weatherers += Dissolution(low_waves)
 
     for sc in model.spills.items():
