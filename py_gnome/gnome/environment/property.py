@@ -107,12 +107,12 @@ class EnvProp(object):
 
         :param points: Coordinates to be queried (P)
         :param time: The time at which to query these points (T)
-        :param depth: Specifies the depth level of the variable
+        :param time: Specifies the time level of the variable
         :param units: units the values will be returned in (or converted to)
         :param extrapolate: if True, extrapolation will be supported
         :type points: Nx2 array of double
         :type time: datetime.datetime object
-        :type depth: integer
+        :type time: integer
         :type units: string such as ('m/s', 'knots', etc)
         :type extrapolate: boolean (True or False)
         :return: returns a Nx1 array of interpolated values
@@ -241,12 +241,12 @@ class VectorProp(object):
 
         :param points: Coordinates to be queried (P)
         :param time: The time at which to query these points (T)
-        :param depth: Specifies the depth level of the variable
+        :param time: Specifies the time level of the variable
         :param units: units the values will be returned in (or converted to)
         :param extrapolate: if True, extrapolation will be supported
         :type points: Nx2 array of double
         :type time: datetime.datetime object
-        :type depth: integer
+        :type time: integer
         :type units: string such as ('m/s', 'knots', etc)
         :type extrapolate: boolean (True or False)
         :return: returns a Nx2 array of interpolated values
@@ -300,11 +300,11 @@ class Time(object):
     def _timeseries_is_ascending(self, ts):
         return all(np.sort(ts) == ts)
 
-    def _has_duplicates(self, depth):
-        return len(np.unique(depth)) != len(depth) and len(depth) != 1
+    def _has_duplicates(self, time):
+        return len(np.unique(time)) != len(time) and len(time) != 1
 
     @property
-    def min_depth(self):
+    def min_time(self):
         '''
         First time in series
 
@@ -313,7 +313,7 @@ class Time(object):
         return self.time[0]
 
     @property
-    def max_depth(self):
+    def max_time(self):
         '''
         Last time in series
 
@@ -332,47 +332,47 @@ class Time(object):
         :type time: datetime.datetime
         :rtype: boolean
         '''
-        return not time < self.min_depth or time > self.max_depth
+        return not time < self.min_time or time > self.max_time
 
-    def valid_time(self, depth):
-        if depth < self.min_depth or depth > self.max_depth:
-            raise ValueError('depth specified ({0}) is not within the bounds of the depth ({1} to {2})'.format(
-                depth.strftime('%c'), self.min_depth.strftime('%c'), self.max_depth.strftime('%c')))
+    def valid_time(self, time):
+        if time < self.min_time or time > self.max_time:
+            raise ValueError('time specified ({0}) is not within the bounds of the time ({1} to {2})'.format(
+                time.strftime('%c'), self.min_time.strftime('%c'), self.max_time.strftime('%c')))
 
-    def index_of(self, depth, extrapolate):
+    def index_of(self, time, extrapolate):
         '''
-        Returns the index of the provided depth with respect to the depth intervals in the file.
+        Returns the index of the provided time with respect to the time intervals in the file.
 
-        :param depth: Time to be queried
+        :param time: Time to be queried
         :param extrapolate:
-        :type depth: datetime.datetime
+        :type time: datetime.datetime
         :type extrapolate: boolean
-        :return: index of first depth before specified depth
+        :return: index of first time before specified time
         :rtype: integer
         '''
         if not (extrapolate or len(self.time) == 1):
-            self.valid_time(depth)
-        index = np.searchsorted(self.time, depth)
+            self.valid_time(time)
+        index = np.searchsorted(self.time, time)
         return index
 
-    def interp_alpha(self, depth, extrapolate=False):
+    def interp_alpha(self, time, extrapolate=False):
         '''
-        Returns interpolation alpha for the specified depth
+        Returns interpolation alpha for the specified time
 
-        :param depth: Time to be queried
+        :param time: Time to be queried
         :param extrapolate:
-        :type depth: datetime.datetime
+        :type time: datetime.datetime
         :type extrapolate: boolean
         :return: interpolation alpha
         :rtype: double (0 <= r <= 1)
         '''
         if not len(self.time) == 1 or not extrapolate:
-            self.valid_time(depth)
-        i0 = self.index_of(depth, extrapolate)
+            self.valid_time(time)
+        i0 = self.index_of(time, extrapolate)
         if i0 > len(self.time) - 1:
             return 1
         if i0 == 0:
             return 0
         t0 = self.time[i0 - 1]
         t1 = self.time[i0]
-        return (depth - t0).total_seconds() / (t1 - t0).total_seconds()
+        return (time - t0).total_seconds() / (t1 - t0).total_seconds()

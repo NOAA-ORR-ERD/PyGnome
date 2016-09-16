@@ -39,7 +39,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1 day of data in file
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
-                  duration=timedelta(days=4),
+                  duration=timedelta(days=8),
                   time_step=3600)
 
 #     mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
@@ -59,7 +59,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #                                                       0.0),
 #                                       release_time=start_time)
 #
-    spill1 = point_line_release_spill(num_elements=50000,
+    spill1 = point_line_release_spill(num_elements=500,
                                       start_position=(196.25,
                                                       69.75,
                                                       0.0),
@@ -111,7 +111,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr)
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Euler')
-    i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method=method)
+    i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method=method, extrapolate=True)
     i_w_mover = PyWindMover(wind=ice_aware_wind, default_num_method=wind_method)
 
 #     ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:]-360
