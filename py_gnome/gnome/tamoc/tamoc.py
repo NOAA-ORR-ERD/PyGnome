@@ -10,9 +10,17 @@ import copy
 import numpy as np
 import unit_conversion as uc
 
+from netCDF4 import date2num, num2date
+from datetime import datetime
+
 import gnome
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
+
+from tamoc import ambient, seawater
+from tamoc import chemical_properties as chem
+from tamoc import dbm, sintef, dispersed_phases, params
+from tamoc import bent_plume_model as bpm
 
 __all__ = []
 
@@ -215,7 +223,81 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         it returns a list of TAMOC droplet objects
         """
-        return fake_tamoc_results()
+        # Release conditions
+
+        # Release depth (m)
+        z0 = 2000
+        # Release diameter (m)
+        D = 0.30
+        # Release temperature (K)
+        T0 = 273.15 + 150.
+        # Release angles of the plume (radians)
+        phi_0 = -np.pi / 2.
+        theta_0 = 0.
+        # Salinity of the continuous phase fluid in the discharge (psu)
+        S0 = 0.
+        # Concentration of passive tracers in the discharge (user-defined)
+        c0 = 1.
+        # List of passive tracers in the discharge
+        chem_name = 'tracer'
+        # Presence or abscence of hydrates in the particles
+        hydrate = True
+        # Prescence or abscence of dispersant
+        dispersant = True
+        # Reduction in interfacial tension due to dispersant
+        sigma_fac = np.array([[1.], [1. / 200.]])  # sigma_fac[0] - for gas; sigma_fac[1] - for liquid
+        # Define liquid phase as inert
+        inert_drop = 'False'
+        # d_50 of gas particles (m)
+        d50_gas = 0.008
+        # d_50 of oil particles (m)
+        d50_oil = 0.0038
+        # number of bins in the particle size distribution
+        nbins = 10
+        # Create the ambient profile needed for TAMOC
+        # name of the nc file
+        nc_file = './Input/case_01'
+        # Define and input the ambient ctd profiles
+        fname_ctd = './Input/ctd_api.txt'
+        # Define and input the ambient velocity profile
+        ua = 0.05
+        profile = get_profile(nc_name, fname_ctd, ua)
+
+        # Get the release fluid composition
+        fname_composition = './Input/api_2000.csv'
+        composition, mass_frac = get_composition(fname_composition)
+        oil = dbm.FluidMixture(composition)
+
+        # Get the release rates of gas and liquid phase
+        md_gas, md_oil = release_flux(oil, mass_frac, profile, T0, z0)
+
+        # Get the particle list for this composition
+        particles = get_particles(composition, md_gas, md_oil, profile, d50_gas, d50_oil,
+                      nbins, T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop)
+
+        # Run the simulation
+        jlm = bpm.Model(profile)
+        jlm.simulate(np.array([0., 0., z0]), D, None, phi_0, theta_0,
+                 S0, T0, c0, chem_name, particles, track=True, dt_max=60.,
+                 sd_max=6000.)
+
+        # Update the plume object with the nearfiled terminal level answer
+        jlm.q_local.update(jlm.t[-1], jlm.q[-1], jlm.profile, jlm.p, jlm.particles)
+
+        gnome_particles = []
+        for i in range(len(jlm.particles)):
+            nb0 = jlm.particles[i].nb0
+            Tp = jlm.particles[i].T
+            Mp[i, 0:len(jlm.q_local.M_p[i])] = jlm.q_local.M_p[i][:] / jlm.particles[i].nbe
+            mass_flux = np.sum(Mp[i, :] * jlm.particles[i].nb0)
+            density = jlm.particles[i].rho_p
+            radius = (jlm.particles[i].diameter(Mp[i, 0:len(jlm.particles[i].m)], Tp,
+                                             jlm.q_local.Pa, jlm.q_local.S, jlm.q_local.T)) / 2.
+            position = np.array([jlm.particles[i].x, jlm.particles[i].y, jlm.particles[i].z])
+            gnome_particles.append(mass_flux, radius, density, position)
+
+        return gnome_particles
+#        return fake_tamoc_results(gnome_particles)
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
@@ -422,3 +504,230 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # if 'frac_coverage' in data_arrays:
         #     data_arrays['frac_coverage'][-num_new_particles:] = \
         #         self.frac_coverage
+
+    def get_profile(self, nc_name, fname, u_a):
+        """
+        Read in the ambient CTD data
+
+        Read in the CTD data specified by API for all test cases.  Append the
+        velocity information to the CTD file.
+
+        Parameters
+        ----------
+        nc_name : str
+        Name to call the netCDF4 dataset.
+        u_a : float
+        Crossflow velocity for this test case (m/s).
+
+        Returns
+        -------
+        profile : `ambient.Profile` object
+        Returns an `ambient.Profile` object of the ambient CTD and velocity
+        information
+
+        """
+        # Get the ambient CTD data
+        names = ['z', 'temperature', 'salinity', 'oxygen']
+        units = ['m', 'deg C', 'psu', 'mmol/m^3']
+        data = np.loadtxt(fname, comments='%')
+
+        # Convert the data to standard units
+        M_o2 = 31.9988 / 1000.  # kg/mol
+        data[:, 3] = data[:, 3] / 1000. * M_o2
+        units[3] = 'kg/m^3'
+        data, units = ambient.convert_units(data, units)
+
+        # Create an empty netCDF4 dataset to store the CTD dat
+        summary = 'Global horizontal mean hydrographic and oxygen data'
+        source = 'Taken from page 226 of Sarmiento and Gruber'
+        sea_name = 'Global'
+        p_lat = 0.
+        p_lon = 0.
+        p_time = date2num(datetime(1998, 1, 1, 1, 0, 0),
+                      units='seconds since 1970-01-01 00:00:00 0:00',
+                      calendar='julian')
+        nc = ambient.create_nc_db(nc_name, summary, source, sea_name, p_lat,
+                                  p_lon, p_time)
+
+        # Insert the data into the netCDF dataset
+        comments = ['average', 'average', 'average', 'average']
+        nc = ambient.fill_nc_db(nc, data, names, units, comments, 0)
+
+        # Compute the pressure and insert into the netCDF dataset
+        P = ambient.compute_pressure(data[:, 0], data[:, 1], data[:, 2], 0)
+        P_data = np.vstack((data[:, 0], P)).transpose()
+        nc = ambient.fill_nc_db(nc, P_data, ['z', 'pressure'], ['m', 'Pa'],
+                                              ['average', 'computed'], 0)
+
+        # Create an ambient.Profile object from this dataset
+        profile = ambient.Profile(nc, chem_names='all')
+
+        # Add the crossflow velocity
+        crossflow = np.array([[0., u_a], [profile.z_max, u_a]])
+        symbols = ['z', 'ua']
+        units = ['m', 'm/s']
+        comments = ['provided', 'provided']
+        profile.append(crossflow, symbols, units, comments, 0)
+
+        # Finalize the profile (close the nc file)
+        profile.close_nc()
+
+        # Return the final profile
+        return profile
+
+    def get_composition(self, fname):
+
+        composition = []
+        mass_frac = []
+        
+        with open(fname) as datfile:
+            for line in datfile:
+
+                # Get a line of data
+                entries = line.strip().split(',')
+
+                # Excel sometimes addes empty columns...remove them.
+                if len(entries[len(entries) - 1]) is 0:
+                    entries = entries[0:len(entries) - 1]
+
+                if line.find('%') >= 0:
+                    # This is a header line...ignore it
+                    pass
+
+                else:
+                    composition.append(entries[0])
+                    mass_frac.append(np.float64(entries[1]))
+
+        # Return the release composition data
+        return (composition, mass_frac)
+
+    def release_flux(self, oil, mass_frac, profile, T0, z0):
+        """
+        Calulate the release flux
+
+        """
+        # Compute the phase equilibrium at the surface
+        m0, xi, K = oil.equilibrium(mass_frac, 273.15 + 15., 101325.)
+
+        # Get the mass flux of oil
+        rho_o = oil.density(m0[1, :], 273.15 + 15., 101325.)[1, 0]
+        md_o = 20000. * 0.15899 * rho_o / 24. / 60. / 60.
+
+        # The amount of gas coming with that volume flux of oil is determined
+        # by the equilibrium
+        rho_g = oil.density(m0[0, :], 273.15 + 15., 101325.)[0, 0]
+        md_g = np.sum(m0[0, :]) / np.sum(m0[1, :]) * md_o
+
+        # Get the total mass flux of each component in the mixture
+        m_tot = mass_frac / np.sum(mass_frac) * (md_o + md_g)
+
+        # Compute the GOR as a check
+        V_o = md_o / rho_o / 0.15899  # bbl/s
+        V_g = md_g / rho_g * 35.3147  # ft^3/s
+
+        # Determine the mass fluxes at the release point
+        P = profile.get_values(z0, ['pressure'])
+        m0, xi, K = oil.equilibrium(m_tot, T0, P)
+        md_gas = m0[0, :]
+        md_oil = m0[1, :]
+
+        # Return the total mass flux of gas and oil at the release
+        return (md_gas, md_oil)
+
+
+    def get_particles(self, composition, md_gas0, md_oil0, profile, d50_gas, d50_oil, nbins,
+                  T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop):
+        """
+        docstring for get_particles
+
+        """
+
+        # Create DBM objects for the live bubbles and droplets
+        bubl = dbm.FluidParticle(composition, fp_type=0)
+        drop = dbm.FluidParticle(composition, fp_type=1)
+
+        # Reduce surface tension if dispersant is applied
+        if dispersant is True:
+            sigma = np.array([[1.], [1.]]) * sigma_fac
+        else:
+            sigma = np.array([[1.], [1.]])
+
+        # Create DBM objects for the bubbles and droplets
+        bubl = dbm.FluidParticle(composition, fp_type=0, sigma_correction=sigma[0])
+        drop = dbm.FluidParticle(composition, fp_type=1, sigma_correction=sigma[1])
+
+        # Get the local ocean conditions
+        T, S, P = profile.get_values(z0, ['temperature', 'salinity', 'pressure'])
+        rho = seawater.density(T, S, P)
+
+        # Get the mole fractions of the released fluids
+        molf_gas = bubl.mol_frac(md_gas0)
+        molf_oil = drop.mol_frac(md_oil0)
+
+        # Use the Rosin-Rammler distribution to get the mass flux in each
+        # size class
+        de_gas, md_gas = sintef.rosin_rammler(nbins, d50_gas, np.sum(md_gas0),
+                                              bubl.interface_tension(md_gas0, T0, S, P),
+                                              bubl.density(md_gas0, T0, P), rho)
+        de_oil, md_oil = sintef.rosin_rammler(nbins, d50_oil, np.sum(md_oil0),
+                                              drop.interface_tension(md_oil0, T0, S, P),
+                                              drop.density(md_oil0, T0, P), rho)
+
+        # Define a inert particle to be used if inert liquid particles are use
+        # in the simulations
+        molf_inert = 1.
+        isfluid = True
+        iscompressible = True
+        rho_o = drop.density(md_oil0, T0, P)
+        inert = dbm.InsolubleParticle(isfluid, iscompressible, rho_p=rho_o, gamma=40.,
+                                      beta=0.0007, co=2.90075e-9)
+
+        # Create the particle objects
+        particles = []
+        t_hyd = 0.
+
+        # Bubbles
+        for i in range(nbins):
+            if md_gas[i] > 0.:
+                (m0, T0, nb0, P, Sa, Ta) = dispersed_phases.initial_conditions(
+                            profile, z0, bubl, molf_gas, md_gas[i], 2, de_gas[i], T0)
+                # Get the hydrate formation time for bubbles
+                if hydrate is True and dispersant is False:
+                    t_hyd = dispersed_phases.hydrate_formation_time(bubl, z0, m0, T0, profile)
+                    if np.isinf(t_hyd):
+                        t_hyd = 0.
+                else:
+                    t_hyd = 0.
+                particles.append(bpm.Particle(0., 0., z0, bubl, m0, T0, nb0,
+                                              1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=t_hyd))
+
+            # Droplets
+            for i in range(nbins):
+                # Add the live droplets to the particle list
+                if md_oil[i] > 0. and not inert_drop:
+                    (m0, T0, nb0, P, Sa, Ta) = dispersed_phases.initial_conditions(
+                        profile, z0, drop, molf_oil, md_oil[i], 2, de_oil[i], T0)
+                    # Get the hydrate formation time for bubbles
+                    if hydrate is True and dispersant is False:
+                        t_hyd = dispersed_phases.hydrate_formation_time(drop, z0, m0, T0, profile)
+                        if np.isinf(t_hyd):
+                            t_hyd = 0.
+                    else:
+                        t_hyd = 0.
+                    particles.append(bpm.Particle(0., 0., z0, drop, m0, T0, nb0,
+                                                  1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=t_hyd))
+                # Add the inert droplets to the particle list
+                if md_oil[i] > 0. and inert_drop:
+                    (m0, T0, nb0, P, Sa, Ta) = dispersed_phases.initial_conditions(
+                        profile, z0, inert, molf_oil, md_oil[i], 2, de_oil[i], T0)
+                    particles.append(bpm.Particle(0., 0., z0, inert, m0, T0, nb0,
+                                                  1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=0.))
+
+        # Define the lambda for particles
+        model = params.Scales(profile, particles)
+        for j in range(len(particles)):
+            particles[j].lambda_1 = model.lambda_1(z0, j)
+
+        # Return the particle list
+        return particles
+    
