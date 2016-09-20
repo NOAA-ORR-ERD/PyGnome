@@ -9,9 +9,15 @@ from environment_objects import (WindTS,
                                  GridCurrent,
                                  GridWind,
                                  IceConcentration,
-                                 WaterTemperature,
+                                 GridTemperature,
                                  IceAwareCurrent,
-                                 IceAwareWind)
+                                 IceAwareWind,
+                                 TemperatureTS)
+
+from environment_objects import (Wind,
+                                 Current,
+                                 Temperature)
+
 from waves import Waves, WavesSchema
 from tide import Tide, TideSchema
 from wind import Wind, WindSchema, constant_wind, wind_from_values
@@ -37,7 +43,11 @@ __all__ = [Environment,
            GridCurrent,
            GridWind,
            IceConcentration,
-           WaterTemperature,
+           GridTemperature,
            IceAwareCurrent,
-           IceAwareWind
+           IceAwareWind,
+           TemperatureTS,
+           Wind,
+           Current,
+           Temperature
            ]

@@ -53,7 +53,7 @@ class Process(AddLogger):
                      'real_data_start', 'real_data_stop'],
                read=['active'])
 
-    def __init__(self, **kwargs):   # default min + max values for timespan
+    def __init__(self, **kwargs):  # default min + max values for timespan
         """
         Initialize default Mover/Weatherer parameters
 
@@ -230,10 +230,10 @@ class PyMover(Mover):
         dt_s = dt.seconds
         t = model_time
 
-        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate).data
+        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
 
-        v1 = vel_field.at(pos + d0, t + dt, extrapolate=self.extrapolate).data
+        v1 = vel_field.at(pos + d0, t + dt, extrapolate=self.extrapolate)
 
         return dt_s / 2 * (v0 + v1)
 
@@ -242,20 +242,20 @@ class PyMover(Mover):
         dt_s = dt.seconds
         t = model_time
 
-        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate).data
+        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s / 2, pos)
 
         v1 = vel_field.at(pos + d0,
                           t + dt / 2,
-                          extrapolate=self.extrapolate).data
+                          extrapolate=self.extrapolate)
         d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s / 2, pos)
 
         v2 = vel_field.at(pos + d1,
                           t + dt / 2,
-                          extrapolate=self.extrapolate).data
+                          extrapolate=self.extrapolate)
         d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
 
-        v3 = vel_field.at(pos + d2, t + dt, extrapolate=self.extrapolate).data
+        v3 = vel_field.at(pos + d2, t + dt, extrapolate=self.extrapolate)
 
         return dt_s / 6 * (v0 + 2 * v1 + 2 * v2 + v3)
 
@@ -315,11 +315,11 @@ class CyMover(Mover):
 
         if self.active:
             uncertain_spill_count = 0
-            uncertain_spill_size = np.array((0, ), dtype=np.int32)
+            uncertain_spill_size = np.array((0,), dtype=np.int32)
 
             if sc.uncertain:
                 uncertain_spill_count = 1
-                uncertain_spill_size = np.array((sc.num_released, ),
+                uncertain_spill_size = np.array((sc.num_released,),
                                                 dtype=np.int32)
 
             err = self.mover.prepare_for_model_step(
