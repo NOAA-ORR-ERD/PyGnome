@@ -116,8 +116,7 @@ def log_normal_pdf(x, mean, std):
 
     sigma = np.sqrt(np.log(1 + std ** 2 / mean ** 2))
     mu = np.log(mean) + sigma ** 2 / 2
-    return ((1 / (x * sigma * np.sqrt(2 * np.pi))) * 
-            np.exp(-((np.log(x) - mu) ** 2 / (2 * sigma ** 2))))
+    return ((1 / (x * sigma * np.sqrt(2 * np.pi))) * np.exp(-((np.log(x) - mu) ** 2 / (2 * sigma ** 2))))
 
 
 def fake_tamoc_results(num_droplets=10):
@@ -171,7 +170,6 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
     # valid_vol_units = _valid_units('Volume')
     # valid_mass_units = _valid_units('Mass')
-# 
 #         # Release depth (m)
 #         z0 = 2000
 #         # Release diameter (m)
@@ -254,6 +252,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         self.droplets = None
         self.on = on  # spill is active or not
         self.name = name
+        self.tamoc_parmeters = tamoc_parameters
 
     def run_tamoc(self, current_time, time_step):
         """
@@ -281,42 +280,61 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         """
         # Release conditions
 
+        tamoc_parameters = {'depth': 2000.,
+                            'diameter': 0.3,
+                            'release_temp': 273.15 + 150,
+                            'release_phi': (-np.pi / 2),
+                            'release_theta': 0,
+                            'discharge_salinity': 0,
+                            'tracer_concentration': 1,
+                            'hydrate': True,
+                            'dispersant': True,
+                            'sigma_fac': np.array([[1.], [1. / 200.]]),
+                            'inert_drop': 'False',
+                            'd50_gas': 0.008,
+                            'd50_oil': 0.0038,
+                            'nbins': 10,
+                            'nc_file': './Input/case_01',
+                            'fname_ctd': './Input/ctc_api.txt',
+                            'ua': 0.05
+                            }
+        tp = tamoc_parameters
         # Release depth (m)
-        z0 = 2000
+        z0 = tp['depth']
         # Release diameter (m)
-        D = 0.30
+        D = tp['diameter']
         # Release temperature (K)
-        T0 = 273.15 + 150.
+        T0 = tp['release_temp']
         # Release angles of the plume (radians)
-        phi_0 = -np.pi / 2.
-        theta_0 = 0.
+        phi_0 = tp['release_phi']
+        theta_0 = tp['release_theta']
         # Salinity of the continuous phase fluid in the discharge (psu)
-        S0 = 0.
+        S0 = tp['salinity']
         # Concentration of passive tracers in the discharge (user-defined)
-        c0 = 1.
+        c0 = tp['tracer_concentration']
         # List of passive tracers in the discharge
         chem_name = 'tracer'
         # Presence or abscence of hydrates in the particles
-        hydrate = True
+        hydrate = tp['hydrate']
         # Prescence or abscence of dispersant
-        dispersant = True
+        dispersant = tp['dispersant']
         # Reduction in interfacial tension due to dispersant
-        sigma_fac = np.array([[1.], [1. / 200.]])  # sigma_fac[0] - for gas; sigma_fac[1] - for liquid
+        sigma_fac = tp['sigma_frac']  # sigma_fac[0] - for gas; sigma_fac[1] - for liquid
         # Define liquid phase as inert
-        inert_drop = 'False'
+        inert_drop = tp['inert_drop']
         # d_50 of gas particles (m)
-        d50_gas = 0.008
+        d50_gas = tp['d50_gas']
         # d_50 of oil particles (m)
-        d50_oil = 0.0038
+        d50_oil = tp['d50_oil']
         # number of bins in the particle size distribution
-        nbins = 10
+        nbins = tp['nbins']
         # Create the ambient profile needed for TAMOC
         # name of the nc file
-        nc_file = './Input/case_01'
+        nc_file = tp['nc_file']
         # Define and input the ambient ctd profiles
-        fname_ctd = './Input/ctd_api.txt'
+        fname_ctd = tp['fname_ctd']
         # Define and input the ambient velocity profile
-        ua = 0.05
+        ua = tp['ua']
         profile = get_profile(nc_name, fname_ctd, ua)
 
         # Get the release fluid composition
@@ -329,13 +347,13 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         # Get the particle list for this composition
         particles = get_particles(composition, md_gas, md_oil, profile, d50_gas, d50_oil,
-                      nbins, T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop)
+                                  nbins, T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop)
 
         # Run the simulation
         jlm = bpm.Model(profile)
         jlm.simulate(np.array([0., 0., z0]), D, None, phi_0, theta_0,
-                 S0, T0, c0, chem_name, particles, track=True, dt_max=60.,
-                 sd_max=6000.)
+                     S0, T0, c0, chem_name, particles, track=True, dt_max=60.,
+                     sd_max=6000.)
 
         # Update the plume object with the nearfiled terminal level answer
         jlm.q_local.update(jlm.t[-1], jlm.q[-1], jlm.profile, jlm.p, jlm.particles)
@@ -348,7 +366,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             mass_flux = np.sum(Mp[i, :] * jlm.particles[i].nb0)
             density = jlm.particles[i].rho_p
             radius = (jlm.particles[i].diameter(Mp[i, 0:len(jlm.particles[i].m)], Tp,
-                                             jlm.q_local.Pa, jlm.q_local.S, jlm.q_local.T)) / 2.
+                                                jlm.q_local.Pa, jlm.q_local.S, jlm.q_local.T)) / 2.
             position = np.array([jlm.particles[i].x, jlm.particles[i].y, jlm.particles[i].z])
             gnome_particles.append(mass_flux, radius, density, position)
 
