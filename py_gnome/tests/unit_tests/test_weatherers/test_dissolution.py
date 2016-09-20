@@ -14,7 +14,7 @@ from gnome.weatherers import (Evaporation,
                               Dissolution,
                               weatherer_sort)
 
-from conftest import weathering_data_arrays
+from conftest import weathering_data_arrays, build_waves_obj
 from ..conftest import (sample_model_weathering,
                         sample_model_weathering2)
 
@@ -22,9 +22,9 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2, width=120)
 
 # also test with lower wind no dispersion
-wind = constant_wind(15., 270, 'knots')
-water = Water()
-waves = Waves(wind, water)
+waves = build_waves_obj(15., 'knots', 270, 300.0)
+water = waves.water
+wind = waves.wind
 
 
 def test_init():
@@ -87,11 +87,10 @@ def test_prepare_for_model_run():
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'k_ow', 'on'),
-                         [('ABU SAFAH', 311.15, 3, 462.711, True),
-                          ('BAHIA', 311.15, 3, 511.445, True),
+                         [('ABU SAFAH', 311.15, 3, 1.47796613e+17, True),
+                          ('ALGERIAN BLEND', 311.15, 3, 2.13773899e+08, True),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
                            311.15, 3, 0.0, False)])
-@pytest.mark.xfail
 def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
     '''
         Here we are testing that the molar averaged oil/water partition
@@ -122,15 +121,14 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'drop_size', 'on'),
                          [('ABU SAFAH', 311.15, 3,
-                           [235.41e-6, 221.24e-6, 207.6e-6],
+                           [235.41e-6, 229.26e-6, 223.09e-6],
                            True),
                           ('BAHIA', 311.15, 3,
-                           [231.19e-6, 218.27e-6, 205.68e-6],
+                           [231.19e-6, 221.54e-6, 212.02e-6],
                            True),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
                            [0.0, 0.0, 0.0],
                            False)])
-@pytest.mark.xfail
 def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
     '''
         Here we are testing that the molar averaged oil/water partition
@@ -174,51 +172,112 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
         assert np.allclose(sc._data_arrays['droplet_avg_size'], drop_size[i])
 
 
-@pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'expected_mb', 'on'),
-                         [('ABU SAFAH', 311.15, 3, 0.0, True),
-                          ('BAHIA', 311.15, 3, 0.0, True),
-                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
-                           np.nan, False)])
-def test_dissolution_mass_balance(oil, temp, num_elems, expected_mb, on):
+mb_param_names = ('oil', 'temp', 'wind_speed',
+                  'num_elems', 'expected_mb', 'on')
+mb_params = [
+             ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 15.,
+              3, np.nan, False),
+             ('ABU SAFAH', 288.15, 10., 3, 6.2507e-4, True),
+             ('ABU SAFAH', 288.15, 15., 3, 1.1669e-3, True),
+             ('ABU SAFAH', 288.15, 20., 3, 1.9919e-3, True),
+             # wind speed trends
+             ('BAHIA',     288.15,  5., 3, 9.4939e-4, True),
+             ('BAHIA',     288.15, 10., 3, 2.0235e-3, True),
+             ('BAHIA',     288.15, 15., 3, 3.6257e-3, True),
+             ('BAHIA',     288.15, 20., 3, 6.1431e-3, True),
+             # temperature trends
+             ('BAHIA',     273.15, 15., 3, 2.6162e-3, True),
+             ('BAHIA',     283.15, 15., 3, 3.3753e-3, True),
+             ('BAHIA',     293.15, 15., 3, 3.8341e-3, True),
+             ('BAHIA',     303.15, 15., 3, 4.1734e-3, True),
+             ]
+
+
+@pytest.mark.parametrize(mb_param_names, mb_params)
+def test_dissolution_mass_balance(oil, temp, wind_speed,
+                                  num_elems, expected_mb, on):
     '''
+    Test a single dissolution step.
+    - for this, we need a dispersion weatherer to give us a droplet size
+      distribution.
     Fuel Oil #6 does not exist...
     '''
     et = floating(substance=oil)
+
+    waves = build_waves_obj(wind_speed, 'knots', 270, temp)
+    water = waves.water
+
+    disp = NaturalDispersion(waves, water)
     diss = Dissolution(waves)
-    (sc, time_step) = weathering_data_arrays(diss.array_types,
+
+    all_array_types = diss.array_types.union(disp.array_types)
+
+    (sc, time_step) = weathering_data_arrays(all_array_types,
                                              water,
                                              element_type=et,
-                                             num_elements=num_elems)[:2]
+                                             num_elements=num_elems,
+                                             units='kg',
+                                             amount_per_element=1.0
+                                             )[:2]
 
+    print 'time_step: {}'.format(time_step)
     print 'num spills:', len(sc.spills)
-    print 'spill[0] amount:', sc.spills[0].amount
+    print 'spill[0] amount: {} {}'.format(sc.spills[0].amount,
+                                          sc.spills[0].units)
+    print 'temperature = ', temp
+    print 'wind = ',
+    print '\n'.join(['\t{} {}'.format(ts[1][0], waves.wind.units)
+                     for ts in waves.wind.timeseries])
+    print
 
+    initial_amount = sc.spills[0].amount
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
+
+    disp.on = on
+    disp.prepare_for_model_run(sc)
+    disp.initialize_data(sc, sc.num_released)
 
     diss.on = on
     diss.prepare_for_model_run(sc)
     diss.initialize_data(sc, sc.num_released)
 
+    disp.prepare_for_model_step(sc, time_step, model_time)
     diss.prepare_for_model_step(sc, time_step, model_time)
+
+    disp.weather_elements(sc, time_step, model_time)
     diss.weather_elements(sc, time_step, model_time)
 
     if on:
+        print ('fraction dissolved: {}'
+               .format(sc.mass_balance['dissolution'] / initial_amount)
+               )
+        print ('fraction dissolved: {:.2%}'
+               .format(sc.mass_balance['dissolution'] / initial_amount)
+               )
+        print sc.mass_balance['dissolution'], expected_mb
         assert np.isclose(sc.mass_balance['dissolution'], expected_mb)
     else:
         assert 'dissolution' not in sc.mass_balance
 
+    # Here we stop the test to check on wind speed trends
+    # if oil == 'BAHIA' and temp == 288.15:
+    #     assert False
+
+    # Here we stop the test to check on temperature trends
+    if oil == 'BAHIA' and wind_speed == 15.0:
+        assert False
+
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
-                         [('ABU SAFAH', 288.7, 2044.152),
+                         [('ABU SAFAH', 288.7, 122.278),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 288.7,
-                           1770.5167),
-                          ('BAHIA', 288.7, 1618.882),
+                           38.1926),
+                          ('BAHIA', 288.7, 119.831),
                           ('ALASKA NORTH SLOPE, OIL & GAS', 279.261,
-                           2468.827),
+                           227.603),
                           ]
                          )
-@pytest.mark.xfail
 def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json
@@ -259,6 +318,61 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
             #        format(sc._data_arrays['mass']))
             # print ("Mass Components: {0}".
             #        format(sc._data_arrays['mass_components']))
+
+    print ('Fraction dissolved after full run: {}'
+           .format(dissolved[-1] / original_amount))
+
+    assert dissolved[0] == 0.0
+    assert np.isclose(dissolved[-1], expected_balance)
+
+
+@pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
+                         # [(_sample_oils['benzene'], 288.7, 2.98716)
+                         [('benzene', 288.7, 9729.56707)
+                          ]
+                         )
+def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
+    '''
+    test dissolution outputs post step for a full run of model. Dump json
+    for 'weathering_model.json' in dump directory
+    '''
+    low_wind = constant_wind(1., 270, 'knots')
+    low_waves = Waves(low_wind, Water(temp))
+    model = sample_model_weathering2(sample_model_fcn2, oil, temp)
+    model.environment += [Water(temp), low_wind,  low_waves]
+    # model.weatherers += Evaporation(Water(temp), low_wind)
+    model.weatherers += NaturalDispersion(low_waves, Water(temp))
+    model.weatherers += Dissolution(low_waves)
+
+    for sc in model.spills.items():
+        print sc.__dict__.keys()
+        print sc._data_arrays
+
+        print 'num spills:', len(sc.spills)
+        print 'spill[0] amount:', sc.spills[0].amount
+        original_amount = sc.spills[0].amount
+
+    # set make_default_refs to True for objects contained in model after adding
+    # objects to the model
+    model.set_make_default_refs(True)
+    model.setup_model_run()
+
+    dissolved = []
+    for step in model:
+        for sc in model.spills.items():
+            if step['step_num'] > 0:
+                assert (sc.mass_balance['dissolution'] > 0)
+                assert (sc.mass_balance['natural_dispersion'] > 0)
+                assert (sc.mass_balance['sedimentation'] > 0)
+
+            dissolved.append(sc.mass_balance['dissolution'])
+
+            print ("\nDissolved: {0}".
+                   format(sc.mass_balance['dissolution']))
+            print ("Mass: {0}".
+                   format(sc._data_arrays['mass']))
+            print ("Mass Components: {0}".
+                   format(sc._data_arrays['mass_components']))
 
     print ('Fraction dissolved after full run: {}'
            .format(dissolved[-1] / original_amount))

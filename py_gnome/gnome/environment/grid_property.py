@@ -1,17 +1,17 @@
-import warnings
-import copy
-
 import netCDF4 as nc4
 import numpy as np
 
 from datetime import datetime, timedelta
+from collections import OrderedDict
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
+from gnome.utilities.file_tools.data_helpers import _init_grid, _gen_topology, _get_dataset
 from gnome.environment.property import *
 
 import pyugrid
 import pysgrid
 import unit_conversion
 import collections
+import hashlib
 
 
 class GridPropSchema(PropertySchema):
@@ -62,10 +62,11 @@ class GriddedProp(EnvProp):
         if not hasattr(data, 'shape'):
             if grid.infer_location is None:
                 raise ValueError('Data must be able to fit to the grid')
-        super(GriddedProp, self).__init__(name=name, units=units, time=time, data=data)
         self._grid = grid
+        super(GriddedProp, self).__init__(name=name, units=units, time=time, data=data)
         self.data_file = data_file
         self.grid_file = grid_file
+        self._result_memo = OrderedDict()
 
     @classmethod
     def from_netCDF(cls,
@@ -78,7 +79,9 @@ class GriddedProp(EnvProp):
                     grid=None,
                     dataset=None,
                     data_file=None,
-                    grid_file=None
+                    grid_file=None,
+                    load_all=False,
+                    **kwargs
                     ):
         '''
         Allows one-function creation of a GriddedProp from a file.
@@ -122,9 +125,9 @@ class GriddedProp(EnvProp):
             ds = dg = dataset
 
         if grid is None:
-            grid = init_grid(grid_file,
-                             grid_topology=grid_topology,
-                             dataset=dg)
+            grid = _init_grid(grid_file,
+                              grid_topology=grid_topology,
+                              dataset=dg)
         if varname is None:
             varname = cls._gen_varname(data_file,
                                        dataset=ds)
@@ -144,6 +147,8 @@ class GriddedProp(EnvProp):
             except AttributeError:
                 timevar = data.dimensions[0]
             time = Time(ds[timevar])
+        if load_all:
+            data = data[:]
         return cls(name=name,
                    units=units,
                    time=time,
@@ -195,12 +200,44 @@ class GriddedProp(EnvProp):
         self._grid = g
 
     @property
+    def grid_shape(self):
+        if hasattr(self.grid, 'shape'):
+            return self.grid.shape
+        else:
+            return self.grid.node_lon.shape
+
+    @property
     def data_shape(self):
         return self.data.shape
 
     @property
     def is_data_on_nodes(self):
         return self.grid.infer_location(self._data) == 'node'
+
+    def _get_hash(self, points, time):
+        """
+        Returns a SHA1 hash of the array of points passed in
+        """
+        return (hashlib.sha1(points.tobytes()).hexdigest(), hashlib.sha1(str(time)).hexdigest())
+
+    def _memoize_result(self, points, time, result, D, _copy=False, _hash=None):
+        if _copy:
+            result = result.copy()
+        result.setflags(write=False)
+        if _hash is None:
+            _hash = self._get_hash(points, time)
+        if D is not None and len(D) > 4:
+            D.popitem(last=False)
+        D[_hash] = result
+        D[_hash].setflags(write=False)
+
+    def _get_memoed(self, points, time, D, _copy=False, _hash=None):
+        if _hash is None:
+            _hash = self._get_hash(points, time)
+        if (D is not None and _hash in D):
+            return D[_hash].copy() if _copy else D[_hash]
+        else:
+            return None
 
     def set_attr(self,
                  name=None,
@@ -245,7 +282,7 @@ class GriddedProp(EnvProp):
             value = self.at(centers, time, units)
         return value
 
-    def at(self, points, time, units=None, depth=-1, extrapolate=False):
+    def at(self, points, time, units=None, depth=-1, extrapolate=False, memoize=True, _hash=None, _copy=False, mask=False):
         '''
         Find the value of the property at positions P at time T
 
@@ -257,17 +294,26 @@ class GriddedProp(EnvProp):
         :type points: Nx2 array of double
         :type time: datetime.datetime object
         :type depth: integer
-        :type units: string such as ('m/s', 'knots', etc)
+        :type units: string such as ('mem/s', 'knots', etc)
         :type extrapolate: boolean (True or False)
         :return: returns a Nx1 array of interpolated values
         :rtype: double
         '''
 
         sg = False
-        m = True
+        mem = memoize
+
+        if _hash is None:
+            _hash = self._get_hash(points, time)
+
+        if mem:
+            res = self._get_memoed(points, time, self._result_memo, _hash=_hash, _copy=_copy)
+            if res is not None:
+                return np.ma.filled(res)
+
         if self.time is None:
             # special case! prop has no time variance
-            v0 = self.grid.interpolate_var_to_points(points, self.data, slices=None, slice_grid=sg, _memo=m)
+            v0 = self.grid.interpolate_var_to_points(points, self.data, slices=None, slice_grid=sg, _memo=mem, _hash=_hash, _copy=_copy)
             return v0
 
         t_alphas = s0 = s1 = value = None
@@ -275,15 +321,15 @@ class GriddedProp(EnvProp):
             self.time.valid_time(time)
         t_index = self.time.index_of(time, extrapolate)
         if len(self.time) == 1:
-            value = self.grid.interpolate_var_to_points(points, self.data, slices=[0], _memo=m)
+            value = self.grid.interpolate_var_to_points(points, self.data, slices=[0], _memo=mem, _hash=_hash, _copy=_copy)
         else:
             if time > self.time.max_time:
                 value = self.data[-1]
             if time <= self.time.min_time:
                 value = self.data[0]
             if extrapolate and t_index == len(self.time.time):
-                s0 = [t_index]
-                value = self.grid.interpolate_var_to_points(points, self.data, slices=s0, _memo=m)
+                s0 = [t_index - 1]
+                value = self.grid.interpolate_var_to_points(points, self.data, slices=s0, _memo=mem, _hash=_hash, _copy=_copy)
             else:
                 t_alphas = self.time.interp_alpha(time, extrapolate)
                 s1 = [t_index]
@@ -291,13 +337,17 @@ class GriddedProp(EnvProp):
                 if len(self.data.shape) == 4:
                     s0.append(depth)
                     s1.append(depth)
-                v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, slice_grid=sg, _memo=m)
-                v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s1, slice_grid=sg, _memo=m)
+                v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, slice_grid=sg, _memo=mem, _hash=_hash[0], _copy=_copy)
+                v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s1, slice_grid=sg, _memo=mem, _hash=_hash[0], _copy=_copy)
                 value = v0 + (v1 - v0) * t_alphas
 
         if units is not None and units != self.units:
             value = unit_conversion.convert(self.units, units, value)
-        return value
+
+        if mem:
+            self._memoize_result(points, time, value, self._result_memo, _hash=_hash, _copy=_copy)
+            
+        return np.ma.filled(value)
 
     @classmethod
     def _gen_varname(cls,
@@ -359,6 +409,7 @@ class GridVectorProp(VectorProp):
                             grid_file=grid_file)
 
         self._check_consistency()
+        self._result_memo = OrderedDict()
 
     @classmethod
     def from_netCDF(cls,
@@ -371,7 +422,9 @@ class GridVectorProp(VectorProp):
                     grid=None,
                     data_file=None,
                     grid_file=None,
-                    dataset=None
+                    dataset=None,
+                    load_all=False,
+                    **kwargs
                     ):
         '''
         Allows one-function creation of a GridVectorProp from a file.
@@ -415,9 +468,9 @@ class GridVectorProp(VectorProp):
             ds = dg = dataset
 
         if grid is None:
-            grid = init_grid(grid_file,
-                             grid_topology=grid_topology,
-                             dataset=dg)
+            grid = _init_grid(grid_file,
+                              grid_topology=grid_topology,
+                              dataset=dg)
         if varnames is None:
             varnames = cls._gen_varnames(data_file,
                                          dataset=ds)
@@ -441,7 +494,8 @@ class GridVectorProp(VectorProp):
                                                      grid=grid,
                                                      data_file=data_file,
                                                      grid_file=grid_file,
-                                                     dataset=ds))
+                                                     dataset=ds,
+                                                     load_all=load_all))
         return cls(name,
                    units,
                    time,
@@ -546,6 +600,30 @@ class GridVectorProp(VectorProp):
         else:
             return None
 
+    def _get_hash(self, points, time):
+        """
+        Returns a SHA1 hash of the array of points passed in
+        """
+        return (hashlib.sha1(points.tobytes()).hexdigest(), hashlib.sha1(str(time)).hexdigest())
+
+    def _memoize_result(self, points, time, result, D, _copy=True, _hash=None):
+        if _copy:
+            result = result.copy()
+        result.setflags(write=False)
+        if _hash is None:
+            _hash = self._get_hash(points, time)
+        if D is not None and len(D) > 8:
+            D.popitem(last=False)
+        D[_hash] = result
+
+    def _get_memoed(self, points, time, D, _copy=True, _hash=None):
+        if _hash is None:
+            _hash = self._get_hash(points, time)
+        if (D is not None and _hash in D):
+            return D[_hash].copy() if _copy else D[_hash]
+        else:
+            return None
+
     def set_attr(self,
                  name=None,
                  units=None,
@@ -594,6 +672,29 @@ class GridVectorProp(VectorProp):
         self.grid_file = grid_file
         self.grid_file = grid_file
 
+    def at(self, points, time, units=None, depth=-1, extrapolate=False, memoize=True, _hash=None, _copy=False):
+        mem = memoize
+        if hash is None:
+            _hash = self._get_hash(points, time)
+
+        if mem:
+            res = self._get_memoed(points, time, self._result_memo, _hash=_hash, _copy=_copy)
+            if res is not None:
+                return res
+
+        value = super(GridVectorProp, self).at(points=points,
+                                               time=time,
+                                               units=units,
+                                               depth=depth,
+                                               extrapolate=extrapolate,
+                                               memoize=memoize,
+                                               _hash=_hash,
+                                               _copy=_copy)
+
+        if mem:
+            self._memoize_result(points, time, value, self._result_memo, _hash=_hash, _copy=_copy)
+        return value
+
     @classmethod
     def _gen_varnames(cls,
                       filename=None,
@@ -616,129 +717,3 @@ class GridVectorProp(VectorProp):
             if n[0] in df.variables.keys() and n[1] in df.variables.keys():
                 return n
         raise ValueError("Default names not found.")
-
-
-def init_grid(filename,
-              grid_topology=None,
-              dataset=None,):
-    gt = grid_topology
-    gf = dataset
-    if gf is None:
-        gf = _get_dataset(filename)
-    grid = None
-    if gt is None:
-        try:
-            grid = pyugrid.UGrid.from_nc_dataset(gf)
-        except (ValueError, NameError):
-            pass
-        try:
-            grid = pysgrid.SGrid.load_grid(gf)
-        except (ValueError, NameError):
-            gt = _gen_topology(filename)
-    if grid is None:
-        nodes = node_lon = node_lat = None
-        if 'nodes' not in gt:
-            if 'node_lon' not in gt and 'node_lat' not in gt:
-                raise ValueError('Nodes must be specified with either the "nodes" or "node_lon" and "node_lat" keys')
-            node_lon = gf[gt['node_lon']]
-            node_lat = gf[gt['node_lat']]
-        else:
-            nodes = gf[gt['nodes']]
-        if 'faces' in gt and gf[gt['faces']]:
-            # UGrid
-            faces = gf[gt['faces']]
-            if faces.shape[0] == 3:
-                faces = np.ascontiguousarray(np.array(faces).T - 1)
-            if nodes is None:
-                nodes = np.column_stack((node_lon, node_lat))
-            grid = pyugrid.UGrid(nodes=nodes, faces=faces)
-        else:
-            # SGrid
-            center_lon = center_lat = edge1_lon = edge1_lat = edge2_lon = edge2_lat = None
-            if node_lon is None:
-                node_lon = nodes[:, 0]
-            if node_lat is None:
-                node_lat = nodes[:, 1]
-            if 'center_lon' in gt:
-                center_lon = gf[gt['center_lon']]
-            if 'center_lat' in gt:
-                center_lat = gf[gt['center_lat']]
-            if 'edge1_lon' in gt:
-                edge1_lon = gf[gt['edge1_lon']]
-            if 'edge1_lat' in gt:
-                edge1_lat = gf[gt['edge1_lat']]
-            if 'edge2_lon' in gt:
-                edge2_lon = gf[gt['edge2_lon']]
-            if 'edge2_lat' in gt:
-                edge2_lat = gf[gt['edge2_lat']]
-            grid = pysgrid.SGrid(node_lon=node_lon,
-                                 node_lat=node_lat,
-                                 center_lon=center_lon,
-                                 center_lat=center_lat,
-                                 edge1_lon=edge1_lon,
-                                 edge1_lat=edge1_lat,
-                                 edge2_lon=edge2_lon,
-                                 edge2_lat=edge2_lat)
-    return grid
-
-
-def _gen_topology(filename,
-                  dataset=None):
-    '''
-    Function to create the correct default topology if it is not provided
-
-    :param filename: Name of file that will be searched for variables
-    :return: List of default variable names, or None if none are found
-    '''
-    gf = dataset
-    if gf is None:
-        gf = _get_dataset(filename)
-    gt = {}
-    node_coord_names = [['node_lon', 'node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
-    face_var_names = ['nv']
-    center_coord_names = [['center_lon', 'center_lat'], ['lon_rho', 'lat_rho']]
-    edge1_coord_names = [['edge1_lon', 'edge1_lat'], ['lon_u', 'lat_u']]
-    edge2_coord_names = [['edge2_lon', 'edge2_lat'], ['lon_v', 'lat_v']]
-    for n in node_coord_names:
-        if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-            gt['node_lon'] = n[0]
-            gt['node_lat'] = n[1]
-            break
-
-    if 'node_lon' not in gt:
-        raise NameError('Default node topology names are not in the grid file')
-
-    for n in face_var_names:
-        if n in gf.variables.keys():
-            gt['faces'] = n
-            break
-
-    if 'faces' in gt.keys():
-        # UGRID
-        return gt
-    else:
-        for n in center_coord_names:
-            if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-                gt['center_lon'] = n[0]
-                gt['center_lat'] = n[1]
-                break
-        for n in edge1_coord_names:
-            if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-                gt['edge1_lon'] = n[0]
-                gt['edge1_lat'] = n[1]
-                break
-        for n in edge2_coord_names:
-            if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
-                gt['edge2_lon'] = n[0]
-                gt['edge2_lat'] = n[1]
-                break
-    return gt
-
-
-def _get_dataset(filename):
-    df = None
-    if isinstance(filename, basestring):
-        df = nc4.Dataset(filename)
-    else:
-        df = nc4.MFDataset(filename)
-    return df

@@ -13,6 +13,7 @@ from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
 from gnome.environment import IceConcentration
+from gnome.environment.grid_property import _init_grid
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
 from gnome.basic_types import (world_point,
@@ -51,8 +52,8 @@ class RandomMover(CyMover, Serializable):
         using super.  See Mover documentation for remaining valid kwargs.
         """
         self.mover = \
-            CyRandomMover(diffusion_coef=kwargs.pop('diffusion_coef',100000),
-                          uncertain_factor=kwargs.pop('uncertain_factor',2))
+            CyRandomMover(diffusion_coef=kwargs.pop('diffusion_coef', 100000),
+                          uncertain_factor=kwargs.pop('uncertain_factor', 2))
         super(RandomMover, self).__init__(**kwargs)
 
     @property
@@ -99,35 +100,35 @@ class IceAwareRandomMover(RandomMover):
             data_file = filename
             grid_file = filename
         if grid is None:
-            grid = init_grid(grid_file,
+            grid = _init_grid(grid_file,
                              grid_topology=grid_topology)
         if ice_conc_var is None:
             ice_conc_var = IceConcentration.from_netCDF(filename,
                                                         time=time,
                                                         grid=grid)
         return cls(ice_conc_var=ice_conc_var, **kwargs)
+
     def get_move(self, sc, time_step, model_time_datetime):
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
         deltas = np.zeros_like(positions)
         pos = positions[:, 0:2]
-        interp = self.ice_conc_var.at(pos, model_time_datetime, extrapolate=True)
+        interp = self.ice_conc_var.at(pos, model_time_datetime, extrapolate=True).copy()
         interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
         if len(np.where(interp_mask)[0]) != 0:
             ice_mask = interp >= 0.8
 
-            deltas = super(IceAwareRandomMover,self).get_move(sc, time_step, model_time_datetime)
+            deltas = super(IceAwareRandomMover, self).get_move(sc, time_step, model_time_datetime)
             interp -= 0.2
             interp *= 1.25
             interp *= 1.3333333333
 
-            deltas[:,0:2][ice_mask] = 0
-            deltas[:,0:2][interp_mask] *= (1 - interp[interp_mask][:,np.newaxis]) # scale winds from 100-0% depending on ice coverage
+            deltas[:, 0:2][ice_mask] = 0
+            deltas[:, 0:2][interp_mask] *= (1 - interp[interp_mask][:, np.newaxis])  # scale winds from 100-0% depending on ice coverage
             deltas[status] = (0, 0, 0)
             return deltas
         else:
-            return super(IceAwareRandomMover,self).get_move(sc, time_step, model_time_datetime)
-
+            return super(IceAwareRandomMover, self).get_move(sc, time_step, model_time_datetime)
 
 
 class RandomVerticalMoverSchema(ObjType, ProcessSchema):

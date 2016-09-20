@@ -107,12 +107,12 @@ class EnvProp(object):
 
         :param points: Coordinates to be queried (P)
         :param time: The time at which to query these points (T)
-        :param depth: Specifies the depth level of the variable
+        :param time: Specifies the time level of the variable
         :param units: units the values will be returned in (or converted to)
         :param extrapolate: if True, extrapolation will be supported
         :type points: Nx2 array of double
         :type time: datetime.datetime object
-        :type depth: integer
+        :type time: integer
         :type units: string such as ('m/s', 'knots', etc)
         :type extrapolate: boolean (True or False)
         :return: returns a Nx1 array of interpolated values
@@ -241,12 +241,12 @@ class VectorProp(object):
 
         :param points: Coordinates to be queried (P)
         :param time: The time at which to query these points (T)
-        :param depth: Specifies the depth level of the variable
+        :param time: Specifies the time level of the variable
         :param units: units the values will be returned in (or converted to)
         :param extrapolate: if True, extrapolation will be supported
         :type points: Nx2 array of double
         :type time: datetime.datetime object
-        :type depth: integer
+        :type time: integer
         :type units: string such as ('m/s', 'knots', etc)
         :type extrapolate: boolean (True or False)
         :return: returns a Nx2 array of interpolated values
@@ -300,8 +300,8 @@ class Time(object):
     def _timeseries_is_ascending(self, ts):
         return all(np.sort(ts) == ts)
 
-    def _has_duplicates(self, ts):
-        return len(np.unique(ts)) != len(ts) and len(ts) != 1
+    def _has_duplicates(self, time):
+        return len(np.unique(time)) != len(time) and len(time) != 1
 
     @property
     def min_time(self):

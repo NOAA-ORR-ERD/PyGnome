@@ -1,5 +1,5 @@
 """
-kmz  outputter
+shapefile  outputter
 """
 
 import copy
@@ -89,6 +89,9 @@ class ShapeOutput(Outputter, Serializable):
                                                      spills,
                                                      **kwargs)
 
+        if not self.on:
+            return
+
         self.delete_output_files()
         # shouldn't be required if the above worked!
         self._file_exists_error(self.filename + '.zip')
@@ -125,7 +128,7 @@ class ShapeOutput(Outputter, Serializable):
 
         super(ShapeOutput, self).write_output(step_num, islast_step)
 
-        if not self._write_step:
+        if not self.on or not self._write_step:
             return None
 
         uncertain = False

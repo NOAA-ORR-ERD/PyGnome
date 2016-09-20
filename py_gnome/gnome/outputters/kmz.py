@@ -103,6 +103,9 @@ class KMZOutput(Outputter, Serializable):
                                                      spills,
                                                      **kwargs)
 
+        if not self.on:
+            return
+
         self.delete_output_files()
         # shouldn't be required if the above worked!
         self._file_exists_error(self.filename)
@@ -122,7 +125,7 @@ class KMZOutput(Outputter, Serializable):
 
         super(KMZOutput, self).write_output(step_num, islast_step)
 
-        if not self._write_step:
+        if not self.on or not self._write_step:
             return None
 
 
