@@ -21,6 +21,7 @@ from tamoc import ambient, seawater
 from tamoc import chemical_properties as chem
 from tamoc import dbm, sintef, dispersed_phases, params
 from tamoc import bent_plume_model as bpm
+from gnome.tamoc.tamoc_coupling import Depth
 
 __all__ = []
 
@@ -170,6 +171,43 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
     # valid_vol_units = _valid_units('Volume')
     # valid_mass_units = _valid_units('Mass')
+# 
+#         # Release depth (m)
+#         z0 = 2000
+#         # Release diameter (m)
+#         D = 0.30
+#         # Release temperature (K)
+#         T0 = 273.15 + 150.
+#         # Release angles of the plume (radians)
+#         phi_0 = -np.pi / 2.
+#         theta_0 = 0.
+#         # Salinity of the continuous phase fluid in the discharge (psu)
+#         S0 = 0.
+#         # Concentration of passive tracers in the discharge (user-defined)
+#         c0 = 1.
+#         # List of passive tracers in the discharge
+#         chem_name = 'tracer'
+#         # Presence or abscence of hydrates in the particles
+#         hydrate = True
+#         # Prescence or abscence of dispersant
+#         dispersant = True
+#         # Reduction in interfacial tension due to dispersant
+#         sigma_fac = np.array([[1.], [1. / 200.]])  # sigma_fac[0] - for gas; sigma_fac[1] - for liquid
+#         # Define liquid phase as inert
+#         inert_drop = 'False'
+#         # d_50 of gas particles (m)
+#         d50_gas = 0.008
+#         # d_50 of oil particles (m)
+#         d50_oil = 0.0038
+#         # number of bins in the particle size distribution
+#         nbins = 10
+#         # Create the ambient profile needed for TAMOC
+#         # name of the nc file
+#         nc_file = './Input/case_01'
+#         # Define and input the ambient ctd profiles
+#         fname_ctd = './Input/ctd_api.txt'
+#         # Define and input the ambient velocity profile
+#         ua = 0.05
 
     def __init__(self,
                  release_time,
@@ -179,6 +217,24 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                  name='TAMOC plume',
                  TAMOC_interval=None,
                  on=True,
+                 tamoc_parameters={'depth': 2000.,
+                                   'diameter': 0.3,
+                                   'release_temp': 273.15 + 150,
+                                   'release_phi': (-np.pi / 2),
+                                   'release_theta': 0,
+                                   'discharge_salinity': 0,
+                                   'tracer_concentration': 1,
+                                   'hydrate': True,
+                                   'dispersant': True,
+                                   'sigma_fac': np.array([[1.], [1. / 200.]]),
+                                   'inert_drop': False,
+                                   'd50_gas': 0.008,
+                                   'd50_oil': 0.0038,
+                                   'nbins': 10,
+                                   'nc_file': './Input/case_01',
+                                   'fname_ctd': './Input/ctc_api.txt',
+                                   'ua': 0.05
+                                   }
                  ):
         """
 
