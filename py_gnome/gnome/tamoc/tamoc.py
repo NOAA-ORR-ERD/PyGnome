@@ -21,7 +21,6 @@ from tamoc import ambient, seawater
 from tamoc import chemical_properties as chem
 from tamoc import dbm, sintef, dispersed_phases, params
 from tamoc import bent_plume_model as bpm
-from gnome.tamoc.tamoc_coupling import Depth
 
 __all__ = []
 
