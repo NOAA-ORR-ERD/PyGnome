@@ -282,7 +282,7 @@ class GriddedProp(EnvProp):
             value = self.at(centers, time, units)
         return value
 
-    def at(self, points, time, units=None, depth=-1, extrapolate=False, memoize=True, _hash=None, _copy=False, mask=False):
+    def at(self, points, time, units=None, depth=-1, extrapolate=False, memoize=True, _hash=None, mask=False, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -307,7 +307,7 @@ class GriddedProp(EnvProp):
             _hash = self._get_hash(points, time)
 
         if mem:
-            res = self._get_memoed(points, time, self._result_memo, _hash=_hash, _copy=_copy)
+            res = self._get_memoed(points, time, self._result_memo, _hash=_hash)
             if res is not None:
                 return np.ma.filled(res)
 
@@ -345,7 +345,7 @@ class GriddedProp(EnvProp):
             value = unit_conversion.convert(self.units, units, value)
 
         if mem:
-            self._memoize_result(points, time, value, self._result_memo, _hash=_hash, _copy=_copy)
+            self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
             
         return np.ma.filled(value)
 
@@ -672,13 +672,13 @@ class GridVectorProp(VectorProp):
         self.grid_file = grid_file
         self.grid_file = grid_file
 
-    def at(self, points, time, units=None, depth=-1, extrapolate=False, memoize=True, _hash=None, _copy=False):
+    def at(self, points, time, units=None, depth=-1, extrapolate=False, memoize=True, _hash=None, **kwargs):
         mem = memoize
         if hash is None:
             _hash = self._get_hash(points, time)
 
         if mem:
-            res = self._get_memoed(points, time, self._result_memo, _hash=_hash, _copy=_copy)
+            res = self._get_memoed(points, time, self._result_memo, _hash=_hash)
             if res is not None:
                 return res
 
@@ -689,10 +689,10 @@ class GridVectorProp(VectorProp):
                                                extrapolate=extrapolate,
                                                memoize=memoize,
                                                _hash=_hash,
-                                               _copy=_copy)
+                                               **kwargs)
 
         if mem:
-            self._memoize_result(points, time, value, self._result_memo, _hash=_hash, _copy=_copy)
+            self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
         return value
 
     @classmethod

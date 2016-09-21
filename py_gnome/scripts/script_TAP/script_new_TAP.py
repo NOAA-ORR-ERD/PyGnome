@@ -39,7 +39,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1 day of data in file
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
-                  duration=timedelta(days=8),
+                  duration=timedelta(days=4),
                   time_step=3600)
 
 #     mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
@@ -59,7 +59,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #                                                       0.0),
 #                                       release_time=start_time)
 #
-    spill1 = point_line_release_spill(num_elements=500,
+    spill1 = point_line_release_spill(num_elements=50000,
                                       start_position=(196.25,
                                                       69.75,
                                                       0.0),
@@ -96,7 +96,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding movers'
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
-    load = True
+    load = False
 
     print 'loading entire current data'
     ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,

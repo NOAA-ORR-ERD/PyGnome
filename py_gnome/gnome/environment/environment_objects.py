@@ -419,7 +419,7 @@ class GridCurrent(VelocityGrid, Environment):
             # Unrotated ROMS Grid!
             self.angle = GriddedProp(name='angle', units='radians', time=None, grid=self.grid, data=df['angle'])
 
-    def at(self, points, time, units=None, depth=-1, extrapolate=False):
+    def at(self, points, time, units=None, depth=-1, extrapolate=False, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -436,13 +436,27 @@ class GridCurrent(VelocityGrid, Environment):
         :return: returns a Nx2 array of interpolated values
         :rtype: double
         '''
-        value = super(GridCurrent, self).at(points, time, units, extrapolate=extrapolate)
+        mem = kwargs['memoize'] if 'memoize' in kwargs else True
+        _hash = kwargs['_hash'] if '_hash' in kwargs else None
+        if _hash is None:
+            _hash = self._get_hash(points, time)
+            if '_hash' not in kwargs:
+                kwargs['_hash'] = _hash
+
+        if mem:
+            res = self._get_memoed(points, time, self._result_memo, _hash=_hash)
+            if res is not None:
+                return res
+
+        value = super(GridCurrent, self).at(points, time, units, extrapolate=extrapolate, **kwargs)
         if self.angle is not None:
-            angs = self.angle.at(points, time, extrapolate=extrapolate,)
+            angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs)
             x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
             y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
             value[:, 0] = x
             value[:, 1] = y
+        if mem:
+            self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
         return value
 
 
@@ -480,7 +494,7 @@ class GridWind(VelocityGrid, Environment):
             # Unrotated ROMS Grid!
             self.angle = GriddedProp(name='angle', units='radians', time=None, grid=self.grid, data=df['angle'])
 
-    def at(self, points, time, units=None, depth=-1, extrapolate=False):
+    def at(self, points, time, units=None, depth=-1, extrapolate=False, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -497,13 +511,27 @@ class GridWind(VelocityGrid, Environment):
         :return: returns a Nx2 array of interpolated values
         :rtype: double
         '''
-        value = super(GridWind, self).at(points, time, units, extrapolate=extrapolate)
+        mem = kwargs['memoize'] if 'memoize' in kwargs else True
+        _hash = kwargs['_hash'] if '_hash' in kwargs else None
+        if _hash is None:
+            _hash = self._get_hash(points, time)
+            if '_hash' not in kwargs:
+                kwargs['_hash'] = _hash
+
+        if mem:
+            res = self._get_memoed(points, time, self._result_memo, _hash=_hash)
+            if res is not None:
+                return res
+
+        value = super(GridWind, self).at(points, time, units, extrapolate=extrapolate, **kwargs)
         if self.angle is not None:
-            angs = self.angle.at(points, time, extrapolate=extrapolate)
+            angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs)
             x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
             y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
             value[:, 0] = x
             value[:, 1] = y
+        if mem:
+            self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
         return value
 
 
