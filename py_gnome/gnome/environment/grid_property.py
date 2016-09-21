@@ -309,12 +309,12 @@ class GriddedProp(EnvProp):
         if mem:
             res = self._get_memoed(points, time, self._result_memo, _hash=_hash, _copy=_copy)
             if res is not None:
-                return np.ma.filled(res)
+                return np.ma.filled(res) if not _copy else np.ma.filled(res).copy()
 
         if self.time is None:
             # special case! prop has no time variance
             v0 = self.grid.interpolate_var_to_points(points, self.data, slices=None, slice_grid=sg, _memo=mem, _hash=_hash,)
-            return v0
+            return np.ma.filled(v0) if not _copy else np.ma.filled(v0).copy()
 
         t_alphas = s0 = s1 = value = None
         if not extrapolate:
@@ -347,7 +347,7 @@ class GriddedProp(EnvProp):
         if mem:
             self._memoize_result(points, time, value, self._result_memo, _hash=_hash, _copy=_copy)
             
-        return np.ma.filled(value)
+        return np.ma.filled(value) if not _copy else np.ma.filled(value).copy()
 
     @classmethod
     def _gen_varname(cls,
