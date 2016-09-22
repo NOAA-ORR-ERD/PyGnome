@@ -1,6 +1,6 @@
 before_script: 
   - yum update -y
-  - yum install gcc netcdf-devel
+  - yum install gcc netcdf-devel -y
   - conda install --file conda_requirements.txt
   - cd ./py_gnome
   - pip install -r requirements.txt
