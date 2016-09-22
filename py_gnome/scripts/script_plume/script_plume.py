@@ -6,6 +6,7 @@ Simple map and simple current mover
 Rise velocity and vertical diffusion
 """
 
+
 import os
 from datetime import datetime, timedelta
 
@@ -133,12 +134,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     return model
 
 
-# if __name__ == "__main__":
-#     scripting.make_images_dir()
-#     for step in model:
-#         print step
-#         print model.get_spill_data('spill_num && positions',
-#                                    ('age < 8000 && '
-#                                     'spill_num == 1 || '
-#                                     'mass < 8100')
-#                                    )
+if __name__ == "__main__":
+    scripting.make_images_dir()
+    model = make_model()
+    for step in model:
+        print step

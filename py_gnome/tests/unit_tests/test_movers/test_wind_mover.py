@@ -223,8 +223,7 @@ class TestWindMover:
         for ix in range(2):
             curr_time = sec_to_date(date_to_sec(self.model_time) +
                                     self.time_step * ix)
-            self.wm.prepare_for_model_step(self.sc, self.time_step,
-                                       curr_time)
+            self.wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
             delta = self.wm.get_move(self.sc, self.time_step, curr_time)
             actual = self._expected_move()

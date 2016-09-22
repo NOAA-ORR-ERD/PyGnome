@@ -60,7 +60,7 @@ var_attributes = {
         'flag_meanings': " ".join(["%i: %s," % pair for pair in
                                    sorted(zip(oil_status._int,
                                               oil_status._attr))])
-        },
+                      },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',
            },
@@ -91,7 +91,7 @@ var_attributes = {
     'amount_released': {
         'long_name': 'total mass of oil released thus far',
         'units': 'kg'},
-    }
+}
 
 
 class NetCDFOutputSchema(BaseSchema):
@@ -277,7 +277,7 @@ class NetCDFOutput(Outputter, Serializable):
         self._var_attributes = {
             'spill_num': {'spills_map': ''},
             'time': {'units': ''}
-            }
+                                 }
 
         super(NetCDFOutput, self).__init__(**kwargs)
 
@@ -355,7 +355,6 @@ class NetCDFOutput(Outputter, Serializable):
     def netcdf_format(self):
         return self._format
 
-
     def _update_var_attributes(self, spills):
         '''
         update instance specific self._var_attributes
@@ -417,13 +416,10 @@ class NetCDFOutput(Outputter, Serializable):
                               **kwargs):
         """
         .. function:: prepare_for_model_run(model_start_time,
-                                            cache=None,
-                                            uncertain=False,
-                                            spills=None,
+                                            spills,
                                             **kwargs)
 
-        Write global attributes and define dimensions and variables for NetCDF
-        file.
+        Write global attributes and define dimensions and variables for NetCDF file.
         This must be done in prepare_for_model_run because if model _state
         changes, it is rewound and re-run from the beginning.
 
@@ -436,7 +432,7 @@ class NetCDFOutput(Outputter, Serializable):
         arguments must be defined following 'cache'.
 
         If uncertainty is on, then SpillContainerPair object contains
-        identical _data_arrays in both certain and uncertain SpillContainer's,
+        identical _data_arrays in both certain and uncertain SpillContainers,
         the data itself is different, but they contain the same type of data
         arrays. If uncertain, then datay arrays for uncertain spill container
         are written to netcdf_filename + '_uncertain.nc'
@@ -461,6 +457,9 @@ class NetCDFOutput(Outputter, Serializable):
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         spills, **kwargs)
+        if not self.on: 
+            return
+
         self.clean_output_files()
 
         self._update_var_attributes(spills)
@@ -475,6 +474,7 @@ class NetCDFOutput(Outputter, Serializable):
 
             # create the netcdf files and write the standard stuff:
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
+
                 self._initialize_rootgrp(rootgrp, sc)
 
                 # create a dict with dims {2: 'two', 3: 'three' ...}
@@ -519,12 +519,16 @@ class NetCDFOutput(Outputter, Serializable):
                 # Add subgroup for mass_balance - could do it w/o subgroup
                 if sc.mass_balance:
                     grp = rootgrp.createGroup('mass_balance')
+                    # give this grp a dimension for time
+                    grp.createDimension('time', None)  # unlimited
                     for key in sc.mass_balance:
                         self._create_nc_var(grp,
-                                            key,
-                                            'float',
-                                            ('time', ),
-                                            (self._chunksize,))
+                                            var_name=key,
+                                            dtype='float',
+                                            shape=('time',),
+                                            chunksz=(256,),
+                                            # smaller chunksize for mass_balance
+                                            )
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
@@ -532,17 +536,41 @@ class NetCDFOutput(Outputter, Serializable):
         self._middle_of_run = True
 
     def _create_nc_var(self, grp, var_name, dtype, shape, chunksz):
-        'chunksizes are optional'
+        # fixme: why is this even here? it's wrapping a single call???
         if dtype == np.bool:
             # this is not primitive so it is not understood
             # Make it 8-bit unsigned - numpy stores True/False in 1 byte
             dtype = 'u1'
 
-        var = grp.createVariable(var_name,
-                                 dtype,
-                                 shape,
-                                 zlib=self._compress,
-                                 chunksizes=chunksz)
+        try:
+            if var_name != "non_weathering":
+                # fixme: TOTAL Kludge --
+                # failing with bad chunksize error for this particular varaible
+                # I have no idea why!!!!
+                var = grp.createVariable(var_name,
+                                         dtype,
+                                         shape,
+                                         zlib=self._compress,
+                                         chunksizes=chunksz,
+                                         )
+            else:
+                var = grp.createVariable(var_name,
+                                         dtype,
+                                         shape,
+                                         zlib=self._compress,
+                                         )
+        except RuntimeError as err:
+            msg = "\narguments are:"
+            msg += "var_name: %s\n" % var_name
+            msg += "dtype: %s\n" % dtype
+            msg += "shape: %s\n" % shape
+            msg += "dims: %s\n" % grp.dimensions
+            # msg += "shape_dim: %s\n" % grp.dimensions[shape[0]]
+            msg += "zlib: %s\n" % self._compress
+            msg += "chunksizes: %s\n" % chunksz
+            err.args = (err.args[0] + msg,)
+            raise err
+
         if var_name in var_attributes:
             var.setncatts(var_attributes[var_name])
 
@@ -566,7 +594,7 @@ class NetCDFOutput(Outputter, Serializable):
         """
         super(NetCDFOutput, self).write_output(step_num, islast_step)
 
-        if not self._write_step:
+        if self.on is False or not self._write_step:
             return None
 
         for sc in self.cache.load_timestep(step_num).items():
@@ -593,17 +621,13 @@ class NetCDFOutput(Outputter, Serializable):
                 for var_name in self.arrays_to_output:
                     # special case positions:
                     if var_name == 'longitude':
-                        rg_vars['longitude'][self._start_idx:_end_idx] = \
-                                    sc['positions'][:, 0]
+                        rg_vars['longitude'][self._start_idx:_end_idx] = sc['positions'][:, 0]
                     elif var_name == 'latitude':
-                        rg_vars['latitude'][self._start_idx:_end_idx] = \
-                                    sc['positions'][:, 1]
+                        rg_vars['latitude'][self._start_idx:_end_idx] = sc['positions'][:, 1]
                     elif var_name == 'depth':
-                        rg_vars['depth'][self._start_idx:_end_idx] = \
-                                    sc['positions'][:, 2]
+                        rg_vars['depth'][self._start_idx:_end_idx] = sc['positions'][:, 2]
                     else:
-                        rg_vars[var_name][self._start_idx:_end_idx] = \
-                                    sc[var_name]
+                        rg_vars[var_name][self._start_idx:_end_idx] = sc[var_name]
 
                 # write mass_balance data
                 if sc.mass_balance:
@@ -612,7 +636,8 @@ class NetCDFOutput(Outputter, Serializable):
                         if key not in grp.variables:
                             self._create_nc_var(grp,
                                                 key, 'float', ('time', ),
-                                                (self._chunksize,))
+                                                (self._chunksize,)
+                                                )
                         grp.variables[key][idx] = val
 
         self._start_idx = _end_idx  # set _start_idx for the next timestep

@@ -13,6 +13,7 @@ GNOME-specific.
 
 This version used libgd and py_gd instead of PIL for the rendering
 """
+
 import bisect
 
 import numpy as np
@@ -133,17 +134,21 @@ class MapCanvas(object):
         or by bounding box
 
         :param center: The point around which the viewport is centered
-        :type a tuple containing an x/y coordinate
+        :type center: tuple of floats (lon, lat)
 
         :param width: Width of the viewport in meters
+        :type width: float
 
         :param height: height of the viewport in meters
+        :type height: float
 
         :param BB: Bounding box of the viewport
                    (overrides all previous parameters)
-        :type a list of tuples containing of the lower left and top right
-              coordinates
+
+        :type BB: a list of tuples containing of the lower left and top right
+              coordinates: ((min_x, min_y),(max_x, max_y))
         """
+
         if BB is None:
             self._viewport.center = center
 
@@ -189,9 +194,8 @@ class MapCanvas(object):
         """
         Add a list of colors to the pallette
 
-        :param color_list: list of colors
-                           - each elemnt of the list is a 2-tuple:
-                             ('color_name', (r,g,b))
+        :param color_list: list of colors:
+                           each elemnt of the list is a 2-tuple: ('color_name', (r,g,b))
         """
         self.fore_image.add_colors(color_list)
         self.back_image.add_colors(color_list)
@@ -302,7 +306,7 @@ class MapCanvas(object):
         :param background=False: whether to draw to the background image.
         :type background: bool
         """
-        points = self.projection.to_pixel_2D(points, asint=True)
+        points = self.projection.to_pixel(points, asint=True)
         img = self.back_image if background else self.fore_image
 
         img.draw_polygon(points,
@@ -331,7 +335,7 @@ class MapCanvas(object):
         :param background=False: whether to draw to the background image.
         :type background: bool
         """
-        points = self.projection.to_pixel_2D(points, asint=True)
+        points = self.projection.to_pixel(points, asint=True)
 
         img = self.back_image if background else self.fore_image
 
@@ -362,7 +366,7 @@ class MapCanvas(object):
         img = self.back_image if draw_to_back else self.fore_image
 
         for tag in text_list:
-            point = (tag[1][0], tag[1][1], 0)
+            point = np.array((tag[1][0], tag[1][1])).reshape(-1, 2)
             point = self.projection.to_pixel(point, asint=True)[0]
 
             img.draw_text(tag[0], point, size, color, align, background)
@@ -371,6 +375,7 @@ class MapCanvas(object):
         self.clear_background()
         self.draw_graticule()
         self.draw_tags()
+        self.draw_grid()
 
     def draw_land(self):
         return None
@@ -383,6 +388,10 @@ class MapCanvas(object):
         """
         for line in self.graticule.get_lines():
             self.draw_polyline(line, 'black', 1, background)
+
+    def draw_grid(self):
+        #Not Implemeneted in MapCanvas
+        return None
 
     def draw_tags(self, draw_to_back=True):
         self.draw_text(self.graticule.get_tags(), draw_to_back=draw_to_back)
@@ -397,15 +406,37 @@ class MapCanvas(object):
         :param filename: full path of file to be saved to
         :type filename: string
 
-        :param draw_back_to_fore=True: whether to add the background image
-                                       to the foreground before saving.
-        :type draw_back_to_fore: bool
-
         :param file_type: type of file to save
         :type file_type: one of the following:
                          {'png', 'gif', 'jpeg', 'bmp'}
         """
         self.fore_image.save(filename, file_type=file_type)
+
+    def save(self, filename, file_type='png'):
+        """
+        save the map image to the specified filename
+
+        This copies the foreground image on top of the
+        background image and saves teh whole thing.
+
+        :param filename: full path of file to be saved to
+        :type filename: string
+
+        :param file_type: type of file to save
+        :type file_type: one of the following:
+                         {'png', 'gif', 'jpeg', 'bmp'}
+        """
+        # create a new image to composite
+        width, height = self.image_size[:2]
+        image = py_gd.Image(width=width, height=height)
+        # copy the pallette from the foreground image
+        print dir(self.fore_image)
+        print self.fore_image.colors
+        assert False
+
+        self.fore_image.copy(self.back_image,
+                             (0, 0), (0, 0),
+                             self.back_image.size)
 
 
 class GridLines(object):
@@ -479,10 +510,12 @@ class GridLines(object):
                           dimension of the viewport. Graticule will scale up
                           or down only when the number of lines in the viewport
                           falls outside the range.
+
         :type max_lines: tuple of integers, (max, min)
 
         :param DegMinSec: Whether to scale by Degrees/Minute/Seconds,
                           or decimal lon/lat
+
         :type bool
         """
         if viewport is None:
@@ -587,11 +620,14 @@ class GridLines(object):
 
         :param max_lines: the maximum number of lines drawn.
                           (Note: this is NOT the number of lines on the screen
-                                 at any given time.  That is determined by
-                                 the computed interval and the size/location
-                                 of the viewport)
+                          at any given time.  That is determined by
+                          the computed interval and the size/location
+                          of the viewport)
+
         :type max_lines: int
+
         """
+
         if max_lines is not None:
             self.max_lines = max_lines
 
@@ -635,7 +671,6 @@ class GridLines(object):
             else:
                 value = line[0][1]
                 hemi = 'N' if value > 0 else 'S'
-
             tag = (str(value)
                    if not self.DMS
                    else uc.LatLongConverter.ToDegMinSec(value, ustring=False))
@@ -674,21 +709,23 @@ class Viewport(object):
     class that defines and manages attribues for a viewport onto a flat 2D map.
     All points and measurements are in lon/lat
     """
+
     def __init__(self, BB=None, center=None, width=None, height=None):
         """
         Init the viewport.
+
         Can initialize with center/width/height, and/or with bounding box.
         NOTE: Bounding box takes precedence over any previous parameters
 
         :param center: The point around which the viewport is centered
-        :type a tuple containing an lon/lat coordinate
+        :type center: a tuple containing an lon/lat coordinate
 
         :param width: Width of the viewport (lon)
 
         :param height: height of the viewport (lat)
 
         :param BB: Bounding box of the viewport (overrides previous parameters)
-        :type a list of lon/lat tuples containing the lower left and top right
+        :type BB:  a list of lon/lat tuples containing the lower left and top right
               coordinates
         """
         self._BB = None

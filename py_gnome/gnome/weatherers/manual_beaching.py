@@ -187,15 +187,18 @@ class Beaching(RemoveMass, Weatherer, Serializable):
 
             # convert timeseries to 'kg'
             dv = self.timeseries['value']
-            dm = 0
-            types = uc.FindUnitTypes()
-            unit_type = types[self.units]
-            if unit_type == 'Mass':
-                dm = uc.convert('Mass', self.units, 'kg', dv)
-            elif unit_type == 'Volume':
-                dm = (uc.convert('Volume', self.units, 'm^3', dv) *
+
+            # types = uc.FindUnitTypes()
+            # unit_type = types[self.units]
+            unit_type = uc.UNIT_TYPES[self.units]
+            if unit_type == 'mass':
+                dm = uc.convert('mass', self.units, 'kg', dv)
+            elif unit_type == 'volume':
+                dm = (uc.convert('volume', self.units, 'm^3', dv) *
                       substance.get_density())
-            self._rate = dm/dt
+            else:
+                raise ValueError("{} is not a valid unit for beached oil".format(self.unit))
+            self._rate = dm / dt
 
         # find rate for time interval (model_time, model_time + time_step)
         # function is called for model_time within active_start and active_stop

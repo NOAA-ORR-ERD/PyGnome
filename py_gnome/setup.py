@@ -57,24 +57,8 @@ class cleanall(clean):
         # call base class clean
         clean.run(self)
 
-        # clean remaining cython/cpp files
-        t_path = [os.path.join(SETUP_PATH, 'gnome', 'cy_gnome'),
-                  os.path.join(SETUP_PATH, 'gnome', 'utilities', 'geometry')]
-        exts = ['*.so', 'cy_*.pyd', 'cy_*.cpp', 'cy_*.c']
-
-        for temp in t_path:
-            for ext in exts:
-                for f in glob.glob(os.path.join(temp, ext)):
-                    print "Deleting auto-generated file: {0}".format(f)
-                    try:
-                        if os.path.isdir(f):
-                            shutil.rmtree(f)
-                        else:
-                            os.remove(f)
-                    except OSError as err:
-                        print("Failed to remove {0}. Error: {1}"
-                              .format(f, err))
-                        # raise
+        self.clean_python_files()
+        self.clean_cython_files()
 
         rm_dir = ['pyGnome.egg-info', 'build']
         for dir_ in rm_dir:
@@ -85,6 +69,48 @@ class cleanall(clean):
                 if err.errno != 2:  # ignore the not-found error
                     raise
 
+    def clean_python_files(self):
+        # clean any byte-compiled python files
+        paths = [os.path.join(SETUP_PATH, 'gnome'),
+                 os.path.join(SETUP_PATH, 'scripts'),
+                 os.path.join(SETUP_PATH, 'tests')]
+        exts = ['*.pyc']
+
+        self.clean_files(paths, exts)
+
+    def clean_cython_files(self):
+        # clean remaining cython/cpp files
+        paths = [os.path.join(SETUP_PATH, 'gnome', 'cy_gnome'),
+                 os.path.join(SETUP_PATH, 'gnome', 'utilities', 'geometry')]
+        exts = ['*.so', 'cy_*.pyd', 'cy_*.cpp', 'cy_*.c']
+
+        self.clean_files(paths, exts)
+
+    def clean_files(self, paths, exts):
+        for path in paths:
+            # first, any local files directly under the path
+            for ext in exts:
+                for f in glob.glob(os.path.join(path, ext)):
+                    self.delete_file(f)
+
+            # next, walk any sub-directories
+            for root, dirs, _files in os.walk(path, topdown=False):
+                for d in dirs:
+                    for ext in exts:
+                        for f in glob.glob(os.path.join(root, d, ext)):
+                            self.delete_file(f)
+
+    def delete_file(self, filepath):
+        print "Deleting auto-generated file: {0}".format(filepath)
+        try:
+            if os.path.isdir(filepath):
+                shutil.rmtree(filepath)
+            else:
+                os.remove(filepath)
+        except OSError as err:
+            print("Failed to remove {0}. Error: {1}"
+                  .format(filepath, err))
+            # raise
 
 # setup our environment and architecture
 # These should be properties that are used by all Extensions
@@ -430,8 +456,20 @@ extensions.append(Extension("gnome.utilities.file_tools.filescanner",
                             language="c",
                             ))
 
+
+def get_version():
+    """
+    return the version number from the __init__
+    """
+    for line in open("gnome/__init__.py"):
+        if line.startswith("__version__"):
+            version = line.strip().split('=')[1].strip().strip("'").strip('"')
+            return version
+    raise ValueError("can't find version string in __init__")
+
+
 setup(name='pyGnome',
-      version='0.0.2',
+      version=get_version(),
       ext_modules=extensions,
       packages=find_packages(),
       package_dir={'gnome': 'gnome'},

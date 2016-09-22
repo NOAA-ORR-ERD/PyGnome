@@ -92,7 +92,10 @@ class Evaporation(Weatherer, Serializable):
 
         vp = substance.vapor_pressure(water_temp)
 
-        mw = substance.molecular_weight
+        #mw = substance.molecular_weight
+        # evaporation expects mw in kg/mol, database is in g/mol
+        mw = substance.molecular_weight / 1000.	
+
         sum_mi_mw = (data['mass_components'][:, :len(vp)] / mw).sum(axis=1)
         # d_numer = -1/rho * f_diff.reshape(-1, 1) * K * vp
         # d_denom = (data['thickness'] * constants.gas_constant *
@@ -249,7 +252,10 @@ class BlobEvaporation(Evaporation):
 
         vp = substance.vapor_pressure(water_temp)
 
-        mw = substance.molecular_weight
+        #mw = substance.molecular_weight
+        # evaporation expects mw in kg/mol, database is in g/mol
+        mw = substance.molecular_weight / 1000.	
+
 
         # for now, for testing, assume instantaneous spill so get the
         # mass of the blob

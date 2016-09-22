@@ -105,7 +105,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         Parameters passed to base class (use super): model_start_time, cache
 
         Does not take any other input arguments; however, to keep the interface
-        the same for all outputters, define **kwargs and pass into base class
+        the same for all outputters, define `**kwargs` and pass into base class
 
         In this case, it cleans out previous written data files
 
@@ -145,13 +145,12 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
             #   on_land : 3
             #   to_be_removed : 12
             for ix, pos in enumerate(position):
-                feature = Feature(
-                    geometry=Point(pos[:2]), id=ix,
-                    properties={'status_code': status[ix],
-                                'sc_type': sc_type,
-                                'mass': mass[ix],
-                                'spill_num': spill_num[ix]}
-                    )
+                feature = Feature(geometry=Point(pos[:2]), id=ix,
+                                  properties={'status_code': status[ix],
+                                              'sc_type': sc_type,
+                                              'mass': mass[ix],
+                                              'spill_num': spill_num[ix]}
+                                  )
                 if sc.uncertain:
                     uc_features.append(feature)
                 else:
@@ -167,10 +166,8 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                        }
 
         if self.output_dir:
-            output_filename = self.output_to_file(c_geojson, step_num)
-            output_info.update({'output_filename': output_filename})
-            output_filename = self.output_to_file(uc_geojson, step_num)
-            output_info.update({'output_filename': output_filename})
+            output_info['output_filename'] = self.output_to_file(c_geojson, step_num)
+            self.output_to_file(uc_geojson, step_num)
 
         return output_info
 
@@ -229,30 +226,29 @@ class IceGeoJsonOutput(Outputter):
     in a geojson format.  The output is a collection of Features.
     Each Feature contains a Point object with associated properties.
     Following is the output format - the data in <> are the results
-    for each element.
-    ::
+    for each element::
 
-    {
-     "time_stamp": <TIME IN ISO FORMAT>,
-     "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
-     "feature_collections": {<mover_id>: {"type": "FeatureCollection",
-                                          "features": [{"type": "Feature",
-                                                        "id": <PARTICLE_ID>,
-                                                        "properties": {"ice_fraction": <FRACTION>,
-                                                                       "ice_thickness": <METERS>,
-                                                                       "water_velocity": [u, v],
-                                                                       "ice_velocity": [u, v]
-                                                                       },
-                                                        "geometry": {"type": "Point",
-                                                                     "coordinates": [<LONG>, <LAT>]
-                                                                     },
-                                                        },
-                                                        ...
-                                                       ],
-                                          },
-                             ...
-                             }
-    }
+        {
+         "time_stamp": <TIME IN ISO FORMAT>,
+         "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
+         "feature_collections": {<mover_id>: {"type": "FeatureCollection",
+                                              "features": [{"type": "Feature",
+                                                            "id": <PARTICLE_ID>,
+                                                            "properties": {"ice_fraction": <FRACTION>,
+                                                                           "ice_thickness": <METERS>,
+                                                                           "water_velocity": [u, v],
+                                                                           "ice_velocity": [u, v]
+                                                                           },
+                                                            "geometry": {"type": "Point",
+                                                                         "coordinates": [<LONG>, <LAT>]
+                                                                         },
+                                                            },
+                                                            ...
+                                                           ],
+                                              },
+                                 ...
+                                 }
+        }
     '''
     _state = copy.deepcopy(Outputter._state)
 

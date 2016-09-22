@@ -193,12 +193,6 @@ class Timeseries(GnomeId):
             timeseries = np.asarray([timeseries],
                                     dtype=basic_types.datetime_value_2d)
 
-        # removed -- we keep seconds everywhere except writing OSSM (WND) files
-        # we could truncate to seconds, but why?
-        # # Our datetime granularity is in minutes, so zero out the seconds.
-        # for ix, tm in enumerate(timeseries['time'].astype(datetime.datetime)):
-        #     timeseries['time'][ix] = tm.replace(second=0)
-
         return timeseries
 
     def __str__(self):

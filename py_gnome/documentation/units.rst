@@ -32,13 +32,17 @@ Velocity
     Velocities are in meters per second 
     
 Latitude-Longitude
-   Lat-long is in floating point degrees  -- range generally -360 to 360, so we can do stuff accross the date line.
+   Lat-long is in floating point degrees  -- range generally -360 to 360, so we can do stuff across the date line.
 
 Diffusion Coefficients
    Diffusion coefficients (for both vertical and horizontal random diffusion) are given in units of square centimeters per second cm^2/s
 
 Droplet Diameter
-   Droplet Diameter is given and returned in meters   
+   Droplet Diameter is given and returned in meters
+
+Viscosity
+   Viscosity is usually kinematic viscosity, and is in units of m^2/s
+
 
 
 

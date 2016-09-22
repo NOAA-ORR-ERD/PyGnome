@@ -164,6 +164,32 @@ class Model(Serializable):
         model.logger.info(msg)
         return model
 
+    @classmethod
+    def load_savefile(cls, filename):
+        """
+        load a model instance from a save file
+
+        :param filename: the filename of the save file -- usually a zip file,
+                         but can also be a directry with the full contents of
+                         a zip file
+
+        :returns: a model instance all set up from the savefile.
+
+        This is simply a utility wrapper around:
+        ``gnome.persist.save_load.load()``
+
+        """
+        model = gnome.persist.save_load.load(filename)
+
+        # check that this actually loaded a model object
+        #  load() will load any gnome object from json...
+        if not isinstance(model, cls):
+            msg = "This does not appear to be a save file for a model\n"
+            msg += "loaded a %s instead" % type(model)
+            raise ValueError(msg)
+        else:
+            return model
+
     def __init__(self,
                  time_step=None,
                  start_time=round_time(datetime.now(), 3600),
@@ -175,7 +201,6 @@ class Model(Serializable):
                  name=None,
                  mode=None):
         '''
-
         Initializes a model.
         All arguments have a default.
 
@@ -221,6 +246,9 @@ class Model(Serializable):
                                            ('add', 'replace'))
         self.outputters.register_callback(self._callback_add_outputter,
                                           ('add', 'replace'))
+
+        self.movers.register_callback(self._callback_add_spill,
+                                      ('add', 'replace', 'remove'))
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map,
@@ -848,8 +876,8 @@ class Model(Serializable):
             # validate and send validation flag if model is invalid
             (msgs, isvalid) = self.check_inputs()
             if not isvalid:
-               raise RuntimeError("Setup model run complete but model "
-                                   "is invalid", msgs)
+                raise RuntimeError("Setup model run complete but model "
+                                    "is invalid", msgs)
             # (msgs, isvalid) = self.validate()
             # if not isvalid:
             #    raise StopIteration("Setup model run complete but model "
@@ -987,6 +1015,9 @@ class Model(Serializable):
         '''
         self._add_to_environ_collec(obj_added)
         self.rewind()  # rewind model if a new weatherer is added
+
+    def _callback_add_spill(self, obj_added):
+        self.rewind()
 
     def __eq__(self, other):
         check = super(Model, self).__eq__(other)
@@ -1390,7 +1421,7 @@ class Model(Serializable):
             else:
                 msg = ('The spill is released after the time interval being modeled.')
             self.logger.warning(msg)	# for now make this a warning
-            #self.logger.error(msg)	
+            #self.logger.error(msg)
             msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
             #isvalid = False
 
@@ -1460,7 +1491,7 @@ class Model(Serializable):
 #             if msg is not None:
 #                 self.logger.warning(msg)
 #                 msgs.append(self._warn_pre + msg)
-# 
+#
         return (msgs, isvalid)
 
     def _validate_env_coll(self, refs, raise_exc=False):
@@ -1537,12 +1568,12 @@ class Model(Serializable):
 
         def test_phrase(phrase):
             for sub_cond in phrase:
-                    cond = sub_cond.rsplit()
-                    prop_val = elem_val(cond[0], i)
-                    op = cond[1]
-                    test_num = cond[2]
-                    if test(prop_val, op, test_num):
-                        return True
+                cond = sub_cond.rsplit()
+                prop_val = elem_val(cond[0], i)
+                op = cond[1]
+                test_num = cond[2]
+                if test(prop_val, op, test_num):
+                    return True
 
             return False
 

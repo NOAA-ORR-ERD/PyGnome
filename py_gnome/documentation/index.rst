@@ -1,10 +1,11 @@
 .. pyGNOME documentation master file
 
+###################################
 Welcome to pyGNOME's documentation!
-===================================
+###################################
 
 Contents
---------
+========
 
 .. toctree::
   :maxdepth: 2
@@ -13,13 +14,15 @@ Contents
   installing
   structure
   scripting
+  customizing
+  logging
   serialization
   units
   reference
   
 
 Indices and tables
-------------------
+==================
 
 * :ref:`genindex`
 * :ref:`modindex`

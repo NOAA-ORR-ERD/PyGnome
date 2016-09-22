@@ -18,6 +18,7 @@ from gnome.utilities import time_utils, serializable
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome import AddLogger
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
+from gnome.utilities.projections import FlatEarthProjection
 
 
 class ProcessSchema(MappingSchema):
@@ -203,6 +204,43 @@ class Mover(Process):
 
         return delta
 
+class PyMover(Mover):
+
+    def __init__(self,
+                 default_num_method='Trapezoid',
+                 **kwargs):
+        self.num_methods = {'RK4': self.get_delta_RK4,
+                            'Euler': self.get_delta_Euler,
+                            'Trapezoid':self.get_delta_Trapezoid}
+        self.default_num_method=default_num_method
+        Mover.__init__(self, **kwargs)
+
+    def get_delta_Euler(self, sc, time_step, model_time, pos, vel_field):
+        vels = vel_field.at(pos[:, 0:2], model_time, extrapolate=self.extrapolate)
+        return vels * time_step
+
+    def get_delta_Trapezoid(self, sc, time_step, model_time, pos, vel_field):
+        dt = timedelta(seconds=time_step)
+        dt_s = dt.seconds
+        t = model_time
+        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate).data
+        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
+        v1 = vel_field.at(pos + d0, t + dt, extrapolate=self.extrapolate).data
+        return  dt_s/2 * (v0 + v1)
+
+    def get_delta_RK4(self, sc, time_step, model_time, pos, vel_field):
+        dt = timedelta(seconds=time_step)
+        dt_s = dt.seconds
+        t = model_time
+        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate).data
+        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s/2, pos)
+        v1 = vel_field.at(pos + d0, t + dt/2, extrapolate=self.extrapolate).data
+        d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s/2, pos)
+        v2 = vel_field.at(pos + d1, t + dt/2, extrapolate=self.extrapolate).data
+        d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
+        v3 = vel_field.at(pos + d2, t + dt, extrapolate=self.extrapolate).data
+        return dt_s/6 * (v0 + 2*v1 + 2*v2 + v3)
+
 
 class CyMover(Mover):
 
@@ -254,8 +292,7 @@ class CyMover(Mover):
         Uses super to invoke Mover class prepare_for_model_step and does a
         couple more things specific to CyMover.
         """
-        super(CyMover, self).prepare_for_model_step(sc, time_step,
-                                                    model_time_datetime)
+        super(CyMover, self).prepare_for_model_step(sc, time_step, model_time_datetime)
         if self.active:
             uncertain_spill_count = 0
             uncertain_spill_size = np.array((0, ), dtype=np.int32)
@@ -270,7 +307,11 @@ class CyMover(Mover):
                         time_step, uncertain_spill_count, uncertain_spill_size)
 
             if err != 0:
-                msg = "No available data in the time interval that is being modeled"
+                msg = ["No available data in the time interval that is being modeled"]
+                msg.append("Model time: %s" % model_time_datetime)
+                msg.append("Mover: %s of type %s" % (self.name, self.__class__))
+                msg.append("Data available from %s to %s" % (self.real_data_start, self.real_data_stop))
+                msg = "\n".join(msg)
                 self.logger.error(msg)
                 raise RuntimeError(msg)
 

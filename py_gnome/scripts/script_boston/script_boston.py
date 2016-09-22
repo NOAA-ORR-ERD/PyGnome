@@ -14,11 +14,13 @@ This one uses:
 and netcdf and kml output
 """
 
+
 import os
 from datetime import datetime, timedelta
 
 import numpy as np
 
+import gnome
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
 
@@ -35,8 +37,10 @@ from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 
 from gnome.outputters import Renderer, NetCDFOutput, KMZOutput
 
-# define base directory
+# let's get the console log working:
+gnome.initialize_console_log()
 
+# define base directory
 base_dir = os.path.dirname(__file__)
 
 
@@ -83,7 +87,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     series = np.zeros((2, ), dtype=datetime_value_2d)
     series[0] = (start_time, (5, 180))
-    series[1] = (start_time + timedelta(hours=18), (5, 180))
+    series[1] = (start_time + timedelta(hours=25), (5, 180))
 
     w_mover = WindMover(Wind(timeseries=series, units='m/s'))
     model.movers += w_mover

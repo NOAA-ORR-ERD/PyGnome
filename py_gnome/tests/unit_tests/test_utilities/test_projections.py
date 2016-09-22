@@ -8,6 +8,7 @@ import pytest
 import numpy as np
 
 from gnome.utilities import projections
+from gnome.utilities.projections import to_2d_coords
 
 
 def test_NoProjection():
@@ -520,3 +521,22 @@ class Test_rectangular_grid_projection(object):
                               ((4, 0),)
                               )
 
+
+def test_to_2d_coords_2point():
+    assert np.array_equal(to_2d_coords((2, 3)), ((2.0, 3.0),))
+
+
+def test_to_2d_coords_3point():
+    assert np.array_equal(to_2d_coords((2, 3, 4)), ((2.0, 3.0),))
+
+
+def test_to_2d_coords_2points():
+    assert np.array_equal(to_2d_coords(((2, 3), (3, 4), (5, 6))),
+                                       ((2, 3), (3, 4), (5, 6))
+                          )
+
+
+def test_to_2d_coords_3points():
+    assert np.array_equal(to_2d_coords(((2, 3, 4), (3, 4, 5), (5, 6, 7))),
+                                       ((2, 3), (3, 4), (5, 6))
+                          )
