@@ -5,6 +5,7 @@ testfixtures
 psutil
 sphinx
 progressbar
+pyshp
 six
 geojson
 repoze.lru 
