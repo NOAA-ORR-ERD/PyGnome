@@ -40,7 +40,7 @@ from gnome.movers import (RandomMover,
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
-from gnome.tamoc import tamoc
+from gnome.tamoc import tamoc_spill
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -84,7 +84,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         size=(1024, 768),
                         output_timestep=timedelta(hours=1),
                         )
-    renderer.viewport = ((-.25, -.25), (.25, .25))
+    renderer.viewport = ((-.005, -.005), (.005, .005))
 
     print 'adding outputters'
     model.outputters += renderer
@@ -101,7 +101,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print "adding Horizontal and Vertical diffusion"
 
     # Horizontal Diffusion
-    model.movers += RandomMover(diffusion_coef=50000)
+    #model.movers += RandomMover(diffusion_coef=5)
     # vertical diffusion (different above and below the mixed layer)
     model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=5,
                                         vertical_diffusion_coef_below_ml=.11,
@@ -111,17 +111,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # droplets rise as a function of their density and radius
     model.movers += RiseVelocityMover()
 
-    print 'adding a circular current and southward current'
+    print 'adding a circular current and eastward current'
     # This is .3 m/s south
     model.movers += PyGridCurrentMover(current=vg, default_num_method='Trapezoid', extrapolate=True)
-    model.movers += SimpleMover(velocity=(0.0, -1, 0.0))
+    model.movers += SimpleMover(velocity=(0., -0.1, 0.))
 
     # Now to add in the TAMOC "spill"
     print "Adding TAMOC spill"
 
-    model.spills += tamoc.TamocSpill(release_time=start_time,
+    model.spills += tamoc_spill.TamocSpill(release_time=start_time,
                                      start_position=(0, 0, 1000),
-                                     num_elements=10000,
+                                     num_elements=1000,
                                      end_release_time=start_time + timedelta(days=1),
                                      name='TAMOC plume',
                                      TAMOC_interval=None,  # how often to re-run TAMOC
@@ -135,5 +135,11 @@ if __name__ == "__main__":
     model = make_model()
     print "about to start running the model"
     for step in model:
+	if step['step_num'] == 23:
+		print 'running tamoc again'
+		model.spills[0].tamoc_parameters['release_phi'] = -np.pi/4 
+		model.spills[0].tamoc_parameters['release_theta'] = -np.pi
+		model.spills[0].tamoc_parameters['ua'] = 0.1
+		model.spills[0].droplets = model.spills[0]._run_tamoc()
         print step
         #model.

@@ -224,12 +224,12 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                                    'hydrate': True,
                                    'dispersant': True,
                                    'sigma_fac': np.array([[1.], [1. / 200.]]),
-                                   'inert_drop': False,
+                                   'inert_drop': 'False',
                                    'd50_gas': 0.008,
                                    'd50_oil': 0.0038,
                                    'nbins': 10,
                                    'nc_file': './Input/case_01',
-                                   'fname_ctd': './Input/ctc_api.txt',
+                                   'fname_ctd': './Input/ctd_api.txt',
                                    'ua': 0.05
                                    }
                  ):
@@ -251,7 +251,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         self.droplets = None
         self.on = on  # spill is active or not
         self.name = name
-        self.tamoc_parmeters = tamoc_parameters
+        self.tamoc_parameters = tamoc_parameters
 
     def run_tamoc(self, current_time, time_step):
         """
@@ -279,25 +279,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         """
         # Release conditions
 
-        tamoc_parameters = {'depth': 2000.,
-                            'diameter': 0.3,
-                            'release_temp': 273.15 + 150,
-                            'release_phi': (-np.pi / 2),
-                            'release_theta': 0,
-                            'discharge_salinity': 0,
-                            'tracer_concentration': 1,
-                            'hydrate': True,
-                            'dispersant': True,
-                            'sigma_fac': np.array([[1.], [1. / 200.]]),
-                            'inert_drop': 'False',
-                            'd50_gas': 0.008,
-                            'd50_oil': 0.0038,
-                            'nbins': 10,
-                            'nc_file': './Input/case_01',
-                            'fname_ctd': './Input/ctc_api.txt',
-                            'ua': 0.05
-                            }
-        tp = tamoc_parameters
+        tp = self.tamoc_parameters
         # Release depth (m)
         z0 = tp['depth']
         # Release diameter (m)
@@ -308,7 +290,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         phi_0 = tp['release_phi']
         theta_0 = tp['release_theta']
         # Salinity of the continuous phase fluid in the discharge (psu)
-        S0 = tp['salinity']
+        S0 = tp['discharge_salinity']
         # Concentration of passive tracers in the discharge (user-defined)
         c0 = tp['tracer_concentration']
         # List of passive tracers in the discharge
@@ -318,7 +300,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Prescence or abscence of dispersant
         dispersant = tp['dispersant']
         # Reduction in interfacial tension due to dispersant
-        sigma_fac = tp['sigma_frac']  # sigma_fac[0] - for gas; sigma_fac[1] - for liquid
+        sigma_fac = tp['sigma_fac']  # sigma_fac[0] - for gas; sigma_fac[1] - for liquid
         # Define liquid phase as inert
         inert_drop = tp['inert_drop']
         # d_50 of gas particles (m)
@@ -334,18 +316,20 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         fname_ctd = tp['fname_ctd']
         # Define and input the ambient velocity profile
         ua = tp['ua']
-        profile = get_profile(nc_name, fname_ctd, ua)
+        profile = self.get_profile(nc_file, fname_ctd, ua)
 
         # Get the release fluid composition
-        fname_composition = './Input/api_2000.csv'
-        composition, mass_frac = get_composition(fname_composition)
+        fname_composition = './Input/API_2000.csv'
+        composition, mass_frac = self.get_composition(fname_composition)
+	print composition
+	print mass_frac
         oil = dbm.FluidMixture(composition)
 
         # Get the release rates of gas and liquid phase
-        md_gas, md_oil = release_flux(oil, mass_frac, profile, T0, z0)
+        md_gas, md_oil = self.release_flux(oil, mass_frac, profile, T0, z0)
 
         # Get the particle list for this composition
-        particles = get_particles(composition, md_gas, md_oil, profile, d50_gas, d50_oil,
+        particles = self.get_particles(composition, md_gas, md_oil, profile, d50_gas, d50_oil,
                                   nbins, T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop)
 
         # Run the simulation
@@ -357,6 +341,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Update the plume object with the nearfiled terminal level answer
         jlm.q_local.update(jlm.t[-1], jlm.q[-1], jlm.profile, jlm.p, jlm.particles)
 
+	Mp = np.zeros((len(jlm.particles), len(jlm.q_local.M_p[0])))
         gnome_particles = []
         for i in range(len(jlm.particles)):
             nb0 = jlm.particles[i].nb0
@@ -367,7 +352,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             radius = (jlm.particles[i].diameter(Mp[i, 0:len(jlm.particles[i].m)], Tp,
                                                 jlm.q_local.Pa, jlm.q_local.S, jlm.q_local.T)) / 2.
             position = np.array([jlm.particles[i].x, jlm.particles[i].y, jlm.particles[i].z])
-            gnome_particles.append(mass_flux, radius, density, position)
+            gnome_particles.append(TamocDroplet(mass_flux, radius, density, position))
 
         return gnome_particles
 #        return fake_tamoc_results(gnome_particles)
@@ -658,17 +643,19 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
                 # Get a line of data
                 entries = line.strip().split(',')
+		print entries
 
                 # Excel sometimes addes empty columns...remove them.
                 if len(entries[len(entries) - 1]) is 0:
                     entries = entries[0:len(entries) - 1]
-
+		
                 if line.find('%') >= 0:
                     # This is a header line...ignore it
                     pass
 
                 else:
                     composition.append(entries[0])
+                    print type(entries[1])
                     mass_frac.append(np.float64(entries[1]))
 
         # Return the release composition data
