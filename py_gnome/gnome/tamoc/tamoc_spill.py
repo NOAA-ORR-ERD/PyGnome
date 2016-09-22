@@ -232,10 +232,10 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                                    'nbins': 10,
                                    'nc_file': './Input/case_01',
                                    'fname_ctd': './Input/ctd_api.txt',
-                                   'ua': np.array([0.05,0.05])
-				   'va': np.array([0.06,0.06])
-				   'za': np.array([0.07,0.07])
-				   'depths: np.array([0,1
+                                   'ua': np.array([0.05, 0.05]),
+                                   'va': np.array([0.06, 0.06]),
+                                   'wa': np.array([0.01, 0.01]),
+                                   'depths': np.array([0, 1])
                                    }
                  ):
         """
@@ -321,17 +321,17 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         fname_ctd = tp['fname_ctd']
         # Define and input the ambient velocity profile
         ua = tp['ua']
-	va = tp['va']
-	za = tp['za']
-	depths = tp['depths']
+        va = tp['va']
+        wa = tp['wa']
+        depths = tp['depths']
 
-        profile = self.get_profile(nc_file, fname_ctd, ua, va, za, depths)
+        profile = self.get_profile(nc_file, fname_ctd, ua, va, wa, depths)
 
         # Get the release fluid composition
         fname_composition = './Input/API_2000.csv'
         composition, mass_frac = self.get_composition(fname_composition)
-	print composition
-	print mass_frac
+        print composition
+        print mass_frac
         oil = dbm.FluidMixture(composition)
 
         # Get the release rates of gas and liquid phase
@@ -350,9 +350,9 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Update the plume object with the nearfiled terminal level answer
         jlm.q_local.update(jlm.t[-1], jlm.q[-1], jlm.profile, jlm.p, jlm.particles)
 
-	Mp = np.zeros((len(jlm.particles), len(jlm.q_local.M_p[0])))
+        Mp = np.zeros((len(jlm.particles), len(jlm.q_local.M_p[0])))
         gnome_particles = []
-	print jlm.particles
+        print jlm.particles
         for i in range(len(jlm.particles)):
             nb0 = jlm.particles[i].nb0
             Tp = jlm.particles[i].T
@@ -364,8 +364,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             position = np.array([jlm.particles[i].x, jlm.particles[i].y, jlm.particles[i].z])
             gnome_particles.append(TamocDroplet(mass_flux, radius, density, position))
 
-	for p in gnome_particles:
-		print p
+        for p in gnome_particles:
+            print p
         return gnome_particles
 #        return fake_tamoc_results(gnome_particles)
 
@@ -575,7 +575,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         #     data_arrays['frac_coverage'][-num_new_particles:] = \
         #         self.frac_coverage
 
-    def get_profile(self, nc_name, fname, u_a, v_a, z_a, depths):
+    def get_profile(self, nc_name, fname, u_a, v_a, w_a, depths):
         """
         Read in the ambient CTD data
 
@@ -632,15 +632,31 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Create an ambient.Profile object from this dataset
         profile = ambient.Profile(nc, chem_names='all')
 
-	# Force the max depth to model
-	depth[-1] = profile.z_max
+        # Force the max depth to model
+        depths[-1] = profile.z_max
 
         # Add the crossflow velocity
 
-	u_crossflow = np.zeros((len(ua), 2))
-	u_crossflow[:,0] = depths
-	u_crossflow[:,1] = u_a
+        u_crossflow = np.zeros((len(u_a), 2))
+        u_crossflow[:, 0] = depths
+        u_crossflow[:, 1] = u_a
         symbols = ['z', 'ua']
+        units = ['m', 'm/s']
+        comments = ['provided', 'provided']
+        profile.append(u_crossflow, symbols, units, comments, 0)
+
+        v_crossflow = np.zeros((len(v_a), 2))
+        v_crossflow[:, 0] = depths
+        v_crossflow[:, 1] = v_a
+        symbols = ['z', 'va']
+        units = ['m', 'm/s']
+        comments = ['provided', 'provided']
+        profile.append(u_crossflow, symbols, units, comments, 0)
+
+        w_crossflow = np.zeros((len(w_a), 2))
+        w_crossflow[:, 0] = depths
+        w_crossflow[:, 1] = w_a
+        symbols = ['z', 'wa']
         units = ['m', 'm/s']
         comments = ['provided', 'provided']
         profile.append(u_crossflow, symbols, units, comments, 0)
