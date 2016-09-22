@@ -104,6 +104,8 @@ class TamocDroplet():
         self.density = density
         self.position = np.asanyarray(position)
 
+    def __repr__(self):
+        return '[flux = {0}, radius = {1}, density = {2}, position = {3}]'.format(self.mass_flux, self.radius, self.density, self.position)
 
 def log_normal_pdf(x, mean, std):
     """
@@ -230,7 +232,10 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                                    'nbins': 10,
                                    'nc_file': './Input/case_01',
                                    'fname_ctd': './Input/ctd_api.txt',
-                                   'ua': 0.05
+                                   'ua': np.array([0.05,0.05])
+				   'va': np.array([0.06,0.06])
+				   'za': np.array([0.07,0.07])
+				   'depths: np.array([0,1
                                    }
                  ):
         """
@@ -316,7 +321,11 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         fname_ctd = tp['fname_ctd']
         # Define and input the ambient velocity profile
         ua = tp['ua']
-        profile = self.get_profile(nc_file, fname_ctd, ua)
+	va = tp['va']
+	za = tp['za']
+	depths = tp['depths']
+
+        profile = self.get_profile(nc_file, fname_ctd, ua, va, za, depths)
 
         # Get the release fluid composition
         fname_composition = './Input/API_2000.csv'
@@ -343,6 +352,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
 	Mp = np.zeros((len(jlm.particles), len(jlm.q_local.M_p[0])))
         gnome_particles = []
+	print jlm.particles
         for i in range(len(jlm.particles)):
             nb0 = jlm.particles[i].nb0
             Tp = jlm.particles[i].T
@@ -354,6 +364,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             position = np.array([jlm.particles[i].x, jlm.particles[i].y, jlm.particles[i].z])
             gnome_particles.append(TamocDroplet(mass_flux, radius, density, position))
 
+	for p in gnome_particles:
+		print p
         return gnome_particles
 #        return fake_tamoc_results(gnome_particles)
 
@@ -563,7 +575,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         #     data_arrays['frac_coverage'][-num_new_particles:] = \
         #         self.frac_coverage
 
-    def get_profile(self, nc_name, fname, u_a):
+    def get_profile(self, nc_name, fname, u_a, v_a, z_a, depths):
         """
         Read in the ambient CTD data
 
@@ -620,12 +632,18 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Create an ambient.Profile object from this dataset
         profile = ambient.Profile(nc, chem_names='all')
 
+	# Force the max depth to model
+	depth[-1] = profile.z_max
+
         # Add the crossflow velocity
-        crossflow = np.array([[0., u_a], [profile.z_max, u_a]])
+
+	u_crossflow = np.zeros((len(ua), 2))
+	u_crossflow[:,0] = depths
+	u_crossflow[:,1] = u_a
         symbols = ['z', 'ua']
         units = ['m', 'm/s']
         comments = ['provided', 'provided']
-        profile.append(crossflow, symbols, units, comments, 0)
+        profile.append(u_crossflow, symbols, units, comments, 0)
 
         # Finalize the profile (close the nc file)
         profile.close_nc()
