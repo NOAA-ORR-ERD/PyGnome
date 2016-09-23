@@ -721,7 +721,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Return the release composition data
         return (composition, mass_frac)
 
-    def release_flux(self, oil, mass_frac, profile, T0, z0):
+    def release_flux(self, oil, mass_frac, profile, T0, z0, Q):
         """
         Calulate the release flux
 
@@ -731,7 +731,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         # Get the mass flux of oil
         rho_o = oil.density(m0[1, :], 273.15 + 15., 101325.)[1, 0]
-        md_o = 20000. * 0.15899 * rho_o / 24. / 60. / 60.
+        md_o = Q * 0.15899 * rho_o / 24. / 60. / 60.
 
         # The amount of gas coming with that volume flux of oil is determined
         # by the equilibrium
