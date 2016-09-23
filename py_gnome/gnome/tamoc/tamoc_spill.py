@@ -310,6 +310,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         z0 = tp['depth']
         # Release diameter (m)
         D = tp['diameter']
+        # Release flowrate (bpd)
+        Q = tp['release_flowrate']
         # Release temperature (K)
         T0 = tp['release_temp']
         # Release angles of the plume (radians)
@@ -353,13 +355,14 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         composition, mass_frac = self.get_composition(fname_composition)
         print composition
         print mass_frac
+        data, units = chem.load_data('./Input/API_ChemData.csv')
         oil = dbm.FluidMixture(composition)
 
         # Get the release rates of gas and liquid phase
-        md_gas, md_oil = self.release_flux(oil, mass_frac, profile, T0, z0)
+        md_gas, md_oil = self.release_flux(oil, mass_frac, profile, T0, z0, Q)
 
         # Get the particle list for this composition
-        particles = self.get_particles(composition, md_gas, md_oil, profile, d50_gas, d50_oil,
+        particles = self.get_particles(composition, data, md_gas, md_oil, profile, d50_gas, d50_oil,
                                   nbins, T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop)
         print len(particles)
         print particles
