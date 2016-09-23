@@ -779,6 +779,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Get the mole fractions of the released fluids
         molf_gas = bubl.mol_frac(md_gas0)
         molf_oil = drop.mol_frac(md_oil0)
+        print molf_gas
+        print molf_oil
 
         # Use the Rosin-Rammler distribution to get the mass flux in each
         # size class
@@ -790,7 +792,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 #                                              drop.density(md_oil0, T0, P), rho)
 
         # Get the user defined particle size distibution
-        de_oil, vf_oil, de_gas, vf_gas = userdefined_de()
+        de_oil, vf_oil, de_gas, vf_gas = self.userdefined_de()
         md_gas = np.sum(md_gas0) * vf_gas
         md_oil = np.sum(md_oil0) * vf_oil
 
