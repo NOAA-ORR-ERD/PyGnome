@@ -259,6 +259,23 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         self.on = on  # spill is active or not
         self.name = name
         self.tamoc_parameters = tamoc_parameters
+        self.data_sources = data_sources
+
+    def update_environment_conditions(self, current_time):
+        ds = self.data_sources
+        if ds['currents'] is not None:
+            currents = ds['currents']
+            uv = np.zeros((2, currents.shape[1]))
+            for d in currents.shape[1]:
+                uv[d] = currents.at(self.start_position.reshape(-1, 2), current_time, depth=d)
+            self.tamoc_parameters['ua'] = uv[:, 0]
+            self.tamoc_parameters['va'] = uv[:, 1]
+            depth_var = currents.variables[0].data._grp[currents.variables[0].data.dimensions[1]]
+            self.tamoc_parameters['depths'] = depth_var[:]
+        if ds['salinity'] is not None:
+            pass
+        if ds['temperature'] is not None:
+            pass
 
     def run_tamoc(self, current_time, time_step):
         """
@@ -342,8 +359,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Get the particle list for this composition
         particles = self.get_particles(composition, md_gas, md_oil, profile, d50_gas, d50_oil,
                                   nbins, T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop)
-	print len(particles)
-	print particles
+        print len(particles)
+        print particles
 
         # Run the simulation
         jlm = bpm.Model(profile)
@@ -675,18 +692,18 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         composition = []
         mass_frac = []
-        
+
         with open(fname) as datfile:
             for line in datfile:
 
                 # Get a line of data
                 entries = line.strip().split(',')
-		print entries
+                print entries
 
                 # Excel sometimes addes empty columns...remove them.
                 if len(entries[len(entries) - 1]) is 0:
                     entries = entries[0:len(entries) - 1]
-		
+
                 if line.find('%') >= 0:
                     # This is a header line...ignore it
                     pass
@@ -770,12 +787,12 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         de_oil, md_oil = sintef.rosin_rammler(nbins, d50_oil, np.sum(md_oil0),
                                               drop.interface_tension(md_oil0, T0, S, P),
                                               drop.density(md_oil0, T0, P), rho)
-	print de_gas
-	print md_gas
-	print "__________"
-	print de_oil
-	print md_oil
-	
+        print de_gas
+        print md_gas
+        print "__________"
+        print de_oil
+        print md_oil
+
         # Define a inert particle to be used if inert liquid particles are use
         # in the simulations
         molf_inert = 1.
