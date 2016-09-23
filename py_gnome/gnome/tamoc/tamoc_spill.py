@@ -226,17 +226,19 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                                    'hydrate': True,
                                    'dispersant': True,
                                    'sigma_fac': np.array([[1.], [1. / 200.]]),
-                                   'inert_drop': 'False',
+                                   'inert_drop': False,
                                    'd50_gas': 0.008,
                                    'd50_oil': 0.0038,
-                                   'nbins': 10,
+                                   'nbins': 3,
                                    'nc_file': './Input/case_01',
                                    'fname_ctd': './Input/ctd_api.txt',
                                    'ua': np.array([0.05, 0.05]),
                                    'va': np.array([0.06, 0.06]),
                                    'wa': np.array([0.01, 0.01]),
-                                   'depths': np.array([0, 1])
-                                   }
+                                   'depths': np.array([0, 1])},
+                 data_sources={'currents': None,
+                               'salinity': None,
+                               'temperature': None}
                  ):
         """
 
@@ -340,6 +342,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Get the particle list for this composition
         particles = self.get_particles(composition, md_gas, md_oil, profile, d50_gas, d50_oil,
                                   nbins, T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop)
+	print len(particles)
+	print particles
 
         # Run the simulation
         jlm = bpm.Model(profile)
@@ -766,7 +770,12 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         de_oil, md_oil = sintef.rosin_rammler(nbins, d50_oil, np.sum(md_oil0),
                                               drop.interface_tension(md_oil0, T0, S, P),
                                               drop.density(md_oil0, T0, P), rho)
-
+	print de_gas
+	print md_gas
+	print "__________"
+	print de_oil
+	print md_oil
+	
         # Define a inert particle to be used if inert liquid particles are use
         # in the simulations
         molf_inert = 1.
