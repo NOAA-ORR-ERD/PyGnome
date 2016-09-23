@@ -21,6 +21,7 @@ from tamoc import ambient, seawater
 from tamoc import chemical_properties as chem
 from tamoc import dbm, sintef, dispersed_phases, params
 from tamoc import bent_plume_model as bpm
+from tamoc import chemical_properties as chem
 
 __all__ = []
 
@@ -218,6 +219,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                  on=True,
                  tamoc_parameters={'depth': 2000.,
                                    'diameter': 0.3,
+                                   'release_flowrate': 25000.,
                                    'release_temp': 273.15 + 150,
                                    'release_phi': (-np.pi / 2),
                                    'release_theta': 0,
@@ -750,16 +752,12 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         return (md_gas, md_oil)
 
 
-    def get_particles(self, composition, md_gas0, md_oil0, profile, d50_gas, d50_oil, nbins,
+    def get_particles(self, composition, data, md_gas0, md_oil0, profile, d50_gas, d50_oil, nbins,
                   T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop):
         """
         docstring for get_particles
 
         """
-
-        # Create DBM objects for the live bubbles and droplets
-        bubl = dbm.FluidParticle(composition, fp_type=0)
-        drop = dbm.FluidParticle(composition, fp_type=1)
 
         # Reduce surface tension if dispersant is applied
         if dispersant is True:
@@ -768,8 +766,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             sigma = np.array([[1.], [1.]])
 
         # Create DBM objects for the bubbles and droplets
-        bubl = dbm.FluidParticle(composition, fp_type=0, sigma_correction=sigma[0])
-        drop = dbm.FluidParticle(composition, fp_type=1, sigma_correction=sigma[1])
+        bubl = dbm.FluidParticle(composition, fp_type=0, sigma_correction=sigma[0], user_data=data)
+        drop = dbm.FluidParticle(composition, fp_type=1, sigma_correction=sigma[1], user_data=data)
 
         # Get the local ocean conditions
         T, S, P = profile.get_values(z0, ['temperature', 'salinity', 'pressure'])
@@ -781,17 +779,17 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         # Use the Rosin-Rammler distribution to get the mass flux in each
         # size class
-        de_gas, md_gas = sintef.rosin_rammler(nbins, d50_gas, np.sum(md_gas0),
-                                              bubl.interface_tension(md_gas0, T0, S, P),
-                                              bubl.density(md_gas0, T0, P), rho)
-        de_oil, md_oil = sintef.rosin_rammler(nbins, d50_oil, np.sum(md_oil0),
-                                              drop.interface_tension(md_oil0, T0, S, P),
-                                              drop.density(md_oil0, T0, P), rho)
-        print de_gas
-        print md_gas
-        print "__________"
-        print de_oil
-        print md_oil
+#        de_gas, md_gas = sintef.rosin_rammler(nbins, d50_gas, np.sum(md_gas0),
+#                                              bubl.interface_tension(md_gas0, T0, S, P),
+#                                              bubl.density(md_gas0, T0, P), rho)
+#        de_oil, md_oil = sintef.rosin_rammler(nbins, d50_oil, np.sum(md_oil0),
+#                                              drop.interface_tension(md_oil0, T0, S, P),
+#                                              drop.density(md_oil0, T0, P), rho)
+
+        # Get the user defined particle size distibution
+        de_oil, vf_oil, de_gas, vf_gas = userdefined_de()
+        md_gas = np.sum(md_gas0) * vf_gas
+        md_oil = np.sum(md_oil0) * vf_oil
 
         # Define a inert particle to be used if inert liquid particles are use
         # in the simulations
@@ -821,27 +819,27 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                 particles.append(bpm.Particle(0., 0., z0, bubl, m0, T0, nb0,
                                               1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=t_hyd))
 
-            # Droplets
-            for i in range(nbins):
-                # Add the live droplets to the particle list
-                if md_oil[i] > 0. and not inert_drop:
-                    (m0, T0, nb0, P, Sa, Ta) = dispersed_phases.initial_conditions(
+        # Droplets
+        for i in range(nbins):
+            # Add the live droplets to the particle list
+            if md_oil[i] > 0. and not inert_drop:
+                (m0, T0, nb0, P, Sa, Ta) = dispersed_phases.initial_conditions(
                         profile, z0, drop, molf_oil, md_oil[i], 2, de_oil[i], T0)
-                    # Get the hydrate formation time for bubbles
-                    if hydrate is True and dispersant is False:
-                        t_hyd = dispersed_phases.hydrate_formation_time(drop, z0, m0, T0, profile)
-                        if np.isinf(t_hyd):
+                # Get the hydrate formation time for bubbles
+                if hydrate is True and dispersant is False:
+                    t_hyd = dispersed_phases.hydrate_formation_time(drop, z0, m0, T0, profile)
+                    if np.isinf(t_hyd):
                             t_hyd = 0.
-                    else:
-                        t_hyd = 0.
-                    particles.append(bpm.Particle(0., 0., z0, drop, m0, T0, nb0,
-                                                  1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=t_hyd))
-                # Add the inert droplets to the particle list
-                if md_oil[i] > 0. and inert_drop:
-                    (m0, T0, nb0, P, Sa, Ta) = dispersed_phases.initial_conditions(
+                else:
+                    t_hyd = 0.
+                particles.append(bpm.Particle(0., 0., z0, drop, m0, T0, nb0,
+                                                1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=t_hyd))
+            # Add the inert droplets to the particle list
+            if md_oil[i] > 0. and inert_drop:
+                (m0, T0, nb0, P, Sa, Ta) = dispersed_phases.initial_conditions(
                         profile, z0, inert, molf_oil, md_oil[i], 2, de_oil[i], T0)
-                    particles.append(bpm.Particle(0., 0., z0, inert, m0, T0, nb0,
-                                                  1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=0.))
+                particles.append(bpm.Particle(0., 0., z0, inert, m0, T0, nb0,
+                        1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=0.))
 
         # Define the lambda for particles
         model = params.Scales(profile, particles)
@@ -850,4 +848,32 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         # Return the particle list
         return particles
-    
+
+    def userdefined_de(self):
+
+        # Load the particle sizes
+        fname = './Input/Particles_de.csv'
+
+        de_details = np.zeros([100, 4])
+        k = 0
+        with open(fname, 'r') as datfile:
+            datfile.readline()
+            datfile.readline()
+            datfile.readline()
+            for row in datfile:
+                row = row.strip().split(",")
+                for i in range(len(row)):
+                    de_details[k, i] = float(row[i])
+                k += 1
+
+        de_oil = np.zeros([100, 1])
+        de_gas = np.zeros([100, 1])
+        vf_oil = np.zeros([100, 1])
+        vf_gas = np.zeros([100, 1])
+
+        de_oil = de_details[:, 0] / 1000.
+        de_gas = de_details[:, 2] / 1000.
+        vf_oil = de_details[:, 1]
+        vf_gas = de_details[:, 3]
+
+        return (de_oil[de_oil > 0.], vf_oil[vf_oil > 0.], de_gas[de_gas > 0.], vf_gas[vf_gas > 0.])
