@@ -137,9 +137,13 @@ if __name__ == "__main__":
     for step in model:
         if step['step_num'] == 23:
             print 'running tamoc again'
-            model.spills[0].tamoc_parameters['release_phi'] = -np.pi / 4 
-            model.spills[0].tamoc_parameters['release_theta'] = -np.pi
-            model.spills[0].tamoc_parameters['ua'] = 0.1
-            model.spills[0].droplets = model.spills[0]._run_tamoc()
+            sp = model.spills[0]
+            sp.tamoc_parameters['release_phi'] = -np.pi / 4 
+            sp.tamoc_parameters['release_theta'] = -np.pi
+            sp.tamoc_parameters['ua'] = np.array([0.1, 0.5, 0])
+            sp.tamoc_parameters['va'] = np.array([0.1, 0.5, 0])
+            sp.tamoc_parameters['wa'] = np.array([0.1, 0.5, 0])
+            sp.tamoc_parametersp['depth'] = np.array([2000., 1000., 0])
+            sp.droplets = sp._run_tamoc()
         print step
         # model.
