@@ -231,7 +231,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                                    'inert_drop': False,
                                    'd50_gas': 0.008,
                                    'd50_oil': 0.0038,
-                                   'nbins': 3,
+                                   'nbins': 10,
                                    'nc_file': './Input/case_01',
                                    'fname_ctd': './Input/ctd_api.txt',
                                    'ua': np.array([0.05, 0.05]),
@@ -267,12 +267,15 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         ds = self.data_sources
         if ds['currents'] is not None:
             currents = ds['currents']
-            uv = np.zeros((2, currents.shape[1]))
-            for d in currents.shape[1]:
-                uv[d] = currents.at(self.start_position.reshape(-1, 2), current_time, depth=d)
+            c_data = currents.variables[0].data
+            uv = np.zeros((c_data.shape[1], 2))
+            for d in range(0, c_data.shape[1]):
+                uv[d] = currents.at(np.array(self.start_position)[0:2], current_time, depth=d)
             self.tamoc_parameters['ua'] = uv[:, 0]
             self.tamoc_parameters['va'] = uv[:, 1]
-            depth_var = currents.variables[0].data._grp[currents.variables[0].data.dimensions[1]]
+            print 'getdepths'
+            depth_var = c_data._grp['depth_levels'][:]
+#            depth_var = c_data._grp[currents.variables[0].data.dimensions[1]]
             self.tamoc_parameters['depths'] = depth_var[:]
         if ds['salinity'] is not None:
             pass
@@ -663,6 +666,10 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         # Add the crossflow velocity
 
+	print '******************'
+	print depths
+	print '******************'
+
         u_crossflow = np.zeros((len(u_a), 2))
         u_crossflow[:, 0] = depths
         u_crossflow[:, 1] = u_a
@@ -875,6 +882,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         de_gas = np.zeros([100, 1])
         vf_oil = np.zeros([100, 1])
         vf_gas = np.zeros([100, 1])
+
 
         de_oil = de_details[:, 0] / 1000.
         de_gas = de_details[:, 2] / 1000.

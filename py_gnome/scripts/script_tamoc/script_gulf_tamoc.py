@@ -70,7 +70,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
     # set up the modeling environment
-    start_time = datetime(2004, 12, 31, 13, 0)
+    start_time = datetime(2016, 9, 18, 0, 0)
     model = Model(start_time=start_time,
                   duration=timedelta(days=3),
                   time_step=30 * 60,
@@ -114,7 +114,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a circular current and eastward current'
     # This is .3 m/s south
     
-    model.movers += PyGridCurrentMover.from_netCDF('HYCOM_3d.nc')
+    pygcm = PyGridCurrentMover.from_netCDF('HYCOM_3d.nc')
+    
+    model.movers += pygcm
     model.movers += SimpleMover(velocity=(0., -0.1, 0.))
 
     # Now to add in the TAMOC "spill"
@@ -127,6 +129,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                         name='TAMOC plume',
                                         TAMOC_interval=None,  # how often to re-run TAMOC
                                         )
+    model.spills[0].data_sources['currents'] = pygcm.current
 
     return model
 
@@ -134,13 +137,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
+    model.spills[0].update_environment_conditions(model.model_time)
     print "about to start running the model"
     for step in model:
-        if step['step_num'] == 23:
-            print 'running tamoc again'
-            sp = model.spills[0]
-            print sp.tamoc_parameters
-            sp.update_environment_conditions(model.model_time)
-            print sp.tamoc_parameters
+#        if step['step_num'] == 23:
+#            print 'running tamoc again'
+#            sp = model.spills[0]
+#            print sp.tamoc_parameters
+#            sp.update_environment_conditions(model.model_time)
+#            print sp.tamoc_parameters
         print step
         # model.
