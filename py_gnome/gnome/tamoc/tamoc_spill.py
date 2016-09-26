@@ -269,12 +269,14 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             currents = ds['currents']
             c_data = currents.variables[0].data
             uv = np.zeros((c_data.shape[1], 2))
-            for d in range(0, c_data.shape[1]):
+            depth_var = c_data._grp['depth_levels'][:]
+            max_depth_ind = np.where(depth_var, depth_var.mask)[0].min()
+            depth_var = depth_var[0, max_depth_ind]
+            for d in range(0, max_depth_ind):
                 uv[d] = currents.at(np.array(self.start_position)[0:2], current_time, depth=d)
             self.tamoc_parameters['ua'] = uv[:, 0]
             self.tamoc_parameters['va'] = uv[:, 1]
             print 'getdepths'
-            depth_var = c_data._grp['depth_levels'][:]
 #            depth_var = c_data._grp[currents.variables[0].data.dimensions[1]]
             self.tamoc_parameters['depths'] = depth_var[:]
         if ds['salinity'] is not None:
