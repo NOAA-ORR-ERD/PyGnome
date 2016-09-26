@@ -219,14 +219,14 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                  on=True,
                  tamoc_parameters={'depth': 2000.,
                                    'diameter': 0.3,
-                                   'release_flowrate': 25000.,
+                                   'release_flowrate': 20000.,
                                    'release_temp': 273.15 + 150,
-                                   'release_phi': (-np.pi / 2),
-                                   'release_theta': 0,
-                                   'discharge_salinity': 0,
-                                   'tracer_concentration': 1,
+                                   'release_phi': (-np.pi / 2.),
+                                   'release_theta': 0.,
+                                   'discharge_salinity': 0.,
+                                   'tracer_concentration': 1.,
                                    'hydrate': True,
-                                   'dispersant': True,
+                                   'dispersant': False,
                                    'sigma_fac': np.array([[1.], [1. / 200.]]),
                                    'inert_drop': False,
                                    'd50_gas': 0.008,
@@ -273,10 +273,10 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             print source_idx
             time_idx = currents.time.index_of(current_time, False)
             print time_idx
-            u_conditions= u_data[time_idx, :, source_idx[0], source_idx[1]]
+            u_conditions = u_data[time_idx, :, source_idx[0], source_idx[1]]
             max_depth_ind = np.where(u_conditions.mask)[0].min()
             u_conditions = u_conditions[0:max_depth_ind]
-            v_conditions = v_data[time_idx,0:max_depth_ind, source_idx[0], source_idx[1]]
+            v_conditions = v_data[time_idx, 0:max_depth_ind, source_idx[0], source_idx[1]]
 #            for d in range(0, max_depth_ind):
 #                uv[d] = currents.at(np.array(self.start_position)[0:2], current_time, depth=d, memoize=False)
 #                print d
@@ -368,11 +368,11 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         print composition
         print mass_frac
         data, units = chem.load_data('./Input/API_ChemData.csv')
-        oil = dbm.FluidMixture(composition)
+        oil = dbm.FluidMixture(composition, user_data=data)
 
         # Get the release rates of gas and liquid phase
         md_gas, md_oil = self.release_flux(oil, mass_frac, profile, T0, z0, Q)
-
+        print 'md_gas, md_oil', np.sum(md_gas), np.sum(md_oil)
         # Get the particle list for this composition
         particles = self.get_particles(composition, data, md_gas, md_oil, profile, d50_gas, d50_oil,
                                   nbins, T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop)
@@ -382,7 +382,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Run the simulation
         jlm = bpm.Model(profile)
         jlm.simulate(np.array([0., 0., z0]), D, None, phi_0, theta_0,
-                     S0, T0, c0, chem_name, particles, track=True, dt_max=60.,
+                     S0, T0, c0, chem_name, particles, track=False, dt_max=60.,
                      sd_max=6000.)
 
         # Update the plume object with the nearfiled terminal level answer
@@ -390,7 +390,6 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         Mp = np.zeros((len(jlm.particles), len(jlm.q_local.M_p[0])))
         gnome_particles = []
-        print jlm.particles
         for i in range(len(jlm.particles)):
             nb0 = jlm.particles[i].nb0
             Tp = jlm.particles[i].T
@@ -703,7 +702,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         symbols = ['z', 'va']
         units = ['m', 'm/s']
         comments = ['provided', 'provided']
-        profile.append(u_crossflow, symbols, units, comments, 0)
+        profile.append(v_crossflow, symbols, units, comments, 0)
 
         w_crossflow = np.zeros((len(depths), 2))
         w_crossflow[:, 0] = depths
@@ -714,7 +713,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         symbols = ['z', 'wa']
         units = ['m', 'm/s']
         comments = ['provided', 'provided']
-        profile.append(u_crossflow, symbols, units, comments, 0)
+        profile.append(w_crossflow, symbols, units, comments, 0)
 
         # Finalize the profile (close the nc file)
         profile.close_nc()
@@ -854,7 +853,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                                               1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=t_hyd))
 
         # Droplets
-        for i in range(nbins):
+        for i in range(len(de_oil)):
             # Add the live droplets to the particle list
             if md_oil[i] > 0. and not inert_drop:
                 (m0, T0, nb0, P, Sa, Ta) = dispersed_phases.initial_conditions(
@@ -890,7 +889,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         de_details = np.zeros([100, 4])
         k = 0
-        with open(fname, 'r') as datfile:
+        with open(fname, 'rU') as datfile:
             datfile.readline()
             datfile.readline()
             datfile.readline()
