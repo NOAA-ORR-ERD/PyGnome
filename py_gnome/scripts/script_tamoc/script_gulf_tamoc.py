@@ -70,7 +70,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
     # set up the modeling environment
-    start_time = datetime(2016, 9, 18, 0, 0)
+    start_time = datetime(2016, 9, 18, 1, 0)
     model = Model(start_time=start_time,
                   duration=timedelta(days=3),
                   time_step=30 * 60,
@@ -84,7 +84,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         size=(1024, 768),
                         output_timestep=timedelta(hours=1),
                         )
-    renderer.viewport = ((-87.495, 27.995), (-87.505, 28.005))
+    renderer.viewport = ((-87.095, 27.595), (-87.905, 28.405))
 
     print 'adding outputters'
     model.outputters += renderer
@@ -116,8 +116,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     
     pygcm = PyGridCurrentMover.from_netCDF('HYCOM_3d.nc')
     
-    model.movers += pygcm
-    model.movers += SimpleMover(velocity=(0., -0.1, 0.))
+ #   model.movers += pygcm
+    model.movers += SimpleMover(velocity=(0., 0, 0.))
 
     # Now to add in the TAMOC "spill"
     print "Adding TAMOC spill"
@@ -129,6 +129,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                         name='TAMOC plume',
                                         TAMOC_interval=None,  # how often to re-run TAMOC
                                         )
+    model.spills += point_line_release_spill(release_time=start_time,
+                                             end_release_time = start_time + timedelta(days=1),
+                                             start_position = (-87.51, 28.1, 0),
+                                             num_elements=100)
+
     model.spills[0].data_sources['currents'] = pygcm.current
 
     return model

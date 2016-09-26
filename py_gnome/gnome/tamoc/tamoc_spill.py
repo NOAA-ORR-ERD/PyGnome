@@ -267,18 +267,25 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         ds = self.data_sources
         if ds['currents'] is not None:
             currents = ds['currents']
-            c_data = currents.variables[0].data
-            uv = np.zeros((c_data.shape[1], 2))
-            depth_var = c_data._grp['depth_levels'][:]
-            max_depth_ind = np.where(depth_var, depth_var.mask)[0].min()
-            depth_var = depth_var[0, max_depth_ind]
-            for d in range(0, max_depth_ind):
-                uv[d] = currents.at(np.array(self.start_position)[0:2], current_time, depth=d)
-            self.tamoc_parameters['ua'] = uv[:, 0]
-            self.tamoc_parameters['va'] = uv[:, 1]
+            u_data = currents.variables[0].data
+            v_data = currents.variables[1].data
+            source_idx = currents.grid.locate_faces(np.array(self.start_position)[0:2], 'node')
+            print source_idx
+            time_idx = currents.time.index_of(current_time, False)
+            print time_idx
+            u_conditions= u_data[time_idx, :, source_idx[0], source_idx[1]]
+            max_depth_ind = np.where(u_conditions.mask)[0].min()
+            u_conditions = u_conditions[0:max_depth_ind]
+            v_conditions = v_data[time_idx,0:max_depth_ind, source_idx[0], source_idx[1]]
+#            for d in range(0, max_depth_ind):
+#                uv[d] = currents.at(np.array(self.start_position)[0:2], current_time, depth=d, memoize=False)
+#                print d
+#                print uv[d]
+            self.tamoc_parameters['ua'] = u_conditions
+            self.tamoc_parameters['va'] = v_conditions
             print 'getdepths'
-#            depth_var = c_data._grp[currents.variables[0].data.dimensions[1]]
-            self.tamoc_parameters['depths'] = depth_var[:]
+#            depth_var = u_data._grp[currents.variables[0].data.dimensions[1]]
+            self.tamoc_parameters['depths'] = u_data._grp['depth_levels'][0:max_depth_ind]
         if ds['salinity'] is not None:
             pass
         if ds['temperature'] is not None:
@@ -569,10 +576,14 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         # compute release point location for each droplet
         positions = [self.start_position + FlatEarthProjection.meters_to_lonlat(d.position, self.start_position) for d in self.droplets]
+	print positions
 
         # for each release location, set the position and mass of the elements released at that location
         total_rel = 0
         for mass_dist, n_LEs, pos in zip(delta_masses, LE_distribution, positions):
+            print mass_dist
+            print n_LEs
+            print pos
             start_idx = -num_new_particles + total_rel
             end_idx = start_idx + n_LEs
 
@@ -664,7 +675,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         profile = ambient.Profile(nc, chem_names='all')
 
         # Force the max depth to model
-        depths[-1] = profile.z_max
+#        depths[-1] = profile.z_max
 
         # Add the crossflow velocity
 
@@ -672,7 +683,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         print depths
         print '******************'
 
-        u_crossflow = np.zeros((len(u_a), 2))
+        u_crossflow = np.zeros((len(depths), 2))
         u_crossflow[:, 0] = depths
         if u_a.shape != depths.shape:
             u_crossflow[:, 1] = np.linspace(u_a[0], u_a[-1], len(depths))
@@ -683,7 +694,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         comments = ['provided', 'provided']
         profile.append(u_crossflow, symbols, units, comments, 0)
 
-        v_crossflow = np.zeros((len(v_a), 2))
+        v_crossflow = np.zeros((len(depths), 2))
         v_crossflow[:, 0] = depths
         if v_a.shape != depths.shape:
             v_crossflow[:, 1] = np.linspace(v_a[0], v_a[-1], len(depths))
@@ -694,7 +705,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         comments = ['provided', 'provided']
         profile.append(u_crossflow, symbols, units, comments, 0)
 
-        w_crossflow = np.zeros((len(w_a), 2))
+        w_crossflow = np.zeros((len(depths), 2))
         w_crossflow[:, 0] = depths
         if w_a.shape != depths.shape:
             w_crossflow[:, 1] = np.linspace(w_a[0], w_a[-1], len(depths))
