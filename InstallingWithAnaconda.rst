@@ -11,7 +11,7 @@ Anaconda vs miniconda:
 
 `Anaconda <https://store.continuum.io/cshop/anaconda/>`__ provides a fairly complete pyton sytsem for computationl programming -- it is a large install, but comes with a lot of nice stuff pre-pacakged that all works together.
 
-`miniconda <http://conda.pydata.org/miniconda.html>`__ is a much smaller install -- it provides only Python and the conda package mangement system. You can install miniconda, and then install only teh packges you need to run ``py_gnome``. 
+`miniconda <http://conda.pydata.org/miniconda.html>`__ is a much smaller install -- it provides only Python and the conda package mangement system. You can install miniconda, and then install only teh packges you need to run ``py_gnome``.
 
 Either will work fine with ``py_gnome``.
 
@@ -101,8 +101,12 @@ and to add the NOAA-ORR-ERD channel to Anaconda::
 
     > conda config --add channels NOAA-ORR-ERD
 
-Now conda will know to go look in our anaconda channel for the packages
-you need.
+There is also a community-maintained channel called conda-forge with additional packages that we need. So you need to add that too:
+
+    > conda config --add channels conda-forge
+
+Now conda will know to go look in conda-forge and our anaconda channel for the packages
+gnome needs.
 
 
 conda environments
