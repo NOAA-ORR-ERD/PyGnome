@@ -48,7 +48,7 @@ class ModelSchema(ObjType):
     num_time_steps = SchemaNode(Int(), missing=drop)
     make_default_refs = SchemaNode(Bool(), missing=drop)
     mode = SchemaNode(String(),
-                      validator=OneOf(['gnome', 'adios']),
+                      validator=OneOf(['gnome', 'adios', 'roc']),
                       missing=drop)
 
     def __init__(self, json_='webapi', *args, **kwargs):
@@ -110,7 +110,7 @@ class Model(Serializable):
     # list of OrderedCollections
     _oc_list = ['movers', 'weatherers', 'environment', 'outputters']
 
-    modes = {'gnome', 'adios'}
+    modes = {'gnome', 'adios', 'roc'}
 
     @classmethod
     def new_from_dict(cls, dict_):
