@@ -84,7 +84,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         size=(1024, 768),
                         output_timestep=timedelta(hours=1),
                         )
-    renderer.viewport = ((-.005, -.005), (.005, .005))
+    renderer.viewport = ((-.1, -.1), (.1, .1))
 
     print 'adding outputters'
     model.outputters += renderer
@@ -138,12 +138,16 @@ if __name__ == "__main__":
         if step['step_num'] == 23:
             print 'running tamoc again'
             sp = model.spills[0]
-            sp.tamoc_parameters['release_phi'] = -np.pi / 4 
-            sp.tamoc_parameters['release_theta'] = -np.pi
-            sp.tamoc_parameters['ua'] = np.array([0.1, 0.5, 0])
-            sp.tamoc_parameters['va'] = np.array([0.1, 0.5, 0])
-            sp.tamoc_parameters['wa'] = np.array([0.1, 0.5, 0])
-            sp.tamoc_parametersp['depth'] = np.array([2000., 1000., 0])
+#            sp.tamoc_parameters['release_phi'] = -np.pi / 4 
+#            sp.tamoc_parameters['release_theta'] = -np.pi
+            sp.tamoc_parameters['ua'] = np.array([-0.05, -0.05])
+#            sp.tamoc_parameters['va'] = np.array([-1, -0.5, 0])
+#            sp.tamoc_parameters['wa'] = np.array([0.01, 0.01, 0.01])
+#            sp.tamoc_parameters['depths'] = np.array([0., 1000., 2000])
+            sp.droplets = sp._run_tamoc()
+        if step['step_num'] == 25:
+            sp = model.spills[0]
+            sp.tamoc_parameters['ua'] = np.array([0.05,0.05])
             sp.droplets = sp._run_tamoc()
         print step
         # model.
