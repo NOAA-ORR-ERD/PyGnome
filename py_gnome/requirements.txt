@@ -7,7 +7,7 @@ sphinx
 progressbar
 six
 geojson
-repoze.lru 
+repoze.lru
 colander
 gsw             # Thermodynamic Equations Of Seawater - density computation
 oil-library
@@ -22,7 +22,7 @@ netCDF4>=1.1.0            # requires netcdf-4 binaries and hdf5
 
 ## projections uses interpolate routine so most of py_gnome will work without this
 #  gsw also uses scipy. Expect py_gnome users with a local install to have scipy
-scipy      
+scipy
 
 ## End Binary packages ##
 
