@@ -666,13 +666,16 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         # Add the crossflow velocity
 
-	print '******************'
-	print depths
-	print '******************'
+        print '******************'
+        print depths
+        print '******************'
 
         u_crossflow = np.zeros((len(u_a), 2))
         u_crossflow[:, 0] = depths
-        u_crossflow[:, 1] = u_a
+        if u_a.shape != depths.shape:
+            u_crossflow[:, 1] = np.linspace(u_a[0], u_a[-1], len(depths))
+        else:
+            u_crossflow[:, 1] = u_a
         symbols = ['z', 'ua']
         units = ['m', 'm/s']
         comments = ['provided', 'provided']
@@ -680,7 +683,10 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         v_crossflow = np.zeros((len(v_a), 2))
         v_crossflow[:, 0] = depths
-        v_crossflow[:, 1] = v_a
+        if v_a.shape != depths.shape:
+            v_crossflow[:, 1] = np.linspace(v_a[0], v_a[-1], len(depths))
+        else:
+            v_crossflow[:, 1] = v_a
         symbols = ['z', 'va']
         units = ['m', 'm/s']
         comments = ['provided', 'provided']
@@ -688,7 +694,10 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         w_crossflow = np.zeros((len(w_a), 2))
         w_crossflow[:, 0] = depths
-        w_crossflow[:, 1] = w_a
+        if w_a.shape != depths.shape:
+            w_crossflow[:, 1] = np.linspace(w_a[0], w_a[-1], len(depths))
+        else:
+            w_crossflow[:, 1] = w_a
         symbols = ['z', 'wa']
         units = ['m', 'm/s']
         comments = ['provided', 'provided']
