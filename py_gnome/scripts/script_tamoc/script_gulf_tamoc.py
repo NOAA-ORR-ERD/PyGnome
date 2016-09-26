@@ -84,7 +84,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         size=(1024, 768),
                         output_timestep=timedelta(hours=1),
                         )
-    renderer.viewport = ((-.005, -.005), (.005, .005))
+    renderer.viewport = ((-87.495, 27.995), (-87.505, 28.005))
 
     print 'adding outputters'
     model.outputters += renderer
@@ -113,7 +113,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a circular current and eastward current'
     # This is .3 m/s south
-    model.movers += PyGridCurrentMover(current=vg, default_num_method='Trapezoid', extrapolate=True)
+    
+    model.movers += PyGridCurrentMover.from_netCDF('HYCOM_3d.nc')
     model.movers += SimpleMover(velocity=(0., -0.1, 0.))
 
     # Now to add in the TAMOC "spill"
