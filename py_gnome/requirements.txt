@@ -28,7 +28,7 @@ scipy
 
 ##Binary dependencies that can probably be pip installed
 # these have binary wheels for Windows and Mac at least...
-pillow
+# pillow -- I don't think we've need this for ages.
 pyzmq
 Cython
 pyugrid
