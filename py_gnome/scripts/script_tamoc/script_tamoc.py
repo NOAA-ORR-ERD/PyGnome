@@ -143,7 +143,7 @@ if __name__ == "__main__":
             sp.tamoc_parameters['ua'] = np.array([0.1, 0.5, 0])
             sp.tamoc_parameters['va'] = np.array([0.1, 0.5, 0])
             sp.tamoc_parameters['wa'] = np.array([0.1, 0.5, 0])
-            sp.tamoc_parametersp['depth'] = np.array([2000., 1000., 0])
+            sp.tamoc_parameters['depths'] = np.array([0., 1000., 2000])
             sp.droplets = sp._run_tamoc()
         print step
         # model.
