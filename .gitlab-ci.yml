@@ -8,7 +8,7 @@ before_script:
   - conda config --add channels NOAA-ORR-ERD
   - conda install --file conda_requirements.txt
   # get the oil libary package from gitlab
-  - pip install git+https://srccontrol.orr.noaa.gov/gnome/OilLibrary.git#egg=oil_library
+  - pip install -U git+https://srccontrol.orr.noaa.gov/gnome/OilLibrary.git@v0.0.6#egg=oil_library
   - cd ./py_gnome
   - python ./setup.py develop
 
