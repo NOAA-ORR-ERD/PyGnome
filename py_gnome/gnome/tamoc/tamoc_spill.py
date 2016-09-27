@@ -594,10 +594,13 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             data_arrays['density'][start_idx:end_idx] = droplet.density
             data_arrays['droplet_diameter'][start_idx:end_idx] = droplet.radius * 2
             total_rel += n_LEs
-            rise_velocity_from_drop_size(data_arrays['rise_vel'][start_idx:end_idx],
+            v = data_arrays['rise_vel'][start_idx:end_idx]
+            print len(v)
+            rise_velocity_from_drop_size(v,
                                          data_arrays['density'][start_idx:end_idx],
                                          data_arrays['droplet_diameter'][start_idx:end_idx],
                                          1020, 0.000001)
+            data_arrays['rise_vel'][start_idx:end_idx] = v
             print data_arrays['rise_vel'][start_idx:end_idx]
 
         self.num_released += num_new_particles
