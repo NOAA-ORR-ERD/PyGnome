@@ -587,6 +587,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             if end_idx == 0:
                 end_idx = None
             print '{0} to {1}'.format(start_idx, end_idx)
+            if start_idx == end_idx:
+                continue
 
             data_arrays['positions'][start_idx:end_idx] = pos
             data_arrays['mass'][start_idx:end_idx] = mass_dist / n_LEs
