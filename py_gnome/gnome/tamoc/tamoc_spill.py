@@ -16,6 +16,7 @@ from datetime import datetime
 import gnome
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
+from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 
 from tamoc import ambient, seawater
 from tamoc import chemical_properties as chem
@@ -262,6 +263,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         self.name = name
         self.tamoc_parameters = tamoc_parameters
         self.data_sources = data_sources
+        self.array_types.update(('rise_vel', 'droplet_diameter', 'density'))
 
     def update_environment_conditions(self, current_time):
         ds = self.data_sources
@@ -578,9 +580,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         # for each release location, set the position and mass of the elements released at that location
         total_rel = 0
-        print num_new_particles
-        print np.sum(LE_distribution)
-        for mass_dist, n_LEs, pos in zip(delta_masses, LE_distribution, positions):
+        for mass_dist, n_LEs, pos, droplet in zip(delta_masses, LE_distribution, positions, self.droplets):
             start_idx = -num_new_particles + total_rel
             if start_idx == 0:
                 break
@@ -592,7 +592,14 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             data_arrays['positions'][start_idx:end_idx] = pos
             data_arrays['mass'][start_idx:end_idx] = mass_dist / n_LEs
             data_arrays['init_mass'][start_idx:end_idx] = mass_dist / n_LEs
+            data_arrays['density'][start_idx:end_idx] = droplet.density
+            data_arrays['droplet_diameter'][start_idx:end_idx] = droplet.radius * 2
             total_rel += n_LEs
+            rise_velocity_from_drop_size(data_arrays['rise_vel'][start_idx:end_idx],
+                                         data_arrays['density'][start_idx:end_idx],
+                                         data_arrays['droplet_diameter'][start_idx:end_idx],
+                                         1020, 0.000001)
+            print data_arrays['rise_vel'][start_idx:end_idx]
 
         self.num_released += num_new_particles
         self.amount_released += total_mass
