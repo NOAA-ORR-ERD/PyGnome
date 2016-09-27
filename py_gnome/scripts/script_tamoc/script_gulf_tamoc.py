@@ -36,6 +36,7 @@ from gnome.movers import (RandomMover,
                           TamocRiseVelocityMover,
                           RandomVerticalMover,
                           SimpleMover,
+                          GridCurrentMover
                           PyGridCurrentMover)
 
 from gnome.outputters import Renderer
@@ -112,11 +113,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += TamocRiseVelocityMover()
 
     print 'adding a circular current and eastward current'
-    # This is .3 m/s south
-    
-    pygcm = PyGridCurrentMover.from_netCDF('HYCOM_3d.nc')
-    
- #   model.movers += pygcm
+    gc = GridCurrent.from_netCDF('HYCOM_3d.nc')
+
+    model.movers += GridCurrentMover('HYCOM_3d.nc')
     model.movers += SimpleMover(velocity=(0., 0, 0.))
 
     # Now to add in the TAMOC "spill"
@@ -134,7 +133,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                              start_position=(-87.51, 28.1, 0),
                                              num_elements=100)
 
-    model.spills[0].data_sources['currents'] = pygcm.current
+    model.spills[0].data_sources['currents'] = gc
 
     return model
 
