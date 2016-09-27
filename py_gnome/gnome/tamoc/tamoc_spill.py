@@ -602,7 +602,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             rise_velocity_from_drop_size(v,
                                          data_arrays['density'][start_idx:end_idx],
                                          data_arrays['droplet_diameter'][start_idx:end_idx],
-                                         1020, 0.000001)
+                                         0.0000013, 1020)
             data_arrays['rise_vel'][start_idx:end_idx] = v
             print data_arrays['rise_vel'][start_idx:end_idx]
             total_rel += n_LEs
