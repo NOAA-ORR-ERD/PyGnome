@@ -575,16 +575,19 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         # compute release point location for each droplet
         positions = [self.start_position + FlatEarthProjection.meters_to_lonlat(d.position, self.start_position) for d in self.droplets]
-	print positions
 
         # for each release location, set the position and mass of the elements released at that location
         total_rel = 0
+        print num_new_particles
+        print np.sum(LE_distribution)
         for mass_dist, n_LEs, pos in zip(delta_masses, LE_distribution, positions):
-            print mass_dist
-            print n_LEs
-            print pos
             start_idx = -num_new_particles + total_rel
+            if start_idx == 0:
+                break
             end_idx = start_idx + n_LEs
+            if end_idx == 0:
+                end_idx = None
+#            print '{0} to {1}'.format(start_idx, end_idx)
 
             data_arrays['positions'][start_idx:end_idx] = pos
             data_arrays['mass'][start_idx:end_idx] = mass_dist / n_LEs
