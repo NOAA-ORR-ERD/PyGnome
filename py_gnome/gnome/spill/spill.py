@@ -206,7 +206,7 @@ class Spill(BaseSpill):
                  element_type=None,
                  substance=None,
                  on=True,
-                 amount=None,   # could be volume or mass
+                 amount=None,  # could be volume or mass
                  units=None,
                  amount_uncertainty_scale=0.0,
                  name='Spill'):
@@ -259,7 +259,7 @@ class Spill(BaseSpill):
 
         self.element_type = element_type
 
-        self.on = on    # spill is active or not
+        self.on = on  # spill is active or not
         self._units = None
         self.amount = amount
 
@@ -296,7 +296,7 @@ class Spill(BaseSpill):
         if not self._check_type(other):
             return False
 
-        if (self._state.get_field_by_attribute('save') !=
+        if (self._state.get_field_by_attribute('save') != 
                 other._state.get_field_by_attribute('save')):
             return False
 
@@ -375,21 +375,21 @@ class Spill(BaseSpill):
         self.logger.debug(self._pid + "spill mass (kg): {0}".format(_mass))
 
         if _mass is not None:
-            rd_sec = self.get('release_duration')
+            rd_sec = self.release_duration
             if rd_sec == 0:
                 try:
-                    le_mass = _mass / self.get('num_elements')
+                    le_mass = _mass / self.num_elements
                 except TypeError:
-                    le_mass = _mass / self.get('num_per_timestep')
+                    le_mass = _mass / self.num_per_timestep
             else:
                 time_at_step_end = current_time + timedelta(seconds=time_step)
-                if self.get('release_time') > current_time:
+                if self.release_time > current_time:
                     # first time_step in which particles are released
-                    time_step = (time_at_step_end -
-                                 self.get('release_time')).total_seconds()
+                    time_step = (time_at_step_end - 
+                                 self.release_time).total_seconds()
 
-                if self.get('end_release_time') < time_at_step_end:
-                    time_step = (self.get('end_release_time') -
+                if self.end_release_time < time_at_step_end:
+                    time_step = (self.end_release_time - 
                                  current_time).total_seconds()
 
                 _mass_in_ts = _mass / rd_sec * time_step
@@ -466,7 +466,7 @@ class Spill(BaseSpill):
             property - could be the case if they both define a 'distribution',
             then it does not know which one to return
         """
-        if prop is None: # why??
+        if prop is None:  # why??
             return self._get_all_props()
 
         try:

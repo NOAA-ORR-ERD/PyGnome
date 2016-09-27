@@ -33,7 +33,7 @@ from gnome.map import GnomeMap
 from gnome.spill import point_line_release_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
-                          RiseVelocityMover,
+                          TamocRiseVelocityMover,
                           RandomVerticalMover,
                           SimpleMover,
                           PyGridCurrentMover)
@@ -109,7 +109,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding Rise Velocity'
     # droplets rise as a function of their density and radius
-    model.movers += RiseVelocityMover()
+    model.movers += TamocRiseVelocityMover()
 
     print 'adding a circular current and eastward current'
     # This is .3 m/s south
@@ -130,8 +130,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                         TAMOC_interval=None,  # how often to re-run TAMOC
                                         )
     model.spills += point_line_release_spill(release_time=start_time,
-                                             end_release_time = start_time + timedelta(days=1),
-                                             start_position = (-87.51, 28.1, 0),
+                                             end_release_time=start_time + timedelta(days=1),
+                                             start_position=(-87.51, 28.1, 0),
                                              num_elements=100)
 
     model.spills[0].data_sources['currents'] = pygcm.current

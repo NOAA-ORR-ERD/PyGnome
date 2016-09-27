@@ -263,7 +263,6 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         self.name = name
         self.tamoc_parameters = tamoc_parameters
         self.data_sources = data_sources
-        self.array_types.update(('rise_vel', 'droplet_diameter', 'density'))
 
     def update_environment_conditions(self, current_time):
         ds = self.data_sources
