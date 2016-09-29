@@ -76,6 +76,28 @@ class TestRandomMover:
         self.mover.uncertain_factor = 3
         assert self.mover.uncertain_factor == 3
 
+    def test_subsurface_zero(self):
+        """
+        checks that there is no movement if z below surface
+        """
+        num_elements = 10
+
+        sc = sample_sc_release(num_elements=num_elements,
+                           start_pos=(0.0, 0.0, 0.0),
+                           release_time=self.model_time,
+                           )
+        # set z positions:
+        sc['positions'][:, 2] = 100
+
+        delta = self.mover.get_move(sc,
+                            self.time_step,
+                            self.model_time,
+                            )
+
+        print delta
+
+        assert np.alltrue(delta[:, :] == 0.0)
+
     def test_prepare_for_model_step(self):
         """
         Simply tests the method executes without exceptions
@@ -87,7 +109,9 @@ class TestRandomMover:
         assert True
 
 
-start_locs = [(0., 0., 0.), (30.0, 30.0, 30.0), (-45.0, -60.0, 30.0)]
+#start_locs = [(0., 0., 0.), (30.0, 30.0, 30.0), (-45.0, -60.0, 30.0)]
+# changed random mover to not act below surface
+start_locs = [(0., 0., 0.), (30.0, 30.0, 0.0), (-45.0, -60.0, 0.0)]
 
 timesteps = [36, 360, 3600]
 
