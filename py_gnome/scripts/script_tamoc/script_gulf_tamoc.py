@@ -36,8 +36,9 @@ from gnome.movers import (RandomMover,
                           TamocRiseVelocityMover,
                           RandomVerticalMover,
                           SimpleMover,
-                          GridCurrentMover
-                          PyGridCurrentMover)
+                          GridCurrentMover,
+                          PyGridCurrentMover,
+                          constant_wind_mover)
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
@@ -102,7 +103,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print "adding Horizontal and Vertical diffusion"
 
     # Horizontal Diffusion
-    # model.movers += RandomMover(diffusion_coef=5)
+    model.movers += RandomMover(diffusion_coef=10000)
     # vertical diffusion (different above and below the mixed layer)
     model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=5,
                                         vertical_diffusion_coef_below_ml=.11,
@@ -116,22 +117,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     gc = GridCurrent.from_netCDF('HYCOM_3d.nc')
 
     model.movers += GridCurrentMover('HYCOM_3d.nc')
-    model.movers += SimpleMover(velocity=(0., 0, 0.))
+#    model.movers += SimpleMover(velocity=(0., 0, 0.))
+    model.movers += constant_wind_mover(5, 315, units='knots')
 
     # Now to add in the TAMOC "spill"
     print "Adding TAMOC spill"
 
     model.spills += tamoc_spill.TamocSpill(release_time=start_time,
                                         start_position=(-87.5, 28.0, 2000),
-                                        num_elements=1000,
-                                        end_release_time=start_time + timedelta(days=1),
+                                        num_elements=30000,
+                                        end_release_time=start_time + timedelta(days=2),
                                         name='TAMOC plume',
                                         TAMOC_interval=None,  # how often to re-run TAMOC
                                         )
-    model.spills += point_line_release_spill(release_time=start_time,
-                                             end_release_time=start_time + timedelta(days=1),
-                                             start_position=(-87.51, 28.1, 0),
-                                             num_elements=100)
 
     model.spills[0].data_sources['currents'] = gc
 
@@ -142,13 +140,19 @@ if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
     model.spills[0].update_environment_conditions(model.model_time)
+    model.spills[0].tamoc_parameters['nbins'] = 20
     print "about to start running the model"
     for step in model:
-#        if step['step_num'] == 23:
+        if step['step_num'] == 1:
+#             import random
+             for d in model.spills[0].droplets:
+#                 d.density= random.randint(800,850)
+                  d.density = 850.
 #            print 'running tamoc again'
 #            sp = model.spills[0]
 #            print sp.tamoc_parameters
 #            sp.update_environment_conditions(model.model_time)
 #            print sp.tamoc_parameters
+#            sp._run_tamoc()
         print step
         # model.
