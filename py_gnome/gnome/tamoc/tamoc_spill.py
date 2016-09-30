@@ -98,9 +98,9 @@ class TamocDroplet():
                  mass_flux=1.0,  # kg/s
                  radius=1e-6,  # meters
                  density=900.0,  # kg/m^3 at 15degC
-                 position=(10, 20, 100)  # (x, y, z) in meters
-                 flag_phase_insitu = 'Mixture', # flag for the phase of the particle at  plumetermination
-                 flag_phase_surface = 'Mixture' # flag for the phase of the particle at  1 atm and 15 degC
+                 position=(10, 20, 100),  # (x, y, z) in meters
+                 flag_phase_insitu='Mixture',  # flag for the phase of the particle at  plumetermination
+                 flag_phase_surface='Mixture'  # flag for the phase of the particle at  1 atm and 15 degC
                  ):
 
         self.mass_flux = mass_flux
@@ -111,6 +111,7 @@ class TamocDroplet():
     def __repr__(self):
         return '[flux = {0}, radius = {1}, density = {2}, position = {3}]'.format(self.mass_flux, self.radius, self.density, self.position)
 
+
 class TamocDissMasses():
     """
         Dummy class to show what we need from the TAMOC output
@@ -118,14 +119,16 @@ class TamocDissMasses():
     def __init__(self,
                  mass_flux=1.0,  # kg/s
                  position=(10, 20, 100),  # (x, y, z) in meters
-                 chem_name = 'x'
+                 chem_name='x'
                  ):
         self.mass_flux = mass_flux
         self.position = np.asanyarray(position)
         self.chem_name = chem_name
-    
+
     def __repr__(self):
         return '[flux = {0}, position = {1}, chem_name = {2}]'.format(self.mass_flux, self.position, self.chem_name)
+
+
 def log_normal_pdf(x, mean, std):
     """
     Utility  to compute the log normal CDF
@@ -429,7 +432,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             # Get the particle equilibrium at the 15 C and 1 atm
             print 'Surface'
             flag_phase_surface = self.get_phase(jlm.profile, Eq_parti, Mp[i, :]/np.sum(Mp[i, :]), 273.15 + 15. , 0.)
-           gnome_particles.append(TamocDroplet(mass_flux, radius, density, position))
+            gnome_particles.append(TamocDroplet(mass_flux, radius, density, position))
 
         for p in gnome_particles:
             print p
@@ -444,13 +447,13 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             chem_name = jlm.q_local.chem_names[j]
 #            print chem_name
             gnome_diss_components.append(TamocDissMasses(diss_mass_flux, position,chem_name))
-        
+
         print 'total dissolved mass flux at plume termination' ,m_tot_diss
         print 'total non ddissolved mass flux at plume termination', m_tot_nondiss
         print 'total mass flux tracked at plume termination',m_tot_diss+m_tot_nondiss
         print 'total mass flux released at the orifice',np.sum(md_gas)+ np.sum(md_oil)
         print 'perccentsge_error', (np.sum(md_gas)+ np.sum(md_oil)-m_tot_diss-m_tot_nondiss)/(np.sum(md_gas)+ np.sum(md_oil))*100.
-        
+
         return gnome_particles, gnome_diss_components
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
@@ -971,20 +974,20 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
     def get_phase(self, profile, particle, Mp, T, z):
         """
-        This get the equilibrium composition of the particle at adefined 
+        This get the equilibrium composition of the particle at adefined
         temperature T and pressure P
-    
+
         """
         # Get the pressure at particle location
         P = profile.get_values(z, ['pressure'])
         print 'Pressure', P
-        
+
         # Get the equilibrium composition
         m0, xi, K = particle.equilibrium(Mp, T, P)
-        
+
         print 'liquid fraction' , np.sum(m0[1,:])
         print 'gas fraction', np.sum(m0[0,:])
-        
+
         if np.sum(m0[1,:]) == 1.0:
             print ' Particle is complete liquid'
             flag_phase = 'Liquid'
