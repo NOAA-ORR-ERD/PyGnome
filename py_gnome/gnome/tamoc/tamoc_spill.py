@@ -7,6 +7,7 @@ Assorted code for working with TAMOC
 from datetime import timedelta
 
 import copy
+import random
 import numpy as np
 import unit_conversion as uc
 
@@ -98,7 +99,7 @@ class TamocDroplet():
                  mass_flux=1.0,  # kg/s
                  radius=1e-6,  # meters
                  density=900.0,  # kg/m^3 at 15degC
-                 position=(10, 20, 100)  # (x, y, z) in meters
+                 position=(10, 20, 100),  # (x, y, z) in meters
                  flag_phase_insitu = 'Mixture', # flag for the phase of the particle at  plumetermination
                  flag_phase_surface = 'Mixture' # flag for the phase of the particle at  1 atm and 15 degC
                  ):
@@ -249,7 +250,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                                    'inert_drop': False,
                                    'd50_gas': 0.008,
                                    'd50_oil': 0.0038,
-                                   'nbins': 10,
+                                   'nbins': 20,
                                    'nc_file': './Input/case_01',
                                    'fname_ctd': './Input/ctd_api.txt',
                                    'ua': np.array([0.05, 0.05]),
@@ -303,7 +304,10 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             self.tamoc_parameters['va'] = v_conditions
             print 'getdepths'
 #            depth_var = u_data._grp[currents.variables[0].data.dimensions[1]]
-            self.tamoc_parameters['depths'] = u_data._grp['depth_levels'][0:max_depth_ind]
+            try:
+                self.tamoc_parameters['depths'] = u_data._grp['depth_levels'][0:max_depth_ind]
+            except IndexError:
+                self.tamoc_parameters['depths'] = u_data._grp['depth'][0:max_depth_ind]
         if ds['salinity'] is not None:
             pass
         if ds['temperature'] is not None:
@@ -318,13 +322,13 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             if self.tamoc_interval is None:
                 if self.last_tamoc_time is None:
                     self.last_tamoc_time = current_time
-                    self.droplets = self._run_tamoc()
+                    self.droplets, self.diss_components = self._run_tamoc()
                 return self.droplets
 
             if (current_time >= self.release_time and (self.last_tamoc_time is None or self.droplets is None) or
                     current_time >= self.last_tamoc_time + self.tamoc_interval and current_time < self.end_release_time):
                 self.last_tamoc_time = current_time
-                self.droplets = self._run_tamoc()
+                self.droplets, self.diss_components = self._run_tamoc()
         return self.droplets
 
     def _run_tamoc(self):
@@ -429,7 +433,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             # Get the particle equilibrium at the 15 C and 1 atm
             print 'Surface'
             flag_phase_surface = self.get_phase(jlm.profile, Eq_parti, Mp[i, :]/np.sum(Mp[i, :]), 273.15 + 15. , 0.)
-           gnome_particles.append(TamocDroplet(mass_flux, radius, density, position))
+            gnome_particles.append(TamocDroplet(mass_flux, radius, density, position))
 
         for p in gnome_particles:
             print p
@@ -621,6 +625,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         # compute release point location for each droplet
         positions = [self.start_position + FlatEarthProjection.meters_to_lonlat(d.position, self.start_position) for d in self.droplets]
+        for p in positions:
+            p[0][2] -= self.start_position[2]
 
         # for each release location, set the position and mass of the elements released at that location
         total_rel = 0
@@ -639,7 +645,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             data_arrays['mass'][start_idx:end_idx] = mass_dist / n_LEs
             data_arrays['init_mass'][start_idx:end_idx] = mass_dist / n_LEs
             data_arrays['density'][start_idx:end_idx] = droplet.density
-            data_arrays['droplet_diameter'][start_idx:end_idx] = droplet.radius * 2
+            data_arrays['droplet_diameter'][start_idx:end_idx] = np.random.normal(droplet.radius * 2, droplet.radius * 0.15, (n_LEs))
             v = data_arrays['rise_vel'][start_idx:end_idx]
             rise_velocity_from_drop_size(v,
                                          data_arrays['density'][start_idx:end_idx],
