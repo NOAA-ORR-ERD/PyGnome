@@ -21,11 +21,11 @@ def _init_grid(filename,
     if gt is None:
         try:
             grid = pyugrid.UGrid.from_nc_dataset(gf)
-        except (ValueError, NameError):
+        except (ValueError, NameError, AttributeError):
             pass
         try:
             grid = pysgrid.SGrid.load_grid(gf)
-        except (ValueError, NameError):
+        except (ValueError, NameError, AttributeError):
             gt = _gen_topology(filename)
     if grid is None:
         nodes = node_lon = node_lat = None

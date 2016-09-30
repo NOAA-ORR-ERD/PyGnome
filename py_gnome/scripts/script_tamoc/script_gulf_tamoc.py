@@ -107,6 +107,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # vertical diffusion (different above and below the mixed layer)
     model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=5,
                                         vertical_diffusion_coef_below_ml=.11,
+                                        horizontal_diffusion_coef_above_ml=10000,
+                                        horizontal_diffusion_coef_below_ml=126,
                                         mixed_layer_depth=10)
 
     print 'adding Rise Velocity'
