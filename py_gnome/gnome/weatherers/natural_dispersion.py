@@ -112,7 +112,7 @@ class NaturalDispersion(Weatherer, Serializable):
             sed = np.zeros((len(data['mass'])), dtype=np.float64)
             droplet_avg_size = data['droplet_avg_size']
 
-            print 'dispersion: mass_components = ', data['mass_components'].sum(1)
+            #print 'dispersion: mass_components = ', data['mass_components'].sum(1)
 
             disperse_oil(time_step,
                          data['frac_water'],
@@ -162,7 +162,7 @@ class NaturalDispersion(Weatherer, Serializable):
                               .format(self._pid,
                                       substance.name,
                                       sc.mass_balance['natural_dispersion']))
-            print 'dispersion: mass_components = ', data['mass_components'].sum(1)
+            #print 'dispersion: mass_components = ', data['mass_components'].sum(1)
 
         sc.update_from_fatedataview()
 

@@ -46,6 +46,9 @@ def test_horizontal_zero():
     # set z positions:
     sc['positions'][:, 2] = np.linspace(0, 50, num_elements)
 
+    mv.horizontal_diffusion_coef_above_ml = 0;
+    mv.horizontal_diffusion_coef_below_ml = 0;
+
     delta = mv.get_move(sc,
                         time_step,
                         model_time,
@@ -54,6 +57,34 @@ def test_horizontal_zero():
     print delta
 
     assert np.alltrue(delta[:, 0:2] == 0.0)
+
+
+def test_vertical_zero():
+    """
+    checks that there is no vertical movement
+    """
+    mv = RandomVerticalMover() # all defaults
+
+    num_elements = 100
+
+    sc = sample_sc_release(num_elements=num_elements,
+                           start_pos=(0.0, 0.0, 0.0),
+                           release_time=model_time,
+                           )
+    # set z positions:
+    sc['positions'][:, 2] = np.linspace(0, 50, num_elements)
+
+    mv.vertical_diffusion_coef_above_ml = 0;
+    mv.vertical_diffusion_coef_below_ml = 0;
+
+    delta = mv.get_move(sc,
+                        time_step,
+                        model_time,
+                        )
+
+    print delta
+
+    assert np.alltrue(delta[:, 2] == 0.0)
 
 
 def test_bottom_layer():
@@ -98,7 +129,7 @@ def test_bottom_layer():
     var = sc['positions'][:,2].var()
     print "expected_var:", exp_var, "var:", var
 
-    assert np.allclose(exp_var, var, rtol=0.1)
+    assert np.allclose(exp_var, var, rtol=0.25)
 
 
 def test_mixed_layer():

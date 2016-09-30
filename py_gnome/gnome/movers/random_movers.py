@@ -135,6 +135,8 @@ class RandomVerticalMoverSchema(ObjType, ProcessSchema):
     vertical_diffusion_coef_above_ml = SchemaNode(Float(), missing=drop)
     vertical_diffusion_coef_below_ml = SchemaNode(Float(), missing=drop)
     mixed_layer_depth = SchemaNode(Float(), missing=drop)
+    horizontal_diffusion_coef_above_ml = SchemaNode(Float(), missing=drop)
+    horizontal_diffusion_coef_below_ml = SchemaNode(Float(), missing=drop)
 
 
 class RandomVerticalMover(CyMover, Serializable):
@@ -147,9 +149,13 @@ class RandomVerticalMover(CyMover, Serializable):
     _state = copy.deepcopy(CyMover._state)
     _state.add(update=['vertical_diffusion_coef_above_ml',
                       'vertical_diffusion_coef_below_ml',
+                      'horizontal_diffusion_coef_above_ml',
+                      'horizontal_diffusion_coef_below_ml',
                       'mixed_layer_depth'],
               save=['vertical_diffusion_coef_above_ml',
                       'vertical_diffusion_coef_below_ml',
+                      'horizontal_diffusion_coef_above_ml',
+                      'horizontal_diffusion_coef_below_ml',
                       'mixed_layer_depth'])
     _schema = RandomVerticalMoverSchema
 
@@ -163,14 +169,28 @@ class RandomVerticalMover(CyMover, Serializable):
         :param vertical_diffusion_coef_below_ml: Vertical diffusion coefficient
             for random diffusion below the mixed layer. Default is .11 cm2/s
         :param mixed_layer_depth: Mixed layer depth. Default is 10 meters.
+        :param horizontal_diffusion_coef_above_ml: Horizontal diffusion coefficient  
+            for random diffusion above the mixed layer. Default is 100000 cm2/s.
+        :param horizontal_diffusion_coef_below_ml: Horizontal diffusion coefficient  
+            for random diffusion below the mixed layer. Default is 126 cm2/s.
 
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
         self.mover = CyRandomVerticalMover(vertical_diffusion_coef_above_ml=kwargs.pop('vertical_diffusion_coef_above_ml', 5),
                                            vertical_diffusion_coef_below_ml=kwargs.pop('vertical_diffusion_coef_below_ml', .11),
+                                           horizontal_diffusion_coef_above_ml=kwargs.pop('horizontal_diffusion_coef_above_ml', 100000),
+                                           horizontal_diffusion_coef_below_ml=kwargs.pop('horizontal_diffusion_coef_below_ml', 126),
                                            mixed_layer_depth=kwargs.pop('mixed_layer_depth', 10.))
         super(RandomVerticalMover, self).__init__(**kwargs)
+
+    @property
+    def horizontal_diffusion_coef_above_ml(self):
+        return self.mover.horizontal_diffusion_coef_above_ml
+
+    @property
+    def horizontal_diffusion_coef_below_ml(self):
+        return self.mover.horizontal_diffusion_coef_below_ml
 
     @property
     def vertical_diffusion_coef_above_ml(self):
@@ -183,6 +203,14 @@ class RandomVerticalMover(CyMover, Serializable):
     @property
     def mixed_layer_depth(self):
         return self.mover.mixed_layer_depth
+
+    @horizontal_diffusion_coef_above_ml.setter
+    def horizontal_diffusion_coef_above_ml(self, value):
+        self.mover.horizontal_diffusion_coef_above_ml = value
+
+    @horizontal_diffusion_coef_below_ml.setter
+    def horizontal_diffusion_coef_below_ml(self, value):
+        self.mover.horizontal_diffusion_coef_below_ml = value
 
     @vertical_diffusion_coef_above_ml.setter
     def vertical_diffusion_coef_above_ml(self, value):
@@ -201,9 +229,12 @@ class RandomVerticalMover(CyMover, Serializable):
         .. todo:: We probably want to include more information.
         '''
         return ('RandomVerticalMover(vertical_diffusion_coef_above_ml={0}, '
-                'vertical_diffusion_coef_below_ml={1}, '
-                'mixed_layer_depth={2}, active_start={3}, active_stop={4}, '
-                'on={5})'.format(self.vertical_diffusion_coef_above_ml,
+                'vertical_diffusion_coef_below_ml={1}, mixed_layer_depth={2}, '
+                'horizontal_diffusion_coef_above_ml={3}, '
+                'horizontal_diffusion_coef_below_ml={4}, active_start={5}, active_stop={6}, '
+                'on={6})'.format(self.vertical_diffusion_coef_above_ml,
                                  self.vertical_diffusion_coef_below_ml,
                                  self.mixed_layer_depth,
+                                 self.horizontal_diffusion_coef_above_ml,
+                                 self.horizontal_diffusion_coef_below_ml,
                                  self.active_start, self.active_stop, self.on))
