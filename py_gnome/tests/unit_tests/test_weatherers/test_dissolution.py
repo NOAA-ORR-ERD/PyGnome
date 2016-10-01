@@ -265,8 +265,8 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     #     assert False
 
     # Here we stop the test to check on temperature trends
-    if oil == 'BAHIA' and wind_speed == 15.0:
-        assert False
+    # if oil == 'BAHIA' and wind_speed == 15.0:
+    #     assert False
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),

@@ -20,7 +20,7 @@ import os
 import getopt
 import imp
 
-from subprocess import check_call
+from subprocess import check_call, check_output
 
 
 def remove_local_dir_from_path():
@@ -59,17 +59,32 @@ def main(argv):
         if opt in ("--nolocalpath",):
             remove_local_dir_from_path()
 
-    # find the path to libcurl
-    # Note: Should we implement a list of libraries that we can iterate over?
-    lib_name = 'libcurl.4.dylib'
-    lib_path = get_conda_lib_path(lib_name)
-    cy_gnome_library = find_cy_gnome_library('cy_basic_types.so')
+    # find the path to our .so dependencies
+    for lib_name in ('libcurl.4.dylib', 'libstdc++.6.dylib'):
+        lib_path = get_conda_lib_path(lib_name)
+        cy_gnome_library = find_cy_gnome_library('cy_basic_types.so')
 
-    command = ('install_name_tool -change {} {} {}'
-               .format(lib_name, lib_path, cy_gnome_library))
+        command = ('otool -L {}' .format(cy_gnome_library))
 
-    check_call(command, shell=True)
+        old_lib_name = None
+        for l in check_output(command, shell=True).split('\n'):
+            matching_tokens = [t for t in l.split() if lib_name in t]
+            if len(matching_tokens) > 0:
+                old_lib_name = matching_tokens[0]
+                break
+
+        if old_lib_name is None:
+            # TODO: if we don't have an old rpath, then our re-link command
+            # will probably fail.  But this is not very likely.
+            # we will worry about that later
+            old_lib_name = lib_name
+
+        command = ('install_name_tool -change {} {} {}'
+                   .format(old_lib_name, lib_path, cy_gnome_library))
+
+        check_call(command, shell=True)
 
 
 if __name__ == "__main__":
     main(sys.argv)
+

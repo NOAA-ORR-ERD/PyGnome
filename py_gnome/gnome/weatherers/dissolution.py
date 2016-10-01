@@ -3,6 +3,7 @@ model dissolution process
 '''
 from __future__ import division
 import copy
+import contextlib
 
 import numpy as np
 
@@ -25,6 +26,14 @@ from gnome.weatherers import Weatherer
 
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2, width=120)
+
+
+@contextlib.contextmanager
+def printoptions(*args, **kwargs):
+    original = np.get_printoptions()
+    np.set_printoptions(*args, **kwargs)
+    yield
+    np.set_printoptions(**original)
 
 
 class Dissolution(Weatherer, Serializable):
@@ -125,7 +134,7 @@ class Dissolution(Weatherer, Serializable):
         droplet_avg_sizes = data['droplet_avg_size']
         areas = data['area']
 
-        #print 'droplet_avg_sizes = ', droplet_avg_sizes
+        # print 'droplet_avg_sizes = ', droplet_avg_sizes
 
         arom_mask = substance._sara['type'] == 'Aromatics'
 
@@ -142,9 +151,9 @@ class Dissolution(Weatherer, Serializable):
                                    (fmasses / mol_wt).sum(axis=1))
 
         avg_rhos = self.oil_avg_density(fmasses, rho)
-        #print ('oil density at temp = {}'
-        #       .format(substance.get_density(self.waves.water.temperature)))
-        #print 'avg_rhos = ', avg_rhos
+        # print ('oil density at temp = {}'
+        #        .format(substance.get_density(self.waves.water.temperature)))
+        # print 'avg_rhos = ', avg_rhos
         water_rhos = np.zeros(avg_rhos.shape) + self.waves.water.get('density')
 
         k_w_i = Stokes.water_phase_xfer_velocity(water_rhos - avg_rhos,
@@ -155,10 +164,10 @@ class Dissolution(Weatherer, Serializable):
 
         f_wc_i = self.water_column_time_fraction(model_time, k_w_i)
         T_wc_i = f_wc_i * time_step
-        #print 'T_wc_i = ', T_wc_i
+        # print 'T_wc_i = ', T_wc_i
 
         T_calm_i = self.calm_between_wave_breaks(model_time, time_step, T_wc_i)
-        #print 'T_calm_i = ', T_calm_i
+        # print 'T_calm_i = ', T_calm_i
 
         assert np.alltrue(T_calm_i <= float(time_step))
         assert np.alltrue(T_wc_i <= float(time_step))
@@ -173,29 +182,34 @@ class Dissolution(Weatherer, Serializable):
                                                           arom_mask,
                                                           total_volumes
                                                           )
-        #print 'N_drop_i = ', N_drop_i
-        #print 'T_wc_i = ', T_wc_i
+        # with printoptions(precision=2):
+        #     print 'N_drop_i = ', N_drop_i
+        #
+        # print 'T_wc_i = ', T_wc_i
 
         #
         # OK, here it is, the mass dissolved in the water column.
         #
         mass_dissolved_in_wc = (N_drop_i.T * T_wc_i).T
 
-        #print 'mass_dissolved_in_wc = ', mass_dissolved_in_wc
+        # with printoptions(precision=2):
+        #     print 'mass_dissolved_in_wc = ', mass_dissolved_in_wc
 
         N_s_i = self.slick_subsurface_mass_xfer_rate(model_time,
                                                      oil_concentrations,
                                                      K_ow_comp,
                                                      areas,
                                                      arom_mask)
-        #print 'N_s_i = ', N_s_i
+        # with printoptions(precision=2):
+        #     print 'N_s_i = ', N_s_i
 
         #
         # OK, here it is, the mass dissolved in the slick.
         #
         mass_dissolved_in_slick = (N_s_i.T * T_calm_i).T
 
-        #print 'mass_dissolved_in_slick = ', mass_dissolved_in_slick
+        # with printoptions(precision=2):
+        #     print 'mass_dissolved_in_slick = ', mass_dissolved_in_slick
 
         mass_dissolved_in_wc = np.vstack(mass_dissolved_in_wc)
         mass_dissolved_in_slick = np.vstack(mass_dissolved_in_slick)
@@ -340,29 +354,31 @@ class Dissolution(Weatherer, Serializable):
         K_ow = partition_coeffs
         C_dis = oil_concentrations * arom_mask
 
-        #print 'C_dis = ', C_dis
-        #print 'K_ow = ', K_ow
+        # with printoptions(precision=2):
+        #     print 'C_dis = ', C_dis
+        #     print 'K_ow = ', K_ow
 
         # ok, first lets get the xfer rate per unit area (1.27)
         N_drop_a = ((C_dis / K_ow).T * (k_w / 3600.0)).T
 
-        #print 'N_drop_a = ', N_drop_a
+        # with printoptions(precision=2):
+        #     print 'N_drop_a = ', N_drop_a
 
         # now we calculate the xfer rate.  For this we need the total area
         # first the slow method, just to prove our equations.
-        #print 'droplet_avg_sizes = ', droplet_avg_size
+        # print 'droplet_avg_sizes = ', droplet_avg_size
 
         A_drop = 4 * np.pi * (droplet_avg_size / 2.0) ** 2.0
-        #print 'A_drop = ', A_drop
+        # print 'A_drop = ', A_drop
 
         V_drop = (4.0 / 3.0) * np.pi * (droplet_avg_size / 2.0) ** 3.0
-        #print 'V_drop = ', V_drop
+        # print 'V_drop = ', V_drop
 
         num_droplets = total_volumes / V_drop
-        #print 'num_droplets = ', num_droplets
+        # print 'num_droplets = ', num_droplets
 
-        total_surface_area = A_drop * total_volumes / V_drop
-        #print 'total_surface_area = ', total_surface_area
+        total_surface_area = A_drop * num_droplets
+        # print 'total_surface_area = ', total_surface_area
 
         N_drop = (N_drop_a.T * total_surface_area).T
 
@@ -382,7 +398,8 @@ class Dissolution(Weatherer, Serializable):
 
             We return the mass xfer rate in units (kg/s)
         '''
-        #print 'slick_area = ', slick_area
+        # print 'slick_area = ', slick_area
+
         # oil component count needs to match
         assert oil_concentration.shape[-1] == partition_coeff.shape[-1]
         assert len(partition_coeff.shape) == 1  # single dimension
@@ -391,8 +408,9 @@ class Dissolution(Weatherer, Serializable):
         c_oil = oil_concentration
         k_ow = partition_coeff
 
-        #print 'c_oil = ', c_oil
-        #print 'k_ow = ', k_ow
+        # with printoptions(precision=2):
+        #     print 'c_oil = ', c_oil
+        #     print 'k_ow = ', k_ow
 
         if len(c_oil.shape) == 1:
             # a single LE of mass components
@@ -407,7 +425,9 @@ class Dissolution(Weatherer, Serializable):
             N_s_a = (0.01 * 
                      (U_10 / 3600.0) * 
                      (c_oil / k_ow))
-            #print 'N_s_a = ', N_s_a
+
+            # with printoptions(precision=2):
+            #     print 'N_s_a = ', N_s_a
 
             N_s = (N_s_a.T * slick_area).T
 
@@ -428,13 +448,14 @@ class Dissolution(Weatherer, Serializable):
                 # data does not contain any surface_weathering LEs
                 continue
 
-            #print 'dissolution: mass_components = ', data['mass_components'].sum(1)
+            # print ('dissolution: mass_components = {}'
+            #        .format(data['mass_components'].sum(1)))
             diss = self.dissolve_oil(model_time=model_time,
                                      time_step=time_step,
                                      data=data,
                                      substance=substance)
 
-            #print 'diss = ', diss
+            # print 'diss = ', diss
 
             # TODO: We should probably only modify the floating LEs
             data['mass_components'] -= diss
@@ -447,7 +468,8 @@ class Dissolution(Weatherer, Serializable):
                               .format(self._pid,
                                       substance.name,
                                       sc.mass_balance['dissolution']))
-            #print 'dissolution: mass_components = ', data['mass_components'].sum(1)
+            # print ('dissolution: mass_components = {}'
+            #        .format(data['mass_components'].sum(1)))
 
         sc.update_from_fatedataview()
 
