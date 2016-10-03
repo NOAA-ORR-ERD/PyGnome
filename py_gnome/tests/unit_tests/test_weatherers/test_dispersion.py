@@ -48,12 +48,13 @@ def test_dispersion(oil, temp, num_elems, on):
     disp.weather_elements(sc, time_step, model_time)
 
     if on:
+        # print "sc.mass_balance['natural_dispersion']"
+        # print sc.mass_balance['natural_dispersion']
+        # print "sc.mass_balance['sedimentation']"
+        # print sc.mass_balance['sedimentation']
+
         assert sc.mass_balance['natural_dispersion'] > 0
         assert sc.mass_balance['sedimentation'] > 0
-        print "sc.mass_balance['natural_dispersion']"
-        print sc.mass_balance['natural_dispersion']
-        print "sc.mass_balance['sedimentation']"
-        print sc.mass_balance['sedimentation']
     else:
         assert 'natural_dispersion' not in sc.mass_balance
         assert 'sedimentation' not in sc.mass_balance
@@ -113,14 +114,14 @@ def test_full_run(sample_model_fcn2, oil, temp, dispersed):
     for step in model:
         for sc in model.spills.items():
             if step['step_num'] > 0:
+                # print ("Dispersed: {0}".
+                #        format(sc.mass_balance['natural_dispersion']))
+                # print ("Sedimentation: {0}".
+                #        format(sc.mass_balance['sedimentation']))
+                # print "Completed step: {0}\n".format(step['step_num'])
+
                 assert (sc.mass_balance['natural_dispersion'] > 0)
                 assert (sc.mass_balance['sedimentation'] > 0)
-
-            print ("Dispersed: {0}".
-                   format(sc.mass_balance['natural_dispersion']))
-            print ("Sedimentation: {0}".
-                   format(sc.mass_balance['sedimentation']))
-            print "Completed step: {0}\n".format(step['step_num'])
 
     sc = model.spills.items()[0]
     print (sc.mass_balance['natural_dispersion'], dispersed)
@@ -142,8 +143,9 @@ def test_full_run_disp_not_active(sample_model_fcn):
         assert 'natural_dispersion' not in step['WeatheringOutput']
         assert 'sedimentation' not in step['WeatheringOutput']
         assert ('time_stamp' in step['WeatheringOutput'])
-        print ("Completed step: {0}"
-               .format(step['step_num']))
+
+        # print ("Completed step: {0}"
+        #        .format(step['step_num']))
 
 
 def test_serialize_deseriailize():
