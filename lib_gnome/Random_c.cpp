@@ -110,9 +110,12 @@ WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long
 	WorldPoint refPoint = (*theLE).p;	
 	float rand1,rand2;
 	double 	diffusionCoefficient;
+	char errmsg[256];
 	
-	//if (deltaPoint.z > 0) return deltaPoint;	// only use for surface LEs ?
-	
+#ifdef pyGNOME
+	// for pyGNOME we will handle subsurface diffusion with vertical diffusion
+	if ((*theLE).z > 0) return deltaPoint;	// only use for surface LEs ?
+#endif
 	if (bUseDepthDependent)
 	{
 		float depth=0.;

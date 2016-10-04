@@ -3,6 +3,8 @@
 #  This should be the minimal conda install
 #  install with:
 #  conda install --file conda_requirements.txt
+#
+# you need to have the NOAA-ORR-ERD and conda-forge channels for this to work
 
 setuptools>=23.0
 numpy>=1.11
@@ -26,6 +28,7 @@ gdal>=2.0
 awesome-slugify>=1.6
 regex>=2014.12
 unidecode>=0.04.19
+pyshp>=1.2.3
 cell_tree2d>=0.1.3
 pyugrid>=0.2.1
 pysgrid>=0.3.1
