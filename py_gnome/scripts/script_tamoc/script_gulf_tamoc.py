@@ -27,6 +27,7 @@ from gnome.spill.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
 from gnome.environment.grid_property import GriddedProp
 from gnome.environment import GridCurrent
+from gnome.environment import Wind
 
 from gnome.model import Model
 from gnome.map import GnomeMap
@@ -38,7 +39,8 @@ from gnome.movers import (RandomMover,
                           SimpleMover,
                           GridCurrentMover,
                           PyGridCurrentMover,
-                          constant_wind_mover)
+                          constant_wind_mover,
+                          WindMover)
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
@@ -92,7 +94,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.outputters += renderer
 
     # Also going to write the results out to a netcdf file
-    netcdf_file = os.path.join(base_dir, 'script_plume.nc')
+    netcdf_file = os.path.join(base_dir, 'gulf_tamoc.nc')
     scripting.remove_netcdf(netcdf_file)
 
     model.outputters += NetCDFOutput(netcdf_file,
@@ -103,24 +105,29 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print "adding Horizontal and Vertical diffusion"
 
     # Horizontal Diffusion
-    model.movers += RandomMover(diffusion_coef=10000)
+    model.movers += RandomMover(diffusion_coef=100000)
     # vertical diffusion (different above and below the mixed layer)
-    model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=5,
-                                        vertical_diffusion_coef_below_ml=.11,
-                                        horizontal_diffusion_coef_above_ml=10000,
-                                        horizontal_diffusion_coef_below_ml=126,
+    model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=50,
+                                        vertical_diffusion_coef_below_ml=10,
+                                        horizontal_diffusion_coef_above_ml=100000,
+                                        horizontal_diffusion_coef_below_ml=100,
                                         mixed_layer_depth=10)
 
     print 'adding Rise Velocity'
     # droplets rise as a function of their density and radius
     model.movers += TamocRiseVelocityMover()
 
-    print 'adding a circular current and eastward current'
+    print 'adding the 3D current mover'
     gc = GridCurrent.from_netCDF('HYCOM_3d.nc')
 
     model.movers += GridCurrentMover('HYCOM_3d.nc')
 #    model.movers += SimpleMover(velocity=(0., 0, 0.))
-    model.movers += constant_wind_mover(5, 315, units='knots')
+#    model.movers += constant_wind_mover(5, 315, units='knots')
+
+    # Wind from a buoy
+    w = Wind(filename='KIKT.osm')
+    model.movers += WindMover(w)
+
 
     # Now to add in the TAMOC "spill"
     print "Adding TAMOC spill"
