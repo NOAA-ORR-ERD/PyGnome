@@ -12,7 +12,7 @@ def _construct_environment_objects(**kwargs):
 
 def _init_grid(filename,
               grid_topology=None,
-              dataset = None,):
+              dataset=None,):
     gt = grid_topology
     gf = dataset
     if gf is None:
@@ -21,11 +21,11 @@ def _init_grid(filename,
     if gt is None:
         try:
             grid = pyugrid.UGrid.from_nc_dataset(gf)
-        except (ValueError, NameError):
+        except:
             pass
         try:
             grid = pysgrid.SGrid.load_grid(gf)
-        except (ValueError, NameError):
+        except:
             gt = _gen_topology(filename)
     if grid is None:
         nodes = node_lon = node_lat = None
@@ -37,20 +37,20 @@ def _init_grid(filename,
         else:
             nodes = gf[gt['nodes']]
         if 'faces' in gt and gf[gt['faces']]:
-            #UGrid
+            # UGrid
             faces = gf[gt['faces']]
             if faces.shape[0] == 3:
-                faces=np.ascontiguousarray(np.array(faces).T - 1)
+                faces = np.ascontiguousarray(np.array(faces).T - 1)
             if nodes is None:
                 nodes = np.column_stack((node_lon, node_lat))
-            grid = pyugrid.UGrid(nodes = nodes, faces=faces)
+            grid = pyugrid.UGrid(nodes=nodes, faces=faces)
         else:
-            #SGrid
+            # SGrid
             center_lon = center_lat = edge1_lon = edge1_lat = edge2_lon = edge2_lat = None
             if node_lon is None:
-                node_lon = nodes[:,0]
+                node_lon = nodes[:, 0]
             if node_lat is None:
-                node_lat = nodes[:,1]
+                node_lat = nodes[:, 1]
             if 'center_lon' in gt:
                 center_lon = gf[gt['center_lon']]
             if 'center_lat' in gt:
@@ -63,14 +63,14 @@ def _init_grid(filename,
                 edge2_lon = gf[gt['edge2_lon']]
             if 'edge2_lat' in gt:
                 edge2_lat = gf[gt['edge2_lat']]
-            grid = pysgrid.SGrid(node_lon = node_lon,
-                                 node_lat = node_lat,
-                                 center_lon = center_lon,
-                                 center_lat = center_lat,
-                                 edge1_lon = edge1_lon,
-                                 edge1_lat = edge1_lat,
-                                 edge2_lon = edge2_lon,
-                                 edge2_lat = edge2_lat)
+            grid = pysgrid.SGrid(node_lon=node_lon,
+                                 node_lat=node_lat,
+                                 center_lon=center_lon,
+                                 center_lat=center_lat,
+                                 edge1_lon=edge1_lon,
+                                 edge1_lat=edge1_lat,
+                                 edge2_lon=edge2_lon,
+                                 edge2_lat=edge2_lat)
     return grid
 
 def _gen_topology(filename,
@@ -85,7 +85,7 @@ def _gen_topology(filename,
     if gf is None:
         gf = _get_dataset(filename)
     gt = {}
-    node_coord_names = [['node_lon','node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
+    node_coord_names = [['node_lon', 'node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
     face_var_names = ['nv']
     center_coord_names = [['center_lon', 'center_lat'], ['lon_rho', 'lat_rho']]
     edge1_coord_names = [['edge1_lon', 'edge1_lat'], ['lon_u', 'lat_u']]
@@ -105,7 +105,7 @@ def _gen_topology(filename,
             break
 
     if 'faces' in gt.keys():
-        #UGRID
+        # UGRID
         return gt
     else:
         for n in center_coord_names:

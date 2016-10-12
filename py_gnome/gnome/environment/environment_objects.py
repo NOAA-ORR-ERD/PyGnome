@@ -23,6 +23,98 @@ from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPro
 from gnome.utilities.file_tools.data_helpers import _init_grid, _get_dataset
 
 
+class S_Depth(object):
+
+    default_terms = [['Cs_w', 's_w', 'hc']]
+
+    def __init__(self,
+                 bathymetry,
+                 data_file=None,
+                 dataset=None):
+        ds = dataset
+        if ds is None:
+            if data_file is None:
+                data_file = bathymetry.data_file
+                if data_file is None:
+                    raise ValueError("Need data_file or dataset containing sigma equation terms")
+            ds = _get_dataset(data_file)
+        self.bathymetry = bathymetry
+        self.terms = {}
+        for s in S_Depth.default_terms:
+            for term in s:
+                self.terms[term] = ds[term][:]
+
+    @classmethod
+    def from_netCDF(cls,
+                    **kwargs
+                    ):
+        bathymetry = Bathymetry.from_netCDF(depth=1, **kwargs)
+        data_file = bathymetry.data_file,
+        if 'dataset' in kwargs:
+            dataset = kwargs['dataset']
+        if 'data_file' in kwargs:
+            data_file = kwargs['data_file']
+        return cls(bathymetry,
+                   data_file=data_file,
+                   dataset=dataset)
+
+    @property
+    def num_levels(self):
+        return len(self.terms['s_w'])
+
+    def level_depth_given_bathymetry(self, depths, lvl):
+        s_w = self.terms['s_w'][lvl]
+        Cs_w = self.terms['Cs_w'][lvl]
+        hc = self.terms['hc']
+        return -(hc * (s_w - Cs_w) + Cs_w * depths)
+
+    def index_of(self, points):
+        underwater = points[2] == 0.0
+        pts = points[underwater]
+        depths = self.bathymetry.at(pts, datetime.now())
+        indices = -np.ones((len(points)))
+        if len(underwater) == 0:
+            return indices
+        und_ind = -np.ones((len(pts)))
+
+        for lev in range(0, self.num_levels):
+            lev_depths = self.level_depth_given_bathymetry(depths, lev)
+            und_ind[lev_depths < depths and depths != -1] = lev
+
+        indices[underwater] = und_ind
+        return indices
+
+    def interpolation_alphas(self, points):
+        underwater = points[:, 2] > 0.0
+        pts = points[np.where(underwater)[0], :]
+        if len(pts) == 0:
+            return None, None
+        indices = -np.ones((len(points)))
+        alphas = indices.copy()
+        depths = self.bathymetry.at(pts[:, 0:2], datetime.now())
+        und_ind = -np.ones((len(pts)))
+        und_alph = und_ind.copy()
+        
+        blev_depths = ulev_depths = None
+        for ulev in range(0, self.num_levels):
+            blev_depths = ulev_depths
+            ulev_depths = self.level_depth_given_bathymetry(depths, ulev)
+#             print ulev_depths[0]
+            within_layer = np.where(np.logical_and(ulev_depths < pts[:, 2], und_ind == -1))[0]
+#             print within_layer
+            und_ind[within_layer] = ulev
+            if ulev == 0:
+                und_alph[within_layer] = -2
+                continue
+            else:
+                a = ((pts[:, 2].take(within_layer) - blev_depths.take(within_layer)) / 
+                     (ulev_depths.take(within_layer) - blev_depths.take(within_layer)))
+                und_alph[within_layer] = a
+
+        indices[underwater] = und_ind
+        alphas[underwater] = und_alph
+        return indices, alphas
+
 class TemperatureTSSchema(PropertySchema):
     timeseries = SequenceSchema(
                                 TupleSchema(
@@ -384,6 +476,10 @@ class IceConcentration(GriddedProp, Environment, serializable.Serializable):
 
     def __str__(self):
         return self.serialize(json_='save').__repr__()
+
+
+class Bathymetry(GriddedProp):
+    default_names = ['h']
 
 
 class GridCurrent(VelocityGrid, Environment):

@@ -220,7 +220,7 @@ class PyMover(Mover):
         Mover.__init__(self, **kwargs)
 
     def get_delta_Euler(self, sc, time_step, model_time, pos, vel_field):
-        vels = vel_field.at(pos[:, 0:2], model_time,
+        vels = vel_field.at(pos, model_time,
                             extrapolate=self.extrapolate)
 
         return vels * time_step

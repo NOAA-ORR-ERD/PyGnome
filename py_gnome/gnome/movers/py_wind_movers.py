@@ -50,8 +50,8 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
         self._wind = wind
         self.make_default_refs = False
 
-        self.filename=filename
-        self.extrapolate=extrapolate
+        self.filename = filename
+        self.extrapolate = extrapolate
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.uncertain_speed_scale = uncertain_speed_scale
@@ -120,7 +120,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                                      sc['windage_persist'],
                                      time_step)
 
-    def get_move(self, sc, time_step, model_time_datetime, num_method = None):
+    def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
         Compute the move in (long,lat,z) space. It returns the delta move
         for each element of the spill as a numpy array of size
@@ -146,11 +146,11 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
         deltas = np.zeros_like(positions)
-        pos = positions[:, 0:2]
+        pos = positions[:]
 
         deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos, self.wind)
-        deltas[:,0] *= sc['windages']
-        deltas[:,1] *= sc['windages']
+        deltas[:, 0] *= sc['windages']
+        deltas[:, 1] *= sc['windages']
 
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)

@@ -30,6 +30,7 @@ class GriddedProp(EnvProp):
                  time=None,
                  data=None,
                  grid=None,
+                 depth=None,
                  data_file=None,
                  grid_file=None,
                  dataset=None,
@@ -63,6 +64,7 @@ class GriddedProp(EnvProp):
             if grid.infer_location is None:
                 raise ValueError('Data must be able to fit to the grid')
         self._grid = grid
+        self.depth = depth
         super(GriddedProp, self).__init__(name=name, units=units, time=time, data=data)
         self.data_file = data_file
         self.grid_file = grid_file
@@ -77,6 +79,7 @@ class GriddedProp(EnvProp):
                     units=None,
                     time=None,
                     grid=None,
+                    depth=None,
                     dataset=None,
                     data_file=None,
                     grid_file=None,
@@ -94,6 +97,7 @@ class GriddedProp(EnvProp):
         :param time: Time axis of the data
         :param data: Underlying data source
         :param grid: Grid that the data corresponds with
+        :param depth: Depth axis object
         :param dataset: Instance of open Dataset
         :param data_file: Name of data source file
         :param grid_file: Name of grid source file
@@ -105,6 +109,7 @@ class GriddedProp(EnvProp):
         :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
         :type data: netCDF4.Variable or numpy.array
         :type grid: pysgrid or pyugrid
+        :type S_Depth or L_Depth
         :type dataset: netCDF4.Dataset
         :type data_file: string
         :type grid_file: string
@@ -128,6 +133,9 @@ class GriddedProp(EnvProp):
             grid = _init_grid(grid_file,
                               grid_topology=grid_topology,
                               dataset=dg)
+        if depth is None:
+            from gnome.environment.environment_objects import S_Depth
+            depth = S_Depth.from_netCDF(dataset=ds, data_file=data_file, grid_file=grid_file)
         if varname is None:
             varname = cls._gen_varname(data_file,
                                        dataset=ds)
@@ -145,8 +153,11 @@ class GriddedProp(EnvProp):
             try:
                 timevar = data.time if data.time == data.dimensions[0] else data.dimensions[0]
             except AttributeError:
-                timevar = data.dimensions[0]
-            time = Time(ds[timevar])
+                if len(data.dimensions) > 2:
+                    timevar = data.dimensions[0]
+                    time = Time(ds[timevar])
+                else:
+                    time = None
         if load_all:
             data = data[:]
         return cls(name=name,
@@ -154,8 +165,10 @@ class GriddedProp(EnvProp):
                    time=time,
                    data=data,
                    grid=grid,
+                   depth=depth,
                    grid_file=grid_file,
-                   data_file=data_file)
+                   data_file=data_file,
+                   **kwargs)
 
     @property
     def time(self):
@@ -300,6 +313,9 @@ class GriddedProp(EnvProp):
         :rtype: double
         '''
 
+        depths = points[:, 2]
+        points = points[:, 0:2]
+
         sg = False
         mem = memoize
 
@@ -420,6 +436,7 @@ class GridVectorProp(VectorProp):
                     units=None,
                     time=None,
                     grid=None,
+                    depth=None,
                     data_file=None,
                     grid_file=None,
                     dataset=None,
@@ -471,6 +488,9 @@ class GridVectorProp(VectorProp):
             grid = _init_grid(grid_file,
                               grid_topology=grid_topology,
                               dataset=dg)
+        if depth is None:
+            from gnome.environment.environment_objects import S_Depth
+            depth = S_Depth.from_netCDF(dataset=ds, data_file=data_file, grid_file=grid_file)
         if varnames is None:
             varnames = cls._gen_varnames(data_file,
                                          dataset=ds)
@@ -492,10 +512,12 @@ class GridVectorProp(VectorProp):
                                                      units=units,
                                                      time=time,
                                                      grid=grid,
+                                                     depth=depth,
                                                      data_file=data_file,
                                                      grid_file=grid_file,
                                                      dataset=ds,
-                                                     load_all=load_all))
+                                                     load_all=load_all,
+                                                     **kwargs))
         return cls(name,
                    units,
                    time,
@@ -503,7 +525,8 @@ class GridVectorProp(VectorProp):
                    grid=grid,
                    grid_file=grid_file,
                    data_file=data_file,
-                   dataset=ds)
+                   dataset=ds,
+                   **kwargs)
 
     def _check_consistency(self):
         '''
@@ -717,3 +740,4 @@ class GridVectorProp(VectorProp):
             if n[0] in df.variables.keys() and n[1] in df.variables.keys():
                 return n
         raise ValueError("Default names not found.")
+ 

@@ -376,3 +376,4 @@ class Time(object):
         t0 = self.time[i0 - 1]
         t1 = self.time[i0]
         return (time - t0).total_seconds() / (t1 - t0).total_seconds()
+

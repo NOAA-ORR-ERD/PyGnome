@@ -34,9 +34,9 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
                  uncertain_cross=.25,
                  default_num_method='Trapezoid'
                  ):
-        self.current=current
-        self.filename=filename
-        self.extrapolate=extrapolate
+        self.current = current
+        self.filename = filename
+        self.extrapolate = extrapolate
         self.current_scale = current_scale
         self.uncertain_along = uncertain_along
         self.uncertain_across = uncertain_across
@@ -115,7 +115,7 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
         deltas = np.zeros_like(positions)
-        pos = positions[:, 0:2]
+        pos = positions[:]
 
         deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos, self.current)
 

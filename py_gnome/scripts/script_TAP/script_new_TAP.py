@@ -102,7 +102,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
                                                  grid_topology=gt,
                                                  load_all=load)
-    print 'loading entire wind data'    
+    print 'loading entire wind data'
     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
                                               ice_var=ice_aware_curr.ice_var,
                                               ice_conc_var=ice_aware_curr.ice_conc_var,
