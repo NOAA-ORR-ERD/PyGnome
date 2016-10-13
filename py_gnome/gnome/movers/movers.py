@@ -232,8 +232,10 @@ class PyMover(Mover):
 
         v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
+        p1 = pos.copy()
+        p1[:, 0:2] += d0
 
-        v1 = vel_field.at(pos + d0, t + dt, extrapolate=self.extrapolate)
+        v1 = vel_field.at(p1, t + dt, extrapolate=self.extrapolate)
 
         return dt_s / 2 * (v0 + v1)
 
@@ -244,18 +246,20 @@ class PyMover(Mover):
 
         v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s / 2, pos)
+        p1 = pos.copy()
+        p1[:, 0:2] += d0
 
-        v1 = vel_field.at(pos + d0,
-                          t + dt / 2,
-                          extrapolate=self.extrapolate)
+        v1 = vel_field.at(p1, t + dt / 2, extrapolate=self.extrapolate)
         d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s / 2, pos)
+        p2 = pos.copy()
+        p2[:, 0:2] += d1
 
-        v2 = vel_field.at(pos + d1,
-                          t + dt / 2,
-                          extrapolate=self.extrapolate)
+        v2 = vel_field.at(p2, t + dt / 2, extrapolate=self.extrapolate)
         d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
+        p3 = pos.copy()
+        p3[:, 0:2] += d2
 
-        v3 = vel_field.at(pos + d2, t + dt, extrapolate=self.extrapolate)
+        v3 = vel_field.at(p3, t + dt, extrapolate=self.extrapolate)
 
         return dt_s / 6 * (v0 + 2 * v1 + 2 * v2 + v3)
 

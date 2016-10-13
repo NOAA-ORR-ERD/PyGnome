@@ -34,7 +34,9 @@ class GriddedProp(EnvProp):
                  data_file=None,
                  grid_file=None,
                  dataset=None,
-                 varname=None):
+                 varname=None,
+                 fill_value=0,
+                 **kwargs):
         '''
         This class represents a phenomenon using gridded data
 
@@ -69,6 +71,7 @@ class GriddedProp(EnvProp):
         self.data_file = data_file
         self.grid_file = grid_file
         self._result_memo = OrderedDict()
+        self.fill_value = fill_value
 
     @classmethod
     def from_netCDF(cls,
@@ -84,6 +87,7 @@ class GriddedProp(EnvProp):
                     data_file=None,
                     grid_file=None,
                     load_all=False,
+                    fill_value=0,
                     **kwargs
                     ):
         '''
@@ -133,9 +137,6 @@ class GriddedProp(EnvProp):
             grid = _init_grid(grid_file,
                               grid_topology=grid_topology,
                               dataset=dg)
-        if depth is None:
-            from gnome.environment.environment_objects import S_Depth
-            depth = S_Depth.from_netCDF(dataset=ds, data_file=data_file, grid_file=grid_file)
         if varname is None:
             varname = cls._gen_varname(data_file,
                                        dataset=ds)
@@ -158,6 +159,10 @@ class GriddedProp(EnvProp):
                     time = Time(ds[timevar])
                 else:
                     time = None
+        if depth is None:
+            if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):
+                from gnome.environment.environment_objects import S_Depth
+                depth = S_Depth.from_netCDF(dataset=ds, data_file=data_file, grid_file=grid_file)
         if load_all:
             data = data[:]
         return cls(name=name,
@@ -168,6 +173,7 @@ class GriddedProp(EnvProp):
                    depth=depth,
                    grid_file=grid_file,
                    data_file=data_file,
+                   fill_value=fill_value,
                    **kwargs)
 
     @property
@@ -295,7 +301,7 @@ class GriddedProp(EnvProp):
             value = self.at(centers, time, units)
         return value
 
-    def at(self, points, time, units=None, depth=-1, extrapolate=False, memoize=True, _hash=None, mask=False, **kwargs):
+    def at(self, points, time, units=None, extrapolate=False, _hash=None, _mem=True, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -312,24 +318,114 @@ class GriddedProp(EnvProp):
         :return: returns a Nx1 array of interpolated values
         :rtype: double
         '''
-
-        depths = points[:, 2]
-        points = points[:, 0:2]
-
-        sg = False
-        mem = memoize
-
         if _hash is None:
             _hash = self._get_hash(points, time)
 
-        if mem:
+        if _mem:
             res = self._get_memoed(points, time, self._result_memo, _hash=_hash)
             if res is not None:
                 return np.ma.filled(res)
 
+        value = self._at_4D(points, time, self.data, units=units, extrapolate=extrapolate, _hash=_hash)
+
+        if _mem:
+            self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
+        return np.ma.filled(value)
+
+    def _at_2D(self, pts, data_slice, **kwargs):
+        if 1 in data_slice.shape[-2:]:
+            raise ValueError("Data dimensions are too small! len == 1")
+        data_slice = data_slice[:].squeeze()
+        _hash = kwargs['_hash'] if '_hash' in kwargs else None
+        units = kwargs['units'] if 'units' in kwargs else None
+        value = self.grid.interpolate_var_to_points(pts, data_slice, _hash=_hash[0], _memo=True)
+        if units is not None and units != self.units:
+            value = unit_conversion.convert(self.units, units, value)
+        return value
+
+    def _at_3D(self, points, data_slice, **kwargs):
+        if self.depth is None or len(data_slice.shape) == 2:
+            if len(data_slice.shape) == 3 and len(data_slice) == 1:
+                data_slice = data_slice[0]
+            else:
+                raise ValueError("Cannot determine surface layer for 3D data without depth axis")
+            return self._at_2D(points[:, 0:2], data_slice, **kwargs)
+        else:
+            indices, alphas = self.depth.interpolation_alphas(points)
+            if indices is None and alphas is None:
+                surface_slice = data_slice[self.depth.surface_index]
+                return self._at_2D(points[:, 0:2], surface_slice, **kwargs)
+            else:
+                underwater = np.where(indices != -1)[0]
+                m = underwater.min()
+                min_idx = max((m - 1, 0))
+                max_idx = underwater.max()
+                pts = points[:, 0:2]
+                values = np.array((len(points)), dtype=np.float64)
+                v0 = self._at_2D(pts, data_slice[min_idx])
+                for idx in range(min_idx + 1, max_idx):
+                    v1 = self._at_2D(pts, data_slice[idx])
+                    pos_idxs = np.where(indices == idx)[0]
+                    sub_vals = v0 + (v1 - v0) * alphas
+                    values.put(sub_vals.take(pos_idxs), pos_idxs)
+                    v0 = v1
+                if 'extrapolate' in kwargs and kwargs['extrapolate']:
+                    underground = (indices == self.depth.bottom_index)
+                    values[underground] = self._at_2D(pts, data_slice[self.depth.bottom_index])
+                else:
+                    values[underground] = self.fill_value
+                return values
+
+    def _at_4D(self, points, time, data_slice, **kwargs):
+        value = None
+        if self.time is None or len(self.time) == 1:
+            if len(data_slice.shape) == 2:
+                return self._at_2D(points[:, 0:2], data_slice, **kwargs)
+            if len(data_slice.shape) == 3:
+                return self._at_3D(points, data_slice, **kwargs)
+            if len(data_slice.shape) == 4 and len(data_slice) == 1:
+                data_slice = data_slice[0]
+                return self._at_3D(points, data_slice, **kwargs)
+            else:
+                raise ValueError("Cannot determine correct time index without time axis")
+        else:
+            extrapolate = kwargs['extrapolate'] if 'extrapolate' in kwargs else False
+            if not extrapolate:
+                self.time.valid_time(time)
+            if time == self.time.min_time:
+                return self._at_3D(points, data_slice[0], **kwargs)
+            elif time == self.time.max_time:
+                return self._at_3D(points, data_slice[-1], **kwargs)
+            elif extrapolate and time < self.time.min_time:
+                return self._at_3D(points, data_slice[0], **kwargs)
+            elif extrapolate and time > self.time.max_time:
+                return self._at_3D(points, data_slice[-1], **kwargs)
+            else:
+                if not any(points[:, 2] > 0.0):
+                    surface_only = True
+                ind = self.time.index_of(time)
+                alphas = self.time.interp_alpha(time)
+                s1 = [[ind]]
+                s0 = [[ind - 1]]
+                v0 = v1 = None
+                if surface_only and self.depth is not None:
+                    pts = points[:, 0:2]
+                    s1.append([self.depth.surface_index])
+                    s0.append([self.depth.surface_index])
+                    v0 = self._at_2D(pts, data_slice[s0], **kwargs)
+                    v1 = self._at_2D(pts, data_slice[s1], **kwargs)
+                else:
+                    v0 = self._at_3D(points, data_slice[s1], **kwargs)
+                    v1 = self._at_3D(points, data_slice[s0], **kwargs)
+                value = v0 + (v1 - v0) * alphas
+        return value
+
+    def _at_surface_only(self, pts, time, units=None, depth=-1, extrapolate=False, memoize=True, _hash=None, mask=False, **kwargs):
+        sg = False
+        mem = memoize
         if self.time is None:
             # special case! prop has no time variance
-            v0 = self.grid.interpolate_var_to_points(points, self.data, slices=None, slice_grid=sg, _memo=mem, _hash=_hash,)
+            v0 = self.grid.interpolate_var_to_points(pts, self.data, slices=None, slice_grid=sg, _memo=mem, _hash=_hash,)
             return v0
 
         t_alphas = s0 = s1 = value = None
@@ -337,7 +433,7 @@ class GriddedProp(EnvProp):
             self.time.valid_time(time)
         t_index = self.time.index_of(time, extrapolate)
         if len(self.time) == 1:
-            value = self.grid.interpolate_var_to_points(points, self.data, slices=[0], _memo=mem, _hash=_hash,)
+            value = self.grid.interpolate_var_to_points(pts, self.data, slices=[0], _memo=mem, _hash=_hash,)
         else:
             if time > self.time.max_time:
                 value = self.data[-1]
@@ -345,7 +441,7 @@ class GriddedProp(EnvProp):
                 value = self.data[0]
             if extrapolate and t_index == len(self.time.time):
                 s0 = [t_index - 1]
-                value = self.grid.interpolate_var_to_points(points, self.data, slices=s0, _memo=mem, _hash=_hash,)
+                value = self.grid.interpolate_var_to_points(pts, self.data, slices=s0, _memo=mem, _hash=_hash,)
             else:
                 t_alphas = self.time.interp_alpha(time, extrapolate)
                 s1 = [t_index]
@@ -353,17 +449,13 @@ class GriddedProp(EnvProp):
                 if len(self.data.shape) == 4:
                     s0.append(depth)
                     s1.append(depth)
-                v0 = self.grid.interpolate_var_to_points(points, self.data, slices=s0, slice_grid=sg, _memo=mem, _hash=_hash[0],)
-                v1 = self.grid.interpolate_var_to_points(points, self.data, slices=s1, slice_grid=sg, _memo=mem, _hash=_hash[0],)
+                v0 = self.grid.interpolate_var_to_points(pts, self.data, slices=s0, slice_grid=sg, _memo=mem, _hash=_hash[0],)
+                v1 = self.grid.interpolate_var_to_points(pts, self.data, slices=s1, slice_grid=sg, _memo=mem, _hash=_hash[0],)
                 value = v0 + (v1 - v0) * t_alphas
 
         if units is not None and units != self.units:
             value = unit_conversion.convert(self.units, units, value)
-
-        if mem:
-            self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
-            
-        return np.ma.filled(value)
+        return value
 
     @classmethod
     def _gen_varname(cls,
@@ -488,9 +580,6 @@ class GridVectorProp(VectorProp):
             grid = _init_grid(grid_file,
                               grid_topology=grid_topology,
                               dataset=dg)
-        if depth is None:
-            from gnome.environment.environment_objects import S_Depth
-            depth = S_Depth.from_netCDF(dataset=ds, data_file=data_file, grid_file=grid_file)
         if varnames is None:
             varnames = cls._gen_varnames(data_file,
                                          dataset=ds)
@@ -504,6 +593,10 @@ class GridVectorProp(VectorProp):
             except AttributeError:
                 timevar = data.dimensions[0]
             time = Time(ds[timevar])
+        if depth is None:
+            if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):
+                from gnome.environment.environment_objects import S_Depth
+                depth = S_Depth.from_netCDF(dataset=ds, data_file=data_file, grid_file=grid_file)
         variables = []
         for vn in varnames:
             variables.append(GriddedProp.from_netCDF(filename=filename,

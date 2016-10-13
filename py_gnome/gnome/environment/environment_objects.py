@@ -30,7 +30,8 @@ class S_Depth(object):
     def __init__(self,
                  bathymetry,
                  data_file=None,
-                 dataset=None):
+                 dataset=None,
+                 **kwargs):
         ds = dataset
         if ds is None:
             if data_file is None:
@@ -57,6 +58,14 @@ class S_Depth(object):
         return cls(bathymetry,
                    data_file=data_file,
                    dataset=dataset)
+
+    @property
+    def surface_index(self):
+        return -1
+    
+    @property
+    def bottom_index(self):
+        return 0
 
     @property
     def num_levels(self):
