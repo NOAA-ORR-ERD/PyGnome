@@ -362,16 +362,16 @@ class GriddedProp(EnvProp):
                 max_idx = underwater.max()
                 pts = points[:, 0:2]
                 values = np.array((len(points)), dtype=np.float64)
-                v0 = self._at_2D(pts, data_slice[min_idx])
+                v0 = self._at_2D(pts, data_slice[min_idx], **kwargs)
                 for idx in range(min_idx + 1, max_idx):
-                    v1 = self._at_2D(pts, data_slice[idx])
+                    v1 = self._at_2D(pts, data_slice[idx], **kwargs)
                     pos_idxs = np.where(indices == idx)[0]
                     sub_vals = v0 + (v1 - v0) * alphas
                     values.put(sub_vals.take(pos_idxs), pos_idxs)
                     v0 = v1
                 if 'extrapolate' in kwargs and kwargs['extrapolate']:
                     underground = (indices == self.depth.bottom_index)
-                    values[underground] = self._at_2D(pts, data_slice[self.depth.bottom_index])
+                    values[underground] = self._at_2D(pts, data_slice[self.depth.bottom_index], **kwargs)
                 else:
                     values[underground] = self.fill_value
                 return values
