@@ -25,7 +25,7 @@ from gnome.utilities.file_tools.data_helpers import _init_grid, _get_dataset
 
 class S_Depth(object):
 
-    default_terms = [['Cs_w', 's_w', 'hc']]
+    default_terms = [['Cs_w', 's_w', 'hc', 'Cs_r', 's_r']]
 
     def __init__(self,
                  bathymetry,
@@ -68,32 +68,26 @@ class S_Depth(object):
         return 0
 
     @property
-    def num_levels(self):
+    def num_w_levels(self):
         return len(self.terms['s_w'])
 
-    def level_depth_given_bathymetry(self, depths, lvl):
+    @property
+    def num_r_levels(self):
+        return len(self.terms['s_r'])
+
+    def _w_level_depth_given_bathymetry(self, depths, lvl):
         s_w = self.terms['s_w'][lvl]
         Cs_w = self.terms['Cs_w'][lvl]
         hc = self.terms['hc']
         return -(hc * (s_w - Cs_w) + Cs_w * depths)
 
-    def index_of(self, points):
-        underwater = points[2] == 0.0
-        pts = points[underwater]
-        depths = self.bathymetry.at(pts, datetime.now())
-        indices = -np.ones((len(points)))
-        if len(underwater) == 0:
-            return indices
-        und_ind = -np.ones((len(pts)))
+    def _r_level_depth_given_bathymetry(self, depths, lvl):
+        s_w = self.terms['s_w'][lvl]
+        Cs_w = self.terms['Cs_w'][lvl]
+        hc = self.terms['hc']
+        return -(hc * (s_w - Cs_w) + Cs_w * depths)
 
-        for lev in range(0, self.num_levels):
-            lev_depths = self.level_depth_given_bathymetry(depths, lev)
-            und_ind[lev_depths < depths and depths != -1] = lev
-
-        indices[underwater] = und_ind
-        return indices
-
-    def interpolation_alphas(self, points):
+    def interpolation_alphas(self, points, data_shape):
         underwater = points[:, 2] > 0.0
         pts = points[np.where(underwater)[0], :]
         if len(pts) == 0:
@@ -107,7 +101,12 @@ class S_Depth(object):
         blev_depths = ulev_depths = None
         for ulev in range(0, self.num_levels):
             blev_depths = ulev_depths
-            ulev_depths = self.level_depth_given_bathymetry(depths, ulev)
+            if data_shape[0] == self.num_w_levels:
+                ulev_depths = self._w_level_depth_given_bathymetry(depths, ulev)
+            elif data_shape[0] == self.num_r_levels:
+                ulev_depths = self._r_level_depth_given_bathymetry(depths, ulev)
+            else:
+                raise ValueError('Cannot get depth interpolation alphas for data shape specified; does not fit r or w depth axis')
 #             print ulev_depths[0]
             within_layer = np.where(np.logical_and(ulev_depths < pts[:, 2], und_ind == -1))[0]
 #             print within_layer
