@@ -301,6 +301,7 @@ class GriddedProp(EnvProp):
             value = self.at(centers, time, units)
         return value
 
+#     @profile
     def at(self, points, time, units=None, extrapolate=False, _hash=None, _mem=True, **kwargs):
         '''
         Find the value of the property at positions P at time T
@@ -332,10 +333,10 @@ class GriddedProp(EnvProp):
             self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
         return np.ma.filled(value)
 
+#     @profile
     def _at_2D(self, pts, data_slice, **kwargs):
         if 1 in data_slice.shape[-2:]:
             raise ValueError("Data dimensions are too small! len == 1")
-        data_slice = data_slice[:].squeeze()
         _hash = kwargs['_hash'] if '_hash' in kwargs else None
         units = kwargs['units'] if 'units' in kwargs else None
         value = self.grid.interpolate_var_to_points(pts, data_slice, _hash=_hash[0], _memo=True)
@@ -343,6 +344,7 @@ class GriddedProp(EnvProp):
             value = unit_conversion.convert(self.units, units, value)
         return value
 
+#     @profile
     def _at_3D(self, points, data_slice, **kwargs):
         if self.depth is None or len(data_slice.shape) == 2:
             if len(data_slice.shape) == 3 and len(data_slice) == 1:
@@ -376,6 +378,7 @@ class GriddedProp(EnvProp):
                     values[underground] = self.fill_value
                 return values
 
+#     @profile
     def _at_4D(self, points, time, data_slice, **kwargs):
         value = None
         if self.time is None or len(self.time) == 1:
@@ -405,18 +408,19 @@ class GriddedProp(EnvProp):
                     surface_only = True
                 ind = self.time.index_of(time)
                 alphas = self.time.interp_alpha(time)
-                s1 = [[ind]]
-                s0 = [[ind - 1]]
+                s1 = (ind)
+                s0 = (ind - 1)
                 v0 = v1 = None
                 if surface_only and self.depth is not None:
                     pts = points[:, 0:2]
-                    s1.append([self.depth.surface_index])
-                    s0.append([self.depth.surface_index])
+                    s1.append(self.depth.surface_index)
+                    s0.append(self.depth.surface_index)
                     v0 = self._at_2D(pts, data_slice[s0], **kwargs)
                     v1 = self._at_2D(pts, data_slice[s1], **kwargs)
                 else:
-                    v0 = self._at_3D(points, data_slice[s1], **kwargs)
-                    v1 = self._at_3D(points, data_slice[s0], **kwargs)
+                    pts = points[:, 0:2]
+                    v0 = self._at_2D(pts, data_slice[s0], **kwargs)
+                    v1 = self._at_2D(pts, data_slice[s1], **kwargs)
                 value = v0 + (v1 - v0) * alphas
         return value
 
