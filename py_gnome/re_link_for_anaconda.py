@@ -51,11 +51,11 @@ def find_cy_gnome_library(shared_lib):
 
 def main(argv):
     try:
-        optlist, args = getopt.getopt(argv[1:], '', ['nolocalpath'])
+        optlist, _args = getopt.getopt(argv[1:], '', ['nolocalpath'])
     except getopt.GetoptError:
         sys.exit(2)
 
-    for opt, arg in optlist:
+    for opt, _arg in optlist:
         if opt in ("--nolocalpath",):
             remove_local_dir_from_path()
 
@@ -87,4 +87,3 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv)
-
