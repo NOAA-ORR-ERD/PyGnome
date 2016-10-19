@@ -1139,6 +1139,7 @@ def test_set_end_to_none():
                                          )
 
         print "release is", spill.release
+        print spill.release.release_time
         # now change the end_release_time
         spill.end_release_time = None
 
@@ -1149,6 +1150,8 @@ def test_set_end_to_none():
                        'positions': np.zeros((num_new_particles, 3), dtype=np.float64),
                        }
         print "release_duration:", spill.release_duration
+        print "current_time:", current_time
+        print "release_time:", spill.release.release_time, spill.release_time
         spill.set_newparticle_values(num_new_particles,
                                      current_time,
                                      time_step,

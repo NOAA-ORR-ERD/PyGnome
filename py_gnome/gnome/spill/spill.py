@@ -158,30 +158,6 @@ class BaseSpill(serializable.Serializable, object):
 
         return False
 
-    # def get(self, prop=None):
-    #     # Fixme! this should probably not be here at all
-    #     # but it could be replaces with __getattr__ to make it a lot more Pythonic
-    #     """
-    #     for get(), return all properties of embedded release object and
-    #     element_type initializer objects. If 'prop' is not None, then return
-    #     the property
-
-    #     For example: get('windage_range') returns the 'windage_range' assuming
-    #     the element_type = floating()
-
-    #     .. todo::
-    #         There is an issue in that if two initializers have the same
-    #         property - could be the case if they both define a 'distribution',
-    #         then it does not know which one to return
-    #     """
-    #     # nothing returned, then property was not found - raise exception or
-    #     # return None?
-    #     print "in BaseSpill get:", prop
-    #     self.logger.warning("{0} attribute does not exist in element_type"
-    #                         " or release object or initializers".format(prop))
-    #     return None
-
-
 class SpillSchema(ObjType):
     'Spill class schema'
     on = SchemaNode(Bool(), default=True, missing=True,
@@ -299,10 +275,52 @@ class Spill(BaseSpill):
     @property
     def release_time(self):
         return self.release.release_time
-
     @release_time.setter
     def release_time(self, rt):
         self.release.release_time = rt
+
+    @property
+    def end_release_time(self):
+        return self.release.end_release_time
+    @end_release_time.setter
+    def end_release_time(self, rt):
+        self.release.end_release_time = rt
+
+    @property
+    def release_duration(self):
+        return self.release.release_duration
+    @release_duration.setter
+    def release_duration(self, rd):
+        self.release.release_duration = rd
+
+    @property
+    def num_elements(self):
+        return self.release.num_elements
+    @num_elements.setter
+    def num_elements(self, ne):
+        self.release.num_elements = ne
+
+    @property
+    def num_released(self):
+        return self.release.num_released
+    @num_released.setter
+    def num_released(self, ne):
+        self.release.num_released = ne
+
+    @property
+    def start_position(self):
+        return self.release.start_position
+    @start_position.setter
+    def start_position(self, sp):
+        self.release.start_position = sp
+
+    @property
+    def start_time_invalid(self):
+        return self.release.start_time_invalid
+    @start_time_invalid.setter
+    def start_time_invalid(self, sp):
+        self.release.start_time_invalid = sp
+
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -353,8 +371,11 @@ class Spill(BaseSpill):
             return True
         else:
             msg = ('Units for amount spilled must be in volume or mass units. '
+                   '{} was provided.'
                    'Valid units for volume: {0}, for mass: {1} ').format(
-                       self.valid_vol_units, self.valid_mass_units)
+                         units,
+                         self.valid_vol_units,
+                         self.valid_mass_units)
             ex = ValueError(msg)
             self.logger.exception(ex, exc_info=True)
             raise ex  # this should be raised since run will fail otherwise
@@ -414,7 +435,7 @@ class Spill(BaseSpill):
                     # first time_step in which particles are released
                     time_step = (time_at_step_end -
                                  self.release_time).total_seconds()
-
+                print "********", self.end_release_time, time_at_step_end
                 if self.end_release_time < time_at_step_end:
                     time_step = (self.end_release_time -
                                  current_time).total_seconds()
@@ -437,117 +458,17 @@ class Spill(BaseSpill):
 
         return False
 
-    # # __setattr overrides everything! so have to re-impliment properties, etc.
-    # # so NOT the way to go
-    # def __setattr__(self, prop, val):
-
+    # def __getattr__(self, prop=None):
     #     """
-    #     Sets an existing property that really  belong onone of the
-    #     contained objects like 'Release' or 'ElementType'
+    #     implementing this so that attributes can be pulled from the enclosed objects
 
-    #     It can also be a property of one of the initializers contained in
-    #     the 'ElementType' object. This maps it to look like a regular
-    #     attribute of a Spill object.
+    #     this replaces the old "get()" method
 
-    #     If the property doesn't exist for any of these, then an error is raised
-    #     since user cannot set a property that does not exist using this method
-
-    #     For example: set('windage_range', (0.4, 0.4)) sets the windage_range
-    #     assuming the element_type is floating
-
-    #     .. todo::
-    #         There is an issue in that if two initializers have the same
-    #         property - could be the case if they both define a 'distribution',
-    #         then it does not know which one to return
-    #     """
-
-    #     # Essentially having to re-impliment properties!
-    #     if prop == "units":
-    #         self._check_units(val)  # check validity before setting
-    #         self.__dict__['units'] = val
-    #         return None
-    #     if prop == 'num_released':
-    #         self.logger.warning("cannot set 'num_released' attribute")
-    #         return None
-    #     # we don't want to add an attribute that doesn't already exist
-    #     # first check to see that the attribute exists, then change it else
-    #     # raise error
-    #     # setting properties on the Spill object
-    #     print "setting: %s in Spill to %s" % (prop, val)
-    #     if hasattr(self, prop):
-    #         print "Spill has the %s attribute -- setting it in the dict" % prop
-    #         # fixme: this may override properties!
-    #         self.__dict__[prop] = val
-    #         pprint(self.__dict__)
-    #         return None
-    #     if hasattr(self.release, prop):
-    #         setattr(self.release, prop, val)
-    #         return None
-    #     if hasattr(self.element_type, prop):
-    #         setattr(self.element_type, prop, val)
-    #         return None
-    #     else:
-    #         if self.element_type is not None:
-    #             for init in self.element_type.initializers:
-    #                 if hasattr(init, prop):
-    #                     setattr(init, prop, val)
-    #                     return None
-    #     # self.logger.warning('{0} attribute does not exist '
-    #     #                     'in element_type or release object'
-    #     #                                 .format(prop)
-    #     # if it's  not in any of the sub-objects, set it on the Spill
-    #     # here we have to re-impliment properties!!!
-    #     self.__dict__[prop] = val
-
-    def __getattr__(self, prop=None):
-        """
-        implementing this so that attributes can be pulled from the enclosed objects
-
-        this replaces the old "get()" method
-
-        Return all properties of embedded release object and
-        element_type initializer objects. If 'prop' is not None, then return
-        the property
-
-        For example: Spill.windage_range returns the 'windage_range' from element_type assuming
-        the element_type = floating()
-
-        .. todo::
-            There is an issue in that if two initializers have the same
-            property - could be the case if they both define a 'distribution',
-            then it does not know which one to return
-        """
-        print "in __getattr__, getting: %s" % prop
-        try:
-            return getattr(self.release, prop)
-        except AttributeError:
-            pass
-
-        try:
-            return getattr(self.element_type, prop)
-        except AttributeError:
-            pass
-
-        for init in self.element_type.initializers:
-            try:
-                return getattr(init, prop)
-            except AttributeError:
-                pass
-
-        # nothing returned, then property was not found
-        msg = ("{0} attribute does not exist in element_type"
-               " or release object or initializers".format(prop))
-        self.logger.warning(msg)
-
-        raise AttributeError(msg)
-
-    # def get(self, prop=None):
-    #     """
-    #     for get(), return all properties of embedded release object and
+    #     Return all properties of embedded release object and
     #     element_type initializer objects. If 'prop' is not None, then return
     #     the property
 
-    #     For example: get('windage_range') returns the 'windage_range' assuming
+    #     For example: Spill.windage_range returns the 'windage_range' from element_type assuming
     #     the element_type = floating()
 
     #     .. todo::
@@ -555,10 +476,7 @@ class Spill(BaseSpill):
     #         property - could be the case if they both define a 'distribution',
     #         then it does not know which one to return
     #     """
-    #     'Return all properties'
-    #     if prop is None:
-    #         return self._get_all_props()
-
+    #     print "in __getattr__, getting: %s" % prop
     #     try:
     #         return getattr(self.release, prop)
     #     except AttributeError:
@@ -575,11 +493,12 @@ class Spill(BaseSpill):
     #         except AttributeError:
     #             pass
 
-    #     # nothing returned, then property was not found - raise exception or
-    #     # return None?
-    #     self.logger.warning("{0} attribute does not exist in element_type"
-    #                         " or release object or initializers".format(prop))
-    #     return None
+    #     # nothing returned, then property was not found
+    #     msg = ("{0} attribute does not exist in element_type"
+    #            " or release object or initializers".format(prop))
+    #     self.logger.warning(msg)
+
+    #     raise AttributeError(msg)
 
     def get_initializer_by_name(self, name):
         ''' get first initializer in list whose name matches 'name' '''
@@ -684,7 +603,8 @@ class Spill(BaseSpill):
         """
         set default units in which volume data is returned
         """
-        self._check_units(units)  # check validity before setting
+        if units is not None:
+            self._check_units(units)  # check validity before setting
         self._units = units
 
     @property
@@ -725,7 +645,6 @@ class Spill(BaseSpill):
             return mass
         else:
             self._check_units(units)
-            print "calling _check_units:", units
             return uc.convert('Mass', 'kg', units, mass)
 
     def uncertain_copy(self):
@@ -1104,5 +1023,4 @@ def point_line_release_spill(num_elements,
                   amount,
                   units,
                   name=name)
-    print " ** ", spill.release
     return spill
