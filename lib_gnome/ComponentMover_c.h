@@ -13,7 +13,11 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "CurrentMover_c.h"
-
+#ifdef pyGNOME
+#include "GridVel_c.h"
+#else
+#include "GridVel.h"
+#endif
 #ifdef pyGNOME
 #define TCATSMover CATSMover_c
 #define TOSSMTimeValue OSSMTimeValue_c
@@ -101,6 +105,12 @@ public:
 	void				SetTimeFile (TOSSMTimeValue *newTimeFile);
 	TOSSMTimeValue		*GetTimeFile () { return (timeFile); }
 	
+	VelocityFH GetVelocityHdl();
+	LongPointHdl GetPointsHdl(void);
+	WORLDPOINTH GetWorldPointsHdl(void);
+	TopologyHdl GetTopologyHdl(void);
+	WORLDPOINTH	GetTriangleCenters();
+
 	//virtual	OSErr TextRead(vector<string> &linesInFile);
 #ifdef pyGNOME
 	virtual	OSErr TextRead(char* catsPath1, char* catsPath2);
