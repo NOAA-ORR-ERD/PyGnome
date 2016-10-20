@@ -112,8 +112,7 @@ class IceAwareRandomMover(RandomMover):
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
         deltas = np.zeros_like(positions)
-        pos = positions[:, 0:2]
-        interp = self.ice_conc_var.at(pos, model_time_datetime, extrapolate=True).copy()
+        interp = self.ice_conc_var.at(positions, model_time_datetime, extrapolate=True).copy()
         interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
         if len(np.where(interp_mask)[0]) != 0:
             ice_mask = interp >= 0.8
