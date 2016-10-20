@@ -5,8 +5,7 @@ import shutil
 import pytest
 from pytest import raises
 
-import numpy
-np = numpy
+import numpy as np
 
 import unit_conversion
 
@@ -32,7 +31,8 @@ from gnome.persist import References, load
 from gnome.exceptions import ReferencedObjectNotSet
 from ..conftest import sample_sc_release, testdata
 
-""" WindMover tests """
+
+# WindMover tests
 
 file_ = testdata['timeseries']['wind_ts']
 file2_ = testdata['timeseries']['wind_cardinal']
@@ -285,12 +285,12 @@ def test_windage_index():
     timestep = 30
     for i in range(2):
         spill = point_line_release_spill(num_elements=5,
-                                start_position=(0., 0., 0.),
-                                release_time=rel_time + i * timedelta(hours=1),
-                                element_type=floating(windage_range=(i * .01 +
-                                                        .01, i * .01 + .01),
-                                                      windage_persist=900)
-                                )
+                                         start_position=(0., 0., 0.),
+                                         release_time=rel_time + i * timedelta(hours=1),
+                                         element_type=floating(windage_range=(i * .01 +
+                                                               .01, i * .01 + .01),
+                                                               windage_persist=900)
+                                         )
         sc.spills.add(spill)
 
     windage = ['windages', 'windage_range', 'windage_persist']
@@ -311,7 +311,7 @@ def test_windage_index():
             mask = sc.get_spill_mask(sp)
             if np.any(mask):
                 assert np.all(sc['windages'][mask] ==
-                              sp.get('windage_range')[0])
+                              sp.windage_range[0])
 
     # only 1st spill is released
     _check_index(sc)  # 1st ASSERT

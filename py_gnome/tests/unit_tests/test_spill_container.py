@@ -779,15 +779,16 @@ def test_get_spill_mask():
     start_position = (23.0, -78.5, 0.0)
     num_elements = 5
     sc = SpillContainer()
-    sp0 = point_line_release_spill(num_elements, start_position,
-                                    start_time0)
+    sp0 = point_line_release_spill(num_elements, start_position, start_time0)
 
-    sp1 = point_line_release_spill(num_elements, start_position,
-                                    start_time1,
-                                    end_position=(start_position[0]
-                                    + 0.2, start_position[1] + 0.2,
-                                    0.0), end_release_time=start_time1
-                                    + timedelta(hours=3))
+    sp1 = point_line_release_spill(num_elements,
+                                   start_position,
+                                   start_time1,
+                                   end_position=(start_position[0] + 0.2,
+                                                 start_position[1] + 0.2,
+                                                 0.0),
+                                   end_release_time=start_time1 + timedelta(hours=3)
+                                   )
 
     sp2 = point_line_release_spill(num_elements, start_position,
                                     start_time2)

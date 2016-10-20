@@ -8,7 +8,11 @@ These are properties that are spill specific like:
   'nonweathering' element_types would set use_droplet_size flag to False
   'weathering' element_types would use droplet_size, densities, mass?
 
+Note that an ElementType needs a bunch of initializers -- but that is an
+implimentaiton detail, so the ElementType API exposes access to the initializers.
+
 '''
+
 import copy
 
 from gnome.utilities.serializable import Serializable, Field
@@ -69,6 +73,27 @@ class ElementType(Serializable):
                 'initializers={0.initializers}, '
                 'substance={0.substance!r}'
                 ')'.format(self))
+
+    def __getattr__(self, att):
+        """
+        delegates some attribute access to the element types.
+
+        .. todo::
+            There is an issue in that if two initializers have the same
+            property - could be the case if they both define a 'distribution',
+            then it does not know which one to return
+        """
+        for initr in self.initializers:
+            try:
+                return getattr(initr, att)
+            except AttributeError:
+                pass
+
+        # nothing returned, then attribute was not found
+        msg = ("{0} attribute does not exist in element_type initializers".format(att))
+        self.logger.warning(msg)
+
+        raise AttributeError(msg)
 
     def contains_object(self, obj_id):
         for o in self.initializers:

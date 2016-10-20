@@ -52,13 +52,12 @@ def test_init(element_type, amount):
                   )
 
     if element_type is None:
-        print "*******"
-        print spill.element_type.initializers
         assert np.all(spill.windage_range == (0.01, 0.04))
         assert spill.windage_persist == 900
-        assert len(spill.initializers) == 1  # add windages
-    else:
-        assert len(spill.initializers) == 0
+        # no need to test this in spill -- it shouldn't know about initializers
+    #     assert len(spill.initializers) == 1  # add windages
+    # else:
+    #     assert len(spill.initializers) == 0
 
     assert spill.name == 'Spill'
     assert spill.release_duration == 0

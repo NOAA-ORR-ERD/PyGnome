@@ -240,7 +240,6 @@ class Spill(BaseSpill):
             If amount property is None, then just floating elements
             (ie. 'windages')
         """
-        print "about to set release in __init__"
         self.release = release
 
         if element_type is None:
@@ -269,9 +268,9 @@ class Spill(BaseSpill):
         fraction of area covered by oil
         '''
         self.frac_coverage = 1.0
-        print "setting name in init"
         self.name = name
 
+## fixme: a bunch of these properties should really be defined in subclasses
     @property
     def release_time(self):
         return self.release.release_time
@@ -290,8 +289,15 @@ class Spill(BaseSpill):
     def release_duration(self):
         return self.release.release_duration
     @release_duration.setter
-    def release_duration(self, rd):
-        self.release.release_duration = rd
+    def release_duration(self, sti):
+        self.release.release_duration = sti
+
+    @property
+    def start_time_invalid(self):
+        return self.release.start_time_invalid
+    @start_time_invalid.setter
+    def start_time_invalid(self, rd):
+        self.release.start_time_invalid = rd
 
     @property
     def num_elements(self):
@@ -315,49 +321,33 @@ class Spill(BaseSpill):
         self.release.start_position = sp
 
     @property
-    def start_time_invalid(self):
-        return self.release.start_time_invalid
-    @start_time_invalid.setter
-    def start_time_invalid(self, sp):
-        self.release.start_time_invalid = sp
+    def end_position(self):
+        return self.release.end_position
+    @end_position.setter
+    def end_position(self, sp):
+        self.release.end_position = sp
 
     @property
-    def initializers(self):
-        return self.element_type.initializers
-    # probably not a good idea to have a setter for these!
-#    @initializers.setter
-#    def initializers(self, inits):
-#        self.element_type.initializers = inits
+    def array_types(self):
+        return self.element_type.array_types
+    @array_types.setter
+    def array_types(self, at):
+        self.element_type.array_types = at
 
     @property
     def windage_range(self):
-        for init in self.element_type.initializers:
-            try:
-                return init.windage_range
-            except AttributeError:
-                continue
-        raise AttributeError("No initializers have a windage_range")
+        return self.element_type.windage_range
     @windage_range.setter
-    def windage_range(self, wr):
-        for init in self.element_type.initializers:
-            if hasattr(init, 'windage_range'):
-                init.windage_range = wr
-        raise AttributeError("No initializers have a windage_range")
+    def windage_range(self, at):
+        self.element_type.windage_range = at
 
     @property
     def windage_persist(self):
-        for init in self.element_type.initializers:
-            try:
-                return init.windage_persist
-            except AttributeError:
-                continue
-        raise AttributeError("No initializers have a windage_persist")
+        return self.element_type.windage_persist
     @windage_persist.setter
-    def windage_persist(self, wr):
-        for init in self.element_type.initializers:
-            if hasattr(init, 'windage_persist'):
-                init.windage_persist = wr
-        raise AttributeError("No initializers have a windage_persist")
+    def windage_persist(self, at):
+        self.element_type.windage_range = at
+
 
 
     def __repr__(self):
@@ -403,7 +393,6 @@ class Spill(BaseSpill):
         Checks the user provided units are in list of valid volume
         or mass units
         """
-        print "in check_units:", units
         if (units in self.valid_vol_units or
                 units in self.valid_mass_units):
             return True
@@ -419,6 +408,8 @@ class Spill(BaseSpill):
             raise ex  # this should be raised since run will fail otherwise
 
     def _get_all_props(self):
+        # fixme: why is this needed???
+
         'return all properties accessible through get'
         all_props = []
 
@@ -473,7 +464,6 @@ class Spill(BaseSpill):
                     # first time_step in which particles are released
                     time_step = (time_at_step_end -
                                  self.release_time).total_seconds()
-                print "********", self.end_release_time, time_at_step_end
                 if self.end_release_time < time_at_step_end:
                     time_step = (self.end_release_time -
                                  current_time).total_seconds()
@@ -496,6 +486,7 @@ class Spill(BaseSpill):
 
         return False
 
+    ## NOTE: this has been moved to properties
     # def __getattr__(self, prop=None):
     #     """
     #     implementing this so that attributes can be pulled from the enclosed objects
