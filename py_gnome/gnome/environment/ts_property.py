@@ -17,11 +17,11 @@ import collections
 class TimeSeriesProp(EnvProp):
 
     def __init__(self,
-
                  name=None,
                  units=None,
                  time=None,
-                 data=None):
+                 data=None,
+                 **kwargs):
         '''
         A class that represents a scalar natural phenomenon using a time series
 
@@ -103,7 +103,7 @@ class TimeSeriesProp(EnvProp):
             self.data = data if data is not None else self.data
             self.time = time if time is not None else self.time
 
-    def at(self, points, time, units=None, extrapolate=False):
+    def at(self, points, time, units=None, extrapolate=False, **kwargs):
         '''
         Interpolates this property to the given points at the given time with the units specified
         :param points: A Nx2 array of lon,lat points
@@ -114,7 +114,7 @@ class TimeSeriesProp(EnvProp):
         value = None
         if len(self.time) == 1:
             # single time time series (constant)
-            value = np.full((points.shape[0], 1), self.data)
+            value = np.full((points.shape[0], 1), self.data, dtype=np.float64)
             if units is not None and units != self.units:
                 value = unit_conversion.convert(self.units, units, value)
             return value
@@ -135,7 +135,7 @@ class TimeSeriesProp(EnvProp):
         if units is not None and units != self.units:
             value = unit_conversion.convert(self.units, units, value)
 
-        return np.full((points.shape[0], 1), value)
+        return np.full((points.shape[0], 1), value, dtype=np.float64)
 
     def is_constant(self):
         return len(self.data) == 1
@@ -158,7 +158,8 @@ class TSVectorProp(VectorProp):
                  units=None,
                  time=None,
                  variables=None,
-                 varnames=None):
+                 varnames=None,
+                 **kwargs):
         '''
         This class represents a vector phenomenon using a time series
         '''

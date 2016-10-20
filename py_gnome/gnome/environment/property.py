@@ -339,7 +339,7 @@ class Time(object):
             raise ValueError('time specified ({0}) is not within the bounds of the time ({1} to {2})'.format(
                 time.strftime('%c'), self.min_time.strftime('%c'), self.max_time.strftime('%c')))
 
-    def index_of(self, time, extrapolate):
+    def index_of(self, time, extrapolate=False):
         '''
         Returns the index of the provided time with respect to the time intervals in the file.
 
@@ -376,3 +376,4 @@ class Time(object):
         t0 = self.time[i0 - 1]
         t1 = self.time[i0]
         return (time - t0).total_seconds() / (t1 - t0).total_seconds()
+
