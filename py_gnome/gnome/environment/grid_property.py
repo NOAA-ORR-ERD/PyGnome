@@ -203,7 +203,7 @@ class GriddedProp(EnvProp):
         if self.time is not None and len(d) != len(self.time):
             raise ValueError("Data/time interval mismatch")
         if self.grid is not None and self.grid.infer_location(d) is None:
-            raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(d.shape, self.grid.shape))
+            raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(d.shape, self.grid.node_lon.shape))
         self._data = d
 
     @property
@@ -215,7 +215,7 @@ class GriddedProp(EnvProp):
         if not (isinstance(g, (pyugrid.UGrid, pysgrid.SGrid))):
             raise ValueError('Grid must be set with a pyugrid.UGrid or pysgrid.SGrid object')
         if self.data is not None and g.infer_location(self.data) is None:
-            raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(self.data.shape, self.grid.shape))
+            raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(self.data.shape, self.grid.node_lon.shape))
         self._grid = g
 
     @property
@@ -334,93 +334,89 @@ class GriddedProp(EnvProp):
         return np.ma.filled(value)
 
 #     @profile
-    def _at_2D(self, pts, data_slice, **kwargs):
-        if 1 in data_slice.shape[-2:]:
-            raise ValueError("Data dimensions are too small! len == 1")
+    def _at_2D(self, pts, data, slices=None, **kwargs):
+        cur_dim = len(data.shape) - len(slices) if slices is not None else len(data.shape)
+        if slices is not None and cur_dim != 2:
+            raise ValueError("Data dimensions are incorrect! dimension is {0}".format(len(data.shape) - len(slices)))
         _hash = kwargs['_hash'] if '_hash' in kwargs else None
         units = kwargs['units'] if 'units' in kwargs else None
-        value = self.grid.interpolate_var_to_points(pts, data_slice, _hash=_hash[0], _memo=True)
+        value = self.grid.interpolate_var_to_points(pts, data, _hash=_hash[0], slices=slices, _memo=True)
         if units is not None and units != self.units:
             value = unit_conversion.convert(self.units, units, value)
         return value
 
 #     @profile
-    def _at_3D(self, points, data_slice, **kwargs):
-        if self.depth is None or len(data_slice.shape) == 2:
-            if len(data_slice.shape) == 3 and len(data_slice) == 1:
-                data_slice = data_slice[0]
-            else:
-                raise ValueError("Cannot determine surface layer for 3D data without depth axis")
-            return self._at_2D(points[:, 0:2], data_slice, **kwargs)
+    def _at_3D(self, points, data, slices=None, **kwargs):
+        cur_dim = len(data.shape) - len(slices) if slices is not None else len(data.shape)
+        if slices is not None and cur_dim != 3:
+            raise ValueError("Data dimensions are incorrect! dimension is {0}".format(len(data.shape) - len(slices)))
+        indices, alphas = self.depth.interpolation_alphas(points, data.shape[1:], kwargs['_hash'])
+        if indices is None and alphas is None:
+            # all particles are on surface
+            return self._at_2D(points[:, 0:2], data, slices=slices + (self.depth.surface_index,), **kwargs)
         else:
-            indices, alphas = self.depth.interpolation_alphas(points)
-            if indices is None and alphas is None:
-                surface_slice = data_slice[self.depth.surface_index]
-                return self._at_2D(points[:, 0:2], surface_slice, **kwargs)
+            min_idx = indices[indices != -1].min() - 1
+            max_idx = indices.max()
+            pts = points[:, 0:2]
+            values = np.zeros(len(points), dtype=np.float64)
+            v0 = self._at_2D(pts, data, slices=slices + (min_idx - 1,), **kwargs)
+            for idx in range(min_idx + 1, max_idx + 1):
+                v1 = self._at_2D(pts, data, slices=slices + (idx,), **kwargs)
+                pos_idxs = np.where(indices == idx)[0]
+                sub_vals = v0 + (v1 - v0) * alphas
+                if len(pos_idxs) > 0:
+                    values.put(pos_idxs, sub_vals.take(pos_idxs))
+                v0 = v1
+            if 'extrapolate' in kwargs and kwargs['extrapolate']:
+                underground = (indices == self.depth.bottom_index)
+                values[underground] = self._at_2D(pts, data, slices=slices + (self.depth.bottom_index,) ** kwargs)
             else:
-                underwater = np.where(indices != -1)[0]
-                m = underwater.min()
-                min_idx = max((m - 1, 0))
-                max_idx = underwater.max()
-                pts = points[:, 0:2]
-                values = np.array((len(points)), dtype=np.float64)
-                v0 = self._at_2D(pts, data_slice[min_idx], **kwargs)
-                for idx in range(min_idx + 1, max_idx):
-                    v1 = self._at_2D(pts, data_slice[idx], **kwargs)
-                    pos_idxs = np.where(indices == idx)[0]
-                    sub_vals = v0 + (v1 - v0) * alphas
-                    values.put(sub_vals.take(pos_idxs), pos_idxs)
-                    v0 = v1
-                if 'extrapolate' in kwargs and kwargs['extrapolate']:
-                    underground = (indices == self.depth.bottom_index)
-                    values[underground] = self._at_2D(pts, data_slice[self.depth.bottom_index], **kwargs)
-                else:
-                    values[underground] = self.fill_value
-                return values
+                underground = (indices == self.depth.bottom_index)
+                values[underground] = self.fill_value
+            return values
 
 #     @profile
-    def _at_4D(self, points, time, data_slice, **kwargs):
+    def _at_4D(self, points, time, data, **kwargs):
         value = None
         if self.time is None or len(self.time) == 1:
-            if len(data_slice.shape) == 2:
-                return self._at_2D(points[:, 0:2], data_slice, **kwargs)
-            if len(data_slice.shape) == 3:
-                return self._at_3D(points, data_slice, **kwargs)
-            if len(data_slice.shape) == 4 and len(data_slice) == 1:
-                data_slice = data_slice[0]
-                return self._at_3D(points, data_slice, **kwargs)
+            if len(data.shape) == 2:
+                return self._at_2D(points[:, 0:2], data, **kwargs)
+            if len(data.shape) == 3:
+                return self._at_3D(points, data, **kwargs)
+            if len(data.shape) == 4 and len(data) == 1:
+                return self._at_3D(points, data, slices=(0,), **kwargs)
             else:
                 raise ValueError("Cannot determine correct time index without time axis")
         else:
             extrapolate = kwargs['extrapolate'] if 'extrapolate' in kwargs else False
             if not extrapolate:
                 self.time.valid_time(time)
-            if time == self.time.min_time:
-                return self._at_3D(points, data_slice[0], **kwargs)
-            elif time == self.time.max_time:
-                return self._at_3D(points, data_slice[-1], **kwargs)
-            elif extrapolate and time < self.time.min_time:
-                return self._at_3D(points, data_slice[0], **kwargs)
-            elif extrapolate and time > self.time.max_time:
-                return self._at_3D(points, data_slice[-1], **kwargs)
+            if time == self.time.min_time or (extrapolate and time < self.time.min_time):
+                return self._at_3D(points, data, slices=(0,), **kwargs)
+            elif time == self.time.max_time or (extrapolate and time > self.time.max_time):
+                return self._at_3D(points, data, slices=(-1,), **kwargs)
             else:
-                if not any(points[:, 2] > 0.0):
+                surface_only = False
+                if all(np.isclose(points[:, 2], 0.0, atol=0.0001)):
                     surface_only = True
                 ind = self.time.index_of(time)
                 alphas = self.time.interp_alpha(time)
-                s1 = (ind)
-                s0 = (ind - 1)
+                s1 = (ind,)
+                s0 = (ind - 1,)
                 v0 = v1 = None
                 if surface_only and self.depth is not None:
                     pts = points[:, 0:2]
-                    s1.append(self.depth.surface_index)
-                    s0.append(self.depth.surface_index)
-                    v0 = self._at_2D(pts, data_slice[s0], **kwargs)
-                    v1 = self._at_2D(pts, data_slice[s1], **kwargs)
-                else:
+                    s1 = s1 + (self.depth.surface_index,)
+                    s0 = s0 + (self.depth.surface_index,)
+                    v0 = self._at_2D(pts, data, slices=s0, **kwargs)
+                    v1 = self._at_2D(pts, data, slices=s1, **kwargs)
+                elif surface_only and self.depth is None and len(data.shape) == 3:
                     pts = points[:, 0:2]
-                    v0 = self._at_2D(pts, data_slice[s0], **kwargs)
-                    v1 = self._at_2D(pts, data_slice[s1], **kwargs)
+                    v0 = self._at_2D(pts, data, slices=s0, **kwargs)
+                    v1 = self._at_2D(pts, data, slices=s1, **kwargs)
+                else:
+                    v0 = self._at_3D(points, data, slices=s0, **kwargs)
+                    v1 = self._at_3D(points, data, slices=s1, **kwargs)
                 value = v0 + (v1 - v0) * alphas
         return value
 
@@ -493,10 +489,12 @@ class GridVectorProp(VectorProp):
                  time=None,
                  variables=None,
                  grid=None,
+                 depth=None,
                  grid_file=None,
                  data_file=None,
                  dataset=None,
-                 varnames=None):
+                 varnames=None,
+                 **kwargs):
 
         self._grid = self._grid_file = self._data_file = None
 
@@ -508,6 +506,7 @@ class GridVectorProp(VectorProp):
 
         if all([isinstance(v, GriddedProp) for v in variables]):
             grid = variables[0].grid if grid is None else grid
+            depth = variables[0].depth if depth is None else depth
             grid_file = variables[0].grid_file if grid_file is None else grid_file
             data_file = variables[0].data_file if data_file is None else data_file
         VectorProp.__init__(self,
@@ -516,11 +515,13 @@ class GridVectorProp(VectorProp):
                             time,
                             variables,
                             grid=grid,
+                            depth=depth,
                             dataset=dataset,
                             data_file=data_file,
-                            grid_file=grid_file)
+                            grid_file=grid_file,
+                            **kwargs)
 
-        self._check_consistency()
+#         self._check_consistency()
         self._result_memo = OrderedDict()
 
     @classmethod
@@ -620,6 +621,7 @@ class GridVectorProp(VectorProp):
                    time,
                    variables,
                    grid=grid,
+                   depth=depth,
                    grid_file=grid_file,
                    data_file=data_file,
                    dataset=ds,
@@ -834,7 +836,7 @@ class GridVectorProp(VectorProp):
         else:
             df = _get_dataset(filename)
         for n in cls.default_names:
-            if n[0] in df.variables.keys() and n[1] in df.variables.keys():
+            if all([sn in df.variables.keys() for sn in n]):
                 return n
         raise ValueError("Default names not found.")
  

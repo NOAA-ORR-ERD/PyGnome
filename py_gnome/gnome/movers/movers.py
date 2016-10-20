@@ -233,7 +233,7 @@ class PyMover(Mover):
         v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
         p1 = pos.copy()
-        p1[:, 0:2] += d0
+        p1 += d0
 
         v1 = vel_field.at(p1, t + dt, extrapolate=self.extrapolate)
 

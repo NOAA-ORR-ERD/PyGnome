@@ -25,12 +25,13 @@ from gnome.utilities.file_tools.data_helpers import _init_grid, _get_dataset
 
 class S_Depth(object):
 
-    default_terms = [['Cs_w', 's_w', 'hc', 'Cs_r', 's_r']]
+    default_terms = [['Cs_w', 's_w', 'hc', 'Cs_r', 's_rho']]
 
     def __init__(self,
                  bathymetry,
                  data_file=None,
                  dataset=None,
+                 terms={},
                  **kwargs):
         ds = dataset
         if ds is None:
@@ -40,10 +41,11 @@ class S_Depth(object):
                     raise ValueError("Need data_file or dataset containing sigma equation terms")
             ds = _get_dataset(data_file)
         self.bathymetry = bathymetry
-        self.terms = {}
-        for s in S_Depth.default_terms:
-            for term in s:
-                self.terms[term] = ds[term][:]
+        self.terms = terms
+        if terms is None:
+            for s in S_Depth.default_terms:
+                for term in s:
+                    self.terms[term] = ds[term][:]
 
     @classmethod
     def from_netCDF(cls,
@@ -73,7 +75,7 @@ class S_Depth(object):
 
     @property
     def num_r_levels(self):
-        return len(self.terms['s_r'])
+        return len(self.terms['s_rho'])
 
     def _w_level_depth_given_bathymetry(self, depths, lvl):
         s_w = self.terms['s_w'][lvl]
@@ -82,46 +84,49 @@ class S_Depth(object):
         return -(hc * (s_w - Cs_w) + Cs_w * depths)
 
     def _r_level_depth_given_bathymetry(self, depths, lvl):
-        s_w = self.terms['s_w'][lvl]
-        Cs_w = self.terms['Cs_w'][lvl]
+        s_rho = self.terms['s_rho'][lvl]
+        Cs_r = self.terms['Cs_r'][lvl]
         hc = self.terms['hc']
-        return -(hc * (s_w - Cs_w) + Cs_w * depths)
-
-    def interpolation_alphas(self, points, data_shape):
+        return -(hc * (s_rho - Cs_r) + Cs_r * depths)
+    
+    def interpolation_alphas(self, points, data_shape, _hash=None):
         underwater = points[:, 2] > 0.0
-        pts = points[np.where(underwater)[0], :]
-        if len(pts) == 0:
+        if len(np.where(underwater)[0]) == 0:
             return None, None
-        indices = -np.ones((len(points)))
-        alphas = indices.copy()
-        depths = self.bathymetry.at(pts[:, 0:2], datetime.now())
-        und_ind = -np.ones((len(pts)))
+        indices = -np.ones((len(points)), dtype=np.int64)
+        alphas = -np.ones((len(points)), dtype=np.float64)
+        depths = self.bathymetry.at(points, datetime.now(), _hash=_hash)[underwater]
+        pts = points[underwater]
+        und_ind = -np.ones((len(np.where(underwater)[0])))
         und_alph = und_ind.copy()
-        
+
+        if data_shape[0] == self.num_w_levels:
+            num_levels = self.num_w_levels
+            ldgb = self._w_level_depth_given_bathymetry
+        elif data_shape[0] == self.num_r_levels:
+            num_levels = self.num_r_levels
+            ldgb = self._r_level_depth_given_bathymetry
+        else:
+            raise ValueError('Cannot get depth interpolation alphas for data shape specified; does not fit r or w depth axis')
         blev_depths = ulev_depths = None
-        for ulev in range(0, self.num_levels):
-            blev_depths = ulev_depths
-            if data_shape[0] == self.num_w_levels:
-                ulev_depths = self._w_level_depth_given_bathymetry(depths, ulev)
-            elif data_shape[0] == self.num_r_levels:
-                ulev_depths = self._r_level_depth_given_bathymetry(depths, ulev)
-            else:
-                raise ValueError('Cannot get depth interpolation alphas for data shape specified; does not fit r or w depth axis')
+        for ulev in range(0, num_levels):
+            ulev_depths = ldgb(depths, ulev)
 #             print ulev_depths[0]
             within_layer = np.where(np.logical_and(ulev_depths < pts[:, 2], und_ind == -1))[0]
 #             print within_layer
             und_ind[within_layer] = ulev
             if ulev == 0:
                 und_alph[within_layer] = -2
-                continue
             else:
                 a = ((pts[:, 2].take(within_layer) - blev_depths.take(within_layer)) / 
                      (ulev_depths.take(within_layer) - blev_depths.take(within_layer)))
                 und_alph[within_layer] = a
+            blev_depths = ulev_depths
 
         indices[underwater] = und_ind
         alphas[underwater] = und_alph
         return indices, alphas
+
 
 class TemperatureTSSchema(PropertySchema):
     timeseries = SequenceSchema(
@@ -132,6 +137,7 @@ class TemperatureTSSchema(PropertySchema):
                                             missing=drop)
                                 )
     varnames = SequenceSchema(SchemaNode(String(), missing=drop))
+
 
 class VelocityTSSchema(PropertySchema):
     timeseries = SequenceSchema(
@@ -289,23 +295,26 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
                  units=None,
                  time=None,
                  grid=None,
+                 depth=None,
                  variables=None,
                  data_file=None,
                  grid_file=None,
                  dataset=None,
                  **kwargs):
 
-        if len(variables) > 2:
-            raise ValueError('Only 2 dimensional velocities are supported')
         GridVectorProp.__init__(self,
                                 name=name,
                                 units=units,
                                 time=time,
                                 grid=grid,
+                                depth=depth,
                                 variables=variables,
                                 data_file=data_file,
                                 grid_file=grid_file,
-                                dataset=dataset)
+                                dataset=dataset,
+                                **kwargs)
+        if len(variables) == 2:
+            self.variables.append(TimeSeriesProp(name='constant w', data=[0.0], time=[datetime.now()], units='m/s'))
 
     def __eq__(self, o):
         if o is None:
@@ -493,7 +502,12 @@ class Bathymetry(GriddedProp):
 class GridCurrent(VelocityGrid, Environment):
     _ref_as = 'current'
 
-    default_names = [['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]
+    default_names = [['u', 'v', 'w'],
+                     ['U', 'V', 'W'],
+                     ['u', 'v'],
+                     ['U', 'V'],
+                     ['water_u', 'water_v'],
+                     ['curr_ucmp', 'curr_vcmp']]
 
     def __init__(self,
                  name=None,
@@ -501,15 +515,18 @@ class GridCurrent(VelocityGrid, Environment):
                  time=None,
                  variables=None,
                  grid=None,
+                 depth=None,
                  grid_file=None,
                  data_file=None,
-                 dataset=None):
+                 dataset=None,
+                 **kwargs):
         VelocityGrid.__init__(self,
                               name=name,
                               units=units,
                               time=time,
                               variables=variables,
                               grid=grid,
+                              depth=depth,
                               grid_file=grid_file,
                               data_file=data_file,
                               dataset=dataset)
@@ -522,6 +539,7 @@ class GridCurrent(VelocityGrid, Environment):
         if df is not None and 'angle' in df.variables.keys():
             # Unrotated ROMS Grid!
             self.angle = GriddedProp(name='angle', units='radians', time=None, grid=self.grid, data=df['angle'])
+        self.depth = depth
 
     def at(self, points, time, units=None, depth=-1, extrapolate=False, **kwargs):
         '''
@@ -559,6 +577,8 @@ class GridCurrent(VelocityGrid, Environment):
             y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
             value[:, 0] = x
             value[:, 1] = y
+        z = value[:, 2]
+        z[points[:, 2] == 0.0] = 0
         if mem:
             self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
         return value
@@ -578,7 +598,8 @@ class GridWind(VelocityGrid, Environment):
                  grid=None,
                  grid_file=None,
                  data_file=None,
-                 dataset=None):
+                 dataset=None,
+                 **kwargs):
         VelocityGrid.__init__(self,
                               name=name,
                               units=units,

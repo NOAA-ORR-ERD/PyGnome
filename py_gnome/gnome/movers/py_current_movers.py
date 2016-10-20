@@ -114,10 +114,14 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
 
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
-        deltas = np.zeros_like(positions)
         pos = positions[:]
 
-        deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos, self.current)
+        res = method(sc, time_step, model_time_datetime, pos, self.current)
+        if res.shape[1] == 2:
+            deltas = np.zeros_like(positions)
+            deltas[:, 0:2] = res
+        else:
+            deltas = res
 
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)

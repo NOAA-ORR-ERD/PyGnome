@@ -16,11 +16,16 @@ import os
 from datetime import datetime, timedelta
 
 from gnome import scripting
-from gnome.spill.elements import plume
-from gnome.utilities.distributions import WeibullDistribution
+from gnome import utilities
+from gnome.basic_types import datetime_value_2d, numerical_methods
 
+from gnome.utilities.remote_data import get_datafile
+
+from gnome.spill.elements import plume
+from gnome.utilities.distributions import WeibullDistribution, UniformDistribution
+from gnome.map import MapFromBNA
 from gnome.model import Model
-from gnome.map import GnomeMap
+from gnome.environment import GridCurrent
 from gnome.spill import point_line_release_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
@@ -30,6 +35,8 @@ from gnome.movers import (RandomMover,
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
+from gnome.movers.py_current_movers import PyGridCurrentMover
+import gnome.utilities.profiledeco as pd
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -44,7 +51,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1 day of data in file
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
-                  duration=timedelta(hours=6),
+                  duration=timedelta(hours=2),
                   time_step=900)
 
     mapfile = get_datafile(os.path.join(base_dir, 'nyharbor.bna'))
@@ -67,8 +74,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     netcdf_file = os.path.join(base_dir, 'script_ny_plume.nc')
     scripting.remove_netcdf(netcdf_file)
 
-    model.outputters += NetCDFOutput(netcdf_file, which_data='most',
-                                     output_timestep=timedelta(hours=2))
+    model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
     print 'adding two spills'
     # Break the spill into two spills, first with the larger droplets
@@ -77,32 +83,39 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # in the larger droplet spill.
     # Smaller droplets start at a lower depth than larger
 
-    wd = WeibullDistribution(alpha=1.8,
-                             lambda_=.00456,
-                             min_=.0002)  # 200 micron min
-    end_time = start_time + timedelta(hours=24)
+    end_time = start_time + model.duration
+#     wd = WeibullDistribution(alpha=1.8,
+#                              lambda_=.00456,
+#                              min_=.0002)  # 200 micron min
+# 
+#     spill = subsurface_plume_spill(num_elements=10,
+#                                    start_position=(-74.15,
+#                                                    40.5,
+#                                                    7.2),
+#                                    release_time=start_time,
+#                                    distribution=wd,
+#                                    amount=90,  # default volume_units=m^3
+#                                    units='m^3',
+#                                    end_release_time=end_time,
+#                                    density=600)
+# 
+#     model.spills += spill
 
-    spill = subsurface_plume_spill(num_elements=10,
-                                   start_position=(-76.126872, 37.680952, 1700),
-                                   release_time=start_time,
-                                   distribution=wd,
-                                   amount=90,  # default volume_units=m^3
-                                   units='m^3',
-                                   end_release_time=end_time,
-                                   density=600)
+#     wd = WeibullDistribution(alpha=1.8,
+#                              lambda_=.00456,
+#                              max_=.0002)  # 200 micron max
 
-    model.spills += spill
-
-    wd = WeibullDistribution(alpha=1.8,
-                             lambda_=.00456,
-                             max_=.0002)  # 200 micron max
+    wd = UniformDistribution(low=.0002,
+                             high=.0002)
 
     spill = point_line_release_spill(num_elements=10, amount=90,
                                      units='m^3',
-                                     start_position=(-76.126872, 37.680952, 1800),
+                                     start_position=(-74.15,
+                                                     40.5,
+                                                     7.2),
                                      release_time=start_time,
                                      element_type=plume(distribution=wd,
-                                                        substance_name='oil_crude')
+                                                        substance_name='ALASKA NORTH SLOPE (MIDDLE PIPELINE)')
                                      )
     model.spills += spill
 
@@ -113,10 +126,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += RiseVelocityMover()
 
     print 'adding a RandomVerticalMover:'
-    model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=5,
-                                        vertical_diffusion_coef_below_ml=.11,
-                                        mixed_layer_depth=10)
+#     model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=5,
+#                                         vertical_diffusion_coef_below_ml=.11,
+#                                         mixed_layer_depth=10)
 
+    url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
+    gc = GridCurrent.from_netCDF(url)
+    u_mover = PyGridCurrentMover(gc, default_num_method='Trapezoid')
+    model.movers += u_mover
     # print 'adding a wind mover:'
 
     # series = np.zeros((2, ), dtype=gnome.basic_types.datetime_value_2d)
@@ -131,15 +148,27 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # model.movers += w_mover
 
     print 'adding a simple mover:'
-    s_mover = SimpleMover(velocity=(0.0, -.3, 0.0))
-    model.movers += s_mover
+#     s_mover = SimpleMover(velocity=(0.0, -.3, 0.0))
+#     model.movers += s_mover
 
     return model
 
 
 if __name__ == "__main__":
+#     pd.profiler.enable()
+    startTime = datetime.now()
     scripting.make_images_dir()
     model = make_model()
-    print "about to start running the model"
+    print "doing full run"
+    rend = model.outputters[0]
+#     field = rend.grids[0]
+#     rend.graticule.set_DMS(True)
     for step in model:
-        print step
+        if step['step_num'] == 0:
+            rend.set_viewport(((-74.25, 40.4), (-73.9, 40.6)))
+
+        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                              utilities.get_mem_use())
+    print datetime.now() - startTime
+#     pd.profiler.disable()
+#     pd.print_stats(0.2)

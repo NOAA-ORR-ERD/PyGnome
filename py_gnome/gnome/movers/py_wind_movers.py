@@ -145,10 +145,9 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
 
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
-        deltas = np.zeros_like(positions)
         pos = positions[:]
 
-        deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos, self.wind)
+        deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
         deltas[:, 0] *= sc['windages']
         deltas[:, 1] *= sc['windages']
 
