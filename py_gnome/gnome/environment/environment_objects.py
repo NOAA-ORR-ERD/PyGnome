@@ -42,7 +42,7 @@ class S_Depth(object):
             ds = _get_dataset(data_file)
         self.bathymetry = bathymetry
         self.terms = terms
-        if terms is None:
+        if len(terms) == 0:
             for s in S_Depth.default_terms:
                 for term in s:
                     self.terms[term] = ds[term][:]
