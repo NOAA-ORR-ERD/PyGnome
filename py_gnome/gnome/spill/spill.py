@@ -321,6 +321,44 @@ class Spill(BaseSpill):
     def start_time_invalid(self, sp):
         self.release.start_time_invalid = sp
 
+    @property
+    def initializers(self):
+        return self.element_type.initializers
+    # probably not a good idea to have a setter for these!
+#    @initializers.setter
+#    def initializers(self, inits):
+#        self.element_type.initializers = inits
+
+    @property
+    def windage_range(self):
+        for init in self.element_type.initializers:
+            try:
+                return init.windage_range
+            except AttributeError:
+                continue
+        raise AttributeError("No initializers have a windage_range")
+    @windage_range.setter
+    def windage_range(self, wr):
+        for init in self.element_type.initializers:
+            if hasattr(init, 'windage_range'):
+                init.windage_range = wr
+        raise AttributeError("No initializers have a windage_range")
+
+    @property
+    def windage_persist(self):
+        for init in self.element_type.initializers:
+            try:
+                return init.windage_persist
+            except AttributeError:
+                continue
+        raise AttributeError("No initializers have a windage_persist")
+    @windage_persist.setter
+    def windage_persist(self, wr):
+        for init in self.element_type.initializers:
+            if hasattr(init, 'windage_persist'):
+                init.windage_persist = wr
+        raise AttributeError("No initializers have a windage_persist")
+
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
