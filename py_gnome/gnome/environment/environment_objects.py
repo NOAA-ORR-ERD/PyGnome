@@ -333,6 +333,23 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
     def __str__(self):
         return self.serialize(json_='save').__repr__()
 
+    def save(self, saveloc, references=None, name=None):
+        '''
+        Write Wind timeseries to file or to zip,
+        then call save method using super
+        '''
+        name = (name, 'Wind.json')[name is None]
+        ts_name = os.path.splitext(name)[0] + '_data.WND'
+
+        if zipfile.is_zipfile(saveloc):
+            self._write_timeseries_to_zip(saveloc, ts_name)
+            self._filename = ts_name
+        else:
+            datafile = os.path.join(saveloc, ts_name)
+            self._write_timeseries_to_file(datafile)
+            self._filename = datafile
+        return super(Wind, self).save(saveloc, references, name)
+
 
 class WindTS(VelocityTS, Environment):
 
