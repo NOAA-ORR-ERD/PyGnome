@@ -14,6 +14,7 @@ import pyugrid
 import pysgrid
 import unit_conversion
 import collections
+from collections import OrderedDict
 
 
 class PropertySchema(base_schema.ObjType):
@@ -53,6 +54,20 @@ class EnvProp(object):
         self.time = time
         for k in kwargs:
             setattr(self, k, kwargs[k])
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        r = OrderedDict()
+        r['type'] = type(self).__name__
+        r['name'] = self.name
+        if self.time is not None:
+            r['time'] = 'start:{0.min_time}, end:{0.max_time}, length={1}'.format(self.time, len(self.time.time))
+        else:
+            r['time'] = self.time
+        r['data'] = type(self.data)
+        return str(r)
 
     '''
     Subclasses should override\add any attribute property function getter/setters as needed
@@ -185,6 +200,20 @@ class VectorProp(object):
         for k in kwargs:
             setattr(self, k, kwargs[k])
         self.variables = variables
+
+    def __str__(self):
+        return self.__repr__()
+    
+    def __repr__(self):
+        r = OrderedDict()
+        r['type'] = type(self).__name__
+        r['name'] = self.name
+        if self.time is not None:
+            r['time'] = 'start:{0.min_time}, end:{0.max_time}, length={1}'.format(self.time, len(self.time.time))
+        else:
+            r['time'] = self.time
+        r['variables'] = str(self.variables)
+        return str(r)
 
     @property
     def time(self):
