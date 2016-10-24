@@ -21,6 +21,7 @@ from gnome.array_types import (positions,
                                spill_num,
                                id,
                                mass,
+                               init_mass,
                                age,
                                density,
                                substance,
@@ -378,7 +379,7 @@ class SpillContainer(AddLogger, SpillContainerData):
     """
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
-        self.spills = OrderedCollection(dtype=gnome.spill.Spill)
+        self.spills = OrderedCollection(dtype=gnome.spill.spill.BaseSpill)
         self.spills.register_callback(self._spills_changed,
                                       ('add', 'replace', 'remove'))
         self.rewind()
@@ -410,6 +411,7 @@ class SpillContainer(AddLogger, SpillContainerData):
                              'spill_num': spill_num,
                              'id': id,
                              'mass': mass,
+                             'init_mass': init_mass,
                              'age': age}
         self._data_arrays = {}
 
@@ -464,7 +466,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         for spill in self.spills:
             if not spill.on:
                 continue
-            new_subs = spill.get('substance')
+            new_subs = spill.substance
             if new_subs in subs:
                 # substance already defined for another spill
                 ix = subs.index(new_subs)

@@ -52,16 +52,15 @@ def make_model(uncertain=False, mode='gnome'):
     end_release_time = start_time + timedelta(hours=6)
     spill_amount = 1000.0
     spill_units = 'kg'
-    model.spills += \
-        point_line_release_spill(num_elements=1000,
-                                 start_position=start_position,
-                                 release_time=start_time,
-                                 end_release_time=end_release_time,
-                                 amount=spill_amount,
-                                 units=spill_units,
-                                 substance=test_oil)
+    model.spills += point_line_release_spill(num_elements=1000,
+                                             start_position=start_position,
+                                             release_time=start_time,
+                                             end_release_time=end_release_time,
+                                             amount=spill_amount,
+                                             units=spill_units,
+                                             substance=test_oil)
     spill = model.spills[-1]
-    spill_volume = spill.get_mass()/spill.get('substance').get_density()
+    spill_volume = spill.get_mass() / spill.substance.get_density()
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
 

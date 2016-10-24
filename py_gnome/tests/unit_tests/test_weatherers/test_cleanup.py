@@ -86,7 +86,7 @@ class ObjForTests:
         self.prepare_test_objs()
         if rel_time is None:
             # there is only one spill, use its release time
-            rel_time = self.sc.spills[0].get('release_time')
+            rel_time = self.sc.spills[0].release_time
 
         num_rel = self.sc.release_elements(time_step, rel_time)
         if num_rel > 0:
@@ -259,11 +259,11 @@ class TestBurn(ObjForTests):
     '''
     (sc, weatherers) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
-    op = spill.get('substance')
-    volume = spill.get_mass()/op.get_density()
+    op = spill.substance
+    volume = spill.get_mass() / op.get_density()
 
     thick = 1
-    area = (0.5 * volume)/thick
+    area = (0.5 * volume) / thick
 
     # test with non SI units
     burn = Burn(area, thick, active_start,
@@ -284,7 +284,7 @@ class TestBurn(ObjForTests):
         # use burn constant for test - it isn't stored anywhere
         duration = (uc.convert('Length', burn.thickness_units, 'm',
                                burn.thickness) -
-                    burn._min_thickness)/burn._burn_constant
+                    burn._min_thickness) / burn._burn_constant
 
         assert (burn.active_stop ==
                 burn.active_start + timedelta(seconds=duration))
@@ -419,9 +419,9 @@ class TestBurn(ObjForTests):
         Also sets the 'frac_water' to 0.5 for one of the tests just to ensure
         it works.
         '''
-        self.spill.set('num_elements', 500)
+        self.spill.num_elements = 500
         thick_si = uc.convert('Length', units, 'm', thick)
-        area = (0.5 * self.volume)/thick_si
+        area = (0.5 * self.volume) / thick_si
         burn = Burn(area, thick, active_start, thickness_units=units,
                     efficiency=1.0)
 
@@ -466,8 +466,8 @@ class TestBurn(ObjForTests):
         '''
         Tests that avg_water_frac > 0 weathers faster
         '''
-        self.spill.set('num_elements', 500)
-        area = (0.5 * self.volume)/1.
+        self.spill.num_elements = 500
+        area = (0.5 * self.volume) / 1.
         burn1 = Burn(area, 1., active_start, efficiency=1.0)
         burn2 = Burn(area, 1., active_start, efficiency=1.0)
         burn3 = Burn(area, 1., active_start, efficiency=1.0)
@@ -497,8 +497,8 @@ class TestBurn(ObjForTests):
             effects the amount of oil burned. The rate at which the oil/water
             mixture goes down to 2mm only depends on fractional water content.
         '''
-        self.spill.set('num_elements', 500)
-        area = (0.5 * self.volume)/1.
+        self.spill.num_elements = 500
+        area = (0.5 * self.volume) / 1.
         eff = 0.7
         burn1 = Burn(area, 1., active_start, efficiency=1.0)
         burn2 = Burn(area, 1., active_start, efficiency=eff)
@@ -508,7 +508,7 @@ class TestBurn(ObjForTests):
         self._weather_elements_helper(burn2)
         amount_burn2 = self.sc.mass_balance['burned']
 
-        assert np.isclose(amount_burn2/amount_burn1, eff)
+        assert np.isclose(amount_burn2 / amount_burn1, eff)
         assert burn1.active_start == burn2.active_start
         assert burn1.active_stop == burn2.active_stop
 
@@ -523,8 +523,8 @@ class TestBurn(ObjForTests):
             effects the amount of oil burned. The rate at which the oil/water
             mixture goes down to 2mm only depends on fractional water content.
         '''
-        self.spill.set('num_elements', 500)
-        area = (0.5 * self.volume)/1.
+        self.spill.num_elements = 500
+        area = (0.5 * self.volume) / 1.
         eff = 0.0
         burn1 = Burn(area, 1., active_start, efficiency=1.0)
         burn2 = Burn(area, 1., active_start, efficiency=eff)
@@ -579,7 +579,7 @@ class TestBurn(ObjForTests):
 class TestChemicalDispersion(ObjForTests):
     (sc, weatherers) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
-    op = spill.get('substance')
+    op = spill.substance
     spill_pct = 0.2  # 20%
     c_disp = ChemicalDispersion(spill_pct,
                                 active_start,
@@ -608,12 +608,12 @@ class TestChemicalDispersion(ObjForTests):
                                     active_start,
                                     active_stop,
                                     waves=waves)
-        c_disp._set_efficiency(self.spill.get('release_time'))
+        c_disp._set_efficiency(self.spill.release_time)
         assert c_disp.efficiency == 1.0
 
         c_disp.efficiency = None
         waves.wind.timeseries = (waves.wind.timeseries[0]['time'], (100, 0))
-        c_disp._set_efficiency(self.spill.get('release_time'))
+        c_disp._set_efficiency(self.spill.release_time)
         assert c_disp.efficiency == 0
 
     @mark.parametrize("efficiency", (0.5, 1.0))
@@ -661,7 +661,7 @@ class TestChemicalDispersion(ObjForTests):
 
         assert self.sc.mass_balance['chem_dispersed'] == 0.0
 
-        model_time = self.spill.get('release_time')
+        model_time = self.spill.release_time
         while (model_time < self.c_disp.active_stop +
                timedelta(seconds=time_step)):
             amt_disp = self.sc.mass_balance['chem_dispersed']

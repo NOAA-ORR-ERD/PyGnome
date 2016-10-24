@@ -724,7 +724,7 @@ def test_full_run(model, dump, traj_only):
     # model = setup_simple_model()
     if traj_only:
         for spill in model.spills:
-            spill.set('substance', None)
+            spill.substance = None
         model.weatherers.clear()
 
     results = model.full_run()
@@ -904,14 +904,14 @@ def test_contains_object(sample_model_fcn):
 
     gnome_map = model.map = gnome.map.GnomeMap()    # make it all water
 
-    rel_time = model.spills[0].get('release_time')
+    rel_time = model.spills[0].release_time
     model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
 
     water, wind = Water(), constant_wind(1., 0)
     model.environment += [water, wind]
 
-    et = floating(substance=model.spills[0].get('substance').name)
+    et = floating(substance=model.spills[0].substance.name)
     sp = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
                                   element_type=et,
@@ -924,8 +924,8 @@ def test_contains_object(sample_model_fcn):
     movers = [m for m in model.movers]
 
     evaporation = Evaporation()
-    skim_start = sp.get('release_time') + timedelta(hours=1)
-    skimmer = Skimmer(.5*sp.amount, units=sp.units, efficiency=0.3,
+    skim_start = sp.release_time + timedelta(hours=1)
+    skimmer = Skimmer(.5 * sp.amount, units=sp.units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=1))
     burn = burn_obj(sp)
@@ -955,7 +955,7 @@ def test_contains_object(sample_model_fcn):
 
 def make_skimmer(spill, delay_hours=1, duration=2):
     'make a skimmer for sample model tests'
-    rel_time = spill.get('release_time')
+    rel_time = spill.release_time
     skim_start = rel_time + timedelta(hours=delay_hours)
     amount = spill.amount
     units = spill.units
@@ -969,7 +969,7 @@ def chemical_disperson_obj(spill, delay_hours=1, duration=1):
     '''
     apply chemical dispersion to 10% of spill
     '''
-    rel_time = spill.get('release_time')
+    rel_time = spill.release_time
     disp_start = rel_time + timedelta(hours=delay_hours)
 
     return ChemicalDispersion(.1,
@@ -980,11 +980,11 @@ def chemical_disperson_obj(spill, delay_hours=1, duration=1):
 
 
 def burn_obj(spill, delay_hours=1.5):
-    rel_time = spill.get('release_time')
+    rel_time = spill.release_time
     burn_start = rel_time + timedelta(hours=delay_hours)
-    volume = spill.get_mass()/spill.get('substance').get_density()
+    volume = spill.get_mass() / spill.substance.get_density()
     thick = 1   # in meters
-    area = (0.2 * volume)/thick
+    area = (0.2 * volume) / thick
 
     return Burn(area, thick, active_start=burn_start)
 
@@ -1003,7 +1003,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model = sample_model_weathering(sample_model_fcn, test_oil)
     model.map = gnome.map.GnomeMap()    # make it all water
     model.uncertain = False
-    rel_time = model.spills[0].get('release_time')
+    rel_time = model.spills[0].release_time
     model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
 
@@ -1011,7 +1011,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.cache = True
     model.outputters += gnome.outputters.WeatheringOutput()
 
-    et = floating(substance=model.spills[0].get('substance').name)
+    et = floating(substance=model.spills[0].substance.name)
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + delay,
                                   end_release_time=(rel_time + delay +
@@ -1087,7 +1087,7 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     model = sample_model_weathering(sample_model_fcn, s0)
     model.map = gnome.map.GnomeMap()    # make it all water
     model.uncertain = False
-    rel_time = model.spills[0].get('release_time')
+    rel_time = model.spills[0].release_time
     model.duration = timedelta(days=1)
 
     et = floating(substance=s1)
@@ -1220,7 +1220,7 @@ def test_run_element_type_no_initializers(model):
 
     for ix, spill in enumerate(model.spills):
         if ix == 0:
-            spill.set('initializers', [])
+            spill.initializers = []
         else:
             del model.spills[spill.id]
     assert len(model.spills) == 1
@@ -1350,8 +1350,7 @@ class TestValidateModel():
         assert len(msgs) == 1 and isvalid
         assert ('Spill has release time after model start time' in msgs[0])
 
-        model.spills[0].set('release_time',
-                            self.start_time - timedelta(hours=1))
+        model.spills[0].release_time = self.start_time - timedelta(hours=1)
         (msgs, isvalid) = model.validate()
 
         assert len(msgs) == 1 and not isvalid
