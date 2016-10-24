@@ -143,7 +143,7 @@ class GriddedProp(EnvProp):
             if varname is None:
                 raise NameError('Default current names are not in the data file, must supply variable name')
         data = ds[varname]
-        name = varname if name is None else name
+        name = cls.__name__ + '_' + varname if name is None else name
         if units is None:
             try:
                 units = data.units
@@ -589,7 +589,7 @@ class GridVectorProp(VectorProp):
             varnames = cls._gen_varnames(data_file,
                                          dataset=ds)
         if name is None:
-            name = 'GridVectorProp'
+            name = cls.__name__
         timevar = None
         data = ds[varnames[0]]
         if time is None:
@@ -605,6 +605,7 @@ class GridVectorProp(VectorProp):
         variables = []
         for vn in varnames:
             variables.append(GriddedProp.from_netCDF(filename=filename,
+                                                     name=name + '_' + vn,
                                                      varname=vn,
                                                      grid_topology=grid_topology,
                                                      units=units,

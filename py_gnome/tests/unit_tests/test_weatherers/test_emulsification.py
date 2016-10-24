@@ -44,7 +44,7 @@ def test_emulsification(oil, temp, num_elems, on):
         weathering_data_arrays(emul.array_types,
                                water,
                                element_type=floating(substance=oil))[:2]
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     emul.prepare_for_model_run(sc)

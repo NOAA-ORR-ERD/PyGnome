@@ -78,17 +78,19 @@ def make_model(uncertain=False,
     model.environment += c_mover.tide
 
     print 'adding Weatherers'
-    rel_time = model.spills[0].get('release_time')
+    rel_time = model.spills[0].release_time
     skim_start = rel_time + timedelta(hours=4)
     amount = spill.amount
     units = spill.units
 
     # define skimmer/burn cleanup options
-    skimmer = Skimmer(0.3*amount, units=units, efficiency=0.3,
+    skimmer = Skimmer(0.3 * amount,
+                      units=units,
+                      efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=4))
     # thickness = 1m so area is just 20% of volume
-    volume = spill.get_mass()/spill.get('substance').get_density()
+    volume = spill.get_mass() / spill.substance.get_density()
     burn = Burn(0.2 * volume, 1.0,
                 active_start=skim_start, efficiency=.9)
     c_disp = ChemicalDispersion(0.1, efficiency=0.5,

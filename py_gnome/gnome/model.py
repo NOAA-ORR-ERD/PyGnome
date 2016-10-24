@@ -1400,15 +1400,15 @@ class Model(Serializable):
         num_spills = len(self.spills)
         for spill in self.spills:
             msg = None
-            if spill.get('release_time') < self.start_time + self.duration:
+            if spill.release_time < self.start_time + self.duration:
                 someSpillIntersectsModel = True
-            if spill.get('release_time') > self.start_time:
+            if spill.release_time > self.start_time:
                 msg = ('{0} has release time after model start time'.
                        format(spill.name))
                 self.logger.warning(msg)
                 msgs.append(self._warn_pre + msg)
 
-            elif spill.get('release_time') < self.start_time:
+            elif spill.release_time < self.start_time:
                 msg = ('{0} has release time before model start time'
                        .format(spill.name))
                 self.logger.error(msg)
@@ -1420,10 +1420,10 @@ class Model(Serializable):
                 msg = ('All of the spills are released after the time interval being modeled.')
             else:
                 msg = ('The spill is released after the time interval being modeled.')
-            self.logger.warning(msg)	# for now make this a warning
-            #self.logger.error(msg)
+            self.logger.warning(msg)  # for now make this a warning
+            # self.logger.error(msg)
             msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
-            #isvalid = False
+            # isvalid = False
 
         return (msgs, isvalid)
 
@@ -1475,13 +1475,13 @@ class Model(Serializable):
 
         for spill in self.spills:
             msg = None
-            if spill.get('release_time') > self.start_time:
+            if spill.release_time > self.start_time:
                 msg = ('{0} has release time after model start time'.
                        format(spill.name))
                 self.logger.warning(msg)
                 msgs.append(self._warn_pre + msg)
 
-            elif spill.get('release_time') < self.start_time:
+            elif spill.release_time < self.start_time:
                 msg = ('{0} has release time before model start time'
                        .format(spill.name))
                 self.logger.error(msg)
@@ -1545,17 +1545,22 @@ class Model(Serializable):
         """
         Convenience method to allow user to write an expression to filter
         raw spill data
-        Example case:
-        get_spill_data('position && mass',
-        'position > 50 && spill_num == 1 || status_codes == 1')
+
+        Example case::
+
+          get_spill_data('position && mass',
+                         'position > 50 && spill_num == 1 || status_codes == 1')
 
         WARNING: EXPENSIVE! USE AT YOUR OWN RISK ON LARGE num_elements!
 
         Example spill element properties are below. This list may not contain
         all properties tracked by the model.
+
         'positions', 'next_positions', 'last_water_positions', 'status_codes',
         'spill_num', 'id', 'mass', 'age'
+
         """
+
         if ucert == 'ucert':
             ucert = 1
 
@@ -1579,7 +1584,7 @@ class Model(Serializable):
 
         def test(elem_value, op, test_val):
             if op in {'<', '<=', '>', '>=', '=='}:
-                return eval(str(int(elem_value))+op+test_val)
+                return eval(str(int(elem_value)) + op + test_val)
 
         def num(s):
             try:
@@ -1589,6 +1594,7 @@ class Model(Serializable):
 
         conditions = conditions.rsplit('&&')
         conditions = [str(cond).rsplit('||') for cond in conditions]
+
 
         sc = self.spills.items()[ucert]
         result = {}
