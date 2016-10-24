@@ -54,6 +54,12 @@ class EnvProp(object):
         for k in kwargs:
             setattr(self, k, kwargs[k])
 
+    def __str__(self):
+        return self.__repr__()
+    
+    def __repr__(self):
+        return '''{0.__name__}'''.format(type(self))
+
     '''
     Subclasses should override\add any attribute property function getter/setters as needed
     '''

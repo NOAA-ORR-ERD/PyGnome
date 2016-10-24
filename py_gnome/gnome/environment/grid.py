@@ -168,8 +168,17 @@ class PyGrid(Serializable):
         self._grid = self._init_grid(filename, grid_topology, dataset)
         super(PyGrid, self).__init__(**kwargs)
     
-    def _init_grid(self,
-                   filename,
+    def __new__(self):
+        pass
+    
+    def __getattribute__(self, name):
+        if name != '_grid':
+            return self._grid.__getattribute__(name)
+        else:
+            return self._grid
+    
+    @staticmethod
+    def _init_grid(filename,
                    grid_topology=None,
                    dataset=None,):
         gt = grid_topology
@@ -185,7 +194,7 @@ class PyGrid(Serializable):
             try:
                 grid = pysgrid.SGrid.load_grid(gf)
             except:
-                gt = self._gen_topology(filename)
+                gt = PyGrid._gen_topology(filename)
         if grid is None:
             nodes = node_lon = node_lat = None
             if 'nodes' not in gt:
@@ -232,8 +241,8 @@ class PyGrid(Serializable):
                                      edge2_lat=edge2_lat)
         return grid
 
-    def _gen_topology(self,
-                      filename,
+    @staticmethod
+    def _gen_topology(filename,
                       dataset=None):
         '''
         Function to create the correct default topology if it is not provided
