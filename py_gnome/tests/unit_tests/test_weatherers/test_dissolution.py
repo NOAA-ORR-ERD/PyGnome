@@ -111,7 +111,7 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
     # we don't want to query the oil database, but get the sample oil
     assert sc.spills[0].element_type.substance._r_oil.id is None
 
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     diss.on = on
@@ -238,7 +238,7 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     assert sc.spills[0].element_type.substance._r_oil.id is None
 
     initial_amount = sc.spills[0].amount
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     disp.on = on
