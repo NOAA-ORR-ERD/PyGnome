@@ -666,7 +666,7 @@ class Spill(BaseSpill):
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = self.element_type.substance.get_density() * vol
+            mass = self.element_type.substance.density_at_temp() * vol
         else:
             raise ValueError("%s is not a valid mass or Volume unit" % self.units)
 

@@ -75,7 +75,7 @@ def test_prepare_for_model_run():
     diss = Dissolution(waves)
 
     # we don't want to query the oil database, but get the sample oil
-    assert et.substance._r_oil.id is None
+    assert et.substance.record.id is None
 
     (sc, _time_step) = weathering_data_arrays(diss.array_types,
                                               water,
@@ -109,7 +109,7 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
     print 'spill[0] amount:', sc.spills[0].amount
 
     # we don't want to query the oil database, but get the sample oil
-    assert sc.spills[0].element_type.substance._r_oil.id is None
+    assert sc.spills[0].element_type.substance.record.id is None
 
     model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
@@ -126,7 +126,7 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'drop_size', 'on'),
                          [('oil_bahia', 311.15, 3,
-                           [231.19e-6, 221.54e-6, 212.02e-6], True),
+                           [231.19e-6, 221.98e-6, 212.91e-6], True),
                           ('oil_ans_mp', 311.15, 3,
                            [234.08e-6, 221.6e-6, 213.08e-6], True),
                           ('oil_ans_mp', 311.15, 3,
@@ -155,7 +155,7 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
     print 'time_step = ', time_step
 
     # we don't want to query the oil database, but get the sample oil
-    assert sc.spills[0].element_type.substance._r_oil.id is None
+    assert sc.spills[0].element_type.substance.record.id is None
 
     disp.on = on
     diss.on = on
@@ -186,14 +186,14 @@ mb_params = [
              ('oil_ans_mp', 288.15, 20., 3, 8.9985e-3, True),
              # wind speed trends
              ('oil_bahia',  288.15,  5., 3, 9.4939e-4, True),
-             ('oil_bahia',  288.15, 10., 3, 2.0235e-3, True),
-             ('oil_bahia',  288.15, 15., 3, 3.6257e-3, True),
-             ('oil_bahia',  288.15, 20., 3, 6.1431e-3, True),
+             ('oil_bahia',  288.15, 10., 3, 2.02355e-3, True),
+             ('oil_bahia',  288.15, 15., 3, 3.6288e-3, True),
+             ('oil_bahia',  288.15, 20., 3, 6.1597e-3, True),
              # temperature trends
-             ('oil_bahia',  273.15, 15., 3, 2.6162e-3, True),
-             ('oil_bahia',  283.15, 15., 3, 3.3753e-3, True),
-             ('oil_bahia',  293.15, 15., 3, 3.8341e-3, True),
-             ('oil_bahia',  303.15, 15., 3, 4.1734e-3, True),
+             ('oil_bahia',  273.15, 15., 3, 2.6198e-3, True),
+             ('oil_bahia',  283.15, 15., 3, 3.3789e-3, True),
+             ('oil_bahia',  293.15, 15., 3, 3.8367e-3, True),
+             ('oil_bahia',  303.15, 15., 3, 4.1746e-3, True),
              ]
 
 
@@ -235,7 +235,7 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     print
 
     # we don't want to query the oil database, but get the sample oil
-    assert sc.spills[0].element_type.substance._r_oil.id is None
+    assert sc.spills[0].element_type.substance.record.id is None
 
     initial_amount = sc.spills[0].amount
     model_time = (sc.spills[0].release_time +
@@ -278,7 +278,7 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
                          [('oil_ans_mp', 288.7, 38.1926),
-                          ('oil_bahia',  288.7, 119.831)])
+                          ('oil_bahia',  288.7, 136.751)])
 def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json
@@ -299,7 +299,7 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
         original_amount = sc.spills[0].amount
 
         # we don't want to query the oil database, but get the sample oil
-        assert sc.spills[0].element_type.substance._r_oil.id is None
+        assert sc.spills[0].element_type.substance.record.id is None
 
     # set make_default_refs to True for objects contained in model after adding
     # objects to the model

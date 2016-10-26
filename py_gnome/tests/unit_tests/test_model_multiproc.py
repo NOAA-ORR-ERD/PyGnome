@@ -90,7 +90,7 @@ def make_model(uncertain=False,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=4))
     # thickness = 1m so area is just 20% of volume
-    volume = spill.get_mass() / spill.substance.get_density()
+    volume = spill.get_mass() / spill.substance.density_at_temp()
     burn = Burn(0.2 * volume, 1.0,
                 active_start=skim_start, efficiency=.9)
     c_disp = ChemicalDispersion(0.1, efficiency=0.5,

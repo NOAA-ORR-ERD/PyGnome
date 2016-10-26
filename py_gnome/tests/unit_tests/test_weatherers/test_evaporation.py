@@ -208,8 +208,8 @@ def test_full_run(oil, temp):
     model.weatherers += [Evaporation(model.environment[-2],
                                      model.environment[-1])]
     released = 0
-    init_rho = model.spills[0].substance.get_density(temp)
-    init_vis = model.spills[0].substance.get_viscosity(temp)
+    init_rho = model.spills[0].substance.density_at_temp(temp)
+    init_vis = model.spills[0].substance.kvis_at_temp(temp)
     for step in model:
         for sc in model.spills.items():
             assert_helper(sc, sc.num_released - released)

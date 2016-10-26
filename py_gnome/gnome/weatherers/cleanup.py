@@ -38,7 +38,7 @@ class RemoveMass(object):
             rm_mass = uc.convert('Mass', units, 'kg', amount)
         else:   # amount must be in volume units
             rm_vol = uc.convert('Volume', units, 'm^3', amount)
-            rm_mass = substance.get_density() * rm_vol
+            rm_mass = substance.density_at_temp() * rm_vol
 
         return rm_mass
 

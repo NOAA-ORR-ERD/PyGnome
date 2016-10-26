@@ -100,8 +100,8 @@ class TestWeatheringData:
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         spill = sc.spills[0]
-        init_dens = spill.substance.get_density(wd.water.temperature)
-        init_visc = spill.substance.get_viscosity(wd.water.temperature)
+        init_dens = spill.substance.density_at_temp(wd.water.temperature)
+        init_visc = spill.substance.kvis_at_temp(wd.water.temperature)
 
         num = sc.release_elements(default_ts, rel_time)
         wd.initialize_data(sc, num)
@@ -132,10 +132,8 @@ class TestWeatheringData:
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         spill = sc.spills[0]
-        init_dens = \
-            spill.substance.get_density(wd.water.temperature)
-        init_visc = \
-            spill.substance.get_viscosity(wd.water.temperature)
+        init_dens = spill.substance.density_at_temp(wd.water.temperature)
+        init_visc = spill.substance.kvis_at_temp(wd.water.temperature)
 
         num = sc.release_elements(default_ts, rel_time)
         wd.initialize_data(sc, num)
@@ -340,7 +338,7 @@ class TestWeatheringData:
                                               units='kg',
                                               substance=test_oil)
         op = sc.spills[0].substance
-        rho = op.get_density(wd.water.temperature)
+        rho = op.density_at_temp(wd.water.temperature)
         b_init_vol = [spill.get_mass() / rho for spill in sc.spills]
 
         sc.prepare_for_model_run(wd.array_types)
