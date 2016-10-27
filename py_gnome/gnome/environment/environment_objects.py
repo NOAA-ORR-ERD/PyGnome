@@ -51,7 +51,7 @@ class S_Depth(object):
     def from_netCDF(cls,
                     **kwargs
                     ):
-        bathymetry = Bathymetry.from_netCDF(depth=1, **kwargs)
+        bathymetry = Bathymetry.from_netCDF(**kwargs)
         data_file = bathymetry.data_file,
         if 'dataset' in kwargs:
             dataset = kwargs['dataset']
