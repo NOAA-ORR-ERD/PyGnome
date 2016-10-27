@@ -142,7 +142,11 @@ class GriddedProp(EnvProp, serializable.Serializable):
                 ds = _get_dataset(data_file)
                 dg = _get_dataset(grid_file)
         else:
-            ds = dg = dataset
+            if grid_file is not None:
+                dg = _get_dataset(grid_file)
+            else:
+                dg = dataset
+            ds = dataset
 
         if grid is None:
             grid = _init_grid(grid_file,
@@ -620,7 +624,11 @@ class GridVectorProp(VectorProp):
                 ds = _get_dataset(data_file)
                 dg = _get_dataset(grid_file)
         else:
-            ds = dg = dataset
+            if grid_file is not None:
+                dg = _get_dataset(grid_file)
+            else:
+                dg = dataset
+            ds = dataset
 
         if grid is None:
             grid = _init_grid(grid_file,

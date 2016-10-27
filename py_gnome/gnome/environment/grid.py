@@ -162,10 +162,12 @@ class Grid(Environment, Serializable):
 class GridMeta(type):
     
     def __call__(cls, *args, **kwargs):
+#         c = cls
         if 'faces' in kwargs:
-            cls = PyGrid_U
+            cls = _PyGrid_U
         else:
-            cls = PyGrid_S
+            cls = _PyGrid_S
+#         cls.obj_type = c.obj_type
         return type.__call__(cls, *args, **kwargs)
 
 
@@ -195,7 +197,11 @@ class PyGrid(Serializable):
                  *args,
                  **kwargs):
         super(PyGrid, self).__init__(**kwargs)
-        self.name = self.name + '_' + str(type(self)._def_count)
+        if 'name' in kwargs:
+            self.name = kwargs['name']
+        else:
+            self.name = self.name[1:] + '_' + str(type(self)._def_count)
+        self.obj_type = str(type(self).__bases__[0])
         self.filename = filename
         type(self)._def_count += 1
 
@@ -255,10 +261,18 @@ class PyGrid(Serializable):
                 if s.shape != s2.shape or np.any(s != s2):
                     return False
         return True
+    
+    @classmethod
+    def new_from_dict(cls, dict_):
+        filename = dict_['filename']
+        rv = cls.from_netCDF(filename)
+        rv.__class__._restore_attr_from_save(rv, dict_)
+        print dict_
+        rv.__class__._def_count -= 1
+        return rv
 
     def _write_grid_to_file(self, pth):
         self.save_as_netCDF(pth)
-        
 
     def save(self, saveloc, references=None, name=None):
         '''
@@ -341,5 +355,5 @@ class PyGrid(Serializable):
                     break
         return gt
     
-PyGrid_U = type('PyGrid_U', (PyGrid, pyugrid.UGrid), {})
-PyGrid_S = type('PyGrid_S', (PyGrid, pysgrid.SGrid), {})
+_PyGrid_U = type('_PyGrid_U', (PyGrid, pyugrid.UGrid), {})
+_PyGrid_S = type('_PyGrid_S', (PyGrid, pysgrid.SGrid), {})
