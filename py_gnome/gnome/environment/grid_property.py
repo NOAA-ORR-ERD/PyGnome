@@ -154,7 +154,9 @@ class GriddedProp(EnvProp, serializable.Serializable):
             if varname is None:
                 raise NameError('Default current names are not in the data file, must supply variable name')
         data = ds[varname]
-        name = cls.__name__ + '_' + str(cls._def_count) + '_' + varname if name is None else name
+        if name is None:
+            name = cls.__name__ + str(cls._def_count)
+            cls._def_count += 1
         if units is None:
             try:
                 units = data.units
@@ -171,13 +173,15 @@ class GriddedProp(EnvProp, serializable.Serializable):
                 else:
                     time = None
         if depth is None:
-            if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):
-                from gnome.environment.environment_objects import S_Depth
-                depth = S_Depth.from_netCDF(grid=grid,
-                                            depth=1,
-                                            data_file=data_file,
-                                            grid_file=grid_file,
-                                            **kwargs)
+            from gnome.environment.environment_objects import Depth
+            depth = Depth(surface_index=-1)
+#             if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):
+#                 from gnome.environment.environment_objects import S_Depth
+#                 depth = S_Depth.from_netCDF(grid=grid,
+#                                             depth=1,
+#                                             data_file=data_file,
+#                                             grid_file=grid_file,
+#                                             **kwargs)
         if load_all:
             data = data[:]
         return cls(name=name,
@@ -637,13 +641,15 @@ class GridVectorProp(VectorProp):
                 timevar = data.dimensions[0]
             time = Time(ds[timevar])
         if depth is None:
-            if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):
-                from gnome.environment.environment_objects import S_Depth
-                depth = S_Depth.from_netCDF(grid=grid,
-                                            depth=1,
-                                            data_file=data_file,
-                                            grid_file=grid_file,
-                                            **kwargs)
+            from gnome.environment.environment_objects import Depth
+            depth = Depth(surface_index=-1)
+#             if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):
+#                 from gnome.environment.environment_objects import S_Depth
+#                 depth = S_Depth.from_netCDF(grid=grid,
+#                                             depth=1,
+#                                             data_file=data_file,
+#                                             grid_file=grid_file,
+#                                             **kwargs)
         variables = []
         for vn in varnames:
             variables.append(GriddedProp.from_netCDF(filename=filename,
