@@ -4,7 +4,7 @@ import copy
 import netCDF4 as nc4
 import numpy as np
 
-from gnome.environment.property import EnvProp, VectorProp, Time
+from gnome.environment.property import EnvProp, VectorProp, Time, PropertySchema
 from datetime import datetime, timedelta
 from dateutil import parser
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
@@ -12,6 +12,32 @@ from numbers import Number
 
 import unit_conversion
 import collections
+
+
+class TimeSeriesPropSchema(PropertySchema):
+    timeseries = SequenceSchema(
+                                TupleSchema(
+                                            children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
+                                                      SchemaNode(Float(), missing=0)
+                                                      ],
+                                            missing=drop)
+                                )
+    varnames = SequenceSchema(SchemaNode(String(), missing=drop))
+
+
+class VelocityTSSchema(PropertySchema):
+    timeseries = SequenceSchema(
+                                TupleSchema(
+                                            children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
+                                                      TupleSchema(children=[
+                                                                            SchemaNode(Float(), missing=0),
+                                                                            SchemaNode(Float(), missing=0)
+                                                                            ]
+                                                                 )
+                                                      ],
+                                            missing=drop)
+                                )
+    varnames = SequenceSchema(SchemaNode(String(), missing=drop))
 
 
 class TimeSeriesProp(EnvProp):

@@ -18,7 +18,7 @@ import unit_conversion
 from .. import _valid_units
 from gnome.environment import Environment
 from gnome.environment.property import Time, PropertySchema, VectorProp, EnvProp
-from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
+from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp, TimeSeriesPropSchema
 from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema
 from gnome.utilities.file_tools.data_helpers import _init_grid, _get_dataset
 
@@ -128,36 +128,10 @@ class S_Depth(object):
         return indices, alphas
 
 
-class TemperatureTSSchema(PropertySchema):
-    timeseries = SequenceSchema(
-                                TupleSchema(
-                                            children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
-                                                      SchemaNode(Float(), missing=0)
-                                                      ],
-                                            missing=drop)
-                                )
-    varnames = SequenceSchema(SchemaNode(String(), missing=drop))
-
-
-class VelocityTSSchema(PropertySchema):
-    timeseries = SequenceSchema(
-                                TupleSchema(
-                                            children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
-                                                      TupleSchema(children=[
-                                                                            SchemaNode(Float(), missing=0),
-                                                                            SchemaNode(Float(), missing=0)
-                                                                            ]
-                                                                 )
-                                                      ],
-                                            missing=drop)
-                                )
-    varnames = SequenceSchema(SchemaNode(String(), missing=drop))
-
-
 class VelocityTS(TSVectorProp, serializable.Serializable):
 
     _state = copy.deepcopy(serializable.Serializable._state)
-    _schema = VelocityTSSchema
+    _schema = TimeSeriesPropSchema
 
     _state.add_field([serializable.Field('units', save=True, update=True),
                       serializable.Field('timeseries', save=True, update=True),

@@ -15,15 +15,27 @@ import pysgrid
 import unit_conversion
 import collections
 from collections import OrderedDict
+from gnome.gnomeobject import GnomeId
 
 
-class PropertySchema(base_schema.ObjType):
-    name = SchemaNode(String(), missing='default')
-    units = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String(), missing=drop), SchemaNode(String(), missing=drop)])
+class TimeSchema(base_schema.ObjType):
     time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
 
 
+class PropertySchema(base_schema.ObjType):
+    name = SchemaNode(String(), missing=drop)
+    units = SchemaNode(String(), missing=drop)
+#     units = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String(), missing=drop), SchemaNode(String(), missing=drop)])
+    time = TimeSchema(missing=drop)  # SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
+
+
 class EnvProp(object):
+    
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = PropertySchema
+    
+    _state.add_field([serializable.Field('units', save=True, update=True),
+                      serializable.Field('time', save=True, update=True)])
 
     def __init__(self,
                  name=None,
@@ -59,21 +71,12 @@ class EnvProp(object):
         return self.__repr__()
 
     def __repr__(self):
-        r = OrderedDict()
-        r['type'] = type(self).__name__
-        r['name'] = self.name
-        if self.time is not None:
-            r['time'] = 'start:{0.min_time}, end:{0.max_time}, length={1}'.format(self.time, len(self.time.time))
-        else:
-            r['time'] = self.time
-        r['data'] = type(self.data)
-        return str(r)
-
-    def __str__(self):
-        return self.__repr__()
-    
-    def __repr__(self):
-        return '''{0.__name__}'''.format(type(self))
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'name="{0.name}", '
+                'time="{0.time}", '
+                'units="{0.units}", '
+                'data="{0.data}", '
+                ')').format(self)
 
     '''
     Subclasses should override\add any attribute property function getter/setters as needed
@@ -209,17 +212,14 @@ class VectorProp(object):
 
     def __str__(self):
         return self.__repr__()
-    
+
     def __repr__(self):
-        r = OrderedDict()
-        r['type'] = type(self).__name__
-        r['name'] = self.name
-        if self.time is not None:
-            r['time'] = 'start:{0.min_time}, end:{0.max_time}, length={1}'.format(self.time, len(self.time.time))
-        else:
-            r['time'] = self.time
-        r['variables'] = str(self.variables)
-        return str(r)
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'name="{0.name}", '
+                'time="{0.time}", '
+                'units="{0.units}", '
+                'variables="{0.variables}", '
+                ')').format(self)
 
     @property
     def time(self):
@@ -290,22 +290,27 @@ class VectorProp(object):
         return np.column_stack([var.at(*args, **kwargs) for var in self._variables])
 
 
-class Time(object):
+class Time(serializable.Serializable):
 
-    def __init__(self, time_seq, tz_offset=None, offset=None):
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = TimeSchema
+    
+    _state.add_field([serializable.Field('time', save=True, update=True)])
+
+    def __init__(self, time, tz_offset=None, offset=None):
         '''
         Representation of a time axis. Provides interpolation alphas and indexing.
 
-        :param time_seq: Ascending list of times to use
+        :param time: Ascending list of times to use
         :param tz_offset: offset to compensate for time zone shifts
-        :type time_seq: netCDF4.Variable or [] of datetime.datetime
+        :type time: netCDF4.Variable or [] of datetime.datetime
         :type tz_offset: datetime.timedelta
 
         '''
-        if isinstance(time_seq, (nc4.Variable, nc4._netCDF4._Variable)):
-            self.time = nc4.num2date(time_seq[:], units=time_seq.units)
+        if isinstance(time, (nc4.Variable, nc4._netCDF4._Variable)):
+            self.time = nc4.num2date(time[:], units=time.units)
         else:
-            self.time = time_seq
+            self.time = time
 
         if tz_offset is not None:
             self.time += tz_offset

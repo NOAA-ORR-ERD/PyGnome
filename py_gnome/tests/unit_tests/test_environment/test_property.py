@@ -576,7 +576,7 @@ class TestVelocityGrid:
 
 
 if __name__ == "__main__":
-    import pprint
+    import pprint as pp
     k = vp()
     corners = np.array(((1, 1), (2, 2)))
     t1 = dt.datetime(1999, 12, 31, 23)
@@ -602,8 +602,3 @@ if __name__ == "__main__":
     deser = VelocityGrid.deserialize(dict_)
     pp.pprint(deser)
     v2 = VelocityGrid.new_from_dict(deser)
-    v == v2
-    test_tsprop_construction()
-    test_tsprop_unit_conversion()
-    test_tsprop_set_attr()
-    test_gridprop_construction()
