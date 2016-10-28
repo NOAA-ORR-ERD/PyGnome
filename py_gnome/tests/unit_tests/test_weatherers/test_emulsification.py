@@ -144,7 +144,7 @@ def test_bullwinkle():
     '''
 
     et = floating(substance=test_oil)
-    assert np.isclose(et.substance.bullwinkle, 0.193724)
+    assert np.isclose(et.substance.bullwinkle, 0.25905)
 
     et.substance.bullwinkle = .4
     assert et.substance.bullwinkle == .4

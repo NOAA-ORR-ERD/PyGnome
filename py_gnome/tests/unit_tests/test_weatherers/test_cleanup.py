@@ -260,7 +260,7 @@ class TestBurn(ObjForTests):
     (sc, weatherers) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
     op = spill.substance
-    volume = spill.get_mass() / op.get_density()
+    volume = spill.get_mass() / op.density_at_temp()
 
     thick = 1
     area = (0.5 * volume) / thick
@@ -436,7 +436,7 @@ class TestBurn(ObjForTests):
         # want mass of oil thickness * area gives volume of oil-water so we
         # need to scale this by (1 - avg_frac_water)
         exp_burned = ((thick_si - burn._min_thickness) * (1 - avg_frac_water) *
-                      burn.area * self.op.get_density())
+                      burn.area * self.op.density_at_temp())
         assert np.isclose(self.sc.mass_balance['burned'], exp_burned)
 
         mask = self.sc['fate_status'] & fate.burn == fate.burn
@@ -444,17 +444,20 @@ class TestBurn(ObjForTests):
         # given LEs are discrete elements, we cannot add a fraction of an LE
         mass_per_le = self.sc['init_mass'][mask][0]
         exp_init_oil_mass = (burn.area * thick_si * (1 - avg_frac_water) *
-                             self.op.get_density())
+                             self.op.density_at_temp())
         assert (self.sc['init_mass'][mask].sum() - exp_init_oil_mass <
                 mass_per_le and
                 self.sc['init_mass'][mask].sum() - exp_init_oil_mass >= 0.0)
 
         exp_mass_remain = (burn._oilwater_thickness * (1 - avg_frac_water) *
-                           burn.area * self.op.get_density())
+                           burn.area * self.op.density_at_temp())
         mass_remain_for_burn_LEs = self.sc['mass'][mask].sum()
         # since we don't adjust the thickness anymore need to use min_thick
         min_thick = .002
-        exp_mass_remain = min_thick * (1 - avg_frac_water) * burn.area * self.op.get_density()
+        exp_mass_remain = (min_thick *
+                           (1 - avg_frac_water) *
+                           burn.area *
+                           self.op.density_at_temp())
         assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs)
 
         duration = (burn.active_stop-burn.active_start).total_seconds()/3600
@@ -619,8 +622,9 @@ class TestChemicalDispersion(ObjForTests):
     @mark.parametrize("efficiency", (0.5, 1.0))
     def test_prepare_for_model_step(self, efficiency):
         '''
-        updated: efficiency now does impact the mass of LEs marked as having been
-        sprayed. precent_sprayed also impacts the mass of LEs marked as disperse.
+        updated: efficiency now does impact the mass of LEs marked as
+                 having been sprayed. precent_sprayed also impacts the
+                 mass of LEs marked as disperse.
         '''
         self.reset_and_release()
         self.c_disp.efficiency = efficiency
@@ -631,8 +635,12 @@ class TestChemicalDispersion(ObjForTests):
         self.c_disp.prepare_for_model_step(self.sc, time_step, active_start)
         d_mass = self.sc['mass'][self.sc['fate_status'] == fate.disperse].sum()
 
-        assert d_mass == self.c_disp.fraction_sprayed * self.spill.get_mass() * efficiency
-        exp_mass = self.spill.get_mass() * self.c_disp.fraction_sprayed * efficiency
+        assert d_mass == (self.c_disp.fraction_sprayed *
+                          self.spill.get_mass() *
+                          efficiency)
+        exp_mass = (self.spill.get_mass() *
+                    self.c_disp.fraction_sprayed *
+                    efficiency)
         assert d_mass - exp_mass < self.sc['mass'][0]
 
     @mark.parametrize("frac_water", (0.5, 0.0))

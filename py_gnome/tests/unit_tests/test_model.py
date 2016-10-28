@@ -982,7 +982,7 @@ def chemical_disperson_obj(spill, delay_hours=1, duration=1):
 def burn_obj(spill, delay_hours=1.5):
     rel_time = spill.release_time
     burn_start = rel_time + timedelta(hours=delay_hours)
-    volume = spill.get_mass() / spill.substance.get_density()
+    volume = spill.get_mass() / spill.substance.density_at_temp()
     thick = 1   # in meters
     area = (0.2 * volume) / thick
 

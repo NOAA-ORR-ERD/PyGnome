@@ -60,7 +60,7 @@ def make_model(uncertain=False, mode='gnome'):
                                              units=spill_units,
                                              substance=test_oil)
     spill = model.spills[-1]
-    spill_volume = spill.get_mass() / spill.substance.get_density()
+    spill_volume = spill.get_mass() / spill.substance.density_at_temp()
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
 
