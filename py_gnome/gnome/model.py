@@ -1261,21 +1261,21 @@ class Model(Serializable):
         o_json_ = schema.serialize(toserial)
         o_json_['map'] = self.map.serialize(json_)
 
-        if json_ == 'webapi':
-            # for webapi, we serialize forecast spills just like all other
-            # collections - ignore spills in uncertain spill container
-            for attr in ('environment', 'outputters', 'weatherers', 'movers',
-                         'spills'):
-                o_json_[attr] = self.serialize_oc(getattr(self, attr), json_)
-
-            # validate and send validation flag
-            (msgs, isvalid) = self.validate()
-            o_json_['valid'] = isvalid
-            if len(msgs) > 0:
-                o_json_['messages'] = msgs
-            else:
-                o_json_['messages'] = []
-
+#         if json_ == 'webapi':
+#             # for webapi, we serialize forecast spills just like all other
+#             # collections - ignore spills in uncertain spill container
+#             for attr in ('environment', 'outputters', 'weatherers', 'movers',
+#                          'spills'):
+#                 o_json_[attr] = self.serialize_oc(getattr(self, attr), json_)
+# 
+#             # validate and send validation flag
+#             (msgs, isvalid) = self.validate()
+#             o_json_['valid'] = isvalid
+#             if len(msgs) > 0:
+#                 o_json_['messages'] = msgs
+#             else:
+#                 o_json_['messages'] = []
+# 
         return o_json_
 
     @classmethod
@@ -1396,6 +1396,9 @@ class Model(Serializable):
         '''
         msgs = []
         isvalid = True
+
+        (msgs, isvalid) = self.validate()
+
         someSpillIntersectsModel = False
         num_spills = len(self.spills)
         for spill in self.spills:
