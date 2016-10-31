@@ -1261,21 +1261,23 @@ class Model(Serializable):
         o_json_ = schema.serialize(toserial)
         o_json_['map'] = self.map.serialize(json_)
 
-#         if json_ == 'webapi':
-#             # for webapi, we serialize forecast spills just like all other
-#             # collections - ignore spills in uncertain spill container
-#             for attr in ('environment', 'outputters', 'weatherers', 'movers',
-#                          'spills'):
-#                 o_json_[attr] = self.serialize_oc(getattr(self, attr), json_)
-# 
-#             # validate and send validation flag
+        if json_ == 'webapi':
+            # for webapi, we serialize forecast spills just like all other
+            # collections - ignore spills in uncertain spill container
+            for attr in ('environment', 'outputters', 'weatherers', 'movers',
+                         'spills'):
+                o_json_[attr] = self.serialize_oc(getattr(self, attr), json_)
+
+            o_json_['valid'] = True
+            o_json_['messages'] = []
+            # validate and send validation flag
 #             (msgs, isvalid) = self.validate()
 #             o_json_['valid'] = isvalid
 #             if len(msgs) > 0:
 #                 o_json_['messages'] = msgs
 #             else:
 #                 o_json_['messages'] = []
-# 
+
         return o_json_
 
     @classmethod
@@ -1425,7 +1427,7 @@ class Model(Serializable):
                 msg = ('The spill is released after the time interval being modeled.')
             self.logger.warning(msg)  # for now make this a warning
             # self.logger.error(msg)
-            msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
+            msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
             # isvalid = False
 
         return (msgs, isvalid)

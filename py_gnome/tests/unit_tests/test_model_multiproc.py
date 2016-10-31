@@ -12,7 +12,7 @@ from gnome.basic_types import datetime_value_2d
 from gnome.model import Model
 
 from gnome.map import MapFromBNA
-from gnome.environment import Wind, Water, Tide
+from gnome.environment import Wind, Water, Waves, Tide
 
 from gnome.spill import point_line_release_spill
 
@@ -83,6 +83,10 @@ def make_model(uncertain=False,
     amount = spill.amount
     units = spill.units
 
+    water_env = Water(311.15)
+    waves = Waves(wind,water_env)
+    model.environment += water_env
+
     # define skimmer/burn cleanup options
     skimmer = Skimmer(0.3 * amount,
                       units=units,
@@ -93,12 +97,10 @@ def make_model(uncertain=False,
     volume = spill.get_mass() / spill.substance.density_at_temp()
     burn = Burn(0.2 * volume, 1.0,
                 active_start=skim_start, efficiency=.9)
-    c_disp = ChemicalDispersion(0.1, efficiency=0.5,
+    c_disp = ChemicalDispersion(0.1, waves=waves, efficiency=0.5,
                                 active_start=skim_start,
                                 active_stop=skim_start + timedelta(hours=1))
 
-    water_env = Water(311.15)
-    model.environment += water_env
     model.weatherers += [Evaporation(water_env, wind),
                          c_disp,
                          burn,
