@@ -20,6 +20,7 @@ colander
 gsw             # Thermodynamic Equations Of Seawater - density computation
 pyugrid
 pysgrid
+pyshp
 
 
 # Binary dependencies that can probably be pip installed
@@ -38,7 +39,7 @@ git+https://github.com/NOAA-ORR-ERD/OilLibrary.git@v0.0.6#egg=oil_library
 
 
 ## py_gd requires the libgd graphics rendering library
-## This may be easy to get for LInux, but on OS-X and Windows, you are better off using conda
+## This may be easy to get for Linux, but on OS-X and Windows, you are better off using conda
 git+https://github.com/NOAA-ORR-ERD/py_gd.git@v0.1.6#egg=py_gd
 
 
