@@ -27,7 +27,11 @@ def sg():
 
 @pytest.fixture()
 def ug_data():
-    pass
+    base_dir = os.path.dirname(__file__)
+    s_data = os.path.join(base_dir, 'sample_data')
+    filename = os.path.join(s_data, 'currents')
+    filename = get_datafile(os.path.join(filename, 'ChesBay.nc'))
+    return filename, nc.Dataset(filename)
 
 @pytest.fixture()
 def ug_topology():
@@ -35,7 +39,7 @@ def ug_topology():
 
 @pytest.fixture()
 def ug():
-    pass
+    return GridFactory(ug_data()[0], ug_data()[1], ug_topology())
 
 
 class TestPyGrid_S:
@@ -99,15 +103,15 @@ class TestPyGrid_U:
         filename = ug_data[0]
         dataset = ug_data[1]
         grid_topology = ug_topology
-        ug = PyGrid_S.from_netCDF(filename, dataset, grid_topology)
-        assert ug.filename == filename
-        assert isinstance(ug.node_lon, nc.Variable)
-        assert ug.node_lon.name == 'lonc'
+#         ug = PyGrid_U.from_netCDF(filename, dataset, grid_topology)
+#         assert ug.filename == filename
+#         assert isinstance(ug.node_lon, nc.Variable)
+#         assert ug.node_lon.name == 'lonc'
 
-        ug2 = PyGrid_S.from_netCDF(filename)
+        ug2 = PyGrid_U.from_netCDF(filename)
         assert ug2.filename == filename
-        assert isinstance(ug2.node_lon, nc.Variable)
-        assert ug2.node_lon.name == 'lon'
+#         assert isinstance(ug2.node_lon, nc.Variable)
+#         assert ug2.node_lon.name == 'lon'
         
         ug3 = GridFactory(filename, dataset, grid_topology)
         ug4 = GridFactory(filename)
@@ -120,15 +124,15 @@ class TestPyGrid_U:
         filename = ug_data[0]
         dataset = ug_data[1]
         grid_topology = ug_topology
-        ug2 = PyGrid_S.from_netCDF(filename, dataset, grid_topology)
+        ug2 = PyGrid_U.from_netCDF(filename, dataset, grid_topology)
         assert ug.serialize()['filename'] == ug2.serialize()['filename']
 
     def test_deserialize(self, ug, ug_data, ug_topology):
         filename = ug_data[0]
         dataset = ug_data[1]
         grid_topology = ug_topology
-        ug2 = PyGrid_S.from_netCDF(filename, dataset, grid_topology)
-        d_ug = PyGrid_S.new_from_dict(ug.serialize())
+        ug2 = PyGrid_U.from_netCDF(filename, dataset, grid_topology)
+        d_ug = PyGrid_U.new_from_dict(ug.serialize())
         
         pp.pprint(ug.serialize())
         pp.pprint(d_ug.serialize())

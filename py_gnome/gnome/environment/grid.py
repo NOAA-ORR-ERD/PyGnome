@@ -331,7 +331,7 @@ class PyGrid(Serializable):
             gf = _get_dataset(filename)
         gt = {}
         node_coord_names = [['node_lon', 'node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
-        face_var_names = ['nv']
+        face_var_names = ['nv', 'ele']
         center_coord_names = [['center_lon', 'center_lat'], ['lon_rho', 'lat_rho']]
         edge1_coord_names = [['edge1_lon', 'edge1_lat'], ['lon_u', 'lat_u']]
         edge2_coord_names = [['edge2_lon', 'edge2_lat'], ['lon_v', 'lat_v']]
@@ -405,6 +405,10 @@ class SerializableGrid(Serializable):
         rv.__class__._def_count -= 1
         return rv
 
+    @property
+    def shape(self):
+        return self.node_lon.shape
+
     def _write_grid_to_file(self, pth):
         self.save_as_netcdf(pth)
 
@@ -450,8 +454,8 @@ class PyGrid_U(pyugrid.UGrid, SerializableGrid):
             gf = _get_dataset(filename)
         if gt is None:
             gt = _find_topology(filename)
-        if gt is None:
-            gt = _gen_topology(filename)
+        if gt is None or isinstance(gt, dict):
+            gt = _gen_topology(filename) if gt is None else gt
             if 'nodes' not in gt:
                 if 'node_lon' not in gt and 'node_lat' not in gt:
                     raise ValueError('Nodes must be specified with either the "nodes" or "node_lon" and "node_lat" keys')
@@ -465,7 +469,7 @@ class PyGrid_U(pyugrid.UGrid, SerializableGrid):
             if 'faces' in gt and gf[gt['faces']]:
                 # Definitely UGrid
                 if 'faces' not in kwargs:
-                    kwargs['faces'] = gf[gt['faces']]
+                    kwargs['faces'] = gf[gt['faces']][:]
                 if kwargs['faces'].shape[0] == 3:
                     kwargs['faces'] = np.ascontiguousarray(np.array(kwargs['faces']).T - 1)  # special case for fortran-style, index from 1 faces files
                 return cls(filename, *args, **kwargs)
@@ -529,16 +533,13 @@ class PyGrid_S(pysgrid.SGrid, SerializableGrid):
                 print 'gotta build manually'
             return rv
 
-    @property
-    def shape(self):
-        return self.node_lon.shape
-
 
 def GridFactory(filename, dataset=None, grid_topology=None):
     gf = _get_dataset(filename, dataset)
     gt = _find_topology(filename, dataset=gf) if grid_topology is None else grid_topology
     gt = _gen_topology(filename, dataset) if gt is None else gt
     
+    print gt
     if hasattr(gt, 'faces') or isinstance(gt, dict) and 'faces' in gt:
         return PyGrid_U.from_netCDF(filename, dataset, gt)
     else:
@@ -563,7 +564,7 @@ def _gen_topology(filename,
     '''
     
     node_coord_names = [['node_lon', 'node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi'], ['lonc', 'latc']]
-    face_var_names = ['nv']
+    face_var_names = ['nv', 'ele']
     center_coord_names = [['center_lon', 'center_lat'], ['lon_rho', 'lat_rho']]
     edge1_coord_names = [['edge1_lon', 'edge1_lat'], ['lon_u', 'lat_u']]
     edge2_coord_names = [['edge2_lon', 'edge2_lat'], ['lon_v', 'lat_v']]
