@@ -163,13 +163,22 @@ class GridMeta(type):
     
     def __call__(cls, *args, **kwargs):
 #         c = cls
-        if 'faces' in kwargs:
-            cls = _PyGrid_U
-        else:
-            cls = _PyGrid_S
+        if cls is not _PyGrid_U and cls is not _PyGrid_S:
+            if 'faces' in kwargs:
+                cls = _PyGrid_U
+            else:
+                cls = _PyGrid_S
 #         cls.obj_type = c.obj_type
         return type.__call__(cls, *args, **kwargs)
 
+    def load_grid(self, filename, topology_var):
+        if hasattr(topology_var, 'face_node_connectivity'):
+#             self = _PyGrid_U
+            return _PyGrid_U.from_ncfile(filename)
+        else:
+            self = _PyGrid_S
+            return self.load_grid(filename)
+        pass
 
 
 class PyGridSchema(base_schema.ObjType):
@@ -182,14 +191,9 @@ class PyGrid(Serializable):
 
     _def_count = 0
 
-    _update = ['filename']
-
-    # used to create new obj or as readonly parameter
-    _create = ['filename']
-    _create.extend(_update)
-
     _state = copy.deepcopy(Serializable._state)
-    _state.add(save=_create, update=_update)
+    _state.add_field([Field('filename',
+                            save=True, read=True, isdatafile=True)])
     _schema = PyGridSchema
 
     def __init__(self,
@@ -247,7 +251,10 @@ class PyGrid(Serializable):
                 return cls(filename, *args, **kwargs)
         else:
             # toplogy variable does exist! Read to determine correct course of action
-            raise RuntimeError()
+            rv = cls.load_grid(filename, gt)
+            rv.filename = filename
+#             rv.__init__(filename, *args, **kwargs)
+            return rv
 
     @property
     def shape(self):
@@ -264,31 +271,38 @@ class PyGrid(Serializable):
     
     @classmethod
     def new_from_dict(cls, dict_):
+        js = dict_.pop('json_')
         filename = dict_['filename']
         rv = cls.from_netCDF(filename)
         rv.__class__._restore_attr_from_save(rv, dict_)
         print dict_
+        rv.id = dict_.pop('id') if 'id' in dict_ else rv.id
         rv.__class__._def_count -= 1
         return rv
 
     def _write_grid_to_file(self, pth):
-        self.save_as_netCDF(pth)
+        self.save_as_netcdf(pth)
 
     def save(self, saveloc, references=None, name=None):
         '''
         Write Wind timeseries to file or to zip,
         then call save method using super
         '''
-        name = (name, 'Wind.json')[name is None]
-        ts_name = os.path.splitext(name)[0] + '_data.GRD'
+#         name = self.name
+#         saveloc = os.path.splitext(name)[0] + '_grid.GRD'
         
         if zipfile.is_zipfile(saveloc):
-            self._write_grid_to_zip(saveloc, ts_name)
-            self._filename = ts_name
+            if self.filename is None:
+                self._write_grid_to_file(saveloc)
+                self._write_grid_to_zip(saveloc, saveloc)
+                self.filename = saveloc
+#             else:
+#                 self._write_grid_to_zip(saveloc, self.filename)
         else:
-            datafile = os.path.join(saveloc, ts_name)
-            self._write_grid_to_file(datafile)
-            self._filename = datafile
+#             saveloc = os.path.join(saveloc, saveloc)
+            if self.filename is None:
+                self._write_grid_to_file(saveloc)
+                self.filename = saveloc
         return super(PyGrid, self).save(saveloc, references, name)
     
     @staticmethod
@@ -297,8 +311,9 @@ class PyGrid(Serializable):
         gf = dataset
         if gf is None:
             gf = _get_dataset(filename)
-        if 'grid_topology' in gf.variables.keys():
-            return gf['grid_topology']
+        gts = gf.get_variables_by_attributes(cf_role=lambda t: t is not None and 'topology' in t)
+        if len(gts) != 0:
+            return gts[0]
         else:
             return None
 
@@ -357,3 +372,226 @@ class PyGrid(Serializable):
     
 _PyGrid_U = type('_PyGrid_U', (PyGrid, pyugrid.UGrid), {})
 _PyGrid_S = type('_PyGrid_S', (PyGrid, pysgrid.SGrid), {})
+
+
+class SerializableGridSchema(base_schema.ObjType):
+    filename = SchemaNode(String())
+
+
+class SerializableGrid(Serializable):
+    _def_count = 0
+
+    _state = copy.deepcopy(Serializable._state)
+    _state.add_field([Field('filename',
+                            save=True, read=True, isdatafile=True)])
+    _schema = SerializableGridSchema
+    
+    def __eq__(self, o):
+        for n in ('nodes', 'faces'):
+            if hasattr(self, n) and hasattr(o, n):
+                s = getattr(self, n)
+                s2 = getattr(o, n)
+                if s is not None and s2 is not None and (s.shape != s2.shape or np.any(s != s2)):
+                    return False
+        return True
+    
+    @classmethod
+    def new_from_dict(cls, dict_):
+        js = dict_.pop('json_')
+        filename = dict_['filename']
+        rv = cls.from_netCDF(filename)
+        rv.__class__._restore_attr_from_save(rv, dict_)
+        print dict_
+        rv.__class__._def_count -= 1
+        return rv
+
+    def _write_grid_to_file(self, pth):
+        self.save_as_netcdf(pth)
+
+    def save(self, saveloc, references=None, name=None):
+        '''
+        Write Wind timeseries to file or to zip,
+        then call save method using super
+        '''
+#         name = self.name
+#         saveloc = os.path.splitext(name)[0] + '_grid.GRD'
+        
+        if zipfile.is_zipfile(saveloc):
+            if self.filename is None:
+                self._write_grid_to_file(saveloc)
+                self._write_grid_to_zip(saveloc, saveloc)
+                self.filename = saveloc
+#             else:
+#                 self._write_grid_to_zip(saveloc, self.filename)
+        else:
+#             saveloc = os.path.join(saveloc, saveloc)
+            if self.filename is None:
+                self._write_grid_to_file(saveloc)
+                self.filename = saveloc
+        return super(PyGrid, self).save(saveloc, references, name)
+
+
+class PyGrid_U(pyugrid.UGrid, SerializableGrid):
+    
+    def __init__(self, filename=None, **kwargs):
+        if 'name' in kwargs:
+            self.name = kwargs['name']
+        else:
+            self.name = self.name + '_' + str(type(self)._def_count)
+        type(self)._def_count += 1
+        self.filename = filename
+        super(PyGrid_U, self).__init__(**kwargs)
+
+    @classmethod
+    def from_netCDF(cls, filename=None, dataset=None, grid_topology=None, *args, **kwargs):
+        gt = grid_topology
+        gf = dataset
+        if gf is None:
+            gf = _get_dataset(filename)
+        if gt is None:
+            gt = _find_topology(filename)
+        if gt is None:
+            gt = _gen_topology(filename)
+            if 'nodes' not in gt:
+                if 'node_lon' not in gt and 'node_lat' not in gt:
+                    raise ValueError('Nodes must be specified with either the "nodes" or "node_lon" and "node_lat" keys')
+                if 'node_lon' not in kwargs:
+                    kwargs['node_lon'] = gf[gt['node_lon']]
+                if 'node_lat' not in kwargs:
+                    kwargs['node_lat'] = gf[gt['node_lat']]
+            else:
+                if 'nodes' not in kwargs:
+                    kwargs['nodes'] = gf[gt['nodes']]
+            if 'faces' in gt and gf[gt['faces']]:
+                # Definitely UGrid
+                if 'faces' not in kwargs:
+                    kwargs['faces'] = gf[gt['faces']]
+                if kwargs['faces'].shape[0] == 3:
+                    kwargs['faces'] = np.ascontiguousarray(np.array(kwargs['faces']).T - 1)  # special case for fortran-style, index from 1 faces files
+                return cls(filename, *args, **kwargs)
+        else:
+            try:
+                rv = cls.from_ncfile(filename)
+                rv.filename = filename  # UGrid should pass kwargs!!!
+                return rv
+            except:
+                print 'gotta build manually'
+            return rv
+
+
+class PyGrid_S(pysgrid.SGrid, SerializableGrid):
+        
+    def __init__(self, filename=None, **kwargs):
+        if 'name' in kwargs:
+            self.name = kwargs['name']
+        else:
+            self.name = self.name + '_' + str(type(self)._def_count)
+        type(self)._def_count += 1
+        self.filename = filename
+        super(PyGrid_S, self).__init__(**kwargs)
+
+    @classmethod
+    def from_netCDF(cls, filename=None, dataset=None, grid_topology=None, *args, **kwargs):
+        gt = grid_topology
+        gf = _get_dataset(filename)
+        if gt is None:
+            gt = _find_topology(filename)
+        if gt is None or isinstance(gt, dict):
+            gt = _gen_topology(filename) if gt is None else gt
+            if 'nodes' not in gt:
+                if 'node_lon' not in gt and 'node_lat' not in gt:
+                    raise ValueError('Nodes must be specified with either the "nodes" or "node_lon" and "node_lat" keys')
+                if 'node_lon' not in kwargs:
+                    kwargs['node_lon'] = gf[gt['node_lon']]
+                if 'node_lat' not in kwargs:
+                    kwargs['node_lat'] = gf[gt['node_lat']]
+            else:
+                if 'nodes' not in kwargs:
+                    kwargs['nodes'] = gf[gt['nodes']]
+            # SGrid
+            if kwargs['node_lon'] is None:
+                kwargs['node_lon'] = kwargs['nodes'][:, 0]
+            if kwargs['node_lat'] is None:
+                kwargs['node_lat'] = kwargs['nodes'][:, 1]
+            for k in ('center_lon', 'center_lat', 'edge1_lon', 'edge1_lat', 'edge2_lon', 'edge2_lat'):
+                if k not in kwargs:
+                    if k in gt:
+                        kwargs[k] = gf[gt[k]]
+                    else:
+                        kwargs[k] = None
+            return cls(filename, *args, **kwargs)
+        else:
+            try:
+                rv = cls.load_grid(filename)  # sgrid load needs to be made consistent!
+                rv.filename = filename  # SGrid should pass kwargs!!!
+                return rv
+            except:
+                print 'gotta build manually'
+            return rv
+
+    @property
+    def shape(self):
+        return self.node_lon.shape
+
+
+def GridFactory(filename, dataset=None, grid_topology=None):
+    gf = _get_dataset(filename, dataset)
+    gt = _find_topology(filename, dataset=gf) if grid_topology is None else grid_topology
+    gt = _gen_topology(filename, dataset) if gt is None else gt
+    
+    if hasattr(gt, 'faces') or isinstance(gt, dict) and 'faces' in gt:
+        return PyGrid_U.from_netCDF(filename, dataset, gt)
+    else:
+        return PyGrid_S.from_netCDF(filename, dataset, gt)
+
+def _find_topology(filename,
+                   dataset=None):
+    gf = _get_dataset(filename, dataset)
+    gts = gf.get_variables_by_attributes(cf_role=lambda t: t is not None and 'topology' in t)
+    if len(gts) != 0:
+        return gts[0]
+    else:
+        return None
+
+def _gen_topology(filename,
+                  dataset=None):
+    '''
+    Function to create the correct default topology if it is not provided
+
+    :param filename: Name of file that will be searched for variables
+    :return: List of default variable names, or None if none are found
+    '''
+    
+    node_coord_names = [['node_lon', 'node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi'], ['lonc', 'latc']]
+    face_var_names = ['nv']
+    center_coord_names = [['center_lon', 'center_lat'], ['lon_rho', 'lat_rho']]
+    edge1_coord_names = [['edge1_lon', 'edge1_lat'], ['lon_u', 'lat_u']]
+    edge2_coord_names = [['edge2_lon', 'edge2_lat'], ['lon_v', 'lat_v']]
+    
+    gf = _get_dataset(filename, dataset)
+    gt = {}
+    for n in node_coord_names:
+        if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
+            gt['node_lon'] = n[0]
+            gt['node_lat'] = n[1]
+            break
+
+    if 'node_lon' not in gt:
+        raise NameError('Default node topology names are not in the grid file')
+
+    for n in face_var_names:
+        if n in gf.variables.keys():
+            gt['faces'] = n
+            break
+
+    if 'faces' in gt.keys():
+        # UGRID
+        return gt
+    else:
+        for p in (center_coord_names, edge1_coord_names, edge2_coord_names):
+            for n in p:
+                if n[0] in gf.variables.keys() and n[1] in gf.variables.keys():
+                    gt['center_lon'] = n[0]
+                    gt['center_lat'] = n[1]
+                    break
+    return gt

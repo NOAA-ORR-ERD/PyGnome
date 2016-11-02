@@ -125,7 +125,9 @@ def _gen_topology(filename,
                 break
     return gt
 
-def _get_dataset(filename):
+def _get_dataset(filename, dataset=None):
+    if dataset is not None:
+        return dataset
     df = None
     if isinstance(filename, basestring):
         df = nc4.Dataset(filename)
