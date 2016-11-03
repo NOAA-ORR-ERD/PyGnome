@@ -258,6 +258,8 @@ Store.
 
 *Note: it is a HUGE download.*
 
+[you may be able to isntall only teh command line tools -- Apple keeps changing its mind]
+
 After installing XCode, you still need to install the "Command Line
 Tools". XCode includes a new "Downloads" preference pane to install
 optional components such as command line tools, and previous iOS
