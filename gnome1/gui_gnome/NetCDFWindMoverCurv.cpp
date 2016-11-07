@@ -282,14 +282,14 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
 	if (status != NC_NOERR) 
 	{	
-		goto OLD;
+		//goto OLD;
 		// eventually try to support old format with new algorithm
 		// issues with mask
-		/*status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		status = nc_inq_dimid(ncid, "y", &latIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto OLD;
-		}*/
+		}
 	}
 	bIsCOOPSWaterMask = true;
 	status = nc_inq_varid(ncid, "latc", &latid);
@@ -306,12 +306,12 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 	status = nc_inq_dimid(ncid, "xc", &lonIndexid);	
 	if (status != NC_NOERR) 
 	{
-		err = -1; goto done;
-		/*status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		//err = -1; goto done;
+		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto done;
-		}*/
+		}
 	}
 	status = nc_inq_varid(ncid, "lonc", &lonid);	
 	if (status != NC_NOERR) 
