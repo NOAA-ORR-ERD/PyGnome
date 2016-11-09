@@ -1,23 +1,23 @@
 import netCDF4 as nc4
 import numpy as np
 
-from datetime import datetime, timedelta
 from collections import OrderedDict
-from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
-from gnome.utilities.file_tools.data_helpers import _init_grid, _gen_topology, _get_dataset
+from colander import SchemaNode, SchemaType, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, List
+from gnome.utilities.file_tools.data_helpers import _get_dataset
 from gnome.environment.property import *
+from gnome.environment.grid import PyGrid, PyGridSchema
+from gnome.persist.base_schema import CollectionItemsList
 
-import pyugrid
-import pysgrid
-import unit_conversion
-import collections
 import hashlib
+from gnome.utilities.orderedcollection import OrderedCollection
+from gnome.environment.ts_property import TimeSeriesProp
 
 
 class GridPropSchema(PropertySchema):
     varname = SchemaNode(String())
-    data_file = SchemaNode(String(), missing=drop)
-    grid_file = SchemaNode(String(), missing=drop)
+    grid = PyGridSchema(missing=drop)
+    data_file = SequenceSchema(SchemaNode(String(), missing=drop), accept_scalar=True)
+    grid_file = SequenceSchema(SchemaNode(String(), missing=drop), accept_scalar=True)
 
 
 class GriddedProp(EnvProp, serializable.Serializable):
@@ -26,7 +26,7 @@ class GriddedProp(EnvProp, serializable.Serializable):
 
     _schema = GridPropSchema
 
-    _state.add_field([serializable.Field('grid', save=True, update=True),
+    _state.add_field([serializable.Field('grid', save=True, update=True, save_reference=True),
                       serializable.Field('varname', save=True, update=True),
                       serializable.Field('data_file', save=True, update=True),
                       serializable.Field('grid_file', save=True, update=True)])
@@ -83,6 +83,9 @@ class GriddedProp(EnvProp, serializable.Serializable):
         self.varname = varname
         self._result_memo = OrderedDict()
         self.fill_value = fill_value
+
+#     def __repr__(self):
+#         return str(self.serialize())
 
     @classmethod
     def from_netCDF(cls,
@@ -149,9 +152,9 @@ class GriddedProp(EnvProp, serializable.Serializable):
             ds = dataset
 
         if grid is None:
-            grid = _init_grid(grid_file,
-                              grid_topology=grid_topology,
-                              dataset=dg)
+            grid = PyGrid.from_netCDF(grid_file,
+                                      dataset=dg,
+                                      grid_topology=grid_topology)
         if varname is None:
             varname = cls._gen_varname(data_file,
                                        dataset=ds)
@@ -177,8 +180,9 @@ class GriddedProp(EnvProp, serializable.Serializable):
                 else:
                     time = None
         if depth is None:
-            from gnome.environment.environment_objects import Depth
-            depth = Depth(surface_index=-1)
+            if len(data.shape) == 4:
+                from gnome.environment.environment_objects import Depth
+                depth = Depth(surface_index=-1)
 #             if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):
 #                 from gnome.environment.environment_objects import S_Depth
 #                 depth = S_Depth.from_netCDF(grid=grid,
@@ -481,21 +485,27 @@ class GriddedProp(EnvProp, serializable.Serializable):
             value = unit_conversion.convert(self.units, units, value)
         return value
 
-    def serialize(self, json_='webapi'):
-        _dict = serializable.Serializable.serialize(self, json_=json_)
-        if self.data_file is not None:
-            # put file in save zip
-            pass
-        else:
-            # write data to file and put in zip
-            pass
-        if self.grid_file is not None:
-            # put grid in save zip. make sure it's not in there twice.
-            pass
-        else:
-            # write grid to file and put in zip
-            pass
-    
+#     def serialize(self, json_='webapi'):
+#         _dict = serializable.Serializable.serialize(self, json_=json_)
+#         if self.data_file is not None:
+#             # put file in save zip
+#             pass
+#         else:
+#             # write data to file and put in zip
+#             pass
+#         if self.grid_file is not None:
+#             # put grid in save zip. make sure it's not in there twice.
+#             pass
+#         else:
+#             # write grid to file and put in zip
+#             pass
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        if 'data' not in dict_:
+            return GriddedProp.from_netCDF(**dict_)
+        return super(GriddedProp, cls).new_from_dict(dict_)
+
     @classmethod
     def deserialize(cls, json_):
         return super(GriddedProp, cls).deserialize(json_)
@@ -524,7 +534,29 @@ class GriddedProp(EnvProp, serializable.Serializable):
         raise ValueError("Default names not found.")
 
 
+class GPSeqSchema(SequenceSchema):
+    prop = SchemaNode(SchemaType())
+
+
+class GridVectorPropSchema(VectorPropSchema):
+    varnames = SequenceSchema(SchemaNode(String()))
+    grid = PyGridSchema(missing=drop)
+    data_file = SequenceSchema(SchemaNode(String(), missing=drop), accept_scalar=True)
+    grid_file = SequenceSchema(SchemaNode(String(), missing=drop), accept_scalar=True)
+#     variables = GPSeqSchema()
+
 class GridVectorProp(VectorProp):
+    _state = copy.deepcopy(EnvProp._state)
+
+    _schema = GridVectorPropSchema
+
+    _state.add_field([serializable.Field('grid', save=True, update=True, save_reference=True),
+                      serializable.Field('variables', save=True, update=True, iscollection=True),
+                      serializable.Field('varnames', save=True, update=True),
+                      serializable.Field('data_file', save=True, update=True),
+                      serializable.Field('grid_file', save=True, update=True)])
+
+    default_names = []
 
     _def_count = 0
 
@@ -568,6 +600,9 @@ class GridVectorProp(VectorProp):
 
 #         self._check_consistency()
         self._result_memo = OrderedDict()
+
+    def __repr__(self):
+        return str(self.serialize())
 
     @classmethod
     def from_netCDF(cls,
@@ -631,9 +666,9 @@ class GridVectorProp(VectorProp):
             ds = dataset
 
         if grid is None:
-            grid = _init_grid(grid_file,
-                              grid_topology=grid_topology,
-                              dataset=dg)
+            grid = PyGrid.from_netCDF(grid_file,
+                                      dataset=dg,
+                                      grid_topology=grid_topology)
         if varnames is None:
             varnames = cls._gen_varnames(data_file,
                                          dataset=ds)
@@ -649,8 +684,9 @@ class GridVectorProp(VectorProp):
                 timevar = data.dimensions[0]
             time = Time(ds[timevar])
         if depth is None:
-            from gnome.environment.environment_objects import Depth
-            depth = Depth(surface_index=-1)
+            if len(data.shape) == 4:
+                from gnome.environment.environment_objects import Depth
+                depth = Depth(surface_index=-1)
 #             if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):
 #                 from gnome.environment.environment_objects import S_Depth
 #                 depth = S_Depth.from_netCDF(grid=grid,
@@ -658,10 +694,9 @@ class GridVectorProp(VectorProp):
 #                                             data_file=data_file,
 #                                             grid_file=grid_file,
 #                                             **kwargs)
-        variables = []
+        variables = OrderedCollection(dtype=EnvProp)
         for vn in varnames:
             variables.append(GriddedProp.from_netCDF(filename=filename,
-                                                     name=name + '_' + vn,
                                                      varname=vn,
                                                      grid_topology=grid_topology,
                                                      units=units,
@@ -684,23 +719,34 @@ class GridVectorProp(VectorProp):
                    dataset=ds,
                    **kwargs)
 
-    def _check_consistency(self):
-        '''
-        Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
-        '''
-        if self.units is None or self.time is None or self.grid is None:
-            return
-        for v in self.variables:
-            if v.units != self.units:
-                raise ValueError("Variable {0} did not have units consistent with what was specified. Got: {1} Expected {2}".format(v.name, v.units, self.units))
-            if v.time != self.time:
-                raise ValueError("Variable {0} did not have time consistent with what was specified Got: {1} Expected {2}".format(v.name, v.time, self.time))
-            if v.grid != self.grid:
-                raise ValueError("Variable {0} did not have grid consistent with what was specified Got: {1} Expected {2}".format(v.name, v.grid, self.grid))
-            if v.grid_file != self.grid_file:
-                raise ValueError("Variable {0} did not have grid_file consistent with what was specified Got: {1} Expected {2}".format(v.name, v.grid_file, self.grid_file))
-            if v.data_file != self.data_file:
-                raise ValueError("Variable {0} did not have data_file consistent with what was specified Got: {1} Expected {2}".format(v.name, v.data_file, self.data_file))
+    @classmethod
+    def new_from_dict(cls, dict_):
+        
+        return super(GridVectorProp, cls).new_from_dict(dict_)
+
+    @classmethod
+    def _gen_varnames(cls,
+                      filename=None,
+                      dataset=None):
+        """
+        Function to find the default variable names if they are not provided.
+
+        :param filename: Name of file that will be searched for variables
+        :param dataset: Existing instance of a netCDF4.Dataset
+        :type filename: string
+        :type dataset: netCDF.Dataset
+        :return: List of default variable names, or None if none are found
+        """
+        df = None
+        if dataset is not None:
+            df = dataset
+        else:
+            df = _get_dataset(filename)
+        for n in cls.default_names:
+            if all([sn in df.variables.keys() for sn in n]):
+                return n
+        raise ValueError("Default names not found.")
+ 
 
     @property
     def grid(self):
@@ -708,44 +754,13 @@ class GridVectorProp(VectorProp):
 
     @grid.setter
     def grid(self, g):
-        if not (isinstance(g, (pyugrid.UGrid, pysgrid.SGrid))):
-            raise ValueError('Grid must be set with a pyugrid.UGrid or pysgrid.SGrid object')
-        if self._variables is not None:
+        if self.variables is not None:
             if g.infer_location(self.variables[0]) is None:
                 raise ValueError("Grid with shape {0} not compatible with data of shape {1}".format(g.shape, self.data_shape))
             for v in self.variables:
                 v.grid = g
         else:
             self._grid = g
-
-    @property
-    def variables(self):
-        return self._variables
-
-    @variables.setter
-    def variables(self, vs):
-        if vs is None:
-            self._variables = None
-            return
-        new_vars = []
-        for i, var in enumerate(vs):
-            if not isinstance(var, GriddedProp):
-                if (isinstance(var, (collections.Iterable, nc4.Variable)) and
-                        len(var) == len(self.time) and
-                        self.grid.infer_location(var) is not None):
-                    new_vars.append(GriddedProp(name='var{0}'.format(i),
-                                    units=self.units,
-                                    time=self.time,
-                                    grid=self.grid,
-                                    data=vs[i],
-                                    grid_file=self.grid_file,
-                                    data_file=self.data_file))
-                else:
-                    raise ValueError('Variables must contain an iterable, netCDF4.Variable or GriddedProp objects')
-            else:
-                new_vars.append(var)
-        self._variables = new_vars
-        self._check_consistency()
 
     @property
     def is_data_on_nodes(self):
@@ -774,8 +789,8 @@ class GridVectorProp(VectorProp):
 
     @property
     def data_shape(self):
-        if self._variables is not None:
-            return self.variables.data.shape
+        if self.variables is not None:
+            return self.variables[0].data.shape
         else:
             return None
 
@@ -803,54 +818,6 @@ class GridVectorProp(VectorProp):
         else:
             return None
 
-    def set_attr(self,
-                 name=None,
-                 units=None,
-                 time=None,
-                 variables=None,
-                 grid=None,
-                 grid_file=None,
-                 data_file=None,):
-
-        self.name = name if name is not None else self.name
-        if variables is not None:
-            if self.variables is not None and len(variables) != len(self.variables):
-                raise ValueError('Cannot change the number of variables using set_attr. {0} provided, {1} required'.format(len(variables), len(self.variables)))
-
-            for i, v in enumerate(variables):
-                if isinstance(v, GriddedProp):
-                    variables[i] = variables.data
-
-        units = self.units if units is None else units
-        time = self.time if time is None else time
-        grid = self.grid if grid is None else grid
-        grid_file = self.grid_file if grid_file is None else grid_file
-        data_file = self.data_file if data_file is None else data_file
-
-        for i, var in enumerate(self.variables):
-            if variables is None:
-                nv = None
-            else:
-                nv = variables[i]
-            var.set_attr(units=units,
-                         time=time,
-                         data=nv,
-                         grid=grid,
-                         grid_file=grid_file,
-                         data_file=data_file,)
-        else:
-            for i, var in enumerate(self.variables):
-                var.set_attr(units=units,
-                             time=time,
-                             grid=grid,
-                             grid_file=grid_file,
-                             data_file=data_file,)
-        self._units = units
-        self._time = time
-        self._grid = grid
-        self.grid_file = grid_file
-        self.grid_file = grid_file
-
     def at(self, points, time, units=None, depth=-1, extrapolate=False, memoize=True, _hash=None, **kwargs):
         mem = memoize
         if hash is None:
@@ -873,27 +840,3 @@ class GridVectorProp(VectorProp):
         if mem:
             self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
         return value
-
-    @classmethod
-    def _gen_varnames(cls,
-                      filename=None,
-                      dataset=None):
-        """
-        Function to find the default variable names if they are not provided.
-
-        :param filename: Name of file that will be searched for variables
-        :param dataset: Existing instance of a netCDF4.Dataset
-        :type filename: string
-        :type dataset: netCDF.Dataset
-        :return: List of default variable names, or None if none are found
-        """
-        df = None
-        if dataset is not None:
-            df = dataset
-        else:
-            df = _get_dataset(filename)
-        for n in cls.default_names:
-            if all([sn in df.variables.keys() for sn in n]):
-                return n
-        raise ValueError("Default names not found.")
- 

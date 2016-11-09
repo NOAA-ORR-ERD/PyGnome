@@ -35,7 +35,7 @@ class EnvProp(object):
     _schema = PropertySchema
     
     _state.add_field([serializable.Field('units', save=True, update=True),
-                      serializable.Field('time', save=True, update=True)])
+                      serializable.Field('time', save=True, update=True, save_reference=True)])
 
     def __init__(self,
                  name=None,
@@ -164,7 +164,19 @@ class EnvProp(object):
         return cpy
 
 
-class VectorProp(object):
+class VectorPropSchema(base_schema.ObjType):
+    name = SchemaNode(String(), missing=drop)
+    units = SchemaNode(String(), missing=drop)
+    time = TimeSchema(missing=drop)
+
+
+class VectorProp(serializable.Serializable):
+    
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = VectorPropSchema
+
+    _state.add_field([serializable.Field('units', save=True, update=True),
+                      serializable.Field('time', save=True, update=True, save_reference=True)])
 
     def __init__(self,
                  name=None,
@@ -195,11 +207,6 @@ class VectorProp(object):
                 time = Time(time)
             units = variables[0].units if units is None else units
             time = variables[0].time if time is None else time
-            for v in variables:
-                if (v.units != units or
-                        v.time != time):
-                    raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
-
         if units is None:
             units = variables[0].units
         self._units = units
@@ -288,6 +295,7 @@ class VectorProp(object):
         :rtype: double
         '''
         return np.column_stack([var.at(*args, **kwargs) for var in self._variables])
+
 
 
 class Time(serializable.Serializable):

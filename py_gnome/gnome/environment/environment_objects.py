@@ -17,10 +17,11 @@ import pysgrid
 import unit_conversion
 from .. import _valid_units
 from gnome.environment import Environment
+from gnome.environment.grid import PyGrid
 from gnome.environment.property import Time, PropertySchema, VectorProp, EnvProp
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp, TimeSeriesPropSchema
-from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema
-from gnome.utilities.file_tools.data_helpers import _init_grid, _get_dataset
+from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema, GridVectorPropSchema
+from gnome.utilities.file_tools.data_helpers import _get_dataset
 
 
 class Depth(object):
@@ -144,14 +145,7 @@ class S_Depth(object):
         return indices, alphas
 
 
-class VelocityTS(TSVectorProp, serializable.Serializable):
-
-    _state = copy.deepcopy(serializable.Serializable._state)
-    _schema = TimeSeriesPropSchema
-
-    _state.add_field([serializable.Field('units', save=True, update=True),
-                      serializable.Field('timeseries', save=True, update=True),
-                      serializable.Field('varnames', save=True, update=True)])
+class VelocityTS(TSVectorProp):
 
     def __init__(self,
                  name=None,
@@ -203,7 +197,7 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
         direction = direction * -1 - 90
         u = speed * np.cos(direction * np.pi / 180)
         v = speed * np.sin(direction * np.pi / 180)
-        return super(VelocityTS, self).constant(name, units, variables=[[u], [v]])
+        return super(VelocityTS, cls).constant(name, units, variables=[[u], [v]])
 
     @property
     def timeseries(self):
@@ -264,21 +258,8 @@ class VelocityTS(TSVectorProp, serializable.Serializable):
         return super(VelocityTS, cls).new_from_dict(dict_)
 
 
-class VelocityGridSchema(PropertySchema):
-    data_file = SchemaNode(String(), missing=drop)
-    grid_file = SchemaNode(String(), missing=drop)
+class VelocityGrid(GridVectorProp):
 
-
-class VelocityGrid(GridVectorProp, serializable.Serializable):
-    _state = copy.deepcopy(serializable.Serializable._state)
-
-    _schema = VelocityGridSchema
-
-    _state.add_field([serializable.Field('units', save=True, update=True),
-                      serializable.Field('varnames', save=True, update=True),
-                      serializable.Field('time', save=True, update=True),
-                      serializable.Field('data_file', save=True, update=True),
-                      serializable.Field('grid_file', save=True, update=True)])
 
     def __init__(self,
                  name=None,
@@ -322,23 +303,6 @@ class VelocityGrid(GridVectorProp, serializable.Serializable):
 
     def __str__(self):
         return self.serialize(json_='save').__repr__()
-
-    def save(self, saveloc, references=None, name=None):
-        '''
-        Write Wind timeseries to file or to zip,
-        then call save method using super
-        '''
-        name = (name, 'Wind.json')[name is None]
-        ts_name = os.path.splitext(name)[0] + '_data.WND'
-
-        if zipfile.is_zipfile(saveloc):
-            self._write_timeseries_to_zip(saveloc, ts_name)
-            self._filename = ts_name
-        else:
-            datafile = os.path.join(saveloc, ts_name)
-            self._write_timeseries_to_file(datafile)
-            self._filename = datafile
-        return super(Wind, self).save(saveloc, references, name)
 
 
 class WindTS(VelocityTS, Environment):
@@ -478,15 +442,6 @@ class GridSediment(GriddedProp, Environment):
 
 
 class IceConcentration(GriddedProp, Environment, serializable.Serializable):
-    _state = copy.deepcopy(serializable.Serializable._state)
-
-    _schema = GridPropSchema
-
-    _state.add_field([serializable.Field('units', save=True, update=True),
-                      serializable.Field('varname', save=True, update=False),
-                      serializable.Field('time', save=True, update=True),
-                      serializable.Field('data_file', save=True, update=True),
-                      serializable.Field('grid_file', save=True, update=True)])
 
     default_names = ['ice_fraction', ]
 
@@ -693,13 +648,22 @@ class IceVelocity(VelocityGrid, Environment):
                               **kwargs)
 
 
+class IceAwarePropSchema(base_schema.ObjType):
+    ice_conc_var = PropertySchema()
+
 class IceAwareProp(serializable.Serializable, Environment):
+    
+    _schema = IceAwarePropSchema
     _state = copy.deepcopy(serializable.Serializable._state)
-    _schema = VelocityGridSchema
     _state.add_field([serializable.Field('units', save=True, update=True),
                       serializable.Field('time', save=True, update=True),
                       serializable.Field('data_file', save=True, update=True),
-                      serializable.Field('grid_file', save=True, update=True)])
+                      serializable.Field('grid_file', save=True, update=True),
+                      serializable.Field('ice_conc_var', save=True, update=True)])
+
+    def serialize(self, json_='webapi'):
+        pass
+        return serializable.Serializable.serialize(self, json_=json_)
 
     def __init__(self,
                  name=None,
@@ -750,9 +714,9 @@ class IceAwareProp(serializable.Serializable, Environment):
             ds = dg = dataset
 
         if grid is None:
-            grid = _init_grid(grid_file,
-                              grid_topology=grid_topology,
-                              dataset=dg)
+            grid = PyGrid.from_netCDF(grid_file,
+                                      dataset=dg,
+                                      grid_topology=grid_topology)
         if ice_var is None:
             ice_var = IceVelocity.from_netCDF(filename,
                                               grid=grid,
@@ -767,6 +731,7 @@ class IceAwareProp(serializable.Serializable, Environment):
                                                         grid=grid,
                                                         dataset=ds,
                                                         **kwargs)
+            # ADD GRID_FILE AND DATA_FILE
         if name is None:
             name = 'IceAwareProp'
         if units is None:
@@ -782,8 +747,16 @@ class IceAwareProp(serializable.Serializable, Environment):
                    **kwargs)
 
 
+class IceAwareCurrentSchema(IceAwareVectorSchema):
+    water_var = GridVectorPropSchema()
+
+
 class IceAwareCurrent(IceAwareProp):
 
+    _schema = IceAwareCurrentSchema
+    _state = copy.deepcopy(IceAwareProp._state)
+    _state.add_field([serializable.Field('water_var', save=True, update=True)])
+    
     def __init__(self,
                  name=None,
                  units=None,
@@ -840,9 +813,9 @@ class IceAwareCurrent(IceAwareProp):
             ds = dg = dataset
 
         if grid is None:
-            grid = _init_grid(grid_file,
-                              grid_topology=grid_topology,
-                              dataset=dg)
+            grid = PyGrid.from_netCDF(grid_file,
+                                      dataset=dg,
+                                      grid_topology=grid_topology)
         if water_var is None:
             water_var = GridCurrent.from_netCDF(filename,
                                                 time=time,
@@ -941,9 +914,9 @@ class IceAwareWind(IceAwareProp):
             ds = dg = dataset
 
         if grid is None:
-            grid = _init_grid(grid_file,
-                              grid_topology=grid_topology,
-                              dataset=dg)
+            grid = PyGrid.from_netCDF(grid_file,
+                                      dataset=dg,
+                                      grid_topology=grid_topology)
         if wind_var is None:
             wind_var = GridWind.from_netCDF(filename,
                                             time=time,
@@ -979,292 +952,3 @@ class IceAwareWind(IceAwareProp):
             return vels
         else:
             return self.wind_var.at(points, time, units, extrapolate)
-
-
-_valid_temp_units = _valid_units('Temperature')
-_valid_dist_units = _valid_units('Length')
-_valid_kvis_units = _valid_units('Kinematic Viscosity')
-_valid_density_units = _valid_units('Density')
-_valid_salinity_units = ('psu',)
-_valid_sediment_units = _valid_units('Concentration In Water')
-
-
-class WaterConditions(Environment, serializable.Serializable):
-
-    _ref_as = 'water'
-    _state = copy.deepcopy(Environment._state)
-    _units_type = {'temperature': ('temperature', _valid_temp_units),
-                   'salinity': ('salinity', _valid_salinity_units),
-                   'sediment': ('concentration in water',
-                                _valid_sediment_units),
-                   'wave_height': ('length', _valid_dist_units),
-                   'fetch': ('length', _valid_dist_units),
-                   'kinematic_viscosity': ('kinematic viscosity',
-                                           _valid_kvis_units),
-                   'density': ('density', _valid_density_units),
-                   }
-
-    # keep track of valid SI units for properties - these are used for
-    # conversion since internal code uses SI units. Don't expect to change
-    # these so make it a class level attribute
-    _si_units = {'temperature': 'K',
-                 'salinity': 'psu',
-                 'sediment': 'kg/m^3'}
-
-    def __init__(self,
-                 temperature=300.,
-                 salinity=35.0,
-                 sediment=.005,
-                 fetch=0,
-                 name='WaterConditions',
-                 **kwargs):
-        '''
-        Assume units are SI for all properties. 'units' attribute assumes SI
-        by default. This can be changed, but initialization takes SI.
-        '''
-        if isinstance(temperature, (Number)):
-            self.temperature = TemperatureTS.constant(data=temperature)
-        elif isinstance(temperature, (EnvProp)):
-            self.temperature = temperature
-        else:
-            raise TypeError('Temperature is not an environment object or number')
-        if isinstance(salinity, (Number)):
-            self.salinity = TimeSeriesProp.constant(name='Salinity', units='psu', data=salinity)
-        elif isinstance(salinity, (EnvProp)):
-            self.salinity = salinity
-        else:
-            raise TypeError('Salinity is not an environment object or number')
-        if isinstance(sediment, (Number)):
-            self.sediment = TimeSeriesProp.constant(name='Sediment', units='kg/m^3', data=sediment)
-        elif isinstance(sediment, (EnvProp)):
-            self.sediment = sediment
-        else:
-            raise TypeError('Sediment is not an environment object or number')
-#         self.wave_height = wave_height
-        self.fetch = fetch
-        self.kinematic_viscosity = 0.000001
-        self.name = 'WaterConditions'
-#         self._units = dict(self._si_units)
-#         self.units = units
-
-    @classmethod
-    def from_netCDF(cls,
-                    filename=None,
-                    grid_topology=None,
-                    name=None,
-                    temperature=None,
-                    salinity=None,
-                    sediment=None,
-                    grid=None,
-                    dataset=None,
-                    grid_file=None,
-                    data_file=None):
-        if filename is not None:
-            data_file = filename
-            grid_file = filename
-
-        ds = None
-        dg = None
-        if dataset is None:
-            if grid_file == data_file:
-                ds = dg = _get_dataset(grid_file)
-            else:
-                ds = _get_dataset(data_file)
-                dg = _get_dataset(grid_file)
-        else:
-            ds = dg = dataset
-
-        if grid is None:
-            grid = _init_grid(grid_file,
-                             grid_topology=grid_topology,
-                             dataset=dg)
-
-        if time is None:
-            time = ice_var.time
-
-        if temperature is None:
-            try:
-                temperature = GridTemperature.from_netCDF(filename,
-                                                          time=time,
-                                                          grid=grid,
-                                                          dataset=ds)
-            except:
-                temperature = 300.
-        if salinity is None:
-            try:
-                salinity = GridSalinity.from_netCDF(filename,
-                                                    time=time,
-                                                    grid=grid,
-                                                    dataset=ds)
-            except:
-                salinity = 35.
-        if sediment is None:
-            try:
-                sediment = GridSediment.from_netCDF(filename,
-                                                    time=time,
-                                                    grid=grid,
-                                                    dataset=ds)
-            except:
-                sediment = .005
-        if name is None:
-            name = 'WaterConditions'
-        if units is None:
-            units = water_var.units
-        return cls(name=name,
-                   units=units,
-                   time=time,
-                   ice_var=ice_var,
-                   water_var=water_var,
-                   ice_conc_var=ice_conc_var,
-                   grid=grid,
-                   grid_file=grid_file,
-                   data_file=data_file)
-
-    def get(self, attr, unit=None, points=None, time=None, extrapolate=True):  # Arguments should be reorganized eventually
-        var = getattr(self, attr)
-        if isinstance(var, TimeSeriesProp, TSVectorProp):
-            if var.is_constant() or (time is not None):
-                return var.at(points, time, units=unit)
-            else:
-                raise ValueError("Time must be specified to get value from non-constant time series property")
-        elif isinstance(var, GriddedProp, GridVectorProp):
-            if points is None:
-                raise ValueError("Points must be defined to get value from gridded property")
-            if time is None:
-                raise ValueError("Time must be defined to get value from gridded property")
-            return var.at(points, time, units=unit)
-        else:
-            raise ValueError("var is not a property object")
-
-
-def Wind(*args, **kwargs):
-    '''
-    Wind environment object factory function
-    '''
-    units = kwargs['units'] if 'units' in kwargs else 'm/s'
-    name = kwargs['name'] if 'name' in kwargs else 'Wind'
-
-    # Constant wind - Wind(speed=s, direction=d)
-    if ('speed' in kwargs and 'direction' in kwargs) or len(args) == 2:
-        speed = direction = 0
-        if len(args) == 2:
-            speed = args[0]
-            direction = args[1]
-        else:
-            speed = kwargs['speed']
-            direction = kwargs['direction']
-        name = 'Constant Wind' if name is 'Wind' else name
-        if isinstance(speed, Number):
-            return WindTS.constant(name, units, speed, direction)
-        else:
-            raise TypeError('speed must be a single value. For a timeseries, use timeseries=[(t0, (mag,dir)),(t1, (mag,dir))]')
-
-    # Time-varying wind - Wind(timeseries=[(t0, (mag,dir)),(t1, (mag,dir)),...])
-    if ('timeseries' in kwargs):
-        name = 'Wind Time Series' if name is 'Wind' else name
-        return WindTS(name=name, units=units, timeseries=kwargs['timeseries'])
-
-    # Gridded Wind - Wind(filename=fn, dataset=ds)
-    if ('filename' in kwargs or 'dataset' in kwargs):
-        if 'ice_aware' in kwargs:
-            # Ice Aware Gridded Wind - Wind(filename=fn, dataset=ds, ice_aware=True)
-            name = 'IceAwareWind' if name is 'Wind' else name
-            return IceAwareWind.from_netCDF(**kwargs)
-        name = 'GridWind' if name is 'Wind' else name
-        return GridWind.from_netCDF(**kwargs)
-
-    # Arguments do not trigger a factory route. Attempt construction using default class __init__s
-    w = None
-    warnings.warn('Attempting default Wind constructions')
-    return _attempt_construction([WindTS, GridWind], **kwargs)
-
-
-def Current(*args, **kwargs):
-    '''
-    Wind environment object factory function
-    '''
-    units = kwargs['units'] if 'units' in kwargs else 'm/s'
-    name = kwargs['name'] if 'name' in kwargs else 'Current'
-
-    # Constant wind - Wind(speed=s, direction=d)
-    if ('speed' in kwargs and 'direction' in kwargs) or len(args) == 2:
-        speed = direction = 0
-        if len(args) == 2:
-            speed = args[0]
-            direction = args[1]
-        else:
-            speed = kwargs['speed']
-            direction = kwargs['direction']
-        name = 'Constant Current' if name is 'Wind' else name
-        if isinstance(speed, Number):
-            return CurrentTS.constant_current(name, units, speed, direction)
-        else:
-            raise TypeError('speed must be a single value. For a timeseries, use timeseries=[(t0, (mag,dir)),(t1, (mag,dir))]')
-
-    # Time-varying wind - Wind(timeseries=[(t0, (mag,dir)),(t1, (mag,dir)),...])
-    if ('timeseries' in kwargs):
-        name = 'Current Time Series' if name is 'Current' else name
-        return CurrentTS(name=name, units=units, timeseries=kwargs['timeseries'])
-
-    # Gridded Wind - Wind(filename=fn, dataset=ds)
-    if ('filename' in kwargs or 'dataset' in kwargs):
-        if 'ice_aware' in kwargs:
-            # Ice Aware Gridded Current - Current(filename=fn, dataset=ds, ice_aware=True)
-            name = 'IceAwareCurrent' if name is 'Current' else name
-            return IceAwareCurrent.from_netCDF(**kwargs)
-        name = 'GridCurrent' if name is 'Current' else name
-        return GridCurrent.from_netCDF(**kwargs)
-
-    # Arguments do not trigger a factory route. Attempt construction using default class __init__s
-    w = None
-    warnings.warn('Attempting default Wind constructions')
-    return _attempt_construction([CurrentTS, GridCurrent], **kwargs)
-
-
-def Temperature(*args, **kwargs):
-    units = kwargs['units'] if 'units' in kwargs else 'K'
-    name = kwargs['name'] if 'name' in kwargs else 'WaterTemp'
-    kwargs['units'] = units
-    kwargs['name'] = name
-    # Constant Temperature - WaterTemp(temp=t)
-    if ('temp' in kwargs or 'temperature' in kwargs) or len(args) == 1:
-        temp = 0
-        if len(args) == 1:
-            temp = args[0]
-        else:
-            temp = kwargs['temp'] if 'temp' in kwargs else kwargs['temperature']
-        name = 'Constant Temperature' if name is 'Temperature' else name
-        if isinstance(speed, Number):
-            return TemperatureTS.constant_temp(name, units, temp)
-        else:
-            raise TypeError('temperature must be a single value. For a timeseries, use timeseries=[(t1, temp1), (t2, temp2),...]')
-
-    # Time-varying temp - Temperature(timeseries=[(t1, temp1), (t2, temp2),...])
-    if ('timeseries' in kwargs):
-        name = 'Temperature Time Series' if name is 'Temperature' else name
-        return TemperatureTS(name=name, units=units, timeseries=kwargs['timeseries'])
-
-    # Gridded Temp - Temperature(filename=fn, dataset=ds)
-    if ('filename' in kwargs or 'dataset' in kwargs):
-        if 'ice_aware' in kwargs:
-            # Ice Aware Gridded Wind - Wind(filename=fn, dataset=ds, ice_aware=True)
-            name = 'IceAwareWaterTemp' if name is 'Temperature' else name
-            return IceAwareWaterTemperature.from_netCDF(**kwargs)
-        name = 'GridTemperature' if name is 'Temperature' else name
-        return GridTemperature.from_netCDF(**kwargs)
-
-    # Arguments do not trigger a factory route. Attempt construction using default class __init__s
-    w = None
-    warnings.warn('Attempting default Temperature constructions')
-    return _attempt_construction([TemperatureTS, GridTemperature], **kwargs)
-
-
-def _attempt_construction(types, **kwargs):
-    for t in types:
-        try:
-            prop = t(**kwargs)
-            return prop
-        except Error as e:
-            print('t.__name__ construction failed: {0}'.format(e))
-    raise RuntimeError('Unable to build any type of environment object using the arguments provided. Please see the documentation for the usage of')
-

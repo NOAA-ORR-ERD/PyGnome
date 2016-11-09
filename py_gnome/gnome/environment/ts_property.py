@@ -4,43 +4,38 @@ import copy
 import netCDF4 as nc4
 import numpy as np
 
-from gnome.environment.property import EnvProp, VectorProp, Time, PropertySchema
+from gnome.environment.property import EnvProp, VectorProp, Time, PropertySchema, TimeSchema
 from datetime import datetime, timedelta
 from dateutil import parser
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
 from numbers import Number
+from gnome.utilities import serializable
 
 import unit_conversion
 import collections
 
 
 class TimeSeriesPropSchema(PropertySchema):
+    time = TimeSchema(missing=drop)
+    data = SequenceSchema(SchemaNode(Float()))
     timeseries = SequenceSchema(
                                 TupleSchema(
                                             children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
                                                       SchemaNode(Float(), missing=0)
                                                       ],
-                                            missing=drop)
-                                )
-    varnames = SequenceSchema(SchemaNode(String(), missing=drop))
+                                            missing=drop),
+                                missing=drop)
 
 
-class VelocityTSSchema(PropertySchema):
-    timeseries = SequenceSchema(
-                                TupleSchema(
-                                            children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
-                                                      TupleSchema(children=[
-                                                                            SchemaNode(Float(), missing=0),
-                                                                            SchemaNode(Float(), missing=0)
-                                                                            ]
-                                                                 )
-                                                      ],
-                                            missing=drop)
-                                )
-    varnames = SequenceSchema(SchemaNode(String(), missing=drop))
+class TimeSeriesProp(EnvProp, serializable.Serializable):
 
-
-class TimeSeriesProp(EnvProp):
+    _state = copy.deepcopy(EnvProp._state)
+    _schema = TimeSeriesPropSchema
+    
+    _state.add_field([serializable.Field('timeseries', save=False, update=True),
+                      serializable.Field('data', save=True, update=False)])
+    
+#     _state.update('time', update=False)
 
     def __init__(self,
                  name=None,
@@ -177,7 +172,30 @@ class TimeSeriesProp(EnvProp):
         return not self.__eq__(o)
 
 
+class TSVectorPropSchema(PropertySchema):
+    time = TimeSchema(missing=drop)
+    timeseries = SequenceSchema(
+                                TupleSchema(
+                                            children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
+                                                      TupleSchema(children=[
+                                                                            SchemaNode(Float(), missing=0),
+                                                                            SchemaNode(Float(), missing=0)
+                                                                            ]
+                                                                 )
+                                                      ],
+                                            missing=drop),
+                                missing=drop)
+    data = SequenceSchema(TupleSchema(SchemaNode(Float())))
+    varnames = SequenceSchema(SchemaNode(String(), missing=drop), missing=drop)
+
+
 class TSVectorProp(VectorProp):
+
+    _schema = TSVectorPropSchema
+    _state = copy.deepcopy(VectorProp._state)
+
+    _state.add_field([serializable.Field('timeseries', save=False, update=True),
+                      serializable.Field('data', save=True, update=False)])
 
     def __init__(self,
                  name=None,
@@ -230,26 +248,6 @@ class TSVectorProp(VectorProp):
         return map(lambda x, y, z: (x, (y, z)), self.time.time, self.variables[0], self.variables[1])
 
     @property
-    def variables(self):
-        return self._variables
-
-    @variables.setter
-    def variables(self, vs):
-        new_vars = []
-        for i, var in enumerate(vs):
-            if not isinstance(var, TimeSeriesProp):
-                if isinstance(var, collections.Iterable) and len(var) == len(self.time):
-                    new_vars.append(TimeSeriesProp(name='var{0}'.format(i),
-                                                   units=self.units, time=self.time,
-                                                   data=vs[i]))
-                else:
-                    raise ValueError('Variables must contain iterables or TimeSeriesProp objects')
-            else:
-                new_vars.append(var)
-        self._variables = new_vars
-        self._check_consistency()
-
-    @property
     def time(self):
         return self._time
 
@@ -264,30 +262,6 @@ class TSVectorProp(VectorProp):
             self._time = Time(t)
         else:
             raise ValueError("Object being assigned must be an iterable or a Time object")
-
-    def set_attr(self,
-                 name=None,
-                 units=None,
-                 time=None,
-                 variables=None):
-        self.name = name if name is not None else self.name
-        self.units = units if units is not None else self.units
-        if variables is not None and time is not None:
-            new_vars = []
-            for i, var in enumerate(variables):
-                if not isinstance(var, TimeSeriesProp):
-                    if isinstance(var, collections.Iterable) and len(var) == len(time):
-                        new_vars.append(TimeSeriesProp(name='var{0}'.format(i),
-                                                       units=self.units, time=time,
-                                                       data=variables[i]))
-                    else:
-                        raise ValueError('Variables must contain iterables or TimeSeriesProp objects')
-            self._variables = new_vars
-            self.time = time
-        else:
-            if variables is not None:
-                self.variables = variables
-            self.time = time if time is not None else self.time
 
     def is_constant(self):
         return len(self.variables[0]) == 1
