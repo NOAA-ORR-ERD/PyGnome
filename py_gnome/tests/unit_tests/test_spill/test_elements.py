@@ -3,7 +3,11 @@ Test various element types available for the Spills
 Element Types are very simple classes. They simply define the initializers.
 These are also tested in the test_spill_container module since it allows for
 more comprehensive testing
+
+FIXME: a number of these tests require a spill object -- those tests really should be
+       moved to the spill object -- or maybe not used at all?
 '''
+
 from datetime import datetime, timedelta
 import os
 
@@ -283,7 +287,7 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
         for spill in sc.spills:
             spill_mask = sc.get_spill_mask(spill)
             # todo: need better API for access
-            s_arr_types = spill.get('array_types')
+            s_arr_types = spill.array_types
 
             if np.any(spill_mask):
                 for key in arr_types:

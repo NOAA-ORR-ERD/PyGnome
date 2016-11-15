@@ -44,7 +44,7 @@ def test_emulsification(oil, temp, num_elems, on):
         weathering_data_arrays(emul.array_types,
                                water,
                                element_type=floating(substance=oil))[:2]
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     emul.prepare_for_model_run(sc)
@@ -144,7 +144,7 @@ def test_bullwinkle():
     '''
 
     et = floating(substance=test_oil)
-    assert np.isclose(et.substance.bullwinkle, 0.193724)
+    assert np.isclose(et.substance.bullwinkle, 0.25905)
 
     et.substance.bullwinkle = .4
     assert et.substance.bullwinkle == .4

@@ -2,13 +2,16 @@
 test object in environment module
 '''
 import pytest
+import numpy as np
+import datetime
 from unit_conversion import InvalidUnitError
 from gnome.environment import Water
-
+from gnome.environment import TemperatureTS
 
 def test_Water_init():
     w = Water()
-    assert w.temperature == 300.0
+    t = TemperatureTS(name='test', units='K', time=[w.temperature.time], data=np.array([[300]]))
+    assert w.temperature == t
     assert w.salinity == 35.0
     w = Water(temperature=273, salinity=0)
     assert w.temperature == 273.0

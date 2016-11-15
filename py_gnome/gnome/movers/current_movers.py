@@ -1040,9 +1040,11 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     # scale_value = SchemaNode(Float())
 
 
-class ComponentMover(CyMover, serializable.Serializable):
+#class ComponentMover(CyMover, serializable.Serializable):
+class ComponentMover(CurrentMoversBase, serializable.Serializable):
 
-    _state = copy.deepcopy(CyMover._state)
+    #_state = copy.deepcopy(CyMover._state)
+    _state = copy.deepcopy(CurrentMoversBase._state)
 
     _update = ['scale_refpoint',
                'pat1_angle', 'pat1_speed', 'pat1_speed_units',
@@ -1237,6 +1239,35 @@ class ComponentMover(CyMover, serializable.Serializable):
 
         self.mover.set_ossm(wind_obj.ossm)
         self._wind = wind_obj
+
+    def get_grid_data(self):
+        """
+            Invokes the GetToplogyHdl method of TriGridVel_c object
+        """
+        # we are assuming cats are always triangle grids,
+        # but may want to extend
+        return self.get_triangles()
+
+    def get_center_points(self):
+        return self.get_triangle_center_points()
+
+    def get_scaled_velocities(self, model_time):
+        """
+        Get file values scaled to ref pt value, with tide applied (if any)
+        """
+        velocities = self.mover._get_velocity_handle()
+        #ref_scale = self.ref_scale  # this needs to be computed, needs a time
+
+        #if self._tide is not None:
+            #time_value = self._tide.cy_obj.get_time_value(model_time)
+            #tide = time_value[0][0]
+        #else:
+            #tide = 1
+
+        #velocities['u'] *= ref_scale * tide
+        #velocities['v'] *= ref_scale * tide
+
+        return velocities
 
     def serialize(self, json_='webapi'):
         """

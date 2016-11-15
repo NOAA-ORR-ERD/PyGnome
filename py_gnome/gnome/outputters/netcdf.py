@@ -119,9 +119,11 @@ class NetCDFOutput(Outputter, Serializable):
 
     'standard' : the basic stuff most people would want
 
-    'most': everything the model is tracking except the internal-use-only arrays
+    'most': everything the model is tracking except the internal-use-only
+            arrays
 
-    'all': everything tracked by the model (mostly used for diagnostics of save files)
+    'all': everything tracked by the model (mostly used for diagnostics of
+           save files)
 
 
     .. note::
@@ -419,7 +421,8 @@ class NetCDFOutput(Outputter, Serializable):
                                             spills,
                                             **kwargs)
 
-        Write global attributes and define dimensions and variables for NetCDF file.
+        Write global attributes and define dimensions and variables for
+        NetCDF file.
         This must be done in prepare_for_model_run because if model _state
         changes, it is rewound and re-run from the beginning.
 
@@ -524,12 +527,12 @@ class NetCDFOutput(Outputter, Serializable):
                     # give this grp a dimension for time
                     grp.createDimension('time', None)  # unlimited
                     for key in sc.mass_balance:
+                        # mass_balance variables get a smaller chunksize
                         self._create_nc_var(grp,
                                             var_name=key,
                                             dtype='float',
                                             shape=('time',),
                                             chunksz=(256,),
-                                            # smaller chunksize for mass_balance
                                             )
 
         # need to keep track of starting index for writing data since variable
@@ -657,13 +660,13 @@ class NetCDFOutput(Outputter, Serializable):
         here in case it needs to be called from elsewhere
         '''
         try:
-          os.remove(self.netcdf_filename)
+            os.remove(self.netcdf_filename)
         except OSError:
-            pass # it must not be there
+            pass  # it must not be there
         try:
             os.remove(self._u_netcdf_filename)
         except OSError:
-            pass # it must not be there
+            pass  # it must not be there
 
     def rewind(self):
         '''

@@ -70,21 +70,38 @@ class TestRelease:
 
 
 def test_grid_release():
+    """
+    fixme: test something more here? like actually have the release do its thing?
+    """
     bounds = ((0, 10), (2, 12))
     release = GridRelease(datetime.now(), bounds, 3)
 
-    assert np.array_equal(release.start_position, [[0.,  10.,  0.],
-                                                   [1.,  10.,  0.],
-                                                   [2.,  10.,  0.],
-                                                   [0.,  11.,  0.],
-                                                   [1.,  11.,  0.],
-                                                   [2.,  11.,  0.],
-                                                   [0.,  12.,  0.],
-                                                   [1.,  12.,  0.],
-                                                   [2.,  12.,  0.]])
+    assert np.array_equal(release.start_position, [[0., 10., 0.],
+                                                   [1., 10., 0.],
+                                                   [2., 10., 0.],
+                                                   [0., 11., 0.],
+                                                   [1., 11., 0.],
+                                                   [2., 11., 0.],
+                                                   [0., 12., 0.],
+                                                   [1., 12., 0.],
+                                                   [2., 12., 0.]])
 
 
-'''  todo: add other release to this test - need schemas for all '''
+def test_release_no_attr():
+    """
+    a lot of attribute access is to get attributes of the initilizers
+
+    that is tested in other tests, but this tests that it fails when it should
+    """
+    rel = PointLineRelease(release_time=rel_time,
+                           num_elements=5,
+                           start_position=(0, 0, 0)),
+
+    with pytest.raises(AttributeError):
+        rel.something_weird
+
+
+# todo: add other release to this test - need schemas for all
 
 rel_time = datetime(2012, 8, 20, 13)
 rel_type = [PointLineRelease(release_time=rel_time,
@@ -98,6 +115,7 @@ rel_type = [PointLineRelease(release_time=rel_time,
                               num_per_timestep=5,
                               start_position=(0, 0, 0))]
 # SpatialRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
+
 
 
 @pytest.mark.parametrize("rel_type", rel_type)
@@ -166,7 +184,7 @@ class TestInitElementsFromFile():
     def test_full_run(self):
         'just check that all data arrays work correctly'
         s = Spill(InitElemsFromFile(testdata['nc']['nc_output']))
-        model = Model(start_time=s.get('release_time'),
+        model = Model(start_time=s.release_time,
                       time_step=self.time_step.total_seconds(),
                       duration=timedelta(days=2))
         model.spills += s
@@ -186,6 +204,8 @@ class TestInitElementsFromFile():
                                'last_water_positions'):  # all water map
                         assert np.all(sc[key] == s.release._init_data[key])
                     else:
+                        print sc[key]
+                        print s.release._init_data[key]
                         assert np.any(sc[key] != s.release._init_data[key])
 
 
@@ -240,7 +260,7 @@ class TestContinuousRelease:
         for ix in range(5):
             time = self.rel_time + timedelta(seconds=900 * ix)
             num_les = sc.release_elements(900, time)
-            if time <= s.get('end_release_time'):
+            if time <= s.end_release_time:
                 if ix == 0:
                     assert num_les == 1100
                 else:
@@ -322,7 +342,8 @@ class TestPointLineRelease:
             assert num == 100
 
     def test_num_per_timestep_release_elements(self):
-        'release elements in the context of a spill container'
+        """release elements in the context of a Spill object"""
+        # fixme: A "proper" unit test shouldn't need to put it in a spill
         # todo: need a test for a line release where rate is given - to check
         # positions are being initialized correctly
         end_time = self.rel_time + timedelta(hours=1)
@@ -337,7 +358,7 @@ class TestPointLineRelease:
         for ix in range(5):
             time = self.rel_time + timedelta(seconds=900 * ix)
             num_les = sc.release_elements(900, time)
-            if time <= s.get('end_release_time'):
+            if time <= s.end_release_time:
                 assert num_les == 100
                 assert sc.num_released == 100 + ix * 100
             else:

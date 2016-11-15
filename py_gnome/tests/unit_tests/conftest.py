@@ -133,7 +133,9 @@ def sample_sc_release(num_elements=10,
                       element_type=None,
                       current_time=None,
                       arr_types=None,
-                      windage_range=None):
+                      windage_range=None,
+                      units='g',
+                      amount_per_element=1.0):
     """
     Initialize a Spill of type 'spill', add it to a SpillContainer.
     Invoke release_elements on SpillContainer, then return the spill container
@@ -149,8 +151,9 @@ def sample_sc_release(num_elements=10,
         spill = gnome.spill.point_line_release_spill(num_elements,
                                                      start_pos,
                                                      release_time)
-    spill.units = 'g'
-    spill.amount = num_elements
+    spill.units = units
+    spill.amount = amount_per_element * num_elements
+
     if element_type is not None:
         spill.element_type = element_type
 
@@ -162,7 +165,7 @@ def sample_sc_release(num_elements=10,
         arr_types = {'windages', 'windage_range', 'windage_persist'}
 
     if windage_range is not None:
-        spill.set('windage_range', windage_range)
+        spill.windage_range = windage_range
 
     sc = SpillContainer(uncertain)
     sc.spills.add(spill)
