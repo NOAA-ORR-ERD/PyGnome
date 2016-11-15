@@ -6,12 +6,11 @@ from colander import SchemaNode, SchemaType, Float, Boolean, Sequence, MappingSc
 from gnome.utilities.file_tools.data_helpers import _get_dataset
 from gnome.environment.property import *
 from gnome.environment.grid import PyGrid, PyGridSchema
-from gnome.persist.base_schema import CollectionItemsList
 
 import hashlib
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.environment.ts_property import TimeSeriesProp
-
+from functools import wraps
 
 class GridPropSchema(PropertySchema):
     varname = SchemaNode(String())
@@ -20,7 +19,7 @@ class GridPropSchema(PropertySchema):
     grid_file = SequenceSchema(SchemaNode(String(), missing=drop), accept_scalar=True)
 
 
-class GriddedProp(EnvProp, serializable.Serializable):
+class GriddedProp(EnvProp):
 
     _state = copy.deepcopy(EnvProp._state)
 
@@ -28,8 +27,8 @@ class GriddedProp(EnvProp, serializable.Serializable):
 
     _state.add_field([serializable.Field('grid', save=True, update=True, save_reference=True),
                       serializable.Field('varname', save=True, update=True),
-                      serializable.Field('data_file', save=True, update=True),
-                      serializable.Field('grid_file', save=True, update=True)])
+                      serializable.Field('data_file', save=True, update=True, isdatafile=True),
+                      serializable.Field('grid_file', save=True, update=True, isdatafile=True)])
 
     default_names = []
     _def_count = 0
@@ -68,14 +67,12 @@ class GriddedProp(EnvProp, serializable.Serializable):
         :type varname: string
         '''
 
-        self._grid = self._data_file = self._grid_file = None
-
         if any([grid is None, data is None]):
             raise ValueError("Grid and Data must be defined")
         if not hasattr(data, 'shape'):
             if grid.infer_location is None:
                 raise ValueError('Data must be able to fit to the grid')
-        self._grid = grid
+        self.grid = grid
         self.depth = depth
         super(GriddedProp, self).__init__(name=name, units=units, time=time, data=data)
         self.data_file = data_file
@@ -127,7 +124,7 @@ class GriddedProp(EnvProp, serializable.Serializable):
         :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
         :type data: netCDF4.Variable or numpy.array
         :type grid: pysgrid or pyugrid
-        :type S_Depth or L_Depth
+        :type depth: Depth, S_Depth or L_Depth
         :type dataset: netCDF4.Dataset
         :type data_file: string
         :type grid_file: string
@@ -179,6 +176,7 @@ class GriddedProp(EnvProp, serializable.Serializable):
                     time = Time(ds[timevar])
                 else:
                     time = None
+            time = Time(ds[timevar])
         if depth is None:
             if len(data.shape) == 4:
                 from gnome.environment.environment_objects import Depth
@@ -235,18 +233,6 @@ class GriddedProp(EnvProp, serializable.Serializable):
         self._data = d
 
     @property
-    def grid(self):
-        return self._grid
-
-    @grid.setter
-    def grid(self, g):
-        if not (isinstance(g, (pyugrid.UGrid, pysgrid.SGrid))):
-            raise ValueError('Grid must be set with a pyugrid.UGrid or pysgrid.SGrid object')
-        if self.data is not None and g.infer_location(self.data) is None:
-            raise ValueError("Data/grid shape mismatch. Data shape is {0}, Grid shape is {1}".format(self.data.shape, self.grid.node_lon.shape))
-        self._grid = g
-
-    @property
     def grid_shape(self):
         if hasattr(self.grid, 'shape'):
             return self.grid.shape
@@ -286,31 +272,6 @@ class GriddedProp(EnvProp, serializable.Serializable):
         else:
             return None
 
-    def set_attr(self,
-                 name=None,
-                 time=None,
-                 data=None,
-                 data_file=None,
-                 grid=None,
-                 grid_file=None):
-        self.name = name if name is not None else self.name
-#         self.units = units if units is not None else self.units
-        if time is not None:
-            if data and len(time) != data.shape[0]:
-                raise ValueError("Time provided is incompatible with data source time dimension")
-            self.time = time
-        if data is not None:
-            if (grid and grid.infer_location(data) is None) or self.grid.infer_location(data) is None:
-                raise ValueError("Data shape is incompatible with grid shape.")
-            self._data = data
-        if grid is not None:
-            if data is None:
-                if grid.infer_location(self.data) is None:
-                    raise ValueError("Grid shape is incompatible with current data shape.")
-            self._grid = grid
-        self.grid_file = grid_file if grid_file is not None else self.grid_file
-        self.data_file = data_file if data_file is not None else self.data_file
-
     def center_values(self, time, units=None, extrapolate=False):
         # NOT COMPLETE
         if not extrapolate:
@@ -336,7 +297,6 @@ class GriddedProp(EnvProp, serializable.Serializable):
 
         :param points: Coordinates to be queried (P)
         :param time: The time at which to query these points (T)
-        :param depth: Specifies the depth level of the variable
         :param units: units the values will be returned in (or converted to)
         :param extrapolate: if True, extrapolation will be supported
         :type points: Nx2 array of double
@@ -503,7 +463,7 @@ class GriddedProp(EnvProp, serializable.Serializable):
     @classmethod
     def new_from_dict(cls, dict_):
         if 'data' not in dict_:
-            return GriddedProp.from_netCDF(**dict_)
+            return cls.from_netCDF(**dict_)
         return super(GriddedProp, cls).new_from_dict(dict_)
 
     @classmethod
@@ -534,10 +494,6 @@ class GriddedProp(EnvProp, serializable.Serializable):
         raise ValueError("Default names not found.")
 
 
-class GPSeqSchema(SequenceSchema):
-    prop = SchemaNode(SchemaType())
-
-
 class GridVectorPropSchema(VectorPropSchema):
     varnames = SequenceSchema(SchemaNode(String()))
     grid = PyGridSchema(missing=drop)
@@ -546,25 +502,21 @@ class GridVectorPropSchema(VectorPropSchema):
 #     variables = GPSeqSchema()
 
 class GridVectorProp(VectorProp):
-    _state = copy.deepcopy(EnvProp._state)
+    _state = copy.deepcopy(VectorProp._state)
 
     _schema = GridVectorPropSchema
 
     _state.add_field([serializable.Field('grid', save=True, update=True, save_reference=True),
                       serializable.Field('variables', save=True, update=True, iscollection=True),
                       serializable.Field('varnames', save=True, update=True),
-                      serializable.Field('data_file', save=True, update=True),
-                      serializable.Field('grid_file', save=True, update=True)])
+                      serializable.Field('data_file', save=True, update=True, isdatafile=True),
+                      serializable.Field('grid_file', save=True, update=True, isdatafile=True)])
 
     default_names = []
 
     _def_count = 0
 
     def __init__(self,
-                 name=None,
-                 units=None,
-                 time=None,
-                 variables=None,
                  grid=None,
                  depth=None,
                  grid_file=None,
@@ -573,30 +525,12 @@ class GridVectorProp(VectorProp):
                  varnames=None,
                  **kwargs):
 
-        self._grid = self._grid_file = self._data_file = None
-
-        if any([units is None, time is None, grid is None]) and not all([isinstance(v, GriddedProp) for v in variables]):
-            raise ValueError("All attributes except name, varnames and MUST be defined if variables is not a list of TimeSeriesProp objects")
-
-        if variables is None or len(variables) < 2:
-            raise TypeError("Variables needs to be a list of at least 2 GriddedProp objects or ndarray-like arrays")
-
-        if all([isinstance(v, GriddedProp) for v in variables]):
-            grid = variables[0].grid if grid is None else grid
-            depth = variables[0].depth if depth is None else depth
-            grid_file = variables[0].grid_file if grid_file is None else grid_file
-            data_file = variables[0].data_file if data_file is None else data_file
-        VectorProp.__init__(self,
-                            name,
-                            units,
-                            time,
-                            variables,
-                            grid=grid,
-                            depth=depth,
-                            dataset=dataset,
-                            data_file=data_file,
-                            grid_file=grid_file,
-                            **kwargs)
+        super(GridVectorProp, self).__init__(**kwargs)
+        if isinstance(self.variables[0], GriddedProp):
+            self.grid = self.variables[0].grid if grid is None else grid
+            self.depth = self.variables[0].depth if depth is None else depth
+            self.grid_file = self.variables[0].grid_file if grid_file is None else grid_file
+            self.data_file = self.variables[0].data_file if data_file is None else data_file
 
 #         self._check_consistency()
         self._result_memo = OrderedDict()
@@ -708,21 +642,23 @@ class GridVectorProp(VectorProp):
                                                      dataset=ds,
                                                      load_all=load_all,
                                                      **kwargs))
-        return cls(name,
-                   units,
-                   time,
-                   variables,
-                   grid=grid,
-                   depth=depth,
-                   grid_file=grid_file,
-                   data_file=data_file,
-                   dataset=ds,
-                   **kwargs)
-
-    @classmethod
-    def new_from_dict(cls, dict_):
-        
-        return super(GridVectorProp, cls).new_from_dict(dict_)
+        if units is None:
+            units = [v.units for v in variables]
+            if all(u == units[0] for u in units):
+                units = units[0]
+        return cls(filename=filename,
+                    varnames=varnames,
+                    grid_topology=grid_topology,
+                    units=units,
+                    time=time,
+                    grid=grid,
+                    depth=depth,
+                    variables=variables,
+                    data_file=data_file,
+                    grid_file=grid_file,
+                    dataset=ds,
+                    load_all=load_all,
+                    **kwargs)
 
     @classmethod
     def _gen_varnames(cls,
@@ -746,21 +682,6 @@ class GridVectorProp(VectorProp):
             if all([sn in df.variables.keys() for sn in n]):
                 return n
         raise ValueError("Default names not found.")
- 
-
-    @property
-    def grid(self):
-        return self._grid
-
-    @grid.setter
-    def grid(self, g):
-        if self.variables is not None:
-            if g.infer_location(self.variables[0]) is None:
-                raise ValueError("Grid with shape {0} not compatible with data of shape {1}".format(g.shape, self.data_shape))
-            for v in self.variables:
-                v.grid = g
-        else:
-            self._grid = g
 
     @property
     def is_data_on_nodes(self):
@@ -818,7 +739,7 @@ class GridVectorProp(VectorProp):
         else:
             return None
 
-    def at(self, points, time, units=None, depth=-1, extrapolate=False, memoize=True, _hash=None, **kwargs):
+    def at(self, points, time, units=None, extrapolate=False, memoize=True, _hash=None, **kwargs):
         mem = memoize
         if hash is None:
             _hash = self._get_hash(points, time)
@@ -831,7 +752,6 @@ class GridVectorProp(VectorProp):
         value = super(GridVectorProp, self).at(points=points,
                                                time=time,
                                                units=units,
-                                               depth=depth,
                                                extrapolate=extrapolate,
                                                memoize=memoize,
                                                _hash=_hash,
@@ -840,3 +760,53 @@ class GridVectorProp(VectorProp):
         if mem:
             self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
         return value
+
+
+    @classmethod
+    def _get_shared_vars(cls, *sh_args):
+        default_shared = ['dataset', 'data_file', 'grid_file', 'grid', 'time']
+        if len(sh_args) != 0:
+            shared = sh_args
+        else:
+            shared = default_shared
+
+        def getvars(func):
+            @wraps(func)
+            def wrapper(*args, **kws):
+                def _mod(n):
+                    k = kws
+                    s = shared
+                    return (n in s) and ((n not in k) or (n in k and k[n] is None))
+                if 'filename' in kws and kws['filename'] is not None:
+                    kws['data_file'] = kws['grid_file'] = kws['filename']
+                if _mod('dataset'):
+                    if 'grid_file' in kws and 'data_file' in kws:
+                        if kws['grid_file'] == kws['data_file']:
+                            ds = dg = _get_dataset(kws['grid_file'])
+                        else:
+                            ds = _get_dataset(kws['data_file'])
+                            dg = _get_dataset(kws['grid_file'])
+                    kws['dataset'] = ds
+                else:
+                    if 'grid_file' in kws and kws['grid_file'] is not None:
+                        dg = _get_dataset(kws['grid_file'])
+                    else:
+                        dg = kws['dataset']
+                    ds = kws['dataset']
+                if _mod('grid'):
+                    gt = kws.get('grid_topology', None)
+                    kws['grid'] = PyGrid.from_netCDF(kws['grid_file'], dataset=dg, grid_topology=gt)
+                if kws.get('varnames', None) is None:
+                    varnames = cls._gen_varnames(kws['data_file'],
+                                                 dataset=ds)
+                if _mod('time'):
+                    timevar = None
+                    data = ds[varnames[0]]
+                    try:
+                        timevar = data.time if data.time == data.dimensions[0] else data.dimensions[0]
+                    except AttributeError:
+                        timevar = data.dimensions[0]
+                    kws['time'] = Time(ds[timevar])
+                return func(*args, **kws)
+            return wrapper
+        return getvars

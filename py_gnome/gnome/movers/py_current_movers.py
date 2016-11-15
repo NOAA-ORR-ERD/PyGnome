@@ -3,7 +3,7 @@ import numpy as np
 import datetime
 import copy
 from gnome import basic_types
-from gnome.environment import GridCurrent, IceAwareCurrentSchema, GridVectorPropSchema
+from gnome.environment import GridCurrent, GridVectorPropSchema
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
@@ -20,7 +20,7 @@ class PyGridCurrentMoverSchema(base_schema.ObjType):
     current_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
-    current = IceAwareCurrentSchema()
+    current = GridVectorPropSchema()
     
 
 

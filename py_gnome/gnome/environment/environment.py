@@ -154,7 +154,7 @@ class Water(Environment, serializable.Serializable):
     def __init__(self,
                  temperature=300.0,
                  salinity=35.0,
-                 sediment=.005,	 # kg/m^3 oceanic default
+                 sediment=.005,  # kg/m^3 oceanic default
                  wave_height=None,
                  fetch=None,
                  units={'temperature': 'K',
@@ -292,7 +292,7 @@ class Water(Environment, serializable.Serializable):
 
         if from_ == 'mg/l':
             # convert to kg/m^3
-            return self.sediment/1000.0
+            return self.sediment / 1000.0
 
         else:
             return self.sediment * 1000.0

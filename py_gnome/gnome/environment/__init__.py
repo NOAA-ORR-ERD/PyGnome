@@ -13,7 +13,7 @@ from environment_objects import (WindTS,
                                  IceAwareCurrent,
                                  IceAwareWind,
                                  TemperatureTS,
-                                 IceAwareCurrentSchema,
+#                                  IceAwareCurrentSchema,
                                  GridVectorPropSchema)
 
 from waves import Waves, WavesSchema
@@ -21,7 +21,7 @@ from tide import Tide, TideSchema
 from wind import Wind, WindSchema, constant_wind, wind_from_values
 from running_average import RunningAverage, RunningAverageSchema
 from grid import Grid, GridSchema
-from gnome.environment.environment_objects import IceAwareCurrentSchema
+# from gnome.environment.environment_objects import IceAwareCurrentSchema
 
 
 __all__ = [Environment,
@@ -45,7 +45,7 @@ __all__ = [Environment,
            IceConcentration,
            GridTemperature,
            IceAwareCurrent,
-           IceAwareCurrentSchema,
+#            IceAwareCurrentSchema,
            IceAwareWind,
            TemperatureTS,
            ]

@@ -187,7 +187,7 @@ class VelocityTS(TSVectorProp):
         :param speed: speed of wind
         :param direction: direction -- degrees True, direction wind is from
                           (degrees True)
-        :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s",
+        :param units='m/s': units for speed, as a string, i.e. "knots", "m/s",
                            "cm/s", etc.
 
         .. note:: 
@@ -197,7 +197,9 @@ class VelocityTS(TSVectorProp):
         direction = direction * -1 - 90
         u = speed * np.cos(direction * np.pi / 180)
         v = speed * np.sin(direction * np.pi / 180)
-        return super(VelocityTS, cls).constant(name, units, variables=[[u], [v]])
+        u = TimeSeriesProp.constant('u', units, u)
+        v = TimeSeriesProp.constant('v', units, v)
+        return super(VelocityTS, cls).constant(name, units, variables=[u, v])
 
     @property
     def timeseries(self):
@@ -221,71 +223,64 @@ class VelocityTS(TSVectorProp):
             dict_['varnames'] = [u'magnitude', u'direction', dict_['varnames'][0], dict_['varnames'][1]]
         return dict_
 
-    @classmethod
-    def deserialize(cls, json_):
-        dict_ = super(VelocityTS, cls).deserialize(json_)
-
-        ts, data = zip(*dict_.pop('timeseries'))
-        ts = np.array(ts)
-        data = np.array(data).T
-        units = dict_['units']
-        if len(units) > 1 and units[1] == 'degrees':
-            u_data, v_data = data
-            v_data = ((-v_data - 90) * np.pi / 180)
-            u_t = u_data * np.cos(v_data)
-            v_data = u_data * np.sin(v_data)
-            u_data = u_t
-            data = np.array((u_data, v_data))
-            dict_['varnames'] = dict_['varnames'][2:]
-
-        units = units[0]
-        dict_['units'] = units
-        dict_['time'] = ts
-        dict_['data'] = data
-        return dict_
-
-    @classmethod
-    def new_from_dict(cls, dict_):
-        varnames = dict_['varnames']
-        vs = []
-        for i, varname in enumerate(varnames):
-            vs.append(TimeSeriesProp(name=varname,
-                                     units=dict_['units'],
-                                     time=dict_['time'],
-                                     data=dict_['data'][i]))
-        dict_.pop('data')
-        dict_['variables'] = vs
-        return super(VelocityTS, cls).new_from_dict(dict_)
+#     @classmethod
+#     def deserialize(cls, json_):
+#         if json_ == 'webapi':
+#             dict_ = super(VelocityTS, cls).deserialize(json_)
+#     
+#             ts, data = zip(*dict_.pop('timeseries'))
+#             ts = np.array(ts)
+#             data = np.array(data).T
+#             units = dict_['units']
+#             if len(units) > 1 and units[1] == 'degrees':
+#                 u_data, v_data = data
+#                 v_data = ((-v_data - 90) * np.pi / 180)
+#                 u_t = u_data * np.cos(v_data)
+#                 v_data = u_data * np.sin(v_data)
+#                 u_data = u_t
+#                 data = np.array((u_data, v_data))
+#                 dict_['varnames'] = dict_['varnames'][2:]
+#     
+#             units = units[0]
+#             dict_['units'] = units
+#             dict_['time'] = ts
+#             dict_['data'] = data
+#             return dict_
+#         else:
+#             return super(VelocityTS, cls).deserialize(json_)
+# 
+#     @classmethod
+#     def new_from_dict(cls, dict_):
+#         varnames = dict_['varnames']
+#         vs = []
+#         for i, varname in enumerate(varnames):
+#             vs.append(TimeSeriesProp(name=varname,
+#                                      units=dict_['units'],
+#                                      time=dict_['time'],
+#                                      data=dict_['data'][i]))
+#         dict_.pop('data')
+#         dict_['variables'] = vs
+#         return super(VelocityTS, cls).new_from_dict(dict_)
 
 
 class VelocityGrid(GridVectorProp):
 
-
-    def __init__(self,
-                 name=None,
-                 units=None,
-                 time=None,
-                 grid=None,
-                 depth=None,
-                 variables=None,
-                 data_file=None,
-                 grid_file=None,
-                 dataset=None,
-                 **kwargs):
-
-        GridVectorProp.__init__(self,
-                                name=name,
-                                units=units,
-                                time=time,
-                                grid=grid,
-                                depth=depth,
-                                variables=variables,
-                                data_file=data_file,
-                                grid_file=grid_file,
-                                dataset=dataset,
-                                **kwargs)
-        if len(variables) == 2:
-            self.variables.append(TimeSeriesProp(name='constant w', data=[0.0], time=[datetime.now()], units='m/s'))
+    def __init__(self, **kwargs):
+        if 'variables' in kwargs:
+            variables = kwargs['variables']
+            if len(variables) == 2:
+                variables.append(TimeSeriesProp(name='constant w', data=[0.0], time=[datetime.now()], units='m/s'))
+            kwargs['variables'] = variables
+        self.angle = None
+        df = None
+        if kwargs.get('dataset', None) is not None:
+            df = kwargs['dataset']
+        elif kwargs.get('grid_file', None) is not None:
+            df = _get_dataset(kwargs['grid_file'])
+        if df is not None and 'angle' in df.variables.keys():
+            # Unrotated ROMS Grid!
+            self.angle = GriddedProp(name='angle', units='radians', time=None, grid=self.grid, data=df['angle'])
+        super(VelocityGrid, self).__init__(**kwargs)
 
     def __eq__(self, o):
         if o is None:
@@ -441,9 +436,12 @@ class GridSediment(GriddedProp, Environment):
     default_names = ['sand_06']
 
 
-class IceConcentration(GriddedProp, Environment, serializable.Serializable):
+class IceConcentration(GriddedProp, Environment):
 
     default_names = ['ice_fraction', ]
+
+    def __init__(self, *args, **kwargs):
+        super(IceConcentration, self).__init__(*args, **kwargs)
 
     def __eq__(self, o):
         t1 = (self.name == o.name and
@@ -471,39 +469,7 @@ class GridCurrent(VelocityGrid, Environment):
                      ['water_u', 'water_v'],
                      ['curr_ucmp', 'curr_vcmp']]
 
-    def __init__(self,
-                 name=None,
-                 units=None,
-                 time=None,
-                 variables=None,
-                 grid=None,
-                 depth=None,
-                 grid_file=None,
-                 data_file=None,
-                 dataset=None,
-                 **kwargs):
-        VelocityGrid.__init__(self,
-                              name=name,
-                              units=units,
-                              time=time,
-                              variables=variables,
-                              grid=grid,
-                              depth=depth,
-                              grid_file=grid_file,
-                              data_file=data_file,
-                              dataset=dataset)
-        self.angle = None
-        df = None
-        if dataset is not None:
-            df = dataset
-        elif grid_file is not None:
-            df = _get_dataset(grid_file)
-        if df is not None and 'angle' in df.variables.keys():
-            # Unrotated ROMS Grid!
-            self.angle = GriddedProp(name='angle', units='radians', time=None, grid=self.grid, data=df['angle'])
-        self.depth = depth
-
-    def at(self, points, time, units=None, depth=-1, extrapolate=False, **kwargs):
+    def at(self, points, time, units=None, extrapolate=False, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -552,36 +518,7 @@ class GridWind(VelocityGrid, Environment):
 
     default_names = [['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
 
-    def __init__(self,
-                 name=None,
-                 units=None,
-                 time=None,
-                 variables=None,
-                 grid=None,
-                 grid_file=None,
-                 data_file=None,
-                 dataset=None,
-                 **kwargs):
-        VelocityGrid.__init__(self,
-                              name=name,
-                              units=units,
-                              time=time,
-                              variables=variables,
-                              grid=grid,
-                              grid_file=grid_file,
-                              data_file=data_file,
-                              dataset=dataset)
-        self.angle = None
-        df = None
-        if dataset is not None:
-            df = dataset
-        elif grid_file is not None:
-            df = _get_dataset(grid_file)
-        if df is not None and 'angle' in df.variables.keys():
-            # Unrotated ROMS Grid!
-            self.angle = GriddedProp(name='angle', units='radians', time=None, grid=self.grid, data=df['angle'])
-
-    def at(self, points, time, units=None, depth=-1, extrapolate=False, **kwargs):
+    def at(self, points, time, units=None, extrapolate=False, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -611,6 +548,7 @@ class GridWind(VelocityGrid, Environment):
                 return res
 
         value = super(GridWind, self).at(points, time, units, extrapolate=extrapolate, **kwargs)
+        value[points[:, 2] >= 0.0] = 0  # no wind underwater!
         if self.angle is not None:
             angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs)
             x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
@@ -623,217 +561,43 @@ class GridWind(VelocityGrid, Environment):
 
 
 class IceVelocity(VelocityGrid, Environment):
-
     default_names = [['ice_u', 'ice_v', ], ]
 
-    def __init__(self,
-                 name=None,
-                 units=None,
-                 time=None,
-                 variables=None,
-                 grid=None,
-                 grid_file=None,
-                 data_file=None,
-                 dataset=None,
-                 **kwargs):
-        VelocityGrid.__init__(self,
-                              name=name,
-                              units=units,
-                              time=time,
-                              variables=variables,
-                              grid=grid,
-                              grid_file=grid_file,
-                              data_file=data_file,
-                              dataset=dataset,
-                              **kwargs)
+
+class IceAwarePropSchema(GridVectorPropSchema):
+    ice_var = GridVectorPropSchema(missing=drop)
+    ice_conc_var = GridPropSchema(missing=drop)
 
 
-class IceAwarePropSchema(base_schema.ObjType):
-    ice_conc_var = PropertySchema()
+class IceAwareCurrent(GridCurrent):
 
-class IceAwareProp(serializable.Serializable, Environment):
-    
     _schema = IceAwarePropSchema
-    _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add_field([serializable.Field('units', save=True, update=True),
-                      serializable.Field('time', save=True, update=True),
-                      serializable.Field('data_file', save=True, update=True),
-                      serializable.Field('grid_file', save=True, update=True),
-                      serializable.Field('ice_conc_var', save=True, update=True)])
+    _state = copy.deepcopy(GridCurrent._state)
 
-    def serialize(self, json_='webapi'):
-        pass
-        return serializable.Serializable.serialize(self, json_=json_)
+    _state.add_field([serializable.Field('ice_var', save=True, update=True, save_reference=True),
+                      serializable.Field('ice_conc_var', save=True, update=True, save_reference=True)])
 
     def __init__(self,
-                 name=None,
-                 units=None,
-                 time=None,
                  ice_var=None,
                  ice_conc_var=None,
-                 grid=None,
-                 grid_file=None,
-                 data_file=None,
+                 *args,
                  **kwargs):
-        self.name = name
-        self.units = units
-        self.time = time
         self.ice_var = ice_var
         self.ice_conc_var = ice_conc_var
-        self.grid = grid
-        self.grid_file = grid_file
-        self.data_file = data_file
+        super(IceAwareCurrent, self).__init__(*args, **kwargs)
 
     @classmethod
+    @GridCurrent._get_shared_vars()
     def from_netCDF(cls,
-                    filename=None,
-                    grid_topology=None,
-                    name=None,
-                    units=None,
-                    time=None,
-                    ice_var=None,
                     ice_conc_var=None,
-                    grid=None,
-                    dataset=None,
-                    grid_file=None,
-                    data_file=None,
+                    ice_var=None,
                     **kwargs):
-        if filename is not None:
-            data_file = filename
-            grid_file = filename
-
-        ds = None
-        dg = None
-        if dataset is None:
-            if grid_file == data_file:
-                ds = dg = _get_dataset(grid_file)
-            else:
-                ds = _get_dataset(data_file)
-                dg = _get_dataset(grid_file)
-        else:
-            ds = dg = dataset
-
-        if grid is None:
-            grid = PyGrid.from_netCDF(grid_file,
-                                      dataset=dg,
-                                      grid_topology=grid_topology)
-        if ice_var is None:
-            ice_var = IceVelocity.from_netCDF(filename,
-                                              grid=grid,
-                                              dataset=ds,
-                                              **kwargs)
-        if time is None:
-            time = ice_var.time
-
         if ice_conc_var is None:
-            ice_conc_var = IceConcentration.from_netCDF(filename,
-                                                        time=time,
-                                                        grid=grid,
-                                                        dataset=ds,
-                                                        **kwargs)
-            # ADD GRID_FILE AND DATA_FILE
-        if name is None:
-            name = 'IceAwareProp'
-        if units is None:
-            units = ice_var.units
-        return cls(name='foo',
-                   units=units,
-                   time=time,
-                   ice_var=ice_var,
-                   ice_conc_var=ice_conc_var,
-                   grid=grid,
-                   grid_file=grid_file,
-                   data_file=data_file,
-                   **kwargs)
-
-
-class IceAwareCurrentSchema(IceAwareVectorSchema):
-    water_var = GridVectorPropSchema()
-
-
-class IceAwareCurrent(IceAwareProp):
-
-    _schema = IceAwareCurrentSchema
-    _state = copy.deepcopy(IceAwareProp._state)
-    _state.add_field([serializable.Field('water_var', save=True, update=True)])
-    
-    def __init__(self,
-                 name=None,
-                 units=None,
-                 time=None,
-                 ice_var=None,
-                 water_var=None,
-                 ice_conc_var=None,
-                 grid=None,
-                 grid_file=None,
-                 data_file=None,
-                 **kwargs):
-        IceAwareProp.__init__(self,
-                              name=name,
-                              units=units,
-                              time=time,
-                              ice_var=ice_var,
-                              ice_conc_var=ice_conc_var,
-                              grid=grid,
-                              grid_file=grid_file,
-                              data_file=data_file)
-        self.water_var = water_var
-        if self.name == 'IceAwareProp':
-            self.name = 'IceAwareCurrent'
-
-    @classmethod
-    def from_netCDF(cls,
-                    filename=None,
-                    grid_topology=None,
-                    name=None,
-                    units=None,
-                    time=None,
-                    ice_var=None,
-                    water_var=None,
-                    ice_conc_var=None,
-                    grid=None,
-                    dataset=None,
-                    grid_file=None,
-                    data_file=None,
-                    **kwargs):
-
-        if filename is not None:
-            data_file = filename
-            grid_file = filename
-
-        ds = None
-        dg = None
-        if dataset is None:
-            if grid_file == data_file:
-                ds = dg = _get_dataset(grid_file)
-            else:
-                ds = _get_dataset(data_file)
-                dg = _get_dataset(grid_file)
-        else:
-            ds = dg = dataset
-
-        if grid is None:
-            grid = PyGrid.from_netCDF(grid_file,
-                                      dataset=dg,
-                                      grid_topology=grid_topology)
-        if water_var is None:
-            water_var = GridCurrent.from_netCDF(filename,
-                                                time=time,
-                                                grid=grid,
-                                                dataset=ds,
-                                                **kwargs)
-
-        return super(IceAwareCurrent, cls).from_netCDF(grid_topology=grid_topology,
-                                                       name=name,
-                                                       units=units,
-                                                       time=time,
+            ice_conc_var = IceConcentration.from_netCDF(**kwargs)
+        if ice_var is None:
+            ice_var = IceVelocity.from_netCDF(**kwargs)
+        return super(IceAwareCurrent, cls).from_netCDF(ice_conc_var=ice_conc_var,
                                                        ice_var=ice_var,
-                                                       water_var=water_var,
-                                                       ice_conc_var=ice_conc_var,
-                                                       grid=grid,
-                                                       dataset=ds,
-                                                       grid_file=grid_file,
-                                                       data_file=data_file,
                                                        **kwargs)
 
     def at(self, points, time, units=None, extrapolate=False):
@@ -842,7 +606,7 @@ class IceAwareCurrent(IceAwareProp):
         if len(interp > 0.2):
             ice_mask = interp >= 0.8
 
-            water_v = self.water_var.at(points, time, units, extrapolate)
+            water_v = super(IceAwareCurrent, self).at(points, time, units, extrapolate)
             ice_v = self.ice_var.at(points, time, units, extrapolate).copy()
             interp = (interp * 10) / 6 - 0.2
 
@@ -853,88 +617,31 @@ class IceAwareCurrent(IceAwareProp):
             vels[interp_mask] += diff_v[interp_mask] * interp[interp_mask][:, np.newaxis]
             return vels
         else:
-            return self.water_var.at(points, time, units, extrapolate)
+            return super(IceAwareCurrent, self).at(points, time, units, extrapolate)
 
 
-class IceAwareWind(IceAwareProp):
-
+class IceAwareWind(GridWind):
     def __init__(self,
-                 name=None,
-                 units=None,
-                 time=None,
                  ice_var=None,
-                 wind_var=None,
                  ice_conc_var=None,
-                 grid=None,
-                 grid_file=None,
-                 data_file=None,
+                 *args,
                  **kwargs):
-        IceAwareProp.__init__(self,
-                              name=name,
-                              units=units,
-                              time=time,
-                              ice_var=ice_var,
-                              ice_conc_var=ice_conc_var,
-                              grid=grid,
-                              grid_file=grid_file,
-                              data_file=data_file)
-        self.wind_var = wind_var
-        if self.name == 'IceAwareProp':
-            self.name = 'IceAwareWind'
+        self.ice_var = ice_var
+        self.ice_conc_var = ice_conc_var
+        super(IceAwareWind, self).__init__(*args, **kwargs)
 
     @classmethod
+    @GridCurrent._get_shared_vars()
     def from_netCDF(cls,
-                    filename=None,
-                    grid_topology=None,
-                    name=None,
-                    units=None,
-                    time=None,
-                    ice_var=None,
-                    wind_var=None,
                     ice_conc_var=None,
-                    grid=None,
-                    dataset=None,
-                    grid_file=None,
-                    data_file=None,
+                    ice_var=None,
                     **kwargs):
-
-        if filename is not None:
-            data_file = filename
-            grid_file = filename
-
-        ds = None
-        dg = None
-        if dataset is None:
-            if grid_file == data_file:
-                ds = dg = _get_dataset(grid_file)
-            else:
-                ds = _get_dataset(data_file)
-                dg = _get_dataset(grid_file)
-        else:
-            ds = dg = dataset
-
-        if grid is None:
-            grid = PyGrid.from_netCDF(grid_file,
-                                      dataset=dg,
-                                      grid_topology=grid_topology)
-        if wind_var is None:
-            wind_var = GridWind.from_netCDF(filename,
-                                            time=time,
-                                            grid=grid,
-                                            dataset=ds,
-                                            **kwargs)
-
-        return super(IceAwareWind, cls).from_netCDF(grid_topology=grid_topology,
-                                                    name=name,
-                                                    units=units,
-                                                    time=time,
+        if ice_conc_var is None:
+            ice_conc_var = IceConcentration.from_netCDF(**kwargs)
+        if ice_var is None:
+            ice_var = IceVelocity.from_netCDF(**kwargs)
+        return super(IceAwareWind, cls).from_netCDF(ice_conc_var=ice_conc_var,
                                                     ice_var=ice_var,
-                                                    wind_var=wind_var,
-                                                    ice_conc_var=ice_conc_var,
-                                                    grid=grid,
-                                                    dataset=ds,
-                                                    grid_file=grid_file,
-                                                    data_file=data_file,
                                                     **kwargs)
 
     def at(self, points, time, units=None, extrapolate=False):
@@ -943,7 +650,7 @@ class IceAwareWind(IceAwareProp):
         if len(interp >= 0.2) != 0:
             ice_mask = interp >= 0.8
 
-            wind_v = self.wind_var.at(points, time, units, extrapolate)
+            wind_v = super(IceAwareWind, self).at(points, time, units, extrapolate)
             interp = (interp * 10) / 6 - 0.2
 
             vels = wind_v.copy()
@@ -951,4 +658,4 @@ class IceAwareWind(IceAwareProp):
             vels[interp_mask] = vels[interp_mask] * (1 - interp[interp_mask][:, np.newaxis])  # scale winds from 100-0% depending on ice coverage
             return vels
         else:
-            return self.wind_var.at(points, time, units, extrapolate)
+            return super(IceAwareWind, self).at(points, time, units, extrapolate)

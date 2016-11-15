@@ -4,7 +4,8 @@ import copy
 import netCDF4 as nc4
 import numpy as np
 
-from gnome.environment.property import EnvProp, VectorProp, Time, PropertySchema, TimeSchema
+from gnome.environment.property import EnvProp, VectorProp, Time, PropertySchema, TimeSchema, \
+    VectorPropSchema
 from datetime import datetime, timedelta
 from dateutil import parser
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
@@ -13,6 +14,7 @@ from gnome.utilities import serializable
 
 import unit_conversion
 import collections
+from gnome.utilities.orderedcollection import OrderedCollection
 
 
 class TimeSeriesPropSchema(PropertySchema):
@@ -172,8 +174,7 @@ class TimeSeriesProp(EnvProp, serializable.Serializable):
         return not self.__eq__(o)
 
 
-class TSVectorPropSchema(PropertySchema):
-    time = TimeSchema(missing=drop)
+class TSVectorPropSchema(VectorPropSchema):
     timeseries = SequenceSchema(
                                 TupleSchema(
                                             children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
@@ -185,7 +186,7 @@ class TSVectorPropSchema(PropertySchema):
                                                       ],
                                             missing=drop),
                                 missing=drop)
-    data = SequenceSchema(TupleSchema(SchemaNode(Float())))
+#     variables = SequenceSchema(TupleSchema(SchemaNode(Float())))
     varnames = SequenceSchema(SchemaNode(String(), missing=drop), missing=drop)
 
 
@@ -195,7 +196,8 @@ class TSVectorProp(VectorProp):
     _state = copy.deepcopy(VectorProp._state)
 
     _state.add_field([serializable.Field('timeseries', save=False, update=True),
-                      serializable.Field('data', save=True, update=False)])
+                      serializable.Field('variables', save=True, update=True, iscollection=True),
+                      serializable.Field('varnames', save=True, update=False)])
 
     def __init__(self,
                  name=None,
@@ -214,7 +216,6 @@ class TSVectorProp(VectorProp):
         if variables is None or len(variables) < 2:
             raise TypeError('Variables must be an array-like of 2 or more TimeSeriesProp or array-like')
         VectorProp.__init__(self, name, units, time, variables)
-        self._check_consistency()
 
     @classmethod
     def constant(cls,
@@ -228,15 +229,6 @@ class TSVectorProp(VectorProp):
             raise TypeError('{0} variables must be an iterable'.format(name))
         t = datetime.now().replace(microsecond=0, second=0, minute=0)
         return cls(name=name, units=units, time=[t], variables=[v for v in variables])
-
-    def _check_consistency(self):
-        '''
-        Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
-        '''
-        for v in self.variables:
-            if (v.units != self.units or
-                    v.time != self.time):
-                raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
 
     @property
     def timeseries(self):
@@ -262,6 +254,17 @@ class TSVectorProp(VectorProp):
             self._time = Time(t)
         else:
             raise ValueError("Object being assigned must be an iterable or a Time object")
+
+    @property
+    def variables(self):
+        return self._variables
+
+    @variables.setter
+    def variables(self, v):
+        if v is None:
+            self._variables = v
+        if isinstance(v, collections.Iterable):
+            self._variables = OrderedCollection(v)
 
     def is_constant(self):
         return len(self.variables[0]) == 1

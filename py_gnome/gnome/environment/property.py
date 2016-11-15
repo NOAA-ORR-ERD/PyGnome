@@ -29,7 +29,7 @@ class PropertySchema(base_schema.ObjType):
     time = TimeSchema(missing=drop)  # SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
 
 
-class EnvProp(object):
+class EnvProp(serializable.Serializable):
     
     _state = copy.deepcopy(serializable.Serializable._state)
     _schema = PropertySchema
@@ -212,10 +212,13 @@ class VectorProp(serializable.Serializable):
         self._units = units
         if variables is None or len(variables) < 2:
             raise ValueError('Variables must be an array-like of 2 or more Property objects')
-        self.time = time
-        for k in kwargs:
-            setattr(self, k, kwargs[k])
         self.variables = variables
+        self._time = time
+        unused_args = kwargs.keys() if kwargs is not None else None
+        if len(unused_args) > 0:
+            print unused_args
+            kwargs = {}
+        super(VectorProp, self).__init__(**kwargs)
 
     def __str__(self):
         return self.__repr__()
@@ -327,6 +330,12 @@ class Time(serializable.Serializable):
             raise ValueError("Time sequence is not ascending")
         if self._has_duplicates(self.time):
             raise ValueError("Time sequence has duplicate entries")
+
+    @classmethod
+    def single(cls):
+        if not hasattr(Time, '_single'):
+            Time._single = Time([datetime.now()])
+        return Time._single
 
     @classmethod
     def time_from_nc_var(cls, var):
