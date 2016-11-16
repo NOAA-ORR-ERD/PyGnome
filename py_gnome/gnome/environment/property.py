@@ -297,7 +297,7 @@ class VectorProp(serializable.Serializable):
         :return: returns a Nx2 array of interpolated values
         :rtype: double
         '''
-        return np.column_stack([var.at(*args, **kwargs) for var in self._variables])
+        return np.column_stack([var.at(*args, **kwargs) for var in self.variables])
 
 
 

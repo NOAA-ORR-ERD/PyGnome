@@ -5,7 +5,7 @@ from collections import OrderedDict
 from colander import SchemaNode, SchemaType, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, List
 from gnome.utilities.file_tools.data_helpers import _get_dataset
 from gnome.environment.property import *
-from gnome.environment.grid import PyGrid, PyGridSchema
+from gnome.environment.grid import PyGrid, PyGrid_U, PyGrid_S, PyGridSchema
 
 import hashlib
 from gnome.utilities.orderedcollection import OrderedCollection
@@ -408,42 +408,9 @@ class GriddedProp(EnvProp):
                 value = v0 + (v1 - v0) * alphas
         return value
 
-    def _at_surface_only(self, pts, time, units=None, depth=-1, extrapolate=False, memoize=True, _hash=None, mask=False, **kwargs):
-        sg = False
-        mem = memoize
-        if self.time is None:
-            # special case! prop has no time variance
-            v0 = self.grid.interpolate_var_to_points(pts, self.data, slices=None, slice_grid=sg, _memo=mem, _hash=_hash,)
-            return v0
+    def _at_tri_grid(self, points, time, data, **kwargs):
+        if self.time is None
 
-        t_alphas = s0 = s1 = value = None
-        if not extrapolate:
-            self.time.valid_time(time)
-        t_index = self.time.index_of(time, extrapolate)
-        if len(self.time) == 1:
-            value = self.grid.interpolate_var_to_points(pts, self.data, slices=[0], _memo=mem, _hash=_hash,)
-        else:
-            if time > self.time.max_time:
-                value = self.data[-1]
-            if time <= self.time.min_time:
-                value = self.data[0]
-            if extrapolate and t_index == len(self.time.time):
-                s0 = [t_index - 1]
-                value = self.grid.interpolate_var_to_points(pts, self.data, slices=s0, _memo=mem, _hash=_hash,)
-            else:
-                t_alphas = self.time.interp_alpha(time, extrapolate)
-                s1 = [t_index]
-                s0 = [t_index - 1]
-                if len(self.data.shape) == 4:
-                    s0.append(depth)
-                    s1.append(depth)
-                v0 = self.grid.interpolate_var_to_points(pts, self.data, slices=s0, slice_grid=sg, _memo=mem, _hash=_hash[0],)
-                v1 = self.grid.interpolate_var_to_points(pts, self.data, slices=s1, slice_grid=sg, _memo=mem, _hash=_hash[0],)
-                value = v0 + (v1 - v0) * t_alphas
-
-        if units is not None and units != self.units:
-            value = unit_conversion.convert(self.units, units, value)
-        return value
 
 #     def serialize(self, json_='webapi'):
 #         _dict = serializable.Serializable.serialize(self, json_=json_)

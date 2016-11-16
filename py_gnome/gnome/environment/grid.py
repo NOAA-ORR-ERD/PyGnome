@@ -202,6 +202,7 @@ class PyGrid(Serializable):
 
     def save(self, saveloc, references=None, name=None):
         '''
+        INCOMPLETE
         Write Wind timeseries to file or to zip,
         then call save method using super
         '''
