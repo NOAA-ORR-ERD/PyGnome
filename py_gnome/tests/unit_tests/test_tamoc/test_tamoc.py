@@ -1,11 +1,20 @@
 #!/usr/bin/env python
 
 """
-test code for the tamoc module
+Test code for the tamoc module -- not as much here as there should be!
 
-so far, only dummy input, etc.
+The gnome.tamoc module provides an interface with:
+
+TAMOC - Texas A&M Oilspill Calculator
+
+
+These tests will only run if the tamoc module is available
+
+It can be installed from the source at:
+
+https://github.com/socolofs/tamoc
+
 """
-
 
 from datetime import datetime
 from datetime import timedelta
@@ -13,7 +22,14 @@ import numpy as np
 
 import pytest
 
-from gnome.tamoc import tamoc
+
+try:
+    # we dont actually need it -- but ned to know if can be imported.
+    import tamoc as tamoc_raw
+    from gnome.tamoc import tamoc
+except ImportError:
+    # if we can't import the tamoc module all tests in this module are skipped.
+    pytestmark = pytest.mark.skipif(True, reason="this test requires the tamoc package")
 
 
 def init_spill():
@@ -28,7 +44,7 @@ def init_spill():
 
 def test_TamocDroplet():
     """
-    Really jsut a way to run it
+    Really just a way to run it
 
     This is a dummy object anyway -- won't always be needed
     """

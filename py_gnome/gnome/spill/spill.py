@@ -198,7 +198,7 @@ class Spill(BaseSpill):
                  element_type=None,
                  substance=None,
                  on=True,
-                 amount=None,   # could be volume or mass
+                 amount=None,  # could be volume or mass
                  units=None,
                  amount_uncertainty_scale=0.0,
                  name='Spill'):
@@ -270,7 +270,8 @@ class Spill(BaseSpill):
         self.frac_coverage = 1.0
         self.name = name
 
-## fixme: a bunch of these properties should really be defined in subclasses
+
+# fixme: a bunch of these properties should really be defined in subclasses
     @property
     def release_time(self):
         return self.release.release_time
