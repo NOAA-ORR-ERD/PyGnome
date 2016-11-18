@@ -111,7 +111,6 @@ def test_TamocSpill_set_newparticle_values():
     assert data_arrays['mass'].sum() == 36000
 
 
-
 if __name__ == '__main__':
     test_TamocSpill_run_tamoc()
     test_TamocSpill_num_elements_to_release()
