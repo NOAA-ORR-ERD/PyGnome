@@ -15,8 +15,8 @@ from wind_movers import (WindMover,
                          wind_mover_from_file,
                          GridWindMoverSchema,
                          GridWindMover,
-                         # IceWindMoverSchema,
-                         # IceWindMover,
+                         IceWindMoverSchema,
+                         IceWindMover,
                          )
 from ship_drift_mover import (ShipDriftMoverSchema,
                               ShipDriftMover)
