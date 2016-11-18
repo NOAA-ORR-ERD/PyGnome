@@ -333,7 +333,6 @@ class PointLineRelease(Release, Serializable):
         '''
         duration over which particles are released in seconds
         '''
-        print "acsessing release_duration property:", self.end_release_time
         if self.end_release_time is None:
             return 0
         else:
@@ -876,9 +875,7 @@ class SpatialRelease(Release, Serializable):
         '''
             Custom new_from_dict() functionality for SpatialRelease
         '''
-        if ('release_time' in dict_ and
-                not isinstance(dict_['release_time'], datetime)):
-            print 'handling release_time...'
+        if ('release_time' in dict_ and not isinstance(dict_['release_time'], datetime)):
             dict_['release_time'] = iso8601.parse_date(dict_['release_time'],
                                                        default_timezone=None)
 
