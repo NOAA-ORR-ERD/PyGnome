@@ -1268,13 +1268,15 @@ class Model(Serializable):
                          'spills'):
                 o_json_[attr] = self.serialize_oc(getattr(self, attr), json_)
 
+            o_json_['valid'] = True
+            o_json_['messages'] = []
             # validate and send validation flag
-            (msgs, isvalid) = self.validate()
-            o_json_['valid'] = isvalid
-            if len(msgs) > 0:
-                o_json_['messages'] = msgs
-            else:
-                o_json_['messages'] = []
+#             (msgs, isvalid) = self.validate()
+#             o_json_['valid'] = isvalid
+#             if len(msgs) > 0:
+#                 o_json_['messages'] = msgs
+#             else:
+#                 o_json_['messages'] = []
 
         return o_json_
 
@@ -1396,6 +1398,9 @@ class Model(Serializable):
         '''
         msgs = []
         isvalid = True
+
+        (msgs, isvalid) = self.validate()
+
         someSpillIntersectsModel = False
         num_spills = len(self.spills)
         for spill in self.spills:
@@ -1422,7 +1427,7 @@ class Model(Serializable):
                 msg = ('The spill is released after the time interval being modeled.')
             self.logger.warning(msg)  # for now make this a warning
             # self.logger.error(msg)
-            msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
+            msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
             # isvalid = False
 
         return (msgs, isvalid)

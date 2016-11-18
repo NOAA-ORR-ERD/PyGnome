@@ -71,12 +71,15 @@ def test_serialize_deseriailize():
 
 def test_prepare_for_model_run():
     'test sort order for Dissolution weatherer'
-    et = floating(substance='ABU SAFAH')
+    et = floating(substance='oil_bahia')
     diss = Dissolution(waves)
 
-    (sc, time_step) = weathering_data_arrays(diss.array_types,
-                                             water,
-                                             element_type=et)[:2]
+    # we don't want to query the oil database, but get the sample oil
+    assert et.substance.record.id is None
+
+    (sc, _time_step) = weathering_data_arrays(diss.array_types,
+                                              water,
+                                              element_type=et)[:2]
 
     assert 'partition_coeff' in sc.data_arrays
     assert 'dissolution' not in sc.mass_balance
@@ -87,10 +90,9 @@ def test_prepare_for_model_run():
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'k_ow', 'on'),
-                         [('ABU SAFAH', 311.15, 3, 1.47796613e+17, True),
-                          ('ALGERIAN BLEND', 311.15, 3, 2.13773899e+08, True),
-                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
-                           311.15, 3, 0.0, False)])
+                         [('oil_bahia', 311.15, 3, 1.03156e+12, True),
+                          ('oil_ans_mp', 311.15, 3, 2.40572e+39, True),
+                          ('oil_ans_mp', 311.15, 3, 0.0, False)])
 def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
     '''
         Here we are testing that the molar averaged oil/water partition
@@ -106,7 +108,10 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
     print 'num spills:', len(sc.spills)
     print 'spill[0] amount:', sc.spills[0].amount
 
-    model_time = (sc.spills[0].get('release_time') +
+    # we don't want to query the oil database, but get the sample oil
+    assert sc.spills[0].element_type.substance.record.id is None
+
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     diss.on = on
@@ -120,15 +125,12 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'drop_size', 'on'),
-                         [('ABU SAFAH', 311.15, 3,
-                           [235.41e-6, 229.26e-6, 223.09e-6],
-                           True),
-                          ('BAHIA', 311.15, 3,
-                           [231.19e-6, 221.54e-6, 212.02e-6],
-                           True),
-                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
-                           [0.0, 0.0, 0.0],
-                           False)])
+                         [('oil_bahia', 311.15, 3,
+                           [231.19e-6, 221.98e-6, 212.91e-6], True),
+                          ('oil_ans_mp', 311.15, 3,
+                           [234.08e-6, 221.6e-6, 213.08e-6], True),
+                          ('oil_ans_mp', 311.15, 3,
+                           [0.0, 0.0, 0.0], False)])
 def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
     '''
         Here we are testing that the molar averaged oil/water partition
@@ -144,13 +146,16 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
                                              element_type=et,
                                              num_elements=num_elems)[:2]
 
-    print 'num spills:', len(sc.spills)
+    print 'num_spills:', len(sc.spills)
     print 'spill[0] amount:', sc.spills[0].amount, sc.spills[0].units
 
     model_time = (sc.spills[0]
-                  .get('release_time') + timedelta(seconds=time_step))
+                  .release_time + timedelta(seconds=time_step))
     print 'model_time = ', model_time
     print 'time_step = ', time_step
+
+    # we don't want to query the oil database, but get the sample oil
+    assert sc.spills[0].element_type.substance.record.id is None
 
     disp.on = on
     diss.on = on
@@ -175,21 +180,20 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
 mb_param_names = ('oil', 'temp', 'wind_speed',
                   'num_elems', 'expected_mb', 'on')
 mb_params = [
-             ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 15.,
-              3, np.nan, False),
-             ('ABU SAFAH', 288.15, 10., 3, 6.2507e-4, True),
-             ('ABU SAFAH', 288.15, 15., 3, 1.1669e-3, True),
-             ('ABU SAFAH', 288.15, 20., 3, 1.9919e-3, True),
+             ('oil_ans_mp', 311.15, 15., 3, np.nan, False),
+             ('oil_ans_mp', 288.15, 10., 3, 2.8556e-3, True),
+             ('oil_ans_mp', 288.15, 15., 3, 5.2833e-3, True),
+             ('oil_ans_mp', 288.15, 20., 3, 8.9985e-3, True),
              # wind speed trends
-             ('BAHIA',     288.15,  5., 3, 9.4939e-4, True),
-             ('BAHIA',     288.15, 10., 3, 2.0235e-3, True),
-             ('BAHIA',     288.15, 15., 3, 3.6257e-3, True),
-             ('BAHIA',     288.15, 20., 3, 6.1431e-3, True),
+             ('oil_bahia',  288.15,  5., 3, 9.4939e-4, True),
+             ('oil_bahia',  288.15, 10., 3, 2.02355e-3, True),
+             ('oil_bahia',  288.15, 15., 3, 3.6288e-3, True),
+             ('oil_bahia',  288.15, 20., 3, 6.1597e-3, True),
              # temperature trends
-             ('BAHIA',     273.15, 15., 3, 2.6162e-3, True),
-             ('BAHIA',     283.15, 15., 3, 3.3753e-3, True),
-             ('BAHIA',     293.15, 15., 3, 3.8341e-3, True),
-             ('BAHIA',     303.15, 15., 3, 4.1734e-3, True),
+             ('oil_bahia',  273.15, 15., 3, 2.6198e-3, True),
+             ('oil_bahia',  283.15, 15., 3, 3.3789e-3, True),
+             ('oil_bahia',  293.15, 15., 3, 3.8367e-3, True),
+             ('oil_bahia',  303.15, 15., 3, 4.1746e-3, True),
              ]
 
 
@@ -230,8 +234,11 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
                      for ts in waves.wind.timeseries])
     print
 
+    # we don't want to query the oil database, but get the sample oil
+    assert sc.spills[0].element_type.substance.record.id is None
+
     initial_amount = sc.spills[0].amount
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     disp.on = on
@@ -270,14 +277,8 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
-                         [('ABU SAFAH', 288.7, 122.278),
-                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 288.7,
-                           38.1926),
-                          ('BAHIA', 288.7, 119.831),
-                          ('ALASKA NORTH SLOPE, OIL & GAS', 279.261,
-                           227.603),
-                          ]
-                         )
+                         [('oil_ans_mp', 288.7, 38.1926),
+                          ('oil_bahia',  288.7, 136.751)])
 def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json
@@ -296,6 +297,9 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
         print 'num spills:', len(sc.spills)
         print 'spill[0] amount:', sc.spills[0].amount
         original_amount = sc.spills[0].amount
+
+        # we don't want to query the oil database, but get the sample oil
+        assert sc.spills[0].element_type.substance.record.id is None
 
     # set make_default_refs to True for objects contained in model after adding
     # objects to the model
@@ -328,9 +332,7 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
                          # [(_sample_oils['benzene'], 288.7, 2.98716)
-                         [('benzene', 288.7, 9729.56707)
-                          ]
-                         )
+                         [('benzene', 288.7, 9729.56707)])
 def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json

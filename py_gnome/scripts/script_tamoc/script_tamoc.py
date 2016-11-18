@@ -84,7 +84,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         size=(1024, 768),
                         output_timestep=timedelta(hours=1),
                         )
-    renderer.viewport = ((-.1, -.1), (.1, .1))
+    renderer.viewport = ((-.15, -.35), (.15, .35))
 
     print 'adding outputters'
     model.outputters += renderer
@@ -113,19 +113,21 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a circular current and eastward current'
     # This is .3 m/s south
-    model.movers += PyGridCurrentMover(current=vg, default_num_method='Trapezoid', extrapolate=True)
+    model.movers += PyGridCurrentMover(current=vg,
+                                       default_num_method='Trapezoid',
+                                       extrapolate=True)
     model.movers += SimpleMover(velocity=(0., -0.1, 0.))
 
     # Now to add in the TAMOC "spill"
     print "Adding TAMOC spill"
 
     model.spills += tamoc_spill.TamocSpill(release_time=start_time,
-                                     start_position=(0, 0, 1000),
-                                     num_elements=1000,
-                                     end_release_time=start_time + timedelta(days=1),
-                                     name='TAMOC plume',
-                                     TAMOC_interval=None,  # how often to re-run TAMOC
-                                     )
+                                           start_position=(0, 0, 1000),
+                                           num_elements=1000,
+                                           end_release_time=start_time + timedelta(days=1),
+                                           name='TAMOC plume',
+                                           TAMOC_interval=None,  # how often to re-run TAMOC
+                                           )
 
     return model
 
@@ -138,7 +140,7 @@ if __name__ == "__main__":
         if step['step_num'] == 23:
             print 'running tamoc again'
             sp = model.spills[0]
-#            sp.tamoc_parameters['release_phi'] = -np.pi / 4 
+#            sp.tamoc_parameters['release_phi'] = -np.pi / 4
 #            sp.tamoc_parameters['release_theta'] = -np.pi
             sp.tamoc_parameters['ua'] = np.array([-0.05, -0.05])
 #            sp.tamoc_parameters['va'] = np.array([-1, -0.5, 0])
@@ -147,7 +149,7 @@ if __name__ == "__main__":
             sp.droplets = sp._run_tamoc()
         if step['step_num'] == 25:
             sp = model.spills[0]
-            sp.tamoc_parameters['ua'] = np.array([0.05,0.05])
+            sp.tamoc_parameters['ua'] = np.array([0.05, 0.05])
             sp.droplets = sp._run_tamoc()
         print step
         # model.

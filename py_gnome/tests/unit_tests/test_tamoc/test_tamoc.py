@@ -1,18 +1,35 @@
 #!/usr/bin/env python
 
 """
-test code for the tamoc module
+Test code for the tamoc module -- not as much here as there should be!
 
-so far, only dummy input, etc.
+The gnome.tamoc module provides an interface with:
+
+TAMOC - Texas A&M Oilspill Calculator
+
+
+These tests will only run if the tamoc module is available
+
+It can be installed from the source at:
+
+https://github.com/socolofs/tamoc
+
 """
-
 
 from datetime import datetime
 from datetime import timedelta
 import numpy as np
 
+import pytest
 
-from gnome.tamoc import tamoc
+
+try:
+    # we dont actually need it -- but ned to know if can be imported.
+    import tamoc as tamoc_raw
+    from gnome.tamoc import tamoc
+except ImportError:
+    # if we can't import the tamoc module all tests in this module are skipped.
+    pytestmark = pytest.mark.skipif(True, reason="this test requires the tamoc package")
 
 
 def init_spill():
@@ -27,7 +44,7 @@ def init_spill():
 
 def test_TamocDroplet():
     """
-    Really jsut a way to run it
+    Really just a way to run it
 
     This is a dummy object anyway -- won't always be needed
     """
@@ -91,6 +108,7 @@ def test_TamocSpill_num_elements_to_release():
     assert num_elem == 1000
 
 
+@pytest.mark.xfail
 def test_TamocSpill_set_newparticle_values():
 
     # release 1k particles over 1 hour, at an overall rate of 10kg/sec
@@ -103,21 +121,11 @@ def test_TamocSpill_set_newparticle_values():
     ts.end_release_time = ts.release_time + timedelta(hours=10)
     num_elem = ts.num_elements_to_release(ts.release_time, 3600)
     ts.set_newparticle_values(num_elem, ts.release_time, 3600, data_arrays)
-    assert abs(ts.amount_released - 36000) > 0.00001
+    # fixme: is this good enough??
+    assert abs(ts.amount_released - 36000) < 0.0001
+    # fixme:: this fails, but sholdn't the amount_released all be inthe mass array?
+    assert data_arrays['mass'].sum() == 36000
 
-    # eventually we will need to test several release scenarios
-    data_arrays = {}
-    data_arrays['mass'] = np.zeros((1000))
-    data_arrays['positions'] = np.zeros((1000, 3))
-    data_arrays['init_mass'] = np.zeros((1000))
-
-    ts = init_spill()
-    ts.tamoc_interval = 1
-    ts.end_release_time = ts.release_time + timedelta(hours=10)
-    num_elem = ts.num_elements_to_release(ts.release_time, 3600)
-    ts.set_newparticle_values(num_elem, ts.release_time, 3600, data_arrays)
-    assert abs(ts.amount_released - 36000) > 0.00001
-#     assert data_arrays['mass'][0] == 36
 
 
 if __name__ == '__main__':

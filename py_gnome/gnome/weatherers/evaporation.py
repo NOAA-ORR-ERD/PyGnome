@@ -36,10 +36,11 @@ class Evaporation(Weatherer, Serializable):
         self.wind = wind
 
         if water is not None and wind is not None:
-            kwargs['make_default_refs'] = \
-                kwargs.pop('make_default_refs', False)
+            make_default_refs = False
+        else:
+            make_default_refs = True
 
-        super(Evaporation, self).__init__(**kwargs)
+        super(Evaporation, self).__init__(make_default_refs=make_default_refs, **kwargs)
         self.array_types.update({'area', 'evap_decay_constant',
                                  'frac_water', 'frac_lost', 'init_mass'})
 

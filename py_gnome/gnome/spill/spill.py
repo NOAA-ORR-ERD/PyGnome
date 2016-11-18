@@ -5,6 +5,8 @@ A "spill" is essentially a source of elements. These classes provide
 the logic about where an when the elements are released
 
 """
+from pprint import pprint
+
 import copy
 from inspect import getmembers, ismethod
 from datetime import timedelta
@@ -28,14 +30,24 @@ class BaseSpill(serializable.Serializable, object):
     and as a spec for the API.
     """
     def __init__(self,
-                 release_time,
+                 release_time=None,
                  name=""):
         """
-        inititlaize -- sub-classes will probably have a lot more
+        initialize -- sub-classes will probably have a lot more to do
         """
         self.release_time = release_time
-        self.substance = None
 
+    @property
+    def release_time(self):
+        return self._release_time
+
+    @release_time.setter
+    def release_time(self, rt):
+        self._release_time = rt
+
+    @property
+    def substance(self):
+        return None
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
@@ -146,31 +158,6 @@ class BaseSpill(serializable.Serializable, object):
 
         return False
 
-    # def get(self, prop=None):
-    #     # Fixme! this should probably not be here at all
-    #     # but it could be replaces with __getattr__ to make it a lot more Pythonic
-    #     """
-    #     for get(), return all properties of embedded release object and
-    #     element_type initializer objects. If 'prop' is not None, then return
-    #     the property
-
-    #     For example: get('windage_range') returns the 'windage_range' assuming
-    #     the element_type = floating()
-
-    #     .. todo::
-    #         There is an issue in that if two initializers have the same
-    #         property - could be the case if they both define a 'distribution',
-    #         then it does not know which one to return
-    #     """
-    #     # nothing returned, then property was not found - raise exception or
-    #     # return None?
-    #     print "in BaseSpill get:", prop
-    #     self.logger.warning("{0} attribute does not exist in element_type"
-    #                         " or release object or initializers".format(prop))
-    #     return None
-
-
-
 class SpillSchema(ObjType):
     'Spill class schema'
     on = SchemaNode(Bool(), default=True, missing=True,
@@ -182,7 +169,7 @@ class SpillSchema(ObjType):
 
 class Spill(BaseSpill):
     """
-    Models a spill
+    Models a spill by combining Release and ElementType objects
     """
     _update = ['on', 'release',
                'amount', 'units', 'amount_uncertainty_scale']
@@ -200,6 +187,11 @@ class Spill(BaseSpill):
 
     valid_vol_units = _valid_units('Volume')
     valid_mass_units = _valid_units('Mass')
+    # attributes that need to be there for the __setattr__ magic to work
+    # release = None  # just to make sure it's there.
+    # element_type = None
+    # this is so the properties in teh base classes work -- arrgg!
+    # _name = 'Spill'
 
     def __init__(self,
                  release,
@@ -248,9 +240,8 @@ class Spill(BaseSpill):
             If amount property is None, then just floating elements
             (ie. 'windages')
         """
-        super(Spill, self).__init__(release.release_time, name)
-
         self.release = release
+
         if element_type is None:
             element_type = elements.floating(substance=substance)
         elif substance is not None:
@@ -259,8 +250,10 @@ class Spill(BaseSpill):
 
         self.element_type = element_type
 
-        self.on = on  # spill is active or not
-        self._units = None
+        self.on = on    # spill is active or not
+        # raise Exception("stopping")
+
+        self.units = None
         self.amount = amount
 
         if amount is not None:
@@ -276,6 +269,87 @@ class Spill(BaseSpill):
         '''
         self.frac_coverage = 1.0
         self.name = name
+
+
+# fixme: a bunch of these properties should really be defined in subclasses
+    @property
+    def release_time(self):
+        return self.release.release_time
+    @release_time.setter
+    def release_time(self, rt):
+        self.release.release_time = rt
+
+    @property
+    def end_release_time(self):
+        return self.release.end_release_time
+    @end_release_time.setter
+    def end_release_time(self, rt):
+        self.release.end_release_time = rt
+
+    @property
+    def release_duration(self):
+        return self.release.release_duration
+    @release_duration.setter
+    def release_duration(self, sti):
+        self.release.release_duration = sti
+
+    @property
+    def start_time_invalid(self):
+        return self.release.start_time_invalid
+    @start_time_invalid.setter
+    def start_time_invalid(self, rd):
+        self.release.start_time_invalid = rd
+
+    @property
+    def num_elements(self):
+        return self.release.num_elements
+    @num_elements.setter
+    def num_elements(self, ne):
+        self.release.num_elements = ne
+
+    @property
+    def num_released(self):
+        return self.release.num_released
+    @num_released.setter
+    def num_released(self, ne):
+        self.release.num_released = ne
+
+    @property
+    def start_position(self):
+        return self.release.start_position
+    @start_position.setter
+    def start_position(self, sp):
+        self.release.start_position = sp
+
+    @property
+    def end_position(self):
+        return self.release.end_position
+    @end_position.setter
+    def end_position(self, sp):
+        self.release.end_position = sp
+
+    @property
+    def array_types(self):
+        return self.element_type.array_types
+    @array_types.setter
+    def array_types(self, at):
+        self.element_type.array_types = at
+
+    @property
+    def windage_range(self):
+        return self.element_type.windage_range
+    @windage_range.setter
+    def windage_range(self, at):
+        self.element_type.windage_range = at
+
+    @property
+    def windage_persist(self):
+        return self.element_type.windage_persist
+    @windage_persist.setter
+    def windage_persist(self, at):
+        self.element_type.windage_range = at
+
+
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -296,7 +370,7 @@ class Spill(BaseSpill):
         if not self._check_type(other):
             return False
 
-        if (self._state.get_field_by_attribute('save') != 
+        if (self._state.get_field_by_attribute('save') !=
                 other._state.get_field_by_attribute('save')):
             return False
 
@@ -320,19 +394,23 @@ class Spill(BaseSpill):
         Checks the user provided units are in list of valid volume
         or mass units
         """
-
         if (units in self.valid_vol_units or
                 units in self.valid_mass_units):
             return True
         else:
             msg = ('Units for amount spilled must be in volume or mass units. '
+                   '{} was provided.'
                    'Valid units for volume: {0}, for mass: {1} ').format(
-                       self.valid_vol_units, self.valid_mass_units)
-            ex = uc.InvalidUnitError(msg)
+                         units,
+                         self.valid_vol_units,
+                         self.valid_mass_units)
+            ex = ValueError(msg)
             self.logger.exception(ex, exc_info=True)
             raise ex  # this should be raised since run will fail otherwise
 
     def _get_all_props(self):
+        # fixme: why is this needed???
+
         'return all properties accessible through get'
         all_props = []
 
@@ -385,11 +463,10 @@ class Spill(BaseSpill):
                 time_at_step_end = current_time + timedelta(seconds=time_step)
                 if self.release_time > current_time:
                     # first time_step in which particles are released
-                    time_step = (time_at_step_end - 
+                    time_step = (time_at_step_end -
                                  self.release_time).total_seconds()
-
                 if self.end_release_time < time_at_step_end:
-                    time_step = (self.end_release_time - 
+                    time_step = (self.end_release_time -
                                  current_time).total_seconds()
 
                 _mass_in_ts = _mass / rd_sec * time_step
@@ -410,95 +487,18 @@ class Spill(BaseSpill):
 
         return False
 
-    def set(self, prop, val):
-        """
-        sets an existing property. The property could be of one of the
-        contained objects like 'Release' or 'ElementType'
-        It can also be a property of one of the initializers contained in
-        the 'ElementType' object.
-
-        If the property doesn't exist for any of these, then an error is raised
-        since user cannot set a property that does not exist using this method
-
-        For example: set('windage_range', (0.4, 0.4)) sets the windage_range
-        assuming the element_type is floating
-
-        .. todo::
-            There is an issue in that if two initializers have the same
-            property - could be the case if they both define a 'distribution',
-            then it does not know which one to return
-        """
-        if prop == 'num_released':
-            self.logger.warning("cannot set 'num_released' attribute")
-
-        # we don't want to add an attribute that doesn't already exist
-        # first check to see that the attribute exists, then change it else
-        # raise error
-        if hasattr(self.release, prop):
-            setattr(self.release, prop, val)
-        elif hasattr(self.element_type, prop):
-            setattr(self.element_type, prop, val)
-        else:
-            for init in self.element_type.initializers:
-                if hasattr(init, prop):
-                    setattr(init, prop, val)
-                    break
-                else:
-                    self.logger.warning('{0} attribute does not exist '
-                                        'in element_type or release object'
-                                        .format(prop))
-
-    def __getattr__(self, prop=None):
-        """
-        imp imenting this so that attributes can be pulled from the enclosed objects
-
-        this replaces the old "get()" method
-
-        Return all properties of embedded release object and
-        element_type initializer objects. If 'prop' is not None, then return
-        the property
-
-        For example: Spill.windage_range returns the 'windage_range' from element_type assuming
-        the element_type = floating()
-
-        .. todo::
-            There is an issue in that if two initializers have the same
-            property - could be the case if they both define a 'distribution',
-            then it does not know which one to return
-        """
-        if prop is None:  # why??
-            return self._get_all_props()
-
-        try:
-            return getattr(self.release, prop)
-        except AttributeError:
-            pass
-
-        try:
-            return getattr(self.element_type, prop)
-        except AttributeError:
-            pass
-
-        for init in self.element_type.initializers:
-            try:
-                return getattr(init, prop)
-            except AttributeError:
-                pass
-
-        # nothing returned, then property was not found - raise exception or
-        # return None?
-        self.logger.warning("{0} attribute does not exist in element_type"
-                            " or release object or initializers".format(prop))
-        return None
-
-
-    # def get(self, prop=None):
+    ## NOTE: this has been moved to properties
+    # def __getattr__(self, prop=None):
     #     """
-    #     for get(), return all properties of embedded release object and
+    #     implementing this so that attributes can be pulled from the enclosed objects
+
+    #     this replaces the old "get()" method
+
+    #     Return all properties of embedded release object and
     #     element_type initializer objects. If 'prop' is not None, then return
     #     the property
 
-    #     For example: get('windage_range') returns the 'windage_range' assuming
+    #     For example: Spill.windage_range returns the 'windage_range' from element_type assuming
     #     the element_type = floating()
 
     #     .. todo::
@@ -506,10 +506,7 @@ class Spill(BaseSpill):
     #         property - could be the case if they both define a 'distribution',
     #         then it does not know which one to return
     #     """
-    #     'Return all properties'
-    #     if prop is None:
-    #         return self._get_all_props()
-
+    #     print "in __getattr__, getting: %s" % prop
     #     try:
     #         return getattr(self.release, prop)
     #     except AttributeError:
@@ -526,11 +523,12 @@ class Spill(BaseSpill):
     #         except AttributeError:
     #             pass
 
-    #     # nothing returned, then property was not found - raise exception or
-    #     # return None?
-    #     self.logger.warning("{0} attribute does not exist in element_type"
-    #                         " or release object or initializers".format(prop))
-    #     return None
+    #     # nothing returned, then property was not found
+    #     msg = ("{0} attribute does not exist in element_type"
+    #            " or release object or initializers".format(prop))
+    #     self.logger.warning(msg)
+
+    #     raise AttributeError(msg)
 
     def get_initializer_by_name(self, name):
         ''' get first initializer in list whose name matches 'name' '''
@@ -635,17 +633,32 @@ class Spill(BaseSpill):
         """
         set default units in which volume data is returned
         """
-        self._check_units(units)  # check validity before setting
+        if units is not None:
+            self._check_units(units)  # check validity before setting
         self._units = units
 
+    @property
+    def substance(self):
+        return self.element_type.substance
+        # try:
+        #     return self.element_type.substance
+        # except AttributeError:
+        #     return None
+
+    @substance.setter
+    def substance(self, subs):
+        self.element_type.substance = subs
+
     def get_mass(self, units=None):
-        '''
+
+        """
         Return the mass released during the spill.
         User can also specify desired output units in the function.
         If units are not specified, then return in 'SI' units ('kg')
         If volume is given, then use density to find mass. Density is always
         at 15degC, consistent with API definition
-        '''
+        """
+
         if self.amount is None:
             return self.amount
 
@@ -654,7 +667,9 @@ class Spill(BaseSpill):
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = self.element_type.substance.get_density() * vol
+            mass = self.element_type.substance.density_at_temp() * vol
+        else:
+            raise ValueError("%s is not a valid mass or Volume unit" % self.units)
 
         if units is None or units == 'kg':
             return mass
@@ -1031,10 +1046,11 @@ def point_line_release_spill(num_elements,
                                num_elements=num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
-    return Spill(release,
-                 element_type,
-                 substance,
-                 on,
-                 amount,
-                 units,
-                 name=name)
+    spill = Spill(release,
+                  element_type,
+                  substance,
+                  on,
+                  amount,
+                  units,
+                  name=name)
+    return spill

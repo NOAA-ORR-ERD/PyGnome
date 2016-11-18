@@ -3060,7 +3060,7 @@ OSErr TimeGridVelCurv_c::TextRead(const char *path, const char *topFilePath)
 	static size_t mask_index[] = {0, 0};
 	static size_t mask_count[2];
 	static size_t latIndex = 0, lonIndex = 0, timeIndex, ptIndex[2] = {0, 0}, sigmaIndex = 0;
-	static size_t pt_count[2], sigma_count;
+	static size_t pt_count[2], sigma_count, no_interp_str;
 
 	float startLat, startLon, endLat, endLon, hc_param = 0.;
 	char *timeUnits = 0;
@@ -3150,11 +3150,19 @@ OSErr TimeGridVelCurv_c::TextRead(const char *path, const char *topFilePath)
 		}
 	} 
 	
+	status = nc_inq_attlen(ncid,NC_GLOBAL,"no_interp",&no_interp_str);	// this marks files to be treated the old way
+	if (status == NC_NOERR) goto OLD;
+
 	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
 	if (status != NC_NOERR) 
 	{	// add new check if error for LON, LAT with extensions based on subset from LAS 1/29/09
 		//status = nc_inq_dimid(ncid, "y", &latIndexid);	if (status != NC_NOERR) {err = -1; goto OLD;}	
-		goto OLD;
+		//goto OLD;
+		status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto OLD;
+		}
 	}
 	bVelocitiesOnNodes = true;
 	status = nc_inq_varid(ncid, "latc", &latid); //Navy
@@ -3173,7 +3181,12 @@ OSErr TimeGridVelCurv_c::TextRead(const char *path, const char *topFilePath)
 	{
 		//status = nc_inq_dimid(ncid, "LON_UV", &lonIndexid);	
 		//if (status != NC_NOERR) {err = -1; goto done;}	
-		err = -1; goto done;
+		//err = -1; goto done;
+		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
 	}
 	status = nc_inq_varid(ncid, "lonc", &lonid);	//Navy
 	if (status != NC_NOERR) 
@@ -3412,8 +3425,9 @@ OLD:
 		goto depths;
 	}
 	
-		if (isLandMask && bVelocitiesOnNodes) err = ReorderPointsCOOPSMask(landmaskH,errmsg);
-		else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(landmaskH,errmsg);
+		if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(landmaskH,errmsg);
+		else if (isLandMask && bVelocitiesOnNodes) err = ReorderPointsCOOPSMask(landmaskH,errmsg);
+		//else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(landmaskH,errmsg);	// do this first
 		else if (bVelocitiesOnNodes) err = ReorderPointsCOOPSNoMask(errmsg);
 		else if (isLandMask) err = ReorderPoints(landmaskH,errmsg);	
 		else err = ReorderPointsNoMask(errmsg);
@@ -8536,10 +8550,6 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue(const Seconds& model_time, World
 		// Calculate the interpolated velocity at the point
 		if (interpolationVal.ptIndex1 >= 0) 
 		{
-//		    cerr << timeAlpha << endl;
-//		    cerr << INDEXH(fStartData.dataHdl,ptIndex1).u << " " << INDEXH(fEndData.dataHdl,ptIndex1).u  << endl;
-//		    cerr << INDEXH(fStartData.dataHdl,ptIndex2).u << " " << INDEXH(fEndData.dataHdl,ptIndex2).u << endl;
-//		    cerr << INDEXH(fStartData.dataHdl,ptIndex3).u << " " << INDEXH(fEndData.dataHdl,ptIndex3).u << endl;
 			scaledPatVelocity.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1).u)
 			+interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2).u)
 			+interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3).u);
@@ -8568,8 +8578,7 @@ scale:
 	//scaledPatVelocity.v *= fVar.curScale; 
 	scaledPatVelocity.u *= fVar.fileScaleFactor; // may want to allow some sort of scale factor, though should be in file
 	scaledPatVelocity.v *= fVar.fileScaleFactor; 
-
-//	cerr << scaledPatVelocity.u << " " << scaledPatVelocity.v << endl;
+	
 	return scaledPatVelocity;
 }
 

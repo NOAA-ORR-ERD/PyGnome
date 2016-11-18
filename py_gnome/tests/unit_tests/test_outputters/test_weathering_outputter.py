@@ -49,7 +49,7 @@ def model(sample_model):
     model.spills += spill
 
     # figure out mid-run save for weathering_data attribute, then add this in
-    rel_time = model.spills[0].get('release_time')
+    rel_time = model.spills[0].release_time
     skim_start = rel_time + timedelta(hours=1)
     amount = model.spills[0].amount
     units = model.spills[0].units
@@ -57,7 +57,7 @@ def model(sample_model):
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=1))
     # thickness = 1m so area is just 20% of volume
-    volume = spill.get_mass()/spill.get('substance').get_density()
+    volume = spill.get_mass() / spill.substance.density_at_temp()
     burn = Burn(0.2 * volume, 1.0,
                 active_start=skim_start,
                 efficiency=0.9)
