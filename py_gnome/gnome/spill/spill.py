@@ -5,7 +5,6 @@ A "spill" is essentially a source of elements. These classes provide
 the logic about where an when the elements are released
 
 """
-from pprint import pprint
 
 import copy
 from inspect import getmembers, ismethod
@@ -171,8 +170,7 @@ class Spill(BaseSpill):
     """
     Models a spill by combining Release and ElementType objects
     """
-    _update = ['on', 'release',
-               'amount', 'units', 'amount_uncertainty_scale']
+    _update = ['on', 'release', 'amount', 'units', 'amount_uncertainty_scale']
 
     _create = ['frac_coverage']
     _create.extend(_update)
@@ -271,7 +269,7 @@ class Spill(BaseSpill):
         self.name = name
 
 
-# fixme: a bunch of these properties should really be defined in subclasses
+# fixme: a bunch of these properties should really be defined in subclasses that use them
     @property
     def release_time(self):
         return self.release.release_time
@@ -289,16 +287,14 @@ class Spill(BaseSpill):
     @property
     def release_duration(self):
         return self.release.release_duration
-    @release_duration.setter
-    def release_duration(self, sti):
-        self.release.release_duration = sti
 
     @property
     def start_time_invalid(self):
         return self.release.start_time_invalid
-    @start_time_invalid.setter
-    def start_time_invalid(self, rd):
-        self.release.start_time_invalid = rd
+    # any reason to set this on a spill??
+    # @start_time_invalid.setter
+    # def start_time_invalid(self, rd):
+    #     self.release.start_time_invalid = rd
 
     @property
     def num_elements(self):
@@ -307,12 +303,13 @@ class Spill(BaseSpill):
     def num_elements(self, ne):
         self.release.num_elements = ne
 
+    # doesn't seem like this should be set on the spill object!
     @property
     def num_released(self):
         return self.release.num_released
-    @num_released.setter
-    def num_released(self, ne):
-        self.release.num_released = ne
+    # @num_released.setter
+    # def num_released(self, ne):
+    #     self.release.num_released = ne
 
     @property
     def start_position(self):
@@ -346,8 +343,8 @@ class Spill(BaseSpill):
     def windage_persist(self):
         return self.element_type.windage_persist
     @windage_persist.setter
-    def windage_persist(self, at):
-        self.element_type.windage_range = at
+    def windage_persist(self, wp):
+        self.element_type.windage_persist = wp
 
 
 
