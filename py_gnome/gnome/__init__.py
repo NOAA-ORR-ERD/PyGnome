@@ -10,9 +10,15 @@ import json
 
 import unit_conversion as uc
 
-from gnomeobject import GnomeId, init_obj_log, AddLogger
+from gnomeobject import GnomeId, AddLogger
+# from gnomeobject import init_obj_log
 
-__version__ = '0.2.1p1'
+# using a PEP 404 compliant version name
+# the "dev" is for "develop" -- we can increment the number if we want
+# (it needs to stay an integer) -- but probably no need
+# but this will keep systems from accidentally overwrting an older, non-develop version
+# the "dev" should be removed when we push to gitHub
+__version__ = '0.2.1dev1'
 
 
 # a few imports so that the basic stuff is there

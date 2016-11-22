@@ -1,18 +1,24 @@
+"""
+an assortment of utilities to help with various netcdf grid files.
+"""
+
 import netCDF4 as nc4
 import pyugrid
 import pysgrid
 import numpy as np
 
+
 def _construct_environment_objects(**kwargs):
     '''
-    This function takes the arguments passed to it, and attempts to construct the appropriate Property object
-    to represent it. If the argument is already a Property object or is unable to be parsed, it will pass
-    through
+    This function takes the arguments passed to it, and attempts to construct the appropriate
+    Property object to represent it. If the argument is already a Property object or is unable
+    to be parsed, it will pass through
     '''
 
+
 def _init_grid(filename,
-              grid_topology=None,
-              dataset=None,):
+               grid_topology=None,
+               dataset=None,):
     gt = grid_topology
     gf = dataset
     if gf is None:
@@ -21,17 +27,18 @@ def _init_grid(filename,
     if gt is None:
         try:
             grid = pyugrid.UGrid.from_nc_dataset(gf)
-        except:
+        except (ValueError, NameError, AttributeError):
             pass
         try:
             grid = pysgrid.SGrid.load_grid(gf)
-        except:
+        except (ValueError, NameError, AttributeError):
             gt = _gen_topology(filename)
     if grid is None:
         nodes = node_lon = node_lat = None
         if 'nodes' not in gt:
             if 'node_lon' not in gt and 'node_lat' not in gt:
-                raise ValueError('Nodes must be specified with either the "nodes" or "node_lon" and "node_lat" keys')
+                raise ValueError('Nodes must be specified with either the "nodes" '
+                                 'or "node_lon" and "node_lat" keys')
             node_lon = gf[gt['node_lon']]
             node_lat = gf[gt['node_lat']]
         else:
@@ -72,6 +79,7 @@ def _init_grid(filename,
                                  edge2_lon=edge2_lon,
                                  edge2_lat=edge2_lat)
     return grid
+
 
 def _gen_topology(filename,
                   dataset=None):
@@ -124,6 +132,7 @@ def _gen_topology(filename,
                 gt['edge2_lat'] = n[1]
                 break
     return gt
+
 
 def _get_dataset(filename):
     df = None

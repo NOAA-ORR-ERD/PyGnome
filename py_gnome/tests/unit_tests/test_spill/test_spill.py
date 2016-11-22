@@ -20,14 +20,18 @@ import numpy as np
 
 import unit_conversion as uc
 
+from gnome.model import Model
+from gnome.movers import RandomMover
 from gnome.spill import (Spill,
                          Release,
                          point_line_release_spill,
-                         SpatialRelease)
+                         SpatialRelease,
+                         InitElemsFromFile)
 from gnome.spill.elements import (floating,
                                   ElementType)
+from gnome.spill_container import SpillContainer
 
-from ..conftest import mock_sc_array_types, mock_append_data_arrays, test_oil
+from ..conftest import mock_sc_array_types, mock_append_data_arrays, test_oil, testdata
 
 
 # Used to mock SpillContainer functionality of creating/appending data_arrays
@@ -1036,90 +1040,52 @@ class TestVerticalPlumeRelease:
         assert data_arrays['positions'].shape == (10, 3)
 
 
-# def test_PointSourceSurfaceRelease_new_from_dict():
-#     """
-#     test to_dict function for Wind object
-#     create a new wind object and make sure it has same properties
-#     """
-#
-#     spill = PointSourceSurfaceRelease(num_elements=1000,
-#             start_position=(144.664166, 13.441944, 0.),
-#             release_time=datetime(2013, 2, 13, 9, 0),
-#             end_release_time=datetime(2013, 2, 13, 9, 0)
-#             + timedelta(hours=6))
-#
-#     sp_state = spill.to_dict('save')
-#     print sp_state
-#
-#     # this does not catch two objects with same ID
-#
-#     sp2 = PointSourceSurfaceRelease.new_from_dict(sp_state)
-#
-#     assert spill == sp2
-#
-#
-# def test_PointSourceSurfaceRelease_from_dict():
-#     """
-#     test from_dict function for Wind object
-#     update existing wind object from_dict
-#     """
-#
-#     spill = PointSourceSurfaceRelease(num_elements=1000,
-#             start_position=(144.664166, 13.441944, 0.),
-#             release_time=datetime(2013, 2, 13, 9, 0),
-#             end_release_time=datetime(2013, 2, 13, 9, 0)
-#             + timedelta(hours=6))
-#
-#     sp_dict = spill.to_dict()
-#     sp_dict['windage_range'] = [.02, .03]
-#     spill.from_dict(sp_dict)
-#
-#     for key in sp_dict.keys():
-#         if isinstance(spill.__getattribute__(key), np.ndarray):
-#             np.testing.assert_equal(sp_dict.__getitem__(key),
-#                                     spill.__getattribute__(key))
-#         else:
-#             assert spill.__getattribute__(key) \
-#                 == sp_dict.__getitem__(key)
-# ==============================================================================
-
-
 # """
 # Following test set/get windage_range and windage_persist parameters from the
 # Spill object. These were removed but are put back into master branch so current
 # webgnome works. These will eventually be removed
 # """
+# these are all the properties that tie Spill attriubtes to the underlying
+# element_type, etc attributes.
+def test_propeties():
+    """
+    NOTE: this is not longer set and get -- it's propeties instead
 
-# NOTE: no longer set/get -- nothign to test here!
-# def test_setget():
-#     """
-#     NOTE: this is not longer set and get -- it's using __setattr__ and __getattr_ instead
+    set a couple of properties of release object and windages initializer to
+    test that it works
 
-#     set a couple of properties of release object and windages initializer to
-#     test that it works
-#     """
-#     rel_time = datetime.now()
-#     spill = point_line_release_spill(10, (0, 0, 0), rel_time)
-#     # is an empty get critical??
-#     # assert len(spill.get()) > 1
-#     assert spill.num_elements == 10
-#     assert spill.release_time == rel_time
+    # fixme -- maybe this should be a complete test!
+    """
+    rel_time = datetime.now()
+    spill = point_line_release_spill(10, (0, 0, 0), rel_time)
 
-#     spill.num_elements = 100
-#     assert spill.num_elements == 100
+    assert spill.num_elements == 10
+    assert spill.release_time == rel_time
 
-#     new_time = datetime(2014, 1, 1, 0, 0, 0)
-#     spill.release_time = new_time
-#     assert spill.release_time == new_time
+    spill.num_elements = 100
+    assert spill.num_elements == 100
 
-#     spill.windage_persist = -1
-#     assert spill.windage_persist == -1
+    new_time1 = datetime(2014, 1, 1, 0, 0, 0)
+    spill.release_time = new_time1
+    assert spill.release_time == new_time1
 
-#     spill.windage_range = (0.4, 0.4)
-#     assert spill.windage_range == (0.4, 0.4)
+    new_time2 = datetime(2014, 1, 1, 2, 0, 0)
+    spill.end_release_time = new_time2
+    assert spill.end_release_time == new_time2
 
-#     spill.windage_range = [0.4, 0.4]
-#     assert spill.windage_range == [0.4, 0.4]
+    assert spill.release_duration == (new_time2 - new_time1).total_seconds()
+
+    spill.start_position = (1, 2, 3)
+    assert np.all(spill.start_position == (1, 2, 3))
+
+    spill.end_position = (2, 2, 3)
+    assert np.all(spill.end_position == (2, 2, 3))
+
+    spill.windage_persist = -1
+    assert spill.windage_persist == -1
+
+    spill.windage_range = (0.4, 0.4)
+    assert spill.windage_range == (0.4, 0.4)
 
 
 def test_set_end_to_none():
@@ -1158,6 +1124,77 @@ def test_set_end_to_none():
                                      time_step,
                                      data_arrays)
 
+class TestInitElementsFromFile():
+    nc_start_time = datetime(2011, 3, 11, 7, 0)
+    time_step = timedelta(hours=24)
+
+    @pytest.mark.parametrize("index", [None, 0, 2])
+    def test_init(self, index):
+        release = InitElemsFromFile(testdata['nc']['nc_output'], index=index)
+        assert release.num_elements == 4000
+        if index is None:
+            # file contains initial condition plus 4 timesteps
+            exp_rel_time = self.nc_start_time + self.time_step * 4
+            assert np.all(release._init_data['age'] ==
+                          self.time_step.total_seconds() * 4)
+        else:
+            exp_rel_time = self.nc_start_time + self.time_step * index
+
+            assert np.all(release._init_data['age'] ==
+                          self.time_step.total_seconds() * index)
+        assert release.release_time == exp_rel_time
+
+    def test_init_with_releasetime(self):
+        'test release time gets set correctly'
+        reltime = datetime(2014, 1, 1, 0, 0)
+        release = InitElemsFromFile(testdata['nc']['nc_output'], reltime)
+        assert release.num_elements == 4000
+        assert release.release_time == reltime
+
+    @pytest.mark.parametrize("at", [{},
+                                    {'windages'}])
+    def test_release_elements(self, at):
+        'release elements in the context of a spill container'
+        s = Spill(InitElemsFromFile(testdata['nc']['nc_output']))
+        sc = SpillContainer()
+        sc.spills += s
+        sc.prepare_for_model_run(array_types=at)
+        num_les = sc.release_elements(self.time_step, self.nc_start_time)
+        assert sc.num_released == s.release.num_elements
+        assert num_les == s.release.num_elements
+        for array, val in s.release._init_data.iteritems():
+            if array in sc:
+                assert np.all(val == sc[array])
+                assert val is not sc[array]
+            else:
+                assert array not in at
+
+    def test_full_run(self):
+        'just check that all data arrays work correctly'
+        s = Spill(InitElemsFromFile(testdata['nc']['nc_output']))
+        model = Model(start_time=s.release_time,
+                      time_step=self.time_step.total_seconds(),
+                      duration=timedelta(days=2)
+                      )
+        model.spills += s
+        model.movers += RandomMover()
+
+        # setup model run
+        for step in model:
+            if step['step_num'] == 0:
+                continue
+            for sc in model.spills.items():
+                for key in sc.data_arrays.keys():
+                    # following keys will not change with run
+                    if key in ('status_codes',
+                               'mass',
+                               'init_mass',
+                               'id',
+                               'spill_num',
+                               'last_water_positions'):  # all water map
+                        assert np.all(sc[key] == s.release._init_data[key])
+                    else:
+                        assert np.any(sc[key] != s.release._init_data[key])
 
 if __name__ == '__main__':
 
