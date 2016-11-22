@@ -12,7 +12,7 @@ import unit_conversion as uc
 
 from gnomeobject import GnomeId, init_obj_log, AddLogger
 
-__version__ = '0.2.1prev'
+__version__ = '0.2.1p1'
 
 
 # a few imports so that the basic stuff is there

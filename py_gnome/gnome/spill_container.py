@@ -25,7 +25,8 @@ from gnome.array_types import (positions,
                                age,
                                density,
                                substance,
-                               ArrayType)
+                               ArrayType,
+                               default_array_types)
 
 from gnome.utilities.orderedcollection import OrderedCollection
 import gnome.spill
@@ -404,15 +405,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         '''
         gnome.array_types.reset_to_defaults(['spill_num', 'id'])
 
-        self._array_types = {'positions': positions,
-                             'next_positions': next_positions,
-                             'last_water_positions': last_water_positions,
-                             'status_codes': status_codes,
-                             'spill_num': spill_num,
-                             'id': id,
-                             'mass': mass,
-                             'init_mass': init_mass,
-                             'age': age}
+        self._array_types = default_array_types
         self._data_arrays = {}
 
     def _reset__substances_spills(self):
