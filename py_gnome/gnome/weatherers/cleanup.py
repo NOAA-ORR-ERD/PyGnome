@@ -808,8 +808,13 @@ class ChemicalDispersion(CleanUpBase, Serializable):
         # rate is set the first timestep in which the object becomes active
         self._rate = None
 
-        # since efficiency can also be set - do not make_default_refs
-        self.make_default_refs = False
+        # fixme: this note was here: since efficiency can also be set - do not
+        #        make_default_refs but we need waves!
+        # we need a way to override efficiency, rather than disableing default-refs
+        # but the current code sets the efficiency attribute from waves..
+        # maybe a static_efficiency property -- if it is not None, then
+        # it is used, rather than any computation being made.
+        self.make_default_refs = False if efficiency else True
 
     def prepare_for_model_run(self, sc):
         '''

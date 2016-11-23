@@ -22,7 +22,7 @@ from conftest import sample_sc_release
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, "../sample_data")
-testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
+testbnamap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 test_tri_grid = os.path.join(basedir, '../sample_data',
                              'small_trigrid_example.nc')
 
@@ -36,7 +36,7 @@ def test_in_water_resolution():
     # Create an 500x500 pixel map, with an LE refloat half-life of 2 hours
     # (specified here in seconds).
 
-    m = gnome.map.MapFromBNA(filename=testmap, refloat_halflife=2,
+    m = gnome.map.MapFromBNA(filename=testbnamap, refloat_halflife=2,
                              raster_size=500 * 500)
 
     # Specify coordinates of the two points that make up the
@@ -516,9 +516,9 @@ class TestRefloat:
 
 class Test_MapfromBNA:
 
-    print "instaniating map:", testmap
+    print "instaniating map:", testbnamap
     # NOTE: this is a pretty course map -- for testing
-    bna_map = MapFromBNA(testmap, refloat_halflife=6, raster_size=1000)
+    bna_map = MapFromBNA(testbnamap, refloat_halflife=6, raster_size=1000)
 
     def test_map_in_water(self):
         '''
@@ -601,6 +601,16 @@ class Test_MapfromBNA:
 
         assert not self.bna_map.on_map(point_off_map)
 
+    def test_map_bounds(self):
+        map_bounds = self.bna_map.map_bounds
+        # these are the map_bounds in the BNA
+        expected_bounds = np.array([[-127.465333, 48.3294],
+                                    [-126.108847, 48.3294],
+                                    [-126.108847, 47.44727],
+                                    [-127.465333, 47.44727],
+                                    ])
+        assert np.allclose(map_bounds, expected_bounds)
+
     def test_to_geojson(self):
         geo_json = self.bna_map.to_geojson()
 
@@ -625,7 +635,7 @@ def test_serialize_deserialize(json_):
     """
     test create new object from to_dict
     """
-    gmap = gnome.map.MapFromBNA(testmap, 6)
+    gmap = gnome.map.MapFromBNA(testbnamap, 6)
 
     serial = gmap.serialize(json_)
     dict_ = gnome.map.MapFromBNA.deserialize(serial)
@@ -636,7 +646,7 @@ def test_serialize_deserialize(json_):
 
 def test_update_from_dict_MapFromBNA():
     'test update_from_dict for MapFromBNA'
-    gmap = gnome.map.MapFromBNA(testmap, 6)
+    gmap = gnome.map.MapFromBNA(testbnamap, 6)
 
     serial = gmap.serialize('webapi')
     dict_ = gnome.map.MapFromBNA.deserialize(serial)

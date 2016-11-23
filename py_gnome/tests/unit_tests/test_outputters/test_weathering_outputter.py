@@ -8,7 +8,7 @@ from datetime import timedelta
 import numpy as np
 import pytest
 
-from gnome.environment import constant_wind, Water
+from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import Evaporation, ChemicalDispersion, Skimmer, Burn
 from gnome.spill import point_line_release_spill
 
@@ -25,10 +25,15 @@ def model(sample_model):
 
     model.cache_enabled = True
     model.uncertain = False
-    model.environment += Water(311.15)
 
-    print 'adding a Weatherer'
-    model.environment += constant_wind(1.0, 0.0)
+    wind = constant_wind(1.0, 0.0)
+    water = Water(311.15)
+    model.environment += water
+
+    waves = Waves(wind, water)
+    model.environment += waves
+
+    print "the environment:", model.environment
 
     N = 10  # a line of ten points
     line_pos = np.zeros((N, 3), dtype=np.float64)
@@ -53,7 +58,7 @@ def model(sample_model):
     skim_start = rel_time + timedelta(hours=1)
     amount = model.spills[0].amount
     units = model.spills[0].units
-    skimmer = Skimmer(.3*amount, units=units, efficiency=0.3,
+    skimmer = Skimmer(.3 * amount, units=units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=1))
     # thickness = 1m so area is just 20% of volume
@@ -82,7 +87,6 @@ def test_init():
     assert g.output_dir is None
 
 
-@pytest.mark.slow
 def test_model_webapi_output(model, output_dir):
     '''
     Test weathering outputter with a model since simplest to do that

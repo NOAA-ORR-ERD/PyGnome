@@ -2,6 +2,7 @@
 release objects that define how elements are released. A Spill() objects
 is composed of a release object and an ElementType
 '''
+
 import copy
 from datetime import datetime, timedelta
 
@@ -333,7 +334,6 @@ class PointLineRelease(Release, Serializable):
         '''
         duration over which particles are released in seconds
         '''
-        print "acsessing release_duration property:", self.end_release_time
         if self.end_release_time is None:
             return 0
         else:
@@ -876,9 +876,7 @@ class SpatialRelease(Release, Serializable):
         '''
             Custom new_from_dict() functionality for SpatialRelease
         '''
-        if ('release_time' in dict_ and
-                not isinstance(dict_['release_time'], datetime)):
-            print 'handling release_time...'
+        if ('release_time' in dict_ and not isinstance(dict_['release_time'], datetime)):
             dict_['release_time'] = iso8601.parse_date(dict_['release_time'],
                                                        default_timezone=None)
 
@@ -1087,6 +1085,8 @@ class VerticalPlumeRelease(Release, Serializable):
 
 
 class InitElemsFromFile(Release):
+    # fixme: This should really be a spill, not a release -- it does al of what
+    # a spill does, not just the release part.
     '''
     release object that sets the initial state of particles from a previously
     output NetCDF file
@@ -1117,7 +1117,6 @@ class InitElemsFromFile(Release):
             and use this data. If both 'time' and 'index' are None, use
             data for index = -1
         '''
-        self._init_data = None
         self._read_data_file(filename, index, time)
         if release_time is None:
             release_time = self._init_data.pop('current_time_stamp').item()
@@ -1137,6 +1136,9 @@ class InitElemsFromFile(Release):
         else:
             self._init_data = NetCDFOutput.read_data(filename, index=-1,
                                                      which_data='all')[0]
+        # if init_mass is not there, set it to mass
+        # fixme: should this be a required data array?
+        self._init_data.setdefault('init_mass', self._init_data['mass'].copy())
 
     def num_elements_to_release(self, current_time, time_step):
         '''

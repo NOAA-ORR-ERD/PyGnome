@@ -24,8 +24,8 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
     """
 
     _state = copy.deepcopy(CyMover._state)
-    #_state.add(update=['water_density'], save=['water_density'])
-    #_state.add(update=['water_viscosity'], save=['water_viscosity'])
+    # _state.add(update=['water_density'], save=['water_density'])
+    # _state.add(update=['water_viscosity'], save=['water_viscosity'])
     _schema = RiseVelocityMoverSchema
 
     def __init__(
@@ -106,3 +106,9 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
 
         return self.delta.view(dtype=world_point_type).reshape((-1,
                 len(world_point)))
+
+
+class TamocRiseVelocityMover(RiseVelocityMover):
+    def __init__(self, *args, **kwargs):
+        super(TamocRiseVelocityMover, self).__init__(*args, **kwargs)
+        self.array_types.update(('density', 'droplet_diameter'))

@@ -33,10 +33,13 @@ from gnome.map import GnomeMap
 from gnome.spill import point_line_release_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
-                          RiseVelocityMover,
+                          TamocRiseVelocityMover,
                           RandomVerticalMover,
                           SimpleMover,
-                          PyGridCurrentMover)
+                          GridCurrentMover,
+                          PyGridCurrentMover,
+                          constant_wind_mover,
+                          IceMover)
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
@@ -70,9 +73,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
     # set up the modeling environment
-    start_time = datetime(2004, 12, 31, 13, 0)
+    start_time = datetime(2016, 9, 23, 0, 0)
     model = Model(start_time=start_time,
-                  duration=timedelta(days=3),
+                  duration=timedelta(days=2),
                   time_step=30 * 60,
                   uncertain=False)
 
@@ -84,13 +87,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         size=(1024, 768),
                         output_timestep=timedelta(hours=1),
                         )
-    renderer.viewport = ((-.15, -.35), (.15, .35))
+    renderer.viewport = ((196.14, 71.89), (196.18, 71.93))
 
     print 'adding outputters'
     model.outputters += renderer
 
     # Also going to write the results out to a netcdf file
-    netcdf_file = os.path.join(base_dir, 'script_plume.nc')
+    netcdf_file = os.path.join(base_dir, 'script_arctic_plume.nc')
     scripting.remove_netcdf(netcdf_file)
 
     model.outputters += NetCDFOutput(netcdf_file,
@@ -101,7 +104,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print "adding Horizontal and Vertical diffusion"
 
     # Horizontal Diffusion
-    # model.movers += RandomMover(diffusion_coef=5)
+    model.movers += RandomMover(diffusion_coef=500)
     # vertical diffusion (different above and below the mixed layer)
     model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=5,
                                         vertical_diffusion_coef_below_ml=.11,
@@ -109,25 +112,38 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding Rise Velocity'
     # droplets rise as a function of their density and radius
-    model.movers += RiseVelocityMover()
+    model.movers += TamocRiseVelocityMover()
 
     print 'adding a circular current and eastward current'
-    # This is .3 m/s south
-    model.movers += PyGridCurrentMover(current=vg,
-                                       default_num_method='Trapezoid',
-                                       extrapolate=True)
-    model.movers += SimpleMover(velocity=(0., -0.1, 0.))
+    fn = 'hycom_glb_regp17_2016092300_subset.nc'
+    fn_ice = 'hycom-cice_ARCu0.08_046_2016092300_subset.nc'
+    import pysgrid
+    import netCDF4 as nc
+    df = nc.Dataset(fn)
+    lon = df['lon'][:]
+    lat = df['lat'][:]
+    grd = pysgrid.SGrid(node_lon=np.repeat(lon.reshape(1,-1), len(lat), axis=0), node_lat=np.repeat(lat.reshape(-1,1), len(lon), axis=1))
+    print(grd.node_lon.shape)
+    print(grd.node_lat.shape)
+    gc = GridCurrent.from_netCDF(fn, units='m/s', grid=grd)
+
+    model.movers += IceMover(fn_ice)
+    model.movers += GridCurrentMover(fn)
+    model.movers += SimpleMover(velocity=(0., 0., 0.))
+    model.movers += constant_wind_mover(20, 315, units='knots')
 
     # Now to add in the TAMOC "spill"
     print "Adding TAMOC spill"
 
     model.spills += tamoc_spill.TamocSpill(release_time=start_time,
-                                           start_position=(0, 0, 1000),
-                                           num_elements=1000,
-                                           end_release_time=start_time + timedelta(days=1),
-                                           name='TAMOC plume',
-                                           TAMOC_interval=None,  # how often to re-run TAMOC
-                                           )
+                                        start_position=(196.16, 71.91, 40.0),
+                                        num_elements=1000,
+                                        end_release_time=start_time + timedelta(days=1),
+                                        name='TAMOC plume',
+                                        TAMOC_interval=None,  # how often to re-run TAMOC
+                                        )
+
+    model.spills[0].data_sources['currents'] = gc
 
     return model
 
@@ -135,21 +151,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
+    model.spills[0].update_environment_conditions(model.model_time)
+    model.spills[0].tamoc_parameters['depth'] = model.spills[0].start_position[2]
     print "about to start running the model"
     for step in model:
-        if step['step_num'] == 23:
-            print 'running tamoc again'
-            sp = model.spills[0]
-#            sp.tamoc_parameters['release_phi'] = -np.pi / 4
-#            sp.tamoc_parameters['release_theta'] = -np.pi
-            sp.tamoc_parameters['ua'] = np.array([-0.05, -0.05])
-#            sp.tamoc_parameters['va'] = np.array([-1, -0.5, 0])
-#            sp.tamoc_parameters['wa'] = np.array([0.01, 0.01, 0.01])
-#            sp.tamoc_parameters['depths'] = np.array([0., 1000., 2000])
-            sp.droplets = sp._run_tamoc()
-        if step['step_num'] == 25:
-            sp = model.spills[0]
-            sp.tamoc_parameters['ua'] = np.array([0.05, 0.05])
-            sp.droplets = sp._run_tamoc()
+        if step['step_num'] == 0:
+            for d in model.spills[0].droplets:
+                d.density = 850.
+                d.position[2] = 0
+#            sp = model.spills[0]
+#            print sp.tamoc_parameters
+#            sp.update_environment_conditions(model.model_time)
+#            print sp.tamoc_parameters
         print step
         # model.

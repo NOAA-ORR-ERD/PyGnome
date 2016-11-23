@@ -584,8 +584,10 @@ def sample_model():
     start_points[:] = (-127.1, 47.93, 0)
     end_points[:] = (-126.5, 48.1, 0)
 
-    return {'model': model, 'release_start_pos': start_points,
-            'release_end_pos': end_points}
+    return {'model': model,
+            'release_start_pos': start_points,
+            'release_end_pos': end_points,
+            }
 
 
 @pytest.fixture(scope='module')

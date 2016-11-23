@@ -147,7 +147,7 @@ class Dissolution(Weatherer, Serializable):
         # for each LE.
         # K_ow for non-aromatics are masked to 0.0
         K_ow_comp = arom_mask * BanerjeeHuibers.partition_coeff(mol_wt, rho)
-        data['partition_coeff'] = ((fmasses * K_ow_comp / mol_wt).sum(axis=1) /
+        data['partition_coeff'] = ((fmasses * K_ow_comp / mol_wt).sum(axis=1) / 
                                    (fmasses / mol_wt).sum(axis=1))
 
         avg_rhos = self.oil_avg_density(fmasses, rho)
@@ -217,7 +217,7 @@ class Dissolution(Weatherer, Serializable):
 
         # adjust any masses that might go negative
         total_mass_dissolved += np.clip(fmasses - total_mass_dissolved,
-                                        -np.inf, 0.0)
+                                        - np.inf, 0.0)
 
         return total_mass_dissolved
 
@@ -415,15 +415,15 @@ class Dissolution(Weatherer, Serializable):
         if len(c_oil.shape) == 1:
             # a single LE of mass components
             # mass xfer rate (per unit area)
-            N_s_a = (0.01 *
-                     (U_10 / 3600.0) *
+            N_s_a = (0.01 * 
+                     (U_10 / 3600.0) * 
                      (c_oil / k_ow))
 
             N_s = N_s_a * slick_area
         else:
             # multiple LE mass components in a 2D array
-            N_s_a = (0.01 *
-                     (U_10 / 3600.0) *
+            N_s_a = (0.01 * 
+                     (U_10 / 3600.0) * 
                      (c_oil / k_ow))
 
             # with printoptions(precision=2):
