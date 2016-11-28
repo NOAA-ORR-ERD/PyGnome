@@ -4,8 +4,8 @@ Element Types are very simple classes. They simply define the initializers.
 These are also tested in the test_spill_container module since it allows for
 more comprehensive testing
 
-FIXME: a number of these tests require a spill object -- those tests really should be
-       moved to the spill object -- or maybe not used at all?
+FIXME: a number of these tests require a spill object -- those tests really
+       should be moved to the spill object -- or maybe not used at all?
 '''
 
 from datetime import datetime, timedelta
@@ -16,15 +16,14 @@ from pytest import raises
 
 import numpy as np
 
-import unit_conversion as uc
-import gnome
+from oil_library import _sample_oils
 
+import gnome
 from gnome.spill.elements import (InitWindages,
                                   InitRiseVelFromDist,
                                   InitRiseVelFromDropletSizeFromDist,
                                   floating,
-                                  ElementType,
-                                  plume)
+                                  ElementType)
 
 from gnome.utilities.distributions import (NormalDistribution,
                                            UniformDistribution,
@@ -244,7 +243,8 @@ oil = test_oil
 inp_params = [((floating(substance=oil),
                 ElementType([InitWindages()], substance=oil)), arr_types),
               ((floating(substance=oil),
-                ElementType([InitWindages(), InitRiseVelFromDist(distribution=UniformDistribution())],
+                ElementType([InitWindages(),
+                             InitRiseVelFromDist(distribution=UniformDistribution())],
                             substance=oil)), rise_vel),
               ((floating(substance=oil),
                 ElementType([InitRiseVelFromDist(distribution=UniformDistribution())],
@@ -307,8 +307,9 @@ def test_serialize_deserialize_initializers(fcn):
 
         if json_ == 'webapi':
             if 'distribution' in dict_:
-                'webapi will replace dict with object so mock it here'
-                dict_['distribution'] = eval(dict_['distribution']['obj_type']).new_from_dict(dict_['distribution'])
+                # webapi will replace dict with object so mock it here
+                dict_['distribution'] = (eval(dict_['distribution']['obj_type'])
+                                         .new_from_dict(dict_['distribution']))
 
         n_obj = cls.new_from_dict(dict_)
         # following is requirement for 'save' files
@@ -358,7 +359,10 @@ def test_save_load(saveloc_, test_obj):
 def test_element_type_init(substance):
     et = ElementType(substance=substance)
     if isinstance(substance, basestring):
-        assert et.substance.get('name') == substance
+        try:
+            assert et.substance.get('name') == substance
+        except AssertionError:
+            assert et.substance.get('name') == _sample_oils[substance].name
     elif isinstance(substance, int):
         assert et.substance.get('id') == substance
     else:

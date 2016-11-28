@@ -13,7 +13,7 @@ from datetime import timedelta
 import unit_conversion as uc
 from colander import (SchemaNode, Bool, String, Float, drop)
 
-from gnome.utilities import serializable
+from gnome.utilities.serializable import Serializable, Field
 from gnome.persist import class_from_objtype
 from gnome.persist.base_schema import ObjType
 
@@ -22,7 +22,7 @@ from .release import PointLineRelease, ContinuousRelease
 from .. import _valid_units
 
 
-class BaseSpill(serializable.Serializable, object):
+class BaseSpill(Serializable, object):
     """
     A base class for spills -- so we can check for them, etc.
 
@@ -49,7 +49,8 @@ class BaseSpill(serializable.Serializable, object):
         return None
 
     def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
+        return ('{0.__class__.__module__}.{0.__class__.__name__}()'
+                .format(self))
 
     # what is this for??
     def get_mass(self, units=None):
@@ -157,6 +158,7 @@ class BaseSpill(serializable.Serializable, object):
 
         return False
 
+
 class SpillSchema(ObjType):
     'Spill class schema'
     on = SchemaNode(Bool(), default=True, missing=True,
@@ -175,12 +177,11 @@ class Spill(BaseSpill):
     _create = ['frac_coverage']
     _create.extend(_update)
 
-    _state = copy.deepcopy(serializable.Serializable._state)
+    _state = copy.deepcopy(Serializable._state)
     _state.add(save=_create, update=_update)
-    _state += serializable.Field('element_type',
-                                 save=True,
-                                 save_reference=True,
-                                 update=True)
+    _state += [Field('element_type', save=True, update=True,
+                     save_reference=True),
+               Field('water', save=True, update=True, save_reference=True)]
     _schema = SpillSchema
 
     valid_vol_units = _valid_units('Volume')
@@ -193,6 +194,7 @@ class Spill(BaseSpill):
 
     def __init__(self,
                  release,
+                 water=None,
                  element_type=None,
                  substance=None,
                  on=True,
@@ -238,6 +240,7 @@ class Spill(BaseSpill):
             If amount property is None, then just floating elements
             (ie. 'windages')
         """
+        self.water = water
         self.release = release
 
         if element_type is None:
@@ -269,10 +272,12 @@ class Spill(BaseSpill):
         self.name = name
 
 
-# fixme: a bunch of these properties should really be defined in subclasses that use them
+# fixme: a bunch of these properties should really be defined in subclasses
+# that use them
     @property
     def release_time(self):
         return self.release.release_time
+
     @release_time.setter
     def release_time(self, rt):
         self.release.release_time = rt
@@ -280,6 +285,7 @@ class Spill(BaseSpill):
     @property
     def end_release_time(self):
         return self.release.end_release_time
+
     @end_release_time.setter
     def end_release_time(self, rt):
         self.release.end_release_time = rt
@@ -299,6 +305,7 @@ class Spill(BaseSpill):
     @property
     def num_elements(self):
         return self.release.num_elements
+
     @num_elements.setter
     def num_elements(self, ne):
         self.release.num_elements = ne
@@ -314,6 +321,7 @@ class Spill(BaseSpill):
     @property
     def start_position(self):
         return self.release.start_position
+
     @start_position.setter
     def start_position(self, sp):
         self.release.start_position = sp
@@ -321,6 +329,7 @@ class Spill(BaseSpill):
     @property
     def end_position(self):
         return self.release.end_position
+
     @end_position.setter
     def end_position(self, sp):
         self.release.end_position = sp
@@ -328,6 +337,7 @@ class Spill(BaseSpill):
     @property
     def array_types(self):
         return self.element_type.array_types
+
     @array_types.setter
     def array_types(self, at):
         self.element_type.array_types = at
@@ -335,6 +345,7 @@ class Spill(BaseSpill):
     @property
     def windage_range(self):
         return self.element_type.windage_range
+
     @windage_range.setter
     def windage_range(self, at):
         self.element_type.windage_range = at
@@ -342,11 +353,10 @@ class Spill(BaseSpill):
     @property
     def windage_persist(self):
         return self.element_type.windage_persist
+
     @windage_persist.setter
     def windage_persist(self, wp):
         self.element_type.windage_persist = wp
-
-
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -484,10 +494,11 @@ class Spill(BaseSpill):
 
         return False
 
-    ## NOTE: this has been moved to properties
+    # NOTE: this has been moved to properties
     # def __getattr__(self, prop=None):
     #     """
-    #     implementing this so that attributes can be pulled from the enclosed objects
+    #     implementing this so that attributes can be pulled from the enclosed
+    #     objects
 
     #     this replaces the old "get()" method
 
@@ -495,12 +506,14 @@ class Spill(BaseSpill):
     #     element_type initializer objects. If 'prop' is not None, then return
     #     the property
 
-    #     For example: Spill.windage_range returns the 'windage_range' from element_type assuming
-    #     the element_type = floating()
+    #     For example: Spill.windage_range returns the 'windage_range'
+    #                  from element_type assuming
+    #                  the element_type = floating()
 
     #     .. todo::
     #         There is an issue in that if two initializers have the same
-    #         property - could be the case if they both define a 'distribution',
+    #         property - could be the case if they both define a
+    #                    'distribution',
     #         then it does not know which one to return
     #     """
     #     print "in __getattr__, getting: %s" % prop
@@ -663,10 +676,13 @@ class Spill(BaseSpill):
         if self.units in self.valid_mass_units:
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
+            water_temp = self.water.temperature
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = self.element_type.substance.density_at_temp() * vol
+            mass = (self.element_type.substance.density_at_temp(water_temp) *
+                    vol)
         else:
-            raise ValueError("%s is not a valid mass or Volume unit" % self.units)
+            raise ValueError("{} is not a valid mass or Volume unit"
+                             .format(self.units))
 
         if units is None or units == 'kg':
             return mass
@@ -1029,6 +1045,7 @@ def point_line_release_spill(num_elements,
                              release_time,
                              end_position=None,
                              end_release_time=None,
+                             water=None,
                              element_type=None,
                              substance=None,
                              on=True,
@@ -1044,10 +1061,11 @@ def point_line_release_spill(num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
     spill = Spill(release,
-                  element_type,
-                  substance,
-                  on,
-                  amount,
-                  units,
+                  water=water,
+                  element_type=element_type,
+                  substance=substance,
+                  on=on,
+                  amount=amount,
+                  units=units,
                   name=name)
     return spill

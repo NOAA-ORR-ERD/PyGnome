@@ -68,7 +68,8 @@ def model(sample_model):
                 efficiency=0.9)
     c_disp = ChemicalDispersion(.1, efficiency=0.5,
                                 active_start=skim_start,
-                                active_stop=skim_start + timedelta(hours=1))
+                                active_stop=skim_start + timedelta(hours=1),
+                                waves=waves)
 
     model.weatherers += [Evaporation(),
                          c_disp,

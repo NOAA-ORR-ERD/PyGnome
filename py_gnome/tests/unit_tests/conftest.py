@@ -508,6 +508,7 @@ def sample_sc_no_uncertainty():
     the two spills and returns it. It is used in test_spill_container.py
     and test_elements.py so defined as a fixture.
     """
+    water = Water()
     sc = SpillContainer()
     # Sample data for creating spill
     num_elements = 100
@@ -521,12 +522,14 @@ def sample_sc_no_uncertainty():
     spills = [gnome.spill.point_line_release_spill(num_elements,
                                                    start_position,
                                                    release_time,
+                                                   water=water,
                                                    amount=10, units='l'),
               gnome.spill.point_line_release_spill(num_elements,
                                                    start_position,
                                                    release_time_2,
                                                    end_position,
-                                                   end_release_time),
+                                                   end_release_time,
+                                                   water=water),
               ]
     sc.spills.add(spills)
     return sc

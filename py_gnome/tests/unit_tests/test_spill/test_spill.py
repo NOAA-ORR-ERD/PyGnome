@@ -21,6 +21,7 @@ import numpy as np
 import unit_conversion as uc
 
 from gnome.model import Model
+from gnome.environment import Water
 from gnome.movers import RandomMover
 from gnome.spill import (Spill,
                          Release,
@@ -74,19 +75,22 @@ def test_amount_mass_vol(amount, units):
     ensure mass is being returned correctly when 'amount' is initialized wtih
     'mass' or 'volume'
     '''
+    water = Water()
     spill = Spill(Release(datetime.now()),
                   amount=amount,
                   units=units,
-                  substance=test_oil)
+                  substance=test_oil,
+                  water=water)
     assert spill.amount == amount
     assert spill.units == units
 
     if units in Spill.valid_vol_units:
-        exp_mass = (spill.substance.density_at_temp() *
+        exp_mass = (spill.substance.density_at_temp(water.temperature) *
                     uc.convert('Volume', units, 'm^3', spill.amount))
     else:
         exp_mass = uc.convert('Mass', units, 'kg', spill.amount)
     assert spill.get_mass() == exp_mass
+
     exp_mass_g = exp_mass * 1000
     assert spill.get_mass('g') == exp_mass_g
 
