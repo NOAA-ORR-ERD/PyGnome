@@ -58,7 +58,8 @@ class ObjForTests:
                                               rel_time,
                                               substance=test_oil,
                                               amount=amount,
-                                              units='kg')
+                                              units='kg',
+                                              water=water)
         return (sc, weatherers)
 
     def prepare_test_objs(self, obj_arrays=None):
@@ -262,7 +263,7 @@ class TestBurn(ObjForTests):
     (sc, weatherers) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
     op = spill.substance
-    volume = spill.get_mass() / op.density_at_temp()
+    volume = spill.get_mass() / op.density_at_temp(spill.water.temperature)
 
     thick = 1
     area = (0.5 * volume) / thick
@@ -473,8 +474,8 @@ class TestBurn(ObjForTests):
                            (1.0 - avg_frac_water) *
                            self.op.density_at_temp(water.temperature))
 
-        print 'diff = ', exp_mass_remain - mass_remain_for_burn_LEs
-        assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs)
+        assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs,
+                           rtol=0.001)
 
     def test_elements_weather_faster_with_frac_water(self):
         '''

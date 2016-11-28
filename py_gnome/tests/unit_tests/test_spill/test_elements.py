@@ -19,16 +19,16 @@ import numpy as np
 from oil_library import _sample_oils
 
 import gnome
+from gnome.utilities.distributions import (NormalDistribution,
+                                           UniformDistribution,
+                                           LogNormalDistribution,
+                                           WeibullDistribution)
+from gnome.environment import Water
 from gnome.spill.elements import (InitWindages,
                                   InitRiseVelFromDist,
                                   InitRiseVelFromDropletSizeFromDist,
                                   floating,
                                   ElementType)
-
-from gnome.utilities.distributions import (NormalDistribution,
-                                           UniformDistribution,
-                                           LogNormalDistribution,
-                                           WeibullDistribution)
 
 from gnome.spill import Spill, Release
 from oil_library import get_oil_props
@@ -76,7 +76,7 @@ arrays_ = (windages,
            rise_vel_diameter_array)
 
 spill_list = (None, None, None, None, None,
-              Spill(Release(datetime.now())))
+              Spill(Release(datetime.now()), water=Water()))
 
 
 @pytest.mark.parametrize(("fcn", "arr_types", "spill"),
@@ -179,7 +179,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull():
     num_elems = 10
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
     substance = get_oil_props(oil)
-    spill = Spill(Release(datetime.now()))
+    spill = Spill(Release(datetime.now()), water=Water())
 
     # (.001*.2) / (.693 ** (1 / 1.8)) - smaller droplet test case, in mm
     #                                   so multiply by .001
@@ -198,7 +198,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull_with_min_max():
     num_elems = 1000
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
     substance = get_oil_props(oil)
-    spill = Spill(Release(datetime.now()))
+    spill = Spill(Release(datetime.now()), water=Water())
 
     # (.001*3.8) / (.693 ** (1 / 1.8)) - larger droplet test case, in mm
     #                                    so multiply by .001
