@@ -36,9 +36,12 @@ class RemoveMass(object):
         '''
         if units in self.valid_mass_units:
             rm_mass = uc.convert('Mass', units, 'kg', amount)
-        else:   # amount must be in volume units
+        else:
+            # amount must be in volume units
+            water_temp = self.water.temperature
             rm_vol = uc.convert('Volume', units, 'm^3', amount)
-            rm_mass = substance.density_at_temp() * rm_vol
+
+            rm_mass = substance.density_at_temp(water_temp) * rm_vol
 
         return rm_mass
 
@@ -232,7 +235,8 @@ class Skimmer(CleanUpBase, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('amount', save=True, update=True),
                Field('units', save=True, update=True),
-               Field('efficiency', save=True, update=True)]
+               Field('efficiency', save=True, update=True),
+               Field('water', save=True, update=True, save_reference=True)]
 
     _schema = SkimmerSchema
 
@@ -242,6 +246,7 @@ class Skimmer(CleanUpBase, Serializable):
                  efficiency,
                  active_start,
                  active_stop,
+                 water=None,
                  **kwargs):
         '''
         initialize Skimmer object - calls base class __init__ using super()
@@ -249,6 +254,8 @@ class Skimmer(CleanUpBase, Serializable):
         cleanup operations must have a valid datetime - cannot use -inf and inf
         active_start/active_stop is used to get the mass removal rate
         '''
+        self.water = water
+
         super(Skimmer, self).__init__(active_start=active_start,
                                       active_stop=active_stop,
                                       efficiency=efficiency,
@@ -350,8 +357,7 @@ class Skimmer(CleanUpBase, Serializable):
             if len(data['mass']) is 0:
                 continue
 
-            rm_amount = \
-                self._rate * self._avg_frac_oil(data) * self._timestep
+            rm_amount = self._rate * self._avg_frac_oil(data) * self._timestep
             rm_mass = self._get_mass(substance,
                                      rm_amount,
                                      self.units) * self.efficiency
@@ -400,7 +406,8 @@ class Burn(CleanUpBase, Serializable):
                Field('_oilwater_thickness', save=True),
                Field('_oilwater_thick_burnrate', save=True),
                Field('_oil_vol_burnrate', save=True),
-               Field('wind', save=True, update=True, save_reference=True)]
+               Field('wind', save=True, update=True, save_reference=True),
+               Field('water', save=True, update=True, save_reference=True)]
 
     # save active_stop once burn duration is known - not update able but is
     # returned in webapi json_ so make it readable
@@ -418,6 +425,7 @@ class Burn(CleanUpBase, Serializable):
                  thickness_units='m',
                  efficiency=1.0,
                  wind=None,
+                 water=None,
                  **kwargs):
         '''
         Set the area of boomed oil to be burned.
@@ -475,6 +483,7 @@ class Burn(CleanUpBase, Serializable):
         self.area_units = area_units
         self.thickness_units = thickness_units
         self.wind = wind
+        self.water = water
 
         # initialize rates and active_stop based on frac_water = 0.0
         self._init_rate_duration()
@@ -591,12 +600,15 @@ class Burn(CleanUpBase, Serializable):
         # only when it is active, update the status codes
         if (sc['fate_status'] == bt_fate.burn).sum() == 0:
             substance = self._get_substance(sc)
+
             _si_area = uc.Convert('Area', self.area_units, 'm^2', self.area)
-            _si_thickness = \
-                uc.Convert('Length', self.thickness_units, 'm', self.thickness)
-            mass_to_remove = self._get_mass(substance,
-                                            _si_area * _si_thickness,
-                                            'm^3') * self.efficiency
+            _si_thickness = uc.Convert('Length', self.thickness_units, 'm',
+                                       self.thickness)
+
+            mass_to_remove = (self.efficiency *
+                              self._get_mass(substance,
+                                             _si_area * _si_thickness, 'm^3'))
+
             self._update_LE_status_codes(sc, bt_fate.burn,
                                          substance, mass_to_remove)
 
@@ -616,19 +628,21 @@ class Burn(CleanUpBase, Serializable):
 
         # rate if efficiency is 100 %
         self._oilwater_thick_burnrate = self._burn_constant * avg_frac_oil
-        self._oil_vol_burnrate = \
-            self._burn_constant * avg_frac_oil**2 * _si_area
+        self._oil_vol_burnrate = (self._burn_constant *
+                                  avg_frac_oil ** 2 *
+                                  _si_area)
 
         # burn duration is known once rate is known
         # reset current thickness to initial thickness whenever model is rerun
-        self._oilwater_thickness = \
-            uc.Convert('Length', self.thickness_units, 'm', self.thickness)
+        self._oilwater_thickness = uc.Convert('Length',
+                                              self.thickness_units, 'm',
+                                              self.thickness)
 
         burn_duration = ((self._oilwater_thickness - self._min_thickness) /
                          self._oilwater_thick_burnrate)
 
-        self.active_stop = \
-            self.active_start + timedelta(seconds=burn_duration)
+        self.active_stop = (self.active_start +
+                            timedelta(seconds=burn_duration))
 
     def _set_burn_params(self, sc, substance):
         '''
@@ -696,20 +710,24 @@ class Burn(CleanUpBase, Serializable):
 
             # scale rate by efficiency
             # this is volume of oil burned - need to get mass from this
-            vol_oil_burned = \
-                self._oil_vol_burnrate * self.efficiency * self._timestep
+            vol_oil_burned = (self._oil_vol_burnrate *
+                              self.efficiency *
+                              self._timestep)
+
             rm_mass = self._get_mass(substance, vol_oil_burned, 'm^3')
             if rm_mass > data['mass'].sum():
                 rm_mass = data['mass'].sum()
+
             rm_mass_frac = rm_mass / data['mass'].sum()
-            data['mass_components'] = \
-                (1 - rm_mass_frac) * data['mass_components']
+
+            data['mass_components'] = ((1 - rm_mass_frac) *
+                                       data['mass_components'])
             data['mass'] = data['mass_components'].sum(1)
 
             # new thickness of oil/water mixture
             # decided not to update thickness, just use burn rate and duration
-            #self._oilwater_thickness -= \
-                #(self._oilwater_thick_burnrate * self._timestep)
+            # self._oilwater_thickness -= (self._oilwater_thick_burnrate *
+            #                              self._timestep)
 
             sc.mass_balance['burned'] += rm_mass
             self.logger.debug('{0} amount burned for {1}: {2}'
@@ -810,10 +828,10 @@ class ChemicalDispersion(CleanUpBase, Serializable):
 
         # fixme: this note was here: since efficiency can also be set - do not
         #        make_default_refs but we need waves!
-        # we need a way to override efficiency, rather than disableing default-refs
-        # but the current code sets the efficiency attribute from waves..
-        # maybe a static_efficiency property -- if it is not None, then
-        # it is used, rather than any computation being made.
+        # we need a way to override efficiency, rather than disabling
+        # default-refs but the current code sets the efficiency attribute
+        # from waves.. maybe a static_efficiency property -- if it is not None,
+        # then it is used, rather than any computation being made.
         self.make_default_refs = False if efficiency else True
 
     def prepare_for_model_run(self, sc):
@@ -841,8 +859,9 @@ class ChemicalDispersion(CleanUpBase, Serializable):
         if (sc['fate_status'] == bt_fate.disperse).sum() == 0:
             substance = self._get_substance(sc)
             mass = sum([spill.get_mass() for spill in sc.spills])
+
+            # rm_total_mass_si = mass * self.fraction_sprayed
             rm_total_mass_si = mass * self.fraction_sprayed * self.efficiency
-            #rm_total_mass_si = mass * self.fraction_sprayed
 
             # the mass to remove is actual oil mass not mass of oil/water
             # mixture
@@ -880,8 +899,9 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                     continue
 
                 self._set_efficiency(model_time)
-                #rm_mass = self._rate * self._timestep * self.efficiency
-                rm_mass = self._rate * self._timestep # rate includes efficiency
+
+                # rm_mass = self._rate * self._timestep * self.efficiency
+                rm_mass = self._rate * self._timestep  # rate includes efficiency
 
                 total_mass = data['mass'].sum()
                 rm_mass_frac = min(rm_mass / total_mass, 1.0)

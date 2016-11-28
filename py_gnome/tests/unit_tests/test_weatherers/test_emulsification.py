@@ -27,7 +27,7 @@ waves = Waves(wind, water)
 # s_oils = [test_oil, 'FUEL OIL NO.6']
 s_oils = [test_oil, test_oil]
 
-@pytest.mark.xfail(reason="I think the algorithm changed")
+
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
                          [(s_oils[0], 311.15, 3, True),
                           (s_oils[1], 311.15, 3, False)])
@@ -145,7 +145,9 @@ def test_bullwinkle():
     '''
 
     et = floating(substance=test_oil)
-    assert np.isclose(et.substance.bullwinkle, 0.25905)
+
+    # our test_oil is the sample oile 
+    assert np.isclose(et.substance.bullwinkle, 0.1937235)
 
     et.substance.bullwinkle = .4
     assert et.substance.bullwinkle == .4

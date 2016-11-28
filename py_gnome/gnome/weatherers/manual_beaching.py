@@ -77,13 +77,15 @@ class Beaching(RemoveMass, Weatherer, Serializable):
     '''
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('timeseries', save=True, update=True),
-               Field('units', save=True, update=True), ]
+               Field('units', save=True, update=True),
+               Field('water', save=True, update=True, save_reference=True)]
     _schema = BeachingSchema
 
     def __init__(self,
                  active_start,
                  units='m^3',
                  timeseries=None,
+                 water=None,
                  **kwargs):
         '''
         Initialization for the manual beaching events.
@@ -103,6 +105,8 @@ class Beaching(RemoveMass, Weatherer, Serializable):
 
         super(Beaching, self).__init__(active_start=active_start,
                                        **kwargs)
+
+        self.water = water
 
         self._units = None
         self.units = units
@@ -169,7 +173,7 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         '''
         if self.on:
             sc.mass_balance['observed_beached'] = 0.0
-            #force rate to be recalculated in case anything changed
+            # force rate to be recalculated in case anything changed
             self._rate = None
 
     def _remove_mass(self, time_step, model_time, substance):
@@ -195,9 +199,10 @@ class Beaching(RemoveMass, Weatherer, Serializable):
                 dm = uc.convert('mass', self.units, 'kg', dv)
             elif unit_type == 'volume':
                 dm = (uc.convert('volume', self.units, 'm^3', dv) *
-                      substance.density_at_temp())
+                      substance.density_at_temp(self.water.temperature))
             else:
-                raise ValueError("{} is not a valid unit for beached oil".format(self.unit))
+                raise ValueError("{} is not a valid unit for beached oil"
+                                 .format(self.unit))
             self._rate = dm / dt
 
         # find rate for time interval (model_time, model_time + time_step)

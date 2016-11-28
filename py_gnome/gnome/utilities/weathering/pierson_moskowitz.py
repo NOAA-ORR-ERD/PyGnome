@@ -1,7 +1,5 @@
 
-from gnome import constants
-
-g = constants.gravity
+from gnome.constants import gravity as g
 
 
 class PiersonMoskowitz(object):

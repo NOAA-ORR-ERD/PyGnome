@@ -162,13 +162,14 @@ class TestCleanUpBase:
 
 
 class TestSkimmer(ObjForTests):
+    (sc, weatherers) = ObjForTests.mk_test_objs()
+
     skimmer = Skimmer(amount,
                       'kg',
                       efficiency=0.3,
                       active_start=active_start,
-                      active_stop=active_stop)
-
-    (sc, weatherers) = ObjForTests.mk_test_objs()
+                      active_stop=active_stop,
+                      water=weatherers[0].water)
 
     def test_prepare_for_model_run(self):
         self.reset_and_release()
@@ -239,8 +240,9 @@ class TestSkimmer(ObjForTests):
             model_time += timedelta(seconds=time_step)
 
             # check - useful for debugging issues with recursion
-            assert (amount == self.sc.mass_balance['skimmed'] +
-                    self.sc['mass'].sum())
+            assert np.isclose(amount,
+                              (self.sc.mass_balance['skimmed'] +
+                               self.sc['mass'].sum()))
 
         # following should finally hold true for entire run
         assert np.allclose(amount, self.sc.mass_balance['skimmed'] +
@@ -420,10 +422,15 @@ class TestBurn(ObjForTests):
         it works.
         '''
         self.spill.num_elements = 500
+        print 'starting num_elements = ', self.spill.num_elements
+        print 'time_step = ', time_step
+
         thick_si = uc.convert('Length', units, 'm', thick)
         area = (0.5 * self.volume) / thick_si
+        water = self.weatherers[0].water
+
         burn = Burn(area, thick, active_start, thickness_units=units,
-                    efficiency=1.0)
+                    efficiency=1.0, water=water)
 
         # return the initial value of burn._oil_thickness - this is starting
         # thickness of the oil
@@ -435,8 +442,9 @@ class TestBurn(ObjForTests):
 
         # want mass of oil thickness * area gives volume of oil-water so we
         # need to scale this by (1 - avg_frac_water)
-        exp_burned = ((thick_si - burn._min_thickness) * (1 - avg_frac_water) *
-                      burn.area * self.op.density_at_temp())
+        exp_burned = ((thick_si - burn._min_thickness) * burn.area *
+                      (1 - avg_frac_water) *
+                      self.op.density_at_temp(water.temperature))
         assert np.isclose(self.sc.mass_balance['burned'], exp_burned)
 
         mask = self.sc['fate_status'] & fate.burn == fate.burn
@@ -444,26 +452,29 @@ class TestBurn(ObjForTests):
         # given LEs are discrete elements, we cannot add a fraction of an LE
         mass_per_le = self.sc['init_mass'][mask][0]
         exp_init_oil_mass = (burn.area * thick_si * (1 - avg_frac_water) *
-                             self.op.density_at_temp())
+                             self.op.density_at_temp(water.temperature))
         assert (self.sc['init_mass'][mask].sum() - exp_init_oil_mass <
                 mass_per_le and
                 self.sc['init_mass'][mask].sum() - exp_init_oil_mass >= 0.0)
 
-        exp_mass_remain = (burn._oilwater_thickness * (1 - avg_frac_water) *
-                           burn.area * self.op.density_at_temp())
         mass_remain_for_burn_LEs = self.sc['mass'][mask].sum()
-        # since we don't adjust the thickness anymore need to use min_thick
-        min_thick = .002
-        exp_mass_remain = (min_thick *
-                           (1 - avg_frac_water) *
-                           burn.area *
-                           self.op.density_at_temp())
-        assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs)
 
-        duration = (burn.active_stop-burn.active_start).total_seconds()/3600
+        duration = (burn.active_stop-burn.active_start).total_seconds() / 3600
         print ('Current Thickness: {0:.3f}, '
                'Duration (hrs): {1:.3f}').format(burn._oilwater_thickness,
                                                  duration)
+
+        exp_mass_remain = (burn._oilwater_thickness * burn.area *
+                           (1 - avg_frac_water) *
+                           self.op.density_at_temp(water.temperature))
+        # since we don't adjust the thickness anymore need to use min_thick
+        min_thick = .002
+        exp_mass_remain = (min_thick * burn.area *
+                           (1.0 - avg_frac_water) *
+                           self.op.density_at_temp(water.temperature))
+
+        print 'diff = ', exp_mass_remain - mass_remain_for_burn_LEs
+        assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs)
 
     def test_elements_weather_faster_with_frac_water(self):
         '''
@@ -471,9 +482,11 @@ class TestBurn(ObjForTests):
         '''
         self.spill.num_elements = 500
         area = (0.5 * self.volume) / 1.
-        burn1 = Burn(area, 1., active_start, efficiency=1.0)
-        burn2 = Burn(area, 1., active_start, efficiency=1.0)
-        burn3 = Burn(area, 1., active_start, efficiency=1.0)
+        water = self.weatherers[0].water
+
+        burn1 = Burn(area, 1., active_start, efficiency=1.0, water=water)
+        burn2 = Burn(area, 1., active_start, efficiency=1.0, water=water)
+        burn3 = Burn(area, 1., active_start, efficiency=1.0, water=water)
 
         self._weather_elements_helper(burn1)
         self._weather_elements_helper(burn2, avg_frac_water=0.3)
@@ -503,8 +516,10 @@ class TestBurn(ObjForTests):
         self.spill.num_elements = 500
         area = (0.5 * self.volume) / 1.
         eff = 0.7
-        burn1 = Burn(area, 1., active_start, efficiency=1.0)
-        burn2 = Burn(area, 1., active_start, efficiency=eff)
+        water = self.weatherers[0].water
+
+        burn1 = Burn(area, 1., active_start, efficiency=1.0, water=water)
+        burn2 = Burn(area, 1., active_start, efficiency=eff, water=water)
 
         self._weather_elements_helper(burn1)
         amount_burn1 = self.sc.mass_balance['burned']
@@ -529,8 +544,10 @@ class TestBurn(ObjForTests):
         self.spill.num_elements = 500
         area = (0.5 * self.volume) / 1.
         eff = 0.0
-        burn1 = Burn(area, 1., active_start, efficiency=1.0)
-        burn2 = Burn(area, 1., active_start, efficiency=eff)
+        water = self.weatherers[0].water
+
+        burn1 = Burn(area, 1., active_start, efficiency=1.0, water=water)
+        burn2 = Burn(area, 1., active_start, efficiency=eff, water=water)
 
         self._weather_elements_helper(burn1)
         amount_burn1 = self.sc.mass_balance['burned']

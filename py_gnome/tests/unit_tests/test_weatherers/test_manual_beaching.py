@@ -40,7 +40,8 @@ def test_init(timeseries, units):
 class TestBeaching(ObjForTests):
     (sc, weatherers) = ObjForTests.mk_test_objs()
     sc.spills[0].release_time = active_start
-    b = Beaching(active_start, 'l', timeseries, name='test_beaching')
+    b = Beaching(active_start, 'l', timeseries, name='test_beaching',
+                 water=weatherers[0].water)
     substance = sc.spills[0].substance
 
     @mark.parametrize(("model_time", "active"),

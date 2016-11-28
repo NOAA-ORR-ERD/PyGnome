@@ -1062,7 +1062,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
                     sc.mass_balance['skimmed']
                     )
 
-            assert abs(sum_ - sc.mass_balance['amount_released']) < 1.e-6
+            assert np.isclose(sum_, sc.mass_balance['amount_released'])
 
     assert sc.mass_balance['burned'] > 0
     assert sc.mass_balance['skimmed'] > 0
@@ -1138,7 +1138,7 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
                      sc.mass_balance['evaporated'] +
                      sc.mass_balance['floating'])
 
-            assert abs(sum_ - sc.mass_balance['amount_released']) < 1.e-6
+            assert np.isclose(sum_, sc.mass_balance['amount_released'])
 
         print "completed step {0}".format(step)
 
@@ -1258,6 +1258,7 @@ class TestMergeModels:
         # create save model
         sample_save_file = os.path.join(saveloc_, 'SampleSaveModel.zip')
         model.save(saveloc_, name='SampleSaveModel.zip')
+
         if os.path.exists(sample_save_file):
             model = load(sample_save_file)
             model.merge(m)
