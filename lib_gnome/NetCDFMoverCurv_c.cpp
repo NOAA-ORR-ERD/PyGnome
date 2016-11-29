@@ -92,7 +92,8 @@ LongPoint NetCDFMoverCurv_c::GetVelocityIndices(WorldPoint wp)
 	return indices;
 }
 
-VelocityRec NetCDFMoverCurv_c::GetInterpolate{
+VelocityRec NetCDFMoverCurv_c::GetInterpolatedValue(InterpolationValBilinear interpolationVal,float depth,float totalDepth)
+{
 	
 	long pt1depthIndex1, pt1depthIndex2, pt2depthIndex1, pt2depthIndex2, pt3depthIndex1, pt3depthIndex2, pt4depthIndex1, pt4depthIndex2;
 	long ptIndex1, ptIndex2, ptIndex3, ptIndex4, amtOfDepthData = 0;
@@ -120,7 +121,8 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 	else
 		return interpolatedVelocity;
 	
-	if (fDepthDataInfo) amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
+	//if (fDepthDataInfo) amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
+	if (fDepthLevelsHdl) amtOfDepthData = _GetHandleSize((Handle)fDepthLevelsHdl)/sizeof(**fDepthLevelsHdl);
  	if (amtOfDepthData>0)
  	{
 		GetDepthIndices(ptIndex1,depth,totalDepth,&pt1depthIndex1,&pt1depthIndex2);	
@@ -130,10 +132,14 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 	}
  	else
  	{	// old version that didn't use fDepthDataInfo, must be 2D
- 		pt1depthIndex1 = ptIndex1;	pt1depthIndex2 = -1;
- 		pt2depthIndex1 = ptIndex2;	pt2depthIndex2 = -1;
- 		pt3depthIndex1 = ptIndex3;	pt3depthIndex2 = -1;
- 		pt4depthIndex1 = ptIndex4;	pt4depthIndex2 = -1;
+ 		//pt1depthIndex1 = ptIndex1;	pt1depthIndex2 = -1;
+ 		//pt2depthIndex1 = ptIndex2;	pt2depthIndex2 = -1;
+ 		//pt3depthIndex1 = ptIndex3;	pt3depthIndex2 = -1;
+ 		//pt4depthIndex1 = ptIndex4;	pt4depthIndex2 = -1;
+ 		pt1depthIndex1 = 0;	pt1depthIndex2 = -1;
+ 		pt2depthIndex1 = 0;	pt2depthIndex2 = -1;
+ 		pt3depthIndex1 = 0;	pt3depthIndex2 = -1;
+ 		pt4depthIndex1 = 0;	pt4depthIndex2 = -1;
  	}
 
  	// the contributions from each point will default to zero if the depth indicies
@@ -149,15 +155,15 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 				topDepth = INDEXH(fDepthsH,pt1depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt1depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex2).u));
-				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex2).v));
+				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).u));
+				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt1interp.u = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).u); 
-				pt1interp.v = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).v); 
+				pt1interp.u = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u); 
+				pt1interp.v = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 		
@@ -168,15 +174,15 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 				topDepth = INDEXH(fDepthsH,pt2depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt2depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex2).u));
-				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex2).v));
+				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).u));
+				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt2interp.u = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).u); 
-				pt2interp.v = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).v);
+				pt2interp.u = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u); 
+				pt2interp.v = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v);
 			}
 		}
 		
@@ -187,15 +193,15 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 				topDepth = INDEXH(fDepthsH,pt3depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt3depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex2).u));
-				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex2).v));
+				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).u));
+				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt3interp.u = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).u); 
-				pt3interp.v = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).v); 
+				pt3interp.u = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u); 
+				pt3interp.v = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 		if (pt4depthIndex1!=-1) 
@@ -205,15 +211,15 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 				topDepth = INDEXH(fDepthsH,pt4depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt4depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex2).u));
-				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex2).v));
+				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).u));
+				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt4interp.u = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).u); 
-				pt4interp.v = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).v); 
+				pt4interp.u = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u); 
+				pt4interp.v = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 	}
@@ -236,15 +242,15 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 				topDepth = INDEXH(fDepthsH,pt1depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt1depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex2).u));
-				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex2).v));
+				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).u));
+				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt1interp.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).u); 
-				pt1interp.v = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).v); 
+				pt1interp.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u); 
+				pt1interp.v = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 		
@@ -255,15 +261,15 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 				topDepth = INDEXH(fDepthsH,pt2depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt2depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex2).u));
-				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex2).v));
+				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).u));
+				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt2interp.u = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).u); 
-				pt2interp.v = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).v); 
+				pt2interp.u = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u); 
+				pt2interp.v = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 		
@@ -274,15 +280,15 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 				topDepth = INDEXH(fDepthsH,pt3depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt3depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex2).u));
-				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex2).v));
+				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).u));
+				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt3interp.u = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).u); 
-				pt3interp.v = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).v); 
+				pt3interp.u = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u); 
+				pt3interp.v = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 		if (pt4depthIndex1!=-1) 
@@ -292,15 +298,15 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 				topDepth = INDEXH(fDepthsH,pt4depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt4depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex2).u));
-				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex2).v));
+				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).u));
+				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt4interp.u = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).u); 
-				pt4interp.v = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).v); 
+				pt4interp.u = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u); 
+				pt4interp.v = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 	}
@@ -309,7 +315,6 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 	
 	return interpolatedVelocity;
 }
-dValue(InterpolationValBilinear interpolationVal,float depth,float totalDepth)
 
 Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 {	// code goes here, this is triangle code, not curvilinear
@@ -2448,7 +2453,7 @@ OSErr NetCDFMoverCurv_c::ReorderPointsCOOPSMaskOld(TMap **newMap, DOUBLEH landma
 	SegInfoHdl segList = 0;
 	LONGH flagH = 0;
 	
-	TTriGridVel *triGrid = nil;
+	TTriGridVel3D *triGrid = nil;
 	tree.treeHdl = 0;
 	TDagTree *dagTree = 0;
 	
@@ -2851,7 +2856,7 @@ setFields:
 		
 	/////////////////////////////////////////////////
 	
-	triGrid = new TTriGridVel;
+	triGrid = new TTriGridVel3D;
 	if (!triGrid)
 	{		
 		err = true;
@@ -2859,7 +2864,7 @@ setFields:
 		goto done;
 	}
 	
-	fGrid = (TTriGridVel*)triGrid;
+	fGrid = (TTriGridVel3D*)triGrid;
 	
 	triGrid -> SetBounds(triBounds); 
 	//this->SetGridBounds(triBounds);
