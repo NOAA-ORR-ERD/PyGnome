@@ -1,7 +1,8 @@
 # PyGnome
 
 
-## [Project Documentation](http://noaa-orr-erd.github.io/PyGnome/) ##
+Project Documentation: http://noaa-orr-erd.github.io/PyGnome/
+
 ## [FAQ -- Troubleshoot](https://github.com/NOAA-ORR-ERD/GNOME2/wiki/FAQ---Troubleshoot) ##
 
 <img src="http://gnome.orr.noaa.gov/py_gnome_testdata/GnomeIcon128.png" alt="Gnome Logo" title="Gnome" align="right">
