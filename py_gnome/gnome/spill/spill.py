@@ -676,10 +676,11 @@ class Spill(BaseSpill):
         if self.units in self.valid_mass_units:
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
-            water_temp = self.water.temperature
+            water_temp = self.water.get('temperature')
+            rho = self.element_type.substance.density_at_temp(water_temp)
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = (self.element_type.substance.density_at_temp(water_temp) *
-                    vol)
+
+            mass = rho * vol
         else:
             raise ValueError("{} is not a valid mass or Volume unit"
                              .format(self.units))
@@ -815,6 +816,9 @@ class Spill(BaseSpill):
         o_json_['element_type'] = self.element_type.serialize(json_)
         o_json_['release'] = self.release.serialize(json_)
 
+        if self.water is not None:
+            o_json_['water'] = self.water.serialize(json_)
+
         return o_json_
 
     @classmethod
@@ -838,11 +842,12 @@ class Spill(BaseSpill):
                 save files store a reference to element_type so it will get
                 deserialized, created and added to this dict by load method
                 '''
-                etcls = \
-                    class_from_objtype(json_['element_type']['obj_type'])
-                dict_['element_type'] = \
-                    etcls.deserialize(json_['element_type'])
+                etcls = class_from_objtype(json_['element_type']['obj_type'])
+                dict_['element_type'] = etcls.deserialize(json_['element_type'])
 
+                if 'water' in json_:
+                    w_cls = class_from_objtype(json_['water']['obj_type'])
+                    dict_['water'] = w_cls.deserialize(json_['water'])
             else:
                 '''
                 Convert nested dict (release object) back into object. The
