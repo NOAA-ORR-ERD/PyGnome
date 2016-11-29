@@ -92,8 +92,7 @@ LongPoint NetCDFMoverCurv_c::GetVelocityIndices(WorldPoint wp)
 	return indices;
 }
 
-VelocityRec NetCDFMoverCurv_c::GetInterpolatedValue(InterpolationValBilinear interpolationVal,float depth,float totalDepth)
-{
+VelocityRec NetCDFMoverCurv_c::GetInterpolate{
 	
 	long pt1depthIndex1, pt1depthIndex2, pt2depthIndex1, pt2depthIndex2, pt3depthIndex1, pt3depthIndex2, pt4depthIndex1, pt4depthIndex2;
 	long ptIndex1, ptIndex2, ptIndex3, ptIndex4, amtOfDepthData = 0;
@@ -310,6 +309,7 @@ VelocityRec NetCDFMoverCurv_c::GetInterpolatedValue(InterpolationValBilinear int
 	
 	return interpolatedVelocity;
 }
+dValue(InterpolationValBilinear interpolationVal,float depth,float totalDepth)
 
 Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 {	// code goes here, this is triangle code, not curvilinear
@@ -977,7 +977,11 @@ float NetCDFMoverCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 	{
 		//if (triNum < 0) useTriNum = false;
 		if (bIsCOOPSWaterMask)
-			err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols);
+		{
+			totalDepth = GetInterpolatedTotalDepth(refPoint);
+			return totalDepth;
+		}
+			//err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols);
 		else 
 			err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		

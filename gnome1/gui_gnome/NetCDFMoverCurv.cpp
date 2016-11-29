@@ -954,7 +954,7 @@ depths:
 			//INDEXH(totalDepthsH,i) = depth_vals[ptIndex];
 			INDEXH(totalDepthsH,i) = INDEXH(fDepthsH,ptIndex);
 		}
-		if (!bIsCOOPSWaterMask)	// code goes here, figure out how to handle depths in this case
+		//if (!bIsCOOPSWaterMask)	// code goes here, figure out how to handle depths in this case
 			((TTriGridVel3D*)fGrid)->SetDepths(totalDepthsH);
 	}
 	

@@ -294,11 +294,8 @@ class TestGridCurrentMover:
         #actual[:]['lat'] = -.003850193  # file 2
         #actual[:]['long'] = .000152012
         # updated to new curvilinear algorithm
-        actual[:]['lat'] = -.00014633  # file 2
-        actual[:]['long'] = -.00028796
-        print "self.cm.delta['long'], ['lat']"
-        print self.cm.delta['long']
-        print self.cm.delta['lat']
+        actual[:]['lat'] = .00292  # file 2
+        actual[:]['long'] = .00051458
         tol = 1e-5
 
         msg = r"{0} move is not within a tolerance of {1}"
