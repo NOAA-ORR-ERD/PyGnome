@@ -78,8 +78,8 @@ class Burn(Weatherer, Serializable):
 
     _schema = BurnSchema
 
-    _si_units = {'offset': 'm',
-                 'boom_length': 'm',
+    _si_units = {'offset': 'ft',
+                 'boom_length': 'ft',
                  'boom_draft': 'in',
                  'speed': 'm/s'}
 
@@ -115,6 +115,19 @@ class Burn(Weatherer, Serializable):
         self._boom_capacity = None
         self._offset_time = None
         self._report = []
+
+        self._is_collecting = False
+        self._is_burning = False
+        self._is_boom_filled = False
+        self._is_transiting = False
+        self._is_cleaning = False
+
+        self._time_collecting_in_sim = 0.
+        self._total_burns = 0.
+        self._time_burning = 0.
+        self._ts_burned = 0.
+        self._ts_collected = 0.
+        self._burn_time = None
 
     @property
     def units(self):
@@ -161,22 +174,22 @@ class Burn(Weatherer, Serializable):
         self._swath_width = 0.3 * self.boom_length
         self._area = self._swath_width * (0.4125 * self.boom_length / 3) * 2/3
         self._boom_capacity = self.boom_draft / 36 * self._area
-        self._offset_time = self.offset * 0.00987 / self.speed
+        self._boom_capacity_remaining = self._boom_capacity
+        self._offset_time = (self.offset * 0.00987 / self.speed) * 60
         self._area_coverage_rate = self._swath_width * self.speed / 430
 
         if self._swath_width > 1000:
             self.report.append('Swaths > 1000 feet may not be achievable in the field')
 
+        if self.speed > 1.2:
+            self.report.append('Excessive entrainment of oil likely to occur at speeds greater than 1.2 knots.')
+
         if self.on:
             sc.mass_balance['burned'] = 0.0
             sc.mass_balance[self.id] = 0.0
+            sc.mass_balance['boomed'] = 0.0
 
-        _is_burning = False
-        _is_retired = False
-
-        _time_collecting_in_sim = 0.
-        _total_burns = 0.
-        _time_burning = 0.
+        self._is_collecting = True
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -185,27 +198,161 @@ class Burn(Weatherer, Serializable):
            that are released together will be burned together since they would
            be closer to each other in position.
         '''
-        if not self.active:
-            return
-        
+       
+        self._ts_collected = 0.
+        self._ts_burned = 0.
+
         if self._is_active(model_time, time_step):
             self._active = True
         else:
             self._active = False
         
+        if not self.active:
+            return
+ 
+        self._time_remaining = time_step
+
+        while self._time_remaining > 0.:
+            if self._is_collecting:
+                self._collect(sc, time_step, model_time)
+
+            if self._is_transiting and self._is_boom_full:
+                self._transit(sc, time_step, model_time)
+
+            if self._is_burning:
+                self._burn(sc, time_step, model_time)
+
+            if self._is_cleaning:
+                self._clean(sc, time_step, model_time)
+               
+            if self._is_transiting and not self._is_boom_full:
+                self._transit(sc, time_step, model_time)
+
+    def _collect(self, sc, time_step, model_time):
+        # calculate amount collected this time_step 
+        if self._burn_time is None:
+            self._burn_rate = 0.14 * (100 - (sc['frac_water'].mean() * 100)) / 100
+            self._burn_time = (0.33 * self.boom_draft / self._burn_rate) * 60
+            self._burn_time_remaining = self._burn_time
+
+        oil_thickness = self._get_thickness(sc)
+        encounter_rate = 63.13 * self._swath_width * oil_thickness * self.speed
+        emulsion_rr = encounter_rate * self.throughput
+        if oil_thickness > 0:
+            # old ROC equation
+            #time_to_fill = (self._boom_capacity_remaining / emulsion_rr) * 60
+            # new ebsp equation
+            time_to_fill = ((self._boom_capacity_remaining * 0.17811) * 42) / emulsion_rr
+        else:
+            time_to_fill = 0.
         
+        if time_to_fill > self._time_remaining:
+            # doesn't finish fill the boom in this time step
+            self._ts_collected = emulsion_rr * (self._time_remaining / 60)
+            self._boom_capacity_remaining -= collected
+            self._time_remaining = 0.0
+            self._time_collecting_in_sim += self._time_remaining
+        elif self._time_remaining > 0:
+            # finishes filling the boom in this time step any time remaining
+            # should be spend transiting to the burn position
+            self._ts_collected = self._boom_capacity_remaining
 
+            self._boom_capacity_remaining = 0.0
+            self._is_boom_full = True
+            
+            self._time_remaining -= time_to_fill
+            self._time_collecting_in_sim += time_to_fill
+            self._offset_time_remaining = self._offset_time
+            self._is_collecting = False
+            self._is_transiting = True
 
-    def weather_elements(self, sc, time_step, mdoel_time):
+    def _transit(self, sc, time_step, model_time):
+        # transiting to burn site 
+        # does it arrive and start burning?
+        if self._time_remaining > self._offset_time_remaining:
+            self._time_remaining -= self._offset_time_remaining
+            self._offset_time_remaining = 0.
+            self._is_transiting = False
+            if self._is_boom_full:
+                self._is_burning = True
+            else:
+                self._is_collecting = True
+        elif self._time_remaining > 0:
+            self._offset_time_remaining -= self._time_remaining
+            self._time_remaining = 0.
 
+    def _burn(self, sc, time_step, model_time):
+        # burning
+        self._is_boom_full = False
+        if self._time_remaining > self._burn_time_remaining:
+            self._time_remaining -= self._burn_time_remaining
+            self._burn_time_remaining = 0.
+            burned = self._boom_capacity - self._boom_capacity_remaining
+            self._ts_burned = burned
+            self._is_burning = False
+            self._is_cleaning = True
+            self._cleaning_time_remaining = 3600 # 1hr in seconds
+        elif self._time_remaining > 0: 
+            frac_burned = self._time_remaining / self._burn_time
+            burned = self._boom_capacity * frac_burned
+            self._boom_capacity_remaining += burned
+            self._ts_burned = burned
+            self._burn_time_remaining -= self._time_remaining
+            self._time_remaining = 0.
+
+    def _clean(self, sc, time_step, model_time):
+        # cleaning
+        self._burn_time = None
+        if self._time_remaining > self._cleaning_time_remaining:
+            self._time_remaining -= self._cleaning_time_remaining
+            self._cleaning_time_remaining = 0.
+            self._is_cleaning = False
+            self._is_transiting = True
+            self._offset_time_remaining = self._offset_time
+        elif self._time_remaining > 0:
+            self._cleaning_time_remaining -= self._time_remaining
+            self._time_remaining = 0.
+
+    def weather_elements(self, sc, time_step, model_time):
+        '''
+        Remove mass from each le equally for now, no flagging for not
+        just make sure it's from floating oil.
+        '''
         if not self.active or len(sc) == 0:
             return
+        
+        les = sc.itersubstancedata(self.array_types)
+        for substance, data in les:
+            if len(data['mass']) is 0:
+                continue
+            
+            if self._ts_collected:
+                sc.mass_balance['boomed'] += self._ts_collected
+                sc.mass_balance[self.id] += self._ts_collected
+                total_mass = data['mass'].sum()
+                rm_mass_frac = min(self._ts_collected / total_mass, 1.0)
+                data['mass_components'] = \
+                    (1 - rm_mass_frac) * data['mass_components']
+                data['mass'] = data['mass_components'].sum(1)
 
+                self.logger.debug('{0} amount boomed for {1}: {2}'
+                                  .format(self._pid, substance.name, self._ts_collected))
 
+            if self._ts_burned:
+                sc.mass_balance['burned'] += self._ts_burned
+                sc.mass_balance['boomed'] -= self._ts_burned
+        
+    def _get_thickness(self, sc):
+        oil_thickness = 0.0
+        substance = self._get_substance(sc)
+        if sc['area'].any() > 0:
+            volume_emul = (sc['mass'].mean() / substance.get_density()) / (1.0 - sc['frac_water'].mean())
+            oil_thickness = volume_emul / sc['area'].mean()
+
+        return uc.convert('Length', 'meters', 'inches', oil_thickness)
 
     def _is_active(self, model_time, time_step):
         for t in self.timeseries:
-            print model_time
             if model_time >= t[0] and model_time + datetime.timedelta(seconds=time_step/2) <= t[1]:
                 return True
 
@@ -218,4 +365,16 @@ class Burn(Weatherer, Serializable):
         sc.report[self.id] = []  
         self.report = sc.report[self.id]
 
+    def _get_substance(self, sc):
+        '''
+        return a single substance - recovery options only know about the
+        total amount removed. Unclear how to assign this to multiple substances
+        for now, just log an error if more than one substance is present
+        '''
+        substance = sc.get_substances(complete=False)
+        if len(substance) > 1:
+            self.logger.error('Found more than one type of oil '
+                              '- not supported. Results with be incorrect')
+    
+        return substance[0]
    
