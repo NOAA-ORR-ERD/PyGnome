@@ -3925,7 +3925,8 @@ OSErr TModel::FirstStepUserInputChecks(void)
 						case TYPE_SPRAYLELIST: bSprayedLeProblem = TRUE; break;
 					}
 				}
-				if((!bHindcast && thisStartTime > endTime) || (bHindcast && thisEndTime <= startTime))
+				//if((!bHindcast && thisStartTime > endTime) || (bHindcast && thisEndTime <= startTime))
+				if((!bHindcast && thisStartTime > endTime) || (bHindcast && thisEndTime < startTime))
 				{
 					if (!bHindcast) 
 					{
@@ -6577,7 +6578,7 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	Boolean hadError = FALSE;
 	char str[512], hindCastStr[256];
 	char outputDirectory[256];
-	char outputPath[256], ncOutputPath[256], moviePath[256], mossDirectory[256];
+	char outputPath[256], ncOutputPath[256], moviePath[256], mossDirectory[256], kmlPath[256];
 	long len;
 	double runDurationInHrs;
 	double timeStepInMinutes = GetTimeStep()/60,outputStepInMinutes = GetOutputStep()/60;
@@ -6845,6 +6846,42 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 		}
 	}
 	///////////////////////////////////////////////////////////
+	message->GetParameterString("kmlPath",kmlPath,256);
+	if(kmlPath[0]) {
+		char classicPath[kMaxNameLen], * p;
+		//ResolvePathFromApplication(outputPath);
+		//StringSubstitute(outputPath, '/', DIRDELIMITER);
+		if (ConvertIfUnixPath(kmlPath, classicPath)) strcpy(kmlPath,classicPath);
+		err = ResolvePathFromCommandFile(kmlPath);
+		if (err) ResolvePathFromApplication(kmlPath);
+		strcpy(str,kmlPath);
+		p =  strrchr(str,DIRDELIMITER);
+		if(p) *(p+1) = 0; // chop off the file name
+		// create the folder if it does not exist
+		/*if (!FolderExists(0, 0, str)) 
+		{
+			err = dircreate(0, 0, str, &dirID);
+			if(err) {
+				hadError = TRUE;
+				printError("Unable to create the directory for the output file.");
+			} 
+		}*/
+		if (!FolderExists(0, 0, str)) 
+		{
+			err = dircreate(0, 0, str, &dirID);
+			if(err) 
+			{	// try to create folders 
+				err = CreateFoldersInDirectoryPath(str);
+				if (err)	
+				{
+					printError("Unable to create the directory for the output file.");
+					hadError = TRUE;
+				}
+			}
+		}
+	}
+
+	///////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////
 
 	err = message->GetParameterAsSeconds("startTime",&startTime);
@@ -6973,6 +7010,13 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	else {
 		this->SetWantOutput(false);
 	}
+	if(kmlPath[0]) {
+		gSaveKMLFile=true;
+		strcpy(gKMLPath,kmlPath);
+	}
+	else {
+		gSaveKMLFile=false;
+	}
 	if(mossDirectory[0]) {
 		gSaveMossFiles=true;
 		strcpy(gMossPath,mossDirectory);
@@ -6985,9 +7029,13 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 		model->Run(model->GetStartTime()); 
 	else
 		model->Run(model->GetEndTime());
+
+	if (gSaveKMLFile) model->FinishKmlFile();
+
 	// reset the parameters we changed
 	this->SetWantOutput(saveBool);
 	gSaveMossFiles = false;
+	gSaveKMLFile = false;
 	this->bSaveRunBarLEs = savebSaveRunBarLEs; 
 	
 	// reset those model parameters that the user can not normally change
@@ -7342,7 +7390,7 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 	Boolean hadError = FALSE;
 	char str[512], hindCastStr[256];
 	char outputDirectory[256];
-	char outputPath[256], ncOutputPath[256], moviePath[256], mossDirectory[256];
+	char outputPath[256], ncOutputPath[256], moviePath[256], mossDirectory[256], kmlPath[256];
 	long len;
 	double runDurationInHrs;
 	double timeStepInMinutes = GetTimeStep()/60,outputStepInMinutes = GetOutputStep()/60;
@@ -7562,6 +7610,42 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 			}
 		}
 	}
+	///////////////////////////////////////////////////////////
+	message->GetParameterString("kmlPath",kmlPath,256);
+	if(kmlPath[0]) {
+		char classicPath[kMaxNameLen], * p;
+		//ResolvePathFromApplication(outputPath);
+		//StringSubstitute(outputPath, '/', DIRDELIMITER);
+		if (ConvertIfUnixPath(kmlPath, classicPath)) strcpy(kmlPath,classicPath);
+		err = ResolvePathFromCommandFile(kmlPath);
+		if (err) ResolvePathFromApplication(kmlPath);
+		strcpy(str,kmlPath);
+		p =  strrchr(str,DIRDELIMITER);
+		if(p) *(p+1) = 0; // chop off the file name
+		// create the folder if it does not exist
+		/*if (!FolderExists(0, 0, str)) 
+		{
+			err = dircreate(0, 0, str, &dirID);
+			if(err) {
+				hadError = TRUE;
+				printError("Unable to create the directory for the output file.");
+			} 
+		}*/
+		if (!FolderExists(0, 0, str)) 
+		{
+			err = dircreate(0, 0, str, &dirID);
+			if(err) 
+			{	// try to create folders 
+				err = CreateFoldersInDirectoryPath(str);
+				if (err)	
+				{
+					printError("Unable to create the directory for the output file.");
+					hadError = TRUE;
+				}
+			}
+		}
+	}
+
 	///////////////////////////////////////////////////////////
 	
 	//	There are three methods supported at this time
@@ -7976,6 +8060,13 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 	else {
 		this->SetWantOutput(false);
 	}
+	if(kmlPath[0]) {
+		gSaveKMLFile=true;
+		strcpy(gKMLPath,kmlPath);
+	}
+	else {
+		gSaveKMLFile=false;
+	}
 	if(mossDirectory[0]) {
 		gSaveMossFiles=true;
 		strcpy(gMossPath,mossDirectory);
@@ -7988,9 +8079,13 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 		model->Run(model->GetStartTime()); 
 	else
 		model->Run(model->GetEndTime());
+
+	if (gSaveKMLFile) model->FinishKmlFile();
+
 	// reset the parameters we changed
 	this->SetWantOutput(saveBool);
 	gSaveMossFiles = false;
+	gSaveKMLFile = false;
 	this->bSaveRunBarLEs = savebSaveRunBarLEs; 
 	
 	// reset those model parameters that the user can not normally change

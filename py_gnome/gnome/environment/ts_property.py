@@ -8,6 +8,7 @@ from gnome.environment.property import EnvProp, VectorProp, Time
 from datetime import datetime, timedelta
 from dateutil import parser
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
+from numbers import Number
 
 import unit_conversion
 import collections
@@ -16,11 +17,11 @@ import collections
 class TimeSeriesProp(EnvProp):
 
     def __init__(self,
-
                  name=None,
                  units=None,
                  time=None,
-                 data=None):
+                 data=None,
+                 **kwargs):
         '''
         A class that represents a scalar natural phenomenon using a time series
 
@@ -39,6 +40,18 @@ class TimeSeriesProp(EnvProp):
         super(TimeSeriesProp, self).__init__(name, units, time, data)
         self.time = time
 
+    @classmethod
+    def constant(cls,
+                 name=None,
+                 units=None,
+                 data=None,):
+        if any(var is None for var in (name, data, units)):
+            raise ValueError("name, data, or units may not be None")
+
+        if not isinstance(data, Number):
+            raise TypeError('{0} data must be a number'.format(name))
+        t = datetime.now().replace(microsecond=0, second=0, minute=0)
+        return cls(name=name, units=units, time=[t], data=[data])
     @property
     def timeseries(self):
         '''
@@ -90,7 +103,7 @@ class TimeSeriesProp(EnvProp):
             self.data = data if data is not None else self.data
             self.time = time if time is not None else self.time
 
-    def at(self, points, time, units=None, extrapolate=False):
+    def at(self, points, time, units=None, extrapolate=False, **kwargs):
         '''
         Interpolates this property to the given points at the given time with the units specified
         :param points: A Nx2 array of lon,lat points
@@ -101,8 +114,9 @@ class TimeSeriesProp(EnvProp):
         value = None
         if len(self.time) == 1:
             # single time time series (constant)
-            value = np.full((points.shape[0], 1), self.data)
-            value = unit_conversion.convert(self.units, units, value)
+            value = np.full((points.shape[0], 1), self.data, dtype=np.float64)
+            if units is not None and units != self.units:
+                value = unit_conversion.convert(self.units, units, value)
             return value
 
         if not extrapolate:
@@ -121,7 +135,10 @@ class TimeSeriesProp(EnvProp):
         if units is not None and units != self.units:
             value = unit_conversion.convert(self.units, units, value)
 
-        return np.full((points.shape[0], 1), value)
+        return np.full((points.shape[0], 1), value, dtype=np.float64)
+
+    def is_constant(self):
+        return len(self.data) == 1
 
     def __eq__(self, o):
         t1 = (self.name == o.name and
@@ -141,7 +158,8 @@ class TSVectorProp(VectorProp):
                  units=None,
                  time=None,
                  variables=None,
-                 varnames=None):
+                 varnames=None,
+                 **kwargs):
         '''
         This class represents a vector phenomenon using a time series
         '''
@@ -153,6 +171,19 @@ class TSVectorProp(VectorProp):
             raise TypeError('Variables must be an array-like of 2 or more TimeSeriesProp or array-like')
         VectorProp.__init__(self, name, units, time, variables)
         self._check_consistency()
+
+    @classmethod
+    def constant(cls,
+                 name=None,
+                 units=None,
+                 variables=None):
+        if any(var is None for var in (name, variables, units)):
+            raise ValueError("name, variables, or units may not be None")
+
+        if not isinstance(variables, collections.Iterable):
+            raise TypeError('{0} variables must be an iterable'.format(name))
+        t = datetime.now().replace(microsecond=0, second=0, minute=0)
+        return cls(name=name, units=units, time=[t], variables=[v for v in variables])
 
     def _check_consistency(self):
         '''
@@ -231,6 +262,9 @@ class TSVectorProp(VectorProp):
             if variables is not None:
                 self.variables = variables
             self.time = time if time is not None else self.time
+
+    def is_constant(self):
+        return len(self.variables[0]) == 1
 
     def in_units(self, units):
         '''

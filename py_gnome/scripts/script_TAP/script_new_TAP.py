@@ -25,7 +25,6 @@ from gnome.movers.py_current_movers import PyGridCurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
 from gnome.environment.vector_field import ice_field
-from gnome.movers import PyIceMover
 import gnome.utilities.profiledeco as pd
 
 # define base directory
@@ -41,7 +40,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
                   duration=timedelta(days=4),
-                  time_step=3600 * 2)
+                  time_step=3600)
 
 #     mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
     mapfile = get_datafile('arctic_coast3.bna')
@@ -60,7 +59,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #                                                       0.0),
 #                                       release_time=start_time)
 #
-    spill1 = point_line_release_spill(num_elements=100,
+    spill1 = point_line_release_spill(num_elements=50000,
                                       start_position=(196.25,
                                                       69.75,
                                                       0.0),
@@ -97,16 +96,22 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding movers'
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
+    load = False
+
+    print 'loading entire current data'
     ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
-                                                 grid_topology=gt)
+                                                 grid_topology=gt,
+                                                 load_all=load)
+    print 'loading entire wind data'
     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
                                               ice_var=ice_aware_curr.ice_var,
                                               ice_conc_var=ice_aware_curr.ice_conc_var,
-                                              grid=ice_aware_curr.grid,)
+                                              grid=ice_aware_curr.grid,
+                                              load_all=load)
 
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr)
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Euler')
-    i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method=method)
+    i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method=method, extrapolate=True)
     i_w_mover = PyWindMover(wind=ice_aware_wind, default_num_method=wind_method)
 
 #     ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:]-360

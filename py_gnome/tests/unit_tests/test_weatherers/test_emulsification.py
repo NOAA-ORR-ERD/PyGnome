@@ -34,6 +34,7 @@ s_oils = [test_oil, test_oil]
 def test_emulsification(oil, temp, num_elems, on):
     '''
     Fuel Oil #6 does not emulsify
+    fixme: this fails for ALASKA NORTH SLOPE - what is it supposed to test?
     '''
     print oil, temp, num_elems, on
 
@@ -44,7 +45,7 @@ def test_emulsification(oil, temp, num_elems, on):
         weathering_data_arrays(emul.array_types,
                                water,
                                element_type=floating(substance=oil))[:2]
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     emul.prepare_for_model_run(sc)
@@ -144,7 +145,9 @@ def test_bullwinkle():
     '''
 
     et = floating(substance=test_oil)
-    assert np.isclose(et.substance.bullwinkle, 0.193724)
+
+    # our test_oil is the sample oile 
+    assert np.isclose(et.substance.bullwinkle, 0.1937235)
 
     et.substance.bullwinkle = .4
     assert et.substance.bullwinkle == .4

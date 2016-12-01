@@ -20,6 +20,7 @@ class DLL_API RandomVertical_c : virtual public Mover_c {
 public:
 	double fVerticalDiffusionCoefficient; //cm**2/s
 	double fHorizontalDiffusionCoefficient; //cm**2/s
+	double fHorizontalDiffusionCoefficientBelowML; //cm**2/s
 	double fVerticalBottomDiffusionCoefficient; //cm**2/s
 	double fMixedLayerDepth;	// meters
 	Boolean bUseDepthDependentDiffusion;

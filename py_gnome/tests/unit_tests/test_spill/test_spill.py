@@ -16,19 +16,23 @@ import copy
 import pytest
 from pytest import raises
 
-import numpy
-np = numpy
+import numpy as np
 
 import unit_conversion as uc
 
+from gnome.model import Model
+from gnome.environment import Water
+from gnome.movers import RandomMover
 from gnome.spill import (Spill,
                          Release,
                          point_line_release_spill,
-                         SpatialRelease)
+                         SpatialRelease,
+                         InitElemsFromFile)
 from gnome.spill.elements import (floating,
                                   ElementType)
+from gnome.spill_container import SpillContainer
 
-from ..conftest import mock_sc_array_types, mock_append_data_arrays, test_oil
+from ..conftest import mock_sc_array_types, mock_append_data_arrays, test_oil, testdata
 
 
 # Used to mock SpillContainer functionality of creating/appending data_arrays
@@ -40,10 +44,11 @@ arr_types = mock_sc_array_types({'positions', 'mass'})
 @pytest.mark.parametrize(("element_type", "amount"), [(None, None),
                                                       (None, 10.0),
                                                       (ElementType(), None),
-                                                      (ElementType(), 1.0)])
+                                                      (ElementType(), 1.0),
+                                                      ])
 def test_init(element_type, amount):
     '''
-    Test various initializtions
+    Test various initializations
     '''
     spill = Spill(Release(release_time=datetime.now()),
                   element_type=element_type,
@@ -52,14 +57,15 @@ def test_init(element_type, amount):
                   )
 
     if element_type is None:
-        assert np.all(spill.get('windage_range') == (0.01, 0.04))
-        assert (spill.get('windage_persist') == 900)
-        assert len(spill.get('initializers')) == 1  # add windages
-    else:
-        assert len(spill.get('initializers')) == 0
+        assert np.all(spill.windage_range == (0.01, 0.04))
+        assert spill.windage_persist == 900
+        # no need to test this in spill -- it shouldn't know about initializers
+    #     assert len(spill.initializers) == 1  # add windages
+    # else:
+    #     assert len(spill.initializers) == 0
 
     assert spill.name == 'Spill'
-    assert spill.get('release_duration') == 0
+    assert spill.release_duration == 0
 
 
 @pytest.mark.parametrize(("amount", "units"), [(10.0, 'm^3'),
@@ -69,19 +75,22 @@ def test_amount_mass_vol(amount, units):
     ensure mass is being returned correctly when 'amount' is initialized wtih
     'mass' or 'volume'
     '''
+    water = Water()
     spill = Spill(Release(datetime.now()),
                   amount=amount,
                   units=units,
-                  substance=test_oil)
+                  substance=test_oil,
+                  water=water)
     assert spill.amount == amount
     assert spill.units == units
 
     if units in Spill.valid_vol_units:
-        exp_mass = (spill.get('substance').get_density() *
+        exp_mass = (spill.substance.density_at_temp(water.temperature) *
                     uc.convert('Volume', units, 'm^3', spill.amount))
     else:
         exp_mass = uc.convert('Mass', units, 'kg', spill.amount)
     assert spill.get_mass() == exp_mass
+
     exp_mass_g = exp_mass * 1000
     assert spill.get_mass('g') == exp_mass_g
 
@@ -203,13 +212,13 @@ class Test_point_line_release_spill:
         Also so we can keep appending to data_arrays since that is what the
         SpillContainer will work until a rewind.
         """
-        prev_num_rel = sp.get('num_released')
+        prev_num_rel = sp.num_released
         (num, data_arrays) = \
             self._release(sp, release_time, timestep, data_arrays)
         assert num == expected_num_released
 
-        assert (sp.get('num_released') == prev_num_rel + expected_num_released)
-        assert data_arrays['positions'].shape == (sp.get('num_released'), 3)
+        assert sp.num_released == prev_num_rel + expected_num_released
+        assert data_arrays['positions'].shape == (sp.num_released, 3)
 
         return data_arrays
 
@@ -224,12 +233,13 @@ class Test_point_line_release_spill:
                                       release_time=self.release_time)
 
         release = sp.release
+        print "in test_init: release", release
         assert release.num_elements == self.num_elements
         assert (np.all(release.start_position == self.start_position) and
                 np.all(release.end_position is None))
         assert (np.all(release.release_time == self.release_time) and
                 release.end_release_time is None)
-        assert sp.get('release_duration') == 0
+        assert sp.release_duration == 0
 
     def test_noparticles_model_run_after_release_time(self):
         """
@@ -292,7 +302,7 @@ class Test_point_line_release_spill:
                                       release_time=self.release_time,
                                       amount=100,
                                       units='kg')
-        assert sp.get('release_duration') == 0
+        assert sp.release_duration == 0
         timestep = 3600  # seconds
 
         # release all particles
@@ -307,11 +317,11 @@ class Test_point_line_release_spill:
 
         # reset and try again
         sp.rewind()
-        assert sp.get('num_released') == 0
+        assert sp.num_released == 0
         num = sp.num_elements_to_release(self.release_time - timedelta(10),
                                          timestep)
         assert num == 0
-        assert sp.get('num_released') == 0
+        assert sp.num_released == 0
 
         # release all particles
         data_arrays = self.release_and_assert(sp, self.release_time,
@@ -336,7 +346,7 @@ class Test_point_line_release_spill:
                                       amount=123,
                                       units='kg')
 
-        assert (sp.get('release_duration') ==
+        assert (sp.release_duration ==
                 timedelta(hours=10).total_seconds())
         timestep = 3600  # one hour in seconds
 
@@ -370,7 +380,7 @@ class Test_point_line_release_spill:
                                                   exp_num_released[ix])
             assert np.alltrue(data_arrays['positions'] == self.start_position)
 
-        assert sp.get('num_released') == sp.release.num_elements
+        assert sp.num_released == sp.release.num_elements
         assert np.allclose(data_arrays['mass'].sum(), sp.get_mass('kg'),
                            atol=1e-6)
 
@@ -406,7 +416,7 @@ class Test_point_line_release_spill:
         assert np.array_equal(data_arrays['positions'][:, 1],
                               np.linspace(28, 29, 11))
 
-        assert sp.get('num_released') == 11
+        assert sp.num_released == 11
 
     @pytest.mark.parametrize(('start_position', 'end_position'), nom_positions)
     def test_cont_line_release_first_timestep(self,
@@ -424,8 +434,7 @@ class Test_point_line_release_spill:
                                       end_release_time=(self.release_time +
                                                         timedelta(minutes=100))
                                       )
-        assert (sp.get('release_duration') ==
-                timedelta(minutes=100).total_seconds())
+        assert (sp.release_duration == timedelta(minutes=100).total_seconds())
 
         timestep = 100 * 60
 
@@ -441,7 +450,7 @@ class Test_point_line_release_spill:
         assert np.array_equal(data_arrays['positions'][:, 1],
                               np.linspace(28, 29, 11))
 
-        assert sp.get('num_released') == 11
+        assert sp.num_released == 11
 
     @pytest.mark.parametrize(('start_position', 'end_position'), nom_positions)
     def test_cont_line_release_multiple_timesteps(self,
@@ -486,13 +495,13 @@ class Test_point_line_release_spill:
                                                   ts[ix], data_arrays,
                                                   exp_elems[ix])
             assert np.allclose(data_arrays['positions'][:, 0],
-                               lats[:sp.get('num_released')], atol=1e-10)
+                               lats[:sp.num_released], atol=1e-10)
             assert np.allclose(data_arrays['positions'][:, 1],
-                               lons[:sp.get('num_released')], atol=1e-10)
+                               lons[:sp.num_released], atol=1e-10)
 
             if np.any(z != 0):
                 assert np.allclose(data_arrays['positions'][:, 2],
-                                   z[:sp.get('num_released')], atol=1e-10)
+                                   z[:sp.num_released], atol=1e-10)
 
             time += timedelta(seconds=ts[ix])
 
@@ -540,13 +549,15 @@ class Test_point_line_release_spill:
 
                 var_delta_t = mult * delta_t
                 timestep_min = var_delta_t.seconds / 60
-                exp_num_rel = min(sp.get('num_elements') -
-                                  sp.get('num_released'),
+                exp_num_rel = min(sp.num_elements -
+                                  sp.num_released,
                                   num_rel_per_min * timestep_min)
 
-            data_arrays = self.release_and_assert(sp, time,
+            data_arrays = self.release_and_assert(sp,
+                                                  time,
                                                   var_delta_t.total_seconds(),
-                                                  data_arrays, exp_num_rel)
+                                                  data_arrays,
+                                                  exp_num_rel)
             time += var_delta_t
 
         assert data_arrays['mass'].sum() == sp.get_mass('kg')
@@ -679,12 +690,12 @@ class Test_point_line_release_spill:
                                       start_position=self.start_position,
                                       release_time=self.release_time)
 
-        assert sp.get('end_release_time') is None
+        assert sp.end_release_time is None
         new_time = (self.release_time + timedelta(hours=20))
 
         sp.release.release_time = new_time
-        assert sp.get('release_time') == new_time
-        assert sp.get('end_release_time') is None
+        assert sp.release_time == new_time
+        assert sp.end_release_time is None
 
     @pytest.mark.parametrize(("json_", "amount", "units"),
                              [('save', 1.0, 'kg'),
@@ -790,7 +801,7 @@ def test_line_release_with_one_element():
 
     sp.set_newparticle_values(num, release_time, time_step.total_seconds(),
                               data_arrays)
-    assert sp.get('num_released') == 1
+    assert sp.num_released == 1
     assert np.array_equal(data_arrays['positions'], [start_pos])
 
 
@@ -866,7 +877,7 @@ class TestSpatialRelease:
 
     def test_SpatialRelease_rewind(self):
         """ test rewind sets _state to original """
-        assert self.sp.get('num_released') == 0
+        assert self.sp.num_released == 0
         assert self.sp.release.start_time_invalid is None
 
     def test_SpatialRelease_0_elements(self):
@@ -906,7 +917,7 @@ class TestSpatialRelease:
                                               self.sp.release.release_time,
                                               600)
 
-        assert (self.sp.get('num_released') == self.sp.release.num_elements and
+        assert (self.sp.num_released == self.sp.release.num_elements and
                 self.sp.release.num_elements == num)
         assert np.alltrue(data_arrays['positions'] == self.start_positions)
 
@@ -917,7 +928,7 @@ class TestSpatialRelease:
         (data_arrays, num) = release_elements(self.sp,
                                               self.sp.release.release_time,
                                               600)
-        assert (self.sp.get('num_released') == self.sp.release.num_elements and
+        assert (self.sp.num_released == self.sp.release.num_elements and
                 self.sp.release.num_elements == num)
 
         (data_arrays, num) = release_elements(self.sp,
@@ -934,19 +945,20 @@ class TestSpatialRelease:
         (data_arrays, num) = release_elements(self.sp,
                                               self.sp.release.release_time,
                                               600)
-        assert (self.sp.get('num_released') == self.sp.release.num_elements and
+        # fixme -- should we be checking for the release inside the Spill?
+        assert (self.sp.num_released == self.sp.release.num_elements and
                 self.sp.release.num_elements == num)
 
         (data_arrays, num2) = release_elements(sp2,
                                                sp2.release.release_time,
                                                600,
                                                data_arrays)
-        assert (sp2.get('num_released') == sp2.release.num_elements and
+        assert (sp2.num_released == sp2.release.num_elements and
                 len(data_arrays['positions']) == num2 + num)
         assert (np.all(data_arrays['positions'][:num, :] ==
-                self.sp.get('start_position')))
+                self.sp.start_position))
         assert (np.all(data_arrays['positions'][num:, :] ==
-                sp2.get('start_position')))
+                sp2.start_position))
 
 
 class TestVerticalPlumeRelease:
@@ -965,8 +977,8 @@ class TestVerticalPlumeRelease:
 
     def test_rewind(self):
         ''' test rewind sets _state to original '''
-        assert self.spill.get('num_released') == 0
-        assert self.spill.get('start_time_invalid') is None
+        assert self.spill.num_released == 0
+        assert self.spill.start_time_invalid is None
 
     def test_release_bounds(self):
         '''
@@ -1032,88 +1044,161 @@ class TestVerticalPlumeRelease:
         assert data_arrays['positions'].shape == (10, 3)
 
 
-# def test_PointSourceSurfaceRelease_new_from_dict():
-#     """
-#     test to_dict function for Wind object
-#     create a new wind object and make sure it has same properties
-#     """
-#
-#     spill = PointSourceSurfaceRelease(num_elements=1000,
-#             start_position=(144.664166, 13.441944, 0.),
-#             release_time=datetime(2013, 2, 13, 9, 0),
-#             end_release_time=datetime(2013, 2, 13, 9, 0)
-#             + timedelta(hours=6))
-#
-#     sp_state = spill.to_dict('save')
-#     print sp_state
-#
-#     # this does not catch two objects with same ID
-#
-#     sp2 = PointSourceSurfaceRelease.new_from_dict(sp_state)
-#
-#     assert spill == sp2
-#
-#
-# def test_PointSourceSurfaceRelease_from_dict():
-#     """
-#     test from_dict function for Wind object
-#     update existing wind object from_dict
-#     """
-#
-#     spill = PointSourceSurfaceRelease(num_elements=1000,
-#             start_position=(144.664166, 13.441944, 0.),
-#             release_time=datetime(2013, 2, 13, 9, 0),
-#             end_release_time=datetime(2013, 2, 13, 9, 0)
-#             + timedelta(hours=6))
-#
-#     sp_dict = spill.to_dict()
-#     sp_dict['windage_range'] = [.02, .03]
-#     spill.from_dict(sp_dict)
-#
-#     for key in sp_dict.keys():
-#         if isinstance(spill.__getattribute__(key), np.ndarray):
-#             np.testing.assert_equal(sp_dict.__getitem__(key),
-#                                     spill.__getattribute__(key))
-#         else:
-#             assert spill.__getattribute__(key) \
-#                 == sp_dict.__getitem__(key)
-# ==============================================================================
-
-
-"""
-Following test set/get windage_range and windage_persist parameters from the
-Spill object. These were removed but are put back into master branch so current
-webgnome works. These will eventually be removed
-"""
-
-
-def test_setget():
+# """
+# Following test set/get windage_range and windage_persist parameters from the
+# Spill object. These were removed but are put back into master branch so current
+# webgnome works. These will eventually be removed
+# """
+# these are all the properties that tie Spill attriubtes to the underlying
+# element_type, etc attributes.
+def test_propeties():
     """
+    NOTE: this is not longer set and get -- it's propeties instead
+
     set a couple of properties of release object and windages initializer to
     test that it works
+
+    # fixme -- maybe this should be a complete test!
     """
     rel_time = datetime.now()
     spill = point_line_release_spill(10, (0, 0, 0), rel_time)
-    assert len(spill.get()) > 1
-    assert spill.get('num_elements') == 10
-    assert spill.get('release_time') == rel_time
 
-    spill.set('num_elements', 100)
-    assert spill.get('num_elements') == 100
+    assert spill.num_elements == 10
+    assert spill.release_time == rel_time
 
-    new_time = datetime(2014, 1, 1, 0, 0, 0)
-    spill.set('release_time', new_time)
-    assert spill.get('release_time') == new_time
+    spill.num_elements = 100
+    assert spill.num_elements == 100
 
-    spill.set('windage_persist', -1)
-    assert spill.get('windage_persist') == -1
+    new_time1 = datetime(2014, 1, 1, 0, 0, 0)
+    spill.release_time = new_time1
+    assert spill.release_time == new_time1
 
-    spill.set('windage_range', (0.4, 0.4))
-    assert spill.get('windage_range') == (0.4, 0.4)
+    new_time2 = datetime(2014, 1, 1, 2, 0, 0)
+    spill.end_release_time = new_time2
+    assert spill.end_release_time == new_time2
 
-    spill.set('windage_range', [0.4, 0.4])
-    assert spill.get('windage_range') == [0.4, 0.4]
+    assert spill.release_duration == (new_time2 - new_time1).total_seconds()
 
+    spill.start_position = (1, 2, 3)
+    assert np.all(spill.start_position == (1, 2, 3))
+
+    spill.end_position = (2, 2, 3)
+    assert np.all(spill.end_position == (2, 2, 3))
+
+    spill.windage_persist = -1
+    assert spill.windage_persist == -1
+
+    spill.windage_range = (0.4, 0.4)
+    assert spill.windage_range == (0.4, 0.4)
+
+
+def test_set_end_to_none():
+        '''
+        for two different spills, ensure that release_time and end_release_time
+        all work, even if end_release_tiem is None.
+        '''
+        rel_time = datetime.now().replace(microsecond=0)
+        end_time = rel_time + timedelta(hours=1)
+        # (sc, wd, spread) = self.sample_sc_wd_spreading(1, rel_time)
+        # sc.spills[0].end_release_time = None
+        spill = point_line_release_spill(1,
+                                         (0, 0, 0),
+                                         rel_time,
+                                         end_release_time=end_time,
+                                         amount=100,
+                                         units='kg',
+                                         )
+
+        print "release is", spill.release
+        print spill.release.release_time
+        # now change the end_release_time
+        spill.end_release_time = None
+
+        num_new_particles = 10
+        current_time = rel_time
+        time_step = 900
+        data_arrays = {'mass': np.zeros((num_new_particles,), dtype=np.float64),
+                       'positions': np.zeros((num_new_particles, 3), dtype=np.float64),
+                       }
+        print "release_duration:", spill.release_duration
+        print "current_time:", current_time
+        print "release_time:", spill.release.release_time, spill.release_time
+        spill.set_newparticle_values(num_new_particles,
+                                     current_time,
+                                     time_step,
+                                     data_arrays)
+
+class TestInitElementsFromFile():
+    nc_start_time = datetime(2011, 3, 11, 7, 0)
+    time_step = timedelta(hours=24)
+
+    @pytest.mark.parametrize("index", [None, 0, 2])
+    def test_init(self, index):
+        release = InitElemsFromFile(testdata['nc']['nc_output'], index=index)
+        assert release.num_elements == 4000
+        if index is None:
+            # file contains initial condition plus 4 timesteps
+            exp_rel_time = self.nc_start_time + self.time_step * 4
+            assert np.all(release._init_data['age'] ==
+                          self.time_step.total_seconds() * 4)
+        else:
+            exp_rel_time = self.nc_start_time + self.time_step * index
+
+            assert np.all(release._init_data['age'] ==
+                          self.time_step.total_seconds() * index)
+        assert release.release_time == exp_rel_time
+
+    def test_init_with_releasetime(self):
+        'test release time gets set correctly'
+        reltime = datetime(2014, 1, 1, 0, 0)
+        release = InitElemsFromFile(testdata['nc']['nc_output'], reltime)
+        assert release.num_elements == 4000
+        assert release.release_time == reltime
+
+    @pytest.mark.parametrize("at", [{},
+                                    {'windages'}])
+    def test_release_elements(self, at):
+        'release elements in the context of a spill container'
+        s = Spill(InitElemsFromFile(testdata['nc']['nc_output']))
+        sc = SpillContainer()
+        sc.spills += s
+        sc.prepare_for_model_run(array_types=at)
+        num_les = sc.release_elements(self.time_step, self.nc_start_time)
+        assert sc.num_released == s.release.num_elements
+        assert num_les == s.release.num_elements
+        for array, val in s.release._init_data.iteritems():
+            if array in sc:
+                assert np.all(val == sc[array])
+                assert val is not sc[array]
+            else:
+                assert array not in at
+
+    def test_full_run(self):
+        'just check that all data arrays work correctly'
+        s = Spill(InitElemsFromFile(testdata['nc']['nc_output']))
+        model = Model(start_time=s.release_time,
+                      time_step=self.time_step.total_seconds(),
+                      duration=timedelta(days=2)
+                      )
+        model.spills += s
+        model.movers += RandomMover()
+
+        # setup model run
+        for step in model:
+            if step['step_num'] == 0:
+                continue
+            for sc in model.spills.items():
+                for key in sc.data_arrays.keys():
+                    # following keys will not change with run
+                    if key in ('status_codes',
+                               'mass',
+                               'init_mass',
+                               'id',
+                               'spill_num',
+                               'last_water_positions'):  # all water map
+                        assert np.all(sc[key] == s.release._init_data[key])
+                    else:
+                        assert np.any(sc[key] != s.release._init_data[key])
 
 if __name__ == '__main__':
 

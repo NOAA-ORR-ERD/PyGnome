@@ -2,8 +2,13 @@
 """
 Script to test GNOME with plume element type
  - weibull droplet size distribution
+
 Simple map and simple current mover
+
 Rise velocity and vertical diffusion
+
+This is simply making a point source with a given distribution of droplet sizes
+
 """
 
 
@@ -34,15 +39,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
     start_time = datetime(2004, 12, 31, 13, 0)
-    model = Model(start_time=start_time, duration=timedelta(days=3),
-                  time_step=30 * 60, uncertain=False)
+    model = Model(start_time=start_time,
+                  duration=timedelta(days=3),
+                  time_step=30 * 60,
+                  uncertain=False)
 
     print 'adding the map'
     model.map = GnomeMap()
 
-    # draw_ontop can be 'uncertain' or 'forecast'
-    # 'forecast' LEs are in black, and 'uncertain' are in red
-    # default is 'forecast' LEs draw on top
     renderer = Renderer(output_dir=images_dir,
                         # size=(800, 600),
                         output_timestep=timedelta(hours=1),
@@ -65,23 +69,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # in the larger droplet spill.
     # Smaller droplets start at a lower depth than larger
 
-    wd = WeibullDistribution(alpha=1.8, lambda_=.00456,
+    wd = WeibullDistribution(alpha=1.8,
+                             lambda_=.00456,
                              min_=.0002)  # 200 micron min
     end_time = start_time + timedelta(hours=24)
-    # spill = point_line_release_spill(num_elements=10,
-    #                                  amount=90,  # default volume_units=m^3
-    #                                  units='m^3',
-    #                                  start_position=(-76.126872, 37.680952,
-    #                                                  1700),
-    #                                  release_time=start_time,
-    #                                  end_release_time=end_time,
-    #                                  element_type=plume(distribution=wd,
-    #                                                     density=600)
-    #                                  )
 
     spill = subsurface_plume_spill(num_elements=10,
-                                   start_position=(-76.126872, 37.680952,
-                                                   1700),
+                                   start_position=(-76.126872, 37.680952, 1700),
                                    release_time=start_time,
                                    distribution=wd,
                                    amount=90,  # default volume_units=m^3
@@ -91,12 +85,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.spills += spill
 
-    wd = WeibullDistribution(alpha=1.8, lambda_=.00456,
+    wd = WeibullDistribution(alpha=1.8,
+                             lambda_=.00456,
                              max_=.0002)  # 200 micron max
+
     spill = point_line_release_spill(num_elements=10, amount=90,
                                      units='m^3',
-                                     start_position=(-76.126872, 37.680952,
-                                                     1800),
+                                     start_position=(-76.126872, 37.680952, 1800),
                                      release_time=start_time,
                                      element_type=plume(distribution=wd,
                                                         substance_name='oil_crude')
@@ -137,5 +132,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
+    print "about to start running the model"
     for step in model:
         print step

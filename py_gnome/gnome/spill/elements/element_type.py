@@ -8,7 +8,11 @@ These are properties that are spill specific like:
   'nonweathering' element_types would set use_droplet_size flag to False
   'weathering' element_types would use droplet_size, densities, mass?
 
+Note: An ElementType needs a bunch of initializers -- but that is an
+      implementation detail, so the ElementType API exposes access to the
+      initializers.
 '''
+
 import copy
 
 from gnome.utilities.serializable import Serializable, Field
@@ -16,7 +20,6 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromPlume)
-from oil_library import get_oil_props
 from gnome.persist import base_schema, class_from_objtype
 import unit_conversion as uc
 
@@ -49,6 +52,9 @@ class ElementType(Serializable):
         :type substance: str or OilProps
 
         '''
+        from oil_library import get_oil_props
+        self.get_oil_props = get_oil_props
+
         self.initializers = []
         try:
             self.initializers.extend(initializers)
@@ -69,6 +75,28 @@ class ElementType(Serializable):
                 'initializers={0.initializers}, '
                 'substance={0.substance!r}'
                 ')'.format(self))
+
+    def __getattr__(self, att):
+        """
+        delegates some attribute access to the element types.
+
+        .. todo::
+            There is an issue in that if two initializers have the same
+            property - could be the case if they both define a 'distribution',
+            then it does not know which one to return
+        """
+        for initr in self.initializers:
+            try:
+                return getattr(initr, att)
+            except AttributeError:
+                pass
+
+        # nothing returned, then attribute was not found
+        msg = ('{0} attribute does not exist in element_type initializers'
+               .format(att))
+
+        self.logger.warning(msg)
+        raise AttributeError(msg)
 
     def contains_object(self, obj_id):
         for o in self.initializers:
@@ -130,7 +158,7 @@ class ElementType(Serializable):
         user has provided a valid OilProps object and use it as is
         '''
         try:
-            self._substance = get_oil_props(val)
+            self._substance = self.get_oil_props(val)
         except:
             if isinstance(val, basestring):
                 raise
@@ -320,6 +348,8 @@ def plume(distribution_type='droplet_size',
     .. note:: substance_name or density must be provided
 
     """
+    from oil_library import get_oil_props
+
     # Add docstring from called classes
     # Note: following gives sphinx warnings on build, ignore for now.
 
