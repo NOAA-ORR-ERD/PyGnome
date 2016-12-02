@@ -109,15 +109,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                               load_all=load)
     curr = GridCurrent.from_netCDF(filename=fn)
 
-    import pprint as pp
-    from gnome.utilities.orderedcollection import OrderedCollection
-    model.environment = OrderedCollection(dtype=Environment)
-    model.environment.add(ice_aware_curr)
-    from gnome.environment import WindTS
-    model.environment.add(WindTS.constant(10, 300))
-    model.save('.')
-    from gnome.persist.save_load import load
-    model2 = load('./Model.zip')
+#     import pprint as pp
+#     from gnome.utilities.orderedcollection import OrderedCollection
+#     model.environment = OrderedCollection(dtype=Environment)
+#     model.environment.add(ice_aware_curr)
+#     from gnome.environment import WindTS
+#     model.environment.add(WindTS.constant(10, 300))
+#     model.save('.')
+#     from gnome.persist.save_load import load
+#     model2 = load('./Model.zip')
 
     print 'loading entire wind data'
 

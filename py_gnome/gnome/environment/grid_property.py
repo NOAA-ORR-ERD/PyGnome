@@ -315,7 +315,13 @@ class GriddedProp(EnvProp):
             if res is not None:
                 return np.ma.filled(res)
 
-        value = self._at_4D(points, time, self.data, units=units, extrapolate=extrapolate, _hash=_hash)
+        order = self.dimension_ordering
+        if order[0] == 'time':
+            value = self._time_interp(points, time, extrapolate, _mem=_mem, _hash=_hash, **kwargs)
+        elif order[0] == 'depth':
+            value = self._depth_interp(points, time, extrapolate, _mem=_mem, _hash=_hash, **kwargs)
+        else:
+            value = self._xy_interp(points, time, extrapolate, _mem=_mem, _hash=_hash, **kwargs)
 
         if _mem:
             self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
@@ -408,9 +414,99 @@ class GriddedProp(EnvProp):
                 value = v0 + (v1 - v0) * alphas
         return value
 
-    def _at_tri_grid(self, points, time, data, **kwargs):
-        if self.time is None
+    @property
+    def dimension_ordering(self):
+        if not hasattr(self, '_order'):
+            self._order = None
+        if self._order is not None:
+            return self._order
+        else:
+            if isinstance(self.grid, PyGrid_S):
+                order = ['time', 'depth', 'lon', 'lat']
+            else:
+                order = ['time', 'depth', 'ele']
+            ndim = len(self.data.shape)
+            diff = len(order) - ndim
+            if diff == 0:
+                return order
+            elif diff == 1:
+                if self.time is not None:
+                    del order[1]
+                elif self.depth is not None:
+                    del order[0]
+                else:
+                    raise ValueError('Generated ordering too short to fit data. Time or depth must not be None')
+            elif diff == 2:
+                order = order[2:]
+            else:
+                raise ValueError('Too many/too few dimensions ndim={0}'.format(ndim))
+            return order
 
+    @dimension_ordering.setter
+    def dimension_ordering(self, order):
+        self._order = order
+
+    def _xy_interp(self, points, time, extrapolate, slices=(), **kwargs):
+        _hash = kwargs['_hash'] if '_hash' in kwargs else None
+        units = kwargs['units'] if 'units' in kwargs else None
+        value = self.grid.interpolate_var_to_points(points[:, 0:2], self.data, _hash=_hash[0], slices=slices, _memo=True)
+        if units is not None and units != self.units:
+            value = unit_conversion.convert(self.units, units, value)
+        return value
+
+    def _time_interp(self, points, time, extrapolate, slices=(), **kwargs):
+        order = self.dimension_ordering
+        idx = order.index('time')
+        if order[idx + 1] != 'depth':
+            val_func = self._xy_interp
+        else:
+            val_func = self._depth_interp
+
+        if time == self.time.min_time or (extrapolate and time < self.time.min_time):
+            # min or before
+            return val_func(points, time, extrapolate, slices=(0,), ** kwargs)
+        elif time == self.time.max_time or (extrapolate and time > self.time.max_time):
+            return val_func(points, time, extrapolate, slices=(-1,), **kwargs)
+        else:
+            ind = self.time.index_of(time)
+            s1 = slices + (ind,)
+            s0 = slices + (ind - 1,)
+            v0 = val_func(points, time, extrapolate, slices=s0, **kwargs)
+            v1 = val_func(points, time, extrapolate, slices=s1, **kwargs)
+            alphas = self.time.interp_alpha(time)
+            value = v0 + (v1 - v0) * alphas
+            return value
+
+    def _depth_interp(self, points, time, extrapolate, slices=(), **kwargs):
+        order = self.dimension_ordering
+        idx = order.index('depth')
+        if order[idx + 1] != 'time':
+            val_func = self._xy_interp
+        else:
+            val_func = self._time_interp
+        indices, alphas = self.depth.interpolation_alphas(points, self.data.shape[1:], kwargs.get('_hash', None))
+        if indices is None and alphas is None:
+            # all particles are on surface
+            return val_func(points, time, extrapolate, slices=slices + (self.depth.surface_index,), **kwargs)
+        else:
+            min_idx = indices[indices != -1].min() - 1
+            max_idx = indices.max()
+            values = np.zeros(len(points), dtype=np.float64)
+            v0 = val_func(points, time, extrapolate, slices=slices + (min_idx - 1,), **kwargs)
+            for idx in range(min_idx + 1, max_idx + 1):
+                v1 = val_func(points, time, extrapolate, slices=slices + (idx,), **kwargs)
+                pos_idxs = np.where(indices == idx)[0]
+                sub_vals = v0 + (v1 - v0) * alphas
+                if len(pos_idxs) > 0:
+                    values.put(pos_idxs, sub_vals.take(pos_idxs))
+                v0 = v1
+            if extrapolate:
+                underground = (indices == self.depth.bottom_index)
+                values[underground] = val_func(points, time, extrapolate, slices=slices + (self.depth.bottom_index,), **kwargs)
+            else:
+                underground = (indices == self.depth.bottom_index)
+                values[underground] = self.fill_value
+            return values
 
 #     def serialize(self, json_='webapi'):
 #         _dict = serializable.Serializable.serialize(self, json_=json_)

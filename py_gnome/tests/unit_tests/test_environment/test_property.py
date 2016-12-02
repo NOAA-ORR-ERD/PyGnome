@@ -53,6 +53,32 @@ s_data = np.array([20, 30, 40])
 def ts():
     return Time(dates2)
 
+@pytest.fixture()
+def sg_data():
+    base_dir = os.path.dirname(__file__)
+    s_data = os.path.join(base_dir, 'sample_data')
+    filename = os.path.join(s_data, 'currents')
+    filename = get_datafile(os.path.join(filename, 'ny_cg.nc'))
+    return filename, nc.Dataset(filename)
+
+@pytest.fixture()
+def sg_topology():
+    return {'node_lon': 'lonc',
+            'node_lat': 'latc'}
+
+@pytest.fixture()
+def ug_data():
+    base_dir = os.path.dirname(__file__)
+    s_data = os.path.join(base_dir, 'sample_data')
+    filename = os.path.join(s_data, 'currents')
+    filename = get_datafile(os.path.join(filename, 'ChesBay.nc'))
+    return filename, nc.Dataset(filename)
+
+@pytest.fixture()
+def example_data():
+    
+    
+
 class TestTime:
 
     def test_construction(self):

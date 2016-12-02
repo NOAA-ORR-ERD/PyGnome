@@ -331,6 +331,8 @@ class Time(serializable.Serializable):
         if self._has_duplicates(self.time):
             raise ValueError("Time sequence has duplicate entries")
 
+        self.name = time.name if hasattr(time, 'name') else None
+
     @classmethod
     def single(cls):
         if not hasattr(Time, '_single'):
