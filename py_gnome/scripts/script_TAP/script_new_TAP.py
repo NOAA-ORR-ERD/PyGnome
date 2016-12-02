@@ -40,7 +40,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
                   duration=timedelta(days=4),
-                  time_step=3600)
+                  time_step=7200)
 
 #     mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
     mapfile = get_datafile('arctic_coast3.bna')
@@ -102,6 +102,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
                                                  grid_topology=gt,
                                                  load_all=load)
+    ice_aware_curr.ice_var.variables[0].dimension_ordering = ['time', 'x', 'y']
     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
                                               ice_var=ice_aware_curr.ice_var,
                                               ice_conc_var=ice_aware_curr.ice_conc_var,
@@ -109,7 +110,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                               load_all=load)
     curr = GridCurrent.from_netCDF(filename=fn)
 
-#     import pprint as pp
+    import pprint as pp
 #     from gnome.utilities.orderedcollection import OrderedCollection
 #     model.environment = OrderedCollection(dtype=Environment)
 #     model.environment.add(ice_aware_curr)

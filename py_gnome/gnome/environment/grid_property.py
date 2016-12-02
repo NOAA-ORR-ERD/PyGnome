@@ -11,12 +11,13 @@ import hashlib
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.environment.ts_property import TimeSeriesProp
 from functools import wraps
+import pytest
 
 class GridPropSchema(PropertySchema):
     varname = SchemaNode(String())
     grid = PyGridSchema(missing=drop)
-    data_file = SequenceSchema(SchemaNode(String(), missing=drop), accept_scalar=True)
-    grid_file = SequenceSchema(SchemaNode(String(), missing=drop), accept_scalar=True)
+    data_file = SchemaNode(String())
+    grid_file = SchemaNode(String())
 
 
 class GriddedProp(EnvProp):
@@ -290,6 +291,39 @@ class GriddedProp(EnvProp):
             value = self.at(centers, time, units)
         return value
 
+    @property
+    def dimension_ordering(self):
+        if not hasattr(self, '_order'):
+            self._order = None
+        if self._order is not None:
+            return self._order
+        else:
+            if isinstance(self.grid, PyGrid_S):
+                order = ['time', 'depth', 'lon', 'lat']
+            else:
+                order = ['time', 'depth', 'ele']
+            ndim = len(self.data.shape)
+            diff = len(order) - ndim
+            if diff == 0:
+                return order
+            elif diff == 1:
+#                 pytest.set_trace()
+                if self.time is not None:
+                    del order[1]
+                elif self.depth is not None:
+                    del order[0]
+                else:
+                    raise ValueError('Generated ordering too short to fit data. Time or depth must not be None')
+            elif diff == 2:
+                order = order[2:]
+            else:
+                raise ValueError('Too many/too few dimensions ndim={0}'.format(ndim))
+            return order
+
+    @dimension_ordering.setter
+    def dimension_ordering(self, order):
+        self._order = order
+
 #     @profile
     def at(self, points, time, units=None, extrapolate=False, _hash=None, _mem=True, **kwargs):
         '''
@@ -326,125 +360,6 @@ class GriddedProp(EnvProp):
         if _mem:
             self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
         return np.ma.filled(value)
-
-#     @profile
-    def _at_2D(self, pts, data, slices=None, **kwargs):
-        cur_dim = len(data.shape) - len(slices) if slices is not None else len(data.shape)
-        if slices is not None and cur_dim != 2:
-            raise ValueError("Data dimensions are incorrect! dimension is {0}".format(len(data.shape) - len(slices)))
-        _hash = kwargs['_hash'] if '_hash' in kwargs else None
-        units = kwargs['units'] if 'units' in kwargs else None
-        value = self.grid.interpolate_var_to_points(pts, data, _hash=_hash[0], slices=slices, _memo=True)
-        if units is not None and units != self.units:
-            value = unit_conversion.convert(self.units, units, value)
-        return value
-
-#     @profile
-    def _at_3D(self, points, data, slices=None, **kwargs):
-        cur_dim = len(data.shape) - len(slices) if slices is not None else len(data.shape)
-        if slices is not None and cur_dim != 3:
-            raise ValueError("Data dimensions are incorrect! dimension is {0}".format(len(data.shape) - len(slices)))
-        indices, alphas = self.depth.interpolation_alphas(points, data.shape[1:], kwargs['_hash'])
-        if indices is None and alphas is None:
-            # all particles are on surface
-            return self._at_2D(points[:, 0:2], data, slices=slices + (self.depth.surface_index,), **kwargs)
-        else:
-            min_idx = indices[indices != -1].min() - 1
-            max_idx = indices.max()
-            pts = points[:, 0:2]
-            values = np.zeros(len(points), dtype=np.float64)
-            v0 = self._at_2D(pts, data, slices=slices + (min_idx - 1,), **kwargs)
-            for idx in range(min_idx + 1, max_idx + 1):
-                v1 = self._at_2D(pts, data, slices=slices + (idx,), **kwargs)
-                pos_idxs = np.where(indices == idx)[0]
-                sub_vals = v0 + (v1 - v0) * alphas
-                if len(pos_idxs) > 0:
-                    values.put(pos_idxs, sub_vals.take(pos_idxs))
-                v0 = v1
-            if 'extrapolate' in kwargs and kwargs['extrapolate']:
-                underground = (indices == self.depth.bottom_index)
-                values[underground] = self._at_2D(pts, data, slices=slices + (self.depth.bottom_index,) ** kwargs)
-            else:
-                underground = (indices == self.depth.bottom_index)
-                values[underground] = self.fill_value
-            return values
-
-#     @profile
-    def _at_4D(self, points, time, data, **kwargs):
-        value = None
-        if self.time is None or len(self.time) == 1:
-            if len(data.shape) == 2:
-                return self._at_2D(points[:, 0:2], data, **kwargs)
-            if len(data.shape) == 3:
-                return self._at_3D(points, data, **kwargs)
-            if len(data.shape) == 4 and len(data) == 1:
-                return self._at_3D(points, data, slices=(0,), **kwargs)
-            else:
-                raise ValueError("Cannot determine correct time index without time axis")
-        else:
-            extrapolate = kwargs['extrapolate'] if 'extrapolate' in kwargs else False
-            if not extrapolate:
-                self.time.valid_time(time)
-            if time == self.time.min_time or (extrapolate and time < self.time.min_time):
-                return self._at_3D(points, data, slices=(0,), **kwargs)
-            elif time == self.time.max_time or (extrapolate and time > self.time.max_time):
-                return self._at_3D(points, data, slices=(-1,), **kwargs)
-            else:
-                surface_only = False
-                if all(np.isclose(points[:, 2], 0.0, atol=0.0001)):
-                    surface_only = True
-                ind = self.time.index_of(time)
-                alphas = self.time.interp_alpha(time)
-                s1 = (ind,)
-                s0 = (ind - 1,)
-                v0 = v1 = None
-                if surface_only and self.depth is not None:
-                    pts = points[:, 0:2]
-                    s1 = s1 + (self.depth.surface_index,)
-                    s0 = s0 + (self.depth.surface_index,)
-                    v0 = self._at_2D(pts, data, slices=s0, **kwargs)
-                    v1 = self._at_2D(pts, data, slices=s1, **kwargs)
-                elif surface_only and self.depth is None and len(data.shape) == 3:
-                    pts = points[:, 0:2]
-                    v0 = self._at_2D(pts, data, slices=s0, **kwargs)
-                    v1 = self._at_2D(pts, data, slices=s1, **kwargs)
-                else:
-                    v0 = self._at_3D(points, data, slices=s0, **kwargs)
-                    v1 = self._at_3D(points, data, slices=s1, **kwargs)
-                value = v0 + (v1 - v0) * alphas
-        return value
-
-    @property
-    def dimension_ordering(self):
-        if not hasattr(self, '_order'):
-            self._order = None
-        if self._order is not None:
-            return self._order
-        else:
-            if isinstance(self.grid, PyGrid_S):
-                order = ['time', 'depth', 'lon', 'lat']
-            else:
-                order = ['time', 'depth', 'ele']
-            ndim = len(self.data.shape)
-            diff = len(order) - ndim
-            if diff == 0:
-                return order
-            elif diff == 1:
-                if self.time is not None:
-                    del order[1]
-                elif self.depth is not None:
-                    del order[0]
-                else:
-                    raise ValueError('Generated ordering too short to fit data. Time or depth must not be None')
-            elif diff == 2:
-                order = order[2:]
-            else:
-                raise ValueError('Too many/too few dimensions ndim={0}'.format(ndim))
-            return order
-
-    @dimension_ordering.setter
-    def dimension_ordering(self, order):
-        self._order = order
 
     def _xy_interp(self, points, time, extrapolate, slices=(), **kwargs):
         _hash = kwargs['_hash'] if '_hash' in kwargs else None
@@ -560,8 +475,8 @@ class GriddedProp(EnvProp):
 class GridVectorPropSchema(VectorPropSchema):
     varnames = SequenceSchema(SchemaNode(String()))
     grid = PyGridSchema(missing=drop)
-    data_file = SequenceSchema(SchemaNode(String(), missing=drop), accept_scalar=True)
-    grid_file = SequenceSchema(SchemaNode(String(), missing=drop), accept_scalar=True)
+    data_file = SchemaNode(String())
+    grid_file = SchemaNode(String())
 #     variables = GPSeqSchema()
 
 class GridVectorProp(VectorProp):

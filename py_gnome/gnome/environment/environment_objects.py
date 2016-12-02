@@ -548,7 +548,7 @@ class GridWind(VelocityGrid, Environment):
                 return res
 
         value = super(GridWind, self).at(points, time, units, extrapolate=extrapolate, **kwargs)
-        value[points[:, 2] >= 0.0] = 0  # no wind underwater!
+        value[points[:, 2] > 0.0] = 0  # no wind underwater!
         if self.angle is not None:
             angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs)
             x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)

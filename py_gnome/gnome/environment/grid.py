@@ -6,7 +6,7 @@ import copy
 
 import numpy as np
 
-from colander import (SchemaNode, drop, Float, String, SequenceSchema)
+from colander import (SchemaNode, drop, Float, String, SequenceSchema, Sequence)
 
 from gnome.cy_gnome.cy_grid_curv import CyTimeGridWindCurv
 from gnome.cy_gnome.cy_grid_rect import CyTimeGridWindRect
@@ -23,7 +23,8 @@ from gnome.utilities.file_tools.data_helpers import _get_dataset
 
 
 class PyGridSchema(base_schema.ObjType):
-    filename = SequenceSchema(SchemaNode(String(), missing=drop), missing=drop, accept_scalar=True)
+#     filename = SequenceSchema(SchemaNode(String()), accept_scalar=True)
+    filename = SchemaNode(String())
 
 
 class PyGrid(Serializable):
@@ -32,7 +33,7 @@ class PyGrid(Serializable):
 
     _state = copy.deepcopy(Serializable._state)
     _schema = PyGridSchema
-    _state.add_field([Field('filename', save=True, read=True)])
+    _state.add_field([Field('filename', save=True, update=True)])
 
     def __new__(cls, *args, **kwargs):
         '''
@@ -186,7 +187,7 @@ class PyGrid(Serializable):
         if self is o:
             return True
         for n in ('nodes', 'faces'):
-            if hasattr(self, n) and hasattr(o, n) and self.n is not None and o.n is not None:
+            if hasattr(self, n) and hasattr(o, n) and getattr(self, n) is not None and getattr(o, n) is not None:
                 s = getattr(self, n)
                 s2 = getattr(o, n)
                 if s.shape != s2.shape or np.any(s != s2):
