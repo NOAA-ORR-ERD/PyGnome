@@ -21,23 +21,6 @@ from .. import _valid_units
 _valid_dist_units = _valid_units('Length')
 _valid_vel_units = _valid_units('Velocity')
 
-class UnitsSchema(MappingSchema):
-    offset = SchemaNode(String(),
-                        description='SI units for distance',
-                        validator=OneOf(_valid_dist_units))
-
-    boom_length = SchemaNode(String(),
-                             description='SI units for distance',
-                             validator=OneOf(_valid_dist_units))
-
-    boom_draft = SchemaNode(String(),
-                            description='SI units for distance',
-                            validator=OneOf(_valid_dist_units))
-
-    speed = SchemaNode(String(),
-                       description='SI units for speed',
-                       validator=OneOf(_valid_vel_units))
-
 class OnSceneTupleSchema(DefaultTupleSchema):
     start = SchemaNode(LocalDateTime(default_tzinfo=None),
                        validator=validators.convertible_to_seconds)
@@ -55,79 +38,23 @@ class OnSceneTimeSeriesSchema(NumpyArray):
         validators.no_duplicate_datetime(node, cstruct)
         validators.ascending_datetime(node, cstruct)
 
-class BurnSchema(WeathererSchema):
-    offset = SchemaNode(Integer())
-    boom_length = SchemaNode(Integer())
-    boom_draft = SchemaNode(Integer())
-    speed = SchemaNode(Float())
-    throughput = SchemaNode(Float())
-    burn_effeciency_type = SchemaNode(String())
-    units = UnitsSchema()
+class ResponseSchema(WeathererSchema):
     timeseries = OnSceneTimeSeriesSchema()
 
-class Burn(Weatherer, Serializable):
-    _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('offset', save=True, update=True),
-               Field('boom_length', save=True, update=True),
-               Field('boom_draft', save=True, update=True),
-               Field('speed', save=True, update=True),
-               Field('timeseries', save=True, update=True),
-               Field('throughput', save=True, update=True),
-               Field('burn_effeciency_type', save=True, update=True),
-               Field('units', save=True, update=True)]
-
-    _schema = BurnSchema
-
-    _si_units = {'offset': 'ft',
-                 'boom_length': 'ft',
-                 'boom_draft': 'in',
-                 'speed': 'm/s'}
-
-    _units_type = {'offset': ('offset', _valid_dist_units),
-                   'boom_length': ('boom_length', _valid_dist_units),
-                   'boom_draft': ('boom_draft', _valid_dist_units),
-                   'speed': ('speed', _valid_vel_units)}
-
-    def __init__(self,
-                 offset,
-                 boom_length,
-                 boom_draft,
-                 speed,
-                 throughput,
-                 burn_effeciency_type=1,
-                 timeseries=None,
-                 units=_si_units,
-                 **kwargs):
-
-        super(Burn, self).__init__(**kwargs)
-
-        self.offset = offset
-        self.boom_length = boom_length
-        self.boom_draft = boom_draft
-        self.speed = speed
-        self.throughput = throughput
-        self.timeseries = timeseries
-        self.burn_effeciency_type = burn_effeciency_type
-        self._units = dict(self._si_units)
-        self.units = units
-        self._swath_width = None
-        self._area = None
-        self._boom_capacity = None
-        self._offset_time = None
+class Response(Weatherer, Serializable):
+    
+    def __init__(self, **kwargs):
+        super(Response, self).__init__(**kwargs)
         self._report = []
 
-        self._is_collecting = False
-        self._is_burning = False
-        self._is_boom_filled = False
-        self._is_transiting = False
-        self._is_cleaning = False
+    def _get_thickness(self, sc):
+        oil_thickness = 0.0
+        substance = self._get_substance(sc)
+        if sc['area'].any() > 0:
+            volume_emul = (sc['mass'].mean() / substance.get_density()) / (1.0 - sc['frac_water'].mean())
+            oil_thickness = volume_emul / sc['area'].mean()
 
-        self._time_collecting_in_sim = 0.
-        self._total_burns = 0.
-        self._time_burning = 0.
-        self._ts_burned = 0.
-        self._ts_collected = 0.
-        self._burn_time = None
+        return uc.convert('Length', 'meters', 'inches', oil_thickness)
 
     @property
     def units(self):
@@ -168,6 +95,122 @@ class Burn(Weatherer, Serializable):
         
         setattr(self, attr, value)
         self.units[attr] = unit
+
+    def _is_active(self, model_time, time_step):
+        for t in self.timeseries:
+            if model_time >= t[0] and model_time + datetime.timedelta(seconds=time_step/2) <= t[1]:
+                return True
+
+        return False
+ 
+    def _setup_report(self, sc):
+        if 'report' not in sc:
+            sc.report = {}
+
+        sc.report[self.id] = []  
+        self.report = sc.report[self.id]
+
+    def _get_substance(self, sc):
+        '''
+        return a single substance - recovery options only know about the
+        total amount removed. Unclear how to assign this to multiple substances
+        for now, just log an error if more than one substance is present
+        '''
+        substance = sc.get_substances(complete=False)
+        if len(substance) > 1:
+            self.logger.error('Found more than one type of oil '
+                              '- not supported. Results with be incorrect')
+    
+        return substance[0]
+   
+class BurnUnitsSchema(MappingSchema):
+    offset = SchemaNode(String(),
+                        description='SI units for distance',
+                        validator=OneOf(_valid_dist_units))
+
+    boom_length = SchemaNode(String(),
+                             description='SI units for distance',
+                             validator=OneOf(_valid_dist_units))
+
+    boom_draft = SchemaNode(String(),
+                            description='SI units for distance',
+                            validator=OneOf(_valid_dist_units))
+
+    speed = SchemaNode(String(),
+                       description='SI units for speed',
+                       validator=OneOf(_valid_vel_units))
+
+class BurnSchema(ResponseSchema):
+    offset = SchemaNode(Integer())
+    boom_length = SchemaNode(Integer())
+    boom_draft = SchemaNode(Integer())
+    speed = SchemaNode(Float())
+    throughput = SchemaNode(Float())
+    burn_effeciency_type = SchemaNode(String())
+    units = BurnUnitsSchema()
+
+class Burn(Response):
+    _state = copy.deepcopy(Weatherer._state)
+    _state += [Field('offset', save=True, update=True),
+               Field('boom_length', save=True, update=True),
+               Field('boom_draft', save=True, update=True),
+               Field('speed', save=True, update=True),
+               Field('timeseries', save=True, update=True),
+               Field('throughput', save=True, update=True),
+               Field('burn_effeciency_type', save=True, update=True),
+               Field('units', save=True, update=True)]
+
+    _schema = BurnSchema
+
+    _si_units = {'offset': 'ft',
+                 'boom_length': 'ft',
+                 'boom_draft': 'in',
+                 'speed': 'm/s'}
+
+    _units_type = {'offset': ('offset', _valid_dist_units),
+                   'boom_length': ('boom_length', _valid_dist_units),
+                   'boom_draft': ('boom_draft', _valid_dist_units),
+                   'speed': ('speed', _valid_vel_units)}
+
+    def __init__(self,
+                 offset,
+                 boom_length,
+                 boom_draft,
+                 speed,
+                 throughput,
+                 burn_effeciency_type=1,
+                 timeseries=None,
+                 units=_si_units,
+                 **kwargs):
+
+        super(Burn, self).__init__(**kwargs)
+
+        self.offset = offset
+        self._units = dict(self._si_units)
+        self.units = units
+        self.boom_length = boom_length
+        self.boom_draft = boom_draft
+        self.speed = speed
+        self.throughput = throughput
+        self.timeseries = timeseries
+        self.burn_effeciency_type = burn_effeciency_type
+        self._swath_width = None
+        self._area = None
+        self._boom_capacity = None
+        self._offset_time = None
+
+        self._is_collecting = False
+        self._is_burning = False
+        self._is_boom_filled = False
+        self._is_transiting = False
+        self._is_cleaning = False
+
+        self._time_collecting_in_sim = 0.
+        self._total_burns = 0.
+        self._time_burning = 0.
+        self._ts_burned = 0.
+        self._ts_collected = 0.
+        self._burn_time = None
 
     def prepare_for_model_run(self, sc):
         self._setup_report(sc)
@@ -342,39 +385,5 @@ class Burn(Weatherer, Serializable):
                 sc.mass_balance['burned'] += self._ts_burned
                 sc.mass_balance['boomed'] -= self._ts_burned
         
-    def _get_thickness(self, sc):
-        oil_thickness = 0.0
-        substance = self._get_substance(sc)
-        if sc['area'].any() > 0:
-            volume_emul = (sc['mass'].mean() / substance.get_density()) / (1.0 - sc['frac_water'].mean())
-            oil_thickness = volume_emul / sc['area'].mean()
-
-        return uc.convert('Length', 'meters', 'inches', oil_thickness)
-
-    def _is_active(self, model_time, time_step):
-        for t in self.timeseries:
-            if model_time >= t[0] and model_time + datetime.timedelta(seconds=time_step/2) <= t[1]:
-                return True
-
-        return False
-    
-    def _setup_report(self, sc):
-        if 'report' not in sc:
-            sc.report = {}
-
-        sc.report[self.id] = []  
-        self.report = sc.report[self.id]
-
-    def _get_substance(self, sc):
-        '''
-        return a single substance - recovery options only know about the
-        total amount removed. Unclear how to assign this to multiple substances
-        for now, just log an error if more than one substance is present
-        '''
-        substance = sc.get_substances(complete=False)
-        if len(substance) > 1:
-            self.logger.error('Found more than one type of oil '
-                              '- not supported. Results with be incorrect')
-    
-        return substance[0]
    
+    
