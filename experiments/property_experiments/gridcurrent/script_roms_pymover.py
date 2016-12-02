@@ -18,7 +18,7 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.outputters import Renderer
-from gnome.environment.property_classes import GridCurrent
+from gnome.environment import GridCurrent
 from gnome.movers.py_current_movers import PyGridCurrentMover
 import gnome.utilities.profiledeco as pd
 
@@ -34,7 +34,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model = Model(start_time=start_time,
                   duration=timedelta(hours=12),
-                  time_step=.25*3600)
+                  time_step=.25 * 3600)
 
     mapfile = (os.path.join(base_dir, 'coast.bna'))
 
@@ -63,39 +63,39 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                                       27.5475,
                                                       0.0),
                                       release_time=start_time,
-                                      end_release_time=start_time+timedelta(hours=24))
+                                      end_release_time=start_time + timedelta(hours=24))
     spill2 = point_line_release_spill(num_elements=500,
                                       start_position=(-82.73888,
                                                       27.545,
                                                       0.0),
                                       release_time=start_time,
-                                      end_release_time=start_time+timedelta(hours=24))
+                                      end_release_time=start_time + timedelta(hours=24))
     spill3 = point_line_release_spill(num_elements=500,
                                       start_position=(-82.73888,
                                                       27.5425,
                                                       0.0),
                                       release_time=start_time,
-                                      end_release_time=start_time+timedelta(hours=24))
+                                      end_release_time=start_time + timedelta(hours=24))
     spill4 = point_line_release_spill(num_elements=500,
                                       start_position=(-82.73988,
                                                       27.5475,
                                                       0.0),
                                       release_time=start_time,
-                                      end_release_time=start_time+timedelta(hours=24))
+                                      end_release_time=start_time + timedelta(hours=24))
 
     spill5 = point_line_release_spill(num_elements=500,
                                       start_position=(-82.73988,
                                                       27.5450,
                                                       0.0),
                                       release_time=start_time,
-                                      end_release_time=start_time+timedelta(hours=24))
+                                      end_release_time=start_time + timedelta(hours=24))
 
     spill6 = point_line_release_spill(num_elements=500,
                                       start_position=(-82.73988,
                                                       27.5425,
                                                       0.0),
                                       release_time=start_time,
-                                      end_release_time=start_time+timedelta(hours=24))
+                                      end_release_time=start_time + timedelta(hours=24))
 
 
     model.spills += spill1
@@ -110,11 +110,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a current mover:'
 
     fn = 'nos.tbofs.fields.n000.20160406.t00z_sgrid.nc'
-    #fn = 'dbofs_newFormat.nc'
+    # fn = 'dbofs_newFormat.nc'
 
     cf = GridCurrent.from_netCDF(filename=fn)
     u_mover = PyGridCurrentMover(cf, extrapolate=True)
-    #u_mover = GridCurrentMover(fn)
+    # u_mover = GridCurrentMover(fn)
     renderer.add_grid(cf.grid)
 #     renderer.add_vec_prop(cf)
     model.movers += u_mover
