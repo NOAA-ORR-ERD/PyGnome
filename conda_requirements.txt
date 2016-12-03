@@ -35,9 +35,9 @@ netCDF4=1.2.2  # v1.2.4 needs gdal 2.1, which seems to be broken
 awesome-slugify>=1.6
 regex>=2014.12
 unidecode>=0.04.19
-cell_tree2d>=0.1.3
-pyugrid>=0.2.1
-pysgrid>=0.3.1
+cell_tree2d>=0.3.0
+pyugrid>=0.2.2
+pysgrid>=0.3.3
 pyshp>=1.2
 
 # nice to have for development, not required to run
