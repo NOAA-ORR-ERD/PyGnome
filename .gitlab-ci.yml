@@ -3,9 +3,10 @@ before_script:
   - yum install gcc gcc-c++ -y
   - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
   # make sure the conda channels are set up right
-  - conda config --add channels conda-forge
-  - conda config --add channels defaults
+  # the last channel you add will be first on the list
   - conda config --add channels NOAA-ORR-ERD
+  - conda config --add channels defaults
+  - conda config --add channels conda-forge
   - conda install --file conda_requirements.txt
   # get the oil libary package from gitlab
   - pip install -U git+https://srccontrol.orr.noaa.gov/gnome/OilLibrary.git@v0.0.9#egg=oil_library
