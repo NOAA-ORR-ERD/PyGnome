@@ -3,7 +3,7 @@
 #  This should be the minimal conda install
 #  install with:
 #  conda install --file conda_requirements.txt
-# These pacakgesld all be in one of the follwoing channels:
+# These packages would all be in one of the following channels:
 # defaults
 # conda-forge
 # NOAA-ORR-ERD
@@ -27,7 +27,9 @@ colander>=1.2
 sqlalchemy>=0.7.6
 zope.interface>=4.1
 zope.sqlalchemy>=0.7.6
-krb5>=1.14  # dependency of gdal, but not installed automatically
+# geos>=3.4.2    # dependency of libgdal-2.0.0-1
+libgdal=2.0.0=0  # dependency of gdal, newer versions have bad geos dependency
+krb5>=1.14       # dependency of gdal, not installed automatically
 gdal>=2.0
 netCDF4=1.2.2  # v1.2.4 needs gdal 2.1, which seems to be broken
 awesome-slugify>=1.6
