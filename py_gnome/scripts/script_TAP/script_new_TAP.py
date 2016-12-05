@@ -15,11 +15,11 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.model import Model
 
 from gnome.map import MapFromBNA
-from gnome.environment import Wind
+from gnome.environment import Environment
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover, IceAwareRandomMover
 
-from gnome.environment import IceAwareCurrent, IceAwareWind
+from gnome.environment import IceAwareCurrent, IceAwareWind, GridCurrent
 from gnome.movers.py_wind_movers import PyWindMover
 from gnome.movers.py_current_movers import PyGridCurrentMover
 
@@ -40,7 +40,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
                   duration=timedelta(days=4),
-                  time_step=3600)
+                  time_step=7200)
 
 #     mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
     mapfile = get_datafile('arctic_coast3.bna')
@@ -74,8 +74,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a current mover:'
 
-    fn = ['arctic_avg2_0001_gnome.nc',
-          'arctic_avg2_0002_gnome.nc']
+    fn = ['C:\\Users\\jay.hennen\\Documents\\Code\\pygnome\\py_gnome\\scripts\\script_TAP\\arctic_avg2_0001_gnome.nc',
+          'C:\\Users\\jay.hennen\\Documents\\Code\\pygnome\\py_gnome\\scripts\\script_TAP\\arctic_avg2_0002_gnome.nc']
 
     gt = {'node_lon': 'lon',
           'node_lat': 'lat'}
@@ -102,12 +102,25 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
                                                  grid_topology=gt,
                                                  load_all=load)
-    print 'loading entire wind data'
+    ice_aware_curr.ice_var.variables[0].dimension_ordering = ['time', 'x', 'y']
     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
                                               ice_var=ice_aware_curr.ice_var,
                                               ice_conc_var=ice_aware_curr.ice_conc_var,
                                               grid=ice_aware_curr.grid,
                                               load_all=load)
+    curr = GridCurrent.from_netCDF(filename=fn)
+
+    import pprint as pp
+#     from gnome.utilities.orderedcollection import OrderedCollection
+#     model.environment = OrderedCollection(dtype=Environment)
+#     model.environment.add(ice_aware_curr)
+#     from gnome.environment import WindTS
+#     model.environment.add(WindTS.constant(10, 300))
+#     model.save('.')
+#     from gnome.persist.save_load import load
+#     model2 = load('./Model.zip')
+
+    print 'loading entire wind data'
 
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr)
 #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Euler')

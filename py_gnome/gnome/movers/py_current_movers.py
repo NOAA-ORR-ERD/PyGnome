@@ -3,7 +3,7 @@ import numpy as np
 import datetime
 import copy
 from gnome import basic_types
-from gnome.environment import GridCurrent
+from gnome.environment import GridCurrent, GridVectorPropSchema
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
@@ -11,13 +11,28 @@ from gnome.basic_types import (world_point,
                                world_point_type,
                                spill_type,
                                status_code_type)
+from gnome.persist import base_schema
+from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, Bool
+
+
+class PyGridCurrentMoverSchema(base_schema.ObjType):
+    filename = SchemaNode(String(), missing=drop)
+    current_scale = SchemaNode(Float(), missing=drop)
+    extrapolate = SchemaNode(Bool(), missing=drop)
+    time_offset = SchemaNode(Float(), missing=drop)
+    current = GridVectorPropSchema()
+    
 
 
 class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
 
-    _state = copy.deepcopy(movers.Mover._state)
-    _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
-               save=['uncertain_duration', 'uncertain_time_delay'])
+    _state = copy.deepcopy(movers.PyMover._state)
+
+    _state.add_field([serializable.Field('filename',
+                                         save=True, read=True, isdatafile=True,
+                                         test_for_eq=False),
+                      serializable.Field('current', save=True, read=True)])
+    _schema = PyGridCurrentMoverSchema
 
     _ref_as = 'ugrid_current_movers'
 
@@ -73,7 +88,8 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
                    current_scale=current_scale,
                    uncertain_along=uncertain_along,
                    uncertain_across=uncertain_across,
-                   uncertain_cross=uncertain_cross)
+                   uncertain_cross=uncertain_cross,
+                   **kwargs)
 
 
     def get_scaled_velocities(self, time):
@@ -81,10 +97,6 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
         :param model_time=0:
         """
         points = None
-        if isinstance(self.grid, pysgrid):
-            points = np.column_stack(self.grid.node_lon[:], self.grid.node_lat[:])
-        if isinstance(self.grid, pyugrid):
-            raise NotImplementedError("coming soon...")
         vels = self.grid.interpolated_velocities(time, points)
 
         return vels

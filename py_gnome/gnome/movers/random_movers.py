@@ -13,7 +13,8 @@ from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
 from gnome.environment import IceConcentration
-from gnome.environment.grid_property import _init_grid
+from gnome.environment.grid import PyGrid
+from gnome.utilities.file_tools.data_helpers import _get_dataset
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
 from gnome.basic_types import (world_point,
@@ -88,6 +89,7 @@ class IceAwareRandomMover(RandomMover):
 
     @classmethod
     def from_netCDF(cls, filename=None,
+                    dataset=None,
                     grid_topology=None,
                     units=None,
                     time=None,
@@ -100,12 +102,16 @@ class IceAwareRandomMover(RandomMover):
             data_file = filename
             grid_file = filename
         if grid is None:
-            grid = _init_grid(grid_file,
-                             grid_topology=grid_topology)
+            grid = PyGrid.from_netCDF(grid_file,
+                                      grid_topology=grid_topology)
         if ice_conc_var is None:
-            ice_conc_var = IceConcentration.from_netCDF(filename,
+            ice_conc_var = IceConcentration.from_netCDF(filename=filename,
+                                                        dataset=dataset,
+                                                        data_file=data_file,
+                                                        grid_file=grid_file,
                                                         time=time,
-                                                        grid=grid)
+                                                        grid=grid,
+                                                        **kwargs)
         return cls(ice_conc_var=ice_conc_var, **kwargs)
 
     def get_move(self, sc, time_step, model_time_datetime):
@@ -147,15 +153,15 @@ class RandomVerticalMover(CyMover, Serializable):
     """
     _state = copy.deepcopy(CyMover._state)
     _state.add(update=['vertical_diffusion_coef_above_ml',
-                      'vertical_diffusion_coef_below_ml',
-                      'horizontal_diffusion_coef_above_ml',
-                      'horizontal_diffusion_coef_below_ml',
-                      'mixed_layer_depth'],
-              save=['vertical_diffusion_coef_above_ml',
-                      'vertical_diffusion_coef_below_ml',
-                      'horizontal_diffusion_coef_above_ml',
-                      'horizontal_diffusion_coef_below_ml',
-                      'mixed_layer_depth'])
+                       'vertical_diffusion_coef_below_ml',
+                       'horizontal_diffusion_coef_above_ml',
+                       'horizontal_diffusion_coef_below_ml',
+                       'mixed_layer_depth'],
+               save=['vertical_diffusion_coef_above_ml',
+                     'vertical_diffusion_coef_below_ml',
+                     'horizontal_diffusion_coef_above_ml',
+                     'horizontal_diffusion_coef_below_ml',
+                     'mixed_layer_depth'])
     _schema = RandomVerticalMoverSchema
 
     def __init__(self, **kwargs):
