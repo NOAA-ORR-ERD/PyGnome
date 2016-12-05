@@ -360,6 +360,45 @@ class TestTSprop:
 #         assert (vp.at(corners, t1, extrapolate=True) == np.array([2, 5])).all()
 #         assert (vp.at(corners, t5, extrapolate=True) == np.array([10, 13])).all()
 
+'''
+Analytical cases:
+
+Triangular
+    grid shape: (nodes = nv, faces = nele)
+    data_shapes: (time, depth, nv),
+                 (time, nv),
+                 (depth, nv),
+                 (nv)
+    depth types: (None),
+                 (constant),
+                 (sigma v1),
+                 (sigma v2),
+                 (levels)
+    test points: 2D surface (time=None, depth=None)
+                     - nodes should be valid
+                     - off grid should extrapolate with fill value or Error
+                     - interpolation elsewhere
+                 2D surface (time=t, depth=None)
+                     - as above, validate time interpolation
+                 
+    
+
+Quad
+    grid shape: (nodes:(x,y))
+                (nodes:(x,y), faces(xc, yc))
+                (nodes:(x,y), faces(xc, yc), edge1(x, yc), edge2(xc, y))
+    data_shapes: (time, depth, x, y),
+                 (time, x, y),
+                 (depth, x, y),
+                 (x,y)
+    depth types: (None),
+                 (constant),
+                 (sigma v1),
+                 (sigma v2),
+                 (levels)
+
+'''
+
 
 @pytest.fixture()
 def gp():

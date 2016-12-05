@@ -293,6 +293,18 @@ class GriddedProp(EnvProp):
 
     @property
     def dimension_ordering(self):
+        '''
+        Returns a list that describes the dimensions of the property's data. If a dimension_ordering is assigned,
+        it will continue to use that. If no dimension_ordering is set, then a default ordering will be generated
+        based on the object properties and data shape.
+
+        For example, if the data has 4 dimensions and is represented by a PyGrid_S (structured grid), and the
+        GriddedProp has a depth and time assigned, then the assumed ordering is ['time','depth','lon','lat']
+
+        If the data has 3 dimensions, self.grid is a PyGrid_S, and self.time is None, then the ordering is
+        ['depth','lon','lat']
+        If the data has 3 dimensions, self.grid is a PyGrid_U, the ordering is ['time','depth','ele']
+        '''
         if not hasattr(self, '_order'):
             self._order = None
         if self._order is not None:
@@ -307,7 +319,6 @@ class GriddedProp(EnvProp):
             if diff == 0:
                 return order
             elif diff == 1:
-#                 pytest.set_trace()
                 if self.time is not None:
                     del order[1]
                 elif self.depth is not None:
@@ -362,6 +373,17 @@ class GriddedProp(EnvProp):
         return np.ma.filled(value)
 
     def _xy_interp(self, points, time, extrapolate, slices=(), **kwargs):
+        '''
+        Uses the py(s/u)grid interpolation to determine the values at the points, and returns it
+        :param points: Coordinates to be queried (3D)
+        :param time: Time of the query
+        :param extrapolate: Turns extrapolation on or off
+        :param slices: describes how the data needs to be sliced to reach the appropriate dimension
+        :type points: Nx3 array of double
+        :type time: datetime.datetime object
+        :type extrapolate: boolean
+        :type slices: tuple of integers or slice objects
+        '''
         _hash = kwargs['_hash'] if '_hash' in kwargs else None
         units = kwargs['units'] if 'units' in kwargs else None
         value = self.grid.interpolate_var_to_points(points[:, 0:2], self.data, _hash=_hash[0], slices=slices, _memo=True)
@@ -370,6 +392,18 @@ class GriddedProp(EnvProp):
         return value
 
     def _time_interp(self, points, time, extrapolate, slices=(), **kwargs):
+        '''
+        Uses the Time object to interpolate the result of the next level of interpolation, as specified
+        by the dimension_ordering attribute.
+        :param points: Coordinates to be queried (3D)
+        :param time: Time of the query
+        :param extrapolate: Turns extrapolation on or off
+        :param slices: describes how the data needs to be sliced to reach the appropriate dimension
+        :type points: Nx3 array of double
+        :type time: datetime.datetime object
+        :type extrapolate: boolean
+        :type slices: tuple of integers or slice objects
+        '''
         order = self.dimension_ordering
         idx = order.index('time')
         if order[idx + 1] != 'depth':
@@ -393,6 +427,18 @@ class GriddedProp(EnvProp):
             return value
 
     def _depth_interp(self, points, time, extrapolate, slices=(), **kwargs):
+        '''
+        Uses the Depth object to interpolate the result of the next level of interpolation, as specified
+        by the dimension_ordering attribute.
+        :param points: Coordinates to be queried (3D)
+        :param time: Time of the query
+        :param extrapolate: Turns extrapolation on or off
+        :param slices: describes how the data needs to be sliced to reach the appropriate dimension
+        :type points: Nx3 array of double
+        :type time: datetime.datetime object
+        :type extrapolate: boolean
+        :type slices: tuple of integers or slice objects
+        '''
         order = self.dimension_ordering
         idx = order.index('depth')
         if order[idx + 1] != 'time':
