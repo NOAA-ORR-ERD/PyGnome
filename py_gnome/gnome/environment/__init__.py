@@ -20,7 +20,7 @@ from waves import Waves, WavesSchema
 from tide import Tide, TideSchema
 from wind import Wind, WindSchema, constant_wind, wind_from_values
 from running_average import RunningAverage, RunningAverageSchema
-from grid import Grid, GridSchema
+from grid import Grid, GridSchema, PyGrid, PyGrid_S, PyGrid_U
 # from gnome.environment.environment_objects import IceAwareCurrentSchema
 
 
@@ -37,6 +37,9 @@ __all__ = [Environment,
            RunningAverageSchema,
            Grid,
            GridSchema,
+           PyGrid,
+           PyGrid_S,
+           PyGrid_U,
            constant_wind,
            WindTS,
            GridCurrent,

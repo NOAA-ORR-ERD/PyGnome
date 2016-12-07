@@ -40,23 +40,7 @@ class Depth(object):
         return None, None
 
 
-class Depth(object):
-
-    def __init__(self,
-                 surface_index=-1):
-        self.surface_index = surface_index
-        self.bottom_index = surface_index
-
-    @classmethod
-    def from_netCDF(cls,
-                    surface_index=-1):
-        return cls(surface_index)
-
-    def interpolation_alphas(self, points, data_shape, _hash=None):
-        return None, None
-
-
-class S_Depth(object):
+class S_Depth_T1(object):
 
     default_terms = [['Cs_w', 's_w', 'hc', 'Cs_r', 's_rho']]
 
@@ -123,6 +107,11 @@ class S_Depth(object):
         return -(hc * (s_rho - Cs_r) + Cs_r * depths)
     
     def interpolation_alphas(self, points, data_shape, _hash=None):
+        '''
+        Returns a pair of values. The 1st value is an array of the depth indices of all the particles.
+        The 2nd value is an array of the interpolation alphas for the particles between their depth
+        index and depth_index+1. If both values are None, then all particles are on the surface layer.
+        '''
         underwater = points[:, 2] > 0.0
         if len(np.where(underwater)[0]) == 0:
             return None, None
@@ -223,21 +212,21 @@ class VelocityTS(TSVectorProp):
         y = self.variables[1].data
         return map(lambda t, x, y: (t, (x, y)), self._time, x, y)
 
-    def serialize(self, json_='webapi'):
-        dict_ = serializable.Serializable.serialize(self, json_=json_)
-        # The following code is to cover the needs of webapi
-        if json_ == 'webapi':
-            dict_.pop('timeseries')
-            dict_.pop('units')
-            x = np.asanyarray(self.variables[0].data)
-            y = np.asanyarray(self.variables[1].data)
-            direction = -(np.arctan2(y, x) * 180 / np.pi + 90)
-            magnitude = np.sqrt(x ** 2 + y ** 2)
-            ts = (unicode(tx.isoformat()) for tx in self._time)
-            dict_['timeseries'] = map(lambda t, x, y: (t, (x, y)), ts, magnitude, direction)
-            dict_['units'] = (unicode(self.variables[0].units), u'degrees')
-            dict_['varnames'] = [u'magnitude', u'direction', dict_['varnames'][0], dict_['varnames'][1]]
-        return dict_
+#     def serialize(self, json_='webapi'):
+#         dict_ = serializable.Serializable.serialize(self, json_=json_)
+#         # The following code is to cover the needs of webapi
+#         if json_ == 'webapi':
+#             dict_.pop('timeseries')
+#             dict_.pop('units')
+#             x = np.asanyarray(self.variables[0].data)
+#             y = np.asanyarray(self.variables[1].data)
+#             direction = -(np.arctan2(y, x) * 180 / np.pi + 90)
+#             magnitude = np.sqrt(x ** 2 + y ** 2)
+#             ts = (unicode(tx.isoformat()) for tx in self._time)
+#             dict_['timeseries'] = map(lambda t, x, y: (t, (x, y)), ts, magnitude, direction)
+#             dict_['units'] = (unicode(self.variables[0].units), u'degrees')
+#             dict_['varnames'] = [u'magnitude', u'direction', dict_['varnames'][0], dict_['varnames'][1]]
+#         return dict_
 
 #     @classmethod
 #     def deserialize(cls, json_):
@@ -285,7 +274,7 @@ class VelocityGrid(GridVectorProp):
         if 'variables' in kwargs:
             variables = kwargs['variables']
             if len(variables) == 2:
-                variables.append(TimeSeriesProp(name='constant w', data=[0.0], time=[datetime.now()], units='m/s'))
+                variables.append(TimeSeriesProp(name='constant w', data=[0.0], time=Time.constant_time(), units='m/s'))
             kwargs['variables'] = variables
         self.angle = None
         df = None

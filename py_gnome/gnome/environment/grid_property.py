@@ -16,8 +16,8 @@ import pytest
 class GridPropSchema(PropertySchema):
     varname = SchemaNode(String())
     grid = PyGridSchema(missing=drop)
-    data_file = SchemaNode(String())
-    grid_file = SchemaNode(String())
+    data_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
+    grid_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
 
 
 class GriddedProp(EnvProp):
@@ -167,17 +167,10 @@ class GriddedProp(EnvProp):
                 units = data.units
             except AttributeError:
                 units = None
-        timevar = None
         if time is None:
-            try:
-                timevar = data.time if data.time == data.dimensions[0] else data.dimensions[0]
-            except AttributeError:
-                if len(data.dimensions) > 2:
-                    timevar = data.dimensions[0]
-                    time = Time(ds[timevar])
-                else:
-                    time = None
-            time = Time(ds[timevar])
+            time = Time.from_netCDF(filename=data_file,
+                                    dataset=ds,
+                                    datavar=data)
         if depth is None:
             if len(data.shape) == 4:
                 from gnome.environment.environment_objects import Depth
@@ -521,9 +514,13 @@ class GriddedProp(EnvProp):
 class GridVectorPropSchema(VectorPropSchema):
     varnames = SequenceSchema(SchemaNode(String()))
     grid = PyGridSchema(missing=drop)
-    data_file = SchemaNode(String())
-    grid_file = SchemaNode(String())
-#     variables = GPSeqSchema()
+    data_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
+    grid_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
+     
+    def __init__(self, json_='webapi', *args, **kwargs):
+        if json_ == 'save':
+            self.add(SchemaNode(typ=Sequence(), children=[SchemaNode(EnvProp())], name='variables'))
+        super(GridVectorPropSchema, self).__init__(*args, **kwargs)
 
 class GridVectorProp(VectorProp):
     _state = copy.deepcopy(VectorProp._state)
@@ -550,6 +547,8 @@ class GridVectorProp(VectorProp):
                  **kwargs):
 
         super(GridVectorProp, self).__init__(**kwargs)
+        if isinstance(self.variables, list):
+            self.variables = OrderedCollection(elems=self.variables, dtype=EnvProp)
         if isinstance(self.variables[0], GriddedProp):
             self.grid = self.variables[0].grid if grid is None else grid
             self.depth = self.variables[0].depth if depth is None else depth
@@ -633,14 +632,11 @@ class GridVectorProp(VectorProp):
         if name is None:
             name = cls.__name__ + str(cls._def_count)
             cls._def_count += 1
-        timevar = None
         data = ds[varnames[0]]
         if time is None:
-            try:
-                timevar = data.time if data.time == data.dimensions[0] else data.dimensions[0]
-            except AttributeError:
-                timevar = data.dimensions[0]
-            time = Time(ds[timevar])
+            time = Time.from_netCDF(filename=data_file,
+                                    dataset=ds,
+                                    datavar=data)
         if depth is None:
             if len(data.shape) == 4:
                 from gnome.environment.environment_objects import Depth
@@ -671,18 +667,18 @@ class GridVectorProp(VectorProp):
             if all(u == units[0] for u in units):
                 units = units[0]
         return cls(filename=filename,
-                    varnames=varnames,
-                    grid_topology=grid_topology,
-                    units=units,
-                    time=time,
-                    grid=grid,
-                    depth=depth,
-                    variables=variables,
-                    data_file=data_file,
-                    grid_file=grid_file,
-                    dataset=ds,
-                    load_all=load_all,
-                    **kwargs)
+                   varnames=varnames,
+                   grid_topology=grid_topology,
+                   units=units,
+                   time=time,
+                   grid=grid,
+                   depth=depth,
+                   variables=variables,
+                   data_file=data_file,
+                   grid_file=grid_file,
+                   dataset=ds,
+                   load_all=load_all,
+                   **kwargs)
 
     @classmethod
     def _gen_varnames(cls,
@@ -788,7 +784,7 @@ class GridVectorProp(VectorProp):
 
     @classmethod
     def _get_shared_vars(cls, *sh_args):
-        default_shared = ['dataset', 'data_file', 'grid_file', 'grid', 'time']
+        default_shared = ['dataset', 'data_file', 'grid_file', 'grid']
         if len(sh_args) != 0:
             shared = sh_args
         else:
@@ -823,14 +819,11 @@ class GridVectorProp(VectorProp):
                 if kws.get('varnames', None) is None:
                     varnames = cls._gen_varnames(kws['data_file'],
                                                  dataset=ds)
-                if _mod('time'):
-                    timevar = None
-                    data = ds[varnames[0]]
-                    try:
-                        timevar = data.time if data.time == data.dimensions[0] else data.dimensions[0]
-                    except AttributeError:
-                        timevar = data.dimensions[0]
-                    kws['time'] = Time(ds[timevar])
+#                 if _mod('time'):
+#                     time = Time.from_netCDF(filename=kws['data_file'],
+#                                             dataset=ds,
+#                                             varname=data)
+#                     kws['time'] = time
                 return func(*args, **kws)
             return wrapper
         return getvars
