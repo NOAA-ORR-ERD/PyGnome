@@ -254,7 +254,9 @@ class Spill(BaseSpill):
         self.on = on    # spill is active or not
         # raise Exception("stopping")
 
+        # fixme: shouldn't units default to 'kg'?
         self.units = None
+        # fixme -- and amount always be in kg?
         self.amount = amount
 
         if amount is not None:
@@ -265,9 +267,8 @@ class Spill(BaseSpill):
 
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
-        '''
-        fraction of area covered by oil
-        '''
+        # fixme: why is fractional area part of spill???
+        # fraction of area covered by oil
         self.frac_coverage = 1.0
         self.name = name
 
@@ -675,11 +676,18 @@ class Spill(BaseSpill):
         # first convert amount to 'kg'
         if self.units in self.valid_mass_units:
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
-        elif self.units in self.valid_vol_units:
-            water_temp = self.water.get('temperature')
-            rho = self.element_type.substance.density_at_temp(water_temp)
+        # fixme -- we should store mass -- do this on setting/chaning substance or values.
+        elif self.units in self.valid_vol_units:  # need to convert to mass
+            if self.element_type.substance is None:  # assume desnity 1000 kg/m^3
+                rho = 1000
+            else:
+                if self.water is not None:
+                    water_temp = self.water.get('temperature')
+                else:
+                    water_temp = 15  # C -- standard temp
+                rho = self.element_type.substance.density_at_temp(water_temp)
+            # fixme: unit_conversion has an oil qauntity converter -- use that?
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-
             mass = rho * vol
         else:
             raise ValueError("{} is not a valid mass or Volume unit"

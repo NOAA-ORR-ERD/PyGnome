@@ -92,7 +92,7 @@ class ElementType(Serializable):
                 pass
 
         # nothing returned, then attribute was not found
-        msg = ('{0} attribute does not exist in element_type initializers'
+        msg = ('{0} attribute does not exist in element_type or initializers'
                .format(att))
 
         self.logger.warning(msg)
