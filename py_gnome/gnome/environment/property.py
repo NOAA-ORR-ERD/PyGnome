@@ -1,5 +1,8 @@
 import warnings
+import os
 import copy
+import StringIO
+import zipfile
 
 import netCDF4 as nc4
 import numpy as np
@@ -9,6 +12,7 @@ from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, 
 from gnome.persist.base_schema import ObjType
 from gnome.utilities import serializable
 from gnome.persist import base_schema
+from gnome.utilities.file_tools.data_helpers import _get_dataset
 
 import pyugrid
 import pysgrid
@@ -19,7 +23,10 @@ from gnome.gnomeobject import GnomeId
 
 
 class TimeSchema(base_schema.ObjType):
-    time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
+#     time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
+    filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
+    varname = SchemaNode(String(), missing=drop)
+    data = SchemaNode(typ=Sequence(), children=[SchemaNode(DateTime())], missing=drop)
 
 
 class PropertySchema(base_schema.ObjType):
@@ -82,14 +89,14 @@ class EnvProp(serializable.Serializable):
     Subclasses should override\add any attribute property function getter/setters as needed
     '''
 
-    @property
-    def data(self):
-        '''
-        Underlying data
-
-        :rtype: netCDF4.Variable or numpy.array
-        '''
-        return self._data
+#     @property
+#     def data(self):
+#         '''
+#         Underlying data
+# 
+#         :rtype: netCDF4.Variable or numpy.array
+#         '''
+#         return self._data
 
     @property
     def units(self):
@@ -118,7 +125,9 @@ class EnvProp(serializable.Serializable):
 
     @time.setter
     def time(self, t):
-        if isinstance(t, Time):
+        if t is None:
+            self._time = None
+        elif isinstance(t, Time):
             self._time = t
         elif isinstance(t, collections.Iterable):
             self._time = Time(t)
@@ -165,7 +174,6 @@ class EnvProp(serializable.Serializable):
 
 
 class VectorPropSchema(base_schema.ObjType):
-    name = SchemaNode(String(), missing=drop)
     units = SchemaNode(String(), missing=drop)
     time = TimeSchema(missing=drop)
 
@@ -300,15 +308,24 @@ class VectorProp(serializable.Serializable):
         return np.column_stack([var.at(*args, **kwargs) for var in self.variables])
 
 
-
 class Time(serializable.Serializable):
 
     _state = copy.deepcopy(serializable.Serializable._state)
     _schema = TimeSchema
     
-    _state.add_field([serializable.Field('time', save=True, update=True)])
+    _state.add_field([serializable.Field('filename', save=True, update=True, isdatafile=True),
+                      serializable.Field('varname', save=True, update=True),
+                      serializable.Field('data', save=True, update=True)])
 
-    def __init__(self, time, tz_offset=None, offset=None):
+    _const_time = None
+
+    def __init__(self,
+                 time=None,
+                 filename=None,
+                 varname=None,
+                 tz_offset=None,
+                 offset=None,
+                 **kwargs):
         '''
         Representation of a time axis. Provides interpolation alphas and indexing.
 
@@ -323,6 +340,12 @@ class Time(serializable.Serializable):
         else:
             self.time = time
 
+        self.filename = filename
+        self.varname = varname
+
+#         if self.filename is None:
+#             self.filename = self.id + '_time.txt'
+
         if tz_offset is not None:
             self.time += tz_offset
 
@@ -334,14 +357,96 @@ class Time(serializable.Serializable):
         self.name = time.name if hasattr(time, 'name') else None
 
     @classmethod
-    def single(cls):
-        if not hasattr(Time, '_single'):
-            Time._single = Time([datetime.now()])
-        return Time._single
+    def from_netCDF(cls,
+                    filename=None,
+                    dataset=None,
+                    varname=None,
+                    datavar=None,
+                    tz_offset=None,
+                    **kwargs):
+        if dataset is None:
+            dataset = _get_dataset(filename)
+        if datavar is not None:
+            varname = datavar.dimensions[0]
+        time = cls(time=dataset[varname],
+                   filename=filename,
+                   varname=varname,
+                   tz_offset=tz_offset,
+                   **kwargs
+                       )
+        return time
+
+    @staticmethod
+    def constant_time():
+        if Time._const_time is None:
+            Time._const_time = Time([datetime.now()])
+        return Time._const_time
 
     @classmethod
-    def time_from_nc_var(cls, var):
-        return cls(nc4.num2date(var[:], units=var.units))
+    def from_file(cls, filename=None, **kwargs):
+        if isinstance(filename, list):
+            filename = filename[0]
+        fn = open(filename, 'r')
+        t = []
+        for l in fn:
+            l = l.rstrip()
+            if l is not None:
+                t.append(datetime.strptime(l, '%c'))
+        fn.close()
+        return Time(t)
+
+    def save(self, saveloc, references=None, name=None):
+        '''
+        Write Wind timeseries to file or to zip,
+        then call save method using super
+        '''
+#         if self.filename is None:
+#             self.filename = self.id + '_time.txt'
+#             if zipfile.is_zipfile(saveloc):
+#                 self._write_time_to_zip(saveloc, self.filename)
+#             else:
+#                 datafile = os.path.join(saveloc, self.filename)
+#                 self._write_time_to_file(datafile)
+#             rv = super(Time, self).save(saveloc, references, name)
+#             self.filename = None
+#         else:
+#             rv = super(Time, self).save(saveloc, references, name)
+#         return rv
+        super(Time, self).save(saveloc, references, name)
+
+    def _write_time_to_zip(self, saveloc, ts_name):
+        '''
+        use a StringIO type of file descriptor and write directly to zipfile
+        '''
+        fd = StringIO.StringIO()
+        self._write_time_to_fd(fd)
+        self._write_to_zip(saveloc, ts_name, fd.getvalue())
+
+    def _write_time_to_file(self, datafile):
+        '''write timeseries data to file '''
+        with open(datafile, 'w') as fd:
+            self._write_time_to_fd(fd)
+
+    def _write_time_to_fd(self, fd):
+        for t in self.time:
+            fd.write(t.strftime('%c') + '\n')
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        if 'varname' not in dict_:
+            dict_['time'] = dict_['data']
+#             if 'filename' not in dict_:
+#                 raise ValueError
+            return cls(**dict_)
+        else:
+            return cls.from_netCDF(**dict_)
+
+    @property
+    def data(self):
+        if self.filename is None:
+            return self.time
+        else:
+            return None
 
     def __len__(self):
         return len(self.time)

@@ -24,7 +24,7 @@ from gnome.utilities.file_tools.data_helpers import _get_dataset
 
 class PyGridSchema(base_schema.ObjType):
 #     filename = SequenceSchema(SchemaNode(String()), accept_scalar=True)
-    filename = SchemaNode(String())
+    filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
 
 
 class PyGrid(Serializable):
@@ -33,7 +33,7 @@ class PyGrid(Serializable):
 
     _state = copy.deepcopy(Serializable._state)
     _schema = PyGridSchema
-    _state.add_field([Field('filename', save=True, update=True)])
+    _state.add_field([Field('filename', save=True, update=True, isdatafile=True)])
 
     def __new__(cls, *args, **kwargs):
         '''

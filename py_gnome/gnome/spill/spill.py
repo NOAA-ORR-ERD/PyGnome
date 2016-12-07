@@ -251,7 +251,7 @@ class Spill(BaseSpill):
 
         self.element_type = element_type
 
-        self.on = on    # spill is active or not
+        self.on = on  # spill is active or not
         # raise Exception("stopping")
 
         # fixme: shouldn't units default to 'kg'?

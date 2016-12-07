@@ -19,7 +19,7 @@ from gnome.utilities.orderedcollection import OrderedCollection
 
 class TimeSeriesPropSchema(PropertySchema):
     time = TimeSchema(missing=drop)
-    data = SequenceSchema(SchemaNode(Float()))
+    data = SequenceSchema(SchemaNode(Float()), missing=drop)
     timeseries = SequenceSchema(
                                 TupleSchema(
                                             children=[SchemaNode(DateTime(default_tzinfo=None), missing=drop),
@@ -73,8 +73,8 @@ class TimeSeriesProp(EnvProp, serializable.Serializable):
 
         if not isinstance(data, Number):
             raise TypeError('{0} data must be a number'.format(name))
-        t = datetime.now().replace(microsecond=0, second=0, minute=0)
-        return cls(name=name, units=units, time=[t], data=[data])
+        t = Time.constant_time()
+        return cls(name=name, units=units, time=t, data=[data])
     @property
     def timeseries(self):
         '''
@@ -227,8 +227,8 @@ class TSVectorProp(VectorProp):
 
         if not isinstance(variables, collections.Iterable):
             raise TypeError('{0} variables must be an iterable'.format(name))
-        t = datetime.now().replace(microsecond=0, second=0, minute=0)
-        return cls(name=name, units=units, time=[t], variables=[v for v in variables])
+        t = Time.constant_time()
+        return cls(name=name, units=units, time=t, variables=[v for v in variables])
 
     @property
     def timeseries(self):
