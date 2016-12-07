@@ -5,12 +5,12 @@ import numpy as np
 import pysgrid
 import datetime
 from gnome.environment.property import Time
-from gnome.environment.grid_property import GriddedProp, GridVectorProp
+from gnome.environment import GriddedProp, GridVectorProp
 from gnome.environment.ts_property import TimeSeriesProp, TSVectorProp
 from gnome.environment.environment_objects import (VelocityGrid,
                                                    VelocityTS,
                                                    Bathymetry,
-                                                   S_Depth)
+                                                   S_Depth_T1)
 from gnome.environment.grid import PyGrid, PyGrid_S, PyGrid_U
 from gnome.utilities.remote_data import get_datafile
 from unit_conversion import NotSupportedUnitError
@@ -64,6 +64,15 @@ class TestTime:
         t2 = Time(grid_time)
         assert len(t2.time) == 54
 
+    def test_save_load(self):
+        t1 = Time(dates2)
+        fn = 'time.txt'
+        t1.to_file(fn)
+        t2 = Time.from_file(fn)
+#         pytest.set_trace()
+        assert all(t1.time == t2.time)
+        os.remove(fn)
+
     def test_offset(self):
         t = Time(dates2.copy(), tz_offset=dt.timedelta(hours=1))
         assert t.time[0] == dt.datetime(2000, 1, 1, 1)
@@ -82,7 +91,15 @@ class TestTime:
         assert ts.index_of(ts.time[-1], True) == 4
         assert ts.index_of(ts.time[0], True) == 0
 
-
+    @pytest.mark.parametrize('_json_', ['save', 'webapi'])
+    def test_serialization(self, _json_, ts):
+        ser = ts.serialize(_json_)
+        ts.to_file()
+        deser = Time.deserialize(ser)
+#         pytest.set_trace()
+        t2 = Time.new_from_dict(deser)
+        assert all(ts.time == t2.time)
+        os.remove(ts.filename)
 
 
 @pytest.fixture()
@@ -98,7 +115,7 @@ def vp():
     return TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data, v_data])
 
 
-class TestS_Depth:
+class TestS_Depth_T1:
 
     def test_construction(self):
 
@@ -129,7 +146,7 @@ class TestS_Depth:
 
         b = Bathymetry(name='bathymetry', data=bathy_data, grid=test_grid, time=None)
 
-        dep = S_Depth(bathymetry=b, terms=dict(zip(S_Depth.default_terms[0], [Cs_w, s_w, hc, Cs_r, s_rho])), dataset='dummy')
+        dep = S_Depth_T1(bathymetry=b, terms=dict(zip(S_Depth_T1.default_terms[0], [Cs_w, s_w, hc, Cs_r, s_rho])), dataset='dummy')
         assert dep is not None
 
         corners = np.array([[0, 0, 0], [0, 3, 0], [3, 3, 0], [3, 0, 0]], dtype=np.float64)
@@ -468,7 +485,7 @@ class TestGriddedProp:
         assert k.name == u.name
         assert k.units == 'meter second-1'
         # fixme: this was failing
-        #assert k.time == u.time
+        # assert k.time == u.time
         assert k.data[0, 0, 0] == u.data[0, 0, 0]
 
 #     def test_set_data(self, gp):
