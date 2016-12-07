@@ -251,7 +251,7 @@ class Spill(BaseSpill):
 
         self.element_type = element_type
 
-        self.on = on    # spill is active or not
+        self.on = on  # spill is active or not
         # raise Exception("stopping")
 
         self.units = None
@@ -377,7 +377,7 @@ class Spill(BaseSpill):
         if not self._check_type(other):
             return False
 
-        if (self._state.get_field_by_attribute('save') !=
+        if (self._state.get_field_by_attribute('save') != 
                 other._state.get_field_by_attribute('save')):
             return False
 
@@ -470,10 +470,10 @@ class Spill(BaseSpill):
                 time_at_step_end = current_time + timedelta(seconds=time_step)
                 if self.release_time > current_time:
                     # first time_step in which particles are released
-                    time_step = (time_at_step_end -
+                    time_step = (time_at_step_end - 
                                  self.release_time).total_seconds()
                 if self.end_release_time < time_at_step_end:
-                    time_step = (self.end_release_time -
+                    time_step = (self.end_release_time - 
                                  current_time).total_seconds()
 
                 _mass_in_ts = _mass / rd_sec * time_step
@@ -676,7 +676,10 @@ class Spill(BaseSpill):
         if self.units in self.valid_mass_units:
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
-            water_temp = self.water.get('temperature')
+            try:
+                water_temp = self.water.get('temperature')
+            except AttributeError:
+                water_temp = 15
             rho = self.element_type.substance.density_at_temp(water_temp)
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
 
