@@ -91,15 +91,15 @@ class TestTime:
         assert ts.index_of(ts.time[-1], True) == 4
         assert ts.index_of(ts.time[0], True) == 0
 
-    @pytest.mark.parametrize('_json_', ['save', 'webapi'])
-    def test_serialization(self, _json_, ts):
-        ser = ts.serialize(_json_)
-        ts.to_file()
-        deser = Time.deserialize(ser)
-#         pytest.set_trace()
-        t2 = Time.new_from_dict(deser)
-        assert all(ts.time == t2.time)
-        os.remove(ts.filename)
+#     @pytest.mark.parametrize('_json_', ['save', 'webapi'])
+#     def test_serialization(self, _json_, ts):
+#         ser = ts.serialize(_json_)
+#         ts.to_file()
+#         deser = Time.deserialize(ser)
+# #         pytest.set_trace()
+#         t2 = Time.new_from_dict(deser)
+#         assert all(ts.time == t2.time)
+#         os.remove(ts.filename)
 
 
 @pytest.fixture()
