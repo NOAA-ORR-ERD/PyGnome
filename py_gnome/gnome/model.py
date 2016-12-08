@@ -231,7 +231,6 @@ class Model(Serializable):
                          weathering_substeps,
                          uncertain, cache_enabled, map, name, mode)
 
-
         self._register_callbacks()
 
     def _register_callbacks(self):
@@ -277,6 +276,7 @@ class Model(Serializable):
         self._start_time = start_time
         self._duration = duration
         self.weathering_substeps = weathering_substeps
+
         if not map:
             map = gnome.map.GnomeMap()
 
@@ -562,7 +562,7 @@ class Model(Serializable):
         '''
         attach references
         '''
-        attr = {'wind': None, 'water': None, 'waves': None}
+        attr = {}
         attr['wind'] = self.find_by_attr('_ref_as', 'wind', self.environment)
         attr['water'] = self.find_by_attr('_ref_as', 'water', self.environment)
         attr['waves'] = self.find_by_attr('_ref_as', 'waves', self.environment)
@@ -572,7 +572,6 @@ class Model(Serializable):
         spread = None
         for coll in ('environment', 'weatherers', 'movers'):
             for item in getattr(self, coll):
-
                 if coll == 'weatherers':
                     # by default turn WeatheringData and spreading object off
                     if isinstance(item, WeatheringData):
@@ -595,8 +594,21 @@ class Model(Serializable):
                     continue
 
                 for name, val in attr.iteritems():
-                    if hasattr(item, name) and item.make_default_refs:
+                    if (hasattr(item, name) and
+                            getattr(item, name) is None and
+                            item.make_default_refs):
                         setattr(item, name, val)
+
+        all_spills = [sp
+                      for sc in self.spills.items()
+                      for sp in sc.spills.values()]
+
+        for spill in all_spills:
+            for name, val in attr.iteritems():
+                if (hasattr(spill, name) and
+                        getattr(spill, name) is None and
+                        spill.make_default_refs):
+                    setattr(spill, name, val)
 
         # if WeatheringData object and FayGravityViscous (spreading object)
         # are not defined by user, add them automatically because most
@@ -878,7 +890,7 @@ class Model(Serializable):
             (msgs, isvalid) = self.check_inputs()
             if not isvalid:
                 raise RuntimeError("Setup model run complete but model "
-                                    "is invalid", msgs)
+                                   "is invalid", msgs)
             # (msgs, isvalid) = self.validate()
             # if not isvalid:
             #    raise StopIteration("Setup model run complete but model "
@@ -1024,7 +1036,7 @@ class Model(Serializable):
         check = super(Model, self).__eq__(other)
         if check:
             # also check the data in ordered collections
-            if type(self.spills) != type(other.spills):
+            if not isinstance(self.spills, other.spills.__class__):
                 return False
 
             if self.spills != other.spills:
@@ -1397,9 +1409,6 @@ class Model(Serializable):
         raise an exception if user can't run the model
         todo: check if all spills start after model ends
         '''
-        msgs = []
-        isvalid = True
-
         (msgs, isvalid) = self.validate()
 
         someSpillIntersectsModel = False
@@ -1423,9 +1432,11 @@ class Model(Serializable):
 
         if num_spills > 0 and not someSpillIntersectsModel:
             if num_spills > 1:
-                msg = ('All of the spills are released after the time interval being modeled.')
+                msg = ('All of the spills are released after the '
+                       'time interval being modeled.')
             else:
-                msg = ('The spill is released after the time interval being modeled.')
+                msg = ('The spill is released after the time interval '
+                       'being modeled.')
             self.logger.warning(msg)  # for now make this a warning
             # self.logger.error(msg)
             msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
@@ -1555,7 +1566,8 @@ class Model(Serializable):
         Example case::
 
           get_spill_data('position && mass',
-                         'position > 50 && spill_num == 1 || status_codes == 1')
+                         'position > 50 && spill_num == 1 || status_codes == 1'
+                         )
 
         WARNING: EXPENSIVE! USE AT YOUR OWN RISK ON LARGE num_elements!
 
@@ -1600,7 +1612,6 @@ class Model(Serializable):
 
         conditions = conditions.rsplit('&&')
         conditions = [str(cond).rsplit('||') for cond in conditions]
-
 
         sc = self.spills.items()[ucert]
         result = {}
