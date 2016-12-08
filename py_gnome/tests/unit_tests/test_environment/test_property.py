@@ -64,14 +64,14 @@ class TestTime:
         t2 = Time(grid_time)
         assert len(t2.time) == 54
 
-    def test_save_load(self):
-        t1 = Time(dates2)
-        fn = 'time.txt'
-        t1.to_file(fn)
-        t2 = Time.from_file(fn)
-#         pytest.set_trace()
-        assert all(t1.time == t2.time)
-        os.remove(fn)
+#     def test_save_load(self):
+#         t1 = Time(dates2)
+#         fn = 'time.txt'
+#         t1.to_file(fn)
+#         t2 = Time.from_file(fn)
+# #         pytest.set_trace()
+#         assert all(t1.time == t2.time)
+#         os.remove(fn)
 
     def test_offset(self):
         t = Time(dates2.copy(), tz_offset=dt.timedelta(hours=1))
