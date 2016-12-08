@@ -681,10 +681,13 @@ class Spill(BaseSpill):
             if self.element_type.substance is None:  # assume desnity 1000 kg/m^3
                 rho = 1000
             else:
-                if self.water is not None:
-                    water_temp = self.water.get('temperature')
-                else:
-                    water_temp = 15  # C -- standard temp
+                try:
+                    if self.water is not None:
+                        water_temp = self.water.get('temperature')
+                    else
+                        water_temp = 15  # C -- standard temp
+                except AttributeError:
+                    water_temp = 15
                 rho = self.element_type.substance.density_at_temp(water_temp)
             # fixme: unit_conversion has an oil qauntity converter -- use that?
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
