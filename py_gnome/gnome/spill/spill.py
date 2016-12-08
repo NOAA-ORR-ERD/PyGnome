@@ -685,7 +685,7 @@ class Spill(BaseSpill):
                     if self.water is not None:
                         water_temp = self.water.get('temperature')
                     else:
-                        water_temp = 15  # C -- standard temp
+                        water_temp = 300  # K -- standard temp
                 except AttributeError:
                     water_temp = 15
                 rho = self.element_type.substance.density_at_temp(water_temp)
