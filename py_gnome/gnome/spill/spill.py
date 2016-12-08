@@ -685,9 +685,9 @@ class Spill(BaseSpill):
                     if self.water is not None:
                         water_temp = self.water.get('temperature')
                     else:
-                        water_temp = 300  # K -- standard temp
+                        water_temp = 288  # K -- standard temp of API (15C)
                 except AttributeError:
-                    water_temp = 15
+                    water_temp = 288  # K -- standard temp of API (15C)
                 rho = self.element_type.substance.density_at_temp(water_temp)
             # fixme: unit_conversion has an oil qauntity converter -- use that?
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
