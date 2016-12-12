@@ -4,7 +4,7 @@ environment module
 from environment import Environment, Water, WaterSchema
 from property import EnvProp, VectorProp, Time
 from ts_property import TimeSeriesProp, TSVectorProp
-from grid_property import GriddedProp, GridVectorProp
+from grid_property import GriddedProp, GridVectorProp, GridPropSchema, GridVectorPropSchema
 from environment_objects import (WindTS,
                                  GridCurrent,
                                  GridWind,
@@ -12,9 +12,7 @@ from environment_objects import (WindTS,
                                  GridTemperature,
                                  IceAwareCurrent,
                                  IceAwareWind,
-                                 TemperatureTS,
-#                                  IceAwareCurrentSchema,
-                                 GridVectorPropSchema)
+                                 TemperatureTS)
 
 from waves import Waves, WavesSchema
 from tide import Tide, TideSchema
@@ -44,6 +42,7 @@ __all__ = [Environment,
            WindTS,
            GridCurrent,
            GridVectorPropSchema,
+           GridPropSchema,
            GridWind,
            IceConcentration,
            GridTemperature,

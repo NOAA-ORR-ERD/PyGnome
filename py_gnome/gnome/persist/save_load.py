@@ -8,6 +8,7 @@ import zipfile
 import logging
 
 import gnome
+import colander
 
 # as long as loggers are configured before module is loaded, module scope
 # logger will work. If loggers are configured after this module is loaded and
@@ -456,7 +457,11 @@ class Savable(object):
         cls._update_datafile_path(json_data, saveloc)
 
         # deserialize after removing references
-        _to_dict = cls.deserialize(json_data)
+        try:
+            _to_dict = cls.deserialize(json_data)
+        except colander.Invalid as e:
+            print('Class {0} failed to deserialize.'.format(cls.__name__))
+            raise e
 
         if ref_dict:
             _to_dict.update(ref_dict)

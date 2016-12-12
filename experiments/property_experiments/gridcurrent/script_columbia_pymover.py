@@ -23,7 +23,7 @@ from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.movers.py_wind_movers import PyWindMover
 from gnome.environment import WindTS, GridCurrent
-from gnome.movers.py_current_movers import PyGridCurrentMover
+from gnome.movers.py_current_movers import PyCurrentMover
 
 from gnome.outputters import Renderer
 import gnome.utilities.profiledeco as pd
@@ -100,7 +100,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     curr_file = get_datafile('COOPSu_CREOFS24.nc')
     curr = GridCurrent.from_netCDF(name='gc2', filename=curr_file,)
 
-    c_mover = PyGridCurrentMover(curr, extrapolate=True, default_num_method='Trapezoid')
+    c_mover = PyCurrentMover(curr, extrapolate=True, default_num_method='Trapezoid')
 
 #     renderer.add_grid(curr.grid)
 #     renderer.add_vec_prop(curr)

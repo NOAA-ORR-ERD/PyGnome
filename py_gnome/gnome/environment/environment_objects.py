@@ -570,13 +570,19 @@ class IceVelocity(VelocityGrid, Environment):
 
 
 class IceAwarePropSchema(GridVectorPropSchema):
-    ice_var = GridVectorPropSchema(missing=drop)
     ice_conc_var = GridPropSchema(missing=drop)
+
+
+class IceAwareCurrentSchema(IceAwarePropSchema):
+    ice_var = GridVectorPropSchema(missing=drop)
 
 
 class IceAwareCurrent(GridCurrent):
 
-    _schema = IceAwarePropSchema
+    _ref_as = 'current'
+    _req_refs = [IceConcentration, IceVelocity]
+
+    _schema = IceAwareCurrentSchema
     _state = copy.deepcopy(GridCurrent._state)
 
     _state.add_field([serializable.Field('ice_var', save=True, update=True, save_reference=True),
@@ -590,6 +596,10 @@ class IceAwareCurrent(GridCurrent):
         self.ice_var = ice_var
         self.ice_conc_var = ice_conc_var
         super(IceAwareCurrent, self).__init__(*args, **kwargs)
+
+    def _attach_refs(self, _dict):
+        self.ice_conc_var = _dict[IceConcentration] if self.ice_conc_var is None else self.ice_conc_var
+        self.ice_var = _dict[IceVelocity] if self.ice_var is None else self.ice_var
 
     @classmethod
     @GridCurrent._get_shared_vars()
@@ -626,12 +636,19 @@ class IceAwareCurrent(GridCurrent):
 
 
 class IceAwareWind(GridWind):
+
+    _ref_as = 'wind'
+    _req_refs = [IceConcentration, IceVelocity]
+
+    _schema = IceAwarePropSchema
+    _state = copy.deepcopy(GridWind._state)
+
+    _state.add_field([serializable.Field('ice_conc_var', save=True, update=True, save_reference=True)])
+
     def __init__(self,
-                 ice_var=None,
                  ice_conc_var=None,
                  *args,
                  **kwargs):
-        self.ice_var = ice_var
         self.ice_conc_var = ice_conc_var
         super(IceAwareWind, self).__init__(*args, **kwargs)
 

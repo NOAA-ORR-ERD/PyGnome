@@ -3,6 +3,7 @@ import numpy as np
 import datetime
 import copy
 from gnome import basic_types
+from gnome.environment import GridCurrent, GridVectorPropSchema
 from gnome.utilities import serializable, rand
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.environment import GridWind
@@ -11,13 +12,29 @@ from gnome.basic_types import (world_point,
                                world_point_type,
                                spill_type,
                                status_code_type)
+from gnome.persist import base_schema
+from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, Bool
+
+
+class PyWindMoverSchema(base_schema.ObjType):
+    filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
+    current_scale = SchemaNode(Float(), missing=drop)
+    extrapolate = SchemaNode(Bool(), missing=drop)
+    time_offset = SchemaNode(Float(), missing=drop)
+    wind = GridVectorPropSchema(missing=drop)
 
 
 class PyWindMover(movers.PyMover, serializable.Serializable):
 
-    _state = copy.deepcopy(movers.Mover._state)
+    _state = copy.deepcopy(movers.PyMover._state)
+
+    _state.add_field([serializable.Field('filename',
+                                         save=True, read=True, isdatafile=True,
+                                         test_for_eq=False),
+                      serializable.Field('wind', save=True, read=True, save_reference=True)])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
+    _schema = PyWindMoverSchema
 
     _ref_as = 'py_wind_movers'
 

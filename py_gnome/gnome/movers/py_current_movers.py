@@ -15,26 +15,27 @@ from gnome.persist import base_schema
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, Bool
 
 
-class PyGridCurrentMoverSchema(base_schema.ObjType):
-    filename = SchemaNode(String(), missing=drop)
+class PyCurrentMoverSchema(base_schema.ObjType):
+    filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
     current_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
-    current = GridVectorPropSchema()
-    
+    current = GridVectorPropSchema(missing=drop)
 
 
-class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
+class PyCurrentMover(movers.PyMover, serializable.Serializable):
 
     _state = copy.deepcopy(movers.PyMover._state)
 
     _state.add_field([serializable.Field('filename',
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
-                      serializable.Field('current', save=True, read=True)])
-    _schema = PyGridCurrentMoverSchema
+                      serializable.Field('current', save=True, read=True, save_reference=True)])
+    _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
+               save=['uncertain_duration', 'uncertain_time_delay'])
+    _schema = PyCurrentMoverSchema
 
-    _ref_as = 'ugrid_current_movers'
+    _ref_as = 'py_current_movers'
 
     def __init__(self,
                  current=None,

@@ -17,7 +17,7 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.environment import GridCurrent
-from gnome.movers.py_current_movers import PyGridCurrentMover
+from gnome.movers.py_current_movers import PyCurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
 x, y = np.mgrid[-30:30:61j, -30:30:61j]
@@ -87,7 +87,7 @@ def make_model():
     renderer.graticule.set_max_lines(max_lines=0)
     mod.outputters += renderer
 
-    mod.movers += PyGridCurrentMover(current=vg, default_num_method=method, extrapolate=True)
+    mod.movers += PyCurrentMover(current=vg, default_num_method=method, extrapolate=True)
     mod.movers += RandomMover(diffusion_coef=10)
 
     netCDF_fn = os.path.join(base_dir, images_dir + '.nc')
