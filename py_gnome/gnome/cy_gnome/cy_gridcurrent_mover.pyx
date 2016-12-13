@@ -83,7 +83,7 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
                  uncertain_time_delay=0,
                  uncertain_along=.5,
                  uncertain_cross=.25,
-                 num_method = 0):
+                 num_method = 'Euler'):
         """
         .. function:: __init__(self, current_scale=1,
                  uncertain_duration=24*3600, uncertain_time_delay=0,
@@ -101,6 +101,7 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
                                 to current flow
         :param current_scale: scale factor applied to current values
         """
+        self._num_method=num_method
         super(CyGridCurrentMover, self).__init__(uncertain_duration=uncertain_duration,
                                                  uncertain_time_delay=uncertain_time_delay,
                                                  up_cur_uncertain=uncertain_along,
@@ -110,7 +111,8 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         self.grid_current.fCurScale = current_scale
         self.grid_current.fIsOptimizedForStep = 0
-        self.grid_current.num_method = num_method
+        
+        self.grid_current.num_method = basic_types.numerical_methods[num_method]
 
     def __repr__(self):
         return ('CyGridCurrentMover(uncertain_duration={0}, '
@@ -172,14 +174,14 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         def __set__(self, value):
             self.grid_current.SetTimeShift(value)
-            
-                #Does this need to be here? - Jay
+
     property num_method:
         def __get__(self):
-            return self.grid_current.num_method
-        
+            return self._num_method
+
         def __set__(self, value):
-            self.grid_current.num_method = value
+            self.grid_current.num_method = basic_types.numerical_methods[value]
+            self._num_method = value
 
     def extrapolate_in_time(self, extrapolate):
         self.grid_current.SetExtrapolationInTime(extrapolate)

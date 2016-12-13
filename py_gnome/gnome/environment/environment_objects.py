@@ -681,3 +681,15 @@ class IceAwareWind(GridWind):
             return vels
         else:
             return super(IceAwareWind, self).at(points, time, units, extrapolate)
+
+def load_all_from_netCDF(filename=None,
+                         grid_topology=None,
+                         name=None,
+                         time=None,
+                         grid=None,
+                         depth=None,
+                         dataset=None,
+                         data_file=None,
+                         grid_file=None,
+                         **kwargs):
+    pass
