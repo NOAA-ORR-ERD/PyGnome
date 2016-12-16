@@ -26,6 +26,7 @@ from gnome.movers.py_current_movers import PyCurrentMover
 from gnome.outputters import Renderer, NetCDFOutput
 from gnome.environment.vector_field import ice_field
 import gnome.utilities.profiledeco as pd
+from gnome.environment.environment_objects import IceVelocity
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -103,18 +104,24 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'loading entire current data'
     ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
                                                  grid_topology=gt)
-    ice_aware_curr.ice_var.variables[0].dimension_ordering = ['time', 'x', 'y']
+    
+#     env1 = get_env_from_netCDF(filename)
+#     mov = PyCurrentMover.from_netCDF(filename)
+    
+    ice_aware_curr.ice_velocity.variables[0].dimension_ordering = ['time', 'x', 'y']
     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
-                                              ice_var=ice_aware_curr.ice_var,
-                                              ice_conc_var=ice_aware_curr.ice_conc_var,
+                                              ice_velocity=ice_aware_curr.ice_velocity,
+                                              ice_concentration=ice_aware_curr.ice_concentration,
                                               grid=ice_aware_curr.grid)
-    curr = GridCurrent.from_netCDF(filename=fn)
 
-    import pprint as pp
-    from gnome.utilities.orderedcollection import OrderedCollection
-    model.environment = OrderedCollection(dtype=Environment)
-    model.environment.add(ice_aware_curr)
-    from gnome.environment import WindTS
+    curr = GridCurrent.from_netCDF(filename=fn)
+#     GridCurrent.is_gridded()
+
+#     import pprint as pp
+#     from gnome.utilities.orderedcollection import OrderedCollection
+#     model.environment = OrderedCollection(dtype=Environment)
+#     model.environment.add(ice_aware_curr)
+#     from gnome.environment import WindTS
 
     print 'loading entire wind data'
 
@@ -129,7 +136,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += i_w_mover
 
     print 'adding an IceAwareRandomMover:'
-    model.movers += IceAwareRandomMover(ice_conc_var=ice_aware_curr.ice_conc_var,
+    model.movers += IceAwareRandomMover(ice_concentration=ice_aware_curr.ice_concentration,
                                         diffusion_coef=1000)
 #     renderer.add_grid(ice_aware_curr.grid)
 #     renderer.add_vec_prop(ice_aware_curr)
@@ -139,13 +146,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # c_mover = GridCurrentMover(curr_file)
     # model.movers += c_mover
 #     model.environment.add(WindTS.constant(10, 300))
-    print('Saving')
-    model.save('.')
-    from gnome.persist.save_load import load
-    print('Loading')
-    model2 = load('./Model.zip')
+#     print('Saving')
+#     model.environment[0].ice_velocity.variables[0].serialize()
+#     IceVelocity.deserialize(model.environment[0].ice_velocity.serialize())
+#     model.save('.')
+#     from gnome.persist.save_load import load
+#     print('Loading')
+#     model2 = load('./Model.zip')
 
-    return model2
+    return model
 
 
 if __name__ == "__main__":

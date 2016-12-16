@@ -217,6 +217,12 @@ class PyMover(Mover):
                             'Trapezoid': self.get_delta_Trapezoid}
         self.default_num_method = default_num_method
 
+        if 'env' in kwargs:
+            if hasattr(self, '_req_refs'):
+                for k, v in self._req_refs.items():
+                    for o in kwargs['env']:
+                        if k in o._ref_as:
+                            setattr(self, k, o)
         Mover.__init__(self, **kwargs)
 
     def get_delta_Euler(self, sc, time_step, model_time, pos, vel_field):

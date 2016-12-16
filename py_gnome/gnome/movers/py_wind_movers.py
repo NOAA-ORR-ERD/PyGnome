@@ -37,6 +37,8 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
     _schema = PyWindMoverSchema
 
     _ref_as = 'py_wind_movers'
+    
+    _req_refs = {'wind': GridWind}
 
     def __init__(self,
                  wind=None,
@@ -62,8 +64,6 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
             to False since user provided a valid Wind and does not wish to
             use the default from the Model.
         """
-        movers.PyMover.__init__(self,
-                                default_num_method=default_num_method)
         self._wind = wind
         self.make_default_refs = False
 
@@ -75,11 +75,12 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
 
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
+        super(PyWindMover, self).__init__(default_num_method=default_num_method,
+                                          **kwargs)
 
         self.array_types.update({'windages',
                                  'windage_range',
                                  'windage_persist'})
-        # set optional attributes
 
     @classmethod
     def from_netCDF(cls,

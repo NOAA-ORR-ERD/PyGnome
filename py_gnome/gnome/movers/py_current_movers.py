@@ -36,6 +36,8 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
     _schema = PyCurrentMoverSchema
 
     _ref_as = 'py_current_movers'
+    
+    _req_refs = {'current': GridCurrent}
 
     def __init__(self,
                  current=None,
@@ -48,7 +50,8 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                  uncertain_along=.5,
                  uncertain_across=.25,
                  uncertain_cross=.25,
-                 default_num_method='Trapezoid'
+                 default_num_method='Trapezoid',
+                 **kwargs
                  ):
         self.current = current
         self.filename = filename
@@ -66,8 +69,12 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         # either a 1, or 2 depending on whether spill is certain or not
         self.spill_type = 0
 
-        movers.PyMover.__init__(self,
-                                default_num_method=default_num_method)
+        super(PyCurrentMover, self).__init__(default_num_method=default_num_method,
+                                             **kwargs)
+
+    def _attach_default_refs(self, ref_dict):
+        pass
+        return serializable.Serializable._attach_default_refs(self, ref_dict)
 
     @classmethod
     def from_netCDF(cls,

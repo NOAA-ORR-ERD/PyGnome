@@ -1,7 +1,7 @@
 '''
 environment module
 '''
-from environment import Environment, Water, WaterSchema
+from environment import Environment, Water, WaterSchema, env_from_netCDF, ice_env_from_netCDF
 from property import EnvProp, VectorProp, Time
 from ts_property import TimeSeriesProp, TSVectorProp
 from grid_property import GriddedProp, GridVectorProp, GridPropSchema, GridVectorPropSchema
@@ -50,4 +50,6 @@ __all__ = [Environment,
 #            IceAwareCurrentSchema,
            IceAwareWind,
            TemperatureTS,
+           env_from_netCDF,
+           ice_env_from_netCDF
            ]
