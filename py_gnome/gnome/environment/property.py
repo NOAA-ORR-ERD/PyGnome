@@ -224,7 +224,7 @@ class VectorProp(serializable.Serializable):
         self._time = time
         unused_args = kwargs.keys() if kwargs is not None else None
         if len(unused_args) > 0:
-            print unused_args
+#             print(unused_args)
             kwargs = {}
         super(VectorProp, self).__init__(**kwargs)
 

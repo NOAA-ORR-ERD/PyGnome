@@ -378,7 +378,7 @@ class Spill(BaseSpill):
         if not self._check_type(other):
             return False
 
-        if (self._state.get_field_by_attribute('save') !=
+        if (self._state.get_field_by_attribute('save') != 
                 other._state.get_field_by_attribute('save')):
             return False
 
@@ -471,10 +471,10 @@ class Spill(BaseSpill):
                 time_at_step_end = current_time + timedelta(seconds=time_step)
                 if self.release_time > current_time:
                     # first time_step in which particles are released
-                    time_step = (time_at_step_end -
+                    time_step = (time_at_step_end - 
                                  self.release_time).total_seconds()
                 if self.end_release_time < time_at_step_end:
-                    time_step = (self.end_release_time -
+                    time_step = (self.end_release_time - 
                                  current_time).total_seconds()
 
                 _mass_in_ts = _mass / rd_sec * time_step
@@ -661,7 +661,6 @@ class Spill(BaseSpill):
         self.element_type.substance = subs
 
     def get_mass(self, units=None):
-
         """
         Return the mass released during the spill.
         User can also specify desired output units in the function.
@@ -669,24 +668,21 @@ class Spill(BaseSpill):
         If volume is given, then use density to find mass. Density is always
         at 15degC, consistent with API definition
         """
-
         if self.amount is None:
             return self.amount
 
-        # first convert amount to 'kg'
         if self.units in self.valid_mass_units:
+            # first convert amount to 'kg'
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
-        # fixme -- we should store mass -- do this on setting/chaning substance or values.
-        elif self.units in self.valid_vol_units:  # need to convert to mass
-            if self.element_type.substance is None:  # assume desnity 1000 kg/m^3
-                rho = 1000
+        elif self.units in self.valid_vol_units:
+            # need to convert to mass
+            if self.element_type.substance is None:
+                # unspecified substance gets a density 1000 kg/m^3
+                rho = 1000.0
             else:
-                if self.water is not None:
-                    water_temp = self.water.get('temperature')
-                else:
-                    water_temp = 15  # C -- standard temp
+                water_temp = self.water.get('temperature')
                 rho = self.element_type.substance.density_at_temp(water_temp)
-            # fixme: unit_conversion has an oil qauntity converter -- use that?
+
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
             mass = rho * vol
         else:

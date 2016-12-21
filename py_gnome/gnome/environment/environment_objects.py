@@ -442,19 +442,19 @@ class GridSediment(GriddedProp, Environment):
 
 
 class IceConcentration(GriddedProp, Environment):
-
+    _ref_as = ['ice_concentration', 'ice_aware']
     default_names = ['ice_fraction', ]
 
     def __init__(self, *args, **kwargs):
         super(IceConcentration, self).__init__(*args, **kwargs)
 
-    def __eq__(self, o):
-        t1 = (self.name == o.name and
-              self.units == o.units and
-              self.time == o.time and
-              self.varname == o.varname)
-        t2 = self.data == o.data
-        return t1 and t2
+#     def __eq__(self, o):
+#         t1 = (self.name == o.name and
+#               self.units == o.units and
+#               self.time == o.time and
+#               self.varname == o.varname)
+#         t2 = self.data == o.data
+#         return t1 and t2
 
     def __str__(self):
         return self.serialize(json_='save').__repr__()
@@ -566,53 +566,60 @@ class GridWind(VelocityGrid, Environment):
 
 
 class IceVelocity(VelocityGrid, Environment):
+    _ref_as = ['ice_velocity', 'ice_aware']
     default_names = [['ice_u', 'ice_v', ], ]
 
 
 class IceAwarePropSchema(GridVectorPropSchema):
-    ice_var = GridVectorPropSchema(missing=drop)
-    ice_conc_var = GridPropSchema(missing=drop)
+    ice_concentration = GridPropSchema(missing=drop)
+
+
+class IceAwareCurrentSchema(IceAwarePropSchema):
+    ice_velocity = GridVectorPropSchema(missing=drop)
 
 
 class IceAwareCurrent(GridCurrent):
 
-    _schema = IceAwarePropSchema
+    _ref_as = ['current', 'ice_aware']
+    _req_refs = {'ice_concentration': IceConcentration, 'ice_velocity': IceVelocity}
+
+    _schema = IceAwareCurrentSchema
     _state = copy.deepcopy(GridCurrent._state)
 
-    _state.add_field([serializable.Field('ice_var', save=True, update=True, save_reference=True),
-                      serializable.Field('ice_conc_var', save=True, update=True, save_reference=True)])
+    _state.add_field([serializable.Field('ice_velocity', save=True, update=True, save_reference=True),
+                      serializable.Field('ice_concentration', save=True, update=True, save_reference=True)])
 
     def __init__(self,
-                 ice_var=None,
-                 ice_conc_var=None,
+                 ice_velocity=None,
+                 ice_concentration=None,
                  *args,
                  **kwargs):
-        self.ice_var = ice_var
-        self.ice_conc_var = ice_conc_var
+        self.ice_velocity = ice_velocity
+        self.ice_concentration = ice_concentration
         super(IceAwareCurrent, self).__init__(*args, **kwargs)
 
     @classmethod
     @GridCurrent._get_shared_vars()
     def from_netCDF(cls,
-                    ice_conc_var=None,
-                    ice_var=None,
+                    ice_concentration=None,
+                    ice_velocity=None,
                     **kwargs):
-        if ice_conc_var is None:
-            ice_conc_var = IceConcentration.from_netCDF(**kwargs)
-        if ice_var is None:
-            ice_var = IceVelocity.from_netCDF(**kwargs)
-        return super(IceAwareCurrent, cls).from_netCDF(ice_conc_var=ice_conc_var,
-                                                       ice_var=ice_var,
+        if ice_concentration is None:
+            ice_concentration = IceConcentration.from_netCDF(**kwargs)
+        if ice_velocity is None:
+            ice_velocity = IceVelocity.from_netCDF(**kwargs)
+        return super(IceAwareCurrent, cls).from_netCDF(ice_concentration=ice_concentration,
+                                                       ice_velocity=ice_velocity,
                                                        **kwargs)
 
     def at(self, points, time, units=None, extrapolate=False):
-        interp = self.ice_conc_var.at(points, time, extrapolate=extrapolate).copy()
+        interp = self.ice_concentration.at(points, time, extrapolate=extrapolate).copy()
         interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
         if len(interp > 0.2):
             ice_mask = interp >= 0.8
 
             water_v = super(IceAwareCurrent, self).at(points, time, units, extrapolate)
-            ice_v = self.ice_var.at(points, time, units, extrapolate).copy()
+            ice_v = self.ice_velocity.at(points, time, units, extrapolate).copy()
             interp = (interp * 10) / 6 - 0.2
 
             vels = water_v.copy()
@@ -626,31 +633,38 @@ class IceAwareCurrent(GridCurrent):
 
 
 class IceAwareWind(GridWind):
+
+    _ref_as = ['wind', 'ice_aware']
+    _req_refs = {'ice_concentration': IceConcentration}
+
+    _schema = IceAwarePropSchema
+    _state = copy.deepcopy(GridWind._state)
+
+    _state.add_field([serializable.Field('ice_concentration', save=True, update=True, save_reference=True)])
+
     def __init__(self,
-                 ice_var=None,
-                 ice_conc_var=None,
+                 ice_concentration=None,
                  *args,
                  **kwargs):
-        self.ice_var = ice_var
-        self.ice_conc_var = ice_conc_var
+        self.ice_concentration = ice_concentration
         super(IceAwareWind, self).__init__(*args, **kwargs)
 
     @classmethod
     @GridCurrent._get_shared_vars()
     def from_netCDF(cls,
-                    ice_conc_var=None,
-                    ice_var=None,
+                    ice_concentration=None,
+                    ice_velocity=None,
                     **kwargs):
-        if ice_conc_var is None:
-            ice_conc_var = IceConcentration.from_netCDF(**kwargs)
-        if ice_var is None:
-            ice_var = IceVelocity.from_netCDF(**kwargs)
-        return super(IceAwareWind, cls).from_netCDF(ice_conc_var=ice_conc_var,
-                                                    ice_var=ice_var,
+        if ice_concentration is None:
+            ice_concentration = IceConcentration.from_netCDF(**kwargs)
+        if ice_velocity is None:
+            ice_velocity = IceVelocity.from_netCDF(**kwargs)
+        return super(IceAwareWind, cls).from_netCDF(ice_concentration=ice_concentration,
+                                                    ice_velocity=ice_velocity,
                                                     **kwargs)
 
     def at(self, points, time, units=None, extrapolate=False):
-        interp = self.ice_conc_var.at(points, time, extrapolate=extrapolate)
+        interp = self.ice_concentration.at(points, time, extrapolate=extrapolate)
         interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
         if len(interp >= 0.2) != 0:
             ice_mask = interp >= 0.8
@@ -664,3 +678,15 @@ class IceAwareWind(GridWind):
             return vels
         else:
             return super(IceAwareWind, self).at(points, time, units, extrapolate)
+
+def load_all_from_netCDF(filename=None,
+                         grid_topology=None,
+                         name=None,
+                         time=None,
+                         grid=None,
+                         depth=None,
+                         dataset=None,
+                         data_file=None,
+                         grid_file=None,
+                         **kwargs):
+    pass

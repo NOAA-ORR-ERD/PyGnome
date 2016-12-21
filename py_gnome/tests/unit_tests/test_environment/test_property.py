@@ -64,14 +64,14 @@ class TestTime:
         t2 = Time(grid_time)
         assert len(t2.time) == 54
 
-    def test_save_load(self):
-        t1 = Time(dates2)
-        fn = 'time.txt'
-        t1.to_file(fn)
-        t2 = Time.from_file(fn)
-#         pytest.set_trace()
-        assert all(t1.time == t2.time)
-        os.remove(fn)
+#     def test_save_load(self):
+#         t1 = Time(dates2)
+#         fn = 'time.txt'
+#         t1.to_file(fn)
+#         t2 = Time.from_file(fn)
+# #         pytest.set_trace()
+#         assert all(t1.time == t2.time)
+#         os.remove(fn)
 
     def test_offset(self):
         t = Time(dates2.copy(), tz_offset=dt.timedelta(hours=1))
@@ -91,15 +91,15 @@ class TestTime:
         assert ts.index_of(ts.time[-1], True) == 4
         assert ts.index_of(ts.time[0], True) == 0
 
-    @pytest.mark.parametrize('_json_', ['save', 'webapi'])
-    def test_serialization(self, _json_, ts):
-        ser = ts.serialize(_json_)
-        ts.to_file()
-        deser = Time.deserialize(ser)
-#         pytest.set_trace()
-        t2 = Time.new_from_dict(deser)
-        assert all(ts.time == t2.time)
-        os.remove(ts.filename)
+#     @pytest.mark.parametrize('_json_', ['save', 'webapi'])
+#     def test_serialization(self, _json_, ts):
+#         ser = ts.serialize(_json_)
+#         ts.to_file()
+#         deser = Time.deserialize(ser)
+# #         pytest.set_trace()
+#         t2 = Time.new_from_dict(deser)
+#         assert all(ts.time == t2.time)
+#         os.remove(ts.filename)
 
 
 @pytest.fixture()

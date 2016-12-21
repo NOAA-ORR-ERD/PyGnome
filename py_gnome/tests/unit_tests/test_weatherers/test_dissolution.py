@@ -277,8 +277,8 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
-                         [('oil_ans_mp', 288.7, 38.1926),
-                          ('oil_bahia',  288.7, 136.751)])
+                         [('oil_ans_mp', 288.7, 38.522),
+                          ('oil_bahia',  288.7, 137.774)])
 def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json

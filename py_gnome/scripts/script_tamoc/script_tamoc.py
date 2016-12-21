@@ -36,7 +36,7 @@ from gnome.movers import (RandomMover,
                           RiseVelocityMover,
                           RandomVerticalMover,
                           SimpleMover,
-                          PyGridCurrentMover)
+                          PyCurrentMover)
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
@@ -113,7 +113,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a circular current and eastward current'
     # This is .3 m/s south
-    model.movers += PyGridCurrentMover(current=vg,
+    model.movers += PyCurrentMover(current=vg,
                                        default_num_method='Trapezoid',
                                        extrapolate=True)
     model.movers += SimpleMover(velocity=(0., -0.1, 0.))

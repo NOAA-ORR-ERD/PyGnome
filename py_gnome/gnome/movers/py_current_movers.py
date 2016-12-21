@@ -15,26 +15,29 @@ from gnome.persist import base_schema
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, Bool
 
 
-class PyGridCurrentMoverSchema(base_schema.ObjType):
-    filename = SchemaNode(String(), missing=drop)
+class PyCurrentMoverSchema(base_schema.ObjType):
+    filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
     current_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
-    current = GridVectorPropSchema()
-    
+    current = GridVectorPropSchema(missing=drop)
 
 
-class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
+class PyCurrentMover(movers.PyMover, serializable.Serializable):
 
     _state = copy.deepcopy(movers.PyMover._state)
 
     _state.add_field([serializable.Field('filename',
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
-                      serializable.Field('current', save=True, read=True)])
-    _schema = PyGridCurrentMoverSchema
+                      serializable.Field('current', save=True, read=True, save_reference=True)])
+    _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
+               save=['uncertain_duration', 'uncertain_time_delay'])
+    _schema = PyCurrentMoverSchema
 
-    _ref_as = 'ugrid_current_movers'
+    _ref_as = 'py_current_movers'
+    
+    _req_refs = {'current': GridCurrent}
 
     def __init__(self,
                  current=None,
@@ -47,7 +50,8 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
                  uncertain_along=.5,
                  uncertain_across=.25,
                  uncertain_cross=.25,
-                 default_num_method='Trapezoid'
+                 default_num_method='Trapezoid',
+                 **kwargs
                  ):
         self.current = current
         self.filename = filename
@@ -65,8 +69,12 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
         # either a 1, or 2 depending on whether spill is certain or not
         self.spill_type = 0
 
-        movers.PyMover.__init__(self,
-                                default_num_method=default_num_method)
+        super(PyCurrentMover, self).__init__(default_num_method=default_num_method,
+                                             **kwargs)
+
+    def _attach_default_refs(self, ref_dict):
+        pass
+        return serializable.Serializable._attach_default_refs(self, ref_dict)
 
     @classmethod
     def from_netCDF(cls,
