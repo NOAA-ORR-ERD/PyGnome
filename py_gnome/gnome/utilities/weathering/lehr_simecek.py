@@ -6,8 +6,8 @@ class LehrSimecek(object):
         This based on formulas by:
         Lehr and Simecek-Beatty
     '''
-    @classmethod
-    def whitecap_fraction(cls, U, salinity):
+    @staticmethod
+    def whitecap_fraction(U, salinity):
         """
         compute the white capping fraction
 

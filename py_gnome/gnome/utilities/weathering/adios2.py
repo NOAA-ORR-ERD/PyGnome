@@ -14,8 +14,8 @@ class Adios2(object):
         Note: We should really try to look up the references for these and
               move them to an appropriately referenced class.
     '''
-    @classmethod
-    def wave_height(cls, U, fetch):
+    @staticmethod
+    def wave_height(U, fetch):
         """
         compute the wave height
 
@@ -43,8 +43,8 @@ class Adios2(object):
         #          into account?
         return Hrms if Hrms < 30.0 else 30.0
 
-    @classmethod
-    def wind_speed_from_height(cls, H):
+    @staticmethod
+    def wind_speed_from_height(H):
         """
         Compute the wind speed to use for the whitecap fraction
         This is the reverse of wave_height()
@@ -61,8 +61,8 @@ class Adios2(object):
 
         return U_h
 
-    @classmethod
-    def mean_wave_period(cls, U, wave_height, fetch):
+    @staticmethod
+    def mean_wave_period(U, wave_height, fetch):
         """
         Compute the mean wave period
 
@@ -84,9 +84,14 @@ class Adios2(object):
 
         return T
 
-    @classmethod
-    def dissipative_wave_energy(self, water_density, H):
+    @staticmethod
+    def dissipative_wave_energy(water_density, H):
         """
         Compute the dissipative wave energy
+
+        units? --  should be: 1/s^3
+                   i.e. energy disspiation rate per m^2
+                   so water density is in there -- but something else is up
+                   does the constant have units?
         """
         return 0.0034 * water_density * g * H ** 2
