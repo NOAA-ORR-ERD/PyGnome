@@ -251,10 +251,12 @@ class Spill(BaseSpill):
 
         self.element_type = element_type
 
-        self.on = on    # spill is active or not
+        self.on = on  # spill is active or not
         # raise Exception("stopping")
 
+        # fixme: shouldn't units default to 'kg'?
         self.units = None
+        # fixme -- and amount always be in kg?
         self.amount = amount
 
         if amount is not None:
@@ -265,9 +267,8 @@ class Spill(BaseSpill):
 
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
-        '''
-        fraction of area covered by oil
-        '''
+        # fixme: why is fractional area part of spill???
+        # fraction of area covered by oil
         self.frac_coverage = 1.0
         self.name = name
 
@@ -377,7 +378,7 @@ class Spill(BaseSpill):
         if not self._check_type(other):
             return False
 
-        if (self._state.get_field_by_attribute('save') !=
+        if (self._state.get_field_by_attribute('save') != 
                 other._state.get_field_by_attribute('save')):
             return False
 
@@ -470,10 +471,10 @@ class Spill(BaseSpill):
                 time_at_step_end = current_time + timedelta(seconds=time_step)
                 if self.release_time > current_time:
                     # first time_step in which particles are released
-                    time_step = (time_at_step_end -
+                    time_step = (time_at_step_end - 
                                  self.release_time).total_seconds()
                 if self.end_release_time < time_at_step_end:
-                    time_step = (self.end_release_time -
+                    time_step = (self.end_release_time - 
                                  current_time).total_seconds()
 
                 _mass_in_ts = _mass / rd_sec * time_step
@@ -660,7 +661,6 @@ class Spill(BaseSpill):
         self.element_type.substance = subs
 
     def get_mass(self, units=None):
-
         """
         Return the mass released during the spill.
         User can also specify desired output units in the function.
@@ -668,18 +668,23 @@ class Spill(BaseSpill):
         If volume is given, then use density to find mass. Density is always
         at 15degC, consistent with API definition
         """
-
         if self.amount is None:
             return self.amount
 
-        # first convert amount to 'kg'
         if self.units in self.valid_mass_units:
+            # first convert amount to 'kg'
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
-            water_temp = self.water.temperature
+            # need to convert to mass
+            if self.element_type.substance is None:
+                # unspecified substance gets a density 1000 kg/m^3
+                rho = 1000.0
+            else:
+                water_temp = self.water.get('temperature')
+                rho = self.element_type.substance.density_at_temp(water_temp)
+
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = (self.element_type.substance.density_at_temp(water_temp) *
-                    vol)
+            mass = rho * vol
         else:
             raise ValueError("{} is not a valid mass or Volume unit"
                              .format(self.units))
@@ -815,6 +820,9 @@ class Spill(BaseSpill):
         o_json_['element_type'] = self.element_type.serialize(json_)
         o_json_['release'] = self.release.serialize(json_)
 
+        if self.water is not None:
+            o_json_['water'] = self.water.serialize(json_)
+
         return o_json_
 
     @classmethod
@@ -838,11 +846,12 @@ class Spill(BaseSpill):
                 save files store a reference to element_type so it will get
                 deserialized, created and added to this dict by load method
                 '''
-                etcls = \
-                    class_from_objtype(json_['element_type']['obj_type'])
-                dict_['element_type'] = \
-                    etcls.deserialize(json_['element_type'])
+                etcls = class_from_objtype(json_['element_type']['obj_type'])
+                dict_['element_type'] = etcls.deserialize(json_['element_type'])
 
+                if 'water' in json_:
+                    w_cls = class_from_objtype(json_['water']['obj_type'])
+                    dict_['water'] = w_cls.deserialize(json_['water'])
             else:
                 '''
                 Convert nested dict (release object) back into object. The

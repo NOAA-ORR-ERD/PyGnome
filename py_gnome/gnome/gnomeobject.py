@@ -139,6 +139,20 @@ class GnomeId(AddLogger):
     def name(self, val):
         self._name = val
 
+    def _attach_default_refs(self, ref_dict):
+        '''
+        If provided a dictionary of references this function will validate it
+        against the _req_refs specified by the class, and if a match is found
+        and the instance's reference is None, it will set it to the instance 
+        from ref_dict
+        '''
+        if not hasattr(self, '_req_refs'):
+            return
+        else:
+            for var in ref_dict.keys():
+                if getattr(self, var) is None:
+                    setattr(self, var, ref_dict[var])
+
     def validate_refs(self, refs=['wind', 'water', 'waves']):
         '''
         level is the logging level to use for messages. Default is 'warning'

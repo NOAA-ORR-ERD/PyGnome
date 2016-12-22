@@ -42,7 +42,15 @@ def remove_local_dir_from_path():
 
 
 def get_conda_lib_path(lib_name):
-    return os.path.join(sys.exec_prefix, 'lib', lib_name)
+    lib_path = os.path.join(sys.exec_prefix, 'lib', lib_name)
+    if not os.path.isfile(lib_path):
+        # if we are in an anaconda virtual environment, we might need to
+        # strip the last two folders (envs/<env_name>) to get to the main
+        # anaconda lib file.
+        base_exec_prefix = os.sep.join(sys.exec_prefix.split(os.sep)[:-2])
+        lib_path = os.path.join(base_exec_prefix, 'lib', lib_name)
+
+    return lib_path
 
 
 def find_cy_gnome_library(shared_lib):

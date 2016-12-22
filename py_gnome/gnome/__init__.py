@@ -18,7 +18,7 @@ from gnomeobject import GnomeId, AddLogger
 # (it needs to stay an integer) -- but probably no need
 # but this will keep systems from accidentally overwrting an older, non-develop version
 # the "dev" should be removed when we push to gitHub
-__version__ = '0.2.1dev1'
+__version__ = 'v0.0.4'
 
 
 # a few imports so that the basic stuff is there

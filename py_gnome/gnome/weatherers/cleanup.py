@@ -38,10 +38,11 @@ class RemoveMass(object):
             rm_mass = uc.convert('Mass', units, 'kg', amount)
         else:
             # amount must be in volume units
-            water_temp = self.water.temperature
+            water_temp = self.water.get('temperature')
+            rho = substance.density_at_temp(water_temp)
             rm_vol = uc.convert('Volume', units, 'm^3', amount)
 
-            rm_mass = substance.density_at_temp(water_temp) * rm_vol
+            rm_mass = rho * rm_vol
 
         return rm_mass
 
@@ -327,6 +328,7 @@ class Skimmer(CleanUpBase, Serializable):
             total_mass_removed = (self._get_mass(substance, self.amount,
                                                  self.units) *
                                   self.efficiency)
+
             self._update_LE_status_codes(sc,
                                          bt_fate.skim | bt_fate.surface_weather,
                                          substance, total_mass_removed)

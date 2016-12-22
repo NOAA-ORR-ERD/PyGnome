@@ -334,7 +334,8 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         self.distribution.set_values(drop_size)
 
         data_arrays['droplet_diameter'][-num_new_particles:] = drop_size
-        le_density[:] = substance.density_at_temp(spill.water.temperature)
+        water_temp = spill.water.get('temperature')
+        le_density[:] = substance.density_at_temp(water_temp)
 
         # now update rise_vel with droplet size - dummy for now
         rise_velocity_from_drop_size(

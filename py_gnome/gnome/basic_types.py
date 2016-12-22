@@ -46,7 +46,7 @@ water_current_type = np.float64
 
 # value has two components: (u, v) or (r, theta) etc
 datetime_value_2d = np.dtype([('time', 'datetime64[s]'),
-                              ('value', mover_type, (2, ))], align=True)
+                              ('value', mover_type, (2,))], align=True)
 
 # value has one component: (u,)
 # convert from datetime_value_1d to time_value_pair by setting 2nd component
@@ -71,8 +71,9 @@ fate = enum(non_weather=1,
             disperse=32,  # marked for chemical_dispersion
             )
 
-numerical_methods = enum(euler=0,
-                         rk4=1)
+numerical_methods = {'Euler': 0,
+                     'Trapezoid': 1,
+                     'RK4': 2}
 
 # ----------------------------------------------------------------
 # Mirror C++ structures, following are used by cython code

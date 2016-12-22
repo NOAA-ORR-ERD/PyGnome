@@ -16,6 +16,16 @@ from gnome import constants
 from .. import _valid_units
 
 
+class EnvironmentMeta(type):
+    def __init__(cls, name, bases, dct):
+#         if hasattr(cls, '_state'):
+#             cls._state = copy.deepcopy(bases[0]._state)
+        cls._subclasses = []
+        for c in cls.__mro__:
+            if hasattr(c, '_subclasses') and c is not cls:
+                c._subclasses.append(cls)
+
+
 class Environment(object):
     """
     A base class for all classes in environment module
@@ -23,6 +33,8 @@ class Environment(object):
     This is primarily to define a dtype such that the OrderedCollection
     defined in the Model object requires it.
     """
+    
+    _subclasses = []
     _state = copy.deepcopy(serializable.Serializable._state)
 
     # env objects referenced by others using this attribute name
@@ -31,6 +43,8 @@ class Environment(object):
     # insinstance() checks. Used by model to automatically hook up objects that
     # reference environment objects
     _ref_as = 'environment'
+
+    __metaclass__ = EnvironmentMeta
 
     def __init__(self, name=None, make_default_refs=True):
         '''
@@ -117,6 +131,14 @@ class Water(Environment, serializable.Serializable):
     '''
     _ref_as = 'water'
     _state = copy.deepcopy(Environment._state)
+    _field_descr = {'units': ('update', 'save'),
+                    'temperature:': ('update', 'save'),
+                    'salinity': ('update', 'save'),
+                    'sediment': ('update', 'save'),
+                    'fetch': ('update', 'save'),
+                    'wave_height': ('update', 'save'),
+                    'density': ('update', 'save'),
+                    'kinematic_viscosity': ('update', 'save')}
     _state += [serializable.Field('units', update=True, save=True),
                serializable.Field('temperature', update=True, save=True),
                serializable.Field('salinity', update=True, save=True),
@@ -154,7 +176,7 @@ class Water(Environment, serializable.Serializable):
     def __init__(self,
                  temperature=300.0,
                  salinity=35.0,
-                 sediment=.005,	 # kg/m^3 oceanic default
+                 sediment=.005,  # kg/m^3 oceanic default
                  wave_height=None,
                  fetch=None,
                  units={'temperature': 'K',
@@ -292,7 +314,104 @@ class Water(Environment, serializable.Serializable):
 
         if from_ == 'mg/l':
             # convert to kg/m^3
-            return self.sediment/1000.0
+            return self.sediment / 1000.0
 
         else:
             return self.sediment * 1000.0
+
+
+def env_from_netCDF(filename=None, dataset=None, grid_file=None, data_file=None, _cls_list=None, **kwargs):
+    '''
+    Returns a list of instances of environment objects that can be produced from a file or dataset.
+    These instances will be created with a common underlying grid, and will interconnect when possible
+    For example, if an IceAwareWind can find an existing IceConcentration, it will use it instead of
+    instantiating another. This function tries ALL gridded types by default. This means if a particular
+    subclass of object is possible to be built, it is likely that all it's parents will be built and included
+    as well.
+    
+    If you wish to limit the types of environment objects that will be used, pass a list of the types
+    using "_cls_list" kwarg'''
+    def attempt_from_netCDF(cls, **klskwargs):
+        obj = None
+        try:
+            obj = c.from_netCDF(**klskwargs)
+        except Exception as e:
+            import logging
+            logging.warn('''Class {0} could not be constituted from netCDF file
+                                    Exception: {1}'''.format(c.__name__, e))
+        return obj
+
+    from gnome.utilities.file_tools.data_helpers import _get_dataset
+    from gnome.environment.environment_objects import GriddedProp, GridVectorProp
+    from gnome.environment import PyGrid, Environment
+    import copy
+
+    new_env = []
+
+    if filename is not None:
+        data_file = filename
+        grid_file = filename
+
+    ds = None
+    dg = None
+    if dataset is None:
+        if grid_file == data_file:
+            ds = dg = _get_dataset(grid_file)
+        else:
+            ds = _get_dataset(data_file)
+            dg = _get_dataset(grid_file)
+    else:
+        if grid_file is not None:
+            dg = _get_dataset(grid_file)
+        else:
+            dg = dataset
+        ds = dataset
+    dataset = ds
+
+    grid = kwargs.pop('grid', None)
+    if grid is None:
+        grid = PyGrid.from_netCDF(filename=filename, dataset=dg, **kwargs)
+        kwargs['grid'] = grid
+    scs = copy.copy(Environment._subclasses) if _cls_list is None else _cls_list
+    for c in scs:
+        if issubclass(c, (GriddedProp, GridVectorProp)) and not any([isinstance(o, c) for o in new_env]):
+            clskwargs = copy.copy(kwargs)
+            obj = None
+            try:
+                req_refs = c._req_refs
+            except AttributeError:
+                req_refs = None
+
+            if req_refs is not None:
+                for ref, klass in req_refs.items():
+                    for o in new_env:
+                        if isinstance(o, klass):
+                            clskwargs[ref] = o
+                    if ref in clskwargs.keys():
+                        continue
+                    else:
+                        obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
+                        clskwargs[ref] = obj
+                        new_env.append(obj)
+
+            obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
+            if obj is not None:
+                new_env.append(obj)
+    return new_env
+
+
+def ice_env_from_netCDF(filename=None, **kwargs):
+    '''
+    A short function to generate a list of all the 'ice_aware' classes for use in env_from_netCDF
+    (this excludes GridCurrent, GridWind, GridTemperature etc)
+    '''
+    from gnome.environment import Environment
+    cls_list = Environment._subclasses
+    ice_cls_list = [c for c in cls_list if (hasattr(c, '_ref_as') and 'ice_aware' in c._ref_as)]
+#         for c in cls_list:
+#             if hasattr(c, '_ref_as'):
+#                 if ((not isinstance(c._ref_as, basestring) and
+#                         any(['ice_aware' in r for r in c._ref_as])) or
+#                         'ice_aware' in c._ref_as):
+#                     ice_cls_list.append(c)
+    return env_from_netCDF(filename=filename, _cls_list=ice_cls_list, **kwargs)

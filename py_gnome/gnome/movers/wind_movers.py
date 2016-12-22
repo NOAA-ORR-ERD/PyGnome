@@ -364,7 +364,8 @@ def constant_wind_mover(speed, direction, units='m/s'):
 
 class GridWindMoverSchema(WindMoversBaseSchema):
     """ Similar to WindMover except it doesn't have wind_id"""
-    wind_file = SchemaNode(String(), missing=drop)
+    #wind_file = SchemaNode(String(), missing=drop)
+    filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
     wind_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
@@ -373,18 +374,21 @@ class GridWindMoverSchema(WindMoversBaseSchema):
 class GridWindMover(WindMoversBase, serializable.Serializable):
     _state = copy.deepcopy(WindMoversBase._state)
     _state.add(update=['wind_scale', 'extrapolate'], save=['wind_scale', 'extrapolate'])
-    _state.add_field([serializable.Field('wind_file', save=True,
+    #_state.add_field([serializable.Field('wind_file', save=True,
+    _state.add_field([serializable.Field('filename', save=True,
                     read=True, isdatafile=True, test_for_eq=False),
                     serializable.Field('topology_file', save=True,
                     read=True, isdatafile=True, test_for_eq=False)])
 
     _schema = GridWindMoverSchema
 
-    def __init__(self, wind_file, topology_file=None,
+    #def __init__(self, wind_file, topology_file=None,
+    def __init__(self, filename, topology_file=None,
                  extrapolate=False, time_offset=0,
                  **kwargs):
         """
         :param wind_file: file containing wind data on a grid
+        :param filename: file containing wind data on a grid
         :param topology_file: Default is None. When exporting topology, it
                               is stored in this file
         :param wind_scale: Value to scale wind data
@@ -396,9 +400,10 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         uses super: super(GridWindMover,self).__init__(\*\*kwargs)
         """
 
-        if not os.path.exists(wind_file):
+        #if not os.path.exists(wind_file):
+        if not os.path.exists(filename):
             raise ValueError('Path for wind file does not exist: {0}'
-                             .format(wind_file))
+                             .format(filename))
 
         if topology_file is not None:
             if not os.path.exists(topology_file):
@@ -406,13 +411,16 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
                                  .format(topology_file))
 
         # is wind_file and topology_file is stored with cy_gridwind_mover?
-        self.wind_file = wind_file
+        #self.wind_file = wind_file
+        self.filename = filename
         self.topology_file = topology_file
         self.mover = CyGridWindMover(wind_scale=kwargs.pop('wind_scale', 1))
-        self.name = os.path.split(wind_file)[1]
+        #self.name = os.path.split(wind_file)[1]
+        self.name = os.path.split(filename)[1]
         super(GridWindMover, self).__init__(**kwargs)
 
-        self.mover.text_read(wind_file, topology_file)
+        #self.mover.text_read(wind_file, topology_file)
+        self.mover.text_read(filename, topology_file)
         self.real_data_start = time_utils.sec_to_datetime(self.mover.get_start_time())
         self.real_data_stop = time_utils.sec_to_datetime(self.mover.get_end_time())
         self.mover.extrapolate_in_time(extrapolate)

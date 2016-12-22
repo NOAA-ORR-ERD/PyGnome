@@ -8,18 +8,20 @@ import numpy as np
 from colander import (SchemaNode, Float, drop)
 
 from gnome.persist.base_schema import ObjType
-from gnome.utilities.serializable import Serializable
+from gnome.utilities.serializable import Serializable, Field
 from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
-from gnome.environment import IceConcentration
-from gnome.environment.grid_property import _init_grid
+from gnome.environment import IceConcentration, GridPropSchema
+from gnome.environment.grid import PyGrid
+from gnome.utilities.file_tools.data_helpers import _get_dataset
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
 from gnome.basic_types import (world_point,
                                world_point_type,
                                spill_type,
                                status_code_type)
+from gnome.environment.grid_property import GridPropSchema
 
 class RandomMoverSchema(ObjType, ProcessSchema):
     diffusion_coef = SchemaNode(Float(), missing=drop)
@@ -80,18 +82,29 @@ class RandomMover(CyMover, Serializable):
                                  self.active_start, self.active_stop, self.on))
 
 
+class IceAwareRandomMoverSchema(RandomMoverSchema):
+    ice_concentration = GridPropSchema(missing=drop)
+
+
 class IceAwareRandomMover(RandomMover):
-    def __init__(self, *args, **kwargs):
-        if 'ice_conc_var' in kwargs.keys():
-            self.ice_conc_var = kwargs.pop('ice_conc_var')
+    
+    _state = copy.deepcopy(RandomMover._state)
+    _state.add_field([Field('ice_concentration', save=True, read=True, save_reference=True)])
+    _schema = IceAwareRandomMoverSchema
+    
+    _req_refs = {'ice_concentration': IceConcentration}
+
+    def __init__(self, ice_concentration=None, **kwargs):
+        self.ice_concentration = ice_concentration
         super(IceAwareRandomMover, self).__init__(**kwargs)
 
     @classmethod
     def from_netCDF(cls, filename=None,
+                    dataset=None,
                     grid_topology=None,
                     units=None,
                     time=None,
-                    ice_conc_var=None,
+                    ice_concentration=None,
                     grid=None,
                     grid_file=None,
                     data_file=None,
@@ -100,19 +113,23 @@ class IceAwareRandomMover(RandomMover):
             data_file = filename
             grid_file = filename
         if grid is None:
-            grid = _init_grid(grid_file,
-                             grid_topology=grid_topology)
-        if ice_conc_var is None:
-            ice_conc_var = IceConcentration.from_netCDF(filename,
-                                                        time=time,
-                                                        grid=grid)
-        return cls(ice_conc_var=ice_conc_var, **kwargs)
+            grid = PyGrid.from_netCDF(grid_file,
+                                      grid_topology=grid_topology)
+        if ice_concentration is None:
+            ice_concentration = IceConcentration.from_netCDF(filename=filename,
+                                                             dataset=dataset,
+                                                             data_file=data_file,
+                                                             grid_file=grid_file,
+                                                             time=time,
+                                                             grid=grid,
+                                                             **kwargs)
+        return cls(ice_concentration=ice_concentration, **kwargs)
 
     def get_move(self, sc, time_step, model_time_datetime):
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
         deltas = np.zeros_like(positions)
-        interp = self.ice_conc_var.at(positions, model_time_datetime, extrapolate=True).copy()
+        interp = self.ice_concentration.at(positions, model_time_datetime, extrapolate=True).copy()
         interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
         if len(np.where(interp_mask)[0]) != 0:
             ice_mask = interp >= 0.8
@@ -147,15 +164,15 @@ class RandomVerticalMover(CyMover, Serializable):
     """
     _state = copy.deepcopy(CyMover._state)
     _state.add(update=['vertical_diffusion_coef_above_ml',
-                      'vertical_diffusion_coef_below_ml',
-                      'horizontal_diffusion_coef_above_ml',
-                      'horizontal_diffusion_coef_below_ml',
-                      'mixed_layer_depth'],
-              save=['vertical_diffusion_coef_above_ml',
-                      'vertical_diffusion_coef_below_ml',
-                      'horizontal_diffusion_coef_above_ml',
-                      'horizontal_diffusion_coef_below_ml',
-                      'mixed_layer_depth'])
+                       'vertical_diffusion_coef_below_ml',
+                       'horizontal_diffusion_coef_above_ml',
+                       'horizontal_diffusion_coef_below_ml',
+                       'mixed_layer_depth'],
+               save=['vertical_diffusion_coef_above_ml',
+                     'vertical_diffusion_coef_below_ml',
+                     'horizontal_diffusion_coef_above_ml',
+                     'horizontal_diffusion_coef_below_ml',
+                     'mixed_layer_depth'])
     _schema = RandomVerticalMoverSchema
 
     def __init__(self, **kwargs):

@@ -198,8 +198,11 @@ class Beaching(RemoveMass, Weatherer, Serializable):
             if unit_type == 'mass':
                 dm = uc.convert('mass', self.units, 'kg', dv)
             elif unit_type == 'volume':
-                dm = (uc.convert('volume', self.units, 'm^3', dv) *
-                      substance.density_at_temp(self.water.temperature))
+                water_temp = self.water.get('temperature')
+                rho = substance.density_at_temp(water_temp)
+                volume = uc.convert('volume', self.units, 'm^3', dv)
+
+                dm = volume * rho
             else:
                 raise ValueError("{} is not a valid unit for beached oil"
                                  .format(self.unit))

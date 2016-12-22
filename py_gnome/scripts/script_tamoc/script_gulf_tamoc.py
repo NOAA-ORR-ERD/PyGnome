@@ -38,7 +38,7 @@ from gnome.movers import (RandomMover,
                           RandomVerticalMover,
                           SimpleMover,
                           GridCurrentMover,
-                          PyGridCurrentMover,
+                          PyCurrentMover,
                           constant_wind_mover,
                           WindMover)
 

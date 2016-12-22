@@ -23,7 +23,7 @@ from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.movers.py_wind_movers import PyWindMover
 from gnome.environment.property_classes import WindTS, IceAwareCurrent, IceAwareWind
-from gnome.movers.py_current_movers import PyGridCurrentMover
+from gnome.movers.py_current_movers import PyCurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
 from gnome.environment.vector_field import ice_field
@@ -118,9 +118,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #                                               grid = ice_aware_curr.grid,)
 #     method = 'Trapezoid'
 #
-# #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr)
-# #     i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method='Euler')
-#     i_c_mover = PyGridCurrentMover(current=ice_aware_curr, default_num_method=method)
+# #     i_c_mover = PyCurrentMover(current=ice_aware_curr)
+# #     i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method='Euler')
+#     i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method=method)
 #     i_w_mover = PyWindMover(wind = ice_aware_wind, default_num_method=method)
 #
 #     ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:]-360

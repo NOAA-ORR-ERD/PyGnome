@@ -152,7 +152,8 @@ class Dissolution(Weatherer, Serializable):
 
         avg_rhos = self.oil_avg_density(fmasses, rho)
         # print ('oil density at temp = {}'
-        #        .format(substance.get_density(self.waves.water.temperature)))
+        #        .format(substance.get_density(self.waves.water
+        #                                      .get('temperature'))))
         # print 'avg_rhos = ', avg_rhos
         water_rhos = np.zeros(avg_rhos.shape) + self.waves.water.get('density')
 

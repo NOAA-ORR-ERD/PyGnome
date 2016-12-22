@@ -37,11 +37,8 @@ from current_movers import (CatsMoverSchema,
                             CurrentCycleMover)
 from vertical_movers import RiseVelocityMoverSchema, RiseVelocityMover, TamocRiseVelocityMover
 
-from ugrid_movers import UGridCurrentMover
-# from py_ice_mover import PyIceMover
-
 from py_wind_movers import PyWindMover
-from py_current_movers import PyGridCurrentMover
+from py_current_movers import PyCurrentMover
 
 # no reason for __all__ if you are going to put everything in it.
 # in fact, no reason for __all__unless you want to support "import *", which we don't.
@@ -79,4 +76,4 @@ from py_current_movers import PyGridCurrentMover
 #            RiseVelocityMoverSchema,
 #            RiseVelocityMover,
 #            PyWindMover,
-#            PyGridCurrentMover]
+#            PyCurrentMover]
