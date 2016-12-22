@@ -16,6 +16,7 @@ Manual Creation
 ---------------
 Create an all water map -- if map_bounds is not specified, a spill can be added anywhere in the "water world"::
 
+    from gnome.model import Model
     from gnome.map import GnomeMap
     mymap = GnomeMap()
 
@@ -29,7 +30,7 @@ Load Shoreline from File
 Load a BNA map file::
 
     from gnome.map import MapFromBNA
-    mymap = MapFromBNA(mapfile.bna, refloat_halflife=1) 
+    mymap = MapFromBNA('mapfile.bna', refloat_halflife=1) 
 
 *Options:*
 
