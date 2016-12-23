@@ -750,8 +750,8 @@ WORLDPOINTH TimeGridWindRect_c::GetCellCenters()
 		//wp4 = (*ptsH)[(*topH)[index2].vertex2];
 
 #ifndef pyGNOME
-		wp.pLong = (*ptsH)[i].h
-		wp.pLat = (*ptsH)[i].v
+		wp.pLong = (*ptsH)[i].h;
+		wp.pLat = (*ptsH)[i].v;
 		//wp.pLong = (wp1.h+wp2.h+wp3.h + wp4.h)/4;
 		//wp.pLat = (wp1.v+wp2.v+wp3.v + wp4.v)/4;
 #else
