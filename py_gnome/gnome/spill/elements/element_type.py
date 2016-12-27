@@ -94,8 +94,9 @@ class ElementType(Serializable):
     #     # nothing returned, then attribute was not found
     #     msg = ('{0} attribute does not exist in element_type or initializers'
     #            .format(att))
-
-    #     self.logger.warning(msg)
+    #     # NOTE: this would get trigggered by a a hasattr() call --
+    #     #       which isn't something we need to log
+    #     ## self.logger.warning(msg)
     #     raise AttributeError(msg)
 
     # properties for attributes the need to be pulled from initializers
