@@ -62,6 +62,8 @@ class TimeSeriesProp(EnvProp, serializable.Serializable):
             len(time) == {0}, len(data) == {1}".format(len(time), len(data)))
         super(TimeSeriesProp, self).__init__(name, units, time, data)
         self.time = time
+        if isinstance(self.data, list):
+            self.data = np.asarray(self.data)
 
     @classmethod
     def constant(cls,

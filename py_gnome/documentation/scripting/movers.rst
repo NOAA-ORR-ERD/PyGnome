@@ -7,40 +7,6 @@ or larval swimming.)
 
 Some examples and common use cases are shown here. For complete documentation see :mod:`gnome.movers`
 
-PyMovers
-----------
-
-This new type of mover includes the gnome.environment.PyGridCurrentMover and gnome.environment.PyWindMover. They are built to work with
-the Property objects, and also provide multiple types of numerical methods for moving the particles. ::
-
-    from gnome.environment.property_classes import GridCurrent
-    from gnome.movers import PyGridCurrentMover
-    fn = 'my_data.nc'
-    current = GridCurrent.from_netCDF(filename=fn)
-    curr_mover = PyGridCurrentMover(current)
-
-There are three types of numerical methods currently supported.
-
-1. Euler method ('Euler')
-2. Trapezoidal/Heun's 2nd order method ('Trapezoid')
-3. Runge-Kutta 4th order method ('RK4')
-
-To use them, set the 'default_num_method' argument when constructing a mover. Alternatively, you may alter the mover as follows: ::
-
-    fn = 'my_data.nc'
-    current = GridCurrent.from_netCDF(filename=fn)
-    curr_mover = PyGridCurrentMover(current, default_num_method = 'RK4')
-    
-    #RK4 is too slow, so lets go to the 2nd order method.
-    curr_mover.default_num_method = 'Trapezoid'
-    
-The get_move function has the same interface as previous movers. You may also pass in a numerical method here and it will use it instead
-of the default. ::
-
-    curr_mover.get_move(sc, time_step, model_time_datetime, num_method = 'Euler')
-    
-    
-
 Wind movers
 -----------
 
@@ -73,7 +39,7 @@ create a wind mover from a single point time series in a text file::
     
 The format of the text file is described in the GNOME file formats document available `here 
 <http://response.restoration.noaa.gov/sites/default/files/GNOME_DataFormats.pdf>`_.
-Briefly, it has 3 header lines, followed by comma seperated data. An example is given here with
+Briefly, it has 3 header lines, followed by comma seperated data. Alternatively, the An example is given here with
 annotations in brackets at the end of the lines:
 
 |   23NM W Cape Mohican AK *(Location name, can be blank)*
@@ -83,6 +49,7 @@ annotations in brackets at the end of the lines:
 |   14, 10, 2015, 11, 0, 16.00, 20
 |   14, 10, 2015, 12, 0, 16.00, 20
 |   14, 10, 2015, 13, 0, 13.00, 20
+|
 
 
 Gridded wind movers
@@ -184,3 +151,38 @@ with the same value for high and low parameters. Here's a complete example where
     
     model.full_run()
 
+PyMovers
+----------
+
+This new type of mover includes the gnome.environment.PyGridCurrentMover and gnome.environment.PyWindMover. They are 
+being developed to work more seamlessly with native model grids (e.g. staggered grids) and will ultimately replace GridCurrentMover and GridWindMover. However, they are still under active development and this documentation may not
+accurately reflect the current state of development.
+
+PyMovers are built to work with the Property objects, and also provide multiple types of numerical methods for moving the particles. ::
+
+    from gnome.environment.property_classes import GridCurrent
+    from gnome.movers import PyGridCurrentMover
+    fn = 'my_data.nc'
+    current = GridCurrent.from_netCDF(filename=fn)
+    curr_mover = PyGridCurrentMover(current)
+
+There are three types of numerical methods currently supported.
+
+1. Euler method ('Euler')
+2. Trapezoidal/Heun's 2nd order method ('Trapezoid')
+3. Runge-Kutta 4th order method ('RK4')
+
+To use them, set the 'default_num_method' argument when constructing a mover. Alternatively, you may alter the mover as follows: ::
+
+    fn = 'my_data.nc'
+    current = GridCurrent.from_netCDF(filename=fn)
+    curr_mover = PyGridCurrentMover(current, default_num_method = 'RK4')
+    
+    #RK4 is too slow, so lets go to the 2nd order method.
+    curr_mover.default_num_method = 'Trapezoid'
+    
+The get_move function has the same interface as previous movers. You may also pass in a numerical method here and it will use it instead
+of the default. ::
+
+    curr_mover.get_move(sc, time_step, model_time_datetime, num_method = 'Euler')
+    

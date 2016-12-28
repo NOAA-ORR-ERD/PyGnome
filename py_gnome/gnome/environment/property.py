@@ -280,7 +280,7 @@ class VectorProp(serializable.Serializable):
 
         :rtype: [] of strings
         '''
-        return [v.name for v in self.variables]
+        return [v.varname if hasattr(v, 'varname') else v.name for v in self.variables ]
 
     def _check_consistency(self):
         '''
@@ -367,7 +367,12 @@ class Time(serializable.Serializable):
         if dataset is None:
             dataset = _get_dataset(filename)
         if datavar is not None:
-            varname = datavar.dimensions[0]
+            if hasattr(datavar, 'time'):
+                varname = datavar.time
+            else:
+                varname = datavar.dimensions[0] if 'time' in datavar.dimensions[0] else None
+                if varname is None:
+                    return None
         time = cls(time=dataset[varname],
                    filename=filename,
                    varname=varname,

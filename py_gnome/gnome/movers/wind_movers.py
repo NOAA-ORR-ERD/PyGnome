@@ -21,6 +21,7 @@ from gnome.utilities import serializable, rand
 from gnome.utilities import time_utils
 
 from gnome import environment
+from gnome import basic_types
 from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
@@ -453,6 +454,62 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
                            lambda self, val: setattr(self.mover,
                                                      'time_offset',
                                                      val * 3600.))
+
+    def get_grid_data(self):
+        return self.get_cells()
+
+    def get_cells(self):
+        """
+            Invokes the GetCellDataHdl method of TimeGridWind_c object.
+            Cross-references point data to get cell coordinates.
+        """
+        cell_data = self.mover._get_cell_data()
+        points = self.get_points()
+
+        dtype = cell_data[0].dtype.descr
+        unstructured_type = dtype[0][1]
+        unstructured = (cell_data.view(dtype=unstructured_type)
+                        .reshape(-1, len(dtype))[:, 1:])
+
+        return points[unstructured]
+
+    def get_points(self):
+        points = (self.mover._get_points()
+                  .astype([('long', '<f8'), ('lat', '<f8')]))
+        points['long'] /= 10 ** 6
+        points['lat'] /= 10 ** 6
+
+        return points
+
+    def get_cell_center_points(self):
+        '''
+        Right now the cython mover only gets the triangular center points,
+        so we need to calculate centers based on the cells themselves.
+
+        Cells will have the format (tl, tr, bl, br)
+        We need to get the rectangular centers
+        Center will be: (tl + ((br - tl) / 2.))
+        '''
+        return self.mover._get_center_points().view(dtype='<f8').reshape(-1, 2)
+
+    def get_center_points(self):
+        return self.get_cell_center_points()
+
+    def get_scaled_velocities(self, time):
+        """
+        :param model_time=0:
+        """
+        # regular and curvilinear grids only
+        if self.mover._is_regular_grid():
+            num_cells = self.mover.get_num_points()
+        else:
+            num_tri = self.mover.get_num_triangles()
+            num_cells = num_tri / 2
+        # will need to update this for regular grids
+        vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
+        self.mover.get_scaled_velocities(time, vels)
+
+        return vels
 
     def export_topology(self, topology_file):
         """

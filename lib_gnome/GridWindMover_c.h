@@ -73,9 +73,16 @@ public:
 	OSErr			TextRead(char *path,char *topFilePath);
 	OSErr 			ExportTopology(char* path){return timeGrid->ExportTopology(path);}
 
+	OSErr GetScaledVelocities(Seconds model_time, VelocityFRec *velocity);
+	LongPointHdl GetPointsHdl(void);
+	WORLDPOINTH	GetCellCenters();
+	GridCellInfoHdl GetCellDataHdl(void);
+	bool IsRegularGrid(){return timeGrid->IsRegularGrid();}
+
 	OSErr 			get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID);
 
 			long 		GetNumTriangles(void);
+			long 		GetNumPoints(void);
 };
 
 #endif

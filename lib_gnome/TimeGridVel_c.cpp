@@ -2732,7 +2732,11 @@ float TimeGridVelCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 	{
 		//if (triNum < 0) useTriNum = false;
 		if (bVelocitiesOnNodes)
-			err = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols);
+		{
+			totalDepth = GetInterpolatedTotalDepth(refPoint);
+			return totalDepth;
+		}
+			//err = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols);
 		else 
 			err = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		

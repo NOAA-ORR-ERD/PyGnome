@@ -172,7 +172,8 @@ class GriddedProp(EnvProp):
                                     dataset=ds,
                                     datavar=data)
         if depth is None:
-            if len(data.shape) == 4:
+            if (isinstance(grid, PyGrid_S) and len(data.shape) == 4 or
+                    isinstance(grid, PyGrid_U) and len(data.shape) == 3):
                 from gnome.environment.environment_objects import Depth
                 depth = Depth(surface_index=-1)
 #             if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):
@@ -638,7 +639,10 @@ class GridVectorProp(VectorProp):
                                     dataset=ds,
                                     datavar=data)
         if depth is None:
-            if len(data.shape) == 4:
+            if (isinstance(grid, PyGrid_S) and len(data.shape) == 4 or 
+                        (len(data.shape) == 3 and time is None) or 
+                    (isinstance(grid, PyGrid_U) and len(data.shape) == 3 or 
+                        (len(data.shape) == 2 and time is None))):
                 from gnome.environment.environment_objects import Depth
                 depth = Depth(surface_index=-1)
 #             if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):

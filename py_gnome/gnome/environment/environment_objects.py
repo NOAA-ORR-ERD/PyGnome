@@ -284,7 +284,7 @@ class VelocityGrid(GridVectorProp):
             df = _get_dataset(kwargs['grid_file'])
         if df is not None and 'angle' in df.variables.keys():
             # Unrotated ROMS Grid!
-            self.angle = GriddedProp(name='angle', units='radians', time=None, grid=self.grid, data=df['angle'])
+            self.angle = GriddedProp(name='angle', units='radians', time=None, grid=kwargs['grid'], data=df['angle'])
         super(VelocityGrid, self).__init__(**kwargs)
 
     def __eq__(self, o):
