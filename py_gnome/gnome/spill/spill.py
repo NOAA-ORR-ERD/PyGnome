@@ -681,10 +681,11 @@ class Spill(BaseSpill):
                 # unspecified substance gets a density 1000 kg/m^3
                 rho = 1000.0
             else:
-                ## DO NOT change this back!
-                ## for the UI to be consistent, the conversion needs to use standard
-                ##  density -- not the current water temp.
+                # DO NOT change this back!
+                # for the UI to be consistent, the conversion needs to use standard
+                #  density -- not the current water temp.
                 # water_temp = self.water.get('temperature')
+                # ideally substance would have a "standard_density" attribute for this.
                 rho = self.element_type.substance.density_at_temp(288.15)
 
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
