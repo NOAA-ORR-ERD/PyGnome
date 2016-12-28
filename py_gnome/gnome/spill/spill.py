@@ -378,7 +378,7 @@ class Spill(BaseSpill):
         if not self._check_type(other):
             return False
 
-        if (self._state.get_field_by_attribute('save') != 
+        if (self._state.get_field_by_attribute('save') !=
                 other._state.get_field_by_attribute('save')):
             return False
 
@@ -471,10 +471,10 @@ class Spill(BaseSpill):
                 time_at_step_end = current_time + timedelta(seconds=time_step)
                 if self.release_time > current_time:
                     # first time_step in which particles are released
-                    time_step = (time_at_step_end - 
+                    time_step = (time_at_step_end -
                                  self.release_time).total_seconds()
                 if self.end_release_time < time_at_step_end:
-                    time_step = (self.end_release_time - 
+                    time_step = (self.end_release_time -
                                  current_time).total_seconds()
 
                 _mass_in_ts = _mass / rd_sec * time_step
@@ -668,6 +668,7 @@ class Spill(BaseSpill):
         If volume is given, then use density to find mass. Density is always
         at 15degC, consistent with API definition
         """
+        # fixme: This really should be re-factored to always store mass.
         if self.amount is None:
             return self.amount
 
@@ -680,8 +681,11 @@ class Spill(BaseSpill):
                 # unspecified substance gets a density 1000 kg/m^3
                 rho = 1000.0
             else:
-                water_temp = self.water.get('temperature')
-                rho = self.element_type.substance.density_at_temp(water_temp)
+                ## DO NOT change this back!
+                ## for the UI to be consistent, the conversion needs to use standard
+                ##  density -- not the current water temp.
+                # water_temp = self.water.get('temperature')
+                rho = self.element_type.substance.density_at_temp(288.15)
 
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
             mass = rho * vol
