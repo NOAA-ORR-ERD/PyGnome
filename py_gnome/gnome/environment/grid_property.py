@@ -670,7 +670,8 @@ class GridVectorProp(VectorProp):
             units = [v.units for v in variables]
             if all(u == units[0] for u in units):
                 units = units[0]
-        return cls(filename=filename,
+        return cls(name=name,
+                   filename=filename,
                    varnames=varnames,
                    grid_topology=grid_topology,
                    units=units,
