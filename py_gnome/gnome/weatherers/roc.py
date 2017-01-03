@@ -6,7 +6,7 @@ import datetime
 import copy
 import unit_conversion as uc
 
-from colander import (SchemaNode, MappingSchema, Integer, Float, String, OneOf)
+from colander import (drop, SchemaNode, MappingSchema, Integer, Float, String, OneOf)
 
 from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
@@ -20,6 +20,8 @@ from .. import _valid_units
 # define valid units at module scope because the Schema and Object both use it
 _valid_dist_units = _valid_units('Length')
 _valid_vel_units = _valid_units('Velocity')
+_valid_vol_units = _valid_units('Volume')
+_valid_dis_units = _valid_units('Discharge')
 
 class OnSceneTupleSchema(DefaultTupleSchema):
     start = SchemaNode(LocalDateTime(default_tzinfo=None),
@@ -146,18 +148,18 @@ class BurnSchema(ResponseSchema):
     boom_draft = SchemaNode(Integer())
     speed = SchemaNode(Float())
     throughput = SchemaNode(Float())
-    burn_effeciency_type = SchemaNode(String())
+    burn_efficiency_type = SchemaNode(String())
     units = BurnUnitsSchema()
 
 class Burn(Response):
-    _state = copy.deepcopy(Weatherer._state)
+    _state = copy.deepcopy(Response._state)
     _state += [Field('offset', save=True, update=True),
                Field('boom_length', save=True, update=True),
                Field('boom_draft', save=True, update=True),
                Field('speed', save=True, update=True),
                Field('timeseries', save=True, update=True),
                Field('throughput', save=True, update=True),
-               Field('burn_effeciency_type', save=True, update=True),
+               Field('burn_efficiency_type', save=True, update=True),
                Field('units', save=True, update=True)]
 
     _schema = BurnSchema
@@ -178,7 +180,7 @@ class Burn(Response):
                  boom_draft,
                  speed,
                  throughput,
-                 burn_effeciency_type=1,
+                 burn_efficiency_type=1,
                  timeseries=None,
                  units=_si_units,
                  **kwargs):
@@ -193,7 +195,7 @@ class Burn(Response):
         self.speed = speed
         self.throughput = throughput
         self.timeseries = timeseries
-        self.burn_effeciency_type = burn_effeciency_type
+        self.burn_efficiency_type = burn_efficiency_type
         self._swath_width = None
         self._area = None
         self._boom_capacity = None

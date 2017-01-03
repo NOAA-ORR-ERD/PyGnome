@@ -79,7 +79,7 @@ class TestRocGeneral(ROCTests):
                 boom_draft=10.0,
                 speed=2.0,
                 throughput=0.75,
-                burn_effeciency_type=1,
+                burn_efficiency_type=1,
                 timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]))
     
     def test_get_thickness(self, sample_model_fcn2):
@@ -97,7 +97,7 @@ class TestROCBurn(ROCTests):
                  boom_draft=10.0,
                  speed=2.0,
                  throughput=0.75,
-                 burn_effeciency_type=1,
+                 burn_efficiency_type=1,
                  timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]))
 
     def test_prepare_for_model_run(self, sample_model_fcn2):
@@ -147,7 +147,7 @@ class TestROCBurn(ROCTests):
                  boom_draft=10.0,
                  speed=2.0,
                  throughput=0.75,
-                 burn_effeciency_type=1,
+                 burn_efficiency_type=1,
                  timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]))
 
         self.model.weatherers.append(burn)
