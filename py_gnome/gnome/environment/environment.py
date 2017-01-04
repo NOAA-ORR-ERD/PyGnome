@@ -392,7 +392,8 @@ def env_from_netCDF(filename=None, dataset=None, grid_file=None, data_file=None,
                     else:
                         obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
                         clskwargs[ref] = obj
-                        new_env.append(obj)
+                        if obj is not None:
+                            new_env.append(obj)
 
             obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
             if obj is not None:

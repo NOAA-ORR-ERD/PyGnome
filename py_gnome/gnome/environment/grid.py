@@ -106,10 +106,10 @@ class PyGrid(Serializable):
         This function is the top level 'search for attributes' function. If there are any
         common attributes to all potential grid types, they will be sought here.
         
-        This function returns a dict 'init_args', which maps an attribute name to a netCDF4
+        This function returns a dict, which maps an attribute name to a netCDF4
         Variable or numpy array object extracted from the dataset. When called from
         PyGrid_U or PyGrid_S, this function should provide all the kwargs needed to
-        create a valid instance
+        create a valid instance.
         '''
         gf_vars = dataset.variables if dataset is not None else _get_dataset(filename).variables
         init_args = {}
@@ -164,7 +164,7 @@ class PyGrid(Serializable):
             else:
                 raise ValueError('Specified grid_type not recognized/supported')
         if grid_topology is not None:
-            if 'faces' in grid_topology.keys() or grid_topology.get('grid_type', '@').lower() in ugrid_names:
+            if 'faces' in grid_topology.keys() or grid_topology.get('grid_type', 'notype').lower() in ugrid_names:
                 return PyGrid_U
             else:
                 return PyGrid_S

@@ -26,7 +26,7 @@ class TimeSchema(base_schema.ObjType):
 #     time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
     filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
     varname = SchemaNode(String(), missing=drop)
-    data = SchemaNode(typ=Sequence(), children=[SchemaNode(DateTime())], missing=drop)
+    data = SchemaNode(typ=Sequence(), children=[SchemaNode(DateTime(None))], missing=drop)
 
 
 class PropertySchema(base_schema.ObjType):
@@ -367,7 +367,7 @@ class Time(serializable.Serializable):
         if dataset is None:
             dataset = _get_dataset(filename)
         if datavar is not None:
-            if hasattr(datavar, 'time'):
+            if hasattr(datavar, 'time') and datavar.time in dataset.dimensions.keys():
                 varname = datavar.time
             else:
                 varname = datavar.dimensions[0] if 'time' in datavar.dimensions[0] else None

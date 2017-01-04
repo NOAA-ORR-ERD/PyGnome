@@ -1446,6 +1446,17 @@ class Model(Serializable):
                 msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
                 isvalid = False
 
+            if spill.substance is not None:
+                min_k = spill.substance.get('pour_point_min_k')
+                if spill.water is not None:
+                    water_temp = spill.water.get('temperature')
+                    if water_temp < min_k:
+                        msg = ('The water temperature, {0} K, is less than the minimum pour ' 
+                               'point of the selected oil, {1} K. '
+                               'The results may be unreliable.'.format(water_temp, min_k))
+                        self.logger.warning(msg)
+                        msgs.append(self._warn_pre + msg)
+
         if num_spills > 0 and not someSpillIntersectsModel:
             if num_spills > 1:
                 msg = ('All of the spills are released after the '
