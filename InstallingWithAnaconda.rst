@@ -165,8 +165,8 @@ you can "clone" the git repository. If you clone the repository, you will
 be able to update the code with the latest version with a simple command,
 rather than having to re-download the whole package.
 
-Cloning the PyGNOME git repoository
------------------------------------
+Cloning the PyGNOME git repository
+----------------------------------
 
 git
 ...
@@ -201,7 +201,7 @@ Dependencies
 ------------
 
 The conda packages required by ``py_gnome`` are listed in the file
-``conda_packages.txt`` in the top directory of the project.
+``conda_requirements.txt`` in the top directory of the project.
 
 To install all the packages ``py_gnome`` needs:
 
