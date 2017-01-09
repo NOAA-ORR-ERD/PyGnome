@@ -22,7 +22,7 @@ from osgeo import ogr
 
 import py_gd
 from osgeo import ogr
-#import pyugrid
+# import pyugrid
 
 import numpy as np
 
@@ -278,6 +278,8 @@ class GnomeMap(Serializable):
         next_positions = spill['next_positions']
         status_codes = spill['status_codes']
         off_map = np.logical_not(self.on_map(next_positions))
+        if len(next_positions) != 0 and np.all(off_map):
+            self.logger.warn("All particles left the map this timestep.")
 
         # let model decide if we want to remove elements marked as off-map
         status_codes[off_map] = oil_status.off_maps
@@ -578,7 +580,7 @@ class ParamMap(GnomeMap):
         :param spill_container: the current spill container
         :type spill_container:  :class:`gnome.spill_container.SpillContainer`
         """
-        r_idx = np.where(spill_container['status_codes'] ==
+        r_idx = np.where(spill_container['status_codes'] == 
                          oil_status.on_land)[0]
 
         if r_idx.size == 0:  # no particles on land
@@ -587,7 +589,7 @@ class ParamMap(GnomeMap):
         if self._refloat_halflife > 0.0:
             # if 0.0, then r_idx is all of them -- they will all refloat.
             # refloat particles based on probability
-            refloat_probability = 1.0 - 0.5 ** (float(time_step) /
+            refloat_probability = 1.0 - 0.5 ** (float(time_step) / 
                                                 self._refloat_halflife)
             rnd = np.random.uniform(0, 1, len(r_idx))
 
@@ -932,7 +934,7 @@ class RasterMap(GnomeMap):
         """
         # index into array of particles on_land
 
-        r_idx = np.where(spill_container['status_codes'] ==
+        r_idx = np.where(spill_container['status_codes'] == 
                          oil_status.on_land)[0]
 
         if r_idx.size == 0:  # no particles on land
@@ -942,7 +944,7 @@ class RasterMap(GnomeMap):
             # if 0.0, then r_idx is all of them -- they will all refloat.
             # refloat particles based on probability
 
-            refloat_probability = 1.0 - 0.5 ** (float(time_step) /
+            refloat_probability = 1.0 - 0.5 ** (float(time_step) / 
                                                 self._refloat_halflife)
             rnd = np.random.uniform(0, 1, len(r_idx))
 
@@ -1101,7 +1103,7 @@ class MapFromBNA(RasterMap):
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
+        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) * 
                         (BB.Width / BB.Height))
 
         w = int(np.sqrt(raster_size * aspect_ratio))
@@ -1289,7 +1291,7 @@ class MapFromUGrid(RasterMap):
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
+        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) * 
                         (BB.Width / BB.Height))
 
         w = int(np.sqrt(raster_size * aspect_ratio))

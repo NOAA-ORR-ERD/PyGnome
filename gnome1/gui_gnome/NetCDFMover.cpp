@@ -1030,6 +1030,21 @@ OSErr NetCDFMover::CheckAndPassOnMessage(TModelMessage *message)
 	fDuration=fVar.durationInHrs*3600.; //24 hrs as seconds 
 	fUncertainStartTime = (long) (fVar.startTimeInHrs*3600.);*/
 	// code goes here, either check for messages about alongCur and crossCur here or reset in case fUp,fDown... were changed
+	char ourName[kMaxNameLen];
+	
+	// see if the message is of concern to us
+	
+	this->GetClassName(ourName);
+	if(message->IsMessage(M_SETFIELD,ourName))
+	{
+		double val;
+		////////////////
+		err = message->GetParameterAsDouble("timeShift",&val);
+		if(!err) this->fTimeShift = (long)(val*3600); 
+		////////////////
+		model->NewDirtNotification();// tell model about dirt
+	}
+	
 	err = TCurrentMover::CheckAndPassOnMessage(message); 
 	fVar.alongCurUncertainty = fUpCurUncertainty; 	
 	fVar.crossCurUncertainty = fRightCurUncertainty;  

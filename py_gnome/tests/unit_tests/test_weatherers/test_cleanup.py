@@ -58,7 +58,8 @@ class ObjForTests:
                                               rel_time,
                                               substance=test_oil,
                                               amount=amount,
-                                              units='kg')
+                                              units='kg',
+                                              water=water)
         return (sc, weatherers)
 
     def prepare_test_objs(self, obj_arrays=None):
@@ -86,7 +87,7 @@ class ObjForTests:
         self.prepare_test_objs()
         if rel_time is None:
             # there is only one spill, use its release time
-            rel_time = self.sc.spills[0].get('release_time')
+            rel_time = self.sc.spills[0].release_time
 
         num_rel = self.sc.release_elements(time_step, rel_time)
         if num_rel > 0:
@@ -162,13 +163,14 @@ class TestCleanUpBase:
 
 
 class TestSkimmer(ObjForTests):
+    (sc, weatherers) = ObjForTests.mk_test_objs()
+
     skimmer = Skimmer(amount,
                       'kg',
                       efficiency=0.3,
                       active_start=active_start,
-                      active_stop=active_stop)
-
-    (sc, weatherers) = ObjForTests.mk_test_objs()
+                      active_stop=active_stop,
+                      water=weatherers[0].water)
 
     def test_prepare_for_model_run(self):
         self.reset_and_release()
@@ -239,8 +241,9 @@ class TestSkimmer(ObjForTests):
             model_time += timedelta(seconds=time_step)
 
             # check - useful for debugging issues with recursion
-            assert (amount == self.sc.mass_balance['skimmed'] +
-                    self.sc['mass'].sum())
+            assert np.isclose(amount,
+                              (self.sc.mass_balance['skimmed'] +
+                               self.sc['mass'].sum()))
 
         # following should finally hold true for entire run
         assert np.allclose(amount, self.sc.mass_balance['skimmed'] +
@@ -259,11 +262,11 @@ class TestBurn(ObjForTests):
     '''
     (sc, weatherers) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
-    op = spill.get('substance')
-    volume = spill.get_mass()/op.get_density()
+    op = spill.substance
+    volume = spill.get_mass() / op.density_at_temp(spill.water.temperature)
 
     thick = 1
-    area = (0.5 * volume)/thick
+    area = (0.5 * volume) / thick
 
     # test with non SI units
     burn = Burn(area, thick, active_start,
@@ -284,7 +287,7 @@ class TestBurn(ObjForTests):
         # use burn constant for test - it isn't stored anywhere
         duration = (uc.convert('Length', burn.thickness_units, 'm',
                                burn.thickness) -
-                    burn._min_thickness)/burn._burn_constant
+                    burn._min_thickness) / burn._burn_constant
 
         assert (burn.active_stop ==
                 burn.active_start + timedelta(seconds=duration))
@@ -419,11 +422,16 @@ class TestBurn(ObjForTests):
         Also sets the 'frac_water' to 0.5 for one of the tests just to ensure
         it works.
         '''
-        self.spill.set('num_elements', 500)
+        self.spill.num_elements = 500
+        print 'starting num_elements = ', self.spill.num_elements
+        print 'time_step = ', time_step
+
         thick_si = uc.convert('Length', units, 'm', thick)
-        area = (0.5 * self.volume)/thick_si
+        area = (0.5 * self.volume) / thick_si
+        water = self.weatherers[0].water
+
         burn = Burn(area, thick, active_start, thickness_units=units,
-                    efficiency=1.0)
+                    efficiency=1.0, water=water)
 
         # return the initial value of burn._oil_thickness - this is starting
         # thickness of the oil
@@ -435,8 +443,9 @@ class TestBurn(ObjForTests):
 
         # want mass of oil thickness * area gives volume of oil-water so we
         # need to scale this by (1 - avg_frac_water)
-        exp_burned = ((thick_si - burn._min_thickness) * (1 - avg_frac_water) *
-                      burn.area * self.op.get_density())
+        exp_burned = ((thick_si - burn._min_thickness) * burn.area *
+                      (1 - avg_frac_water) *
+                      self.op.density_at_temp(water.temperature))
         assert np.isclose(self.sc.mass_balance['burned'], exp_burned)
 
         mask = self.sc['fate_status'] & fate.burn == fate.burn
@@ -444,33 +453,41 @@ class TestBurn(ObjForTests):
         # given LEs are discrete elements, we cannot add a fraction of an LE
         mass_per_le = self.sc['init_mass'][mask][0]
         exp_init_oil_mass = (burn.area * thick_si * (1 - avg_frac_water) *
-                             self.op.get_density())
+                             self.op.density_at_temp(water.temperature))
         assert (self.sc['init_mass'][mask].sum() - exp_init_oil_mass <
                 mass_per_le and
                 self.sc['init_mass'][mask].sum() - exp_init_oil_mass >= 0.0)
 
-        exp_mass_remain = (burn._oilwater_thickness * (1 - avg_frac_water) *
-                           burn.area * self.op.get_density())
         mass_remain_for_burn_LEs = self.sc['mass'][mask].sum()
-        # since we don't adjust the thickness anymore need to use min_thick
-        min_thick = .002
-        exp_mass_remain = min_thick * (1 - avg_frac_water) * burn.area * self.op.get_density()
-        assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs)
 
-        duration = (burn.active_stop-burn.active_start).total_seconds()/3600
+        duration = (burn.active_stop-burn.active_start).total_seconds() / 3600
         print ('Current Thickness: {0:.3f}, '
                'Duration (hrs): {1:.3f}').format(burn._oilwater_thickness,
                                                  duration)
+
+        exp_mass_remain = (burn._oilwater_thickness * burn.area *
+                           (1 - avg_frac_water) *
+                           self.op.density_at_temp(water.temperature))
+        # since we don't adjust the thickness anymore need to use min_thick
+        min_thick = .002
+        exp_mass_remain = (min_thick * burn.area *
+                           (1.0 - avg_frac_water) *
+                           self.op.density_at_temp(water.temperature))
+
+        assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs,
+                           rtol=0.001)
 
     def test_elements_weather_faster_with_frac_water(self):
         '''
         Tests that avg_water_frac > 0 weathers faster
         '''
-        self.spill.set('num_elements', 500)
-        area = (0.5 * self.volume)/1.
-        burn1 = Burn(area, 1., active_start, efficiency=1.0)
-        burn2 = Burn(area, 1., active_start, efficiency=1.0)
-        burn3 = Burn(area, 1., active_start, efficiency=1.0)
+        self.spill.num_elements = 500
+        area = (0.5 * self.volume) / 1.
+        water = self.weatherers[0].water
+
+        burn1 = Burn(area, 1., active_start, efficiency=1.0, water=water)
+        burn2 = Burn(area, 1., active_start, efficiency=1.0, water=water)
+        burn3 = Burn(area, 1., active_start, efficiency=1.0, water=water)
 
         self._weather_elements_helper(burn1)
         self._weather_elements_helper(burn2, avg_frac_water=0.3)
@@ -497,18 +514,20 @@ class TestBurn(ObjForTests):
             effects the amount of oil burned. The rate at which the oil/water
             mixture goes down to 2mm only depends on fractional water content.
         '''
-        self.spill.set('num_elements', 500)
-        area = (0.5 * self.volume)/1.
+        self.spill.num_elements = 500
+        area = (0.5 * self.volume) / 1.
         eff = 0.7
-        burn1 = Burn(area, 1., active_start, efficiency=1.0)
-        burn2 = Burn(area, 1., active_start, efficiency=eff)
+        water = self.weatherers[0].water
+
+        burn1 = Burn(area, 1., active_start, efficiency=1.0, water=water)
+        burn2 = Burn(area, 1., active_start, efficiency=eff, water=water)
 
         self._weather_elements_helper(burn1)
         amount_burn1 = self.sc.mass_balance['burned']
         self._weather_elements_helper(burn2)
         amount_burn2 = self.sc.mass_balance['burned']
 
-        assert np.isclose(amount_burn2/amount_burn1, eff)
+        assert np.isclose(amount_burn2 / amount_burn1, eff)
         assert burn1.active_start == burn2.active_start
         assert burn1.active_stop == burn2.active_stop
 
@@ -523,11 +542,13 @@ class TestBurn(ObjForTests):
             effects the amount of oil burned. The rate at which the oil/water
             mixture goes down to 2mm only depends on fractional water content.
         '''
-        self.spill.set('num_elements', 500)
-        area = (0.5 * self.volume)/1.
+        self.spill.num_elements = 500
+        area = (0.5 * self.volume) / 1.
         eff = 0.0
-        burn1 = Burn(area, 1., active_start, efficiency=1.0)
-        burn2 = Burn(area, 1., active_start, efficiency=eff)
+        water = self.weatherers[0].water
+
+        burn1 = Burn(area, 1., active_start, efficiency=1.0, water=water)
+        burn2 = Burn(area, 1., active_start, efficiency=eff, water=water)
 
         self._weather_elements_helper(burn1)
         amount_burn1 = self.sc.mass_balance['burned']
@@ -579,7 +600,7 @@ class TestBurn(ObjForTests):
 class TestChemicalDispersion(ObjForTests):
     (sc, weatherers) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
-    op = spill.get('substance')
+    op = spill.substance
     spill_pct = 0.2  # 20%
     c_disp = ChemicalDispersion(spill_pct,
                                 active_start,
@@ -608,19 +629,20 @@ class TestChemicalDispersion(ObjForTests):
                                     active_start,
                                     active_stop,
                                     waves=waves)
-        c_disp._set_efficiency(self.spill.get('release_time'))
+        c_disp._set_efficiency(self.spill.release_time)
         assert c_disp.efficiency == 1.0
 
         c_disp.efficiency = None
         waves.wind.timeseries = (waves.wind.timeseries[0]['time'], (100, 0))
-        c_disp._set_efficiency(self.spill.get('release_time'))
+        c_disp._set_efficiency(self.spill.release_time)
         assert c_disp.efficiency == 0
 
     @mark.parametrize("efficiency", (0.5, 1.0))
     def test_prepare_for_model_step(self, efficiency):
         '''
-        updated: efficiency now does impact the mass of LEs marked as having been
-        sprayed. precent_sprayed also impacts the mass of LEs marked as disperse.
+        updated: efficiency now does impact the mass of LEs marked as
+                 having been sprayed. precent_sprayed also impacts the
+                 mass of LEs marked as disperse.
         '''
         self.reset_and_release()
         self.c_disp.efficiency = efficiency
@@ -631,8 +653,12 @@ class TestChemicalDispersion(ObjForTests):
         self.c_disp.prepare_for_model_step(self.sc, time_step, active_start)
         d_mass = self.sc['mass'][self.sc['fate_status'] == fate.disperse].sum()
 
-        assert d_mass == self.c_disp.fraction_sprayed * self.spill.get_mass() * efficiency
-        exp_mass = self.spill.get_mass() * self.c_disp.fraction_sprayed * efficiency
+        assert d_mass == (self.c_disp.fraction_sprayed *
+                          self.spill.get_mass() *
+                          efficiency)
+        exp_mass = (self.spill.get_mass() *
+                    self.c_disp.fraction_sprayed *
+                    efficiency)
         assert d_mass - exp_mass < self.sc['mass'][0]
 
     @mark.parametrize("frac_water", (0.5, 0.0))
@@ -661,7 +687,7 @@ class TestChemicalDispersion(ObjForTests):
 
         assert self.sc.mass_balance['chem_dispersed'] == 0.0
 
-        model_time = self.spill.get('release_time')
+        model_time = self.spill.release_time
         while (model_time < self.c_disp.active_stop +
                timedelta(seconds=time_step)):
             amt_disp = self.sc.mass_balance['chem_dispersed']

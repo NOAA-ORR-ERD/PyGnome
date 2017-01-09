@@ -48,7 +48,7 @@ class ModelSchema(ObjType):
     num_time_steps = SchemaNode(Int(), missing=drop)
     make_default_refs = SchemaNode(Bool(), missing=drop)
     mode = SchemaNode(String(),
-                      validator=OneOf(['gnome', 'adios']),
+                      validator=OneOf(['gnome', 'adios', 'roc']),
                       missing=drop)
 
     def __init__(self, json_='webapi', *args, **kwargs):
@@ -110,7 +110,7 @@ class Model(Serializable):
     # list of OrderedCollections
     _oc_list = ['movers', 'weatherers', 'environment', 'outputters']
 
-    modes = {'gnome', 'adios'}
+    modes = {'gnome', 'adios', 'roc'}
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -230,6 +230,7 @@ class Model(Serializable):
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
                          uncertain, cache_enabled, map, name, mode)
+
 
         self._register_callbacks()
 
@@ -1268,13 +1269,15 @@ class Model(Serializable):
                          'spills'):
                 o_json_[attr] = self.serialize_oc(getattr(self, attr), json_)
 
+            o_json_['valid'] = True
+            o_json_['messages'] = []
             # validate and send validation flag
-            (msgs, isvalid) = self.validate()
-            o_json_['valid'] = isvalid
-            if len(msgs) > 0:
-                o_json_['messages'] = msgs
-            else:
-                o_json_['messages'] = []
+#             (msgs, isvalid) = self.validate()
+#             o_json_['valid'] = isvalid
+#             if len(msgs) > 0:
+#                 o_json_['messages'] = msgs
+#             else:
+#                 o_json_['messages'] = []
 
         return o_json_
 
@@ -1396,19 +1399,22 @@ class Model(Serializable):
         '''
         msgs = []
         isvalid = True
+
+        (msgs, isvalid) = self.validate()
+
         someSpillIntersectsModel = False
         num_spills = len(self.spills)
         for spill in self.spills:
             msg = None
-            if spill.get('release_time') < self.start_time + self.duration:
+            if spill.release_time < self.start_time + self.duration:
                 someSpillIntersectsModel = True
-            if spill.get('release_time') > self.start_time:
+            if spill.release_time > self.start_time:
                 msg = ('{0} has release time after model start time'.
                        format(spill.name))
                 self.logger.warning(msg)
                 msgs.append(self._warn_pre + msg)
 
-            elif spill.get('release_time') < self.start_time:
+            elif spill.release_time < self.start_time:
                 msg = ('{0} has release time before model start time'
                        .format(spill.name))
                 self.logger.error(msg)
@@ -1420,10 +1426,10 @@ class Model(Serializable):
                 msg = ('All of the spills are released after the time interval being modeled.')
             else:
                 msg = ('The spill is released after the time interval being modeled.')
-            self.logger.warning(msg)	# for now make this a warning
-            #self.logger.error(msg)
-            msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
-            #isvalid = False
+            self.logger.warning(msg)  # for now make this a warning
+            # self.logger.error(msg)
+            msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
+            # isvalid = False
 
         return (msgs, isvalid)
 
@@ -1475,13 +1481,13 @@ class Model(Serializable):
 
         for spill in self.spills:
             msg = None
-            if spill.get('release_time') > self.start_time:
+            if spill.release_time > self.start_time:
                 msg = ('{0} has release time after model start time'.
                        format(spill.name))
                 self.logger.warning(msg)
                 msgs.append(self._warn_pre + msg)
 
-            elif spill.get('release_time') < self.start_time:
+            elif spill.release_time < self.start_time:
                 msg = ('{0} has release time before model start time'
                        .format(spill.name))
                 self.logger.error(msg)
@@ -1545,17 +1551,22 @@ class Model(Serializable):
         """
         Convenience method to allow user to write an expression to filter
         raw spill data
-        Example case:
-        get_spill_data('position && mass',
-        'position > 50 && spill_num == 1 || status_codes == 1')
+
+        Example case::
+
+          get_spill_data('position && mass',
+                         'position > 50 && spill_num == 1 || status_codes == 1')
 
         WARNING: EXPENSIVE! USE AT YOUR OWN RISK ON LARGE num_elements!
 
         Example spill element properties are below. This list may not contain
         all properties tracked by the model.
+
         'positions', 'next_positions', 'last_water_positions', 'status_codes',
         'spill_num', 'id', 'mass', 'age'
+
         """
+
         if ucert == 'ucert':
             ucert = 1
 
@@ -1579,7 +1590,7 @@ class Model(Serializable):
 
         def test(elem_value, op, test_val):
             if op in {'<', '<=', '>', '>=', '=='}:
-                return eval(str(int(elem_value))+op+test_val)
+                return eval(str(int(elem_value)) + op + test_val)
 
         def num(s):
             try:
@@ -1589,6 +1600,7 @@ class Model(Serializable):
 
         conditions = conditions.rsplit('&&')
         conditions = [str(cond).rsplit('||') for cond in conditions]
+
 
         sc = self.spills.items()[ucert]
         result = {}

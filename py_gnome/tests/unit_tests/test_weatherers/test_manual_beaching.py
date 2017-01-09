@@ -39,9 +39,10 @@ def test_init(timeseries, units):
 
 class TestBeaching(ObjForTests):
     (sc, weatherers) = ObjForTests.mk_test_objs()
-    sc.spills[0].set('release_time', active_start)
-    b = Beaching(active_start, 'l', timeseries, name='test_beaching')
-    substance = sc.spills[0].get('substance')
+    sc.spills[0].release_time = active_start
+    b = Beaching(active_start, 'l', timeseries, name='test_beaching',
+                 water=weatherers[0].water)
+    substance = sc.spills[0].substance
 
     @mark.parametrize(("model_time", "active"),
                       [(active_start, True),
@@ -80,7 +81,7 @@ class TestBeaching(ObjForTests):
         '''
         time_step = 900
         total = self.sc.spills[0].get_mass()
-        model_time = self.sc.spills[0].get('release_time')
+        model_time = self.sc.spills[0].release_time
 
         self.prepare_test_objs()
         self.b.prepare_for_model_run(self.sc)
@@ -101,11 +102,12 @@ class TestBeaching(ObjForTests):
             model_time += timedelta(seconds=time_step)
 
             # check - useful for debugging issues with recursion
-            assert np.isclose(total, self.sc.mass_balance['observed_beached']
-                              + self.sc['mass'].sum())
+            assert np.isclose(total,
+                              self.sc.mass_balance['observed_beached'] + self.sc['mass'].sum())
 
         # following should finally hold true for entire run
-        assert np.allclose(total, self.sc.mass_balance['observed_beached'] +
+        assert np.allclose(total,
+                           self.sc.mass_balance['observed_beached'] +
                            self.sc['mass'].sum(), atol=1e-6)
 
         # volume units

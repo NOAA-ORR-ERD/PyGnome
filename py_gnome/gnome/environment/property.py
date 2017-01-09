@@ -14,11 +14,12 @@ import pyugrid
 import pysgrid
 import unit_conversion
 import collections
+from collections import OrderedDict
 
 
 class PropertySchema(base_schema.ObjType):
     name = SchemaNode(String(), missing='default')
-    units = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String(), missing=drop),SchemaNode(String(), missing=drop)])
+    units = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String(), missing=drop), SchemaNode(String(), missing=drop)])
     time = SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
 
 
@@ -48,11 +49,25 @@ class EnvProp(object):
         self.name = self._units = self._time = self._data = None
 
         self.name = name
-        self.units=units
+        self.units = units
         self.data = data
         self.time = time
         for k in kwargs:
             setattr(self, k, kwargs[k])
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        r = OrderedDict()
+        r['type'] = type(self).__name__
+        r['name'] = self.name
+        if self.time is not None:
+            r['time'] = 'start:{0.min_time}, end:{0.max_time}, length={1}'.format(self.time, len(self.time.time))
+        else:
+            r['time'] = self.time
+        r['data'] = type(self.data)
+        return str(r)
 
     '''
     Subclasses should override\add any attribute property function getter/setters as needed
@@ -96,7 +111,7 @@ class EnvProp(object):
     def time(self, t):
         if isinstance(t, Time):
             self._time = t
-        elif isinstance(t,collections.Iterable):
+        elif isinstance(t, collections.Iterable):
             self._time = Time(t)
         else:
             raise ValueError("Object being assigned must be an iterable or a Time object")
@@ -107,12 +122,12 @@ class EnvProp(object):
 
         :param points: Coordinates to be queried (P)
         :param time: The time at which to query these points (T)
-        :param depth: Specifies the depth level of the variable
+        :param time: Specifies the time level of the variable
         :param units: units the values will be returned in (or converted to)
         :param extrapolate: if True, extrapolation will be supported
         :type points: Nx2 array of double
         :type time: datetime.datetime object
-        :type depth: integer
+        :type time: integer
         :type units: string such as ('m/s', 'knots', etc)
         :type extrapolate: boolean (True or False)
         :return: returns a Nx1 array of interpolated values
@@ -123,7 +138,7 @@ class EnvProp(object):
 
     def in_units(self, unit):
         '''
-        Returns a full cpy of this property in the units specified. 
+        Returns a full cpy of this property in the units specified.
         WARNING: This will cpy the data of the original property!
 
         :param units: Units to convert to
@@ -149,7 +164,7 @@ class VectorProp(object):
                  variables=None,
                  **kwargs):
         '''
-        A class that represents a vector natural phenomenon and provides an interface to get the value of 
+        A class that represents a vector natural phenomenon and provides an interface to get the value of
         the phenomenon at a position in space and time. VectorProp is the base class
 
         :param name: Name of the Property
@@ -173,7 +188,7 @@ class VectorProp(object):
             time = variables[0].time if time is None else time
             for v in variables:
                 if (v.units != units or
-                    v.time != time):
+                        v.time != time):
                     raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
 
         if units is None:
@@ -181,10 +196,24 @@ class VectorProp(object):
         self._units = units
         if variables is None or len(variables) < 2:
             raise ValueError('Variables must be an array-like of 2 or more Property objects')
-        self.time=time
+        self.time = time
         for k in kwargs:
             setattr(self, k, kwargs[k])
         self.variables = variables
+
+    def __str__(self):
+        return self.__repr__()
+    
+    def __repr__(self):
+        r = OrderedDict()
+        r['type'] = type(self).__name__
+        r['name'] = self.name
+        if self.time is not None:
+            r['time'] = 'start:{0.min_time}, end:{0.max_time}, length={1}'.format(self.time, len(self.time.time))
+        else:
+            r['time'] = self.time
+        r['variables'] = str(self.variables)
+        return str(r)
 
     @property
     def time(self):
@@ -241,12 +270,12 @@ class VectorProp(object):
 
         :param points: Coordinates to be queried (P)
         :param time: The time at which to query these points (T)
-        :param depth: Specifies the depth level of the variable
+        :param time: Specifies the time level of the variable
         :param units: units the values will be returned in (or converted to)
         :param extrapolate: if True, extrapolation will be supported
         :type points: Nx2 array of double
         :type time: datetime.datetime object
-        :type depth: integer
+        :type time: integer
         :type units: string such as ('m/s', 'knots', etc)
         :type extrapolate: boolean (True or False)
         :return: returns a Nx2 array of interpolated values
@@ -300,8 +329,8 @@ class Time(object):
     def _timeseries_is_ascending(self, ts):
         return all(np.sort(ts) == ts)
 
-    def _has_duplicates(self, ts):
-        return len(np.unique(ts)) != len(ts) and len(ts) != 1
+    def _has_duplicates(self, time):
+        return len(np.unique(time)) != len(time) and len(time) != 1
 
     @property
     def min_time(self):
@@ -339,7 +368,7 @@ class Time(object):
             raise ValueError('time specified ({0}) is not within the bounds of the time ({1} to {2})'.format(
                 time.strftime('%c'), self.min_time.strftime('%c'), self.max_time.strftime('%c')))
 
-    def index_of(self, time, extrapolate):
+    def index_of(self, time, extrapolate=False):
         '''
         Returns the index of the provided time with respect to the time intervals in the file.
 
@@ -376,3 +405,4 @@ class Time(object):
         t0 = self.time[i0 - 1]
         t1 = self.time[i0]
         return (time - t0).total_seconds() / (t1 - t0).total_seconds()
+

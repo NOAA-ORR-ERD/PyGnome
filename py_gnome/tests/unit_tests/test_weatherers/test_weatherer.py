@@ -29,7 +29,7 @@ class TestWeatherer:
         assert weatherer.active
         assert weatherer.active_start == InfDateTime('-inf')
         assert weatherer.active_stop == InfDateTime('inf')
-        assert weatherer.array_types == {'mass_components', 'mass'}
+        assert weatherer.array_types == {'mass_components', 'mass', 'init_mass'}
 
     def test_one_weather(self):
         '''

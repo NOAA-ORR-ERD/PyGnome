@@ -32,9 +32,9 @@ class ProcessSchema(MappingSchema):
     active_stop = SchemaNode(LocalDateTime(), missing=drop,
                              validator=convertible_to_seconds)
     real_data_start = SchemaNode(LocalDateTime(), missing=drop,
-                              validator=convertible_to_seconds)
+                                 validator=convertible_to_seconds)
     real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
-                             validator=convertible_to_seconds)
+                                validator=convertible_to_seconds)
 
 
 class Process(AddLogger):
@@ -47,11 +47,13 @@ class Process(AddLogger):
     a class level _schema attribute.
     """
     _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add(update=['on', 'active_start', 'active_stop', 'real_data_start', 'real_data_stop'],
-               save=['on', 'active_start', 'active_stop', 'real_data_start', 'real_data_stop'],
+    _state.add(update=['on', 'active_start', 'active_stop',
+                       'real_data_start', 'real_data_stop'],
+               save=['on', 'active_start', 'active_stop',
+                     'real_data_start', 'real_data_stop'],
                read=['active'])
 
-    def __init__(self, **kwargs):   # default min + max values for timespan
+    def __init__(self, **kwargs):  # default min + max values for timespan
         """
         Initialize default Mover/Weatherer parameters
 
@@ -60,8 +62,10 @@ class Process(AddLogger):
         :param on: boolean as to whether the object is on or not. Default is on
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
-        :param real_data_start: datetime when the mover first has data (not including extrapolation)
-        :param real_data_stop: datetime after which the mover has no data (not including extrapolation)
+        :param real_data_start: datetime when the mover first has data
+                                (not including extrapolation)
+        :param real_data_stop: datetime after which the mover has no data
+                               (not including extrapolation)
         """
         self.on = kwargs.pop('on', True)  # turn the mover on / off for the run
         self._active = self.on  # initial value
@@ -72,16 +76,16 @@ class Process(AddLogger):
                                  inf_datetime.InfDateTime('inf'))
 
         real_data_start = kwargs.pop('real_data_start',
-                                  inf_datetime.InfDateTime('-inf'))
+                                     inf_datetime.InfDateTime('-inf'))
         real_data_stop = kwargs.pop('real_data_stop',
-                                 inf_datetime.InfDateTime('inf'))
+                                    inf_datetime.InfDateTime('inf'))
 
         self._check_active_startstop(active_start, active_stop)
 
         self._active_start = active_start
         self._active_stop = active_stop
 
-                # not sure if we would ever pass this in...
+        # not sure if we would ever pass this in...
         self._check_active_startstop(real_data_start, real_data_stop)
 
         self.real_data_start = real_data_start
@@ -162,11 +166,10 @@ class Process(AddLogger):
         :param model_time_datetime: current model time as datetime object
 
         """
-        if (self.active_start <=
-            (model_time_datetime + timedelta(seconds=time_step/2)) and
-            self.active_stop >=
-            (model_time_datetime + timedelta(seconds=time_step/2)) and
-            self.on):
+        half_timestep = model_time_datetime + timedelta(seconds=time_step / 2)
+        if (self.active_start <= half_timestep and
+                self.active_stop >= half_timestep and
+                self.on):
             self._active = True
         else:
             self._active = False
@@ -204,42 +207,61 @@ class Mover(Process):
 
         return delta
 
-class PyMover(Mover):
 
+class PyMover(Mover):
     def __init__(self,
                  default_num_method='Trapezoid',
                  **kwargs):
         self.num_methods = {'RK4': self.get_delta_RK4,
                             'Euler': self.get_delta_Euler,
-                            'Trapezoid':self.get_delta_Trapezoid}
-        self.default_num_method=default_num_method
+                            'Trapezoid': self.get_delta_Trapezoid}
+        self.default_num_method = default_num_method
+
         Mover.__init__(self, **kwargs)
 
     def get_delta_Euler(self, sc, time_step, model_time, pos, vel_field):
-        vels = vel_field.at(pos[:, 0:2], model_time, extrapolate=self.extrapolate)
+        vels = vel_field.at(pos, model_time,
+                            extrapolate=self.extrapolate)
+
         return vels * time_step
 
     def get_delta_Trapezoid(self, sc, time_step, model_time, pos, vel_field):
         dt = timedelta(seconds=time_step)
         dt_s = dt.seconds
         t = model_time
-        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate).data
+
+        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
-        v1 = vel_field.at(pos + d0, t + dt, extrapolate=self.extrapolate).data
-        return  dt_s/2 * (v0 + v1)
+        p1 = pos.copy()
+        p1 += d0
+
+        v1 = vel_field.at(p1, t + dt, extrapolate=self.extrapolate)
+
+        return dt_s / 2 * (v0 + v1)
 
     def get_delta_RK4(self, sc, time_step, model_time, pos, vel_field):
         dt = timedelta(seconds=time_step)
         dt_s = dt.seconds
         t = model_time
-        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate).data
-        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s/2, pos)
-        v1 = vel_field.at(pos + d0, t + dt/2, extrapolate=self.extrapolate).data
-        d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s/2, pos)
-        v2 = vel_field.at(pos + d1, t + dt/2, extrapolate=self.extrapolate).data
+
+        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
+        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s / 2, pos)
+        p1 = pos.copy()
+        p1[:, 0:2] += d0
+
+        v1 = vel_field.at(p1, t + dt / 2, extrapolate=self.extrapolate)
+        d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s / 2, pos)
+        p2 = pos.copy()
+        p2[:, 0:2] += d1
+
+        v2 = vel_field.at(p2, t + dt / 2, extrapolate=self.extrapolate)
         d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
-        v3 = vel_field.at(pos + d2, t + dt, extrapolate=self.extrapolate).data
-        return dt_s/6 * (v0 + 2*v1 + 2*v2 + v3)
+        p3 = pos.copy()
+        p3[:, 0:2] += d2
+
+        v3 = vel_field.at(p3, t + dt, extrapolate=self.extrapolate)
+
+        return dt_s / 6 * (v0 + 2 * v1 + 2 * v2 + v3)
 
 
 class CyMover(Mover):
@@ -292,14 +314,16 @@ class CyMover(Mover):
         Uses super to invoke Mover class prepare_for_model_step and does a
         couple more things specific to CyMover.
         """
-        super(CyMover, self).prepare_for_model_step(sc, time_step, model_time_datetime)
+        super(CyMover, self).prepare_for_model_step(sc, time_step,
+                                                    model_time_datetime)
+
         if self.active:
             uncertain_spill_count = 0
-            uncertain_spill_size = np.array((0, ), dtype=np.int32)
+            uncertain_spill_size = np.array((0,), dtype=np.int32)
 
             if sc.uncertain:
                 uncertain_spill_count = 1
-                uncertain_spill_size = np.array((sc.num_released, ),
+                uncertain_spill_size = np.array((sc.num_released,),
                                                 dtype=np.int32)
 
             err = self.mover.prepare_for_model_step(
@@ -307,11 +331,15 @@ class CyMover(Mover):
                         time_step, uncertain_spill_count, uncertain_spill_size)
 
             if err != 0:
-                msg = ["No available data in the time interval that is being modeled"]
-                msg.append("Model time: %s" % model_time_datetime)
-                msg.append("Mover: %s of type %s" % (self.name, self.__class__))
-                msg.append("Data available from %s to %s" % (self.real_data_start, self.real_data_stop))
-                msg = "\n".join(msg)
+                msg = ('No available data in the time interval '
+                       'that is being modeled\n'
+                       '\tModel time: {}\n'
+                       '\tMover: {} of type {}\n'
+                       '\tData available from {} to {}'
+                       .format(model_time_datetime,
+                               self.name, self.__class__,
+                               self.real_data_start, self.real_data_stop))
+
                 self.logger.error(msg)
                 raise RuntimeError(msg)
 
@@ -335,8 +363,8 @@ class CyMover(Mover):
                                 self.positions, self.delta,
                                 self.status_codes, self.spill_type)
 
-        return self.delta.view(dtype=world_point_type).reshape((-1,
-                len(world_point)))
+        return (self.delta.view(dtype=world_point_type)
+                .reshape((-1, len(world_point))))
 
     def prepare_data_for_get_move(self, sc, model_time_datetime):
         """
@@ -362,12 +390,10 @@ class CyMover(Mover):
             self.spill_type = spill_type.forecast
 
         # Array is not the same size, change view and reshape
+        self.positions = (self.positions.view(dtype=world_point)
+                          .reshape((len(self.positions),)))
 
-        self.positions = \
-            self.positions.view(dtype=world_point).reshape(
-                                                    (len(self.positions),))
-        self.delta = np.zeros(len(self.positions),
-                              dtype=world_point)
+        self.delta = np.zeros(len(self.positions), dtype=world_point)
 
     def model_step_is_done(self, sc=None):
         """
@@ -382,8 +408,9 @@ class CyMover(Mover):
                         self.status_codes = sc['status_codes']
                     except KeyError, err:
                         raise ValueError('The spill container does not have'
-                                         ' the required data array\n'
-                                         + err.message)
+                                         ' the required data array\n{}'
+                                         .format(err.message))
+
                     self.mover.model_step_is_done(self.status_codes)
             else:
                 if self.active:

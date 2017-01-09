@@ -62,6 +62,18 @@ class TestRandom:
         assert np.all(self.cm.delta['lat'] != 0)
         assert np.all(self.cm.delta['long'] != 0)
 
+    def test_zero_subsurface_move(self):
+        """
+        ensure no move for z below surface
+        """
+
+    	self.cm.ref['z'][:]=100
+        new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
+        self.move(new_delta)
+    	self.cm.ref['z'][:]=0
+        assert np.all(new_delta.view(dtype=np.double).reshape(1, -1)
+                      == 0)
+
     def test_zero_coef(self):
         """
         ensure no move for 0 diffusion coefficient

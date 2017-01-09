@@ -8,18 +8,20 @@ from gnome.environment.property import EnvProp, VectorProp, Time
 from datetime import datetime, timedelta
 from dateutil import parser
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
+from numbers import Number
 
 import unit_conversion
 import collections
 
+
 class TimeSeriesProp(EnvProp):
 
     def __init__(self,
-
                  name=None,
                  units=None,
                  time=None,
-                 data=None):
+                 data=None,
+                 **kwargs):
         '''
         A class that represents a scalar natural phenomenon using a time series
 
@@ -38,6 +40,18 @@ class TimeSeriesProp(EnvProp):
         super(TimeSeriesProp, self).__init__(name, units, time, data)
         self.time = time
 
+    @classmethod
+    def constant(cls,
+                 name=None,
+                 units=None,
+                 data=None,):
+        if any(var is None for var in (name, data, units)):
+            raise ValueError("name, data, or units may not be None")
+
+        if not isinstance(data, Number):
+            raise TypeError('{0} data must be a number'.format(name))
+        t = datetime.now().replace(microsecond=0, second=0, minute=0)
+        return cls(name=name, units=units, time=[t], data=[data])
     @property
     def timeseries(self):
         '''
@@ -45,7 +59,7 @@ class TimeSeriesProp(EnvProp):
 
         :rtype: list of (datetime, double) tuples
         '''
-        return map(lambda x,y:(x,y), self.time.time, self.data)
+        return map(lambda x, y: (x, y), self.time.time, self.data)
 
     @property
     def data(self):
@@ -68,16 +82,16 @@ class TimeSeriesProp(EnvProp):
             raise ValueError("Data/time interval mismatch")
         if isinstance(t, Time):
             self._time = t
-        elif isinstance(t,collections.Iterable):
+        elif isinstance(t, collections.Iterable):
             self._time = Time(t)
         else:
             raise ValueError("Object being assigned must be an iterable or a Time object")
 
     def set_attr(self,
-               name=None,
-               units=None,
-               time=None,
-               data=None):
+                 name=None,
+                 units=None,
+                 time=None,
+                 data=None):
         self.name = name if name is not None else self.name
         self.units = units if units is not None else self.units
         if data is not None and time is not None:
@@ -89,7 +103,7 @@ class TimeSeriesProp(EnvProp):
             self.data = data if data is not None else self.data
             self.time = time if time is not None else self.time
 
-    def at(self, points, time, units=None, extrapolate=False):
+    def at(self, points, time, units=None, extrapolate=False, **kwargs):
         '''
         Interpolates this property to the given points at the given time with the units specified
         :param points: A Nx2 array of lon,lat points
@@ -99,9 +113,10 @@ class TimeSeriesProp(EnvProp):
         '''
         value = None
         if len(self.time) == 1:
-            #single time time series (constant)
-            value = np.full((points.shape[0], 1), self.data)
-            value = unit_conversion.convert(self.units, units, value)
+            # single time time series (constant)
+            value = np.full((points.shape[0], 1), self.data, dtype=np.float64)
+            if units is not None and units != self.units:
+                value = unit_conversion.convert(self.units, units, value)
             return value
 
         if not extrapolate:
@@ -120,7 +135,10 @@ class TimeSeriesProp(EnvProp):
         if units is not None and units != self.units:
             value = unit_conversion.convert(self.units, units, value)
 
-        return np.full((points.shape[0], 1), value)
+        return np.full((points.shape[0], 1), value, dtype=np.float64)
+
+    def is_constant(self):
+        return len(self.data) == 1
 
     def __eq__(self, o):
         t1 = (self.name == o.name and
@@ -135,13 +153,13 @@ class TimeSeriesProp(EnvProp):
 
 class TSVectorProp(VectorProp):
 
-
     def __init__(self,
                  name=None,
                  units=None,
                  time=None,
                  variables=None,
-                 varnames=None):
+                 varnames=None,
+                 **kwargs):
         '''
         This class represents a vector phenomenon using a time series
         '''
@@ -154,13 +172,26 @@ class TSVectorProp(VectorProp):
         VectorProp.__init__(self, name, units, time, variables)
         self._check_consistency()
 
+    @classmethod
+    def constant(cls,
+                 name=None,
+                 units=None,
+                 variables=None):
+        if any(var is None for var in (name, variables, units)):
+            raise ValueError("name, variables, or units may not be None")
+
+        if not isinstance(variables, collections.Iterable):
+            raise TypeError('{0} variables must be an iterable'.format(name))
+        t = datetime.now().replace(microsecond=0, second=0, minute=0)
+        return cls(name=name, units=units, time=[t], variables=[v for v in variables])
+
     def _check_consistency(self):
         '''
         Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp
         '''
         for v in self.variables:
             if (v.units != self.units or
-                v.time != self.time):
+                    v.time != self.time):
                 raise ValueError("Variable {0} did not have parameters consistent with what was specified".format(v.name))
 
     @property
@@ -170,21 +201,21 @@ class TSVectorProp(VectorProp):
 
         :rtype: list of (datetime, (double, double)) tuples
         '''
-        return map(lambda x,y,z:(x,(y,z)), self.time.time, self.variables[0], self.variables[1])
+        return map(lambda x, y, z: (x, (y, z)), self.time.time, self.variables[0], self.variables[1])
 
     @property
     def variables(self):
         return self._variables
 
     @variables.setter
-    def variables(self, vars):
+    def variables(self, vs):
         new_vars = []
-        for i, var in enumerate(vars):
+        for i, var in enumerate(vs):
             if not isinstance(var, TimeSeriesProp):
                 if isinstance(var, collections.Iterable) and len(var) == len(self.time):
                     new_vars.append(TimeSeriesProp(name='var{0}'.format(i),
-                                                          units=self.units, time=self.time,
-                                                          data = vars[i]))
+                                                   units=self.units, time=self.time,
+                                                   data=vs[i]))
                 else:
                     raise ValueError('Variables must contain iterables or TimeSeriesProp objects')
             else:
@@ -196,7 +227,6 @@ class TSVectorProp(VectorProp):
     def time(self):
         return self._time
 
-
     @time.setter
     def time(self, t):
         if self.variables is not None:
@@ -204,16 +234,16 @@ class TSVectorProp(VectorProp):
                 v.time = t
         if isinstance(t, Time):
             self._time = t
-        elif isinstance(t,collections.Iterable):
+        elif isinstance(t, collections.Iterable):
             self._time = Time(t)
         else:
             raise ValueError("Object being assigned must be an iterable or a Time object")
 
     def set_attr(self,
-               name=None,
-               units=None,
-               time=None,
-               variables=None):
+                 name=None,
+                 units=None,
+                 time=None,
+                 variables=None):
         self.name = name if name is not None else self.name
         self.units = units if units is not None else self.units
         if variables is not None and time is not None:
@@ -221,9 +251,9 @@ class TSVectorProp(VectorProp):
             for i, var in enumerate(variables):
                 if not isinstance(var, TimeSeriesProp):
                     if isinstance(var, collections.Iterable) and len(var) == len(time):
-                        new_vars.append(TimeSeriesProp(name = 'var{0}'.format(i),
-                                                              units = self.units, time=time,
-                                                              data = variables[i]))
+                        new_vars.append(TimeSeriesProp(name='var{0}'.format(i),
+                                                       units=self.units, time=time,
+                                                       data=variables[i]))
                     else:
                         raise ValueError('Variables must contain iterables or TimeSeriesProp objects')
             self._variables = new_vars
@@ -233,9 +263,12 @@ class TSVectorProp(VectorProp):
                 self.variables = variables
             self.time = time if time is not None else self.time
 
+    def is_constant(self):
+        return len(self.variables[0]) == 1
+
     def in_units(self, units):
         '''
-        Returns a full copy of this property in the units specified. 
+        Returns a full copy of this property in the units specified.
         WARNING: This will copy the data of the original property!
         '''
         cpy = copy.deepcopy(self)
