@@ -173,10 +173,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">wind</span> <span class="o">=</span> <span class="n">wind</span>
 
         <span class="k">if</span> <span class="n">water</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">wind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;make_default_refs&#39;</span><span class="p">]</span> <span class="o">=</span> \
-                <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;make_default_refs&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="n">make_default_refs</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">make_default_refs</span> <span class="o">=</span> <span class="kc">True</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">Evaporation</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Evaporation</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">make_default_refs</span><span class="o">=</span><span class="n">make_default_refs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;area&#39;</span><span class="p">,</span> <span class="s1">&#39;evap_decay_constant&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;frac_water&#39;</span><span class="p">,</span> <span class="s1">&#39;frac_lost&#39;</span><span class="p">,</span> <span class="s1">&#39;init_mass&#39;</span><span class="p">})</span>
 

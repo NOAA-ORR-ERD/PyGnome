@@ -142,6 +142,7 @@
 <span class="sd">the logic about where an when the elements are released</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="k">import</span> <span class="n">getmembers</span><span class="p">,</span> <span class="n">ismethod</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">timedelta</span>
@@ -149,13 +150,150 @@
 <span class="kn">import</span> <span class="nn">unit_conversion</span> <span class="k">as</span> <span class="nn">uc</span>
 <span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">drop</span><span class="p">)</span>
 
-<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="k">import</span> <span class="n">serializable</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="k">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
 <span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="k">import</span> <span class="n">class_from_objtype</span>
 <span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="k">import</span> <span class="n">ObjType</span>
 
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">elements</span>
 <span class="kn">from</span> <span class="nn">.release</span> <span class="k">import</span> <span class="n">PointLineRelease</span><span class="p">,</span> <span class="n">ContinuousRelease</span>
 <span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">_valid_units</span>
+
+
+<span class="k">class</span> <span class="nc">BaseSpill</span><span class="p">(</span><span class="n">Serializable</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A base class for spills -- so we can check for them, etc.</span>
+
+<span class="sd">    and as a spec for the API.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">release_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        initialize -- sub-classes will probably have a lot more to do</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span> <span class="o">=</span> <span class="n">release_time</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">release_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_release_time</span>
+
+    <span class="nd">@release_time</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">release_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rt</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_release_time</span> <span class="o">=</span> <span class="n">rt</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">substance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0.__class__.__module__}</span><span class="s1">.</span><span class="si">{0.__class__.__name__}</span><span class="s1">()&#39;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+    <span class="c1"># what is this for??</span>
+    <span class="k">def</span> <span class="nf">get_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return the mass released during the spill.</span>
+<span class="sd">        User can also specify desired output units in the function.</span>
+<span class="sd">        If units are not specified, then return in &#39;SI&#39; units (&#39;kg&#39;)</span>
+<span class="sd">        If volume is given, then use density to find mass. Density is always</span>
+<span class="sd">        at 15degC, consistent with API definition</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># first convert amount to &#39;kg&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_mass_units</span><span class="p">:</span>
+            <span class="n">mass</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">&#39;Mass&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="s1">&#39;kg&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount_released</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">units</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">units</span> <span class="o">==</span> <span class="s1">&#39;kg&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_units</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">&#39;Mass&#39;</span><span class="p">,</span> <span class="s1">&#39;kg&#39;</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">mass</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">uncertain_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a deepcopy of this spill for the uncertainty runs</span>
+
+<span class="sd">        The copy has everything the same, including the spill_num,</span>
+<span class="sd">        but it is a new object with a new id.</span>
+
+<span class="sd">        Not much to this method, but it could be overridden to do something</span>
+<span class="sd">        fancier in the future or a subclass.</span>
+
+<span class="sd">        There are a number of python objects that cannot be deepcopied.</span>
+<span class="sd">        - Logger objects</span>
+
+<span class="sd">        So we copy them temporarily to local variables before we deepcopy</span>
+<span class="sd">        our Spill object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">u_copy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s2">&quot;deepcopied spill </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">u_copy</span>
+
+    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        rewinds the release to original status (before anything has been</span>
+<span class="sd">        released).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">def</span> <span class="nf">num_elements_to_release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines the number of elements to be released during:</span>
+<span class="sd">        current_time + time_step</span>
+
+<span class="sd">        It invokes the num_elements_to_release method for the the unerlying</span>
+<span class="sd">        release object: self.release.num_elements_to_release()</span>
+
+<span class="sd">        :param current_time: current time</span>
+<span class="sd">        :type current_time: datetime.datetime</span>
+<span class="sd">        :param int time_step: the time step, sometimes used to decide how many</span>
+<span class="sd">            should get released.</span>
+
+<span class="sd">        :returns: the number of elements that will be released. This is taken</span>
+<span class="sd">            by SpillContainer to initialize all data_arrays.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">def</span> <span class="nf">set_newparticle_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span>
+                               <span class="n">time_step</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        SpillContainer will release elements and initialize all data_arrays</span>
+<span class="sd">        to default initial value. The SpillContainer gets passed as input and</span>
+<span class="sd">        the data_arrays for &#39;position&#39; get initialized correctly by the release</span>
+<span class="sd">        object: self.release.set_newparticle_positions()</span>
+
+<span class="sd">        If a Spill Amount is given, the Spill object also sets the &#39;mass&#39; data</span>
+<span class="sd">        array; else &#39;mass&#39; array remains &#39;0&#39;</span>
+
+<span class="sd">        :param int num_new_particles: number of new particles that were added.</span>
+<span class="sd">            Always greater than 0</span>
+<span class="sd">        :param current_time: current time</span>
+<span class="sd">        :type current_time: datetime.datetime</span>
+<span class="sd">        :param time_step: the time step, sometimes used to decide how many</span>
+<span class="sd">            should get released.</span>
+<span class="sd">        :type time_step: integer seconds</span>
+<span class="sd">        :param data_arrays: dict of data_arrays provided by the SpillContainer.</span>
+<span class="sd">            Look for &#39;positions&#39; array in the dict and update positions for</span>
+<span class="sd">            latest num_new_particles that are released</span>
+<span class="sd">        :type data_arrays: dict containing numpy arrays for values</span>
+
+<span class="sd">        Also, the set_newparticle_values() method for all element_type gets</span>
+<span class="sd">        called so each element_type sets the values for its own data correctly</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">def</span> <span class="nf">has_initializer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Returns True if an initializer is present in the list which sets the</span>
+<span class="sd">        data_array corresponding with &#39;name&#39;, otherwise returns False</span>
+
+<span class="sd">        Override with a real implimentaitn if you are using initializers</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="kc">False</span>
 
 
 <span class="k">class</span> <span class="nc">SpillSchema</span><span class="p">(</span><span class="n">ObjType</span><span class="p">):</span>
@@ -167,32 +305,37 @@
     <span class="n">amount_uncertainty_scale</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="Spill"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Spill">[docs]</a><span class="k">class</span> <span class="nc">Spill</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
+<div class="viewcode-block" id="Spill"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Spill">[docs]</a><span class="k">class</span> <span class="nc">Spill</span><span class="p">(</span><span class="n">BaseSpill</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Models a spill</span>
+<span class="sd">    Models a spill by combining Release and ElementType objects</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;on&#39;</span><span class="p">,</span> <span class="s1">&#39;release&#39;</span><span class="p">,</span>
-               <span class="s1">&#39;amount&#39;</span><span class="p">,</span> <span class="s1">&#39;units&#39;</span><span class="p">,</span> <span class="s1">&#39;amount_uncertainty_scale&#39;</span><span class="p">]</span>
+    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;on&#39;</span><span class="p">,</span> <span class="s1">&#39;release&#39;</span><span class="p">,</span> <span class="s1">&#39;amount&#39;</span><span class="p">,</span> <span class="s1">&#39;units&#39;</span><span class="p">,</span> <span class="s1">&#39;amount_uncertainty_scale&#39;</span><span class="p">]</span>
 
     <span class="n">_create</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;frac_coverage&#39;</span><span class="p">]</span>
     <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
 
-    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
     <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="n">_create</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">)</span>
-    <span class="n">_state</span> <span class="o">+=</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;element_type&#39;</span><span class="p">,</span>
-                                 <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                 <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                 <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;element_type&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                     <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+               <span class="n">Field</span><span class="p">(</span><span class="s1">&#39;water&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">SpillSchema</span>
 
     <span class="n">valid_vol_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s1">&#39;Volume&#39;</span><span class="p">)</span>
     <span class="n">valid_mass_units</span> <span class="o">=</span> <span class="n">_valid_units</span><span class="p">(</span><span class="s1">&#39;Mass&#39;</span><span class="p">)</span>
+    <span class="c1"># attributes that need to be there for the __setattr__ magic to work</span>
+    <span class="c1"># release = None  # just to make sure it&#39;s there.</span>
+    <span class="c1"># element_type = None</span>
+    <span class="c1"># this is so the properties in teh base classes work -- arrgg!</span>
+    <span class="c1"># _name = &#39;Spill&#39;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">release</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">release</span><span class="p">,</span>
+                 <span class="n">water</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">element_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">substance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                 <span class="n">amount</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>   <span class="c1"># could be volume or mass</span>
+                 <span class="n">amount</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># could be volume or mass</span>
                  <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">amount_uncertainty_scale</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
                  <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Spill&#39;</span><span class="p">):</span>
@@ -234,8 +377,9 @@
 <span class="sd">            If amount property is None, then just floating elements</span>
 <span class="sd">            (ie. &#39;windages&#39;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">water</span> <span class="o">=</span> <span class="n">water</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">release</span> <span class="o">=</span> <span class="n">release</span>
+
         <span class="k">if</span> <span class="n">element_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">element_type</span> <span class="o">=</span> <span class="n">elements</span><span class="o">.</span><span class="n">floating</span><span class="p">(</span><span class="n">substance</span><span class="o">=</span><span class="n">substance</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">substance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -244,8 +388,12 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span> <span class="o">=</span> <span class="n">element_type</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="n">on</span>    <span class="c1"># spill is active or not</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_units</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="n">on</span>  <span class="c1"># spill is active or not</span>
+        <span class="c1"># raise Exception(&quot;stopping&quot;)</span>
+
+        <span class="c1"># fixme: shouldn&#39;t units default to &#39;kg&#39;?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># fixme -- and amount always be in kg?</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">=</span> <span class="n">amount</span>
 
         <span class="k">if</span> <span class="n">amount</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -256,11 +404,97 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">amount_uncertainty_scale</span> <span class="o">=</span> <span class="n">amount_uncertainty_scale</span>
 
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        fraction of area covered by oil</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># fixme: why is fractional area part of spill???</span>
+        <span class="c1"># fraction of area covered by oil</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">frac_coverage</span> <span class="o">=</span> <span class="mf">1.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+
+<span class="c1"># fixme: a bunch of these properties should really be defined in subclasses</span>
+<span class="c1"># that use them</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">release_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">release_time</span>
+
+    <span class="nd">@release_time</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">release_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rt</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">release_time</span> <span class="o">=</span> <span class="n">rt</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">end_release_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">end_release_time</span>
+
+    <span class="nd">@end_release_time</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">end_release_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rt</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">end_release_time</span> <span class="o">=</span> <span class="n">rt</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">release_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">release_duration</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">start_time_invalid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">start_time_invalid</span>
+    <span class="c1"># any reason to set this on a spill??</span>
+    <span class="c1"># @start_time_invalid.setter</span>
+    <span class="c1"># def start_time_invalid(self, rd):</span>
+    <span class="c1">#     self.release.start_time_invalid = rd</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">num_elements</span>
+
+    <span class="nd">@num_elements</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">num_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ne</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">num_elements</span> <span class="o">=</span> <span class="n">ne</span>
+
+    <span class="c1"># doesn&#39;t seem like this should be set on the spill object!</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_released</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">num_released</span>
+    <span class="c1"># @num_released.setter</span>
+    <span class="c1"># def num_released(self, ne):</span>
+    <span class="c1">#     self.release.num_released = ne</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">start_position</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">start_position</span>
+
+    <span class="nd">@start_position</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">start_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sp</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">start_position</span> <span class="o">=</span> <span class="n">sp</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">end_position</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">end_position</span>
+
+    <span class="nd">@end_position</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">end_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sp</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">end_position</span> <span class="o">=</span> <span class="n">sp</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">array_types</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">array_types</span>
+
+    <span class="nd">@array_types</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">array_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">at</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">array_types</span> <span class="o">=</span> <span class="n">at</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">windage_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">windage_range</span>
+
+    <span class="nd">@windage_range</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">windage_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">at</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">windage_range</span> <span class="o">=</span> <span class="n">at</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">windage_persist</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">windage_persist</span>
+
+    <span class="nd">@windage_persist</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">windage_persist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wp</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">windage_persist</span> <span class="o">=</span> <span class="n">wp</span>
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0.__class__.__module__}</span><span class="s1">.</span><span class="si">{0.__class__.__name__}</span><span class="s1">(&#39;</span>
@@ -305,19 +539,23 @@
 <span class="sd">        Checks the user provided units are in list of valid volume</span>
 <span class="sd">        or mass units</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="k">if</span> <span class="p">(</span><span class="n">units</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_vol_units</span> <span class="ow">or</span>
                 <span class="n">units</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_mass_units</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Units for amount spilled must be in volume or mass units. &#39;</span>
+                   <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> was provided.&#39;</span>
                    <span class="s1">&#39;Valid units for volume: </span><span class="si">{0}</span><span class="s1">, for mass: </span><span class="si">{1}</span><span class="s1"> &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">valid_vol_units</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_mass_units</span><span class="p">)</span>
-            <span class="n">ex</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">InvalidUnitError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                         <span class="n">units</span><span class="p">,</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">valid_vol_units</span><span class="p">,</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">valid_mass_units</span><span class="p">)</span>
+            <span class="n">ex</span> <span class="o">=</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">ex</span>  <span class="c1"># this should be raised since run will fail otherwise</span>
 
     <span class="k">def</span> <span class="nf">_get_all_props</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># fixme: why is this needed???</span>
+
         <span class="s1">&#39;return all properties accessible through get&#39;</span>
         <span class="n">all_props</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -360,21 +598,20 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="s2">&quot;spill mass (kg): </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">_mass</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="n">_mass</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">rd_sec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;release_duration&#39;</span><span class="p">)</span>
+            <span class="n">rd_sec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_duration</span>
             <span class="k">if</span> <span class="n">rd_sec</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="n">le_mass</span> <span class="o">=</span> <span class="n">_mass</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;num_elements&#39;</span><span class="p">)</span>
+                    <span class="n">le_mass</span> <span class="o">=</span> <span class="n">_mass</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span>
                 <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
-                    <span class="n">le_mass</span> <span class="o">=</span> <span class="n">_mass</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;num_per_timestep&#39;</span><span class="p">)</span>
+                    <span class="n">le_mass</span> <span class="o">=</span> <span class="n">_mass</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_per_timestep</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">time_at_step_end</span> <span class="o">=</span> <span class="n">current_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="p">)</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;release_time&#39;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">current_time</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span> <span class="o">&gt;</span> <span class="n">current_time</span><span class="p">:</span>
                     <span class="c1"># first time_step in which particles are released</span>
                     <span class="n">time_step</span> <span class="o">=</span> <span class="p">(</span><span class="n">time_at_step_end</span> <span class="o">-</span>
-                                 <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;release_time&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
-
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;end_release_time&#39;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">time_at_step_end</span><span class="p">:</span>
-                    <span class="n">time_step</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;end_release_time&#39;</span><span class="p">)</span> <span class="o">-</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_release_time</span> <span class="o">&lt;</span> <span class="n">time_at_step_end</span><span class="p">:</span>
+                    <span class="n">time_step</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end_release_time</span> <span class="o">-</span>
                                  <span class="n">current_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
 
                 <span class="n">_mass_in_ts</span> <span class="o">=</span> <span class="n">_mass</span> <span class="o">/</span> <span class="n">rd_sec</span> <span class="o">*</span> <span class="n">time_step</span>
@@ -395,83 +632,51 @@
 
         <span class="k">return</span> <span class="kc">False</span>
 
-<div class="viewcode-block" id="Spill.set"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Spill.set">[docs]</a>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        sets an existing property. The property could be of one of the</span>
-<span class="sd">        contained objects like &#39;Release&#39; or &#39;ElementType&#39;</span>
-<span class="sd">        It can also be a property of one of the initializers contained in</span>
-<span class="sd">        the &#39;ElementType&#39; object.</span>
+    <span class="c1"># NOTE: this has been moved to properties</span>
+    <span class="c1"># def __getattr__(self, prop=None):</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     implementing this so that attributes can be pulled from the enclosed</span>
+    <span class="c1">#     objects</span>
 
-<span class="sd">        If the property doesn&#39;t exist for any of these, then an error is raised</span>
-<span class="sd">        since user cannot set a property that does not exist using this method</span>
+    <span class="c1">#     this replaces the old &quot;get()&quot; method</span>
 
-<span class="sd">        For example: set(&#39;windage_range&#39;, (0.4, 0.4)) sets the windage_range</span>
-<span class="sd">        assuming the element_type is floating</span>
+    <span class="c1">#     Return all properties of embedded release object and</span>
+    <span class="c1">#     element_type initializer objects. If &#39;prop&#39; is not None, then return</span>
+    <span class="c1">#     the property</span>
 
-<span class="sd">        .. todo::</span>
-<span class="sd">            There is an issue in that if two initializers have the same</span>
-<span class="sd">            property - could be the case if they both define a &#39;distribution&#39;,</span>
-<span class="sd">            then it does not know which one to return</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">prop</span> <span class="o">==</span> <span class="s1">&#39;num_released&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;cannot set &#39;num_released&#39; attribute&quot;</span><span class="p">)</span>
+    <span class="c1">#     For example: Spill.windage_range returns the &#39;windage_range&#39;</span>
+    <span class="c1">#                  from element_type assuming</span>
+    <span class="c1">#                  the element_type = floating()</span>
 
-        <span class="c1"># we don&#39;t want to add an attribute that doesn&#39;t already exist</span>
-        <span class="c1"># first check to see that the attribute exists, then change it else</span>
-        <span class="c1"># raise error</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">,</span> <span class="n">prop</span><span class="p">):</span>
-            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="p">,</span> <span class="n">prop</span><span class="p">):</span>
-            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">init</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">initializers</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="n">prop</span><span class="p">):</span>
-                    <span class="nb">setattr</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
-                    <span class="k">break</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> attribute does not exist &#39;</span>
-                                        <span class="s1">&#39;in element_type or release object&#39;</span>
-                                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prop</span><span class="p">))</span></div>
+    <span class="c1">#     .. todo::</span>
+    <span class="c1">#         There is an issue in that if two initializers have the same</span>
+    <span class="c1">#         property - could be the case if they both define a</span>
+    <span class="c1">#                    &#39;distribution&#39;,</span>
+    <span class="c1">#         then it does not know which one to return</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     print &quot;in __getattr__, getting: %s&quot; % prop</span>
+    <span class="c1">#     try:</span>
+    <span class="c1">#         return getattr(self.release, prop)</span>
+    <span class="c1">#     except AttributeError:</span>
+    <span class="c1">#         pass</span>
 
-<div class="viewcode-block" id="Spill.get"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Spill.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        for get(), return all properties of embedded release object and</span>
-<span class="sd">        element_type initializer objects. If &#39;prop&#39; is not None, then return</span>
-<span class="sd">        the property</span>
+    <span class="c1">#     try:</span>
+    <span class="c1">#         return getattr(self.element_type, prop)</span>
+    <span class="c1">#     except AttributeError:</span>
+    <span class="c1">#         pass</span>
 
-<span class="sd">        For example: get(&#39;windage_range&#39;) returns the &#39;windage_range&#39; assuming</span>
-<span class="sd">        the element_type = floating()</span>
+    <span class="c1">#     for init in self.element_type.initializers:</span>
+    <span class="c1">#         try:</span>
+    <span class="c1">#             return getattr(init, prop)</span>
+    <span class="c1">#         except AttributeError:</span>
+    <span class="c1">#             pass</span>
 
-<span class="sd">        .. todo::</span>
-<span class="sd">            There is an issue in that if two initializers have the same</span>
-<span class="sd">            property - could be the case if they both define a &#39;distribution&#39;,</span>
-<span class="sd">            then it does not know which one to return</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="s1">&#39;Return all properties&#39;</span>
-        <span class="k">if</span> <span class="n">prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_props</span><span class="p">()</span>
+    <span class="c1">#     # nothing returned, then property was not found</span>
+    <span class="c1">#     msg = (&quot;{0} attribute does not exist in element_type&quot;</span>
+    <span class="c1">#            &quot; or release object or initializers&quot;.format(prop))</span>
+    <span class="c1">#     self.logger.warning(msg)</span>
 
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">,</span> <span class="n">prop</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-            <span class="k">pass</span>
-
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="p">,</span> <span class="n">prop</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-            <span class="k">pass</span>
-
-        <span class="k">for</span> <span class="n">init</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">initializers</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="n">prop</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                <span class="k">pass</span>
-
-        <span class="c1"># nothing returned, then property was not found - raise exception or</span>
-        <span class="c1"># return None?</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> attribute does not exist in element_type&quot;</span>
-                            <span class="s2">&quot; or release object or initializers&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prop</span><span class="p">))</span>
-        <span class="k">return</span> <span class="kc">None</span></div>
+    <span class="c1">#     raise AttributeError(msg)</span>
 
 <div class="viewcode-block" id="Spill.get_initializer_by_name"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Spill.get_initializer_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_initializer_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; get first initializer in list whose name matches &#39;name&#39; &#39;&#39;&#39;</span>
@@ -576,26 +781,55 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        set default units in which volume data is returned</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_units</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>  <span class="c1"># check validity before setting</span>
+        <span class="k">if</span> <span class="n">units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_units</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>  <span class="c1"># check validity before setting</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_units</span> <span class="o">=</span> <span class="n">units</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">substance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">substance</span>
+        <span class="c1"># try:</span>
+        <span class="c1">#     return self.element_type.substance</span>
+        <span class="c1"># except AttributeError:</span>
+        <span class="c1">#     return None</span>
+
+    <span class="nd">@substance</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">substance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">substance</span> <span class="o">=</span> <span class="n">subs</span>
+
 <div class="viewcode-block" id="Spill.get_mass"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Spill.get_mass">[docs]</a>    <span class="k">def</span> <span class="nf">get_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the mass released during the spill.</span>
 <span class="sd">        User can also specify desired output units in the function.</span>
 <span class="sd">        If units are not specified, then return in &#39;SI&#39; units (&#39;kg&#39;)</span>
 <span class="sd">        If volume is given, then use density to find mass. Density is always</span>
 <span class="sd">        at 15degC, consistent with API definition</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># fixme: This really should be re-factored to always store mass.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span>
 
-        <span class="c1"># first convert amount to &#39;kg&#39;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_mass_units</span><span class="p">:</span>
+            <span class="c1"># first convert amount to &#39;kg&#39;</span>
             <span class="n">mass</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">&#39;Mass&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="s1">&#39;kg&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_vol_units</span><span class="p">:</span>
+            <span class="c1"># need to convert to mass</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">substance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># unspecified substance gets a density 1000 kg/m^3</span>
+                <span class="n">rho</span> <span class="o">=</span> <span class="mf">1000.0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># DO NOT change this back!</span>
+                <span class="c1"># for the UI to be consistent, the conversion needs to use standard</span>
+                <span class="c1">#  density -- not the current water temp.</span>
+                <span class="c1"># water_temp = self.water.get(&#39;temperature&#39;)</span>
+                <span class="c1"># ideally substance would have a &quot;standard_density&quot; attribute for this.</span>
+                <span class="n">rho</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">substance</span><span class="o">.</span><span class="n">density_at_temp</span><span class="p">(</span><span class="mf">288.15</span><span class="p">)</span>
+
             <span class="n">vol</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">&#39;Volume&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="s1">&#39;m^3&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="p">)</span>
-            <span class="n">mass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">substance</span><span class="o">.</span><span class="n">get_density</span><span class="p">()</span> <span class="o">*</span> <span class="n">vol</span>
+            <span class="n">mass</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">vol</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> is not a valid mass or Volume unit&quot;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="n">units</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">units</span> <span class="o">==</span> <span class="s1">&#39;kg&#39;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">mass</span>
@@ -728,6 +962,9 @@
         <span class="n">o_json_</span><span class="p">[</span><span class="s1">&#39;element_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
         <span class="n">o_json_</span><span class="p">[</span><span class="s1">&#39;release&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">o_json_</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">o_json_</span></div>
 
     <span class="nd">@classmethod</span>
@@ -751,11 +988,12 @@
 <span class="sd">                save files store a reference to element_type so it will get</span>
 <span class="sd">                deserialized, created and added to this dict by load method</span>
 <span class="sd">                &#39;&#39;&#39;</span>
-                <span class="n">etcls</span> <span class="o">=</span> \
-                    <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;element_type&#39;</span><span class="p">][</span><span class="s1">&#39;obj_type&#39;</span><span class="p">])</span>
-                <span class="n">dict_</span><span class="p">[</span><span class="s1">&#39;element_type&#39;</span><span class="p">]</span> <span class="o">=</span> \
-                    <span class="n">etcls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;element_type&#39;</span><span class="p">])</span>
+                <span class="n">etcls</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;element_type&#39;</span><span class="p">][</span><span class="s1">&#39;obj_type&#39;</span><span class="p">])</span>
+                <span class="n">dict_</span><span class="p">[</span><span class="s1">&#39;element_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">etcls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;element_type&#39;</span><span class="p">])</span>
 
+                <span class="k">if</span> <span class="s1">&#39;water&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+                    <span class="n">w_cls</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">][</span><span class="s1">&#39;obj_type&#39;</span><span class="p">])</span>
+                    <span class="n">dict_</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">w_cls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">                Convert nested dict (release object) back into object. The</span>
@@ -958,6 +1196,7 @@
                              <span class="n">release_time</span><span class="p">,</span>
                              <span class="n">end_position</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">end_release_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                             <span class="n">water</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">element_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">substance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -972,13 +1211,15 @@
                                <span class="n">num_elements</span><span class="o">=</span><span class="n">num_elements</span><span class="p">,</span>
                                <span class="n">end_position</span><span class="o">=</span><span class="n">end_position</span><span class="p">,</span>
                                <span class="n">end_release_time</span><span class="o">=</span><span class="n">end_release_time</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">Spill</span><span class="p">(</span><span class="n">release</span><span class="p">,</span>
-                 <span class="n">element_type</span><span class="p">,</span>
-                 <span class="n">substance</span><span class="p">,</span>
-                 <span class="n">on</span><span class="p">,</span>
-                 <span class="n">amount</span><span class="p">,</span>
-                 <span class="n">units</span><span class="p">,</span>
-                 <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">spill</span> <span class="o">=</span> <span class="n">Spill</span><span class="p">(</span><span class="n">release</span><span class="p">,</span>
+                  <span class="n">water</span><span class="o">=</span><span class="n">water</span><span class="p">,</span>
+                  <span class="n">element_type</span><span class="o">=</span><span class="n">element_type</span><span class="p">,</span>
+                  <span class="n">substance</span><span class="o">=</span><span class="n">substance</span><span class="p">,</span>
+                  <span class="n">on</span><span class="o">=</span><span class="n">on</span><span class="p">,</span>
+                  <span class="n">amount</span><span class="o">=</span><span class="n">amount</span><span class="p">,</span>
+                  <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span>
+                  <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">spill</span>
 </pre></div>
 
            </div>

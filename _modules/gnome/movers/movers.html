@@ -169,9 +169,9 @@
     <span class="n">active_stop</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span>
                              <span class="n">validator</span><span class="o">=</span><span class="n">convertible_to_seconds</span><span class="p">)</span>
     <span class="n">real_data_start</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span>
-                              <span class="n">validator</span><span class="o">=</span><span class="n">convertible_to_seconds</span><span class="p">)</span>
+                                 <span class="n">validator</span><span class="o">=</span><span class="n">convertible_to_seconds</span><span class="p">)</span>
     <span class="n">real_data_stop</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span>
-                             <span class="n">validator</span><span class="o">=</span><span class="n">convertible_to_seconds</span><span class="p">)</span>
+                                <span class="n">validator</span><span class="o">=</span><span class="n">convertible_to_seconds</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Process"><a class="viewcode-back" href="../../../reference.html#gnome.movers.Process">[docs]</a><span class="k">class</span> <span class="nc">Process</span><span class="p">(</span><span class="n">AddLogger</span><span class="p">):</span>
@@ -184,11 +184,13 @@
 <span class="sd">    a class level _schema attribute.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
-    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;on&#39;</span><span class="p">,</span> <span class="s1">&#39;active_start&#39;</span><span class="p">,</span> <span class="s1">&#39;active_stop&#39;</span><span class="p">,</span> <span class="s1">&#39;real_data_start&#39;</span><span class="p">,</span> <span class="s1">&#39;real_data_stop&#39;</span><span class="p">],</span>
-               <span class="n">save</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;on&#39;</span><span class="p">,</span> <span class="s1">&#39;active_start&#39;</span><span class="p">,</span> <span class="s1">&#39;active_stop&#39;</span><span class="p">,</span> <span class="s1">&#39;real_data_start&#39;</span><span class="p">,</span> <span class="s1">&#39;real_data_stop&#39;</span><span class="p">],</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;on&#39;</span><span class="p">,</span> <span class="s1">&#39;active_start&#39;</span><span class="p">,</span> <span class="s1">&#39;active_stop&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;real_data_start&#39;</span><span class="p">,</span> <span class="s1">&#39;real_data_stop&#39;</span><span class="p">],</span>
+               <span class="n">save</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;on&#39;</span><span class="p">,</span> <span class="s1">&#39;active_start&#39;</span><span class="p">,</span> <span class="s1">&#39;active_stop&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;real_data_start&#39;</span><span class="p">,</span> <span class="s1">&#39;real_data_stop&#39;</span><span class="p">],</span>
                <span class="n">read</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;active&#39;</span><span class="p">])</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>   <span class="c1"># default min + max values for timespan</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>  <span class="c1"># default min + max values for timespan</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize default Mover/Weatherer parameters</span>
 
@@ -197,8 +199,10 @@
 <span class="sd">        :param on: boolean as to whether the object is on or not. Default is on</span>
 <span class="sd">        :param active_start: datetime when the mover should be active</span>
 <span class="sd">        :param active_stop: datetime after which the mover should be inactive</span>
-<span class="sd">        :param real_data_start: datetime when the mover first has data (not including extrapolation)</span>
-<span class="sd">        :param real_data_stop: datetime after which the mover has no data (not including extrapolation)</span>
+<span class="sd">        :param real_data_start: datetime when the mover first has data</span>
+<span class="sd">                                (not including extrapolation)</span>
+<span class="sd">        :param real_data_stop: datetime after which the mover has no data</span>
+<span class="sd">                               (not including extrapolation)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;on&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>  <span class="c1"># turn the mover on / off for the run</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span>  <span class="c1"># initial value</span>
@@ -209,16 +213,16 @@
                                  <span class="n">inf_datetime</span><span class="o">.</span><span class="n">InfDateTime</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
 
         <span class="n">real_data_start</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;real_data_start&#39;</span><span class="p">,</span>
-                                  <span class="n">inf_datetime</span><span class="o">.</span><span class="n">InfDateTime</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">))</span>
+                                     <span class="n">inf_datetime</span><span class="o">.</span><span class="n">InfDateTime</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">))</span>
         <span class="n">real_data_stop</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;real_data_stop&#39;</span><span class="p">,</span>
-                                 <span class="n">inf_datetime</span><span class="o">.</span><span class="n">InfDateTime</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
+                                    <span class="n">inf_datetime</span><span class="o">.</span><span class="n">InfDateTime</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_active_startstop</span><span class="p">(</span><span class="n">active_start</span><span class="p">,</span> <span class="n">active_stop</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_active_start</span> <span class="o">=</span> <span class="n">active_start</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_active_stop</span> <span class="o">=</span> <span class="n">active_stop</span>
 
-                <span class="c1"># not sure if we would ever pass this in...</span>
+        <span class="c1"># not sure if we would ever pass this in...</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_active_startstop</span><span class="p">(</span><span class="n">real_data_start</span><span class="p">,</span> <span class="n">real_data_stop</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">real_data_start</span> <span class="o">=</span> <span class="n">real_data_start</span>
@@ -299,11 +303,10 @@
 <span class="sd">        :param model_time_datetime: current model time as datetime object</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_start</span> <span class="o">&lt;=</span>
-            <span class="p">(</span><span class="n">model_time_datetime</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="ow">and</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">&gt;=</span>
-            <span class="p">(</span><span class="n">model_time_datetime</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="ow">and</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">):</span>
+        <span class="n">half_timestep</span> <span class="o">=</span> <span class="n">model_time_datetime</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_start</span> <span class="o">&lt;=</span> <span class="n">half_timestep</span> <span class="ow">and</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">&gt;=</span> <span class="n">half_timestep</span> <span class="ow">and</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="kc">False</span></div>
@@ -341,42 +344,67 @@
 
         <span class="k">return</span> <span class="n">delta</span></div></div>
 
-<span class="k">class</span> <span class="nc">PyMover</span><span class="p">(</span><span class="n">Mover</span><span class="p">):</span>
 
+<span class="k">class</span> <span class="nc">PyMover</span><span class="p">(</span><span class="n">Mover</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">default_num_method</span><span class="o">=</span><span class="s1">&#39;Trapezoid&#39;</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_methods</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;RK4&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_delta_RK4</span><span class="p">,</span>
                             <span class="s1">&#39;Euler&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_delta_Euler</span><span class="p">,</span>
-                            <span class="s1">&#39;Trapezoid&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">get_delta_Trapezoid</span><span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">default_num_method</span><span class="o">=</span><span class="n">default_num_method</span>
+                            <span class="s1">&#39;Trapezoid&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_delta_Trapezoid</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_num_method</span> <span class="o">=</span> <span class="n">default_num_method</span>
+
+        <span class="k">if</span> <span class="s1">&#39;env&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_req_refs&#39;</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_req_refs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;env&#39;</span><span class="p">]:</span>
+                        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">o</span><span class="o">.</span><span class="n">_ref_as</span><span class="p">:</span>
+                            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span>
         <span class="n">Mover</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_delta_Euler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">vel_field</span><span class="p">):</span>
-        <span class="n">vels</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pos</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">model_time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span>
+        <span class="n">vels</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span>
+                            <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">vels</span> <span class="o">*</span> <span class="n">time_step</span>
 
     <span class="k">def</span> <span class="nf">get_delta_Trapezoid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">vel_field</span><span class="p">):</span>
         <span class="n">dt</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="p">)</span>
         <span class="n">dt_s</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">seconds</span>
         <span class="n">t</span> <span class="o">=</span> <span class="n">model_time</span>
-        <span class="n">v0</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="n">v0</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span>
         <span class="n">d0</span> <span class="o">=</span> <span class="n">FlatEarthProjection</span><span class="o">.</span><span class="n">meters_to_lonlat</span><span class="p">(</span><span class="n">v0</span> <span class="o">*</span> <span class="n">dt_s</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
-        <span class="n">v1</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="n">d0</span><span class="p">,</span> <span class="n">t</span> <span class="o">+</span> <span class="n">dt</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
-        <span class="k">return</span>  <span class="n">dt_s</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">v0</span> <span class="o">+</span> <span class="n">v1</span><span class="p">)</span>
+        <span class="n">p1</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">p1</span> <span class="o">+=</span> <span class="n">d0</span>
+
+        <span class="n">v1</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">t</span> <span class="o">+</span> <span class="n">dt</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dt_s</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">v0</span> <span class="o">+</span> <span class="n">v1</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_delta_RK4</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">vel_field</span><span class="p">):</span>
         <span class="n">dt</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="p">)</span>
         <span class="n">dt_s</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">seconds</span>
         <span class="n">t</span> <span class="o">=</span> <span class="n">model_time</span>
-        <span class="n">v0</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">d0</span> <span class="o">=</span> <span class="n">FlatEarthProjection</span><span class="o">.</span><span class="n">meters_to_lonlat</span><span class="p">(</span><span class="n">v0</span> <span class="o">*</span> <span class="n">dt_s</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
-        <span class="n">v1</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="n">d0</span><span class="p">,</span> <span class="n">t</span> <span class="o">+</span> <span class="n">dt</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">d1</span> <span class="o">=</span> <span class="n">FlatEarthProjection</span><span class="o">.</span><span class="n">meters_to_lonlat</span><span class="p">(</span><span class="n">v1</span> <span class="o">*</span> <span class="n">dt_s</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
-        <span class="n">v2</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="n">d1</span><span class="p">,</span> <span class="n">t</span> <span class="o">+</span> <span class="n">dt</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="n">v0</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span>
+        <span class="n">d0</span> <span class="o">=</span> <span class="n">FlatEarthProjection</span><span class="o">.</span><span class="n">meters_to_lonlat</span><span class="p">(</span><span class="n">v0</span> <span class="o">*</span> <span class="n">dt_s</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+        <span class="n">p1</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">p1</span> <span class="o">+=</span> <span class="n">d0</span>
+
+        <span class="n">v1</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">t</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span>
+        <span class="n">d1</span> <span class="o">=</span> <span class="n">FlatEarthProjection</span><span class="o">.</span><span class="n">meters_to_lonlat</span><span class="p">(</span><span class="n">v1</span> <span class="o">*</span> <span class="n">dt_s</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+        <span class="n">p2</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">p2</span> <span class="o">+=</span> <span class="n">d1</span>
+
+        <span class="n">v2</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">p2</span><span class="p">,</span> <span class="n">t</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span>
         <span class="n">d2</span> <span class="o">=</span> <span class="n">FlatEarthProjection</span><span class="o">.</span><span class="n">meters_to_lonlat</span><span class="p">(</span><span class="n">v2</span> <span class="o">*</span> <span class="n">dt_s</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
-        <span class="n">v3</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="n">d2</span><span class="p">,</span> <span class="n">t</span> <span class="o">+</span> <span class="n">dt</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
-        <span class="k">return</span> <span class="n">dt_s</span><span class="o">/</span><span class="mi">6</span> <span class="o">*</span> <span class="p">(</span><span class="n">v0</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">v1</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">v2</span> <span class="o">+</span> <span class="n">v3</span><span class="p">)</span>
+        <span class="n">p3</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">p3</span> <span class="o">+=</span> <span class="n">d2</span>
+
+        <span class="n">v3</span> <span class="o">=</span> <span class="n">vel_field</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">p3</span><span class="p">,</span> <span class="n">t</span> <span class="o">+</span> <span class="n">dt</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dt_s</span> <span class="o">/</span> <span class="mi">6</span> <span class="o">*</span> <span class="p">(</span><span class="n">v0</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">v1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">v2</span> <span class="o">+</span> <span class="n">v3</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="CyMover"><a class="viewcode-back" href="../../../reference.html#gnome.movers.CyMover">[docs]</a><span class="k">class</span> <span class="nc">CyMover</span><span class="p">(</span><span class="n">Mover</span><span class="p">):</span>
@@ -429,14 +457,16 @@
 <span class="sd">        Uses super to invoke Mover class prepare_for_model_step and does a</span>
 <span class="sd">        couple more things specific to CyMover.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">CyMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time_datetime</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CyMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span>
+                                                    <span class="n">model_time_datetime</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
             <span class="n">uncertain_spill_count</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">uncertain_spill_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+            <span class="n">uncertain_spill_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="mi">0</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span><span class="p">:</span>
                 <span class="n">uncertain_spill_count</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="n">uncertain_spill_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">sc</span><span class="o">.</span><span class="n">num_released</span><span class="p">,</span> <span class="p">),</span>
+                <span class="n">uncertain_spill_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">sc</span><span class="o">.</span><span class="n">num_released</span><span class="p">,),</span>
                                                 <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
 
             <span class="n">err</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span>
@@ -444,11 +474,15 @@
                         <span class="n">time_step</span><span class="p">,</span> <span class="n">uncertain_spill_count</span><span class="p">,</span> <span class="n">uncertain_spill_size</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">err</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;No available data in the time interval that is being modeled&quot;</span><span class="p">]</span>
-                <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Model time: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">model_time_datetime</span><span class="p">)</span>
-                <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Mover: </span><span class="si">%s</span><span class="s2"> of type </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">))</span>
-                <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Data available from </span><span class="si">%s</span><span class="s2"> to </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">real_data_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">real_data_stop</span><span class="p">))</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;No available data in the time interval &#39;</span>
+                       <span class="s1">&#39;that is being modeled</span><span class="se">\n</span><span class="s1">&#39;</span>
+                       <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">Model time: </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                       <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">Mover: </span><span class="si">{}</span><span class="s1"> of type </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                       <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">Data available from </span><span class="si">{}</span><span class="s1"> to </span><span class="si">{}</span><span class="s1">&#39;</span>
+                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_time_datetime</span><span class="p">,</span>
+                               <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span>
+                               <span class="bp">self</span><span class="o">.</span><span class="n">real_data_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">real_data_stop</span><span class="p">))</span>
+
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
 
@@ -472,8 +506,8 @@
                                 <span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
                                 <span class="bp">self</span><span class="o">.</span><span class="n">status_codes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spill_type</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-                <span class="nb">len</span><span class="p">(</span><span class="n">world_point</span><span class="p">)))</span></div>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">world_point</span><span class="p">))))</span></div>
 
 <div class="viewcode-block" id="CyMover.prepare_data_for_get_move"><a class="viewcode-back" href="../../../reference.html#gnome.movers.CyMover.prepare_data_for_get_move">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_data_for_get_move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">model_time_datetime</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -499,12 +533,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">spill_type</span> <span class="o">=</span> <span class="n">spill_type</span><span class="o">.</span><span class="n">forecast</span>
 
         <span class="c1"># Array is not the same size, change view and reshape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">world_point</span><span class="p">)</span>
+                          <span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">),)))</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> \
-            <span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">world_point</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
-                                                    <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">),))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">),</span>
-                              <span class="n">dtype</span><span class="o">=</span><span class="n">world_point</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">world_point</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CyMover.model_step_is_done"><a class="viewcode-back" href="../../../reference.html#gnome.movers.CyMover.model_step_is_done">[docs]</a>    <span class="k">def</span> <span class="nf">model_step_is_done</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -519,8 +551,9 @@
                         <span class="bp">self</span><span class="o">.</span><span class="n">status_codes</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s1">&#39;status_codes&#39;</span><span class="p">]</span>
                     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="n">err</span><span class="p">:</span>
                         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The spill container does not have&#39;</span>
-                                         <span class="s1">&#39; the required data array</span><span class="se">\n</span><span class="s1">&#39;</span>
-                                         <span class="o">+</span> <span class="n">err</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                                         <span class="s1">&#39; the required data array</span><span class="se">\n</span><span class="si">{}</span><span class="s1">&#39;</span>
+                                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">message</span><span class="p">))</span>
+
                     <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status_codes</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>

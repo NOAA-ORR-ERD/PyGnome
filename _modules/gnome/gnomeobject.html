@@ -276,6 +276,20 @@
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">val</span>
 
+    <span class="k">def</span> <span class="nf">_attach_default_refs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref_dict</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        If provided a dictionary of references this function will validate it</span>
+<span class="sd">        against the _req_refs specified by the class, and if a match is found</span>
+<span class="sd">        and the instance&#39;s reference is None, it will set it to the instance </span>
+<span class="sd">        from ref_dict</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_req_refs&#39;</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ref_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">ref_dict</span><span class="p">[</span><span class="n">var</span><span class="p">])</span>
+
     <span class="k">def</span> <span class="nf">validate_refs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">refs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;wind&#39;</span><span class="p">,</span> <span class="s1">&#39;water&#39;</span><span class="p">,</span> <span class="s1">&#39;waves&#39;</span><span class="p">]):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        level is the logging level to use for messages. Default is &#39;warning&#39;</span>

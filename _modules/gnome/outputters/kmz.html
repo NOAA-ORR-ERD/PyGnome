@@ -240,6 +240,9 @@
                                                      <span class="n">spills</span><span class="p">,</span>
                                                      <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+            <span class="k">return</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">delete_output_files</span><span class="p">()</span>
         <span class="c1"># shouldn&#39;t be required if the above worked!</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_file_exists_error</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
@@ -259,7 +262,7 @@
 
         <span class="nb">super</span><span class="p">(</span><span class="n">KMZOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
 
 

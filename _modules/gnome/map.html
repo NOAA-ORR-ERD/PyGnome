@@ -159,7 +159,7 @@
 
 <span class="kn">import</span> <span class="nn">py_gd</span>
 <span class="kn">from</span> <span class="nn">osgeo</span> <span class="k">import</span> <span class="n">ogr</span>
-<span class="c1">#import pyugrid</span>
+<span class="c1"># import pyugrid</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
@@ -415,6 +415,8 @@
         <span class="n">next_positions</span> <span class="o">=</span> <span class="n">spill</span><span class="p">[</span><span class="s1">&#39;next_positions&#39;</span><span class="p">]</span>
         <span class="n">status_codes</span> <span class="o">=</span> <span class="n">spill</span><span class="p">[</span><span class="s1">&#39;status_codes&#39;</span><span class="p">]</span>
         <span class="n">off_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_map</span><span class="p">(</span><span class="n">next_positions</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">next_positions</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">off_map</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;All particles left the map this timestep.&quot;</span><span class="p">)</span>
 
         <span class="c1"># let model decide if we want to remove elements marked as off-map</span>
         <span class="n">status_codes</span><span class="p">[</span><span class="n">off_map</span><span class="p">]</span> <span class="o">=</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">off_maps</span>
@@ -715,7 +717,7 @@
 <span class="sd">        :param spill_container: the current spill container</span>
 <span class="sd">        :type spill_container:  :class:`gnome.spill_container.SpillContainer`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">r_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">spill_container</span><span class="p">[</span><span class="s1">&#39;status_codes&#39;</span><span class="p">]</span> <span class="o">==</span>
+        <span class="n">r_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">spill_container</span><span class="p">[</span><span class="s1">&#39;status_codes&#39;</span><span class="p">]</span> <span class="o">==</span> 
                          <span class="n">oil_status</span><span class="o">.</span><span class="n">on_land</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">r_idx</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># no particles on land</span>
@@ -724,7 +726,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refloat_halflife</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
             <span class="c1"># if 0.0, then r_idx is all of them -- they will all refloat.</span>
             <span class="c1"># refloat particles based on probability</span>
-            <span class="n">refloat_probability</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">time_step</span><span class="p">)</span> <span class="o">/</span>
+            <span class="n">refloat_probability</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">time_step</span><span class="p">)</span> <span class="o">/</span> 
                                                 <span class="bp">self</span><span class="o">.</span><span class="n">_refloat_halflife</span><span class="p">)</span>
             <span class="n">rnd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_idx</span><span class="p">))</span>
 
@@ -1069,7 +1071,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># index into array of particles on_land</span>
 
-        <span class="n">r_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">spill_container</span><span class="p">[</span><span class="s1">&#39;status_codes&#39;</span><span class="p">]</span> <span class="o">==</span>
+        <span class="n">r_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">spill_container</span><span class="p">[</span><span class="s1">&#39;status_codes&#39;</span><span class="p">]</span> <span class="o">==</span> 
                          <span class="n">oil_status</span><span class="o">.</span><span class="n">on_land</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">r_idx</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># no particles on land</span>
@@ -1079,7 +1081,7 @@
             <span class="c1"># if 0.0, then r_idx is all of them -- they will all refloat.</span>
             <span class="c1"># refloat particles based on probability</span>
 
-            <span class="n">refloat_probability</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">time_step</span><span class="p">)</span> <span class="o">/</span>
+            <span class="n">refloat_probability</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">time_step</span><span class="p">)</span> <span class="o">/</span> 
                                                 <span class="bp">self</span><span class="o">.</span><span class="n">_refloat_halflife</span><span class="p">)</span>
             <span class="n">rnd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_idx</span><span class="p">))</span>
 
@@ -1238,7 +1240,7 @@
 
         <span class="c1"># stretch the bounding box, to get approximate aspect ratio in</span>
         <span class="c1"># projected coords.</span>
-        <span class="n">aspect_ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">BB</span><span class="o">.</span><span class="n">Center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span> <span class="o">*</span>
+        <span class="n">aspect_ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">BB</span><span class="o">.</span><span class="n">Center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span> <span class="o">*</span> 
                         <span class="p">(</span><span class="n">BB</span><span class="o">.</span><span class="n">Width</span> <span class="o">/</span> <span class="n">BB</span><span class="o">.</span><span class="n">Height</span><span class="p">))</span>
 
         <span class="n">w</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">raster_size</span> <span class="o">*</span> <span class="n">aspect_ratio</span><span class="p">))</span>
@@ -1426,7 +1428,7 @@
 
         <span class="c1"># stretch the bounding box, to get approximate aspect ratio in</span>
         <span class="c1"># projected coords.</span>
-        <span class="n">aspect_ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">BB</span><span class="o">.</span><span class="n">Center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span> <span class="o">*</span>
+        <span class="n">aspect_ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">BB</span><span class="o">.</span><span class="n">Center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span> <span class="o">*</span> 
                         <span class="p">(</span><span class="n">BB</span><span class="o">.</span><span class="n">Width</span> <span class="o">/</span> <span class="n">BB</span><span class="o">.</span><span class="n">Height</span><span class="p">))</span>
 
         <span class="n">w</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">raster_size</span> <span class="o">*</span> <span class="n">aspect_ratio</span><span class="p">))</span>

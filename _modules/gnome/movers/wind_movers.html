@@ -158,6 +158,7 @@
 <span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="k">import</span> <span class="n">time_utils</span>
 
 <span class="kn">from</span> <span class="nn">gnome</span> <span class="k">import</span> <span class="n">environment</span>
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="k">import</span> <span class="n">basic_types</span>
 <span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="k">import</span> <span class="n">CyMover</span><span class="p">,</span> <span class="n">ProcessSchema</span>
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_wind_mover</span> <span class="k">import</span> <span class="n">CyWindMover</span>
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_gridwind_mover</span> <span class="k">import</span> <span class="n">CyGridWindMover</span>
@@ -501,7 +502,8 @@
 
 <span class="k">class</span> <span class="nc">GridWindMoverSchema</span><span class="p">(</span><span class="n">WindMoversBaseSchema</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Similar to WindMover except it doesn&#39;t have wind_id&quot;&quot;&quot;</span>
-    <span class="n">wind_file</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="c1">#wind_file = SchemaNode(String(), missing=drop)</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
     <span class="n">topology_file</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
     <span class="n">wind_scale</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
     <span class="n">extrapolate</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Bool</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
@@ -510,18 +512,21 @@
 <div class="viewcode-block" id="GridWindMover"><a class="viewcode-back" href="../../../reference.html#gnome.movers.GridWindMover">[docs]</a><span class="k">class</span> <span class="nc">GridWindMover</span><span class="p">(</span><span class="n">WindMoversBase</span><span class="p">,</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">WindMoversBase</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
     <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;wind_scale&#39;</span><span class="p">,</span> <span class="s1">&#39;extrapolate&#39;</span><span class="p">],</span> <span class="n">save</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;wind_scale&#39;</span><span class="p">,</span> <span class="s1">&#39;extrapolate&#39;</span><span class="p">])</span>
-    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;wind_file&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="c1">#_state.add_field([serializable.Field(&#39;wind_file&#39;, save=True,</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
                     <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;topology_file&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)])</span>
 
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">GridWindMoverSchema</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wind_file</span><span class="p">,</span> <span class="n">topology_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="c1">#def __init__(self, wind_file, topology_file=None,</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">topology_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">time_offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param wind_file: file containing wind data on a grid</span>
+<span class="sd">        :param filename: file containing wind data on a grid</span>
 <span class="sd">        :param topology_file: Default is None. When exporting topology, it</span>
 <span class="sd">                              is stored in this file</span>
 <span class="sd">        :param wind_scale: Value to scale wind data</span>
@@ -533,9 +538,10 @@
 <span class="sd">        uses super: super(GridWindMover,self).__init__(\*\*kwargs)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">wind_file</span><span class="p">):</span>
+        <span class="c1">#if not os.path.exists(wind_file):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Path for wind file does not exist: </span><span class="si">{0}</span><span class="s1">&#39;</span>
-                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wind_file</span><span class="p">))</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="n">topology_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">topology_file</span><span class="p">):</span>
@@ -543,13 +549,16 @@
                                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">topology_file</span><span class="p">))</span>
 
         <span class="c1"># is wind_file and topology_file is stored with cy_gridwind_mover?</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">wind_file</span> <span class="o">=</span> <span class="n">wind_file</span>
+        <span class="c1">#self.wind_file = wind_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">topology_file</span> <span class="o">=</span> <span class="n">topology_file</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span> <span class="o">=</span> <span class="n">CyGridWindMover</span><span class="p">(</span><span class="n">wind_scale</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;wind_scale&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">wind_file</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1">#self.name = os.path.split(wind_file)[1]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">filename</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">GridWindMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">text_read</span><span class="p">(</span><span class="n">wind_file</span><span class="p">,</span> <span class="n">topology_file</span><span class="p">)</span>
+        <span class="c1">#self.mover.text_read(wind_file, topology_file)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">text_read</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">topology_file</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">real_data_start</span> <span class="o">=</span> <span class="n">time_utils</span><span class="o">.</span><span class="n">sec_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_start_time</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">real_data_stop</span> <span class="o">=</span> <span class="n">time_utils</span><span class="o">.</span><span class="n">sec_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_end_time</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">extrapolate_in_time</span><span class="p">(</span><span class="n">extrapolate</span><span class="p">)</span>
@@ -582,6 +591,62 @@
                            <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span>
                                                      <span class="s1">&#39;time_offset&#39;</span><span class="p">,</span>
                                                      <span class="n">val</span> <span class="o">*</span> <span class="mf">3600.</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">get_grid_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cells</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GridWindMover.get_cells"><a class="viewcode-back" href="../../../reference.html#gnome.movers.GridWindMover.get_cells">[docs]</a>    <span class="k">def</span> <span class="nf">get_cells</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Invokes the GetCellDataHdl method of TimeGridWind_c object.</span>
+<span class="sd">            Cross-references point data to get cell coordinates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cell_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_get_cell_data</span><span class="p">()</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
+
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">cell_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">descr</span>
+        <span class="n">unstructured_type</span> <span class="o">=</span> <span class="n">dtype</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">unstructured</span> <span class="o">=</span> <span class="p">(</span><span class="n">cell_data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">unstructured_type</span><span class="p">)</span>
+                        <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dtype</span><span class="p">))[:,</span> <span class="mi">1</span><span class="p">:])</span>
+
+        <span class="k">return</span> <span class="n">points</span><span class="p">[</span><span class="n">unstructured</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="nf">get_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_get_points</span><span class="p">()</span>
+                  <span class="o">.</span><span class="n">astype</span><span class="p">([(</span><span class="s1">&#39;long&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">)]))</span>
+        <span class="n">points</span><span class="p">[</span><span class="s1">&#39;long&#39;</span><span class="p">]</span> <span class="o">/=</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">6</span>
+        <span class="n">points</span><span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">]</span> <span class="o">/=</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">6</span>
+
+        <span class="k">return</span> <span class="n">points</span>
+
+<div class="viewcode-block" id="GridWindMover.get_cell_center_points"><a class="viewcode-back" href="../../../reference.html#gnome.movers.GridWindMover.get_cell_center_points">[docs]</a>    <span class="k">def</span> <span class="nf">get_cell_center_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Right now the cython mover only gets the triangular center points,</span>
+<span class="sd">        so we need to calculate centers based on the cells themselves.</span>
+
+<span class="sd">        Cells will have the format (tl, tr, bl, br)</span>
+<span class="sd">        We need to get the rectangular centers</span>
+<span class="sd">        Center will be: (tl + ((br - tl) / 2.))</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_get_center_points</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;&lt;f8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">get_center_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cell_center_points</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GridWindMover.get_scaled_velocities"><a class="viewcode-back" href="../../../reference.html#gnome.movers.GridWindMover.get_scaled_velocities">[docs]</a>    <span class="k">def</span> <span class="nf">get_scaled_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param model_time=0:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># regular and curvilinear grids only</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_is_regular_grid</span><span class="p">():</span>
+            <span class="n">num_cells</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_num_points</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">num_tri</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_num_triangles</span><span class="p">()</span>
+            <span class="n">num_cells</span> <span class="o">=</span> <span class="n">num_tri</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="c1"># will need to update this for regular grids</span>
+        <span class="n">vels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_cells</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">velocity_rec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_scaled_velocities</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">vels</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">vels</span></div>
 
 <div class="viewcode-block" id="GridWindMover.export_topology"><a class="viewcode-back" href="../../../reference.html#gnome.movers.GridWindMover.export_topology">[docs]</a>    <span class="k">def</span> <span class="nf">export_topology</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topology_file</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>

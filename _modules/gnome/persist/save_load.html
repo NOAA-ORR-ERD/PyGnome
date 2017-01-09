@@ -145,6 +145,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="kn">import</span> <span class="nn">gnome</span>
+<span class="kn">import</span> <span class="nn">colander</span>
 
 <span class="c1"># as long as loggers are configured before module is loaded, module scope</span>
 <span class="c1"># logger will work. If loggers are configured after this module is loaded and</span>
@@ -470,24 +471,43 @@
         <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
                 <span class="k">continue</span>
-
-            <span class="c1"># data filename</span>
-            <span class="n">d_fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
-
-            <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
-                <span class="c1"># add datafile to zip archive</span>
-                <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span>
-                                     <span class="n">compression</span><span class="o">=</span><span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">,</span>
-                                     <span class="n">allowZip64</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_allowzip64</span><span class="p">)</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">d_fname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">z</span><span class="o">.</span><span class="n">namelist</span><span class="p">():</span>
-                        <span class="n">z</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">d_fname</span><span class="p">)</span>
+            
+            <span class="n">raw_paths</span> <span class="o">=</span> <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_paths</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">raw_paths</span><span class="p">):</span>
+                    <span class="n">d_fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">p</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+                        <span class="c1"># add datafile to zip archive</span>
+                        <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span>
+                                             <span class="n">compression</span><span class="o">=</span><span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">,</span>
+                                             <span class="n">allowZip64</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_allowzip64</span><span class="p">)</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">d_fname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">z</span><span class="o">.</span><span class="n">namelist</span><span class="p">():</span>
+                                <span class="n">z</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">d_fname</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># move datafile to saveloc</span>
+                        <span class="k">if</span> <span class="n">p</span> <span class="o">!=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">d_fname</span><span class="p">):</span>
+                            <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">)</span>
+    
+                    <span class="c1"># always want to update the reference so it is relative to saveloc</span>
+                    <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">d_fname</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># move datafile to saveloc</span>
-                <span class="k">if</span> <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">!=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">d_fname</span><span class="p">):</span>
-                    <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">saveloc</span><span class="p">)</span>
-
-            <span class="c1"># always want to update the reference so it is relative to saveloc</span>
-            <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">d_fname</span>
+                <span class="c1"># data filename</span>
+                <span class="n">d_fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
+    
+                <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
+                    <span class="c1"># add datafile to zip archive</span>
+                    <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span>
+                                         <span class="n">compression</span><span class="o">=</span><span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">,</span>
+                                         <span class="n">allowZip64</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_allowzip64</span><span class="p">)</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">d_fname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">z</span><span class="o">.</span><span class="n">namelist</span><span class="p">():</span>
+                            <span class="n">z</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">d_fname</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># move datafile to saveloc</span>
+                    <span class="k">if</span> <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">!=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">d_fname</span><span class="p">):</span>
+                        <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">saveloc</span><span class="p">)</span>
+    
+                <span class="c1"># always want to update the reference so it is relative to saveloc</span>
+                <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">d_fname</span>
 
         <span class="k">return</span> <span class="n">json_</span>
 
@@ -535,8 +555,13 @@
                 <span class="c1"># For zip files coming from the web, is_savezip_valid() tests</span>
                 <span class="c1"># filenames in archive do not contain paths with &#39;..&#39;</span>
                 <span class="c1"># In here, we just extract datafile to saveloc/.</span>
-                <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
-                                                     <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+                <span class="n">raw_n</span> <span class="o">=</span> <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_n</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">raw_n</span><span class="p">):</span>
+                        <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
+                                                         <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -569,7 +594,11 @@
         <span class="n">cls</span><span class="o">.</span><span class="n">_update_datafile_path</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">)</span>
 
         <span class="c1"># deserialize after removing references</span>
-        <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">colander</span><span class="o">.</span><span class="n">Invalid</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Class </span><span class="si">{0}</span><span class="s1"> failed to deserialize.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="n">e</span>
 
         <span class="k">if</span> <span class="n">ref_dict</span><span class="p">:</span>
             <span class="n">_to_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ref_dict</span><span class="p">)</span>

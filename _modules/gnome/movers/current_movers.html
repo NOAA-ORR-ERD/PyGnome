@@ -556,7 +556,7 @@
                  <span class="n">current_scale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                  <span class="n">uncertain_along</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
                  <span class="n">uncertain_across</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
-                 <span class="n">num_method</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">numerical_methods</span><span class="o">.</span><span class="n">euler</span><span class="p">,</span>
+                 <span class="n">num_method</span><span class="o">=</span><span class="s1">&#39;Euler&#39;</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize a GridCurrentMover</span>
@@ -616,7 +616,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">offset_time</span><span class="p">(</span><span class="n">time_offset</span> <span class="o">*</span> <span class="mf">3600.</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_method</span> <span class="o">=</span> <span class="n">num_method</span>
 
-        <span class="c1">#super(GridCurrentMover, self).__init__(**kwargs)</span>
+        <span class="c1"># super(GridCurrentMover, self).__init__(**kwargs)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">topology_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">topology_file</span> <span class="o">=</span> <span class="n">filename</span> <span class="o">+</span> <span class="s1">&#39;.dat&#39;</span>
@@ -669,10 +669,15 @@
                            <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span>
                                                      <span class="s1">&#39;time_offset&#39;</span><span class="p">,</span>
                                                      <span class="n">val</span> <span class="o">*</span> <span class="mf">3600.</span><span class="p">))</span>
-    <span class="n">num_method</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">num_method</span><span class="p">,</span>
-                          <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span>
-                                                    <span class="s1">&#39;num_method&#39;</span><span class="p">,</span>
-                                                    <span class="n">val</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_method</span>
+
+    <span class="nd">@num_method</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">num_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">num_method</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_method</span> <span class="o">=</span> <span class="n">val</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_data_on_cells</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1177,9 +1182,11 @@
     <span class="c1"># scale_value = SchemaNode(Float())</span>
 
 
-<span class="k">class</span> <span class="nc">ComponentMover</span><span class="p">(</span><span class="n">CyMover</span><span class="p">,</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
+<span class="c1"># class ComponentMover(CyMover, serializable.Serializable):</span>
+<span class="k">class</span> <span class="nc">ComponentMover</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
 
-    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">CyMover</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="c1"># _state = copy.deepcopy(CyMover._state)</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
 
     <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;scale_refpoint&#39;</span><span class="p">,</span>
                <span class="s1">&#39;pat1_angle&#39;</span><span class="p">,</span> <span class="s1">&#39;pat1_speed&#39;</span><span class="p">,</span> <span class="s1">&#39;pat1_speed_units&#39;</span><span class="p">,</span>
@@ -1374,6 +1381,35 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">set_ossm</span><span class="p">(</span><span class="n">wind_obj</span><span class="o">.</span><span class="n">ossm</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_wind</span> <span class="o">=</span> <span class="n">wind_obj</span>
+
+    <span class="k">def</span> <span class="nf">get_grid_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Invokes the GetToplogyHdl method of TriGridVel_c object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># we are assuming cats are always triangle grids,</span>
+        <span class="c1"># but may want to extend</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_triangles</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_center_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_triangle_center_points</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_scaled_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get file values scaled to ref pt value, with tide applied (if any)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">velocities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_get_velocity_handle</span><span class="p">()</span>
+        <span class="c1"># ref_scale = self.ref_scale  # this needs to be computed, needs a time</span>
+
+        <span class="c1"># if self._tide is not None:</span>
+            <span class="c1"># time_value = self._tide.cy_obj.get_time_value(model_time)</span>
+            <span class="c1"># tide = time_value[0][0]</span>
+        <span class="c1"># else:</span>
+            <span class="c1"># tide = 1</span>
+
+        <span class="c1"># velocities[&#39;u&#39;] *= ref_scale * tide</span>
+        <span class="c1"># velocities[&#39;v&#39;] *= ref_scale * tide</span>
+
+        <span class="k">return</span> <span class="n">velocities</span>
 
     <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s1">&#39;webapi&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>

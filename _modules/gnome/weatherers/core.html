@@ -182,7 +182,7 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="c1"># arrays that all weatherers will update - use this to ask</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;mass_components&#39;</span><span class="p">,</span> <span class="s1">&#39;mass&#39;</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;mass_components&#39;</span><span class="p">,</span> <span class="s1">&#39;mass&#39;</span><span class="p">,</span> <span class="s1">&#39;init_mass&#39;</span><span class="p">})</span>
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0.__class__.__module__}</span><span class="s1">.</span><span class="si">{0.__class__.__name__}</span><span class="s1">(&#39;</span>

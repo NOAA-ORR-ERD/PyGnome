@@ -96,10 +96,15 @@
 <li class="toctree-l4"><a class="reference internal" href="#setting-up">Setting up</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#update-your-new-system">Update your (new) system</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#setting-up-anaconda-org-channels">Setting up anaconda.org channels</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-extra-channels-to-conda">Adding extra channels to conda:</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#conda-environments">conda environments</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#download-gnome">Download GNOME</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cloning-the-pygnome-git-repoository">Cloning the PyGNOME git repoository</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#git">git</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#id1">Dependencies</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#the-oil-library">The Oil Library</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#compilers">Compilers</a><ul>
@@ -198,9 +203,10 @@ distribution that has most of the difficult-to-build packages that
 GNOME on your own system.</p>
 <div class="section" id="anaconda-vs-miniconda">
 <h3>Anaconda vs miniconda:<a class="headerlink" href="#anaconda-vs-miniconda" title="Permalink to this headline">¶</a></h3>
-<p><a class="reference external" href="https://store.continuum.io/cshop/anaconda/">Anaconda</a> provides a fairly complete pyton sytsem for computationl programming &#8211; it is a large install, but comes with a lot of nice stuff pre-pacakged that all works together.</p>
-<p><a class="reference external" href="http://conda.pydata.org/miniconda.html">miniconda</a> is a much smaller install &#8211; it provides only Python and the conda package mangement system. You can install miniconda, and then install only teh packges you need to run <code class="docutils literal"><span class="pre">py_gnome</span></code>.</p>
+<p><a class="reference external" href="https://store.continuum.io/cshop/anaconda/">Anaconda</a> provides a fairly complete python system for computational programming &#8211; it is a large install, but comes with a lot of nice stuff pre-packaged that all works together.</p>
+<p><a class="reference external" href="http://conda.pydata.org/miniconda.html">miniconda</a> is a much smaller install &#8211; it provides only Python and the conda package mangement system. You can install miniconda, and then install only the packges you need to run <code class="docutils literal"><span class="pre">py_gnome</span></code>.</p>
 <p>Either will work fine with <code class="docutils literal"><span class="pre">py_gnome</span></code>.</p>
+<p>NOTE: be sure to get the python2 version of Anaconda.</p>
 <div class="section" id="windows">
 <h4>Windows:<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h4>
 <p>You want the Windows 64 bit Python 2.7 version. Installing with the
@@ -217,15 +223,16 @@ the *nix command line.</p>
 <div class="section" id="linux">
 <h4>Linux:<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h4>
 <p>The Linux 64bit-python2.7 is the one to use.</p>
-<p>We do not support 32 bit on linux (or anywhwere, anymore)</p>
+<p>We do not support 32 bit on linux (or anywhere, anymore)</p>
 </div>
 </div>
 <div class="section" id="conda">
 <h3>conda<a class="headerlink" href="#conda" title="Permalink to this headline">¶</a></h3>
 <p><a class="reference external" href="http://conda.pydata.org/docs/intro.html">conda</a> is the package
 manager that Anaconda is built on. So when working with Anaconda, you
-will want to use the conda package manager for installing conda
-packages. <code class="docutils literal"><span class="pre">pip</span></code> still works, but is not preferred.</p>
+use the conda package manager for installing conda packages. <code class="docutils literal"><span class="pre">pip</span></code>
+can also be used with conda, but it&#8217;s best to use use conda if you can.</p>
+<p>We have made sure that every pacakge you need is available for conda.</p>
 <div class="section" id="setting-up">
 <h4>Setting up<a class="headerlink" href="#setting-up" title="Permalink to this headline">¶</a></h4>
 <p>Install: <a class="reference external" href="https://www.continuum.io/downloads">Anaconda</a></p>
@@ -239,15 +246,10 @@ instructions should be the same.</p>
 getting everything up to date, sometimes packages have been updated
 since the installer was built.</p>
 <p>Enter the following on the command-line:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">conda</span> <span class="n">update</span> <span class="n">anaconda</span>
-</pre></div>
-</div>
-<p>which will update everything in Anaconda.</p>
-<p>or if you have Miniconda...:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">conda</span> <span class="n">update</span> <span class="n">conda</span>
 </pre></div>
 </div>
-<p>which will update only conda itself (and dependencies)</p>
+<p>will update the conda package manager itself (and its dependencies)</p>
 </div>
 <div class="section" id="setting-up-anaconda-org-channels">
 <h4>Setting up anaconda.org channels<a class="headerlink" href="#setting-up-anaconda-org-channels" title="Permalink to this headline">¶</a></h4>
@@ -257,31 +259,39 @@ anaconda &#8220;channels&#8221;, which can be thought of simply as places on
 anaconda.org where collections of packages are bundled together by the
 people hosting them.</p>
 <p>Many of the dependencies that <code class="docutils literal"><span class="pre">py_gnome</span></code> requires come out of the box
-with Anaconda (or the conda &#8220;defaults&#8221; channel, but a few don&#8217;t.</p>
-<p>So we have set up
-<a class="reference external" href="https://anaconda.org/noaa-orr-erd">our own anaconda channel</a> where we put various
-packages needed for <code class="docutils literal"><span class="pre">py_gnome</span></code>. But you don&#8217;t need to access the web site
-to use it...conda can find everything you need.</p>
-<p>To install the anaconda client:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">conda</span> <span class="n">install</span> <span class="n">anaconda</span><span class="o">-</span><span class="n">client</span>
-</pre></div>
+with Anaconda (or the conda &#8220;defaults&#8221; channel), but a few don&#8217;t.</p>
+<p>The &#8220;conda-forge&#8221; project:</p>
+<p><a class="reference external" href="https://conda-forge.github.io/">https://conda-forge.github.io/</a></p>
+<p>Is a community project to build a wide variety of pacakges for conda &#8211; it supports
+most of what PyGNOME needs.</p>
+<p>However, there a few NOAA-spcific packages that are not (yet) on conda-forge, so we
+have set up <a class="reference external" href="https://anaconda.org/noaa-orr-erd">our own anaconda channel</a>
+where we put various packages needed for <code class="docutils literal"><span class="pre">py_gnome</span></code>.</p>
 </div>
-<p>and to add the NOAA-ORR-ERD channel to Anaconda:</p>
+<div class="section" id="adding-extra-channels-to-conda">
+<h4>Adding extra channels to conda:<a class="headerlink" href="#adding-extra-channels-to-conda" title="Permalink to this headline">¶</a></h4>
+<p>Add the NOAA-ORR-ERD channel:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">conda</span> <span class="n">config</span> <span class="o">--</span><span class="n">add</span> <span class="n">channels</span> <span class="n">NOAA</span><span class="o">-</span><span class="n">ORR</span><span class="o">-</span><span class="n">ERD</span>
 </pre></div>
 </div>
-<p>Now conda will know to go look in our anaconda channel for the packages
-you need.</p>
+<p>to add conda-forge:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">conda</span> <span class="n">config</span> <span class="o">--</span><span class="n">add</span> <span class="n">channels</span> <span class="n">conda</span> <span class="n">forge</span>
+</pre></div>
+</div>
+<p>When you add a channel to conda, it puts it at the top of the list. So now when you
+install a package, conda will first look in conda-forge, then NOAA-ORR-ERD, and
+then in the default channel. This order should work well for PyGNOME.</p>
 </div>
 </div>
 <div class="section" id="conda-environments">
 <h3>conda environments<a class="headerlink" href="#conda-environments" title="Permalink to this headline">¶</a></h3>
 <p>The conda system supports isolated &#8220;environments&#8221; that can be used to
 maintain different versions of various packages. For more information
-see: [conda environments <a class="reference external" href="http://conda.pydata.org/docs/using/envs.html">http://conda.pydata.org/docs/using/envs.html</a>]
-If you are using Anaconda for other projects that might depend on
+see:</p>
+<p><a class="reference external" href="http://conda.pydata.org/docs/using/envs.html">http://conda.pydata.org/docs/using/envs.html</a></p>
+<p>If you are using Anaconda for other projects that might depend on
 specific versions of specific libraries (like numpy, scipy, etc), then
-you may want create an environment for <code class="docutils literal"><span class="pre">py_gnome</span></code>:</p>
+you may want create an environment for PyGNOME:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="n">gnome</span> <span class="n">python</span><span class="o">=</span><span class="mi">2</span>
 </pre></div>
 </div>
@@ -303,7 +313,7 @@ with:</p>
 <p>After activating the environment, you can proceed with these instructions,
 and all the packages <code class="docutils literal"><span class="pre">py_gnome</span></code> needs will be installed into that environment
 and kept separate from your main Anaconda install.</p>
-<p>You will need to active the environment any time you want to work with
+<p>You will need to activate the environment any time you want to work with
 <code class="docutils literal"><span class="pre">py_gnome</span></code> in the future</p>
 </div>
 <div class="section" id="download-gnome">
@@ -311,10 +321,44 @@ and kept separate from your main Anaconda install.</p>
 <p>At this point you will need the files from the <code class="docutils literal"><span class="pre">py_gnome</span></code> sources. If you
 have not downloaded it yet, it is available here:</p>
 <p><a class="reference external" href="https://github.com/NOAA-ORR-ERD/PyGnome">https://github.com/NOAA-ORR-ERD/PyGnome</a></p>
+<p>You can either download a zip file of all the sources and unpack it, or
+you can &#8220;clone&#8221; the git repository. If you clone the repository, you will
+be able to update the code with the latest version with a simpile command,
+rather than having to re-download the whole package.</p>
+</div>
+<div class="section" id="cloning-the-pygnome-git-repoository">
+<h3>Cloning the PyGNOME git repoository<a class="headerlink" href="#cloning-the-pygnome-git-repoository" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="git">
+<h4>git<a class="headerlink" href="#git" title="Permalink to this headline">¶</a></h4>
+<p>You will need a git client:</p>
+<dl class="docutils">
+<dt>Linux:</dt>
+<dd><p class="first">it should be available from your package manager:</p>
+<div class="last highlight-default"><div class="highlight"><pre><span></span>$ apt_get install git
+or
+$ yum install git
+</pre></div>
+</div>
+</dd>
+<dt>OS-X:</dt>
+<dd><p class="first">git comes with the XCode commadn line tools:</p>
+<p class="last"><a class="reference external" href="http://osxdaily.com/2014/02/12/install-command-line-tools-mac-os-x/">http://osxdaily.com/2014/02/12/install-command-line-tools-mac-os-x/</a></p>
+</dd>
+<dt>Windows:</dt>
+<dd><p class="first">the &#8220;official&#8221; gt for Windows installer is a good bet:</p>
+<p class="last"><a class="reference external" href="https://git-for-windows.github.io/">https://git-for-windows.github.io/</a></p>
+</dd>
+</dl>
+<p>Once you have the client, it&#8217;s as easy as:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ git clone https://github.com/NOAA-ORR-ERD/PyGnome.git
+</pre></div>
+</div>
+<p>This will create a PyGnme dir with all the code in it.</p>
+</div>
 </div>
 <div class="section" id="id1">
 <h3>Dependencies<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
-<p>The Anaconda dependencies for <code class="docutils literal"><span class="pre">py_gnome</span></code> are listed in the file
+<p>The conda packasges required by <code class="docutils literal"><span class="pre">py_gnome</span></code> are listed in the file
 <code class="docutils literal"><span class="pre">conda_packages.txt</span></code> in the top directory of the project.</p>
 <p>To install all the packages <code class="docutils literal"><span class="pre">py_gnome</span></code> needs:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">cd</span> <span class="n">PyGnome</span>  <span class="c1"># or wherever you put the PyGnome project</span>
@@ -322,12 +366,33 @@ have not downloaded it yet, it is available here:</p>
 </pre></div>
 </div>
 <p>This should install all the packages required by <code class="docutils literal"><span class="pre">py_gnome</span></code>.</p>
+<p>(make sure you are in the correct conda environment, and you have the
+conda-forge and NOAA-ORR-ERD channels enabled.)</p>
 </div>
 <div class="section" id="the-oil-library">
 <h3>The Oil Library<a class="headerlink" href="#the-oil-library" title="Permalink to this headline">¶</a></h3>
-<p>If you want to use py_gnome with &#8220;real oil&#8221;, rather than inert particles, you will need NOAA&#8217;s OilLibray package:</p>
+<p>If you want to use py_gnome with &#8220;real oil&#8221;, rather than inert particles, you will need NOAA&#8217;s OilLibrary package:</p>
 <p><a class="reference external" href="https://github.com/NOAA-ORR-ERD/OilLibrary">https://github.com/NOAA-ORR-ERD/OilLibrary</a></p>
-<p>This is under active development along with <code class="docutils literal"><span class="pre">py_gnome</span></code>, so you are best off doenlaoding the sources from gitHub and installing it from source &#8211; similar to <code class="docutils literal"><span class="pre">py_gnome</span></code>.</p>
+<p>This is under active development along with <code class="docutils literal"><span class="pre">py_gnome</span></code>, so you are best off downlaoding the sources from gitHub and installing it from source &#8211; similar to <code class="docutils literal"><span class="pre">py_gnome</span></code>.</p>
+<p>cloning the repo</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ git clone https://github.com/NOAA-ORR-ERD/OilLibrary.git
+</pre></div>
+</div>
+<p>Installing the package:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ cd OilLibrary/
+$ python setup.py install
+</pre></div>
+</div>
+<p>(you will get a lot of INFO and WARNNG messages as the oil libary database is built)</p>
+<p>Testing the oil_library install:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ py.test
+</pre></div>
+</div>
+<p>you should see somethign like:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">=================================</span> <span class="mi">87</span> <span class="n">passed</span> <span class="ow">in</span> <span class="mf">0.88</span> <span class="n">seconds</span> <span class="o">===============================</span>
+</pre></div>
+</div>
+<p>when done.</p>
 </div>
 <div class="section" id="compilers">
 <h3>Compilers<a class="headerlink" href="#compilers" title="Permalink to this headline">¶</a></h3>
@@ -338,6 +403,7 @@ getting the compiler tools varies with the platform you are on.</p>
 <p>The system compiler for OS-X is XCode. It can be installed from the App
 Store.</p>
 <p><em>Note: it is a HUGE download.</em></p>
+<p>[you may be able to isntall only teh command line tools &#8211; Apple keeps changing its mind]</p>
 <p>After installing XCode, you still need to install the &#8220;Command Line
 Tools&#8221;. XCode includes a new &#8220;Downloads&#8221; preference pane to install
 optional components such as command line tools, and previous iOS
@@ -353,15 +419,10 @@ install.</p>
 </div>
 <div class="section" id="id3">
 <h4>Windows<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
-<p>For compiling python extensions on Windows using Anaconda, you can use
-MS Visual Studio 2008 if it is available to you. But Microsoft isn&#8217;t
-really supporting that version anymore, so it is probably best to use
-<a class="reference external" href="https://www.microsoft.com/en-us/download/details.aspx?id=44266">Microsoft Visual C++ Compiler for Python
-2.7</a>,
-which is freely downloadable.</p>
-<p><em>Note: if you are building on windows, the python package setuptools
-needs to be at version 6 or higher to properly query the compiler
-environment.</em> &#8211; a recent conda install will have this version.</p>
+<p>For compiling python extensions on Windows with python2.7 it is best to use the</p>
+<p><a class="reference external" href="https://www.microsoft.com/en-us/download/details.aspx?id=44266">Microsoft Visual C++ Compiler for Python
+2.7</a>,</p>
+<p>which is freely downloadable.</p>
 </div>
 <div class="section" id="id4">
 <h4>Linux<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
@@ -377,8 +438,8 @@ system, use your system package manager to get it.</p>
 </div>
 <div class="section" id="building-py-gnome">
 <h4>Building <code class="docutils literal"><span class="pre">py_gnome</span></code><a class="headerlink" href="#building-py-gnome" title="Permalink to this headline">¶</a></h4>
-<p>Ok, at this point we should at last have all the necessary third-party
-environments in place.</p>
+<p>Ok, at this point you should at last have all the necessary third-party
+tools in place.</p>
 <p>Right now, it is probably best to build <code class="docutils literal"><span class="pre">py_gnome</span></code> from source. And it is
 probably best to build a &#8220;develop&#8221; target for your <code class="docutils literal"><span class="pre">py_gnome</span></code> package if
 you plan on developing or debugging the <code class="docutils literal"><span class="pre">py_gnome</span></code> source code.</p>
@@ -397,7 +458,7 @@ libs for you.</p>
 <p>So to build <code class="docutils literal"><span class="pre">py_gnome</span></code> on OS-X:</p>
 <blockquote>
 <div>$ cd py_gnome
-$ ./build_anaconda.sh devlop</div></blockquote>
+$ ./build_anaconda.sh develop</div></blockquote>
 </div>
 <div class="section" id="other-platforms">
 <h4>Other platforms<a class="headerlink" href="#other-platforms" title="Permalink to this headline">¶</a></h4>
@@ -414,6 +475,7 @@ options for building:</p>
 <p>cleans files generated by the build as well as files auto-generated by
 cython. It is a good idea to run <code class="docutils literal"><span class="pre">cleanall</span></code> after updating from the
 gitHub repo &#8211; particularly if strange errors are occuring.</p>
+<p>You will need to re-run &#8220;develop&#8221; or &#8220;install&#8221; after running &#8220;cleanall&#8221;</p>
 </div>
 </div>
 <div class="section" id="testing-py-gnome">

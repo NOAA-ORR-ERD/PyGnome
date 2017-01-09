@@ -256,9 +256,11 @@
 
 <span class="sd">    &#39;standard&#39; : the basic stuff most people would want</span>
 
-<span class="sd">    &#39;most&#39;: everything the model is tracking except the internal-use-only arrays</span>
+<span class="sd">    &#39;most&#39;: everything the model is tracking except the internal-use-only</span>
+<span class="sd">            arrays</span>
 
-<span class="sd">    &#39;all&#39;: everything tracked by the model (mostly used for diagnostics of save files)</span>
+<span class="sd">    &#39;all&#39;: everything tracked by the model (mostly used for diagnostics of</span>
+<span class="sd">           save files)</span>
 
 
 <span class="sd">    .. note::</span>
@@ -432,7 +434,7 @@
             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;This attribute cannot be changed in the &#39;</span>
                                  <span class="s1">&#39;middle of a run&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_check_netcdf_filename</span><span class="p">(</span><span class="n">new_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_filename</span><span class="p">(</span><span class="n">new_name</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_netcdf_filename</span> <span class="o">=</span> <span class="n">new_name</span>
 
     <span class="nd">@property</span>
@@ -556,7 +558,8 @@
 <span class="sd">                                            spills,</span>
 <span class="sd">                                            **kwargs)</span>
 
-<span class="sd">        Write global attributes and define dimensions and variables for NetCDF file.</span>
+<span class="sd">        Write global attributes and define dimensions and variables for</span>
+<span class="sd">        NetCDF file.</span>
 <span class="sd">        This must be done in prepare_for_model_run because if model _state</span>
 <span class="sd">        changes, it is rewound and re-run from the beginning.</span>
 
@@ -594,7 +597,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">NetCDFOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">model_start_time</span><span class="p">,</span>
                                                         <span class="n">spills</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span> 
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
             <span class="k">return</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">clean_output_files</span><span class="p">()</span>
@@ -611,6 +614,8 @@
 
             <span class="c1"># create the netcdf files and write the standard stuff:</span>
             <span class="k">with</span> <span class="n">nc</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">file_</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_format</span><span class="p">)</span> <span class="k">as</span> <span class="n">rootgrp</span><span class="p">:</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">rootgrp</span><span class="p">)</span>
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_rootgrp</span><span class="p">(</span><span class="n">rootgrp</span><span class="p">,</span> <span class="n">sc</span><span class="p">)</span>
 
@@ -659,12 +664,12 @@
                     <span class="c1"># give this grp a dimension for time</span>
                     <span class="n">grp</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># unlimited</span>
                     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">:</span>
+                        <span class="c1"># mass_balance variables get a smaller chunksize</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">_create_nc_var</span><span class="p">(</span><span class="n">grp</span><span class="p">,</span>
                                             <span class="n">var_name</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
                                             <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">,</span>
                                             <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,),</span>
                                             <span class="n">chunksz</span><span class="o">=</span><span class="p">(</span><span class="mi">256</span><span class="p">,),</span>
-                                            <span class="c1"># smaller chunksize for mass_balance</span>
                                             <span class="p">)</span>
 
         <span class="c1"># need to keep track of starting index for writing data since variable</span>
@@ -792,13 +797,13 @@
 <span class="sd">        here in case it needs to be called from elsewhere</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">try</span><span class="p">:</span>
-          <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">netcdf_filename</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">netcdf_filename</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
-            <span class="k">pass</span> <span class="c1"># it must not be there</span>
+            <span class="k">pass</span>  <span class="c1"># it must not be there</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_u_netcdf_filename</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
-            <span class="k">pass</span> <span class="c1"># it must not be there</span></div>
+            <span class="k">pass</span>  <span class="c1"># it must not be there</span></div>
 
 <div class="viewcode-block" id="NetCDFOutput.rewind"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.NetCDFOutput.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>

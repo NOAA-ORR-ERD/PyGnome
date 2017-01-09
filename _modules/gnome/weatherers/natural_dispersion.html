@@ -249,6 +249,8 @@
             <span class="n">sed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">])),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
             <span class="n">droplet_avg_size</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;droplet_avg_size&#39;</span><span class="p">]</span>
 
+            <span class="c1">#print &#39;dispersion: mass_components = &#39;, data[&#39;mass_components&#39;].sum(1)</span>
+
             <span class="n">disperse_oil</span><span class="p">(</span><span class="n">time_step</span><span class="p">,</span>
                          <span class="n">data</span><span class="p">[</span><span class="s1">&#39;frac_water&#39;</span><span class="p">],</span>
                          <span class="n">data</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">],</span>
@@ -297,6 +299,7 @@
                               <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid</span><span class="p">,</span>
                                       <span class="n">substance</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                                       <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">[</span><span class="s1">&#39;natural_dispersion&#39;</span><span class="p">]))</span>
+            <span class="c1">#print &#39;dispersion: mass_components = &#39;, data[&#39;mass_components&#39;].sum(1)</span>
 
         <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">()</span></div>
 

@@ -153,6 +153,16 @@
 <span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">_valid_units</span>
 
 
+<span class="k">class</span> <span class="nc">EnvironmentMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">):</span>
+<span class="c1">#         if hasattr(cls, &#39;_state&#39;):</span>
+<span class="c1">#             cls._state = copy.deepcopy(bases[0]._state)</span>
+        <span class="n">cls</span><span class="o">.</span><span class="n">_subclasses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cls</span><span class="o">.</span><span class="n">__mro__</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s1">&#39;_subclasses&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">cls</span><span class="p">:</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">_subclasses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span>
+
+
 <span class="k">class</span> <span class="nc">Environment</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A base class for all classes in environment module</span>
@@ -160,6 +170,8 @@
 <span class="sd">    This is primarily to define a dtype such that the OrderedCollection</span>
 <span class="sd">    defined in the Model object requires it.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">_subclasses</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
 
     <span class="c1"># env objects referenced by others using this attribute name</span>
@@ -168,6 +180,8 @@
     <span class="c1"># insinstance() checks. Used by model to automatically hook up objects that</span>
     <span class="c1"># reference environment objects</span>
     <span class="n">_ref_as</span> <span class="o">=</span> <span class="s1">&#39;environment&#39;</span>
+
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">EnvironmentMeta</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">make_default_refs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -254,6 +268,14 @@
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="n">_ref_as</span> <span class="o">=</span> <span class="s1">&#39;water&#39;</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Environment</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_field_descr</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="s1">&#39;save&#39;</span><span class="p">),</span>
+                    <span class="s1">&#39;temperature:&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="s1">&#39;save&#39;</span><span class="p">),</span>
+                    <span class="s1">&#39;salinity&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="s1">&#39;save&#39;</span><span class="p">),</span>
+                    <span class="s1">&#39;sediment&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="s1">&#39;save&#39;</span><span class="p">),</span>
+                    <span class="s1">&#39;fetch&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="s1">&#39;save&#39;</span><span class="p">),</span>
+                    <span class="s1">&#39;wave_height&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="s1">&#39;save&#39;</span><span class="p">),</span>
+                    <span class="s1">&#39;density&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="s1">&#39;save&#39;</span><span class="p">),</span>
+                    <span class="s1">&#39;kinematic_viscosity&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="s1">&#39;save&#39;</span><span class="p">)}</span>
     <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;units&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
                <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;temperature&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
                <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;salinity&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
@@ -291,7 +313,7 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">temperature</span><span class="o">=</span><span class="mf">300.0</span><span class="p">,</span>
                  <span class="n">salinity</span><span class="o">=</span><span class="mf">35.0</span><span class="p">,</span>
-                 <span class="n">sediment</span><span class="o">=.</span><span class="mi">005</span><span class="p">,</span>	 <span class="c1"># kg/m^3 oceanic default</span>
+                 <span class="n">sediment</span><span class="o">=.</span><span class="mi">005</span><span class="p">,</span>  <span class="c1"># kg/m^3 oceanic default</span>
                  <span class="n">wave_height</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">fetch</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">units</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;temperature&#39;</span><span class="p">:</span> <span class="s1">&#39;K&#39;</span><span class="p">,</span>
@@ -429,10 +451,108 @@
 
         <span class="k">if</span> <span class="n">from_</span> <span class="o">==</span> <span class="s1">&#39;mg/l&#39;</span><span class="p">:</span>
             <span class="c1"># convert to kg/m^3</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sediment</span><span class="o">/</span><span class="mf">1000.0</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sediment</span> <span class="o">/</span> <span class="mf">1000.0</span>
 
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sediment</span> <span class="o">*</span> <span class="mf">1000.0</span>
+
+
+<span class="k">def</span> <span class="nf">env_from_netCDF</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">grid_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">data_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">_cls_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Returns a list of instances of environment objects that can be produced from a file or dataset.</span>
+<span class="sd">    These instances will be created with a common underlying grid, and will interconnect when possible</span>
+<span class="sd">    For example, if an IceAwareWind can find an existing IceConcentration, it will use it instead of</span>
+<span class="sd">    instantiating another. This function tries ALL gridded types by default. This means if a particular</span>
+<span class="sd">    subclass of object is possible to be built, it is likely that all it&#39;s parents will be built and included</span>
+<span class="sd">    as well.</span>
+<span class="sd">    </span>
+<span class="sd">    If you wish to limit the types of environment objects that will be used, pass a list of the types</span>
+<span class="sd">    using &quot;_cls_list&quot; kwarg&#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">attempt_from_netCDF</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">klskwargs</span><span class="p">):</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="o">**</span><span class="n">klskwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">logging</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;Class </span><span class="si">{0}</span><span class="s1"> could not be constituted from netCDF file</span>
+<span class="s1">                                    Exception: </span><span class="si">{1}</span><span class="s1">&#39;&#39;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="kn">from</span> <span class="nn">gnome.utilities.file_tools.data_helpers</span> <span class="k">import</span> <span class="n">_get_dataset</span>
+    <span class="kn">from</span> <span class="nn">gnome.environment.environment_objects</span> <span class="k">import</span> <span class="n">GriddedProp</span><span class="p">,</span> <span class="n">GridVectorProp</span>
+    <span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="k">import</span> <span class="n">PyGrid</span><span class="p">,</span> <span class="n">Environment</span>
+    <span class="kn">import</span> <span class="nn">copy</span>
+
+    <span class="n">new_env</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data_file</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="n">grid_file</span> <span class="o">=</span> <span class="n">filename</span>
+
+    <span class="n">ds</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">dg</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">dataset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">grid_file</span> <span class="o">==</span> <span class="n">data_file</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">dg</span> <span class="o">=</span> <span class="n">_get_dataset</span><span class="p">(</span><span class="n">grid_file</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">_get_dataset</span><span class="p">(</span><span class="n">data_file</span><span class="p">)</span>
+            <span class="n">dg</span> <span class="o">=</span> <span class="n">_get_dataset</span><span class="p">(</span><span class="n">grid_file</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">grid_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dg</span> <span class="o">=</span> <span class="n">_get_dataset</span><span class="p">(</span><span class="n">grid_file</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dg</span> <span class="o">=</span> <span class="n">dataset</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">dataset</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">ds</span>
+
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;grid&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">grid</span> <span class="o">=</span> <span class="n">PyGrid</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;grid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">grid</span>
+    <span class="n">scs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Environment</span><span class="o">.</span><span class="n">_subclasses</span><span class="p">)</span> <span class="k">if</span> <span class="n">_cls_list</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_cls_list</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">scs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">(</span><span class="n">GriddedProp</span><span class="p">,</span> <span class="n">GridVectorProp</span><span class="p">))</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">new_env</span><span class="p">]):</span>
+            <span class="n">clskwargs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">req_refs</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">_req_refs</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="n">req_refs</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="n">req_refs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">ref</span><span class="p">,</span> <span class="n">klass</span> <span class="ow">in</span> <span class="n">req_refs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">new_env</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">klass</span><span class="p">):</span>
+                            <span class="n">clskwargs</span><span class="p">[</span><span class="n">ref</span><span class="p">]</span> <span class="o">=</span> <span class="n">o</span>
+                    <span class="k">if</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">clskwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="k">continue</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">obj</span> <span class="o">=</span> <span class="n">attempt_from_netCDF</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">grid_file</span><span class="o">=</span><span class="n">grid_file</span><span class="p">,</span> <span class="n">data_file</span><span class="o">=</span><span class="n">data_file</span><span class="p">,</span> <span class="o">**</span><span class="n">clskwargs</span><span class="p">)</span>
+                        <span class="n">clskwargs</span><span class="p">[</span><span class="n">ref</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
+                        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">new_env</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">attempt_from_netCDF</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">grid_file</span><span class="o">=</span><span class="n">grid_file</span><span class="p">,</span> <span class="n">data_file</span><span class="o">=</span><span class="n">data_file</span><span class="p">,</span> <span class="o">**</span><span class="n">clskwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">new_env</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new_env</span>
+
+
+<span class="k">def</span> <span class="nf">ice_env_from_netCDF</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    A short function to generate a list of all the &#39;ice_aware&#39; classes for use in env_from_netCDF</span>
+<span class="sd">    (this excludes GridCurrent, GridWind, GridTemperature etc)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="k">import</span> <span class="n">Environment</span>
+    <span class="n">cls_list</span> <span class="o">=</span> <span class="n">Environment</span><span class="o">.</span><span class="n">_subclasses</span>
+    <span class="n">ice_cls_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cls_list</span> <span class="k">if</span> <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s1">&#39;_ref_as&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39;ice_aware&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">_ref_as</span><span class="p">)]</span>
+<span class="c1">#         for c in cls_list:</span>
+<span class="c1">#             if hasattr(c, &#39;_ref_as&#39;):</span>
+<span class="c1">#                 if ((not isinstance(c._ref_as, basestring) and</span>
+<span class="c1">#                         any([&#39;ice_aware&#39; in r for r in c._ref_as])) or</span>
+<span class="c1">#                         &#39;ice_aware&#39; in c._ref_as):</span>
+<span class="c1">#                     ice_cls_list.append(c)</span>
+    <span class="k">return</span> <span class="n">env_from_netCDF</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">_cls_list</span><span class="o">=</span><span class="n">ice_cls_list</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </pre></div>
 
            </div>

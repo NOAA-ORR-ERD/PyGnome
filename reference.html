@@ -97,7 +97,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.movers"><code class="docutils literal"><span class="pre">gnome.movers</span></code> &#8211; PyGnome mover classes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.weatherers"><code class="docutils literal"><span class="pre">gnome.weatherers</span></code> &#8211; PyGnome/Adios weathering/mass removal classes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.environment"><code class="docutils literal"><span class="pre">gnome.environment</span></code> &#8211; PyGnome environment classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-gnome.environment.property_classes"><code class="docutils literal"><span class="pre">gnome.environment.property_classes</span></code> &#8211; PyGnome implemented property classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gnome-environment-property-classes-pygnome-implemented-property-classes"><code class="docutils literal"><span class="pre">gnome.environment.property_classes</span></code> &#8211; PyGnome implemented property classes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.environment.property"><code class="docutils literal"><span class="pre">gnome.environment.property</span></code> &#8211; PyGnome abstract property classes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.outputters"><code class="docutils literal"><span class="pre">gnome.outputter</span></code> &#8211; PyGnome outputters module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.utilities.distributions"><code class="docutils literal"><span class="pre">gnome.utilities</span></code> &#8211; PyGnome utilities module</a></li>
@@ -194,7 +194,7 @@ model run and in subsequent steps the model moves and weathers elements.</p>
 </div>
 <span class="target" id="module-gnome.model"></span><dl class="class">
 <dt id="gnome.model.Model">
-<em class="property">class </em><code class="descclassname">gnome.model.</code><code class="descname">Model</code><span class="sig-paren">(</span><em>time_step=None</em>, <em>start_time=datetime.datetime(2016</em>, <em>8</em>, <em>12</em>, <em>15</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>weathering_substeps=1</em>, <em>map=None</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>name=None</em>, <em>mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.model.</code><code class="descname">Model</code><span class="sig-paren">(</span><em>time_step=None</em>, <em>start_time=datetime.datetime(2017</em>, <em>1</em>, <em>9</em>, <em>11</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>weathering_substeps=1</em>, <em>map=None</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>name=None</em>, <em>mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
 <p>PyGnome Model Class</p>
 <p>Initializes a model.
@@ -226,7 +226,7 @@ decide which UI views it should present.</li>
 </table>
 <dl class="attribute">
 <dt id="gnome.model.Model.modes">
-<code class="descname">modes</code><em class="property"> = set(['gnome', 'adios'])</em><a class="headerlink" href="#gnome.model.Model.modes" title="Permalink to this definition">¶</a></dt>
+<code class="descname">modes</code><em class="property"> = set(['roc', 'gnome', 'adios'])</em><a class="headerlink" href="#gnome.model.Model.modes" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="classmethod">
@@ -593,16 +593,24 @@ User can specify ucert as &#8216;ucert&#8217; or 1</p>
 <dt id="gnome.model.Model.get_spill_data">
 <code class="descname">get_spill_data</code><span class="sig-paren">(</span><em>target_properties</em>, <em>conditions</em>, <em>ucert=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model.get_spill_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model.get_spill_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convenience method to allow user to write an expression to filter
-raw spill data
-Example case:
-get_spill_data(&#8216;position &amp;&amp; mass&#8217;,
-&#8216;position &gt; 50 &amp;&amp; spill_num == 1 || status_codes == 1&#8217;)</p>
+raw spill data</p>
+<p>Example case:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">get_spill_data</span><span class="p">(</span><span class="s1">&#39;position &amp;&amp; mass&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;position &gt; 50 &amp;&amp; spill_num == 1 || status_codes == 1&#39;</span>
+               <span class="p">)</span>
+</pre></div>
+</div>
 <p>WARNING: EXPENSIVE! USE AT YOUR OWN RISK ON LARGE num_elements!</p>
 <p>Example spill element properties are below. This list may not contain
-all properties tracked by the model.
-&#8216;positions&#8217;, &#8216;next_positions&#8217;, &#8216;last_water_positions&#8217;, &#8216;status_codes&#8217;,
+all properties tracked by the model.</p>
+<p>&#8216;positions&#8217;, &#8216;next_positions&#8217;, &#8216;last_water_positions&#8217;, &#8216;status_codes&#8217;,
 &#8216;spill_num&#8217;, &#8216;id&#8217;, &#8216;mass&#8217;, &#8216;age&#8217;</p>
 </dd></dl>
+
+<dl class="method">
+<dt id="gnome.model.Model.add_env">
+<code class="descname">add_env</code><span class="sig-paren">(</span><em>env</em>, <em>quash=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model.add_env"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model.add_env" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -1192,8 +1200,8 @@ constant.</p>
 <span id="gnome-spill-classes-in-the-spill-module"></span><h2><code class="docutils literal"><span class="pre">gnome.spill</span></code> &#8211; classes in the spill module<a class="headerlink" href="#module-gnome.spill" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="gnome.spill.Spill">
-<em class="property">class </em><code class="descclassname">gnome.spill.</code><code class="descname">Spill</code><span class="sig-paren">(</span><em>release</em>, <em>element_type=None</em>, <em>substance=None</em>, <em>on=True</em>, <em>amount=None</em>, <em>units=None</em>, <em>amount_uncertainty_scale=0.0</em>, <em>name='Spill'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill" title="Permalink to this definition">¶</a></dt>
-<dd><p>Models a spill</p>
+<em class="property">class </em><code class="descclassname">gnome.spill.</code><code class="descname">Spill</code><span class="sig-paren">(</span><em>release</em>, <em>water=None</em>, <em>element_type=None</em>, <em>substance=None</em>, <em>on=True</em>, <em>amount=None</em>, <em>units=None</em>, <em>amount_uncertainty_scale=0.0</em>, <em>name='Spill'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Models a spill by combining Release and ElementType objects</p>
 <p>Spills used by the gnome model. It contains a release object, which
 releases elements. It also contains an element_type object which
 contains the type of substance spilled and it initializes data arrays
@@ -1238,51 +1246,10 @@ If amount property is None, then just floating elements
 (ie. &#8216;windages&#8217;)</p>
 </div>
 <dl class="attribute">
-<dt id="gnome.spill.Spill.amount_uncertainty_scale">
-<code class="descname">amount_uncertainty_scale</code><em class="property"> = None</em><a class="headerlink" href="#gnome.spill.Spill.amount_uncertainty_scale" title="Permalink to this definition">¶</a></dt>
-<dd><p>fraction of area covered by oil</p>
-</dd></dl>
-
-<dl class="attribute">
 <dt id="gnome.spill.Spill.name">
 <code class="descname">name</code><a class="headerlink" href="#gnome.spill.Spill.name" title="Permalink to this definition">¶</a></dt>
 <dd><p>define as property in base class so all objects will have a name
 by default</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.spill.Spill.set">
-<code class="descname">set</code><span class="sig-paren">(</span><em>prop</em>, <em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.set" title="Permalink to this definition">¶</a></dt>
-<dd><p>sets an existing property. The property could be of one of the
-contained objects like &#8216;Release&#8217; or &#8216;ElementType&#8217;
-It can also be a property of one of the initializers contained in
-the &#8216;ElementType&#8217; object.</p>
-<p>If the property doesn&#8217;t exist for any of these, then an error is raised
-since user cannot set a property that does not exist using this method</p>
-<p>For example: set(&#8216;windage_range&#8217;, (0.4, 0.4)) sets the windage_range
-assuming the element_type is floating</p>
-<div class="admonition-todo admonition" id="index-0">
-<p class="first admonition-title">Todo</p>
-<p class="last">There is an issue in that if two initializers have the same
-property - could be the case if they both define a &#8216;distribution&#8217;,
-then it does not know which one to return</p>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.spill.Spill.get">
-<code class="descname">get</code><span class="sig-paren">(</span><em>prop=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>for get(), return all properties of embedded release object and
-element_type initializer objects. If &#8216;prop&#8217; is not None, then return
-the property</p>
-<p>For example: get(&#8216;windage_range&#8217;) returns the &#8216;windage_range&#8217; assuming
-the element_type = floating()</p>
-<div class="admonition-todo admonition" id="index-1">
-<p class="first admonition-title">Todo</p>
-<p class="last">There is an issue in that if two initializers have the same
-property - could be the case if they both define a &#8216;distribution&#8217;,
-then it does not know which one to return</p>
-</div>
 </dd></dl>
 
 <dl class="method">
@@ -1343,129 +1310,6 @@ RiseVelocityMover is included in the Model.</p>
 <div>init = InitRiseVelFromDist()
 init.name is &#8216;rise_vel&#8217; by default</div></blockquote>
 <p>If name = &#8216;rise_vel&#8217;, all initializers with this name will be deleted</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="gnome.spill.Spill.units">
-<code class="descname">units</code><a class="headerlink" href="#gnome.spill.Spill.units" title="Permalink to this definition">¶</a></dt>
-<dd><p>Default units in which amount of oil spilled was entered by user.
-The &#8216;amount&#8217; property is returned in these &#8216;units&#8217;</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.spill.Spill.get_mass">
-<code class="descname">get_mass</code><span class="sig-paren">(</span><em>units=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.get_mass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.get_mass" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the mass released during the spill.
-User can also specify desired output units in the function.
-If units are not specified, then return in &#8216;SI&#8217; units (&#8216;kg&#8217;)
-If volume is given, then use density to find mass. Density is always
-at 15degC, consistent with API definition</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.spill.Spill.uncertain_copy">
-<code class="descname">uncertain_copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.uncertain_copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.uncertain_copy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a deepcopy of this spill for the uncertainty runs</p>
-<p>The copy has everything the same, including the spill_num,
-but it is a new object with a new id.</p>
-<p>Not much to this method, but it could be overridden to do something
-fancier in the future or a subclass.</p>
-<p>There are a number of python objects that cannot be deepcopied.
-- Logger objects</p>
-<p>So we copy them temporarily to local variables before we deepcopy
-our Spill object.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.spill.Spill.set_amount_uncertainty">
-<code class="descname">set_amount_uncertainty</code><span class="sig-paren">(</span><em>up_or_down=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.set_amount_uncertainty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.set_amount_uncertainty" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function shifts the spill amount based on a scale value
-in the range [0.0 ... 1.0].  The maximum uncertainty scale value
-is (2/3) * spill_amount.
-We determine either an upper uncertainty or a lower uncertainty
-multiplier.  Then we shift our spill amount value based on it.</p>
-<p>Since we are irreversibly changing the spill amount value,
-we should probably do this only once.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.spill.Spill.rewind">
-<code class="descname">rewind</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.rewind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.rewind" title="Permalink to this definition">¶</a></dt>
-<dd><p>rewinds the release to original status (before anything has been
-released).</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.spill.Spill.num_elements_to_release">
-<code class="descname">num_elements_to_release</code><span class="sig-paren">(</span><em>current_time</em>, <em>time_step</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.num_elements_to_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.num_elements_to_release" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determines the number of elements to be released during:
-current_time + time_step</p>
-<p>It invokes the num_elements_to_release method for the the unerlying
-release object: self.release.num_elements_to_release()</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>current_time</strong> (<em>datetime.datetime</em>) &#8211; current time</li>
-<li><strong>time_step</strong> (<em>int</em>) &#8211; the time step, sometimes used to decide how many
-should get released.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the number of elements that will be released. This is taken
-by SpillContainer to initialize all data_arrays.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.spill.Spill.set_newparticle_values">
-<code class="descname">set_newparticle_values</code><span class="sig-paren">(</span><em>num_new_particles</em>, <em>current_time</em>, <em>time_step</em>, <em>data_arrays</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.set_newparticle_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.set_newparticle_values" title="Permalink to this definition">¶</a></dt>
-<dd><p>SpillContainer will release elements and initialize all data_arrays
-to default initial value. The SpillContainer gets passed as input and
-the data_arrays for &#8216;position&#8217; get initialized correctly by the release
-object: self.release.set_newparticle_positions()</p>
-<p>If a Spill Amount is given, the Spill object also sets the &#8216;mass&#8217; data
-array; else &#8216;mass&#8217; array remains &#8216;0&#8217;</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>num_new_particles</strong> (<em>int</em>) &#8211; number of new particles that were added.
-Always greater than 0</li>
-<li><strong>current_time</strong> (<em>datetime.datetime</em>) &#8211; current time</li>
-<li><strong>time_step</strong> (<em>integer seconds</em>) &#8211; the time step, sometimes used to decide how many
-should get released.</li>
-<li><strong>data_arrays</strong> (<em>dict containing numpy arrays for values</em>) &#8211; dict of data_arrays provided by the SpillContainer.
-Look for &#8216;positions&#8217; array in the dict and update positions for
-latest num_new_particles that are released</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<p>Also, the set_newparticle_values() method for all element_type gets
-called so each element_type sets the values for its own data correctly</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.spill.Spill.serialize">
-<code class="descname">serialize</code><span class="sig-paren">(</span><em>json_='webapi'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.serialize" title="Permalink to this definition">¶</a></dt>
-<dd><p>override base serialize implementation
-Need to add node for release object and element_type object</p>
-</dd></dl>
-
-<dl class="classmethod">
-<dt id="gnome.spill.Spill.deserialize">
-<em class="property">classmethod </em><code class="descname">deserialize</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.deserialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.deserialize" title="Permalink to this definition">¶</a></dt>
-<dd><p>Instead of creating schema dynamically for Spill() before
-deserialization, call nested object&#8217;s serialize/deserialize methods</p>
-<p>We also need to accept sparse json objects, in which case we will
-not treat them, but just send them back.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1625,6 +1469,13 @@ If json_=&#8217;save&#8217;, it subselects the Fields with save=True.
 If json_=&#8217;webapi&#8217;, it subselects Fields with (update=True, read=True)</p>
 </dd></dl>
 
+<dl class="attribute">
+<dt id="gnome.spill.Spill.units">
+<code class="descname">units</code><a class="headerlink" href="#gnome.spill.Spill.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default units in which amount of oil spilled was entered by user.
+The &#8216;amount&#8217; property is returned in these &#8216;units&#8217;</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="gnome.spill.Spill.update_attr">
 <code class="descname">update_attr</code><span class="sig-paren">(</span><em>name</em>, <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.spill.Spill.update_attr" title="Permalink to this definition">¶</a></dt>
@@ -1715,6 +1566,122 @@ object is not valid</td>
 <dd><p>level is the logging level to use for messages. Default is &#8216;warning&#8217;
 but if called from prepare_for_model_run, we want to use error and
 raise exception.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.spill.Spill.get_mass">
+<code class="descname">get_mass</code><span class="sig-paren">(</span><em>units=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.get_mass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.get_mass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the mass released during the spill.
+User can also specify desired output units in the function.
+If units are not specified, then return in &#8216;SI&#8217; units (&#8216;kg&#8217;)
+If volume is given, then use density to find mass. Density is always
+at 15degC, consistent with API definition</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.spill.Spill.uncertain_copy">
+<code class="descname">uncertain_copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.uncertain_copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.uncertain_copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a deepcopy of this spill for the uncertainty runs</p>
+<p>The copy has everything the same, including the spill_num,
+but it is a new object with a new id.</p>
+<p>Not much to this method, but it could be overridden to do something
+fancier in the future or a subclass.</p>
+<p>There are a number of python objects that cannot be deepcopied.
+- Logger objects</p>
+<p>So we copy them temporarily to local variables before we deepcopy
+our Spill object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.spill.Spill.set_amount_uncertainty">
+<code class="descname">set_amount_uncertainty</code><span class="sig-paren">(</span><em>up_or_down=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.set_amount_uncertainty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.set_amount_uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function shifts the spill amount based on a scale value
+in the range [0.0 ... 1.0].  The maximum uncertainty scale value
+is (2/3) * spill_amount.
+We determine either an upper uncertainty or a lower uncertainty
+multiplier.  Then we shift our spill amount value based on it.</p>
+<p>Since we are irreversibly changing the spill amount value,
+we should probably do this only once.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.spill.Spill.rewind">
+<code class="descname">rewind</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.rewind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.rewind" title="Permalink to this definition">¶</a></dt>
+<dd><p>rewinds the release to original status (before anything has been
+released).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.spill.Spill.num_elements_to_release">
+<code class="descname">num_elements_to_release</code><span class="sig-paren">(</span><em>current_time</em>, <em>time_step</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.num_elements_to_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.num_elements_to_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines the number of elements to be released during:
+current_time + time_step</p>
+<p>It invokes the num_elements_to_release method for the the unerlying
+release object: self.release.num_elements_to_release()</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>current_time</strong> (<em>datetime.datetime</em>) &#8211; current time</li>
+<li><strong>time_step</strong> (<em>int</em>) &#8211; the time step, sometimes used to decide how many
+should get released.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the number of elements that will be released. This is taken
+by SpillContainer to initialize all data_arrays.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.spill.Spill.set_newparticle_values">
+<code class="descname">set_newparticle_values</code><span class="sig-paren">(</span><em>num_new_particles</em>, <em>current_time</em>, <em>time_step</em>, <em>data_arrays</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.set_newparticle_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.set_newparticle_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>SpillContainer will release elements and initialize all data_arrays
+to default initial value. The SpillContainer gets passed as input and
+the data_arrays for &#8216;position&#8217; get initialized correctly by the release
+object: self.release.set_newparticle_positions()</p>
+<p>If a Spill Amount is given, the Spill object also sets the &#8216;mass&#8217; data
+array; else &#8216;mass&#8217; array remains &#8216;0&#8217;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>num_new_particles</strong> (<em>int</em>) &#8211; number of new particles that were added.
+Always greater than 0</li>
+<li><strong>current_time</strong> (<em>datetime.datetime</em>) &#8211; current time</li>
+<li><strong>time_step</strong> (<em>integer seconds</em>) &#8211; the time step, sometimes used to decide how many
+should get released.</li>
+<li><strong>data_arrays</strong> (<em>dict containing numpy arrays for values</em>) &#8211; dict of data_arrays provided by the SpillContainer.
+Look for &#8216;positions&#8217; array in the dict and update positions for
+latest num_new_particles that are released</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Also, the set_newparticle_values() method for all element_type gets
+called so each element_type sets the values for its own data correctly</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.spill.Spill.serialize">
+<code class="descname">serialize</code><span class="sig-paren">(</span><em>json_='webapi'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>override base serialize implementation
+Need to add node for release object and element_type object</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gnome.spill.Spill.deserialize">
+<em class="property">classmethod </em><code class="descname">deserialize</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.deserialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill.deserialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instead of creating schema dynamically for Spill() before
+deserialization, call nested object&#8217;s serialize/deserialize methods</p>
+<p>We also need to accept sparse json objects, in which case we will
+not treat them, but just send them back.</p>
 </dd></dl>
 
 </dd></dl>
@@ -2818,6 +2785,11 @@ These are properties that are spill specific like:</p>
 &#8216;subsurface_dist&#8217; element_types would contain rise velocity distribution info
 &#8216;nonweathering&#8217; element_types would set use_droplet_size flag to False
 &#8216;weathering&#8217; element_types would use droplet_size, densities, mass?</div></blockquote>
+<dl class="docutils">
+<dt>Note: An ElementType needs a bunch of initializers &#8211; but that is an</dt>
+<dd>implementation detail, so the ElementType API exposes access to the
+initializers.</dd>
+</dl>
 <dl class="class">
 <dt id="gnome.spill.elements.element_type.ElementType">
 <em class="property">class </em><code class="descclassname">gnome.spill.elements.element_type.</code><code class="descname">ElementType</code><span class="sig-paren">(</span><em>initializers=[]</em>, <em>substance=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/elements/element_type.html#ElementType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.elements.element_type.ElementType" title="Permalink to this definition">¶</a></dt>
@@ -2901,6 +2873,13 @@ schemas to the ElementType schema since they are not known ahead of
 time.</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="gnome.spill.elements.element_type.ElementType.attr_to_dict">
+<code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.spill.elements.element_type.ElementType.attr_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>refactor to_dict&#8217;s functionality so child classes can convert a
+single attribute to_dict instead of doing a whole list of fields</p>
+</dd></dl>
+
 <dl class="classmethod">
 <dt id="gnome.spill.elements.element_type.ElementType.deserialize">
 <em class="property">classmethod </em><code class="descname">deserialize</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/spill/elements/element_type.html#ElementType.deserialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.elements.element_type.ElementType.deserialize" title="Permalink to this definition">¶</a></dt>
@@ -2908,13 +2887,6 @@ time.</p>
 deserialized ElementType dict</p>
 <p>We also need to accept sparse json objects, in which case we will
 not treat them, but just send them back.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.spill.elements.element_type.ElementType.attr_to_dict">
-<code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.spill.elements.element_type.ElementType.attr_to_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>refactor to_dict&#8217;s functionality so child classes can convert a
-single attribute to_dict instead of doing a whole list of fields</p>
 </dd></dl>
 
 <dl class="method">
@@ -3247,8 +3219,10 @@ a class level _schema attribute.</p>
 <li><strong>on</strong> &#8211; boolean as to whether the object is on or not. Default is on</li>
 <li><strong>active_start</strong> &#8211; datetime when the mover should be active</li>
 <li><strong>active_stop</strong> &#8211; datetime after which the mover should be inactive</li>
-<li><strong>real_data_start</strong> &#8211; datetime when the mover first has data (not including extrapolation)</li>
-<li><strong>real_data_stop</strong> &#8211; datetime after which the mover has no data (not including extrapolation)</li>
+<li><strong>real_data_start</strong> &#8211; datetime when the mover first has data
+(not including extrapolation)</li>
+<li><strong>real_data_stop</strong> &#8211; datetime after which the mover has no data
+(not including extrapolation)</li>
 </ul>
 </td>
 </tr>
@@ -3318,8 +3292,10 @@ subclassed movers.</p>
 <li><strong>on</strong> &#8211; boolean as to whether the object is on or not. Default is on</li>
 <li><strong>active_start</strong> &#8211; datetime when the mover should be active</li>
 <li><strong>active_stop</strong> &#8211; datetime after which the mover should be inactive</li>
-<li><strong>real_data_start</strong> &#8211; datetime when the mover first has data (not including extrapolation)</li>
-<li><strong>real_data_stop</strong> &#8211; datetime after which the mover has no data (not including extrapolation)</li>
+<li><strong>real_data_start</strong> &#8211; datetime when the mover first has data
+(not including extrapolation)</li>
+<li><strong>real_data_stop</strong> &#8211; datetime after which the mover has no data
+(not including extrapolation)</li>
 </ul>
 </td>
 </tr>
@@ -3852,7 +3828,7 @@ raise exception.</p>
 
 <dl class="class">
 <dt id="gnome.movers.GridCurrentMover">
-<em class="property">class </em><code class="descclassname">gnome.movers.</code><code class="descname">GridCurrentMover</code><span class="sig-paren">(</span><em>filename</em>, <em>topology_file=None</em>, <em>extrapolate=False</em>, <em>time_offset=0</em>, <em>current_scale=1</em>, <em>uncertain_along=0.5</em>, <em>uncertain_across=0.25</em>, <em>num_method=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/current_movers.html#GridCurrentMover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.GridCurrentMover" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.movers.</code><code class="descname">GridCurrentMover</code><span class="sig-paren">(</span><em>filename</em>, <em>topology_file=None</em>, <em>extrapolate=False</em>, <em>time_offset=0</em>, <em>current_scale=1</em>, <em>uncertain_along=0.5</em>, <em>uncertain_across=0.25</em>, <em>num_method='Euler'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/current_movers.html#GridCurrentMover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.GridCurrentMover" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize a GridCurrentMover</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -4428,13 +4404,14 @@ and &#8216;save&#8217; option, need to add appropriate node to WindMover schema<
 
 <dl class="class">
 <dt id="gnome.movers.GridWindMover">
-<em class="property">class </em><code class="descclassname">gnome.movers.</code><code class="descname">GridWindMover</code><span class="sig-paren">(</span><em>wind_file</em>, <em>topology_file=None</em>, <em>extrapolate=False</em>, <em>time_offset=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/wind_movers.html#GridWindMover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.GridWindMover" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.movers.</code><code class="descname">GridWindMover</code><span class="sig-paren">(</span><em>filename</em>, <em>topology_file=None</em>, <em>extrapolate=False</em>, <em>time_offset=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/wind_movers.html#GridWindMover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.GridWindMover" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>wind_file</strong> &#8211; file containing wind data on a grid</li>
+<li><strong>filename</strong> &#8211; file containing wind data on a grid</li>
 <li><strong>topology_file</strong> &#8211; Default is None. When exporting topology, it
 is stored in this file</li>
 <li><strong>wind_scale</strong> &#8211; Value to scale wind data</li>
@@ -4453,6 +4430,36 @@ uses super: super(GridWindMover,self).__init__(**kwargs)</p>
 <code class="descname">name</code><a class="headerlink" href="#gnome.movers.GridWindMover.name" title="Permalink to this definition">¶</a></dt>
 <dd><p>define as property in base class so all objects will have a name
 by default</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.get_cells">
+<code class="descname">get_cells</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/wind_movers.html#GridWindMover.get_cells"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.GridWindMover.get_cells" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invokes the GetCellDataHdl method of TimeGridWind_c object.
+Cross-references point data to get cell coordinates.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.get_cell_center_points">
+<code class="descname">get_cell_center_points</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/wind_movers.html#GridWindMover.get_cell_center_points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.GridWindMover.get_cell_center_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Right now the cython mover only gets the triangular center points,
+so we need to calculate centers based on the cells themselves.</p>
+<p>Cells will have the format (tl, tr, bl, br)
+We need to get the rectangular centers
+Center will be: (tl + ((br - tl) / 2.))</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.get_scaled_velocities">
+<code class="descname">get_scaled_velocities</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/wind_movers.html#GridWindMover.get_scaled_velocities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.GridWindMover.get_scaled_velocities" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_time=0</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -5673,7 +5680,7 @@ raise exception.</p>
 
 <dl class="class">
 <dt id="gnome.weatherers.Skimmer">
-<em class="property">class </em><code class="descclassname">gnome.weatherers.</code><code class="descname">Skimmer</code><span class="sig-paren">(</span><em>amount</em>, <em>units</em>, <em>efficiency</em>, <em>active_start</em>, <em>active_stop</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/weatherers/cleanup.html#Skimmer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.weatherers.Skimmer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.weatherers.</code><code class="descname">Skimmer</code><span class="sig-paren">(</span><em>amount</em>, <em>units</em>, <em>efficiency</em>, <em>active_start</em>, <em>active_stop</em>, <em>water=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/weatherers/cleanup.html#Skimmer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.weatherers.Skimmer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.weatherers.cleanup.CleanUpBase</span></code>, <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
 <p>initialize Skimmer object - calls base class __init__ using super()
 active_start and active_stop time are required
@@ -5715,7 +5722,7 @@ remove mass equally from LEs marked to be skimmed</p>
 
 <dl class="class">
 <dt id="gnome.weatherers.Burn">
-<em class="property">class </em><code class="descclassname">gnome.weatherers.</code><code class="descname">Burn</code><span class="sig-paren">(</span><em>area</em>, <em>thickness</em>, <em>active_start</em>, <em>area_units='m^2'</em>, <em>thickness_units='m'</em>, <em>efficiency=1.0</em>, <em>wind=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/weatherers/cleanup.html#Burn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.weatherers.Burn" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.weatherers.</code><code class="descname">Burn</code><span class="sig-paren">(</span><em>area</em>, <em>thickness</em>, <em>active_start</em>, <em>area_units='m^2'</em>, <em>thickness_units='m'</em>, <em>efficiency=1.0</em>, <em>wind=None</em>, <em>water=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/weatherers/cleanup.html#Burn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.weatherers.Burn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the area of boomed oil to be burned.
 Cleanup operations must have a valid datetime for active_start,
 cannot use -inf. Cannot set active_stop - burn automatically stops
@@ -6826,50 +6833,31 @@ we should probably do this only once.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-gnome.environment.property_classes">
-<span id="gnome-environment-property-classes-pygnome-implemented-property-classes"></span><h2><code class="docutils literal"><span class="pre">gnome.environment.property_classes</span></code> &#8211; PyGnome implemented property classes<a class="headerlink" href="#module-gnome.environment.property_classes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="gnome-environment-property-classes-pygnome-implemented-property-classes">
+<h2><code class="docutils literal"><span class="pre">gnome.environment.property_classes</span></code> &#8211; PyGnome implemented property classes<a class="headerlink" href="#gnome-environment-property-classes-pygnome-implemented-property-classes" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
-<dt id="gnome.environment.property_classes.IceConcentration">
-<em class="property">class </em><code class="descclassname">gnome.environment.property_classes.</code><code class="descname">IceConcentration</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>data=None</em>, <em>grid=None</em>, <em>data_file=None</em>, <em>grid_file=None</em>, <em>dataset=None</em>, <em>varname=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.IceConcentration" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gnome.environment.grid_property.GriddedProp" title="gnome.environment.grid_property.GriddedProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.grid_property.GriddedProp</span></code></a>, <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
-<p>This class represents a phenomenon using gridded data</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<em>string</em>) &#8211; Name</li>
-<li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
-<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4 Variable, or Time object</em>) &#8211; Time axis of the data</li>
-<li><strong>data</strong> (<em>netCDF4.Variable or numpy.array</em>) &#8211; Underlying data source</li>
-<li><strong>grid</strong> (<em>pysgrid or pyugrid</em>) &#8211; Grid that the data corresponds with</li>
-<li><strong>data_file</strong> (<em>string</em>) &#8211; Name of data source file</li>
-<li><strong>grid_file</strong> (<em>string</em>) &#8211; Name of grid source file</li>
-<li><strong>varname</strong> (<em>string</em>) &#8211; Name of the variable in the data source file</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
+<dt id="gnome.environment.IceConcentration">
+<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">IceConcentration</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#IceConcentration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.IceConcentration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.environment.grid_property.GriddedProp" title="gnome.environment.grid_property.GriddedProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.grid_property.GriddedProp</span></code></a>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
 <dl class="attribute">
-<dt id="gnome.environment.property_classes.IceConcentration.default_names">
-<code class="descname">default_names</code><em class="property"> = ['ice_fraction']</em><a class="headerlink" href="#gnome.environment.property_classes.IceConcentration.default_names" title="Permalink to this definition">¶</a></dt>
+<dt id="gnome.environment.IceConcentration.default_names">
+<code class="descname">default_names</code><em class="property"> = ['ice_fraction']</em><a class="headerlink" href="#gnome.environment.IceConcentration.default_names" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="class">
-<dt id="gnome.environment.property_classes.GridCurrent">
-<em class="property">class </em><code class="descclassname">gnome.environment.property_classes.</code><code class="descname">GridCurrent</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>grid=None</em>, <em>grid_file=None</em>, <em>data_file=None</em>, <em>dataset=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.GridCurrent" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property_classes.VelocityGrid</span></code>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
+<dt id="gnome.environment.GridCurrent">
+<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">GridCurrent</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#GridCurrent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.GridCurrent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment_objects.VelocityGrid</span></code>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
 <dl class="attribute">
-<dt id="gnome.environment.property_classes.GridCurrent.default_names">
-<code class="descname">default_names</code><em class="property"> = [['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]</em><a class="headerlink" href="#gnome.environment.property_classes.GridCurrent.default_names" title="Permalink to this definition">¶</a></dt>
+<dt id="gnome.environment.GridCurrent.default_names">
+<code class="descname">default_names</code><em class="property"> = [['u', 'v', 'w'], ['U', 'V', 'W'], ['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]</em><a class="headerlink" href="#gnome.environment.GridCurrent.default_names" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="gnome.environment.property_classes.GridCurrent.at">
-<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>depth=-1</em>, <em>extrapolate=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.GridCurrent.at" title="Permalink to this definition">¶</a></dt>
+<dt id="gnome.environment.GridCurrent.at">
+<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>extrapolate=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#GridCurrent.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.GridCurrent.at" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the value of the property at positions P at time T</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -6897,17 +6885,17 @@ we should probably do this only once.</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="gnome.environment.property_classes.GridWind">
-<em class="property">class </em><code class="descclassname">gnome.environment.property_classes.</code><code class="descname">GridWind</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>grid=None</em>, <em>grid_file=None</em>, <em>data_file=None</em>, <em>dataset=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.GridWind" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property_classes.VelocityGrid</span></code>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
+<dt id="gnome.environment.GridWind">
+<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">GridWind</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#GridWind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.GridWind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment_objects.VelocityGrid</span></code>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
 <dl class="attribute">
-<dt id="gnome.environment.property_classes.GridWind.default_names">
-<code class="descname">default_names</code><em class="property"> = [['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]</em><a class="headerlink" href="#gnome.environment.property_classes.GridWind.default_names" title="Permalink to this definition">¶</a></dt>
+<dt id="gnome.environment.GridWind.default_names">
+<code class="descname">default_names</code><em class="property"> = [['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]</em><a class="headerlink" href="#gnome.environment.GridWind.default_names" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="gnome.environment.property_classes.GridWind.at">
-<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>depth=-1</em>, <em>extrapolate=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.GridWind.at" title="Permalink to this definition">¶</a></dt>
+<dt id="gnome.environment.GridWind.at">
+<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>extrapolate=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#GridWind.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.GridWind.at" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the value of the property at positions P at time T</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -6931,17 +6919,6 @@ we should probably do this only once.</p>
 </tbody>
 </table>
 </dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="gnome.environment.property_classes.IceVelocity">
-<em class="property">class </em><code class="descclassname">gnome.environment.property_classes.</code><code class="descname">IceVelocity</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>grid=None</em>, <em>grid_file=None</em>, <em>data_file=None</em>, <em>dataset=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.property_classes.IceVelocity" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property_classes.VelocityGrid</span></code></p>
-<dl class="attribute">
-<dt id="gnome.environment.property_classes.IceVelocity.default_names">
-<code class="descname">default_names</code><em class="property"> = [['ice_u', 'ice_v']]</em><a class="headerlink" href="#gnome.environment.property_classes.IceVelocity.default_names" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 </dd></dl>
 
@@ -6968,20 +6945,6 @@ class, and returns only a single value regardless of the time.</p>
 </tr>
 </tbody>
 </table>
-<dl class="attribute">
-<dt id="gnome.environment.property.EnvProp.data">
-<code class="descname">data</code><a class="headerlink" href="#gnome.environment.property.EnvProp.data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Underlying data</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">netCDF4.Variable or numpy.array</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 <dl class="attribute">
 <dt id="gnome.environment.property.EnvProp.units">
 <code class="descname">units</code><a class="headerlink" href="#gnome.environment.property.EnvProp.units" title="Permalink to this definition">¶</a></dt>
@@ -7020,8 +6983,8 @@ class, and returns only a single value regardless of the time.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
-<li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
-<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
+<li><strong>time</strong> (<em>integer</em>) &#8211; The time at which to query these points (T)</li>
+<li><strong>time</strong> &#8211; Specifies the time level of the variable</li>
 <li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
 <li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
 </ul>
@@ -7129,8 +7092,8 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
-<li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
-<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
+<li><strong>time</strong> (<em>integer</em>) &#8211; The time at which to query these points (T)</li>
+<li><strong>time</strong> &#8211; Specifies the time level of the variable</li>
 <li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
 <li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
 </ul>
@@ -7150,20 +7113,27 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 
 <dl class="class">
 <dt id="gnome.environment.property.Time">
-<em class="property">class </em><code class="descclassname">gnome.environment.property.</code><code class="descname">Time</code><span class="sig-paren">(</span><em>time_seq</em>, <em>tz_offset=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#Time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.Time" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.environment.property.</code><code class="descname">Time</code><span class="sig-paren">(</span><em>time=None</em>, <em>filename=None</em>, <em>varname=None</em>, <em>tz_offset=None</em>, <em>offset=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#Time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.Time" title="Permalink to this definition">¶</a></dt>
 <dd><p>Representation of a time axis. Provides interpolation alphas and indexing.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>time_seq</strong> (<em>netCDF4.Variable or [] of datetime.datetime</em>) &#8211; Ascending list of times to use</li>
+<li><strong>time</strong> (<em>netCDF4.Variable or [] of datetime.datetime</em>) &#8211; Ascending list of times to use</li>
 <li><strong>tz_offset</strong> (<em>datetime.timedelta</em>) &#8211; offset to compensate for time zone shifts</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
+<dl class="method">
+<dt id="gnome.environment.property.Time.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>saveloc</em>, <em>references=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#Time.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.Time.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write Wind timeseries to file or to zip,
+then call save method using super</p>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="gnome.environment.property.Time.min_time">
 <code class="descname">min_time</code><a class="headerlink" href="#gnome.environment.property.Time.min_time" title="Permalink to this definition">¶</a></dt>
@@ -7210,7 +7180,7 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 
 <dl class="method">
 <dt id="gnome.environment.property.Time.index_of">
-<code class="descname">index_of</code><span class="sig-paren">(</span><em>time</em>, <em>extrapolate</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#Time.index_of"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.Time.index_of" title="Permalink to this definition">¶</a></dt>
+<code class="descname">index_of</code><span class="sig-paren">(</span><em>time</em>, <em>extrapolate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/property.html#Time.index_of"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.property.Time.index_of" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the index of the provided time with respect to the time intervals in the file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -7260,7 +7230,7 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 
 <span class="target" id="module-gnome.environment.grid_property"></span><dl class="class">
 <dt id="gnome.environment.grid_property.GriddedProp">
-<em class="property">class </em><code class="descclassname">gnome.environment.grid_property.</code><code class="descname">GriddedProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>data=None</em>, <em>grid=None</em>, <em>data_file=None</em>, <em>grid_file=None</em>, <em>dataset=None</em>, <em>varname=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.environment.grid_property.</code><code class="descname">GriddedProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>data=None</em>, <em>grid=None</em>, <em>depth=None</em>, <em>data_file=None</em>, <em>grid_file=None</em>, <em>dataset=None</em>, <em>varname=None</em>, <em>fill_value=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.environment.property.EnvProp" title="gnome.environment.property.EnvProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property.EnvProp</span></code></a></p>
 <p>This class represents a phenomenon using gridded data</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -7283,7 +7253,7 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 </table>
 <dl class="classmethod">
 <dt id="gnome.environment.grid_property.GriddedProp.from_netCDF">
-<em class="property">classmethod </em><code class="descname">from_netCDF</code><span class="sig-paren">(</span><em>filename=None</em>, <em>varname=None</em>, <em>grid_topology=None</em>, <em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>grid=None</em>, <em>dataset=None</em>, <em>data_file=None</em>, <em>grid_file=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp.from_netCDF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.from_netCDF" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">from_netCDF</code><span class="sig-paren">(</span><em>filename=None</em>, <em>varname=None</em>, <em>grid_topology=None</em>, <em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>grid=None</em>, <em>depth=None</em>, <em>dataset=None</em>, <em>data_file=None</em>, <em>grid_file=None</em>, <em>load_all=False</em>, <em>fill_value=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp.from_netCDF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.from_netCDF" title="Permalink to this definition">¶</a></dt>
 <dd><p>Allows one-function creation of a GriddedProp from a file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -7298,6 +7268,7 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 <li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4 Variable, or Time object</em>) &#8211; Time axis of the data</li>
 <li><strong>data</strong> (<em>netCDF4.Variable or numpy.array</em>) &#8211; Underlying data source</li>
 <li><strong>grid</strong> (<em>pysgrid or pyugrid</em>) &#8211; Grid that the data corresponds with</li>
+<li><strong>depth</strong> (<em>Depth, S_Depth or L_Depth</em>) &#8211; Depth axis object</li>
 <li><strong>dataset</strong> (<em>netCDF4.Dataset</em>) &#8211; Instance of open Dataset</li>
 <li><strong>data_file</strong> (<em>string</em>) &#8211; Name of data source file</li>
 <li><strong>grid_file</strong> (<em>string</em>) &#8211; Name of grid source file</li>
@@ -7309,8 +7280,27 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._get_hash">
+<code class="descname">_get_hash</code><span class="sig-paren">(</span><em>points</em>, <em>time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp._get_hash"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._get_hash" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a SHA1 hash of the array of points passed in</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GriddedProp.dimension_ordering">
+<code class="descname">dimension_ordering</code><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.dimension_ordering" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list that describes the dimensions of the property&#8217;s data. If a dimension_ordering is assigned,
+it will continue to use that. If no dimension_ordering is set, then a default ordering will be generated
+based on the object properties and data shape.</p>
+<p>For example, if the data has 4 dimensions and is represented by a PyGrid_S (structured grid), and the
+GriddedProp has a depth and time assigned, then the assumed ordering is [&#8216;time&#8217;,&#8217;depth&#8217;,&#8217;lon&#8217;,&#8217;lat&#8217;]</p>
+<p>If the data has 3 dimensions, self.grid is a PyGrid_S, and self.time is None, then the ordering is
+[&#8216;depth&#8217;,&#8217;lon&#8217;,&#8217;lat&#8217;]
+If the data has 3 dimensions, self.grid is a PyGrid_U, the ordering is [&#8216;time&#8217;,&#8217;depth&#8217;,&#8217;ele&#8217;]</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gnome.environment.grid_property.GriddedProp.at">
-<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>depth=-1</em>, <em>extrapolate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.at" title="Permalink to this definition">¶</a></dt>
+<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>extrapolate=False</em>, <em>_hash=None</em>, <em>_mem=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.at" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the value of the property at positions P at time T</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -7319,8 +7309,7 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
 <li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
-<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
-<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>units</strong> (<em>string such as ('mem/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
 <li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
 </ul>
 </td>
@@ -7333,6 +7322,50 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._xy_interp">
+<code class="descname">_xy_interp</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>extrapolate</em>, <em>slices=()</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp._xy_interp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._xy_interp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the py(s/u)grid interpolation to determine the values at the points, and returns it
+:param points: Coordinates to be queried (3D)
+:param time: Time of the query
+:param extrapolate: Turns extrapolation on or off
+:param slices: describes how the data needs to be sliced to reach the appropriate dimension
+:type points: Nx3 array of double
+:type time: datetime.datetime object
+:type extrapolate: boolean
+:type slices: tuple of integers or slice objects</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._time_interp">
+<code class="descname">_time_interp</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>extrapolate</em>, <em>slices=()</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp._time_interp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._time_interp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the Time object to interpolate the result of the next level of interpolation, as specified
+by the dimension_ordering attribute.
+:param points: Coordinates to be queried (3D)
+:param time: Time of the query
+:param extrapolate: Turns extrapolation on or off
+:param slices: describes how the data needs to be sliced to reach the appropriate dimension
+:type points: Nx3 array of double
+:type time: datetime.datetime object
+:type extrapolate: boolean
+:type slices: tuple of integers or slice objects</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._depth_interp">
+<code class="descname">_depth_interp</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>extrapolate</em>, <em>slices=()</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GriddedProp._depth_interp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._depth_interp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the Depth object to interpolate the result of the next level of interpolation, as specified
+by the dimension_ordering attribute.
+:param points: Coordinates to be queried (3D)
+:param time: Time of the query
+:param extrapolate: Turns extrapolation on or off
+:param slices: describes how the data needs to be sliced to reach the appropriate dimension
+:type points: Nx3 array of double
+:type time: datetime.datetime object
+:type extrapolate: boolean
+:type slices: tuple of integers or slice objects</p>
 </dd></dl>
 
 <dl class="classmethod">
@@ -7357,6 +7390,224 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._GnomeId__create_new_id">
+<code class="descname">_GnomeId__create_new_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._GnomeId__create_new_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override this method for more exotic forms of identification.</p>
+<p>Used only for deep copy.
+Used to make a new object which is a copy of the original.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._attach_default_refs">
+<code class="descname">_attach_default_refs</code><span class="sig-paren">(</span><em>ref_dict</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._attach_default_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>If provided a dictionary of references this function will validate it
+against the _req_refs specified by the class, and if a match is found
+and the instance&#8217;s reference is None, it will set it to the instance
+from ref_dict</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._attr_changed">
+<code class="descname">_attr_changed</code><span class="sig-paren">(</span><em>current_value</em>, <em>received_value</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._attr_changed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if an attribute passed back in a <a href="#id9"><span class="problematic" id="id10">dict_</span></a> from client has changed.
+Returns True if changed, else False</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._attrlist">
+<code class="descname">_attrlist</code><span class="sig-paren">(</span><em>do=('update'</em>, <em>'read')</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._attrlist" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns list of object attributes that need to be serialized. By
+default all fields that have &#8216;update&#8217; == True are returned.
+By default it converts the &#8216;update&#8217; list of the _state object to dict;
+however, do=(&#8216;save&#8217;,) or do=(&#8216;update&#8217;,&#8217;read&#8217;) will return the dict
+with the union of the corresponding lists.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._check_type">
+<code class="descname">_check_type</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._check_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>check basic type equality</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._collection_to_dict">
+<code class="descname">_collection_to_dict</code><span class="sig-paren">(</span><em>coll</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._collection_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method takes the instance of a collection containing serializable gnome
+objects and outputs a list of dicts, each with two fields:</p>
+<blockquote>
+<div>{obj_type: object type &lt;module.class&gt;,
+id: IDs of each object.}</div></blockquote>
+<p>This is a general way to make a dict for a collection which is then
+serialized to a &#8216;save&#8217; file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._json_to_saveloc">
+<code class="descname">_json_to_saveloc</code><span class="sig-paren">(</span><em>json_</em>, <em>saveloc</em>, <em>references=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._json_to_saveloc" title="Permalink to this definition">¶</a></dt>
+<dd><p>save <a href="#id11"><span class="problematic" id="id12">json_</span></a> to saveloc</p>
+<dl class="docutils">
+<dt>-. first save and update references if any attributes are stored as</dt>
+<dd>references</dd>
+</dl>
+<p>-. add self to references
+-. move any datafiles to saveloc that need to be persisted
+-. finally, write <a href="#id13"><span class="problematic" id="id14">json_</span></a> directly to zip if saveloc is a zip or dump</p>
+<blockquote>
+<div>to <a href="#id1"><span class="problematic" id="id2">*</span></a>.json of saveloc is a directory</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>json</strong> &#8211; json data after serialization. Default is the output of
+self.serialize(&#8216;save&#8217;)</li>
+<li><strong>saveloc</strong> &#8211; Either zipfile to which object&#8217;s json can be appended.
+Or a valid path where object&#8217;s <a href="#id3"><span class="problematic" id="id4">*</span></a>.json can be dumped to a file</li>
+<li><strong>references</strong> &#8211; References object to keep track of objects that
+have been constructed. If a referenced object has been saved,
+no need to add it again to saveloc - don&#8217;t want multiple copies</li>
+<li><strong>name</strong> &#8211; json is stored in &#8216;name.json&#8217; in zip archive/specified
+directory. Default is self.__class__.__name__. If references object
+contains self.__class__.__name__, then let</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._load_collection">
+<code class="descname">_load_collection</code><span class="sig-paren">(</span><em>saveloc</em>, <em>l_coll_dict</em>, <em>refs</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._load_collection" title="Permalink to this definition">¶</a></dt>
+<dd><p>doesn&#8217;t need to be classmethod of the Model, but its only used by
+Model at present</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._load_refs">
+<code class="descname">_load_refs</code><span class="sig-paren">(</span><em>json_data</em>, <em>saveloc</em>, <em>references</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._load_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>loads up references. First looks for object in references, if not found
+then it creates object from json and adds a reference to it. If found
+in references, it just uses/returns the object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._move_data_file">
+<code class="descname">_move_data_file</code><span class="sig-paren">(</span><em>saveloc</em>, <em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._move_data_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look at _state attribute of object. Find all fields with &#8216;isdatafile&#8217;
+attribute as True. If there is a key in <a href="#id15"><span class="problematic" id="id16">json_</span></a> corresponding with
+&#8216;name&#8217; of the fields with True &#8216;isdatafile&#8217; attribute then move that
+datafile and update the key in the <a href="#id17"><span class="problematic" id="id18">json_</span></a> to point to new location</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GriddedProp._pid">
+<code class="descname">_pid</code><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._pid" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns os.getpid() as a string. Since we have multiple models, each
+running in its own process that is managed by multi_model_broadcast
+module, each debug log messages starts with os.getpid(). This function
+just returns a string that the gnome object can append to - don&#8217;t
+want to keep typing this everywhere.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._ref_in_saveloc">
+<code class="descname">_ref_in_saveloc</code><span class="sig-paren">(</span><em>saveloc</em>, <em>ref</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._ref_in_saveloc" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns true if reference is found in saveloc, false otherwise</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._restore_attr_from_save">
+<code class="descname">_restore_attr_from_save</code><span class="sig-paren">(</span><em>new_obj</em>, <em>dict_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._restore_attr_from_save" title="Permalink to this definition">¶</a></dt>
+<dd><p>restore attributes from save files that are not set during init - broke
+out some functionality of new_from_dict so when child classes override
+it, they can make use of this as well</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._save_collection">
+<code class="descname">_save_collection</code><span class="sig-paren">(</span><em>saveloc</em>, <em>coll_</em>, <em>refs</em>, <em>coll_json</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._save_collection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reference objects inside OrderedCollections or list. Since the OC
+itself isn&#8217;t a reference but the objects in the list are a reference,
+do something a little differently here</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coll</strong> (<a class="reference internal" href="#gnome.utilities.orderedcollection.OrderedCollection" title="gnome.utilities.orderedcollection.OrderedCollection"><em>OrderedCollection</em></a>) &#8211; ordered collection/list to be saved</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._update_and_save_refs">
+<code class="descname">_update_and_save_refs</code><span class="sig-paren">(</span><em>json_</em>, <em>saveloc</em>, <em>references</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._update_and_save_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>for attributes that are stored as references - ensure the references
+are moved to saveloc, and update its value in the <a href="#id19"><span class="problematic" id="id20">json_</span></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._update_datafile_path">
+<code class="descname">_update_datafile_path</code><span class="sig-paren">(</span><em>json_data</em>, <em>saveloc</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._update_datafile_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>update path to attributes that use a datafile
+if saveloc is a zipfile, then extract the datafile to same location
+as zipfile and upate path in json_data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._update_orderedcoll_attr">
+<code class="descname">_update_orderedcoll_attr</code><span class="sig-paren">(</span><em>curr_oc</em>, <em>l_new_oc</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._update_orderedcoll_attr" title="Permalink to this definition">¶</a></dt>
+<dd><p>update attribute of type OrderedCollection with items in list l_new_oc</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GriddedProp._warn_pre">
+<code class="descname">_warn_pre</code><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._warn_pre" title="Permalink to this definition">¶</a></dt>
+<dd><p>standard text prepended to warning messages - not required for logging
+used by validate to prepend to message since it also returns a list
+of messages that were logged</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp._write_to_zip">
+<code class="descname">_write_to_zip</code><span class="sig-paren">(</span><em>saveloc</em>, <em>f_name</em>, <em>s_data</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._write_to_zip" title="Permalink to this definition">¶</a></dt>
+<dd><p>general function for writing string data directly to zipfile.</p>
+<p>f_name is the archive name and s_data is the corresponding string,
+added to zipfile</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.attr_to_dict">
+<code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.attr_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>refactor to_dict&#8217;s functionality so child classes can convert a
+single attribute to_dict instead of doing a whole list of fields</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.deserialize_oc">
+<code class="descname">deserialize_oc</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.deserialize_oc" title="Permalink to this definition">¶</a></dt>
+<dd><p>check contents of orderered collections to figure out what schema to
+use.
+Basically, the json serialized ordered collection looks like a regular
+list.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GriddedProp.id">
+<code class="descname">id</code><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override this method for more exotic forms of identification.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a unique ID assigned during construction</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="gnome.environment.grid_property.GriddedProp.in_units">
 <code class="descname">in_units</code><span class="sig-paren">(</span><em>unit</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.in_units" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a full cpy of this property in the units specified.
@@ -7375,6 +7626,152 @@ WARNING: This will cpy the data of the original property!</p>
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.is_sparse">
+<code class="descname">is_sparse</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.is_sparse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sparse means that we have a previously created object,
+and we are receiving a reference to the object using just
+an obj_type and an id.  This is a valid payload that the
+Web Client will send.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.loads">
+<code class="descname">loads</code><span class="sig-paren">(</span><em>json_data</em>, <em>saveloc=None</em>, <em>references=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.loads" title="Permalink to this definition">¶</a></dt>
+<dd><p>loads object from json_data</p>
+<ul class="simple">
+<li>load json for references from files</li>
+<li>update paths of datafiles if needed</li>
+<li>deserialize json_data</li>
+<li>and create object with new_from_dict()</li>
+</ul>
+<dl class="docutils">
+<dt>json_data: dict containing json data. It has been parsed through the</dt>
+<dd>json.loads() command. The json will be valided here when it gets
+deserialized. Its references and datafile paths will be recreated
+here prior to calling new_from_dict()</dd>
+</dl>
+<p>Optional parameter</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>saveloc</strong> &#8211; location of data files or *.json files for objects
+stored as references. If object requires no datafiles and does not
+need to read references from a *.json file in saveloc, then this
+can be None.</li>
+<li><strong>references</strong> &#8211; references object - if this is called by the Model,
+it will pass a references object. It is not required.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">object constructed from json_data.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GriddedProp.logger">
+<code class="descname">logger</code><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.logger" title="Permalink to this definition">¶</a></dt>
+<dd><p>define attribute &#8216;_log&#8217;. If it doesn&#8217;t exist, define it here.
+This is so we don&#8217;t have to add it to all PyGnome classes - this
+property makes the logger available to each object.
+- default log_level is INFO</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GriddedProp.name">
+<code class="descname">name</code><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>define as property in base class so all objects will have a name
+by default</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.obj_type_to_dict">
+<code class="descname">obj_type_to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.obj_type_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns object type to save in dict.
+This is base implementation and can be over-ridden</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>saveloc</em>, <em>references=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>save object state as json to user specified saveloc</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+either persisted here or a new model is re-created from the files
+stored here. The files are clobbered when save() is called.</li>
+<li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
+&#8220;{0}.json&#8221;.format(self.__class__.__name__). If saveloc is zipfile,
+this is the name of archive in which json for self is stored.</li>
+<li><strong>references</strong> &#8211; dict of references mapping &#8216;id&#8217; to a string used for
+the reference. The value could be a unique integer or it could be
+a filename. It is upto the creator of the reference list to decide
+how to reference a nested object.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.serialize">
+<code class="descname">serialize</code><span class="sig-paren">(</span><em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the dict returned by object&#8217;s to_dict method to valid json
+format via colander schema</p>
+<p>It uses the modules_dict defined in gnome.persist to find the correct
+schema module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>json</strong> &#8211; tells object whether serialization is for web content
+or for generating a save file.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">json format of serialized data</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.serialize_oc">
+<code class="descname">serialize_oc</code><span class="sig-paren">(</span><em>coll</em>, <em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.serialize_oc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialize Model attributes of type ordered collection or list - an
+iterable containing serializable objects</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.to_dict">
+<code class="descname">to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a dictionary containing the serialized representation of this
+object.</p>
+<p>For every field, if there is a method defined on the object such that
+the method name is <cite>{field_name}_to_dict</cite>, use the return value of that
+method as the field value.</p>
+<p>Note: any field in <cite>list</cite> that does not exist on the
+object and does not have a to_dict method will raise an AttributeError.</p>
+<p>NOTE: add the json_=&#8217;webapi&#8217; key to be serialized so we know what the
+serialization is for</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.to_serialize">
+<code class="descname">to_serialize</code><span class="sig-paren">(</span><em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invoke to_dict() which converts all attributes defined in _state to
+dict.
+If json_=&#8217;save&#8217;, it subselects the Fields with save=True.
+If json_=&#8217;webapi&#8217;, it subselects Fields with (update=True, read=True)</p>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="gnome.environment.grid_property.GriddedProp.units">
 <code class="descname">units</code><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.units" title="Permalink to this definition">¶</a></dt>
@@ -7389,15 +7786,107 @@ WARNING: This will cpy the data of the original property!</p>
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.update_attr">
+<code class="descname">update_attr</code><span class="sig-paren">(</span><em>name</em>, <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.update_attr" title="Permalink to this definition">¶</a></dt>
+<dd><p>update the attribute defined by &#8216;name&#8217; with given &#8216;value&#8217;</p>
+<p>If there is a method defined on the object such that the method name is
+<cite>{name}_from_dict</cite>, call that method with the field&#8217;s data.</p>
+<p>If neither method exists, then set the field with the value from
+<code class="docutils literal"><span class="pre">data</span></code> directly on the object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>str</em>) &#8211; name of attribute to be updated</li>
+<li><strong>value</strong> (<em>depends on each attribute being updated</em>) &#8211; the new value of the attribute</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.update_from_dict">
+<code class="descname">update_from_dict</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.update_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the attributes of this object using the dictionary <code class="docutils literal"><span class="pre">data</span></code> by
+looking up the value of each key in <code class="docutils literal"><span class="pre">data</span></code>.
+The fields in self._state that have update=True are modified. The
+remaining keys in &#8216;data&#8217; are ignored. The object&#8217;s _state attribute
+defines what fields can be updated</p>
+<p>If an attribute has changed, then call &#8216;update_attr&#8217; to update its
+value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data</strong> (<em>dict</em>) &#8211; dict containing state of object per the client</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if something changed, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Does not do updates on nested objects. If the attribute references
+another Serializable object, then the value is not a dict but
+rather the updated object. For instance, WindMover will receive:</p>
+<blockquote>
+<div>{..., &#8216;wind&#8217;: &lt;Wind object&gt;}</div></blockquote>
+<p class="last">as opposed to a nested dict of the &#8216;wind&#8217; object. It is expected
+that the &#8216;wind&#8217; object was updated by calling its own
+update_from_dict then added to this dict as the updated object.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.validate">
+<code class="descname">validate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>All pygnome objects should be able to validate themselves. Many
+py_gnome objects reference other objects like wind, water, waves. These
+may not be defined when object is created so they can be None at
+construction time; however, they should reference valid objects
+when running model. If make_default_refs is True, then object isvalid
+because model will set these up at runtime. To raise exception
+for missing references at runtime, directly call
+validate_refs(level=&#8217;error&#8217;)</p>
+<p>&#8216;wind&#8217;, &#8216;water&#8217;, &#8216;waves&#8217; attributes also have special meaning. An
+object containing this attribute references the corresponding object.</p>
+<p>Logs warnings:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a tuple of length two containing:
+(a list of messages that were logged, isvalid bool)
+If any references are missing and make_default_refs is False,
+object is not valid</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GriddedProp.validate_refs">
+<code class="descname">validate_refs</code><span class="sig-paren">(</span><em>refs=['wind', 'water', 'waves']</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp.validate_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>level is the logging level to use for messages. Default is &#8216;warning&#8217;
+but if called from prepare_for_model_run, we want to use error and
+raise exception.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="gnome.environment.grid_property.GridVectorProp">
-<em class="property">class </em><code class="descclassname">gnome.environment.grid_property.</code><code class="descname">GridVectorProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>grid=None</em>, <em>grid_file=None</em>, <em>data_file=None</em>, <em>dataset=None</em>, <em>varnames=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GridVectorProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.environment.grid_property.</code><code class="descname">GridVectorProp</code><span class="sig-paren">(</span><em>grid=None</em>, <em>depth=None</em>, <em>grid_file=None</em>, <em>data_file=None</em>, <em>dataset=None</em>, <em>varnames=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GridVectorProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.environment.property.VectorProp" title="gnome.environment.property.VectorProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property.VectorProp</span></code></a></p>
 <dl class="classmethod">
 <dt id="gnome.environment.grid_property.GridVectorProp.from_netCDF">
-<em class="property">classmethod </em><code class="descname">from_netCDF</code><span class="sig-paren">(</span><em>filename=None</em>, <em>varnames=None</em>, <em>grid_topology=None</em>, <em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>grid=None</em>, <em>data_file=None</em>, <em>grid_file=None</em>, <em>dataset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GridVectorProp.from_netCDF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.from_netCDF" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">from_netCDF</code><span class="sig-paren">(</span><em>filename=None</em>, <em>varnames=None</em>, <em>grid_topology=None</em>, <em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>grid=None</em>, <em>depth=None</em>, <em>data_file=None</em>, <em>grid_file=None</em>, <em>dataset=None</em>, <em>load_all=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GridVectorProp.from_netCDF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.from_netCDF" title="Permalink to this definition">¶</a></dt>
 <dd><p>Allows one-function creation of a GridVectorProp from a file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -7417,67 +7906,6 @@ WARNING: This will cpy the data of the original property!</p>
 <li><strong>grid_file</strong> (<em>string</em>) &#8211; Name of grid source file</li>
 </ul>
 </td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.environment.grid_property.GridVectorProp._check_consistency">
-<code class="descname">_check_consistency</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GridVectorProp._check_consistency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._check_consistency" title="Permalink to this definition">¶</a></dt>
-<dd><p>Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.environment.grid_property.GridVectorProp.at">
-<code class="descname">at</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.at" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find the value of the property at positions P at time T</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
-<li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
-<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
-<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
-<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">returns a Nx2 array of interpolated values</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">double</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="gnome.environment.grid_property.GridVectorProp.units">
-<code class="descname">units</code><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.units" title="Permalink to this definition">¶</a></dt>
-<dd><p>Units of underlying data</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">string</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="gnome.environment.grid_property.GridVectorProp.varnames">
-<code class="descname">varnames</code><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.varnames" title="Permalink to this definition">¶</a></dt>
-<dd><p>Names of underlying variables</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">[] of strings</td>
 </tr>
 </tbody>
 </table>
@@ -7504,12 +7932,526 @@ WARNING: This will cpy the data of the original property!</p>
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._get_hash">
+<code class="descname">_get_hash</code><span class="sig-paren">(</span><em>points</em>, <em>time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/grid_property.html#GridVectorProp._get_hash"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._get_hash" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a SHA1 hash of the array of points passed in</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._GnomeId__create_new_id">
+<code class="descname">_GnomeId__create_new_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._GnomeId__create_new_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override this method for more exotic forms of identification.</p>
+<p>Used only for deep copy.
+Used to make a new object which is a copy of the original.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._attach_default_refs">
+<code class="descname">_attach_default_refs</code><span class="sig-paren">(</span><em>ref_dict</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._attach_default_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>If provided a dictionary of references this function will validate it
+against the _req_refs specified by the class, and if a match is found
+and the instance&#8217;s reference is None, it will set it to the instance
+from ref_dict</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._attr_changed">
+<code class="descname">_attr_changed</code><span class="sig-paren">(</span><em>current_value</em>, <em>received_value</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._attr_changed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if an attribute passed back in a <a href="#id21"><span class="problematic" id="id22">dict_</span></a> from client has changed.
+Returns True if changed, else False</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._attrlist">
+<code class="descname">_attrlist</code><span class="sig-paren">(</span><em>do=('update'</em>, <em>'read')</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._attrlist" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns list of object attributes that need to be serialized. By
+default all fields that have &#8216;update&#8217; == True are returned.
+By default it converts the &#8216;update&#8217; list of the _state object to dict;
+however, do=(&#8216;save&#8217;,) or do=(&#8216;update&#8217;,&#8217;read&#8217;) will return the dict
+with the union of the corresponding lists.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._check_consistency">
+<code class="descname">_check_consistency</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._check_consistency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks that the attributes of each GriddedProp in varlist are the same as the GridVectorProp</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._check_type">
+<code class="descname">_check_type</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._check_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>check basic type equality</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._collection_to_dict">
+<code class="descname">_collection_to_dict</code><span class="sig-paren">(</span><em>coll</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._collection_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method takes the instance of a collection containing serializable gnome
+objects and outputs a list of dicts, each with two fields:</p>
+<blockquote>
+<div>{obj_type: object type &lt;module.class&gt;,
+id: IDs of each object.}</div></blockquote>
+<p>This is a general way to make a dict for a collection which is then
+serialized to a &#8216;save&#8217; file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._json_to_saveloc">
+<code class="descname">_json_to_saveloc</code><span class="sig-paren">(</span><em>json_</em>, <em>saveloc</em>, <em>references=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._json_to_saveloc" title="Permalink to this definition">¶</a></dt>
+<dd><p>save <a href="#id23"><span class="problematic" id="id24">json_</span></a> to saveloc</p>
+<dl class="docutils">
+<dt>-. first save and update references if any attributes are stored as</dt>
+<dd>references</dd>
+</dl>
+<p>-. add self to references
+-. move any datafiles to saveloc that need to be persisted
+-. finally, write <a href="#id25"><span class="problematic" id="id26">json_</span></a> directly to zip if saveloc is a zip or dump</p>
+<blockquote>
+<div>to <a href="#id5"><span class="problematic" id="id6">*</span></a>.json of saveloc is a directory</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>json</strong> &#8211; json data after serialization. Default is the output of
+self.serialize(&#8216;save&#8217;)</li>
+<li><strong>saveloc</strong> &#8211; Either zipfile to which object&#8217;s json can be appended.
+Or a valid path where object&#8217;s <a href="#id7"><span class="problematic" id="id8">*</span></a>.json can be dumped to a file</li>
+<li><strong>references</strong> &#8211; References object to keep track of objects that
+have been constructed. If a referenced object has been saved,
+no need to add it again to saveloc - don&#8217;t want multiple copies</li>
+<li><strong>name</strong> &#8211; json is stored in &#8216;name.json&#8217; in zip archive/specified
+directory. Default is self.__class__.__name__. If references object
+contains self.__class__.__name__, then let</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._load_collection">
+<code class="descname">_load_collection</code><span class="sig-paren">(</span><em>saveloc</em>, <em>l_coll_dict</em>, <em>refs</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._load_collection" title="Permalink to this definition">¶</a></dt>
+<dd><p>doesn&#8217;t need to be classmethod of the Model, but its only used by
+Model at present</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._load_refs">
+<code class="descname">_load_refs</code><span class="sig-paren">(</span><em>json_data</em>, <em>saveloc</em>, <em>references</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._load_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>loads up references. First looks for object in references, if not found
+then it creates object from json and adds a reference to it. If found
+in references, it just uses/returns the object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._move_data_file">
+<code class="descname">_move_data_file</code><span class="sig-paren">(</span><em>saveloc</em>, <em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._move_data_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look at _state attribute of object. Find all fields with &#8216;isdatafile&#8217;
+attribute as True. If there is a key in <a href="#id27"><span class="problematic" id="id28">json_</span></a> corresponding with
+&#8216;name&#8217; of the fields with True &#8216;isdatafile&#8217; attribute then move that
+datafile and update the key in the <a href="#id29"><span class="problematic" id="id30">json_</span></a> to point to new location</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GridVectorProp._pid">
+<code class="descname">_pid</code><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._pid" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns os.getpid() as a string. Since we have multiple models, each
+running in its own process that is managed by multi_model_broadcast
+module, each debug log messages starts with os.getpid(). This function
+just returns a string that the gnome object can append to - don&#8217;t
+want to keep typing this everywhere.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._ref_in_saveloc">
+<code class="descname">_ref_in_saveloc</code><span class="sig-paren">(</span><em>saveloc</em>, <em>ref</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._ref_in_saveloc" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns true if reference is found in saveloc, false otherwise</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._restore_attr_from_save">
+<code class="descname">_restore_attr_from_save</code><span class="sig-paren">(</span><em>new_obj</em>, <em>dict_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._restore_attr_from_save" title="Permalink to this definition">¶</a></dt>
+<dd><p>restore attributes from save files that are not set during init - broke
+out some functionality of new_from_dict so when child classes override
+it, they can make use of this as well</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._save_collection">
+<code class="descname">_save_collection</code><span class="sig-paren">(</span><em>saveloc</em>, <em>coll_</em>, <em>refs</em>, <em>coll_json</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._save_collection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reference objects inside OrderedCollections or list. Since the OC
+itself isn&#8217;t a reference but the objects in the list are a reference,
+do something a little differently here</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coll</strong> (<a class="reference internal" href="#gnome.utilities.orderedcollection.OrderedCollection" title="gnome.utilities.orderedcollection.OrderedCollection"><em>OrderedCollection</em></a>) &#8211; ordered collection/list to be saved</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._update_and_save_refs">
+<code class="descname">_update_and_save_refs</code><span class="sig-paren">(</span><em>json_</em>, <em>saveloc</em>, <em>references</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._update_and_save_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>for attributes that are stored as references - ensure the references
+are moved to saveloc, and update its value in the <a href="#id31"><span class="problematic" id="id32">json_</span></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._update_datafile_path">
+<code class="descname">_update_datafile_path</code><span class="sig-paren">(</span><em>json_data</em>, <em>saveloc</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._update_datafile_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>update path to attributes that use a datafile
+if saveloc is a zipfile, then extract the datafile to same location
+as zipfile and upate path in json_data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._update_orderedcoll_attr">
+<code class="descname">_update_orderedcoll_attr</code><span class="sig-paren">(</span><em>curr_oc</em>, <em>l_new_oc</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._update_orderedcoll_attr" title="Permalink to this definition">¶</a></dt>
+<dd><p>update attribute of type OrderedCollection with items in list l_new_oc</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GridVectorProp._warn_pre">
+<code class="descname">_warn_pre</code><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._warn_pre" title="Permalink to this definition">¶</a></dt>
+<dd><p>standard text prepended to warning messages - not required for logging
+used by validate to prepend to message since it also returns a list
+of messages that were logged</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp._write_to_zip">
+<code class="descname">_write_to_zip</code><span class="sig-paren">(</span><em>saveloc</em>, <em>f_name</em>, <em>s_data</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._write_to_zip" title="Permalink to this definition">¶</a></dt>
+<dd><p>general function for writing string data directly to zipfile.</p>
+<p>f_name is the archive name and s_data is the corresponding string,
+added to zipfile</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.attr_to_dict">
+<code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.attr_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>refactor to_dict&#8217;s functionality so child classes can convert a
+single attribute to_dict instead of doing a whole list of fields</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.deserialize">
+<code class="descname">deserialize</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.deserialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>classmethod takes json structure as input, deserializes it using a
+colander schema then invokes the new_from_dict method to create an
+instance of the object described by the json schema.</p>
+<p>We also need to accept sparse json objects, in which case we will
+not treat them, but just send them back.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.deserialize_oc">
+<code class="descname">deserialize_oc</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.deserialize_oc" title="Permalink to this definition">¶</a></dt>
+<dd><p>check contents of orderered collections to figure out what schema to
+use.
+Basically, the json serialized ordered collection looks like a regular
+list.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GridVectorProp.id">
+<code class="descname">id</code><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override this method for more exotic forms of identification.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a unique ID assigned during construction</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.is_sparse">
+<code class="descname">is_sparse</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.is_sparse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sparse means that we have a previously created object,
+and we are receiving a reference to the object using just
+an obj_type and an id.  This is a valid payload that the
+Web Client will send.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.loads">
+<code class="descname">loads</code><span class="sig-paren">(</span><em>json_data</em>, <em>saveloc=None</em>, <em>references=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.loads" title="Permalink to this definition">¶</a></dt>
+<dd><p>loads object from json_data</p>
+<ul class="simple">
+<li>load json for references from files</li>
+<li>update paths of datafiles if needed</li>
+<li>deserialize json_data</li>
+<li>and create object with new_from_dict()</li>
+</ul>
+<dl class="docutils">
+<dt>json_data: dict containing json data. It has been parsed through the</dt>
+<dd>json.loads() command. The json will be valided here when it gets
+deserialized. Its references and datafile paths will be recreated
+here prior to calling new_from_dict()</dd>
+</dl>
+<p>Optional parameter</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>saveloc</strong> &#8211; location of data files or *.json files for objects
+stored as references. If object requires no datafiles and does not
+need to read references from a *.json file in saveloc, then this
+can be None.</li>
+<li><strong>references</strong> &#8211; references object - if this is called by the Model,
+it will pass a references object. It is not required.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">object constructed from json_data.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GridVectorProp.logger">
+<code class="descname">logger</code><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.logger" title="Permalink to this definition">¶</a></dt>
+<dd><p>define attribute &#8216;_log&#8217;. If it doesn&#8217;t exist, define it here.
+This is so we don&#8217;t have to add it to all PyGnome classes - this
+property makes the logger available to each object.
+- default log_level is INFO</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GridVectorProp.name">
+<code class="descname">name</code><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>define as property in base class so all objects will have a name
+by default</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.new_from_dict">
+<code class="descname">new_from_dict</code><span class="sig-paren">(</span><em>dict_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.new_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates a new object from dictionary</p>
+<p>This is base implementation and can be over-ridden by classes using
+this mixin</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.obj_type_to_dict">
+<code class="descname">obj_type_to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.obj_type_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns object type to save in dict.
+This is base implementation and can be over-ridden</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>saveloc</em>, <em>references=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>save object state as json to user specified saveloc</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+either persisted here or a new model is re-created from the files
+stored here. The files are clobbered when save() is called.</li>
+<li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
+&#8220;{0}.json&#8221;.format(self.__class__.__name__). If saveloc is zipfile,
+this is the name of archive in which json for self is stored.</li>
+<li><strong>references</strong> &#8211; dict of references mapping &#8216;id&#8217; to a string used for
+the reference. The value could be a unique integer or it could be
+a filename. It is upto the creator of the reference list to decide
+how to reference a nested object.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.serialize">
+<code class="descname">serialize</code><span class="sig-paren">(</span><em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the dict returned by object&#8217;s to_dict method to valid json
+format via colander schema</p>
+<p>It uses the modules_dict defined in gnome.persist to find the correct
+schema module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>json</strong> &#8211; tells object whether serialization is for web content
+or for generating a save file.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">json format of serialized data</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.serialize_oc">
+<code class="descname">serialize_oc</code><span class="sig-paren">(</span><em>coll</em>, <em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.serialize_oc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialize Model attributes of type ordered collection or list - an
+iterable containing serializable objects</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.to_dict">
+<code class="descname">to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a dictionary containing the serialized representation of this
+object.</p>
+<p>For every field, if there is a method defined on the object such that
+the method name is <cite>{field_name}_to_dict</cite>, use the return value of that
+method as the field value.</p>
+<p>Note: any field in <cite>list</cite> that does not exist on the
+object and does not have a to_dict method will raise an AttributeError.</p>
+<p>NOTE: add the json_=&#8217;webapi&#8217; key to be serialized so we know what the
+serialization is for</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.to_serialize">
+<code class="descname">to_serialize</code><span class="sig-paren">(</span><em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invoke to_dict() which converts all attributes defined in _state to
+dict.
+If json_=&#8217;save&#8217;, it subselects the Fields with save=True.
+If json_=&#8217;webapi&#8217;, it subselects Fields with (update=True, read=True)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GridVectorProp.units">
+<code class="descname">units</code><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Units of underlying data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.update_attr">
+<code class="descname">update_attr</code><span class="sig-paren">(</span><em>name</em>, <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.update_attr" title="Permalink to this definition">¶</a></dt>
+<dd><p>update the attribute defined by &#8216;name&#8217; with given &#8216;value&#8217;</p>
+<p>If there is a method defined on the object such that the method name is
+<cite>{name}_from_dict</cite>, call that method with the field&#8217;s data.</p>
+<p>If neither method exists, then set the field with the value from
+<code class="docutils literal"><span class="pre">data</span></code> directly on the object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>str</em>) &#8211; name of attribute to be updated</li>
+<li><strong>value</strong> (<em>depends on each attribute being updated</em>) &#8211; the new value of the attribute</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.update_from_dict">
+<code class="descname">update_from_dict</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.update_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the attributes of this object using the dictionary <code class="docutils literal"><span class="pre">data</span></code> by
+looking up the value of each key in <code class="docutils literal"><span class="pre">data</span></code>.
+The fields in self._state that have update=True are modified. The
+remaining keys in &#8216;data&#8217; are ignored. The object&#8217;s _state attribute
+defines what fields can be updated</p>
+<p>If an attribute has changed, then call &#8216;update_attr&#8217; to update its
+value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data</strong> (<em>dict</em>) &#8211; dict containing state of object per the client</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if something changed, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Does not do updates on nested objects. If the attribute references
+another Serializable object, then the value is not a dict but
+rather the updated object. For instance, WindMover will receive:</p>
+<blockquote>
+<div>{..., &#8216;wind&#8217;: &lt;Wind object&gt;}</div></blockquote>
+<p class="last">as opposed to a nested dict of the &#8216;wind&#8217; object. It is expected
+that the &#8216;wind&#8217; object was updated by calling its own
+update_from_dict then added to this dict as the updated object.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.validate">
+<code class="descname">validate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>All pygnome objects should be able to validate themselves. Many
+py_gnome objects reference other objects like wind, water, waves. These
+may not be defined when object is created so they can be None at
+construction time; however, they should reference valid objects
+when running model. If make_default_refs is True, then object isvalid
+because model will set these up at runtime. To raise exception
+for missing references at runtime, directly call
+validate_refs(level=&#8217;error&#8217;)</p>
+<p>&#8216;wind&#8217;, &#8216;water&#8217;, &#8216;waves&#8217; attributes also have special meaning. An
+object containing this attribute references the corresponding object.</p>
+<p>Logs warnings:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a tuple of length two containing:
+(a list of messages that were logged, isvalid bool)
+If any references are missing and make_default_refs is False,
+object is not valid</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.grid_property.GridVectorProp.validate_refs">
+<code class="descname">validate_refs</code><span class="sig-paren">(</span><em>refs=['wind', 'water', 'waves']</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.validate_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>level is the logging level to use for messages. Default is &#8216;warning&#8217;
+but if called from prepare_for_model_run, we want to use error and
+raise exception.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.grid_property.GridVectorProp.varnames">
+<code class="descname">varnames</code><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp.varnames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Names of underlying variables</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">[] of strings</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </dd></dl>
 
 <span class="target" id="module-gnome.environment.ts_property"></span><dl class="class">
 <dt id="gnome.environment.ts_property.TimeSeriesProp">
-<em class="property">class </em><code class="descclassname">gnome.environment.ts_property.</code><code class="descname">TimeSeriesProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/ts_property.html#TimeSeriesProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gnome.environment.property.EnvProp" title="gnome.environment.property.EnvProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property.EnvProp</span></code></a></p>
+<em class="property">class </em><code class="descclassname">gnome.environment.ts_property.</code><code class="descname">TimeSeriesProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>data=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/ts_property.html#TimeSeriesProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.environment.property.EnvProp" title="gnome.environment.property.EnvProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property.EnvProp</span></code></a>, <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
 <p>A class that represents a scalar natural phenomenon using a time series</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -7541,12 +8483,52 @@ WARNING: This will cpy the data of the original property!</p>
 
 <dl class="method">
 <dt id="gnome.environment.ts_property.TimeSeriesProp.at">
-<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>extrapolate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/ts_property.html#TimeSeriesProp.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.at" title="Permalink to this definition">¶</a></dt>
+<code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>extrapolate=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/ts_property.html#TimeSeriesProp.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.at" title="Permalink to this definition">¶</a></dt>
 <dd><p>Interpolates this property to the given points at the given time with the units specified
 :param points: A Nx2 array of lon,lat points
 :param time: A datetime object. May be None; if this is so, the variable is assumed to be gridded
 but time-invariant
 :param units: The units that the result would be converted to</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.attr_to_dict">
+<code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.attr_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>refactor to_dict&#8217;s functionality so child classes can convert a
+single attribute to_dict instead of doing a whole list of fields</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.deserialize">
+<code class="descname">deserialize</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.deserialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>classmethod takes json structure as input, deserializes it using a
+colander schema then invokes the new_from_dict method to create an
+instance of the object described by the json schema.</p>
+<p>We also need to accept sparse json objects, in which case we will
+not treat them, but just send them back.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.deserialize_oc">
+<code class="descname">deserialize_oc</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.deserialize_oc" title="Permalink to this definition">¶</a></dt>
+<dd><p>check contents of orderered collections to figure out what schema to
+use.
+Basically, the json serialized ordered collection looks like a regular
+list.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.id">
+<code class="descname">id</code><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override this method for more exotic forms of identification.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a unique ID assigned during construction</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -7568,6 +8550,160 @@ WARNING: This will cpy the data of the original property!</p>
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.is_sparse">
+<code class="descname">is_sparse</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.is_sparse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sparse means that we have a previously created object,
+and we are receiving a reference to the object using just
+an obj_type and an id.  This is a valid payload that the
+Web Client will send.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.loads">
+<code class="descname">loads</code><span class="sig-paren">(</span><em>json_data</em>, <em>saveloc=None</em>, <em>references=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.loads" title="Permalink to this definition">¶</a></dt>
+<dd><p>loads object from json_data</p>
+<ul class="simple">
+<li>load json for references from files</li>
+<li>update paths of datafiles if needed</li>
+<li>deserialize json_data</li>
+<li>and create object with new_from_dict()</li>
+</ul>
+<dl class="docutils">
+<dt>json_data: dict containing json data. It has been parsed through the</dt>
+<dd>json.loads() command. The json will be valided here when it gets
+deserialized. Its references and datafile paths will be recreated
+here prior to calling new_from_dict()</dd>
+</dl>
+<p>Optional parameter</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>saveloc</strong> &#8211; location of data files or *.json files for objects
+stored as references. If object requires no datafiles and does not
+need to read references from a *.json file in saveloc, then this
+can be None.</li>
+<li><strong>references</strong> &#8211; references object - if this is called by the Model,
+it will pass a references object. It is not required.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">object constructed from json_data.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.logger">
+<code class="descname">logger</code><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.logger" title="Permalink to this definition">¶</a></dt>
+<dd><p>define attribute &#8216;_log&#8217;. If it doesn&#8217;t exist, define it here.
+This is so we don&#8217;t have to add it to all PyGnome classes - this
+property makes the logger available to each object.
+- default log_level is INFO</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.name">
+<code class="descname">name</code><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>define as property in base class so all objects will have a name
+by default</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.new_from_dict">
+<code class="descname">new_from_dict</code><span class="sig-paren">(</span><em>dict_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.new_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates a new object from dictionary</p>
+<p>This is base implementation and can be over-ridden by classes using
+this mixin</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.obj_type_to_dict">
+<code class="descname">obj_type_to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.obj_type_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns object type to save in dict.
+This is base implementation and can be over-ridden</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>saveloc</em>, <em>references=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>save object state as json to user specified saveloc</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+either persisted here or a new model is re-created from the files
+stored here. The files are clobbered when save() is called.</li>
+<li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
+&#8220;{0}.json&#8221;.format(self.__class__.__name__). If saveloc is zipfile,
+this is the name of archive in which json for self is stored.</li>
+<li><strong>references</strong> &#8211; dict of references mapping &#8216;id&#8217; to a string used for
+the reference. The value could be a unique integer or it could be
+a filename. It is upto the creator of the reference list to decide
+how to reference a nested object.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.serialize">
+<code class="descname">serialize</code><span class="sig-paren">(</span><em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the dict returned by object&#8217;s to_dict method to valid json
+format via colander schema</p>
+<p>It uses the modules_dict defined in gnome.persist to find the correct
+schema module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>json</strong> &#8211; tells object whether serialization is for web content
+or for generating a save file.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">json format of serialized data</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.serialize_oc">
+<code class="descname">serialize_oc</code><span class="sig-paren">(</span><em>coll</em>, <em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.serialize_oc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialize Model attributes of type ordered collection or list - an
+iterable containing serializable objects</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.to_dict">
+<code class="descname">to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a dictionary containing the serialized representation of this
+object.</p>
+<p>For every field, if there is a method defined on the object such that
+the method name is <cite>{field_name}_to_dict</cite>, use the return value of that
+method as the field value.</p>
+<p>Note: any field in <cite>list</cite> that does not exist on the
+object and does not have a to_dict method will raise an AttributeError.</p>
+<p>NOTE: add the json_=&#8217;webapi&#8217; key to be serialized so we know what the
+serialization is for</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.to_serialize">
+<code class="descname">to_serialize</code><span class="sig-paren">(</span><em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invoke to_dict() which converts all attributes defined in _state to
+dict.
+If json_=&#8217;save&#8217;, it subselects the Fields with save=True.
+If json_=&#8217;webapi&#8217;, it subselects Fields with (update=True, read=True)</p>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="gnome.environment.ts_property.TimeSeriesProp.units">
 <code class="descname">units</code><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.units" title="Permalink to this definition">¶</a></dt>
@@ -7582,11 +8718,103 @@ WARNING: This will cpy the data of the original property!</p>
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.update_attr">
+<code class="descname">update_attr</code><span class="sig-paren">(</span><em>name</em>, <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.update_attr" title="Permalink to this definition">¶</a></dt>
+<dd><p>update the attribute defined by &#8216;name&#8217; with given &#8216;value&#8217;</p>
+<p>If there is a method defined on the object such that the method name is
+<cite>{name}_from_dict</cite>, call that method with the field&#8217;s data.</p>
+<p>If neither method exists, then set the field with the value from
+<code class="docutils literal"><span class="pre">data</span></code> directly on the object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>str</em>) &#8211; name of attribute to be updated</li>
+<li><strong>value</strong> (<em>depends on each attribute being updated</em>) &#8211; the new value of the attribute</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.update_from_dict">
+<code class="descname">update_from_dict</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.update_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the attributes of this object using the dictionary <code class="docutils literal"><span class="pre">data</span></code> by
+looking up the value of each key in <code class="docutils literal"><span class="pre">data</span></code>.
+The fields in self._state that have update=True are modified. The
+remaining keys in &#8216;data&#8217; are ignored. The object&#8217;s _state attribute
+defines what fields can be updated</p>
+<p>If an attribute has changed, then call &#8216;update_attr&#8217; to update its
+value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data</strong> (<em>dict</em>) &#8211; dict containing state of object per the client</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if something changed, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Does not do updates on nested objects. If the attribute references
+another Serializable object, then the value is not a dict but
+rather the updated object. For instance, WindMover will receive:</p>
+<blockquote>
+<div>{..., &#8216;wind&#8217;: &lt;Wind object&gt;}</div></blockquote>
+<p class="last">as opposed to a nested dict of the &#8216;wind&#8217; object. It is expected
+that the &#8216;wind&#8217; object was updated by calling its own
+update_from_dict then added to this dict as the updated object.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.validate">
+<code class="descname">validate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>All pygnome objects should be able to validate themselves. Many
+py_gnome objects reference other objects like wind, water, waves. These
+may not be defined when object is created so they can be None at
+construction time; however, they should reference valid objects
+when running model. If make_default_refs is True, then object isvalid
+because model will set these up at runtime. To raise exception
+for missing references at runtime, directly call
+validate_refs(level=&#8217;error&#8217;)</p>
+<p>&#8216;wind&#8217;, &#8216;water&#8217;, &#8216;waves&#8217; attributes also have special meaning. An
+object containing this attribute references the corresponding object.</p>
+<p>Logs warnings:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a tuple of length two containing:
+(a list of messages that were logged, isvalid bool)
+If any references are missing and make_default_refs is False,
+object is not valid</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TimeSeriesProp.validate_refs">
+<code class="descname">validate_refs</code><span class="sig-paren">(</span><em>refs=['wind', 'water', 'waves']</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TimeSeriesProp.validate_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>level is the logging level to use for messages. Default is &#8216;warning&#8217;
+but if called from prepare_for_model_run, we want to use error and
+raise exception.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="gnome.environment.ts_property.TSVectorProp">
-<em class="property">class </em><code class="descclassname">gnome.environment.ts_property.</code><code class="descname">TSVectorProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>varnames=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/ts_property.html#TSVectorProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.environment.ts_property.</code><code class="descname">TSVectorProp</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>variables=None</em>, <em>varnames=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/ts_property.html#TSVectorProp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.environment.property.VectorProp" title="gnome.environment.property.VectorProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.property.VectorProp</span></code></a></p>
 <p>This class represents a vector phenomenon using a time series</p>
 <dl class="attribute">
@@ -7613,8 +8841,8 @@ WARNING: This will cpy the data of the original property!</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
-<li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
-<li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
+<li><strong>time</strong> (<em>integer</em>) &#8211; The time at which to query these points (T)</li>
+<li><strong>time</strong> &#8211; Specifies the time level of the variable</li>
 <li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
 <li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
 </ul>
@@ -7630,6 +8858,200 @@ WARNING: This will cpy the data of the original property!</p>
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.attr_to_dict">
+<code class="descname">attr_to_dict</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.attr_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>refactor to_dict&#8217;s functionality so child classes can convert a
+single attribute to_dict instead of doing a whole list of fields</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.deserialize">
+<code class="descname">deserialize</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.deserialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>classmethod takes json structure as input, deserializes it using a
+colander schema then invokes the new_from_dict method to create an
+instance of the object described by the json schema.</p>
+<p>We also need to accept sparse json objects, in which case we will
+not treat them, but just send them back.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.deserialize_oc">
+<code class="descname">deserialize_oc</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.deserialize_oc" title="Permalink to this definition">¶</a></dt>
+<dd><p>check contents of orderered collections to figure out what schema to
+use.
+Basically, the json serialized ordered collection looks like a regular
+list.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.ts_property.TSVectorProp.id">
+<code class="descname">id</code><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override this method for more exotic forms of identification.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a unique ID assigned during construction</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.is_sparse">
+<code class="descname">is_sparse</code><span class="sig-paren">(</span><em>json_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.is_sparse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sparse means that we have a previously created object,
+and we are receiving a reference to the object using just
+an obj_type and an id.  This is a valid payload that the
+Web Client will send.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.loads">
+<code class="descname">loads</code><span class="sig-paren">(</span><em>json_data</em>, <em>saveloc=None</em>, <em>references=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.loads" title="Permalink to this definition">¶</a></dt>
+<dd><p>loads object from json_data</p>
+<ul class="simple">
+<li>load json for references from files</li>
+<li>update paths of datafiles if needed</li>
+<li>deserialize json_data</li>
+<li>and create object with new_from_dict()</li>
+</ul>
+<dl class="docutils">
+<dt>json_data: dict containing json data. It has been parsed through the</dt>
+<dd>json.loads() command. The json will be valided here when it gets
+deserialized. Its references and datafile paths will be recreated
+here prior to calling new_from_dict()</dd>
+</dl>
+<p>Optional parameter</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>saveloc</strong> &#8211; location of data files or *.json files for objects
+stored as references. If object requires no datafiles and does not
+need to read references from a *.json file in saveloc, then this
+can be None.</li>
+<li><strong>references</strong> &#8211; references object - if this is called by the Model,
+it will pass a references object. It is not required.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">object constructed from json_data.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.ts_property.TSVectorProp.logger">
+<code class="descname">logger</code><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.logger" title="Permalink to this definition">¶</a></dt>
+<dd><p>define attribute &#8216;_log&#8217;. If it doesn&#8217;t exist, define it here.
+This is so we don&#8217;t have to add it to all PyGnome classes - this
+property makes the logger available to each object.
+- default log_level is INFO</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.environment.ts_property.TSVectorProp.name">
+<code class="descname">name</code><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>define as property in base class so all objects will have a name
+by default</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.new_from_dict">
+<code class="descname">new_from_dict</code><span class="sig-paren">(</span><em>dict_</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.new_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates a new object from dictionary</p>
+<p>This is base implementation and can be over-ridden by classes using
+this mixin</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.obj_type_to_dict">
+<code class="descname">obj_type_to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.obj_type_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns object type to save in dict.
+This is base implementation and can be over-ridden</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>saveloc</em>, <em>references=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>save object state as json to user specified saveloc</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+either persisted here or a new model is re-created from the files
+stored here. The files are clobbered when save() is called.</li>
+<li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
+&#8220;{0}.json&#8221;.format(self.__class__.__name__). If saveloc is zipfile,
+this is the name of archive in which json for self is stored.</li>
+<li><strong>references</strong> &#8211; dict of references mapping &#8216;id&#8217; to a string used for
+the reference. The value could be a unique integer or it could be
+a filename. It is upto the creator of the reference list to decide
+how to reference a nested object.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.serialize">
+<code class="descname">serialize</code><span class="sig-paren">(</span><em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the dict returned by object&#8217;s to_dict method to valid json
+format via colander schema</p>
+<p>It uses the modules_dict defined in gnome.persist to find the correct
+schema module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>json</strong> &#8211; tells object whether serialization is for web content
+or for generating a save file.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">json format of serialized data</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.serialize_oc">
+<code class="descname">serialize_oc</code><span class="sig-paren">(</span><em>coll</em>, <em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.serialize_oc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialize Model attributes of type ordered collection or list - an
+iterable containing serializable objects</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.to_dict">
+<code class="descname">to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a dictionary containing the serialized representation of this
+object.</p>
+<p>For every field, if there is a method defined on the object such that
+the method name is <cite>{field_name}_to_dict</cite>, use the return value of that
+method as the field value.</p>
+<p>Note: any field in <cite>list</cite> that does not exist on the
+object and does not have a to_dict method will raise an AttributeError.</p>
+<p>NOTE: add the json_=&#8217;webapi&#8217; key to be serialized so we know what the
+serialization is for</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.to_serialize">
+<code class="descname">to_serialize</code><span class="sig-paren">(</span><em>json_='webapi'</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.to_serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invoke to_dict() which converts all attributes defined in _state to
+dict.
+If json_=&#8217;save&#8217;, it subselects the Fields with save=True.
+If json_=&#8217;webapi&#8217;, it subselects Fields with (update=True, read=True)</p>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="gnome.environment.ts_property.TSVectorProp.units">
 <code class="descname">units</code><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.units" title="Permalink to this definition">¶</a></dt>
@@ -7642,6 +9064,98 @@ WARNING: This will cpy the data of the original property!</p>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.update_attr">
+<code class="descname">update_attr</code><span class="sig-paren">(</span><em>name</em>, <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.update_attr" title="Permalink to this definition">¶</a></dt>
+<dd><p>update the attribute defined by &#8216;name&#8217; with given &#8216;value&#8217;</p>
+<p>If there is a method defined on the object such that the method name is
+<cite>{name}_from_dict</cite>, call that method with the field&#8217;s data.</p>
+<p>If neither method exists, then set the field with the value from
+<code class="docutils literal"><span class="pre">data</span></code> directly on the object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>str</em>) &#8211; name of attribute to be updated</li>
+<li><strong>value</strong> (<em>depends on each attribute being updated</em>) &#8211; the new value of the attribute</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.update_from_dict">
+<code class="descname">update_from_dict</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.update_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the attributes of this object using the dictionary <code class="docutils literal"><span class="pre">data</span></code> by
+looking up the value of each key in <code class="docutils literal"><span class="pre">data</span></code>.
+The fields in self._state that have update=True are modified. The
+remaining keys in &#8216;data&#8217; are ignored. The object&#8217;s _state attribute
+defines what fields can be updated</p>
+<p>If an attribute has changed, then call &#8216;update_attr&#8217; to update its
+value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data</strong> (<em>dict</em>) &#8211; dict containing state of object per the client</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if something changed, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Does not do updates on nested objects. If the attribute references
+another Serializable object, then the value is not a dict but
+rather the updated object. For instance, WindMover will receive:</p>
+<blockquote>
+<div>{..., &#8216;wind&#8217;: &lt;Wind object&gt;}</div></blockquote>
+<p class="last">as opposed to a nested dict of the &#8216;wind&#8217; object. It is expected
+that the &#8216;wind&#8217; object was updated by calling its own
+update_from_dict then added to this dict as the updated object.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.validate">
+<code class="descname">validate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>All pygnome objects should be able to validate themselves. Many
+py_gnome objects reference other objects like wind, water, waves. These
+may not be defined when object is created so they can be None at
+construction time; however, they should reference valid objects
+when running model. If make_default_refs is True, then object isvalid
+because model will set these up at runtime. To raise exception
+for missing references at runtime, directly call
+validate_refs(level=&#8217;error&#8217;)</p>
+<p>&#8216;wind&#8217;, &#8216;water&#8217;, &#8216;waves&#8217; attributes also have special meaning. An
+object containing this attribute references the corresponding object.</p>
+<p>Logs warnings:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a tuple of length two containing:
+(a list of messages that were logged, isvalid bool)
+If any references are missing and make_default_refs is False,
+object is not valid</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.environment.ts_property.TSVectorProp.validate_refs">
+<code class="descname">validate_refs</code><span class="sig-paren">(</span><em>refs=['wind', 'water', 'waves']</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.ts_property.TSVectorProp.validate_refs" title="Permalink to this definition">¶</a></dt>
+<dd><p>level is the logging level to use for messages. Default is &#8216;warning&#8217;
+but if called from prepare_for_model_run, we want to use error and
+raise exception.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -7672,7 +9186,7 @@ WARNING: This will copy the data of the original property!</p>
 <span id="gnome-outputter-pygnome-outputters-module"></span><h2><code class="docutils literal"><span class="pre">gnome.outputter</span></code> &#8211; PyGnome outputters module<a class="headerlink" href="#module-gnome.outputters" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="gnome.outputters.Outputter">
-<em class="property">class </em><code class="descclassname">gnome.outputters.</code><code class="descname">Outputter</code><span class="sig-paren">(</span><em>cache=None</em>, <em>on=True</em>, <em>output_timestep=None</em>, <em>output_zero_step=True</em>, <em>output_last_step=True</em>, <em>name=''</em>, <em>output_dir=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/outputter.html#Outputter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.Outputter" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.outputters.</code><code class="descname">Outputter</code><span class="sig-paren">(</span><em>cache=None</em>, <em>on=True</em>, <em>output_timestep=None</em>, <em>output_zero_step=True</em>, <em>output_last_step=True</em>, <em>output_start_time=None</em>, <em>name=''</em>, <em>output_dir=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/outputter.html#Outputter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.Outputter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
 <p>base class for all outputters
 Since this outputter doesn&#8217;t do anything, it&#8217;ll never be used as part
@@ -7693,6 +9207,8 @@ initial step (showing initial release conditions) is written
 regardless of output_timestep</li>
 <li><strong>output_last_step</strong> (<em>boolean</em>) &#8211; default is True. If True then output for
 final step is written regardless of output_timestep</li>
+<li><strong>output_start_time</strong> (<em>datetime object</em>) &#8211; default is None in which case it is set to
+the model time</li>
 <li><strong>name=''</strong> &#8211; name for outputter</li>
 <li><strong>output_dir=None</strong> &#8211; directory to dump ouput in, if it needs to
 do this.</li>
@@ -7869,7 +9385,7 @@ from spill_num</li>
 
 <dl class="class">
 <dt id="gnome.outputters.Renderer">
-<em class="property">class </em><code class="descclassname">gnome.outputters.</code><code class="descname">Renderer</code><span class="sig-paren">(</span><em>map_filename=None, output_dir='./', image_size=(800, 600), projection=None, viewport=None, map_BB=None, land_polygons=None, draw_back_to_fore=True, draw_map_bounds=False, draw_spillable_area=False, cache=None, output_timestep=None, output_zero_step=True, output_last_step=True, draw_ontop='forecast', name=None, on=True, formats=['png', 'gif'], timestamp_attrib={}, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/renderer.html#Renderer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.Renderer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.outputters.</code><code class="descname">Renderer</code><span class="sig-paren">(</span><em>map_filename=None, output_dir='./', image_size=(800, 600), projection=None, viewport=None, map_BB=None, land_polygons=None, draw_back_to_fore=True, draw_map_bounds=False, draw_spillable_area=False, cache=None, output_timestep=None, output_zero_step=True, output_last_step=True, output_start_time=None, draw_ontop='forecast', name=None, on=True, formats=['png', 'gif'], timestamp_attrib={}, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/outputters/renderer.html#Renderer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputters.Renderer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.outputter.Outputter</span></code>, <a class="reference internal" href="#gnome.utilities.map_canvas.MapCanvas" title="gnome.utilities.map_canvas.MapCanvas"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.map_canvas.MapCanvas</span></code></a></p>
 <p>Map Renderer</p>
 <p>class that writes map images for GNOME results.</p>
@@ -8105,8 +9621,12 @@ outputters.</p>
 </div>
 <p><cite>which_data</cite> flag is used to set which data to add to the netcdf file:</p>
 <p>&#8216;standard&#8217; : the basic stuff most people would want</p>
-<p>&#8216;most&#8217;: everything the model is tracking except the internal-use-only arrays</p>
-<p>&#8216;all&#8217;: everything tracked by the model (mostly used for diagnostics of save files)</p>
+<dl class="docutils">
+<dt>&#8216;most&#8217;: everything the model is tracking except the internal-use-only</dt>
+<dd>arrays</dd>
+<dt>&#8216;all&#8217;: everything tracked by the model (mostly used for diagnostics of</dt>
+<dd>save files)</dd>
+</dl>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p>cf_attributes is a class attribute: a dict
@@ -8179,7 +9699,8 @@ final step is written regardless of output_timestep</li>
 <code class="descname">**kwargs)</code></dt>
 <dd></dd></dl>
 
-<p>Write global attributes and define dimensions and variables for NetCDF file.
+<p>Write global attributes and define dimensions and variables for
+NetCDF file.
 This must be done in prepare_for_model_run because if model _state
 changes, it is rewound and re-run from the beginning.</p>
 <p>If there are existing output files, they are deleted here.</p>
@@ -9947,7 +11468,7 @@ accessing again for output, etc.</p>
 
 <dl class="function">
 <dt id="gnome.utilities.cache.clean_up_cache">
-<code class="descclassname">gnome.utilities.cache.</code><code class="descname">clean_up_cache</code><span class="sig-paren">(</span><em>dir_name='/var/folders/7t/137hx7xn4s1fdqvjj1bhtdhskm0vyc/T/tmp64VJry'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/cache.html#clean_up_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.cache.clean_up_cache" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gnome.utilities.cache.</code><code class="descname">clean_up_cache</code><span class="sig-paren">(</span><em>dir_name='/var/folders/7t/137hx7xn4s1fdqvjj1bhtdhskm0vyc/T/tmpAOe2Xu'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/cache.html#clean_up_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.cache.clean_up_cache" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deletes a cache dir.</p>
 <p>Designed to be called at program exit. and/or when
 individual cache objects are deleted</p>
