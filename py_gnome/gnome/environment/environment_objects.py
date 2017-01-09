@@ -510,8 +510,7 @@ class GridCurrent(VelocityGrid, Environment):
             y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
             value[:, 0] = x
             value[:, 1] = y
-        z = value[:, 2]
-        z[points[:, 2] == 0.0] = 0
+        value[:, 2][points[:, 2] == 0.0] = 0
         if mem:
             self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
         return value
@@ -612,24 +611,25 @@ class IceAwareCurrent(GridCurrent):
                                                        ice_velocity=ice_velocity,
                                                        **kwargs)
 
-    def at(self, points, time, units=None, extrapolate=False):
-        interp = self.ice_concentration.at(points, time, extrapolate=extrapolate).copy()
+    def at(self, points, time, units=None, extrapolate=False, **kwargs):
+        interp = self.ice_concentration.at(points, time, extrapolate=extrapolate, **kwargs).copy()
         interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
+        interp_mask = interp_mask.reshape(-1)
         if len(interp > 0.2):
             ice_mask = interp >= 0.8
 
-            water_v = super(IceAwareCurrent, self).at(points, time, units, extrapolate)
-            ice_v = self.ice_velocity.at(points, time, units, extrapolate).copy()
-            interp = (interp * 10) / 6 - 0.2
+            water_v = super(IceAwareCurrent, self).at(points, time, units, extrapolate, **kwargs)
+            ice_v = self.ice_velocity.at(points, time, units, extrapolate, **kwargs).copy()
+            interp = (interp - 0.2) * 10 / 6.
 
             vels = water_v.copy()
             vels[ice_mask] = ice_v[ice_mask]
             diff_v = ice_v
             diff_v -= water_v
-            vels[interp_mask] += diff_v[interp_mask] * interp[interp_mask][:, np.newaxis]
+            vels[interp_mask] += (diff_v[interp_mask] * interp[interp_mask][:, np.newaxis])
             return vels
         else:
-            return super(IceAwareCurrent, self).at(points, time, units, extrapolate)
+            return super(IceAwareCurrent, self).at(points, time, units, extrapolate, **kwargs)
 
 
 class IceAwareWind(GridWind):
@@ -663,21 +663,22 @@ class IceAwareWind(GridWind):
                                                     ice_velocity=ice_velocity,
                                                     **kwargs)
 
-    def at(self, points, time, units=None, extrapolate=False):
-        interp = self.ice_concentration.at(points, time, extrapolate=extrapolate)
+    def at(self, points, time, units=None, extrapolate=False, **kwargs):
+        interp = self.ice_concentration.at(points, time, extrapolate=extrapolate, **kwargs)
         interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
+        interp_mask = interp_mask
         if len(interp >= 0.2) != 0:
             ice_mask = interp >= 0.8
 
-            wind_v = super(IceAwareWind, self).at(points, time, units, extrapolate)
-            interp = (interp * 10) / 6 - 0.2
+            wind_v = super(IceAwareWind, self).at(points, time, units, extrapolate, **kwargs)
+            interp = (interp - 0.2) * 10 / 6.
 
             vels = wind_v.copy()
             vels[ice_mask] = 0
-            vels[interp_mask] = vels[interp_mask] * (1 - interp[interp_mask][:, np.newaxis])  # scale winds from 100-0% depending on ice coverage
+            vels[interp_mask] = vels[interp_mask] * (1 - interp[interp_mask])[:, np.newaxis]  # scale winds from 100-0% depending on ice coverage
             return vels
         else:
-            return super(IceAwareWind, self).at(points, time, units, extrapolate)
+            return super(IceAwareWind, self).at(points, time, units, extrapolate, **kwargs)
 
 def load_all_from_netCDF(filename=None,
                          grid_topology=None,
