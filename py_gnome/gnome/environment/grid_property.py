@@ -352,7 +352,7 @@ class GriddedProp(EnvProp):
         if _mem:
             res = self._get_memoed(points, time, self._result_memo, _hash=_hash)
             if res is not None:
-                return np.ma.filled(res)
+                return res
 
         order = self.dimension_ordering
         if order[0] == 'time':
@@ -364,7 +364,7 @@ class GriddedProp(EnvProp):
 
         if _mem:
             self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
-        return np.ma.filled(value)
+        return value
 
     def _xy_interp(self, points, time, extrapolate, slices=(), **kwargs):
         '''
