@@ -5,6 +5,7 @@ A "spill" is essentially a source of elements. These classes provide
 the logic about where an when the elements are released
 
 """
+
 import copy
 from inspect import getmembers, ismethod
 from datetime import timedelta
@@ -12,13 +13,150 @@ from datetime import timedelta
 import unit_conversion as uc
 from colander import (SchemaNode, Bool, String, Float, drop)
 
-from gnome.utilities import serializable
+from gnome.utilities.serializable import Serializable, Field
 from gnome.persist import class_from_objtype
 from gnome.persist.base_schema import ObjType
 
 from . import elements
 from .release import PointLineRelease, ContinuousRelease
 from .. import _valid_units
+
+
+class BaseSpill(Serializable, object):
+    """
+    A base class for spills -- so we can check for them, etc.
+
+    and as a spec for the API.
+    """
+    def __init__(self,
+                 release_time=None,
+                 name=""):
+        """
+        initialize -- sub-classes will probably have a lot more to do
+        """
+        self.release_time = release_time
+
+    @property
+    def release_time(self):
+        return self._release_time
+
+    @release_time.setter
+    def release_time(self, rt):
+        self._release_time = rt
+
+    @property
+    def substance(self):
+        return None
+
+    def __repr__(self):
+        return ('{0.__class__.__module__}.{0.__class__.__name__}()'
+                .format(self))
+
+    # what is this for??
+    def get_mass(self, units=None):
+        '''
+        Return the mass released during the spill.
+        User can also specify desired output units in the function.
+        If units are not specified, then return in 'SI' units ('kg')
+        If volume is given, then use density to find mass. Density is always
+        at 15degC, consistent with API definition
+        '''
+        # first convert amount to 'kg'
+        if self.units in self.valid_mass_units:
+            mass = uc.convert('Mass', self.units, 'kg', self.amount_released)
+
+        if units is None or units == 'kg':
+            return mass
+        else:
+            self._check_units(units)
+            return uc.convert('Mass', 'kg', units, mass)
+
+    def uncertain_copy(self):
+        """
+        Returns a deepcopy of this spill for the uncertainty runs
+
+        The copy has everything the same, including the spill_num,
+        but it is a new object with a new id.
+
+        Not much to this method, but it could be overridden to do something
+        fancier in the future or a subclass.
+
+        There are a number of python objects that cannot be deepcopied.
+        - Logger objects
+
+        So we copy them temporarily to local variables before we deepcopy
+        our Spill object.
+        """
+        u_copy = copy.deepcopy(self)
+        self.logger.debug(self._pid + "deepcopied spill {0}".format(self.id))
+
+        return u_copy
+
+    def rewind(self):
+        """
+        rewinds the release to original status (before anything has been
+        released).
+        """
+        raise NotImplementedError
+
+    def num_elements_to_release(self, current_time, time_step):
+        """
+        Determines the number of elements to be released during:
+        current_time + time_step
+
+        It invokes the num_elements_to_release method for the the unerlying
+        release object: self.release.num_elements_to_release()
+
+        :param current_time: current time
+        :type current_time: datetime.datetime
+        :param int time_step: the time step, sometimes used to decide how many
+            should get released.
+
+        :returns: the number of elements that will be released. This is taken
+            by SpillContainer to initialize all data_arrays.
+        """
+        if not self.on:
+            return 0
+
+        raise NotImplementedError
+
+    def set_newparticle_values(self, num_new_particles, current_time,
+                               time_step, data_arrays):
+        """
+        SpillContainer will release elements and initialize all data_arrays
+        to default initial value. The SpillContainer gets passed as input and
+        the data_arrays for 'position' get initialized correctly by the release
+        object: self.release.set_newparticle_positions()
+
+        If a Spill Amount is given, the Spill object also sets the 'mass' data
+        array; else 'mass' array remains '0'
+
+        :param int num_new_particles: number of new particles that were added.
+            Always greater than 0
+        :param current_time: current time
+        :type current_time: datetime.datetime
+        :param time_step: the time step, sometimes used to decide how many
+            should get released.
+        :type time_step: integer seconds
+        :param data_arrays: dict of data_arrays provided by the SpillContainer.
+            Look for 'positions' array in the dict and update positions for
+            latest num_new_particles that are released
+        :type data_arrays: dict containing numpy arrays for values
+
+        Also, the set_newparticle_values() method for all element_type gets
+        called so each element_type sets the values for its own data correctly
+        """
+        raise NotImplementedError
+
+    def has_initializer(self, name):
+        '''
+        Returns True if an initializer is present in the list which sets the
+        data_array corresponding with 'name', otherwise returns False
+
+        Override with a real implimentaitn if you are using initializers
+        '''
+
+        return False
 
 
 class SpillSchema(ObjType):
@@ -30,32 +168,37 @@ class SpillSchema(ObjType):
     amount_uncertainty_scale = SchemaNode(Float(), missing=drop)
 
 
-class Spill(serializable.Serializable):
+class Spill(BaseSpill):
     """
-    Models a spill
+    Models a spill by combining Release and ElementType objects
     """
-    _update = ['on', 'release',
-               'amount', 'units', 'amount_uncertainty_scale']
+    _update = ['on', 'release', 'amount', 'units', 'amount_uncertainty_scale']
 
     _create = ['frac_coverage']
     _create.extend(_update)
 
-    _state = copy.deepcopy(serializable.Serializable._state)
+    _state = copy.deepcopy(Serializable._state)
     _state.add(save=_create, update=_update)
-    _state += serializable.Field('element_type',
-                                 save=True,
-                                 save_reference=True,
-                                 update=True)
+    _state += [Field('element_type', save=True, update=True,
+                     save_reference=True),
+               Field('water', save=True, update=True, save_reference=True)]
     _schema = SpillSchema
 
     valid_vol_units = _valid_units('Volume')
     valid_mass_units = _valid_units('Mass')
+    # attributes that need to be there for the __setattr__ magic to work
+    # release = None  # just to make sure it's there.
+    # element_type = None
+    # this is so the properties in teh base classes work -- arrgg!
+    # _name = 'Spill'
 
-    def __init__(self, release,
+    def __init__(self,
+                 release,
+                 water=None,
                  element_type=None,
                  substance=None,
                  on=True,
-                 amount=None,   # could be volume or mass
+                 amount=None,  # could be volume or mass
                  units=None,
                  amount_uncertainty_scale=0.0,
                  name='Spill'):
@@ -97,8 +240,9 @@ class Spill(serializable.Serializable):
             If amount property is None, then just floating elements
             (ie. 'windages')
         """
-
+        self.water = water
         self.release = release
+
         if element_type is None:
             element_type = elements.floating(substance=substance)
         elif substance is not None:
@@ -107,8 +251,12 @@ class Spill(serializable.Serializable):
 
         self.element_type = element_type
 
-        self.on = on    # spill is active or not
-        self._units = None
+        self.on = on  # spill is active or not
+        # raise Exception("stopping")
+
+        # fixme: shouldn't units default to 'kg'?
+        self.units = None
+        # fixme -- and amount always be in kg?
         self.amount = amount
 
         if amount is not None:
@@ -119,11 +267,97 @@ class Spill(serializable.Serializable):
 
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
-        '''
-        fraction of area covered by oil
-        '''
+        # fixme: why is fractional area part of spill???
+        # fraction of area covered by oil
         self.frac_coverage = 1.0
         self.name = name
+
+
+# fixme: a bunch of these properties should really be defined in subclasses
+# that use them
+    @property
+    def release_time(self):
+        return self.release.release_time
+
+    @release_time.setter
+    def release_time(self, rt):
+        self.release.release_time = rt
+
+    @property
+    def end_release_time(self):
+        return self.release.end_release_time
+
+    @end_release_time.setter
+    def end_release_time(self, rt):
+        self.release.end_release_time = rt
+
+    @property
+    def release_duration(self):
+        return self.release.release_duration
+
+    @property
+    def start_time_invalid(self):
+        return self.release.start_time_invalid
+    # any reason to set this on a spill??
+    # @start_time_invalid.setter
+    # def start_time_invalid(self, rd):
+    #     self.release.start_time_invalid = rd
+
+    @property
+    def num_elements(self):
+        return self.release.num_elements
+
+    @num_elements.setter
+    def num_elements(self, ne):
+        self.release.num_elements = ne
+
+    # doesn't seem like this should be set on the spill object!
+    @property
+    def num_released(self):
+        return self.release.num_released
+    # @num_released.setter
+    # def num_released(self, ne):
+    #     self.release.num_released = ne
+
+    @property
+    def start_position(self):
+        return self.release.start_position
+
+    @start_position.setter
+    def start_position(self, sp):
+        self.release.start_position = sp
+
+    @property
+    def end_position(self):
+        return self.release.end_position
+
+    @end_position.setter
+    def end_position(self, sp):
+        self.release.end_position = sp
+
+    @property
+    def array_types(self):
+        return self.element_type.array_types
+
+    @array_types.setter
+    def array_types(self, at):
+        self.element_type.array_types = at
+
+    @property
+    def windage_range(self):
+        return self.element_type.windage_range
+
+    @windage_range.setter
+    def windage_range(self, at):
+        self.element_type.windage_range = at
+
+    @property
+    def windage_persist(self):
+        return self.element_type.windage_persist
+
+    @windage_persist.setter
+    def windage_persist(self, wp):
+        self.element_type.windage_persist = wp
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -168,19 +402,23 @@ class Spill(serializable.Serializable):
         Checks the user provided units are in list of valid volume
         or mass units
         """
-
         if (units in self.valid_vol_units or
                 units in self.valid_mass_units):
             return True
         else:
             msg = ('Units for amount spilled must be in volume or mass units. '
+                   '{} was provided.'
                    'Valid units for volume: {0}, for mass: {1} ').format(
-                       self.valid_vol_units, self.valid_mass_units)
-            ex = uc.InvalidUnitError(msg)
+                         units,
+                         self.valid_vol_units,
+                         self.valid_mass_units)
+            ex = ValueError(msg)
             self.logger.exception(ex, exc_info=True)
             raise ex  # this should be raised since run will fail otherwise
 
     def _get_all_props(self):
+        # fixme: why is this needed???
+
         'return all properties accessible through get'
         all_props = []
 
@@ -223,21 +461,20 @@ class Spill(serializable.Serializable):
         self.logger.debug(self._pid + "spill mass (kg): {0}".format(_mass))
 
         if _mass is not None:
-            rd_sec = self.get('release_duration')
+            rd_sec = self.release_duration
             if rd_sec == 0:
                 try:
-                    le_mass = _mass / self.get('num_elements')
+                    le_mass = _mass / self.num_elements
                 except TypeError:
-                    le_mass = _mass / self.get('num_per_timestep')
+                    le_mass = _mass / self.num_per_timestep
             else:
                 time_at_step_end = current_time + timedelta(seconds=time_step)
-                if self.get('release_time') > current_time:
+                if self.release_time > current_time:
                     # first time_step in which particles are released
                     time_step = (time_at_step_end -
-                                 self.get('release_time')).total_seconds()
-
-                if self.get('end_release_time') < time_at_step_end:
-                    time_step = (self.get('end_release_time') -
+                                 self.release_time).total_seconds()
+                if self.end_release_time < time_at_step_end:
+                    time_step = (self.end_release_time -
                                  current_time).total_seconds()
 
                 _mass_in_ts = _mass / rd_sec * time_step
@@ -258,83 +495,51 @@ class Spill(serializable.Serializable):
 
         return False
 
-    def set(self, prop, val):
-        """
-        sets an existing property. The property could be of one of the
-        contained objects like 'Release' or 'ElementType'
-        It can also be a property of one of the initializers contained in
-        the 'ElementType' object.
+    # NOTE: this has been moved to properties
+    # def __getattr__(self, prop=None):
+    #     """
+    #     implementing this so that attributes can be pulled from the enclosed
+    #     objects
 
-        If the property doesn't exist for any of these, then an error is raised
-        since user cannot set a property that does not exist using this method
+    #     this replaces the old "get()" method
 
-        For example: set('windage_range', (0.4, 0.4)) sets the windage_range
-        assuming the element_type is floating
+    #     Return all properties of embedded release object and
+    #     element_type initializer objects. If 'prop' is not None, then return
+    #     the property
 
-        .. todo::
-            There is an issue in that if two initializers have the same
-            property - could be the case if they both define a 'distribution',
-            then it does not know which one to return
-        """
-        if prop == 'num_released':
-            self.logger.warning("cannot set 'num_released' attribute")
+    #     For example: Spill.windage_range returns the 'windage_range'
+    #                  from element_type assuming
+    #                  the element_type = floating()
 
-        # we don't want to add an attribute that doesn't already exist
-        # first check to see that the attribute exists, then change it else
-        # raise error
-        if hasattr(self.release, prop):
-            setattr(self.release, prop, val)
-        elif hasattr(self.element_type, prop):
-            setattr(self.element_type, prop, val)
-        else:
-            for init in self.element_type.initializers:
-                if hasattr(init, prop):
-                    setattr(init, prop, val)
-                    break
-                else:
-                    self.logger.warning('{0} attribute does not exist '
-                                        'in element_type or release object'
-                                        .format(prop))
+    #     .. todo::
+    #         There is an issue in that if two initializers have the same
+    #         property - could be the case if they both define a
+    #                    'distribution',
+    #         then it does not know which one to return
+    #     """
+    #     print "in __getattr__, getting: %s" % prop
+    #     try:
+    #         return getattr(self.release, prop)
+    #     except AttributeError:
+    #         pass
 
-    def get(self, prop=None):
-        """
-        for get(), return all properties of embedded release object and
-        element_type initializer objects. If 'prop' is not None, then return
-        the property
+    #     try:
+    #         return getattr(self.element_type, prop)
+    #     except AttributeError:
+    #         pass
 
-        For example: get('windage_range') returns the 'windage_range' assuming
-        the element_type = floating()
+    #     for init in self.element_type.initializers:
+    #         try:
+    #             return getattr(init, prop)
+    #         except AttributeError:
+    #             pass
 
-        .. todo::
-            There is an issue in that if two initializers have the same
-            property - could be the case if they both define a 'distribution',
-            then it does not know which one to return
-        """
-        'Return all properties'
-        if prop is None:
-            return self._get_all_props()
+    #     # nothing returned, then property was not found
+    #     msg = ("{0} attribute does not exist in element_type"
+    #            " or release object or initializers".format(prop))
+    #     self.logger.warning(msg)
 
-        try:
-            return getattr(self.release, prop)
-        except AttributeError:
-            pass
-
-        try:
-            return getattr(self.element_type, prop)
-        except AttributeError:
-            pass
-
-        for init in self.element_type.initializers:
-            try:
-                return getattr(init, prop)
-            except AttributeError:
-                pass
-
-        # nothing returned, then property was not found - raise exception or
-        # return None?
-        self.logger.warning("{0} attribute does not exist in element_type"
-                            " or release object or initializers".format(prop))
-        return None
+    #     raise AttributeError(msg)
 
     def get_initializer_by_name(self, name):
         ''' get first initializer in list whose name matches 'name' '''
@@ -439,26 +644,55 @@ class Spill(serializable.Serializable):
         """
         set default units in which volume data is returned
         """
-        self._check_units(units)  # check validity before setting
+        if units is not None:
+            self._check_units(units)  # check validity before setting
         self._units = units
 
+    @property
+    def substance(self):
+        return self.element_type.substance
+        # try:
+        #     return self.element_type.substance
+        # except AttributeError:
+        #     return None
+
+    @substance.setter
+    def substance(self, subs):
+        self.element_type.substance = subs
+
     def get_mass(self, units=None):
-        '''
+        """
         Return the mass released during the spill.
         User can also specify desired output units in the function.
         If units are not specified, then return in 'SI' units ('kg')
         If volume is given, then use density to find mass. Density is always
         at 15degC, consistent with API definition
-        '''
+        """
+        # fixme: This really should be re-factored to always store mass.
         if self.amount is None:
             return self.amount
 
-        # first convert amount to 'kg'
         if self.units in self.valid_mass_units:
+            # first convert amount to 'kg'
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
+            # need to convert to mass
+            if self.element_type.substance is None:
+                # unspecified substance gets a density 1000 kg/m^3
+                rho = 1000.0
+            else:
+                # DO NOT change this back!
+                # for the UI to be consistent, the conversion needs to use standard
+                #  density -- not the current water temp.
+                # water_temp = self.water.get('temperature')
+                # ideally substance would have a "standard_density" attribute for this.
+                rho = self.element_type.substance.density_at_temp(288.15)
+
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = self.element_type.substance.get_density() * vol
+            mass = rho * vol
+        else:
+            raise ValueError("{} is not a valid mass or Volume unit"
+                             .format(self.units))
 
         if units is None or units == 'kg':
             return mass
@@ -591,6 +825,9 @@ class Spill(serializable.Serializable):
         o_json_['element_type'] = self.element_type.serialize(json_)
         o_json_['release'] = self.release.serialize(json_)
 
+        if self.water is not None:
+            o_json_['water'] = self.water.serialize(json_)
+
         return o_json_
 
     @classmethod
@@ -614,11 +851,12 @@ class Spill(serializable.Serializable):
                 save files store a reference to element_type so it will get
                 deserialized, created and added to this dict by load method
                 '''
-                etcls = \
-                    class_from_objtype(json_['element_type']['obj_type'])
-                dict_['element_type'] = \
-                    etcls.deserialize(json_['element_type'])
+                etcls = class_from_objtype(json_['element_type']['obj_type'])
+                dict_['element_type'] = etcls.deserialize(json_['element_type'])
 
+                if 'water' in json_:
+                    w_cls = class_from_objtype(json_['water']['obj_type'])
+                    dict_['water'] = w_cls.deserialize(json_['water'])
             else:
                 '''
                 Convert nested dict (release object) back into object. The
@@ -821,6 +1059,7 @@ def point_line_release_spill(num_elements,
                              release_time,
                              end_position=None,
                              end_release_time=None,
+                             water=None,
                              element_type=None,
                              substance=None,
                              on=True,
@@ -835,10 +1074,12 @@ def point_line_release_spill(num_elements,
                                num_elements=num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
-    return Spill(release,
-                 element_type,
-                 substance,
-                 on,
-                 amount,
-                 units,
-                 name=name)
+    spill = Spill(release,
+                  water=water,
+                  element_type=element_type,
+                  substance=substance,
+                  on=on,
+                  amount=amount,
+                  units=units,
+                  name=name)
+    return spill

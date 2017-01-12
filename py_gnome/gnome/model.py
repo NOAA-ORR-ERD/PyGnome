@@ -276,6 +276,7 @@ class Model(Serializable):
         self._start_time = start_time
         self._duration = duration
         self.weathering_substeps = weathering_substeps
+
         if not map:
             map = gnome.map.GnomeMap()
 
@@ -428,7 +429,7 @@ class Model(Serializable):
 
     @current_time_step.setter
     def current_time_step(self, step):
-        self.model_time = self._start_time + timedelta(seconds=step *
+        self.model_time = self._start_time + timedelta(seconds=step * 
                                                        self.time_step)
         self._current_time_step = step
 
@@ -477,8 +478,8 @@ class Model(Serializable):
         # We do not count any remainder time.
         if self.duration is not None and self.time_step is not None:
             initial_0th_step = 1
-            self._num_time_steps = (initial_0th_step +
-                                    int(self.duration.total_seconds() //
+            self._num_time_steps = (initial_0th_step + 
+                                    int(self.duration.total_seconds() // 
                                         self.time_step))
         else:
             self._num_time_steps = None
@@ -539,11 +540,18 @@ class Model(Serializable):
         items = []
         for item in collection:
             try:
-                if getattr(item, attr) == value:
-                    if allitems:
-                        items.append(item)
-                    else:
-                        return item
+                if not isinstance(getattr(item, attr), basestring):
+                    if any([value == v for v in getattr(item, attr)]):
+                        if allitems:
+                            items.append(item)
+                        else:
+                            return item
+                else:
+                    if getattr(item, attr) == value:
+                        if allitems:
+                            items.append(item)
+                        else:
+                            return item
             except AttributeError:
                 pass
         items = None if items == [] else items
@@ -561,7 +569,7 @@ class Model(Serializable):
         '''
         attach references
         '''
-        attr = {'wind': None, 'water': None, 'waves': None}
+        attr = {}
         attr['wind'] = self.find_by_attr('_ref_as', 'wind', self.environment)
         attr['water'] = self.find_by_attr('_ref_as', 'water', self.environment)
         attr['waves'] = self.find_by_attr('_ref_as', 'waves', self.environment)
@@ -571,31 +579,52 @@ class Model(Serializable):
         spread = None
         for coll in ('environment', 'weatherers', 'movers'):
             for item in getattr(self, coll):
-
-                if coll == 'weatherers':
-                    # by default turn WeatheringData and spreading object off
-                    if isinstance(item, WeatheringData):
-                        item.on = False
-                        wd = item
-
-                    try:
-                        if item._ref_as == 'spreading':
+                if hasattr(item, '_req_refs'):
+                    ref_dict = {}
+                    for var in item._req_refs.keys():
+                        inst = self.find_by_attr('_ref_as', var, self.environment)
+                        if inst is not None:
+                            ref_dict[var] = inst
+                    if len(ref_dict) > 0:
+                        item._attach_default_refs(ref_dict)
+                else:
+                    if coll == 'weatherers':
+                        # by default turn WeatheringData and spreading object off
+                        if isinstance(item, WeatheringData):
                             item.on = False
-                            spread = item
+                            wd = item
 
-                    except AttributeError:
-                        pass
+                        try:
+                            if item._ref_as == 'spreading':
+                                item.on = False
+                                spread = item
 
-                    if item.on:
-                        weather_data.update(item.array_types)
+                        except AttributeError:
+                            pass
 
-                if hasattr(item, 'on') and not item.on:
-                    # no need to setup references if item is not on
-                    continue
+                        if item.on:
+                            weather_data.update(item.array_types)
 
-                for name, val in attr.iteritems():
-                    if hasattr(item, name) and item.make_default_refs:
-                        setattr(item, name, val)
+                    if hasattr(item, 'on') and not item.on:
+                        # no need to setup references if item is not on
+                        continue
+
+                    for name, val in attr.iteritems():
+                        if (hasattr(item, name) and
+                                getattr(item, name) is None and
+                                item.make_default_refs):
+                            setattr(item, name, val)
+
+        all_spills = [sp
+                      for sc in self.spills.items()
+                      for sp in sc.spills.values()]
+
+        for spill in all_spills:
+            for name, val in attr.iteritems():
+                if (hasattr(spill, name) and
+                        getattr(spill, name) is None and
+                        spill.make_default_refs):
+                    setattr(spill, name, val)
 
         # if WeatheringData object and FayGravityViscous (spreading object)
         # are not defined by user, add them automatically because most
@@ -877,7 +906,7 @@ class Model(Serializable):
             (msgs, isvalid) = self.check_inputs()
             if not isvalid:
                 raise RuntimeError("Setup model run complete but model "
-                                    "is invalid", msgs)
+                                   "is invalid", msgs)
             # (msgs, isvalid) = self.validate()
             # if not isvalid:
             #    raise StopIteration("Setup model run complete but model "
@@ -1023,7 +1052,7 @@ class Model(Serializable):
         check = super(Model, self).__eq__(other)
         if check:
             # also check the data in ordered collections
-            if type(self.spills) != type(other.spills):
+            if not isinstance(self.spills, other.spills.__class__):
                 return False
 
             if self.spills != other.spills:
@@ -1268,13 +1297,15 @@ class Model(Serializable):
                          'spills'):
                 o_json_[attr] = self.serialize_oc(getattr(self, attr), json_)
 
+            o_json_['valid'] = True
+            o_json_['messages'] = []
             # validate and send validation flag
-            (msgs, isvalid) = self.validate()
-            o_json_['valid'] = isvalid
-            if len(msgs) > 0:
-                o_json_['messages'] = msgs
-            else:
-                o_json_['messages'] = []
+#             (msgs, isvalid) = self.validate()
+#             o_json_['valid'] = isvalid
+#             if len(msgs) > 0:
+#                 o_json_['messages'] = msgs
+#             else:
+#                 o_json_['messages'] = []
 
         return o_json_
 
@@ -1394,36 +1425,49 @@ class Model(Serializable):
         raise an exception if user can't run the model
         todo: check if all spills start after model ends
         '''
-        msgs = []
-        isvalid = True
+        (msgs, isvalid) = self.validate()
+
         someSpillIntersectsModel = False
         num_spills = len(self.spills)
         for spill in self.spills:
             msg = None
-            if spill.get('release_time') < self.start_time + self.duration:
+            if spill.release_time < self.start_time + self.duration:
                 someSpillIntersectsModel = True
-            if spill.get('release_time') > self.start_time:
+            if spill.release_time > self.start_time:
                 msg = ('{0} has release time after model start time'.
                        format(spill.name))
                 self.logger.warning(msg)
                 msgs.append(self._warn_pre + msg)
 
-            elif spill.get('release_time') < self.start_time:
+            elif spill.release_time < self.start_time:
                 msg = ('{0} has release time before model start time'
                        .format(spill.name))
                 self.logger.error(msg)
                 msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
                 isvalid = False
 
+            if spill.substance is not None:
+                min_k = spill.substance.get('pour_point_min_k')
+                if spill.water is not None:
+                    water_temp = spill.water.get('temperature')
+                    if water_temp < min_k:
+                        msg = ('The water temperature, {0} K, is less than the minimum pour ' 
+                               'point of the selected oil, {1} K. '
+                               'The results may be unreliable.'.format(water_temp, min_k))
+                        self.logger.warning(msg)
+                        msgs.append(self._warn_pre + msg)
+
         if num_spills > 0 and not someSpillIntersectsModel:
             if num_spills > 1:
-                msg = ('All of the spills are released after the time interval being modeled.')
+                msg = ('All of the spills are released after the '
+                       'time interval being modeled.')
             else:
-                msg = ('The spill is released after the time interval being modeled.')
-            self.logger.warning(msg)	# for now make this a warning
-            #self.logger.error(msg)
-            msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
-            #isvalid = False
+                msg = ('The spill is released after the time interval '
+                       'being modeled.')
+            self.logger.warning(msg)  # for now make this a warning
+            # self.logger.error(msg)
+            msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
+            # isvalid = False
 
         return (msgs, isvalid)
 
@@ -1475,13 +1519,13 @@ class Model(Serializable):
 
         for spill in self.spills:
             msg = None
-            if spill.get('release_time') > self.start_time:
+            if spill.release_time > self.start_time:
                 msg = ('{0} has release time after model start time'.
                        format(spill.name))
                 self.logger.warning(msg)
                 msgs.append(self._warn_pre + msg)
 
-            elif spill.get('release_time') < self.start_time:
+            elif spill.release_time < self.start_time:
                 msg = ('{0} has release time before model start time'
                        .format(spill.name))
                 self.logger.error(msg)
@@ -1545,17 +1589,23 @@ class Model(Serializable):
         """
         Convenience method to allow user to write an expression to filter
         raw spill data
-        Example case:
-        get_spill_data('position && mass',
-        'position > 50 && spill_num == 1 || status_codes == 1')
+
+        Example case::
+
+          get_spill_data('position && mass',
+                         'position > 50 && spill_num == 1 || status_codes == 1'
+                         )
 
         WARNING: EXPENSIVE! USE AT YOUR OWN RISK ON LARGE num_elements!
 
         Example spill element properties are below. This list may not contain
         all properties tracked by the model.
+
         'positions', 'next_positions', 'last_water_positions', 'status_codes',
         'spill_num', 'id', 'mass', 'age'
+
         """
+
         if ucert == 'ucert':
             ucert = 1
 
@@ -1579,7 +1629,7 @@ class Model(Serializable):
 
         def test(elem_value, op, test_val):
             if op in {'<', '<=', '>', '>=', '=='}:
-                return eval(str(int(elem_value))+op+test_val)
+                return eval(str(int(elem_value)) + op + test_val)
 
         def num(s):
             try:
@@ -1610,3 +1660,92 @@ class Model(Serializable):
                     result[k].append(n)
 
         return result
+
+    def add_env(self, env, quash=False):
+        for item in env:
+            if not quash:
+                self.environment.add(item)
+            else:
+                for o in self.environment:
+                    if o.__class__ == item.__class__:
+                        idx = self.environment.index(o)
+                        self.environment[idx] = item
+                        break
+                else:
+                    self.environment.add(item)
+
+#     def env_from_netCDF(self, filename=None, dataset=None, grid_file=None, data_file=None, _cls_list=None, **kwargs):
+#         def attempt_from_netCDF(cls, **kwargs):
+#             obj = None
+#             try:
+#                 obj = c.from_netCDF(filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
+#             except Exception as e:
+#                 self.logger.warn('''Class {0} could not be constituted from netCDF file
+#                                         Exception: {1}'''.format(c.__name__, e))
+#             return obj
+# 
+#         from gnome.utilities.file_tools.data_helpers import _get_dataset
+#         from gnome.environment.environment_objects import GriddedProp, GridVectorProp
+#         from gnome.environment import PyGrid
+# 
+#         if filename is not None:
+#             data_file = filename
+#             grid_file = filename
+# 
+#         ds = None
+#         dg = None
+#         if dataset is None:
+#             if grid_file == data_file:
+#                 ds = dg = _get_dataset(grid_file)
+#             else:
+#                 ds = _get_dataset(data_file)
+#                 dg = _get_dataset(grid_file)
+#         else:
+#             if grid_file is not None:
+#                 dg = _get_dataset(grid_file)
+#             else:
+#                 dg = dataset
+#             ds = dataset
+#         dataset = ds
+# 
+#         grid = kwargs.pop('grid', None)
+#         if grid is None:
+#             grid = PyGrid.from_netCDF(filename=filename, dataset=dg, **kwargs)
+#             kwargs['grid'] = grid
+#         scs = copy.copy(Environment._subclasses) if _cls_list is None else _cls_list
+#         for c in scs:
+#             if issubclass(c, (GriddedProp, GridVectorProp)) and not any([isinstance(o, c) for o in self.environment]):
+#                 clskwargs = copy.copy(kwargs)
+#                 obj = None
+#                 try:
+#                     req_refs = c._req_refs
+#                 except AttributeError:
+#                     req_refs = None
+# 
+#                 if req_refs is not None:
+#                     for ref, klass in req_refs.items():
+#                         for o in self.environment:
+#                             if isinstance(o, klass):
+#                                 clskwargs[ref] = o
+#                                 break
+#                         if ref in clskwargs.keys():
+#                             continue
+#                         else:
+#                             obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
+#                             clskwargs[ref] = obj
+#                             self.environment.append(obj)
+# 
+#                 obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
+#                 if obj is not None:
+#                     self.environment.append(obj)
+#                     
+#     def ice_env_from_netCDF(self, filename=None, **kwargs):
+#         cls_list = Environment._subclasses
+#         ice_cls_list = self.find_by_attr('_ref_as', 'ice_aware', cls_list, allitems=True)
+# #         for c in cls_list:
+# #             if hasattr(c, '_ref_as'):
+# #                 if ((not isinstance(c._ref_as, basestring) and
+# #                         any(['ice_aware' in r for r in c._ref_as])) or
+# #                         'ice_aware' in c._ref_as):
+# #                     ice_cls_list.append(c)
+#         self.env_from_netCDF(filename=filename, _cls_list=ice_cls_list, **kwargs)

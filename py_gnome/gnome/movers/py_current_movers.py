@@ -3,7 +3,7 @@ import numpy as np
 import datetime
 import copy
 from gnome import basic_types
-from gnome.environment import GridCurrent
+from gnome.environment import GridCurrent, GridVectorPropSchema
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
@@ -11,15 +11,33 @@ from gnome.basic_types import (world_point,
                                world_point_type,
                                spill_type,
                                status_code_type)
+from gnome.persist import base_schema
+from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, Bool
 
 
-class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
+class PyCurrentMoverSchema(base_schema.ObjType):
+    filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
+    current_scale = SchemaNode(Float(), missing=drop)
+    extrapolate = SchemaNode(Bool(), missing=drop)
+    time_offset = SchemaNode(Float(), missing=drop)
+    current = GridVectorPropSchema(missing=drop)
 
-    _state = copy.deepcopy(movers.Mover._state)
+
+class PyCurrentMover(movers.PyMover, serializable.Serializable):
+
+    _state = copy.deepcopy(movers.PyMover._state)
+
+    _state.add_field([serializable.Field('filename',
+                                         save=True, read=True, isdatafile=True,
+                                         test_for_eq=False),
+                      serializable.Field('current', save=True, read=True, save_reference=True)])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
+    _schema = PyCurrentMoverSchema
 
-    _ref_as = 'ugrid_current_movers'
+    _ref_as = 'py_current_movers'
+    
+    _req_refs = {'current': GridCurrent}
 
     def __init__(self,
                  current=None,
@@ -32,11 +50,12 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
                  uncertain_along=.5,
                  uncertain_across=.25,
                  uncertain_cross=.25,
-                 default_num_method='Trapezoid'
+                 default_num_method='Trapezoid',
+                 **kwargs
                  ):
-        self.current=current
-        self.filename=filename
-        self.extrapolate=extrapolate
+        self.current = current
+        self.filename = filename
+        self.extrapolate = extrapolate
         self.current_scale = current_scale
         self.uncertain_along = uncertain_along
         self.uncertain_across = uncertain_across
@@ -50,8 +69,12 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
         # either a 1, or 2 depending on whether spill is certain or not
         self.spill_type = 0
 
-        movers.PyMover.__init__(self,
-                                default_num_method=default_num_method)
+        super(PyCurrentMover, self).__init__(default_num_method=default_num_method,
+                                             **kwargs)
+
+    def _attach_default_refs(self, ref_dict):
+        pass
+        return serializable.Serializable._attach_default_refs(self, ref_dict)
 
     @classmethod
     def from_netCDF(cls,
@@ -73,7 +96,8 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
                    current_scale=current_scale,
                    uncertain_along=uncertain_along,
                    uncertain_across=uncertain_across,
-                   uncertain_cross=uncertain_cross)
+                   uncertain_cross=uncertain_cross,
+                   **kwargs)
 
 
     def get_scaled_velocities(self, time):
@@ -81,10 +105,6 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
         :param model_time=0:
         """
         points = None
-        if isinstance(self.grid, pysgrid):
-            points = np.column_stack(self.grid.node_lon[:], self.grid.node_lat[:])
-        if isinstance(self.grid, pyugrid):
-            raise NotImplementedError("coming soon...")
         vels = self.grid.interpolated_velocities(time, points)
 
         return vels
@@ -114,10 +134,14 @@ class PyGridCurrentMover(movers.PyMover, serializable.Serializable):
 
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
-        deltas = np.zeros_like(positions)
-        pos = positions[:, 0:2]
+        pos = positions[:]
 
-        deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos, self.current)
+        res = method(sc, time_step, model_time_datetime, pos, self.current)
+        if res.shape[1] == 2:
+            deltas = np.zeros_like(positions)
+            deltas[:, 0:2] = res
+        else:
+            deltas = res
 
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)

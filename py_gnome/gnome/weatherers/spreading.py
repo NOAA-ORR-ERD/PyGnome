@@ -252,7 +252,7 @@ class FayGravityViscous(Weatherer, Serializable):
         subs = sc.get_substances(False)
 
         if len(subs) > 0:
-            vo = subs[0].get_viscosity(self.water.get('temperature'))
+            vo = subs[0].kvis_at_temp(self.water.get('temperature'))
             # set thickness_limit
             self._set_thickness_limit(vo)
 
@@ -268,7 +268,7 @@ class FayGravityViscous(Weatherer, Serializable):
         sink.
         '''
         rho_h2o = self.water.get('density')
-        rho_oil = substance.get_density(self.water.get('temperature'))
+        rho_oil = substance.density_at_temp(self.water.get('temperature'))
 
         # maybe weathering_data should catch error below?
         # todo: write and raise appropriate exception

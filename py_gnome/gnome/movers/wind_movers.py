@@ -21,6 +21,7 @@ from gnome.utilities import serializable, rand
 from gnome.utilities import time_utils
 
 from gnome import environment
+from gnome import basic_types
 from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
@@ -364,7 +365,8 @@ def constant_wind_mover(speed, direction, units='m/s'):
 
 class GridWindMoverSchema(WindMoversBaseSchema):
     """ Similar to WindMover except it doesn't have wind_id"""
-    wind_file = SchemaNode(String(), missing=drop)
+    #wind_file = SchemaNode(String(), missing=drop)
+    filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
     wind_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
@@ -373,18 +375,21 @@ class GridWindMoverSchema(WindMoversBaseSchema):
 class GridWindMover(WindMoversBase, serializable.Serializable):
     _state = copy.deepcopy(WindMoversBase._state)
     _state.add(update=['wind_scale', 'extrapolate'], save=['wind_scale', 'extrapolate'])
-    _state.add_field([serializable.Field('wind_file', save=True,
+    #_state.add_field([serializable.Field('wind_file', save=True,
+    _state.add_field([serializable.Field('filename', save=True,
                     read=True, isdatafile=True, test_for_eq=False),
                     serializable.Field('topology_file', save=True,
                     read=True, isdatafile=True, test_for_eq=False)])
 
     _schema = GridWindMoverSchema
 
-    def __init__(self, wind_file, topology_file=None,
+    #def __init__(self, wind_file, topology_file=None,
+    def __init__(self, filename, topology_file=None,
                  extrapolate=False, time_offset=0,
                  **kwargs):
         """
         :param wind_file: file containing wind data on a grid
+        :param filename: file containing wind data on a grid
         :param topology_file: Default is None. When exporting topology, it
                               is stored in this file
         :param wind_scale: Value to scale wind data
@@ -396,9 +401,10 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         uses super: super(GridWindMover,self).__init__(\*\*kwargs)
         """
 
-        if not os.path.exists(wind_file):
+        #if not os.path.exists(wind_file):
+        if not os.path.exists(filename):
             raise ValueError('Path for wind file does not exist: {0}'
-                             .format(wind_file))
+                             .format(filename))
 
         if topology_file is not None:
             if not os.path.exists(topology_file):
@@ -406,13 +412,16 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
                                  .format(topology_file))
 
         # is wind_file and topology_file is stored with cy_gridwind_mover?
-        self.wind_file = wind_file
+        #self.wind_file = wind_file
+        self.filename = filename
         self.topology_file = topology_file
         self.mover = CyGridWindMover(wind_scale=kwargs.pop('wind_scale', 1))
-        self.name = os.path.split(wind_file)[1]
+        #self.name = os.path.split(wind_file)[1]
+        self.name = os.path.split(filename)[1]
         super(GridWindMover, self).__init__(**kwargs)
 
-        self.mover.text_read(wind_file, topology_file)
+        #self.mover.text_read(wind_file, topology_file)
+        self.mover.text_read(filename, topology_file)
         self.real_data_start = time_utils.sec_to_datetime(self.mover.get_start_time())
         self.real_data_stop = time_utils.sec_to_datetime(self.mover.get_end_time())
         self.mover.extrapolate_in_time(extrapolate)
@@ -445,6 +454,62 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
                            lambda self, val: setattr(self.mover,
                                                      'time_offset',
                                                      val * 3600.))
+
+    def get_grid_data(self):
+        return self.get_cells()
+
+    def get_cells(self):
+        """
+            Invokes the GetCellDataHdl method of TimeGridWind_c object.
+            Cross-references point data to get cell coordinates.
+        """
+        cell_data = self.mover._get_cell_data()
+        points = self.get_points()
+
+        dtype = cell_data[0].dtype.descr
+        unstructured_type = dtype[0][1]
+        unstructured = (cell_data.view(dtype=unstructured_type)
+                        .reshape(-1, len(dtype))[:, 1:])
+
+        return points[unstructured]
+
+    def get_points(self):
+        points = (self.mover._get_points()
+                  .astype([('long', '<f8'), ('lat', '<f8')]))
+        points['long'] /= 10 ** 6
+        points['lat'] /= 10 ** 6
+
+        return points
+
+    def get_cell_center_points(self):
+        '''
+        Right now the cython mover only gets the triangular center points,
+        so we need to calculate centers based on the cells themselves.
+
+        Cells will have the format (tl, tr, bl, br)
+        We need to get the rectangular centers
+        Center will be: (tl + ((br - tl) / 2.))
+        '''
+        return self.mover._get_center_points().view(dtype='<f8').reshape(-1, 2)
+
+    def get_center_points(self):
+        return self.get_cell_center_points()
+
+    def get_scaled_velocities(self, time):
+        """
+        :param model_time=0:
+        """
+        # regular and curvilinear grids only
+        if self.mover._is_regular_grid():
+            num_cells = self.mover.get_num_points()
+        else:
+            num_tri = self.mover.get_num_triangles()
+            num_cells = num_tri / 2
+        # will need to update this for regular grids
+        vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
+        self.mover.get_scaled_velocities(time, vels)
+
+        return vels
 
     def export_topology(self, topology_file):
         """

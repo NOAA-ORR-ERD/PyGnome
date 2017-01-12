@@ -3,6 +3,7 @@ import numpy as np
 import datetime
 import copy
 from gnome import basic_types
+from gnome.environment import GridCurrent, GridVectorPropSchema
 from gnome.utilities import serializable, rand
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.environment import GridWind
@@ -11,15 +12,33 @@ from gnome.basic_types import (world_point,
                                world_point_type,
                                spill_type,
                                status_code_type)
+from gnome.persist import base_schema
+from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, Bool
+
+
+class PyWindMoverSchema(base_schema.ObjType):
+    filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
+    current_scale = SchemaNode(Float(), missing=drop)
+    extrapolate = SchemaNode(Bool(), missing=drop)
+    time_offset = SchemaNode(Float(), missing=drop)
+    wind = GridVectorPropSchema(missing=drop)
 
 
 class PyWindMover(movers.PyMover, serializable.Serializable):
 
-    _state = copy.deepcopy(movers.Mover._state)
+    _state = copy.deepcopy(movers.PyMover._state)
+
+    _state.add_field([serializable.Field('filename',
+                                         save=True, read=True, isdatafile=True,
+                                         test_for_eq=False),
+                      serializable.Field('wind', save=True, read=True, save_reference=True)])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
+    _schema = PyWindMoverSchema
 
     _ref_as = 'py_wind_movers'
+    
+    _req_refs = {'wind': GridWind}
 
     def __init__(self,
                  wind=None,
@@ -45,24 +64,23 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
             to False since user provided a valid Wind and does not wish to
             use the default from the Model.
         """
-        movers.PyMover.__init__(self,
-                                default_num_method=default_num_method)
         self._wind = wind
         self.make_default_refs = False
 
-        self.filename=filename
-        self.extrapolate=extrapolate
+        self.filename = filename
+        self.extrapolate = extrapolate
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.uncertain_speed_scale = uncertain_speed_scale
 
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
+        super(PyWindMover, self).__init__(default_num_method=default_num_method,
+                                          **kwargs)
 
         self.array_types.update({'windages',
                                  'windage_range',
                                  'windage_persist'})
-        # set optional attributes
 
     @classmethod
     def from_netCDF(cls,
@@ -120,7 +138,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                                      sc['windage_persist'],
                                      time_step)
 
-    def get_move(self, sc, time_step, model_time_datetime, num_method = None):
+    def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
         Compute the move in (long,lat,z) space. It returns the delta move
         for each element of the spill as a numpy array of size
@@ -145,12 +163,11 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
 
         status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
-        deltas = np.zeros_like(positions)
-        pos = positions[:, 0:2]
+        pos = positions[:]
 
-        deltas[:, 0:2] = method(sc, time_step, model_time_datetime, pos, self.wind)
-        deltas[:,0] *= sc['windages']
-        deltas[:,1] *= sc['windages']
+        deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
+        deltas[:, 0] *= sc['windages']
+        deltas[:, 1] *= sc['windages']
 
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)

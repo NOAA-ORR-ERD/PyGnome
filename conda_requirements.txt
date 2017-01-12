@@ -1,19 +1,22 @@
 # Documents the conda packages required for PyGnome
-#  this cover py_gnome and the oil_library
+#  this covers py_gnome and the oil_library
 #  This should be the minimal conda install
 #  install with:
 #  conda install --file conda_requirements.txt
-#
-# you need to have the NOAA-ORR-ERD and conda-forge channels for this to work
+# These packages would all be in one of the following channels:
+# defaults
+# conda-forge
+# NOAA-ORR-ERD
 
+python=2.7*
 setuptools>=23.0
 numpy>=1.11
 scipy>=0.17
-netCDF4>=1.2.2
 py_gd>=0.1.5
+libgd>=2.2.2
 gsw>=3.0.3
 pyzmq>=15.2
-cython>=0.24
+cython=0.24.1
 psutil>=4.3
 progressbar>=2.3
 six>=1.10
@@ -24,14 +27,18 @@ colander>=1.2
 sqlalchemy>=0.7.6
 zope.interface>=4.1
 zope.sqlalchemy>=0.7.6
+# geos>=3.4.2    # dependency of libgdal-2.0.0-1
+libgdal=2.0.0=0  # dependency of gdal, newer versions have bad geos dependency
+krb5>=1.14       # dependency of gdal, not installed automatically
 gdal>=2.0
+netCDF4=1.2.2  # v1.2.4 needs gdal 2.1, which seems to be broken
 awesome-slugify>=1.6
 regex>=2014.12
 unidecode>=0.04.19
-pyshp>=1.2.3
-cell_tree2d>=0.1.3
-pyugrid>=0.2.1
-pysgrid>=0.3.1
+cell_tree2d>=0.3.0
+pyugrid>=0.2.2
+pysgrid>=0.3.3
+pyshp>=1.2
 
 # nice to have for development, not required to run
 pytest

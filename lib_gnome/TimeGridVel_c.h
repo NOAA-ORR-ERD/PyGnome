@@ -119,6 +119,7 @@ public:
 	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity){return -1;}
 	virtual GridCellInfoHdl 	GetCellData() {return 0;}
 	virtual WORLDPOINTH 	GetCellCenters() {return 0;}
+	virtual LongPointHdl	GetPointsHdl() {return 0;}
 
 	long 					GetNumTimesInFile();
 	long 					GetNumFiles();
@@ -140,6 +141,7 @@ public:
 	void 				DisposeAllLoadedData();
 
 	virtual	bool 		IsTriangleGrid(){return false;}
+	virtual	bool 		IsRegularGrid(){return false;}
 	virtual	bool 		IsDataOnCells(){return true;}
 	virtual OSErr 		get_values(int n, Seconds model_time, WorldPoint3D* ref, VelocityRec* vels) {return 0;}
 };
@@ -199,6 +201,8 @@ public:
 	virtual long 		GetNumDepthLevelsInFile();	// eventually get rid of this
 	
 	virtual OSErr		TextRead(const char *path, const char *topFilePath);
+
+	virtual	bool 		IsRegularGrid(){return true;}
 };
 
 
@@ -219,7 +223,7 @@ public:
 	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELCURV; }
 	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELCURV) return TRUE; return TimeGridVelRect_c::IAm(id); }
 	
-	LongPointHdl		GetPointsHdl();
+	virtual LongPointHdl		GetPointsHdl();
 	TopologyHdl 		GetTopologyHdl();
 	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	VelocityRec			GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
@@ -268,7 +272,7 @@ public:
 	virtual void		Dispose ();
 	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELTRI; }
 	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELTRI) return TRUE; return TimeGridVelCurv_c::IAm(id); }
-	LongPointHdl			GetPointsHdl();
+	virtual LongPointHdl			GetPointsHdl();
 	void					GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
 	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
@@ -425,6 +429,10 @@ class DLL_API TimeGridWindRect_c : virtual public TimeGridVel_c
 {
 public:
 	
+	LongPointHdl fPtsH;
+	WORLDPOINTH fCenterPtsH;		
+	GridCellInfoHdl fGridCellInfoH;
+
 	TimeGridWindRect_c();
 	virtual	~TimeGridWindRect_c() { Dispose (); }
 	virtual void	Dispose();
@@ -437,6 +445,14 @@ public:
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
 	
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
+
+	virtual LongPointHdl		GetPointsHdl();
+	virtual WORLDPOINTH 	GetCellCenters();
+	virtual GridCellInfoHdl 	GetCellData();
+
+	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
+
+	virtual	bool 	IsRegularGrid(){return true;}
 };
 
 
@@ -446,6 +462,8 @@ public:
 	
 	LONGH fVerdatToNetCDFH;	// for curvilinear
 	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
+	//WORLDPOINTH fCenterPtsH;		// for curvilinear, all vertex points from file
+	//GridCellInfoHdl fGridCellInfoH;
 	Boolean bVelocitiesOnNodes;		// default is velocities on cells
 	
 	
@@ -475,6 +493,12 @@ public:
 
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
 	virtual OSErr get_values(int n, Seconds model_time, WorldPoint3D* ref, VelocityRec* vels);
+
+	virtual LongPointHdl		GetPointsHdl();
+	TopologyHdl 		GetTopologyHdl();
+	virtual WORLDPOINTH 	GetCellCenters();
+	virtual GridCellInfoHdl 	GetCellData();
+	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
 };
 
 
