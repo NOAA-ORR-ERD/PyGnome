@@ -2,9 +2,12 @@
 oil removal from various cleanup options
 add these as weatherers
 '''
+from __future__ import division
+
 import datetime
 import copy
 import unit_conversion as uc
+import json
 
 from colander import (drop, SchemaNode, MappingSchema, Integer, Float, String, OneOf)
 
@@ -44,7 +47,7 @@ class ResponseSchema(WeathererSchema):
     timeseries = OnSceneTimeSeriesSchema()
 
 class Response(Weatherer, Serializable):
-    
+
     def __init__(self, **kwargs):
         super(Response, self).__init__(**kwargs)
         self._report = []
@@ -73,7 +76,7 @@ class Response(Weatherer, Serializable):
                     raise uc.InvalidUnitError(msg)
 
             self._units[prop] = unit
-    
+
     def get(self, attr, unit=None):
         val = getattr(self, attr)
         if unit is None:
@@ -94,22 +97,22 @@ class Response(Weatherer, Serializable):
     def set(self, attr, value, unit):
         if unit not in self._units_type[attr][0]:
             raise uc.InvalidUnitError((unit, self._units_type[attr][0]))
-        
+
         setattr(self, attr, value)
         self.units[attr] = unit
 
     def _is_active(self, model_time, time_step):
         for t in self.timeseries:
-            if model_time >= t[0] and model_time + datetime.timedelta(seconds=time_step/2) <= t[1]:
+            if model_time >= t[0] and model_time + datetime.timedelta(seconds=time_step / 2) <= t[1]:
                 return True
 
         return False
- 
+
     def _setup_report(self, sc):
         if 'report' not in sc:
             sc.report = {}
 
-        sc.report[self.id] = []  
+        sc.report[self.id] = []
         self.report = sc.report[self.id]
 
     def _get_substance(self, sc):
@@ -122,9 +125,141 @@ class Response(Weatherer, Serializable):
         if len(substance) > 1:
             self.logger.error('Found more than one type of oil '
                               '- not supported. Results with be incorrect')
-    
+
         return substance[0]
-   
+
+class Platform(Serializable):
+
+    with open('platforms.json', 'r') as f:
+        _types = json.load(f)
+        _types['vessel'] = dict([t['name'] for t in _types['vessel']], _types['vessel'])
+        _types['aircraft'] = dict([t['name'] for t in _types['aircraft']], _types['aircraft'])
+
+    def __init__(self,
+                 type_,
+                 kind=None,
+                 **kwargs):
+        if kwargs is None:
+            if kind is None:
+                n = 'Typical Large Vessel' if type_ == 'vessel' else 'Test Platform'
+                for k, attr in Platform._types[type_][n]:
+                    setattr(self, k, attr)
+        else:
+            if kind is not None:
+                for k, attr in Platform._types[type_][kind]:
+                    setattr(self, k, attr)
+            for k, attr in kwargs:
+                setattr(self, k, attr)
+        self.type = type_
+        self._state = None
+        self._time_to_next = None
+
+    def release_rate(self, dosage):
+        return (dosage * self.application_speed * self.swadth_width) / 430
+
+    def one_way_transit_time(self, dist):
+        raw = dist / self.transit_speed
+        if self.type == 'aircraft':
+            raw += self.taxi_land_depart / 60
+        return raw * 60
+
+    def adjusted_op_time(self, dist, op_time):
+        pass
+
+
+    def max_dosage(self):
+        return (self.pump_rate_max * 430) / (self.application_speed_min * self.swath_width_min)
+
+    def min_dosage(self):
+        return (self.pump_rate_min * 430) / (self.application_speed_max * self.swath_width_max)
+
+
+class DisperseUnitsSchema(MappingSchema):
+    pass
+
+class DisperseSchema(ResponseSchema):
+    pass
+
+class Disperse(Response):
+
+
+
+    _state = copy.deepcopy(Response._state)
+    _state += [Field('offset', save=True, update=True)]
+
+    def __init__(self,
+                 name=None,
+                 transit=None,
+                 transit_unit='nm',
+                 pass_length=4,
+                 pass_length_unit='nm',
+                 dosage=None,
+                 dosage_unit='Gallon/Acre',
+                 cascade=None,
+                 platform=None,
+                 platform_type='',
+                 edac='0',
+                 loading_type='simultaneous',
+                 pass_type='bidirectional',
+                 **kwargs):
+        super(Disperse, self).__init__(**kwargs)
+        self.name = name
+        self.transit = transit
+        self.transit_unit = transit_unit
+        self.pass_length = pass_length
+        self.pass_length_unit = pass_length_unit
+        self.dosage = dosage
+        self.dosage_unit = dosage_unit
+        self.cascade = cascade
+        self.platform = platform
+        self._platform = None
+        self.platform_type = platform_type
+        self.edac = edac
+        self.loading_type = loading_type
+        self.pass_type = pass_type
+
+    @property
+    def platform(self):
+        return self._platform.to_dict()
+
+    @platform.setter()
+    def platform(self, plt):
+        _type = None
+        if 'type' in plt.keys():
+            _type = plt.pop('type')
+        elif plt['name'] in Platform._types['aircraft'].keys():
+            _type = 'aircraft'
+        elif plt['name'] in Platform._types['vessel'].keys():
+            _type = 'vessel'
+        else:
+            raise ValueError('Must specify platform type (aircraft/vessel)')
+        self._platform = Platform(_type,
+                                  kind=plt.pop('name', None),
+                                  **plt)
+
+    def prepare_for_model_run(self, sc):
+        self._setup_report(sc)
+        self._swath_width = 0.3 * self.boom_length
+        self._area = self._swath_width * (0.4125 * self.boom_length / 3) * 2 / 3
+        self._boom_capacity = self.boom_draft / 36 * self._area
+        self._boom_capacity_remaining = self._boom_capacity
+        self._offset_time = (self.offset * 0.00987 / self.speed) * 60
+        self._area_coverage_rate = self._swath_width * self.speed / 430
+
+        if self._swath_width > 1000:
+            self.report.append('Swaths > 1000 feet may not be achievable in the field')
+
+        if self.speed > 1.2:
+            self.report.append('Excessive entrainment of oil likely to occur at speeds greater than 1.2 knots.')
+
+        if self.on:
+            sc.mass_balance['burned'] = 0.0
+            sc.mass_balance[self.id] = 0.0
+            sc.mass_balance['boomed'] = 0.0
+
+        self._is_collecting = True
+
+
 class BurnUnitsSchema(MappingSchema):
     offset = SchemaNode(String(),
                         description='SI units for distance',
@@ -217,7 +352,7 @@ class Burn(Response):
     def prepare_for_model_run(self, sc):
         self._setup_report(sc)
         self._swath_width = 0.3 * self.boom_length
-        self._area = self._swath_width * (0.4125 * self.boom_length / 3) * 2/3
+        self._area = self._swath_width * (0.4125 * self.boom_length / 3) * 2 / 3
         self._boom_capacity = self.boom_draft / 36 * self._area
         self._boom_capacity_remaining = self._boom_capacity
         self._offset_time = (self.offset * 0.00987 / self.speed) * 60
@@ -243,7 +378,7 @@ class Burn(Response):
            that are released together will be burned together since they would
            be closer to each other in position.
         '''
-       
+
         self._ts_collected = 0.
         self._ts_burned = 0.
 
@@ -251,10 +386,10 @@ class Burn(Response):
             self._active = True
         else:
             self._active = False
-        
+
         if not self.active:
             return
- 
+
         self._time_remaining = time_step
 
         while self._time_remaining > 0.:
@@ -269,12 +404,12 @@ class Burn(Response):
 
             if self._is_cleaning:
                 self._clean(sc, time_step, model_time)
-               
+
             if self._is_transiting and not self._is_boom_full:
                 self._transit(sc, time_step, model_time)
 
     def _collect(self, sc, time_step, model_time):
-        # calculate amount collected this time_step 
+        # calculate amount collected this time_step
         if self._burn_time is None:
             self._burn_rate = 0.14 * (100 - (sc['frac_water'].mean() * 100)) / 100
             self._burn_time = (0.33 * self.boom_draft / self._burn_rate) * 60
@@ -285,12 +420,12 @@ class Burn(Response):
         emulsion_rr = encounter_rate * self.throughput
         if oil_thickness > 0:
             # old ROC equation
-            #time_to_fill = (self._boom_capacity_remaining / emulsion_rr) * 60
+            # time_to_fill = (self._boom_capacity_remaining / emulsion_rr) * 60
             # new ebsp equation
             time_to_fill = ((self._boom_capacity_remaining * 0.17811) * 42) / emulsion_rr
         else:
             time_to_fill = 0.
-        
+
         if time_to_fill > self._time_remaining:
             # doesn't finish fill the boom in this time step
             self._ts_collected = emulsion_rr * (self._time_remaining / 60)
@@ -304,7 +439,7 @@ class Burn(Response):
 
             self._boom_capacity_remaining = 0.0
             self._is_boom_full = True
-            
+
             self._time_remaining -= time_to_fill
             self._time_collecting_in_sim += time_to_fill
             self._offset_time_remaining = self._offset_time
@@ -312,7 +447,7 @@ class Burn(Response):
             self._is_transiting = True
 
     def _transit(self, sc, time_step, model_time):
-        # transiting to burn site 
+        # transiting to burn site
         # does it arrive and start burning?
         if self._time_remaining > self._offset_time_remaining:
             self._time_remaining -= self._offset_time_remaining
@@ -336,8 +471,8 @@ class Burn(Response):
             self._ts_burned = burned
             self._is_burning = False
             self._is_cleaning = True
-            self._cleaning_time_remaining = 3600 # 1hr in seconds
-        elif self._time_remaining > 0: 
+            self._cleaning_time_remaining = 3600  # 1hr in seconds
+        elif self._time_remaining > 0:
             frac_burned = self._time_remaining / self._burn_time
             burned = self._boom_capacity * frac_burned
             self._boom_capacity_remaining += burned
@@ -365,12 +500,12 @@ class Burn(Response):
         '''
         if not self.active or len(sc) == 0:
             return
-        
+
         les = sc.itersubstancedata(self.array_types)
         for substance, data in les:
             if len(data['mass']) is 0:
                 continue
-            
+
             if self._ts_collected:
                 sc.mass_balance['boomed'] += self._ts_collected
                 sc.mass_balance[self.id] += self._ts_collected
@@ -386,6 +521,6 @@ class Burn(Response):
             if self._ts_burned:
                 sc.mass_balance['burned'] += self._ts_burned
                 sc.mass_balance['boomed'] -= self._ts_burned
-        
-   
-    
+
+
+
