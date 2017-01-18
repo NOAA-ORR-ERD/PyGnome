@@ -94,7 +94,7 @@ class PyGrid(Serializable):
         if gf is None:
             raise ValueError('No filename or dataset provided')
 
-        cls = PyGrid._get_grid_type(dataset, grid_topology, grid_type)
+        cls = PyGrid._get_grid_type(gf, grid_topology, grid_type)
         init_args, gf_vars = cls._find_required_grid_attrs(filename,
                                                            dataset=dataset,
                                                            grid_topology=grid_topology)
@@ -113,6 +113,7 @@ class PyGrid(Serializable):
         '''
         gf_vars = dataset.variables if dataset is not None else _get_dataset(filename).variables
         init_args = {}
+        init_args['filename'] = filename
         node_attrs = ['node_lon', 'node_lat']
         node_coord_names = [['node_lon', 'node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
         composite_node_names = ['nodes', 'node']
@@ -147,7 +148,6 @@ class PyGrid(Serializable):
         filename = dict_['filename']
         rv = cls.from_netCDF(filename)
         rv.__class__._restore_attr_from_save(rv, dict_)
-        print dict_
         rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
         rv.__class__._def_count -= 1
         return rv
@@ -195,10 +195,8 @@ class PyGrid(Serializable):
 
     @staticmethod
     def _find_topology_var(filename,
-                       dataset=None):
-        gf = dataset
-        if gf is None:
-            gf = _get_dataset(filename)
+                           dataset=None):
+        gf = _get_dataset(filename, dataset)
         gts = []
         for v in gf.variables:
             if hasattr(v, 'cf_role') and 'topology' in v.cf_role:
