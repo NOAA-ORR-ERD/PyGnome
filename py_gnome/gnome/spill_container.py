@@ -21,10 +21,12 @@ from gnome.array_types import (positions,
                                spill_num,
                                id,
                                mass,
+                               init_mass,
                                age,
                                density,
                                substance,
-                               ArrayType)
+                               ArrayType,
+                               default_array_types)
 
 from gnome.utilities.orderedcollection import OrderedCollection
 import gnome.spill
@@ -378,7 +380,7 @@ class SpillContainer(AddLogger, SpillContainerData):
     """
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
-        self.spills = OrderedCollection(dtype=gnome.spill.Spill)
+        self.spills = OrderedCollection(dtype=gnome.spill.spill.BaseSpill)
         self.spills.register_callback(self._spills_changed,
                                       ('add', 'replace', 'remove'))
         self.rewind()
@@ -403,14 +405,8 @@ class SpillContainer(AddLogger, SpillContainerData):
         '''
         gnome.array_types.reset_to_defaults(['spill_num', 'id'])
 
-        self._array_types = {'positions': positions,
-                             'next_positions': next_positions,
-                             'last_water_positions': last_water_positions,
-                             'status_codes': status_codes,
-                             'spill_num': spill_num,
-                             'id': id,
-                             'mass': mass,
-                             'age': age}
+        # copy, cause we don't want to change the defaults!
+        self._array_types = default_array_types.copy()
         self._data_arrays = {}
 
     def _reset__substances_spills(self):
@@ -464,7 +460,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         for spill in self.spills:
             if not spill.on:
                 continue
-            new_subs = spill.get('substance')
+            new_subs = spill.substance
             if new_subs in subs:
                 # substance already defined for another spill
                 ix = subs.index(new_subs)
@@ -859,10 +855,13 @@ class SpillContainer(AddLogger, SpillContainerData):
         """
         for name, atype in self._array_types.iteritems():
             # Initialize data_arrays with 0 elements
+            # fixme: is every array type with None shape neccesarily oil components??
+            #        but it is more than just mass_components
+            #        maybe some other flag??
             if atype.shape is None:
+            # if name == "mass_components":
                 num_comp = self._oil_comp_array_len
-                self._data_arrays[name] = \
-                    atype.initialize_null(shape=(num_comp, ))
+                self._data_arrays[name] = atype.initialize_null(shape=(num_comp, ))
             else:
                 self._data_arrays[name] = atype.initialize_null()
 

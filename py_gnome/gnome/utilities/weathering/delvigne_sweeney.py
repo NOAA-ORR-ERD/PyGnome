@@ -8,8 +8,8 @@ class DelvigneSweeney(object):
         less than 10 knots.
     '''
 
-    @classmethod
-    def breaking_waves_frac(cls, wind_speed, peak_wave_period):
+    @staticmethod
+    def breaking_waves_frac(wind_speed, peak_wave_period):
         '''
             Field observations of Holthuysen and Herbers (1986)
             and Toba et al. (1971) lead to a simple empirical relation

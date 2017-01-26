@@ -419,7 +419,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                  current_scale=1,
                  uncertain_along=0.5,
                  uncertain_across=0.25,
-                 num_method=basic_types.numerical_methods.euler,
+                 num_method='Euler',
                  **kwargs):
         """
         Initialize a GridCurrentMover
@@ -479,7 +479,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         self.mover.offset_time(time_offset * 3600.)
         self.num_method = num_method
 
-        #super(GridCurrentMover, self).__init__(**kwargs)
+        # super(GridCurrentMover, self).__init__(**kwargs)
 
         if self.topology_file is None:
             self.topology_file = filename + '.dat'
@@ -532,10 +532,15 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                            lambda self, val: setattr(self.mover,
                                                      'time_offset',
                                                      val * 3600.))
-    num_method = property(lambda self: self.mover.num_method,
-                          lambda self, val: setattr(self.mover,
-                                                    'num_method',
-                                                    val))
+
+    @property
+    def num_method(self):
+        return self._num_method
+
+    @num_method.setter
+    def num_method(self, val):
+        self.mover.num_method = val
+        self._num_method = val
 
     @property
     def is_data_on_cells(self):
@@ -1040,9 +1045,11 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     # scale_value = SchemaNode(Float())
 
 
-class ComponentMover(CyMover, serializable.Serializable):
+# class ComponentMover(CyMover, serializable.Serializable):
+class ComponentMover(CurrentMoversBase, serializable.Serializable):
 
-    _state = copy.deepcopy(CyMover._state)
+    # _state = copy.deepcopy(CyMover._state)
+    _state = copy.deepcopy(CurrentMoversBase._state)
 
     _update = ['scale_refpoint',
                'pat1_angle', 'pat1_speed', 'pat1_speed_units',
@@ -1237,6 +1244,35 @@ class ComponentMover(CyMover, serializable.Serializable):
 
         self.mover.set_ossm(wind_obj.ossm)
         self._wind = wind_obj
+
+    def get_grid_data(self):
+        """
+            Invokes the GetToplogyHdl method of TriGridVel_c object
+        """
+        # we are assuming cats are always triangle grids,
+        # but may want to extend
+        return self.get_triangles()
+
+    def get_center_points(self):
+        return self.get_triangle_center_points()
+
+    def get_scaled_velocities(self, model_time):
+        """
+        Get file values scaled to ref pt value, with tide applied (if any)
+        """
+        velocities = self.mover._get_velocity_handle()
+        # ref_scale = self.ref_scale  # this needs to be computed, needs a time
+
+        # if self._tide is not None:
+            # time_value = self._tide.cy_obj.get_time_value(model_time)
+            # tide = time_value[0][0]
+        # else:
+            # tide = 1
+
+        # velocities['u'] *= ref_scale * tide
+        # velocities['v'] *= ref_scale * tide
+
+        return velocities
 
     def serialize(self, json_='webapi'):
         """

@@ -32,7 +32,8 @@ import gnome.array_types as gat
 
 base_dir = os.path.dirname(__file__)
 
-test_oil = u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)'
+# test_oil = u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)'
+test_oil = u'oil_ans_mp'
 
 
 @pytest.fixture(scope="session")
@@ -165,7 +166,7 @@ def sample_sc_release(num_elements=10,
         arr_types = {'windages', 'windage_range', 'windage_persist'}
 
     if windage_range is not None:
-        spill.set('windage_range', windage_range)
+        spill.windage_range = windage_range
 
     sc = SpillContainer(uncertain)
     sc.spills.add(spill)
@@ -507,6 +508,7 @@ def sample_sc_no_uncertainty():
     the two spills and returns it. It is used in test_spill_container.py
     and test_elements.py so defined as a fixture.
     """
+    water = Water()
     sc = SpillContainer()
     # Sample data for creating spill
     num_elements = 100
@@ -520,12 +522,14 @@ def sample_sc_no_uncertainty():
     spills = [gnome.spill.point_line_release_spill(num_elements,
                                                    start_position,
                                                    release_time,
-                                                   amount=10, units='l'),
+                                                   amount=10, units='l',
+                                                   water=water),
               gnome.spill.point_line_release_spill(num_elements,
                                                    start_position,
                                                    release_time_2,
                                                    end_position,
-                                                   end_release_time),
+                                                   end_release_time,
+                                                   water=water),
               ]
     sc.spills.add(spills)
     return sc
@@ -584,8 +588,10 @@ def sample_model():
     start_points[:] = (-127.1, 47.93, 0)
     end_points[:] = (-126.5, 48.1, 0)
 
-    return {'model': model, 'release_start_pos': start_points,
-            'release_end_pos': end_points}
+    return {'model': model,
+            'release_start_pos': start_points,
+            'release_end_pos': end_points,
+            }
 
 
 @pytest.fixture(scope='module')

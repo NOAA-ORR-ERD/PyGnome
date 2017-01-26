@@ -11,13 +11,13 @@ Conversion is done on I/O or occasionally within a class (i.e the class may stor
 
 Time
     Time is expressed in integer seconds -- stored in a C ``unsigned long``
-    
+
     Date-times are in seconds since 1904 (1904-01-01T00:00) -- stored in a C ``unsigned long``
-   
+
     (NOTE: much of the Python code uses ``datetime.datetime`` objects and/or numpy ``datetime64`` objects, but the internal C++ code uses integer seconds)
 
 Length
-    Lengths are in meters   
+    Lengths are in meters
 
 Mass
     Mass is in  grams
@@ -29,8 +29,8 @@ Density
     Density is in grams per cubic centimeter (g/cm^3)
 
 Velocity
-    Velocities are in meters per second 
-    
+    Velocities are in meters per second
+
 Latitude-Longitude
    Lat-long is in floating point degrees  -- range generally -360 to 360, so we can do stuff across the date line.
 
@@ -43,6 +43,8 @@ Droplet Diameter
 Viscosity
    Viscosity is usually kinematic viscosity, and is in units of m^2/s
 
+Salinity
+   Salinity is used in various calculations for sedimentiaon, wave formation, etc. Standard units is Practical Salinity Units (PSU) -- more or less parts per thousand -- i.e. fresh is 0, typical seawater is 35.
 
 
 

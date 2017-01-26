@@ -93,7 +93,13 @@ cdef extern from "GridWindMover_c.h":
         long 		    GetTimeShift()
         OSErr           GetDataStartTime(Seconds *startTime)
         OSErr           GetDataEndTime(Seconds *endTime)
+        OSErr  			GetScaledVelocities(Seconds time, VelocityFRec *velocity)
+        LongPointHdl  GetPointsHdl()
+        WORLDPOINTH  GetCellCenters()
+        GridCellInfoHdl  GetCellDataHdl()
         long  GetNumTriangles()
+        long  GetNumPoints()
+        bool  IsRegularGrid()
 
 cdef extern from "IceWindMover_c.h":
 

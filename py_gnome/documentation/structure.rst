@@ -83,13 +83,22 @@ equal.
 Movers
 -------------
  
-Movers are any physical process that moves or effects the particles. These can
-be ocean currents, winds, turbulent diffusion, and weathering processes
-(evaporation, etc). Each move is initialized with the the data it needs to
-compute the movement. (or links to files with data in them)
+Movers are any physical process that moves the particles. These can
+be ocean currents, winds, and/or turbulent diffusion. Each mover is 
+initialized with the the data it needs to compute the movement or
+with links to appropriate files in the case of gridded model output.
 
 The Mover API is defined so that you can write your own movers -- for instance
 to model fish swimming behavior, etc. See the reference docs for the the API.
+
+
+Weatherers
+--------------
+
+Weatherers are processes that change the mass of the floating oil or of oil droplets
+within the water column. These include processes that are traditionally described as
+"weathering" (e.g. evaporation, dispersion) and response options (e.g. skimming, 
+burning oil).
 
 Outputters
 ------------

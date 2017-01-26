@@ -151,3 +151,4 @@ if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
     model.full_run()
+    model.save('.')

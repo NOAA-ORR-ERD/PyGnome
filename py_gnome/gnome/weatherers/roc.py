@@ -2,9 +2,13 @@
 oil removal from various cleanup options
 add these as weatherers
 '''
+from __future__ import division
+
 import datetime
 import copy
 import unit_conversion as uc
+import json
+import os
 
 from colander import (drop, SchemaNode, MappingSchema, Integer, Float, String, OneOf)
 
@@ -44,7 +48,7 @@ class ResponseSchema(WeathererSchema):
     timeseries = OnSceneTimeSeriesSchema()
 
 class Response(Weatherer, Serializable):
-    
+
     def __init__(self, **kwargs):
         super(Response, self).__init__(**kwargs)
         self._report = []
@@ -73,7 +77,7 @@ class Response(Weatherer, Serializable):
                     raise uc.InvalidUnitError(msg)
 
             self._units[prop] = unit
-    
+
     def get(self, attr, unit=None):
         val = getattr(self, attr)
         if unit is None:
@@ -94,22 +98,22 @@ class Response(Weatherer, Serializable):
     def set(self, attr, value, unit):
         if unit not in self._units_type[attr][0]:
             raise uc.InvalidUnitError((unit, self._units_type[attr][0]))
-        
+
         setattr(self, attr, value)
         self.units[attr] = unit
 
     def _is_active(self, model_time, time_step):
         for t in self.timeseries:
-            if model_time >= t[0] and model_time + datetime.timedelta(seconds=time_step/2) <= t[1]:
+            if model_time >= t[0] and model_time + datetime.timedelta(seconds=time_step / 2) <= t[1]:
                 return True
 
         return False
- 
+
     def _setup_report(self, sc):
         if 'report' not in sc:
             sc.report = {}
 
-        sc.report[self.id] = []  
+        sc.report[self.id] = []
         self.report = sc.report[self.id]
 
     def _get_substance(self, sc):
@@ -122,15 +126,229 @@ class Response(Weatherer, Serializable):
         if len(substance) > 1:
             self.logger.error('Found more than one type of oil '
                               '- not supported. Results with be incorrect')
-    
+
         return substance[0]
-    
     def _remove_mass_simple(self, data, amount):
         total_mass = data['mass'].sum()
         rm_mass_frac = min(amount / total_mass, 1.0)
         data['mass_components'] = \
                 (1 - rm_mass_frac) * data['mass_components']
         data['mass'] = data['mass_components'].sum(1)
+
+
+class Platform(Serializable):
+    base_dir = os.path.dirname(__file__)
+    with open(os.path.join(base_dir, 'platforms.json'), 'r') as f:
+        _types = json.load(f)
+        _types['vessel'] = dict(zip([t['name'] for t in _types['vessel']], _types['vessel']))
+        _types['aircraft'] = dict(zip([t['name'] for t in _types['aircraft']], _types['aircraft']))
+
+    def __init__(self,
+                 type_,
+                 kind=None,
+                 **kwargs):
+
+        dts = {'hours': ['max_op_time', ],
+               'minutes': ['taxi_time_landing', 'taxi_time_takeoff', 'dispersant_load', 'fuel_load', 'u_turn_time', 'staging_area_brief']
+               }
+        if kwargs is None:
+            if kind is None:
+                n = 'Typical Large Vessel' if type_ == 'vessel' else 'Test Platform'
+                for k, attr in Platform._types[type_][n]:
+                    setattr(self, k, attr)
+        else:
+            if kind is not None:
+                for k, attr in Platform._types[type_][kind]:
+                    setattr(self, k, attr)
+            for k, attr in kwargs:
+                setattr(self, k, attr)
+        self.type = type_
+        self._state = None
+        self._time_to_next = None
+        self.active = False
+        self._state = 'cascade'
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, s):
+        self._state = s
+
+    def release_rate(self, dosage):
+        return (dosage * self.application_speed * self.swadth_width) / 430
+
+    def one_way_transit_time(self, dist):
+        raw = dist / self.transit_speed
+        if self.type == 'aircraft':
+            raw += self.taxi_land_depart / 60
+        return raw * 60
+
+    def max_dosage(self):
+        return (self.pump_rate_max * 430) / (self.application_speed_min * self.swath_width_min)
+
+    def min_dosage(self):
+        return (self.pump_rate_min * 430) / (self.application_speed_max * self.swath_width_max)
+
+    def cascade_time(self, dist, payload=False):
+        max_range = self.max_range_with_payload if payload else self.max_range_no_payload
+        speed = self.cascade_transit_speed_with_payload if payload else self.cascade_transit_speed_without_payload
+
+        cascade_time = 0
+        if dist > max_range:
+            num_legs = dist / max_range
+            frac_leg = (num_legs * 1000) % 1000
+            num_legs = int(num_legs)
+            cascade_time += self.taxi_land_depart / 60
+            cascade_time += (num_legs * max_range)
+            inter_stop = (self.taxi_land_depart * 2 + self.fuel_load) / 60
+            cascade_time += num_legs * inter_stop
+            cascade_time += frac_leg * (max_range / speed)
+            cascade_time += self.taxi_land_depart / 60
+        else:
+            cascade_time += self.taxi_land_depart / 60 * 2
+            cascade_time += dist / speed
+        return cascade_time
+
+    def transit_time(self, dist, payload=False):
+        return dist / self.transit_speed
+
+    def sortie_time(self, dist, simul_reload=False):
+        rel = max(self.fuel_load, self.dispersant_load) if simul_reload else self.fuel_load + self.dispersant_load
+        sortie = rel + self.taxi_land_depart + self.transit_time(dist, payload=True) + self.taxi_land_arrival
+        return sortie
+
+    def op_timeseries(self, ts, dist_stage, dist_site, payload=False, simul_reload=False):
+        op_stages = []
+        if dist_stage != 0:
+            # cascade step
+            idx = 0
+            op_stages[idx] = []
+            ct = self.cascade_time(dist_stage, payload)
+
+            sortie_time = self.sortie_time(dist_site, simul_reload)
+            op_start = ts[idx][0]
+            op_end = ts[idx][1]
+            for idx, op in enumerate(ts):
+                op_stages[idx] = []
+                op_time = op_end - op_start
+                if ct != 0:
+                    rt = op_time - ct
+                    if rt < 0:
+                        op_stages.append(('cascade', op_time))
+                        continue
+                    else:
+                        op_stages.append(('cascade', ct))
+                        ct = 0
+                        while rt >= sortie_time:
+                            rt -= sortie_time
+                            op_stages.append((''))
+
+
+#             if ct > (op_end - op_start):
+#                 # cascade takes more than 1 op period
+#                 max_range = self.max_range_with_payload if payload else self.max_range_no_payload
+#                 speed = self.cascade_transit_speed_with_payload if payload else self.cascade_transit_speed_without_payload
+#                 tr = ct
+#                 num_legs = dist_stage / max_range
+#                 leg_time = self.taxi_land_depart * 2 + (max_range / speed)
+#                 frac_leg = (num_legs * 1000.) % 1000
+#                 num_legs = int(num_legs)
+#                 num_legs_per_op = (op_end - op_start).seconds / leg_time.seconds
+#                 while tr > self.taxi_land_depart * 2 + (max_range / speed):
+
+                    op_stages[idx]
+
+class DisperseUnitsSchema(MappingSchema):
+    pass
+
+class DisperseSchema(ResponseSchema):
+    pass
+
+class Disperse(Response):
+
+    _state = copy.deepcopy(Response._state)
+    _state += [Field('offset', save=True, update=True)]
+
+    def __init__(self,
+                 name=None,
+                 transit=None,
+                 transit_unit='nm',
+                 pass_length=4,
+                 pass_length_unit='nm',
+                 dosage=None,
+                 dosage_unit='Gallon/Acre',
+                 cascade_on=None,
+                 cascade_distance=None,
+                 platform=None,
+                 timeseries=None,
+                 edac='0',
+                 loading_type='simultaneous',
+                 pass_type='bidirectional',
+                 **kwargs):
+        super(Disperse, self).__init__(**kwargs)
+        self.name = name
+        self.transit = transit
+        self.transit_unit = transit_unit
+        self.pass_length = pass_length
+        self.pass_length_unit = pass_length_unit
+        self.dosage = dosage
+        self.dosage_unit = dosage_unit
+        self.cascade_on = cascade_on
+        self.cascade_distance = cascade_distance
+        self.platform = platform
+        self._platform = None
+        self.edac = edac
+        self.loading_type = loading_type
+        self.pass_type = pass_type
+        # time to next state
+        self._ttns = 0
+
+    @property
+    def platform(self):
+        return self._platform.to_dict()
+
+    @platform.setter
+    def platform(self, plt):
+        _type = None
+        if not isinstance(plt, basestring):
+            if 'type' in plt.keys():
+                _type = plt.pop('type')
+            elif plt['name'] in Platform._types['aircraft'].keys():
+                _type = 'aircraft'
+            elif plt['name'] in Platform._types['vessel'].keys():
+                _type = 'vessel'
+            else:
+                raise ValueError('Must specify platform type (aircraft/vessel)')
+            self._platform = Platform(_type,
+                                      kind=plt.pop('name', None),
+                                      **plt)
+        else:
+            p = Platform._types['aircraft'].get(plt, None)
+            if p is None:
+                p = Platform._types['vessel'].get(plt, None)
+            if p is None:
+                raise ValueError("Specified platform was not found")
+            self.platform = p
+
+    def prepare_for_model_run(self, sc):
+        if self.cascade_on:
+            self._ttns = self.platform.cascade_time
+        self._setup_report(sc)
+        self.platform.active = False
+
+    def prepare_for_model_step(self, sc, time_step, model_time):
+        for op_time in self.timeseries:
+            start = op_time[0]
+            end = op_time[1]
+            if model_time < end and model_time >= start:
+                self.platform.active = True
+                break  # model time is within an operational period
+            else:
+                self.platform.active = False
+        if self.platform.active == False:
+            return
 
 
 class BurnUnitsSchema(MappingSchema):
@@ -225,7 +443,7 @@ class Burn(Response):
     def prepare_for_model_run(self, sc):
         self._setup_report(sc)
         self._swath_width = 0.3 * self.boom_length
-        self._area = self._swath_width * (0.4125 * self.boom_length / 3) * 2/3
+        self._area = self._swath_width * (0.4125 * self.boom_length / 3) * 2 / 3
         self._boom_capacity = self.boom_draft / 36 * self._area
         self._boom_capacity_remaining = self._boom_capacity
         self._offset_time = (self.offset * 0.00987 / self.speed) * 60
@@ -251,7 +469,7 @@ class Burn(Response):
            that are released together will be burned together since they would
            be closer to each other in position.
         '''
-       
+
         self._ts_collected = 0.
         self._ts_burned = 0.
 
@@ -259,10 +477,10 @@ class Burn(Response):
             self._active = True
         else:
             self._active = False
-        
+
         if not self.active:
             return
- 
+
         self._time_remaining = time_step
 
         while self._time_remaining > 0.:
@@ -277,12 +495,12 @@ class Burn(Response):
 
             if self._is_cleaning:
                 self._clean(sc, time_step, model_time)
-               
+
             if self._is_transiting and not self._is_boom_full:
                 self._transit(sc, time_step, model_time)
 
     def _collect(self, sc, time_step, model_time):
-        # calculate amount collected this time_step 
+        # calculate amount collected this time_step
         if self._burn_time is None:
             self._burn_rate = 0.14 * (100 - (sc['frac_water'].mean() * 100)) / 100
             self._burn_time = (0.33 * self.boom_draft / self._burn_rate) * 60
@@ -293,12 +511,12 @@ class Burn(Response):
         emulsion_rr = encounter_rate * self.throughput
         if oil_thickness > 0:
             # old ROC equation
-            #time_to_fill = (self._boom_capacity_remaining / emulsion_rr) * 60
+            # time_to_fill = (self._boom_capacity_remaining / emulsion_rr) * 60
             # new ebsp equation
             time_to_fill = ((self._boom_capacity_remaining * 0.17811) * 42) / emulsion_rr
         else:
             time_to_fill = 0.
-        
+
         if time_to_fill > self._time_remaining:
             # doesn't finish fill the boom in this time step
             self._ts_collected = emulsion_rr * (self._time_remaining / 60)
@@ -312,7 +530,7 @@ class Burn(Response):
 
             self._boom_capacity_remaining = 0.0
             self._is_boom_full = True
-            
+
             self._time_remaining -= time_to_fill
             self._time_collecting_in_sim += time_to_fill
             self._offset_time_remaining = self._offset_time
@@ -320,7 +538,7 @@ class Burn(Response):
             self._is_transiting = True
 
     def _transit(self, sc, time_step, model_time):
-        # transiting to burn site 
+        # transiting to burn site
         # does it arrive and start burning?
         if self._time_remaining > self._offset_time_remaining:
             self._time_remaining -= self._offset_time_remaining
@@ -344,8 +562,8 @@ class Burn(Response):
             self._ts_burned = burned
             self._is_burning = False
             self._is_cleaning = True
-            self._cleaning_time_remaining = 3600 # 1hr in seconds
-        elif self._time_remaining > 0: 
+            self._cleaning_time_remaining = 3600  # 1hr in seconds
+        elif self._time_remaining > 0:
             frac_burned = self._time_remaining / self._burn_time
             burned = self._boom_capacity * frac_burned
             self._boom_capacity_remaining += burned
@@ -373,12 +591,12 @@ class Burn(Response):
         '''
         if not self.active or len(sc) == 0:
             return
-        
+
         les = sc.itersubstancedata(self.array_types)
         for substance, data in les:
             if len(data['mass']) is 0:
                 continue
-            
+
             if self._ts_collected:
                 sc.mass_balance['boomed'] += self._ts_collected
                 sc.mass_balance[self.id] += self._ts_collected
@@ -651,3 +869,4 @@ class Skim(Response):
         # recovery efficiency based on wind and oil visc.
 
         return self.recovery
+

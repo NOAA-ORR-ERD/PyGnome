@@ -217,10 +217,16 @@ class PyMover(Mover):
                             'Trapezoid': self.get_delta_Trapezoid}
         self.default_num_method = default_num_method
 
+        if 'env' in kwargs:
+            if hasattr(self, '_req_refs'):
+                for k, v in self._req_refs.items():
+                    for o in kwargs['env']:
+                        if k in o._ref_as:
+                            setattr(self, k, o)
         Mover.__init__(self, **kwargs)
 
     def get_delta_Euler(self, sc, time_step, model_time, pos, vel_field):
-        vels = vel_field.at(pos[:, 0:2], model_time,
+        vels = vel_field.at(pos, model_time,
                             extrapolate=self.extrapolate)
 
         return vels * time_step
@@ -232,8 +238,10 @@ class PyMover(Mover):
 
         v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
+        p1 = pos.copy()
+        p1 += d0
 
-        v1 = vel_field.at(pos + d0, t + dt, extrapolate=self.extrapolate)
+        v1 = vel_field.at(p1, t + dt, extrapolate=self.extrapolate)
 
         return dt_s / 2 * (v0 + v1)
 
@@ -244,18 +252,20 @@ class PyMover(Mover):
 
         v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s / 2, pos)
+        p1 = pos.copy()
+        p1 += d0
 
-        v1 = vel_field.at(pos + d0,
-                          t + dt / 2,
-                          extrapolate=self.extrapolate)
+        v1 = vel_field.at(p1, t + dt / 2, extrapolate=self.extrapolate)
         d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s / 2, pos)
+        p2 = pos.copy()
+        p2 += d1
 
-        v2 = vel_field.at(pos + d1,
-                          t + dt / 2,
-                          extrapolate=self.extrapolate)
+        v2 = vel_field.at(p2, t + dt / 2, extrapolate=self.extrapolate)
         d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
+        p3 = pos.copy()
+        p3 += d2
 
-        v3 = vel_field.at(pos + d2, t + dt, extrapolate=self.extrapolate)
+        v3 = vel_field.at(p3, t + dt, extrapolate=self.extrapolate)
 
         return dt_s / 6 * (v0 + 2 * v1 + 2 * v2 + v3)
 

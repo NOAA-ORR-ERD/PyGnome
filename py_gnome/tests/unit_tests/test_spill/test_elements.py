@@ -3,7 +3,11 @@ Test various element types available for the Spills
 Element Types are very simple classes. They simply define the initializers.
 These are also tested in the test_spill_container module since it allows for
 more comprehensive testing
+
+FIXME: a number of these tests require a spill object -- those tests really
+       should be moved to the spill object -- or maybe not used at all?
 '''
+
 from datetime import datetime, timedelta
 import os
 
@@ -12,20 +16,19 @@ from pytest import raises
 
 import numpy as np
 
-import unit_conversion as uc
+from oil_library import _sample_oils
+
 import gnome
-
-from gnome.spill.elements import (InitWindages,
-                                  InitRiseVelFromDist,
-                                  InitRiseVelFromDropletSizeFromDist,
-                                  floating,
-                                  ElementType,
-                                  plume)
-
 from gnome.utilities.distributions import (NormalDistribution,
                                            UniformDistribution,
                                            LogNormalDistribution,
                                            WeibullDistribution)
+from gnome.environment import Water
+from gnome.spill.elements import (InitWindages,
+                                  InitRiseVelFromDist,
+                                  InitRiseVelFromDropletSizeFromDist,
+                                  floating,
+                                  ElementType)
 
 from gnome.spill import Spill, Release
 from oil_library import get_oil_props
@@ -73,7 +76,7 @@ arrays_ = (windages,
            rise_vel_diameter_array)
 
 spill_list = (None, None, None, None, None,
-              Spill(Release(datetime.now())))
+              Spill(Release(datetime.now()), water=Water()))
 
 
 @pytest.mark.parametrize(("fcn", "arr_types", "spill"),
@@ -176,7 +179,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull():
     num_elems = 10
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
     substance = get_oil_props(oil)
-    spill = Spill(Release(datetime.now()))
+    spill = Spill(Release(datetime.now()), water=Water())
 
     # (.001*.2) / (.693 ** (1 / 1.8)) - smaller droplet test case, in mm
     #                                   so multiply by .001
@@ -195,7 +198,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull_with_min_max():
     num_elems = 1000
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
     substance = get_oil_props(oil)
-    spill = Spill(Release(datetime.now()))
+    spill = Spill(Release(datetime.now()), water=Water())
 
     # (.001*3.8) / (.693 ** (1 / 1.8)) - larger droplet test case, in mm
     #                                    so multiply by .001
@@ -240,7 +243,8 @@ oil = test_oil
 inp_params = [((floating(substance=oil),
                 ElementType([InitWindages()], substance=oil)), arr_types),
               ((floating(substance=oil),
-                ElementType([InitWindages(), InitRiseVelFromDist(distribution=UniformDistribution())],
+                ElementType([InitWindages(),
+                             InitRiseVelFromDist(distribution=UniformDistribution())],
                             substance=oil)), rise_vel),
               ((floating(substance=oil),
                 ElementType([InitRiseVelFromDist(distribution=UniformDistribution())],
@@ -283,7 +287,7 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
         for spill in sc.spills:
             spill_mask = sc.get_spill_mask(spill)
             # todo: need better API for access
-            s_arr_types = spill.get('array_types')
+            s_arr_types = spill.array_types
 
             if np.any(spill_mask):
                 for key in arr_types:
@@ -303,8 +307,9 @@ def test_serialize_deserialize_initializers(fcn):
 
         if json_ == 'webapi':
             if 'distribution' in dict_:
-                'webapi will replace dict with object so mock it here'
-                dict_['distribution'] = eval(dict_['distribution']['obj_type']).new_from_dict(dict_['distribution'])
+                # webapi will replace dict with object so mock it here
+                dict_['distribution'] = (eval(dict_['distribution']['obj_type'])
+                                         .new_from_dict(dict_['distribution']))
 
         n_obj = cls.new_from_dict(dict_)
         # following is requirement for 'save' files
@@ -354,7 +359,10 @@ def test_save_load(saveloc_, test_obj):
 def test_element_type_init(substance):
     et = ElementType(substance=substance)
     if isinstance(substance, basestring):
-        assert et.substance.get('name') == substance
+        try:
+            assert et.substance.get('name') == substance
+        except AssertionError:
+            assert et.substance.get('name') == _sample_oils[substance].name
     elif isinstance(substance, int):
         assert et.substance.get('id') == substance
     else:
