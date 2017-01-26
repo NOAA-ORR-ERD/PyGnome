@@ -124,7 +124,15 @@ class Response(Weatherer, Serializable):
                               '- not supported. Results with be incorrect')
     
         return substance[0]
-   
+    
+    def _remove_mass_simple(self, data, amount):
+        total_mass = data['mass'].sum()
+        rm_mass_frac = min(amount / total_mass, 1.0)
+        data['mass_components'] = \
+                (1 - rm_mass_frac) * data['mass_components']
+        data['mass'] = data['mass_components'].sum(1)
+
+
 class BurnUnitsSchema(MappingSchema):
     offset = SchemaNode(String(),
                         description='SI units for distance',
@@ -374,11 +382,7 @@ class Burn(Response):
             if self._ts_collected:
                 sc.mass_balance['boomed'] += self._ts_collected
                 sc.mass_balance[self.id] += self._ts_collected
-                total_mass = data['mass'].sum()
-                rm_mass_frac = min(self._ts_collected / total_mass, 1.0)
-                data['mass_components'] = \
-                    (1 - rm_mass_frac) * data['mass_components']
-                data['mass'] = data['mass_components'].sum(1)
+                self._remove_mass_simple(data, self._ts_collected)
 
                 self.logger.debug('{0} amount boomed for {1}: {2}'
                                   .format(self._pid, substance.name, self._ts_collected))
