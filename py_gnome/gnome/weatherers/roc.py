@@ -391,5 +391,263 @@ class Burn(Response):
                 sc.mass_balance['burned'] += self._ts_burned
                 sc.mass_balance['boomed'] -= self._ts_burned
         
-   
+class SkimUnitsSchema(MappingSchema):
+    storage = SchemaNode(String(),
+                         description='SI units for onboard storage',
+                         validator=OneOf(_valid_vol_units))
+
+    decant_pump = SchemaNode(String(),
+                             description='SI units for discharge',
+                             validator=OneOf(_valid_dis_units))
+
+    nameplate_pump = SchemaNode(String(),
+                             description='SI units for discharge',
+                             validator=OneOf(_valid_dis_units))
+
+    speed = SchemaNode(String(),
+                       description='SI units for speed',
+                       validator=OneOf(_valid_vel_units))
+
+    swath_width = SchemaNode(String(),
+                             description='SI units for length',
+                             validator=OneOf(_valid_dist_units))
+
+class SkimSchema(ResponseSchema):
+    units = SkimUnitsSchema()
+    speed = SchemaNode(Float())
+    storage = SchemaNode(Float())
+    swath_width = SchemaNode(Float())
+    group = SchemaNode(String())
+    throughput = SchemaNode(Float())
+    nameplate_pump = SchemaNode(Float())
+    skim_efficiency_type = SchemaNode(String())
+    decant = SchemaNode(Float())
+    decant_pump = SchemaNode(Float())
+    rig_time = SchemaNode(Float())
+    transit_time = SchemaNode(Float())
+    offload_to = SchemaNode(String())
+    recovery = SchemaNode(String())
+    recovery_ef = SchemaNode(Float())
+    barge_arrival = SchemaNode(LocalDateTime(),
+                               validator=validators.convertible_to_seconds,
+                               missing=drop)
+
     
+class Skim(Response):
+    _state = copy.deepcopy(Response._state)
+    _state += [Field('units', save=True, update=True),
+               Field('speed', save=True, update=True),
+               Field('storage', save=True, update=True),
+               Field('swath_width', save=True, update=True),
+               Field('group', save=True, update=True),
+               Field('throughput', save=True, update=True),
+               Field('nameplate_pump', save=True, update=True),
+               Field('skim_efficiency_type', save=True, update=True),
+               Field('decant', save=True, update=True),
+               Field('decant_pump', save=True, update=True),
+               Field('rig_time', save=True, update=True),
+               Field('transit_time', save=True, update=True),
+               Field('offload_to', save=True, update=True),
+               Field('barge_arrival', save=True, update=True),
+               Field('recovery', save=True, update=True),
+               Field('recovery_ef', save=True, update=True)]
+
+    _schema = SkimSchema
+    
+    _si_units = {'storage': 'bbl',
+                 'decant_pump': 'gpm',
+                 'nameplate_pump': 'gpm',
+                 'speed': 'kts',
+                 'swath_width': 'ft'}
+
+    _units_types = {'storage': ('storage', _valid_vol_units),
+                    'decant_pump': ('decant_pump', _valid_dis_units),
+                    'nameplate_pump': ('nameplate_pump', _valid_dis_units),
+                    'speed': ('speed', _valid_vel_units),
+                    'swath_width': ('swath_width', _valid_dist_units)}
+
+    def __init__(self,
+                 speed,
+                 storage, 
+                 swath_width,
+                 group,
+                 throughput,
+                 nameplate_pump,
+                 recovery,
+                 recovery_ef,
+                 decant,
+                 decant_pump,
+                 rig_time,
+                 transit_time,
+                 offload_to,
+                 barge_arrival,
+                 units=_si_units,
+                 **kwargs):
+
+        super(Skim, self).__init__(**kwargs)
+
+        self.speed = speed
+        self.storage = storage
+        self.swath_width = swath_width
+        self.group = group
+        self.throughput = throughput
+        self.nameplate_pump = nameplate_pump
+        self.recovery = recovery
+        self.recovery_ef = recovery_ef
+        self.decant = decant
+        self.decant_pump = decant_pump
+        self.rig_time = rig_time
+        self.transit_time = transit_time
+        self.offload_to = offload_to
+        self.barge_arrival = barge_arrival
+        self._units = dict(self._si_units)
+        
+        self._is_collecting = False
+        self._is_transiting = False
+        self._is_offloading = False
+        self._is_rig_deriging = False
+
+    def prepare_for_model_run(self, sc):
+        self._setup_report(sc)
+        self._storage_remaining = self.storage
+        self._coverage_rate = self.swath_width * self.speed * 0.00233
+
+        if self.on:
+            sc.mass_balance['skimmed'] = 0.0
+            sc.mass_balance[self.id] = {'fluid_collected': 0.0,
+                                        'emulsion_collected': 0.0,
+                                        'oil_collected': 0.0,
+                                        'water_collected': 0.0,
+                                        'water_decanted': 0.0,
+                                        'water_retained': 0.0,
+                                        'area_covered': 0.0,
+                                        'storage_remaining': 0.0} 
+
+        self._is_collecting = True
+
+    def prepare_for_model_step(self, sc, time_step, model_time):
+        if self._is_active(model_time, time_step):
+            self._active = True
+        else :
+            self._active = False
+
+        if not self.active: 
+            return
+
+        self._time_remaining = time_step
+        
+        if type(self.barge_arrival) is datetime.date:
+            # if there's a barge so a modified cycle
+            while self._time_remaining > 0.:
+                if self._is_collecting:
+                    self._collect(sc, time_step, model_time)
+        else:
+            while self_time_remaining > 0.:
+                if self._is_collecting: 
+                    self._collect(sc, time_step, model_time)
+            
+
+    def _collect(self, sc, time_step, model_time):
+        thickness = self._get_thickness(sc)
+        self._maximum_effective_swath = self.nameplate_pump * self.recovery / (63.13 * self.speed * thickness * self.throughput)
+
+        if self.swath > self._maximum_effective_swath:
+            swath = self._maximum_effective_swath;
+            
+        if swath > 1000:
+            self.report.append('Swaths > 1000 feet may not be achievable in the field.')
+
+        encounter_rate = thickness * self.speed * swath * 63.13
+        rate_of_coverage = swath * self.speed * 0.00233
+
+        if encounter_rate > 0:
+            recovery = self._getRecoveryEfficiency()
+            
+            if recovery > 0:
+                totalFluidRecoveryRate = encounter_rate * (self.throughput / recovery)
+                
+                if totalFluidRecoveryRate > self.nameplate_pump:
+                    # total fluid recovery rate is greater than nameplate
+                    # pump, recalculate the throughput efficiency and
+                    # total fluid recovery rate again with the new throughput
+                    throughput = self.nameplate_pump * recovery / encounter_rate
+                    totalFluidRecoveryRate = encounter_rate * (throughput / recovery)
+                    msg = ('{0.name} - Total Fluid Recovery Rate is greater than Nameplate \
+                            Pump Rate, recalculating Throughput Efficiency').format(self)
+                    self.logger.warni(msg)
+
+                if throughput > 0:
+                    emulsionRecoveryRate = encounter_rate * throughput
+                    
+                    waterRecoveryRate = (1 - recovery) * totalFluidRecoveryRate
+                    waterRetainedRate = waterRecoveryRate * (1 - self.decant)
+                    computedDecantRate = (totalFluidRecoveryRate - emulsionRecoveryRate) * self.decant
+                    
+                    decantRateDifference = 0.
+                    if computedDecantRate > self.decant_pump:
+                        decantRateDifference = computedDecantRate - self.decant_pump
+                    
+                    recoveryRate = emulsionRecoveryRate + waterRecoveryRate
+                    retainRate = emulsionRecoveryRate + weaterRetainedRate + decantRateDifference
+                    oilRecoveryRate = emlusionRecoveryRate * (1 - sc['frac_water'].mean())
+                    
+                    freeWaterRecoveryRate = recoveryRate - emulsionRecoveryRate
+                    freeWaterRetainedRate = retainRate - emulsionRecoveryRate
+                    freeWaterDecantRate = freeWaterRecoveryRate - freeWaterRetainedRate
+                    
+                    timeToFill = .7 * self._storage_remaining / retainRate * 60
+                    
+                    if timeToFill * 60 > self._time_remaining:
+                        # going to take more than this timestep to fill the storage
+                        time_collecting = self._time_remaining
+                        self._time_remaining = 0.
+                    else:
+                        time_collecting = timeToFill
+
+                    self._ts_fluid_collected = retainRate * time_collecting
+                    self._ts_emulsion_collected = emulsionRecoveryRate * time_collecting
+                    self._ts_oil_collected = oilRecoveryRate * time_collecting
+                    self._ts_water_collected = freeWaterRecoveryRate * time_collecting
+                    self._ts_water_decanted = freeWaterDecantRate * time_collecting
+                    self._ts_water_retained = freeWaterRetainedRate * time_collecting
+                    self._ts_area_covered = rate_of_coverage * time_collecting
+                    
+                    self._storage_remaining -= uc.convert('Volume', 'gal', 'bbl', self._ts_fluid_collected)
+
+    def weather_elements(self, sc, time_step, model_time):
+        '''
+        Remove mass from each le equally for now, no flagging for now
+        just make sure the mass is from floating oil.
+        '''
+        if not self.active or len(sc) == 0:
+            return
+
+        les = sc.itersubstancedata(self.array_types)
+        for substance, data in les:
+            if len(data['mass']) is 0:
+                continue
+
+            if self._ts_oil_collected:
+                sc.mass_balance['skimmed'] += self._ts_oil_collected
+                self._remove_mass_simple(data, amount)
+                
+                self.logger.debug('{0} amount boomed for {1}: {2}'
+                                  .format(self._pid, substance.name, self._ts_collected))
+
+                platform_balance = sc.mass_balance[self.id]
+                platform_balance['fluid_collected'] += self._ts_fluid_collected
+                platform_balance['emulsion_collected'] += self._ts_emulsion_collected
+                platform_balance['oil_collected'] += self._ts_oil_collected
+                platform_balance['water_collected'] += self._ts_water_collected
+                platform_balance['water_retained'] += self._ts_water_retained
+                platform_balance['water_decanted'] += self._ts_water_decanted
+                platform_balance['area_covered'] += self._ts_area_covered
+                platform_balance['storage_remaining'] += self._storage_remaining
+                     
+            
+    def _getRecoveryEfficiency(self):
+        # scaffolding method
+        # will eventually include logic for calculating
+        # recovery efficiency based on wind and oil visc.
+
+        return self.recovery
