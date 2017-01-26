@@ -40,19 +40,19 @@ class ROCTests:
         model = sample_model_weathering2(sample_model_fcn2, test_oil, 333.0)
         model.set_make_default_refs(True)
         model.environment += [waves, wind, water]
-        model.weatherers += Evaporation(wind=wind,water=water)
+        model.weatherers += Evaporation(wind=wind, water=water)
         model.weatherers += Emulsification(waves=waves)
         return (model.spills.items()[0], model)
-    
+
     def prepare_test_objs(self, obj_arrays=None):
         self.model.rewind()
         self.model.rewind()
         at = set()
-        
+
         for wd in self.model.weatherers:
             wd.prepare_for_model_run(self.sc)
             at.update(wd.array_types)
-            
+
         if obj_arrays is not None:
             at.update(obj_arrays)
 
@@ -81,18 +81,18 @@ class TestRocGeneral(ROCTests):
                 throughput=0.75,
                 burn_efficiency_type=1,
                 timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]))
-    
+
     def test_get_thickness(self, sample_model_fcn2):
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
         self.reset_and_release()
         assert self.burn._get_thickness(self.sc) == 0.0
         self.model.step()
-        assert self.burn._get_thickness(self.sc) == 0.16786582186002749 
+        assert self.burn._get_thickness(self.sc) == 0.16786582186002749
         self.model.step()
-        assert self.burn._get_thickness(self.sc) == 0.049809899105767913 
+        assert self.burn._get_thickness(self.sc) == 0.049809899105767913
 
 class TestROCBurn(ROCTests):
-    burn =  Burn(offset=50.0,
+    burn = Burn(offset=50.0,
                  boom_length=250.0,
                  boom_draft=10.0,
                  speed=2.0,
@@ -110,12 +110,12 @@ class TestROCBurn(ROCTests):
         assert self.burn._swath_width == 75
         assert self.burn._area == 1718.75
         assert self.burn.boom_draft == 10
-        assert self.burn._offset_time == 14.805 
+        assert self.burn._offset_time == 14.805
         assert round(self.burn._boom_capacity) == 477
         assert len(self.sc.report[self.burn.id]) == 1
         assert self.burn._area_coverage_rate == 0.3488372093023256
         assert len(self.burn.timeseries) == 1
-        
+
     def test_reports(self, sample_model_fcn2):
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
         self.reset_and_release()
@@ -137,7 +137,7 @@ class TestROCBurn(ROCTests):
         self.burn.prepare_for_model_step(self.sc, time_step, active_start)
 
         assert self.burn._active == True
-        assert self.burn._ts_collected == 93576.38888888889 
+        assert self.burn._ts_collected == 93576.38888888889
 
     def test_weather_elements(self, sample_model_fcn2):
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
@@ -182,7 +182,7 @@ class TestROCBurn(ROCTests):
         assert burn._is_cleaning == False
         assert burn._is_transiting == True
         assert burn._is_boom_filled == False
-        
+
         self.model.step()
         self.model.step()
         self.model.step()
@@ -198,3 +198,21 @@ class TestROCBurn(ROCTests):
         self.reset_and_release()
         self.model.step()
 
+
+class TestRocChemDispersion(ROCTests):
+
+    def test_prepare_for_model_run(self, sample_model_fcn2):
+        (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+        self.reset_and_release()
+        self.burn.prepare_for_model_run(self.sc)
+        assert self.sc.mass_balance['burned'] == 0.0
+        assert self.sc.mass_balance[self.burn.id] == 0.0
+        assert self.sc.mass_balance['boomed'] == 0.0
+        assert self.burn._swath_width == 75
+        assert self.burn._area == 1718.75
+        assert self.burn.boom_draft == 10
+        assert self.burn._offset_time == 14.805
+        assert round(self.burn._boom_capacity) == 477
+        assert len(self.sc.report[self.burn.id]) == 1
+        assert self.burn._area_coverage_rate == 0.3488372093023256
+        assert len(self.burn.timeseries) == 1

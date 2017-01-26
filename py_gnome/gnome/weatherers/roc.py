@@ -8,6 +8,7 @@ import datetime
 import copy
 import unit_conversion as uc
 import json
+import os
 
 from colander import (drop, SchemaNode, MappingSchema, Integer, Float, String, OneOf)
 
@@ -128,17 +129,22 @@ class Response(Weatherer, Serializable):
 
         return substance[0]
 
-class Platform(Serializable):
 
-    with open('platforms.json', 'r') as f:
+class Platform(Serializable):
+    base_dir = os.path.dirname(__file__)
+    with open(os.path.join(base_dir, 'platforms.json'), 'r') as f:
         _types = json.load(f)
-        _types['vessel'] = dict([t['name'] for t in _types['vessel']], _types['vessel'])
-        _types['aircraft'] = dict([t['name'] for t in _types['aircraft']], _types['aircraft'])
+        _types['vessel'] = dict(zip([t['name'] for t in _types['vessel']], _types['vessel']))
+        _types['aircraft'] = dict(zip([t['name'] for t in _types['aircraft']], _types['aircraft']))
 
     def __init__(self,
                  type_,
                  kind=None,
                  **kwargs):
+
+        dts = {'hours': ['max_op_time', ],
+               'minutes': ['taxi_time_landing', 'taxi_time_takeoff', 'dispersant_load', 'fuel_load', 'u_turn_time', 'staging_area_brief']
+               }
         if kwargs is None:
             if kind is None:
                 n = 'Typical Large Vessel' if type_ == 'vessel' else 'Test Platform'
@@ -153,6 +159,16 @@ class Platform(Serializable):
         self.type = type_
         self._state = None
         self._time_to_next = None
+        self.active = False
+        self._state = 'cascade'
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, s):
+        self._state = s
 
     def release_rate(self, dosage):
         return (dosage * self.application_speed * self.swadth_width) / 430
@@ -163,16 +179,80 @@ class Platform(Serializable):
             raw += self.taxi_land_depart / 60
         return raw * 60
 
-    def adjusted_op_time(self, dist, op_time):
-        pass
-
-
     def max_dosage(self):
         return (self.pump_rate_max * 430) / (self.application_speed_min * self.swath_width_min)
 
     def min_dosage(self):
         return (self.pump_rate_min * 430) / (self.application_speed_max * self.swath_width_max)
 
+    def cascade_time(self, dist, payload=False):
+        max_range = self.max_range_with_payload if payload else self.max_range_no_payload
+        speed = self.cascade_transit_speed_with_payload if payload else self.cascade_transit_speed_without_payload
+
+        cascade_time = 0
+        if dist > max_range:
+            num_legs = dist / max_range
+            frac_leg = (num_legs * 1000) % 1000
+            num_legs = int(num_legs)
+            cascade_time += self.taxi_land_depart / 60
+            cascade_time += (num_legs * max_range)
+            inter_stop = (self.taxi_land_depart * 2 + self.fuel_load) / 60
+            cascade_time += num_legs * inter_stop
+            cascade_time += frac_leg * (max_range / speed)
+            cascade_time += self.taxi_land_depart / 60
+        else:
+            cascade_time += self.taxi_land_depart / 60 * 2
+            cascade_time += dist / speed
+        return cascade_time
+
+    def transit_time(self, dist, payload=False):
+        return dist / self.transit_speed
+
+    def sortie_time(self, dist, simul_reload=False):
+        rel = max(self.fuel_load, self.dispersant_load) if simul_reload else self.fuel_load + self.dispersant_load
+        sortie = rel + self.taxi_land_depart + self.transit_time(dist, payload=True) + self.taxi_land_arrival
+        return sortie
+
+    def op_timeseries(self, ts, dist_stage, dist_site, payload=False, simul_reload=False):
+        op_stages = []
+        if dist_stage != 0:
+            # cascade step
+            idx = 0
+            op_stages[idx] = []
+            ct = self.cascade_time(dist_stage, payload)
+
+            sortie_time = self.sortie_time(dist_site, simul_reload)
+            op_start = ts[idx][0]
+            op_end = ts[idx][1]
+            for idx, op in enumerate(ts):
+                op_stages[idx] = []
+                op_time = op_end - op_start
+                if ct != 0:
+                    rt = op_time - ct
+                    if rt < 0:
+                        op_stages.append(('cascade', op_time))
+                        continue
+                    else:
+                        op_stages.append(('cascade', ct))
+                        ct = 0
+                        while rt >= sortie_time:
+                            rt -= sortie_time
+                            op_stages.append((''))
+
+
+#             if ct > (op_end - op_start):
+#                 # cascade takes more than 1 op period
+#                 max_range = self.max_range_with_payload if payload else self.max_range_no_payload
+#                 speed = self.cascade_transit_speed_with_payload if payload else self.cascade_transit_speed_without_payload
+#                 tr = ct
+#                 num_legs = dist_stage / max_range
+#                 leg_time = self.taxi_land_depart * 2 + (max_range / speed)
+#                 frac_leg = (num_legs * 1000.) % 1000
+#                 num_legs = int(num_legs)
+#                 num_legs_per_op = (op_end - op_start).seconds / leg_time.seconds
+#                 while tr > self.taxi_land_depart * 2 + (max_range / speed):
+
+                    op_stages[idx]
 
 class DisperseUnitsSchema(MappingSchema):
     pass
@@ -181,8 +261,6 @@ class DisperseSchema(ResponseSchema):
     pass
 
 class Disperse(Response):
-
-
 
     _state = copy.deepcopy(Response._state)
     _state += [Field('offset', save=True, update=True)]
@@ -195,9 +273,10 @@ class Disperse(Response):
                  pass_length_unit='nm',
                  dosage=None,
                  dosage_unit='Gallon/Acre',
-                 cascade=None,
+                 cascade_on=None,
+                 cascade_distance=None,
                  platform=None,
-                 platform_type='',
+                 timeseries=None,
                  edac='0',
                  loading_type='simultaneous',
                  pass_type='bidirectional',
@@ -210,54 +289,63 @@ class Disperse(Response):
         self.pass_length_unit = pass_length_unit
         self.dosage = dosage
         self.dosage_unit = dosage_unit
-        self.cascade = cascade
+        self.cascade_on = cascade_on
+        self.cascade_distance = cascade_distance
         self.platform = platform
         self._platform = None
-        self.platform_type = platform_type
         self.edac = edac
         self.loading_type = loading_type
         self.pass_type = pass_type
+        # time to next state
+        self._ttns = 0
 
     @property
     def platform(self):
         return self._platform.to_dict()
 
-    @platform.setter()
+    @platform.setter
     def platform(self, plt):
         _type = None
-        if 'type' in plt.keys():
-            _type = plt.pop('type')
-        elif plt['name'] in Platform._types['aircraft'].keys():
-            _type = 'aircraft'
-        elif plt['name'] in Platform._types['vessel'].keys():
-            _type = 'vessel'
+        if not isinstance(plt, basestring):
+            if 'type' in plt.keys():
+                _type = plt.pop('type')
+            elif plt['name'] in Platform._types['aircraft'].keys():
+                _type = 'aircraft'
+            elif plt['name'] in Platform._types['vessel'].keys():
+                _type = 'vessel'
+            else:
+                raise ValueError('Must specify platform type (aircraft/vessel)')
+            self._platform = Platform(_type,
+                                      kind=plt.pop('name', None),
+                                      **plt)
         else:
-            raise ValueError('Must specify platform type (aircraft/vessel)')
-        self._platform = Platform(_type,
-                                  kind=plt.pop('name', None),
-                                  **plt)
+            p = Platform._types['aircraft'].get(plt, None)
+            if p is None:
+                p = Platform._types['vessel'].get(plt, None)
+            if p is None:
+                raise ValueError("Specified platform was not found")
+            self.platform = p
 
     def prepare_for_model_run(self, sc):
+        if self.cascade_on:
+            self._ttns = self.platform.cascade_time
         self._setup_report(sc)
-        self._swath_width = 0.3 * self.boom_length
-        self._area = self._swath_width * (0.4125 * self.boom_length / 3) * 2 / 3
-        self._boom_capacity = self.boom_draft / 36 * self._area
-        self._boom_capacity_remaining = self._boom_capacity
-        self._offset_time = (self.offset * 0.00987 / self.speed) * 60
-        self._area_coverage_rate = self._swath_width * self.speed / 430
+        self.platform.active = False
 
-        if self._swath_width > 1000:
-            self.report.append('Swaths > 1000 feet may not be achievable in the field')
+    def prepare_for_model_step(self, sc, time_step, model_time):
+        for op_time in self.timeseries:
+            start = op_time[0]
+            end = op_time[1]
+            if model_time < end and model_time >= start:
+                self.platform.active = True
+                break  # model time is within an operational period
+            else:
+                self.platform.active = False
+        if self.platform.active == False:
+            return
 
-        if self.speed > 1.2:
-            self.report.append('Excessive entrainment of oil likely to occur at speeds greater than 1.2 knots.')
 
-        if self.on:
-            sc.mass_balance['burned'] = 0.0
-            sc.mass_balance[self.id] = 0.0
-            sc.mass_balance['boomed'] = 0.0
 
-        self._is_collecting = True
 
 
 class BurnUnitsSchema(MappingSchema):
