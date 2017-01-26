@@ -175,7 +175,7 @@ class Burn(Response):
     _si_units = {'offset': 'ft',
                  'boom_length': 'ft',
                  'boom_draft': 'in',
-                 'speed': 'm/s'}
+                 'speed': 'kts'}
 
     _units_type = {'offset': ('offset', _valid_dist_units),
                    'boom_length': ('boom_length', _valid_dist_units),
