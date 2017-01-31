@@ -9,6 +9,7 @@ import copy
 import unit_conversion as uc
 import json
 import os
+import logging
 
 from colander import (drop, SchemaNode, MappingSchema, Integer, Float, String, OneOf)
 
@@ -17,8 +18,8 @@ from gnome.utilities.serializable import Serializable, Field
 from gnome.persist.extend_colander import LocalDateTime, DefaultTupleSchema, NumpyArray
 from gnome.persist import validators, base_schema
 
-from .core import WeathererSchema
-from .. import _valid_units
+from gnome.weatherers.core import WeathererSchema
+from gnome import _valid_units
 
 
 # define valid units at module scope because the Schema and Object both use it
@@ -163,10 +164,32 @@ class Platform(Serializable):
             for k, attr in kwargs:
                 setattr(self, k, attr)
         self.type = type_
+
+        if self.type == 'aircraft':
+            self._all_states = {'cascade': 'refuel',
+                                'refuel': 'reload',
+                                'reload': 'taxi_takeoff',
+                                'taxi_takeoff': 'en_route',
+                                'en_route': 'at_site',
+                                'at_site': 'disperse',
+                                'disperse': 'return',
+                                'return': 'landing_taxi',
+                                'landing_taxi': 'refuel'}
+        else:
+            self._all_states = {'cascade': 'refuel',
+                                'refuel': 'reload',
+                                'reload': 'en_route',
+                                'en_route': 'at_site',
+                                'at_site': 'disperse',
+                                'disperse': 'return',
+                                'return': 'refuel'}
+
         self._state = None
         self._time_to_next = None
         self.active = False
+        self.has_payload = False
         self._state = 'cascade'
+        self._disp_remaining = 0
 
     @property
     def state(self):
@@ -175,6 +198,23 @@ class Platform(Serializable):
     @state.setter
     def state(self, s):
         self._state = s
+
+    def get_next_state(self):
+        return self._all_states[self.state]
+
+    def goto_next_state(self):
+        self.state = self._all_states[self.state]
+
+    def get_state_time(self, dist=None, payload=False):
+        d = {'cascade': self.cascade_time(dist, payload),
+             'refuel': self.refuel,
+             'reload': self.reload,
+             'taxi_takeoff': self.taxi_time_takeoff,
+             'en_route': self.transit_time(dist, payload=True),
+             'at_site': self.max_onsite_time(dist),
+             'disperse': None,
+             'return': self.transit_time(dist, payload=False),
+             'landing_taxi': self.taxi_time_landing}
 
     def release_rate(self, dosage):
         return (dosage * self.application_speed * self.swadth_width) / 430
@@ -214,51 +254,20 @@ class Platform(Serializable):
     def transit_time(self, dist, payload=False):
         return dist / self.transit_speed
 
+    def max_onsite_time(self, dist):
+        rv = self.max_op_time - 2 * dist / self.transit_speed
+        if rv < 0:
+            if rv > (self.payload / self.max_pump_rate):
+                logging.warn("max onsite time is less than time expected to spray")
+            else:
+                logging.warn('max onsite time is less than zero')
+        return rv
+
     def sortie_time(self, dist, simul_reload=False):
         rel = max(self.fuel_load, self.dispersant_load) if simul_reload else self.fuel_load + self.dispersant_load
         sortie = rel + self.taxi_land_depart + self.transit_time(dist, payload=True) + self.taxi_land_arrival
         return sortie
 
-    def op_timeseries(self, ts, dist_stage, dist_site, payload=False, simul_reload=False):
-        op_stages = []
-        if dist_stage != 0:
-            # cascade step
-            idx = 0
-            op_stages[idx] = []
-            ct = self.cascade_time(dist_stage, payload)
-
-            sortie_time = self.sortie_time(dist_site, simul_reload)
-            op_start = ts[idx][0]
-            op_end = ts[idx][1]
-            for idx, op in enumerate(ts):
-                op_stages[idx] = []
-                op_time = op_end - op_start
-                if ct != 0:
-                    rt = op_time - ct
-                    if rt < 0:
-                        op_stages.append(('cascade', op_time))
-                        continue
-                    else:
-                        op_stages.append(('cascade', ct))
-                        ct = 0
-                        while rt >= sortie_time:
-                            rt -= sortie_time
-                            op_stages.append((''))
-
-
-#             if ct > (op_end - op_start):
-#                 # cascade takes more than 1 op period
-#                 max_range = self.max_range_with_payload if payload else self.max_range_no_payload
-#                 speed = self.cascade_transit_speed_with_payload if payload else self.cascade_transit_speed_without_payload
-#                 tr = ct
-#                 num_legs = dist_stage / max_range
-#                 leg_time = self.taxi_land_depart * 2 + (max_range / speed)
-#                 frac_leg = (num_legs * 1000.) % 1000
-#                 num_legs = int(num_legs)
-#                 num_legs_per_op = (op_end - op_start).seconds / leg_time.seconds
-#                 while tr > self.taxi_land_depart * 2 + (max_range / speed):
-
-                    op_stages[idx]
 
 class DisperseUnitsSchema(MappingSchema):
     pass
@@ -333,22 +342,39 @@ class Disperse(Response):
             self.platform = p
 
     def prepare_for_model_run(self, sc):
-        if self.cascade_on:
-            self._ttns = self.platform.cascade_time
+        p = self.platform
         self._setup_report(sc)
-        self.platform.active = False
+        p.active = False
+        p._disp_remaining = 0
+        p._time_remaining = 0
+        if self.cascade_on:
+            p._stage = 'cascade'
+            p._ttns = self.platform.cascade_time(self.cascade_distance, payload=False)
+        else:
+            p._stage = 'en_route'
+            p._disp_remaining = self.payload
+            p._ttns = p.transit_time(self.transit, payload=True)
 
     def prepare_for_model_step(self, sc, time_step, model_time):
-        for op_time in self.timeseries:
-            start = op_time[0]
-            end = op_time[1]
-            if model_time < end and model_time >= start:
-                self.platform.active = True
-                break  # model time is within an operational period
-            else:
-                self.platform.active = False
-        if self.platform.active == False:
-            return
+        '''
+        '''
+        extra_time = 0
+        p = self.platform
+        p._ttns -= time_step
+        if p._ttns < 0:
+            extra_time = abs(p._ttns)
+            p.goto_next_state()
+            st = p.get_state_time(self.transit, payload=p.has_payload)
+            if st is None:
+                # DISPERSION STATE. Implementation for the time remaining in this stage is below
+                desired_dosage = self.dosage
+                achieved_pump_rate = desired_dosage * p.application_speed * p.swath_width
+
+
+            p._ttns = 5
+        elif p._ttns == 0:
+            p.goto_next_state()
+            p._ttns = 5
 
 
 class BurnUnitsSchema(MappingSchema):
@@ -520,7 +546,7 @@ class Burn(Response):
         if time_to_fill > self._time_remaining:
             # doesn't finish fill the boom in this time step
             self._ts_collected = emulsion_rr * (self._time_remaining / 60)
-            self._boom_capacity_remaining -= collected
+            self._boom_capacity_remaining -= self.collected
             self._time_remaining = 0.0
             self._time_collecting_in_sim += self._time_remaining
         elif self._time_remaining > 0:
@@ -608,7 +634,7 @@ class Burn(Response):
             if self._ts_burned:
                 sc.mass_balance['burned'] += self._ts_burned
                 sc.mass_balance['boomed'] -= self._ts_burned
-        
+
 class SkimUnitsSchema(MappingSchema):
     storage = SchemaNode(String(),
                          description='SI units for onboard storage',
@@ -650,7 +676,7 @@ class SkimSchema(ResponseSchema):
                                validator=validators.convertible_to_seconds,
                                missing=drop)
 
-    
+
 class Skim(Response):
     _state = copy.deepcopy(Response._state)
     _state += [Field('units', save=True, update=True),
@@ -671,7 +697,7 @@ class Skim(Response):
                Field('recovery_ef', save=True, update=True)]
 
     _schema = SkimSchema
-    
+
     _si_units = {'storage': 'bbl',
                  'decant_pump': 'gpm',
                  'nameplate_pump': 'gpm',
@@ -686,7 +712,7 @@ class Skim(Response):
 
     def __init__(self,
                  speed,
-                 storage, 
+                 storage,
                  swath_width,
                  group,
                  throughput,
@@ -719,7 +745,7 @@ class Skim(Response):
         self.offload_to = offload_to
         self.barge_arrival = barge_arrival
         self._units = dict(self._si_units)
-        
+
         self._is_collecting = False
         self._is_transiting = False
         self._is_offloading = False
@@ -739,7 +765,7 @@ class Skim(Response):
                                         'water_decanted': 0.0,
                                         'water_retained': 0.0,
                                         'area_covered': 0.0,
-                                        'storage_remaining': 0.0} 
+                                        'storage_remaining': 0.0}
 
         self._is_collecting = True
 
@@ -749,11 +775,11 @@ class Skim(Response):
         else :
             self._active = False
 
-        if not self.active: 
+        if not self.active:
             return
 
         self._time_remaining = time_step
-        
+
         if type(self.barge_arrival) is datetime.date:
             # if there's a barge so a modified cycle
             while self._time_remaining > 0.:
@@ -761,9 +787,9 @@ class Skim(Response):
                     self._collect(sc, time_step, model_time)
         else:
             while self_time_remaining > 0.:
-                if self._is_collecting: 
+                if self._is_collecting:
                     self._collect(sc, time_step, model_time)
-            
+
 
     def _collect(self, sc, time_step, model_time):
         thickness = self._get_thickness(sc)
@@ -771,7 +797,7 @@ class Skim(Response):
 
         if self.swath > self._maximum_effective_swath:
             swath = self._maximum_effective_swath;
-            
+
         if swath > 1000:
             self.report.append('Swaths > 1000 feet may not be achievable in the field.')
 
@@ -780,10 +806,10 @@ class Skim(Response):
 
         if encounter_rate > 0:
             recovery = self._getRecoveryEfficiency()
-            
+
             if recovery > 0:
                 totalFluidRecoveryRate = encounter_rate * (self.throughput / recovery)
-                
+
                 if totalFluidRecoveryRate > self.nameplate_pump:
                     # total fluid recovery rate is greater than nameplate
                     # pump, recalculate the throughput efficiency and
@@ -796,25 +822,25 @@ class Skim(Response):
 
                 if throughput > 0:
                     emulsionRecoveryRate = encounter_rate * throughput
-                    
+
                     waterRecoveryRate = (1 - recovery) * totalFluidRecoveryRate
                     waterRetainedRate = waterRecoveryRate * (1 - self.decant)
                     computedDecantRate = (totalFluidRecoveryRate - emulsionRecoveryRate) * self.decant
-                    
+
                     decantRateDifference = 0.
                     if computedDecantRate > self.decant_pump:
                         decantRateDifference = computedDecantRate - self.decant_pump
-                    
+
                     recoveryRate = emulsionRecoveryRate + waterRecoveryRate
                     retainRate = emulsionRecoveryRate + weaterRetainedRate + decantRateDifference
                     oilRecoveryRate = emlusionRecoveryRate * (1 - sc['frac_water'].mean())
-                    
+
                     freeWaterRecoveryRate = recoveryRate - emulsionRecoveryRate
                     freeWaterRetainedRate = retainRate - emulsionRecoveryRate
                     freeWaterDecantRate = freeWaterRecoveryRate - freeWaterRetainedRate
-                    
+
                     timeToFill = .7 * self._storage_remaining / retainRate * 60
-                    
+
                     if timeToFill * 60 > self._time_remaining:
                         # going to take more than this timestep to fill the storage
                         time_collecting = self._time_remaining
@@ -829,7 +855,7 @@ class Skim(Response):
                     self._ts_water_decanted = freeWaterDecantRate * time_collecting
                     self._ts_water_retained = freeWaterRetainedRate * time_collecting
                     self._ts_area_covered = rate_of_coverage * time_collecting
-                    
+
                     self._storage_remaining -= uc.convert('Volume', 'gal', 'bbl', self._ts_fluid_collected)
 
     def weather_elements(self, sc, time_step, model_time):
@@ -848,7 +874,7 @@ class Skim(Response):
             if self._ts_oil_collected:
                 sc.mass_balance['skimmed'] += self._ts_oil_collected
                 self._remove_mass_simple(data, amount)
-                
+
                 self.logger.debug('{0} amount boomed for {1}: {2}'
                                   .format(self._pid, substance.name, self._ts_collected))
 
@@ -861,8 +887,8 @@ class Skim(Response):
                 platform_balance['water_decanted'] += self._ts_water_decanted
                 platform_balance['area_covered'] += self._ts_area_covered
                 platform_balance['storage_remaining'] += self._storage_remaining
-                     
-            
+
+
     def _getRecoveryEfficiency(self):
         # scaffolding method
         # will eventually include logic for calculating
