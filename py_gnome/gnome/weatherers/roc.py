@@ -676,13 +676,19 @@ class Skim(Response):
                  'decant_pump': 'gpm',
                  'nameplate_pump': 'gpm',
                  'speed': 'kts',
-                 'swath_width': 'ft'}
+                 'swath_width': 'ft',
+                 'transit_time': 'sec',
+                 'offload': 'sec',
+                 'rig_time': 'sec'}
 
     _units_types = {'storage': ('storage', _valid_vol_units),
                     'decant_pump': ('decant_pump', _valid_dis_units),
                     'nameplate_pump': ('nameplate_pump', _valid_dis_units),
                     'speed': ('speed', _valid_vel_units),
-                    'swath_width': ('swath_width', _valid_dist_units)}
+                    'swath_width': ('swath_width', _valid_dist_units),
+                    'transit_time': ('transit_time', _valid_time_units),
+                    'offload': ('offload', _valid_time_units),
+                    'rig_time': ('rig_time', _valid_time_units)}
 
     def __init__(self,
                  speed,
@@ -763,7 +769,13 @@ class Skim(Response):
             while self_time_remaining > 0.:
                 if self._is_collecting: 
                     self._collect(sc, time_step, model_time)
-            
+                
+                if self._is_transiting:
+                    self._transit(sc, time_step, model_time)
+
+                if self._is_offloading:
+                     self._offload(sc, time_step, model_time)
+
 
     def _collect(self, sc, time_step, model_time):
         thickness = self._get_thickness(sc)
@@ -820,7 +832,12 @@ class Skim(Response):
                         time_collecting = self._time_remaining
                         self._time_remaining = 0.
                     else:
+                        # storage is filled during this timestep
                         time_collecting = timeToFill
+                        self._time_remaining -= timeToFill
+                        self._transit_remaining = self.transit
+                        self._collecting = False
+                        self._transiting = True
 
                     self._ts_fluid_collected = retainRate * time_collecting
                     self._ts_emulsion_collected = emulsionRecoveryRate * time_collecting
@@ -831,6 +848,32 @@ class Skim(Response):
                     self._ts_area_covered = rate_of_coverage * time_collecting
                     
                     self._storage_remaining -= uc.convert('Volume', 'gal', 'bbl', self._ts_fluid_collected)
+    
+    def _transit(self, sc, time_step, model_time):
+        # transiting back to shore to offload
+        if self._time_remaining > self._transit_remaining:
+            self._time_remaining -= self._transit_remaining
+            self._transit_remaining = 0.
+            self._is_transiting = False
+            if self._storage_remaining == 0.0:
+                self._is_offloading = True
+            else:
+                self._is_collecting = True
+            self._offload_remaining = self.offload + self.rig_time
+        else:
+            self._transit_remaining -= self._time_remaining
+            self._time_remaining = 0.
+
+    def _offload(self, sc, time_step, model_time):
+        if self._time_remaining > self._offload_remaining:
+            self._time_remaining -= self_ofload_remaining
+            self._offload_remaining = 0.
+            self._storage_remaining = self.storage
+            self._offloading = False
+            self._transiting = True
+        else:
+            self._offload_remaining -= self._time_remaining
+            self._time_remaining = 0.
 
     def weather_elements(self, sc, time_step, model_time):
         '''
