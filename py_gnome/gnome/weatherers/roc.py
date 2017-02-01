@@ -4,6 +4,7 @@ add these as weatherers
 '''
 from __future__ import division
 
+import pytest
 import datetime
 import copy
 import unit_conversion as uc
@@ -27,26 +28,32 @@ _valid_dist_units = _valid_units('Length')
 _valid_vel_units = _valid_units('Velocity')
 _valid_vol_units = _valid_units('Volume')
 _valid_dis_units = _valid_units('Discharge')
+_valid_time_units = _valid_units('Time')
+_valid_concentration_units = _valid_units('Oil Concentration')
+
 
 class OnSceneTupleSchema(DefaultTupleSchema):
     start = SchemaNode(LocalDateTime(default_tzinfo=None),
                        validator=validators.convertible_to_seconds)
 
     stop = SchemaNode(LocalDateTime(default_tzinfo=None),
-                       validator=validators.convertible_to_seconds)
+                      validator=validators.convertible_to_seconds)
+
 
 class OnSceneTimeSeriesSchema(NumpyArray):
     value = OnSceneTupleSchema()
 
     def validator(self, node, cstruct):
         '''
-        validate on-scene timeseries list 
+        validate on-scene timeseries list
         '''
         validators.no_duplicate_datetime(node, cstruct)
         validators.ascending_datetime(node, cstruct)
 
+
 class ResponseSchema(WeathererSchema):
     timeseries = OnSceneTimeSeriesSchema()
+
 
 class Response(Weatherer, Serializable):
 
@@ -58,7 +65,8 @@ class Response(Weatherer, Serializable):
         oil_thickness = 0.0
         substance = self._get_substance(sc)
         if sc['area'].any() > 0:
-            volume_emul = (sc['mass'].mean() / substance.get_density()) / (1.0 - sc['frac_water'].mean())
+#             pytest.set_trace()
+            volume_emul = (sc['mass'].mean() / substance.density_at_temp()) / (1.0 - sc['frac_water'].mean())
             oil_thickness = volume_emul / sc['area'].mean()
 
         return uc.convert('Length', 'meters', 'inches', oil_thickness)
@@ -129,37 +137,35 @@ class Response(Weatherer, Serializable):
                               '- not supported. Results with be incorrect')
 
         return substance[0]
+
     def _remove_mass_simple(self, data, amount):
         total_mass = data['mass'].sum()
         rm_mass_frac = min(amount / total_mass, 1.0)
         data['mass_components'] = \
-                (1 - rm_mass_frac) * data['mass_components']
+            (1 - rm_mass_frac) * data['mass_components']
         data['mass'] = data['mass_components'].sum(1)
 
 
 class Platform(Serializable):
     base_dir = os.path.dirname(__file__)
     with open(os.path.join(base_dir, 'platforms.json'), 'r') as f:
-        _types = json.load(f)
-        _types['vessel'] = dict(zip([t['name'] for t in _types['vessel']], _types['vessel']))
-        _types['aircraft'] = dict(zip([t['name'] for t in _types['aircraft']], _types['aircraft']))
+        plat_types = json.load(f)
+        plat_types['vessel'] = dict(zip([t['name'] for t in plat_types['vessel']], plat_types['vessel']))
+        plat_types['aircraft'] = dict(zip([t['name'] for t in plat_types['aircraft']], plat_types['aircraft']))
 
     def __init__(self,
                  type_,
                  kind=None,
                  **kwargs):
 
-        dts = {'hours': ['max_op_time', ],
-               'minutes': ['taxi_time_landing', 'taxi_time_takeoff', 'dispersant_load', 'fuel_load', 'u_turn_time', 'staging_area_brief']
-               }
         if kwargs is None:
             if kind is None:
                 n = 'Typical Large Vessel' if type_ == 'vessel' else 'Test Platform'
-                for k, attr in Platform._types[type_][n]:
+                for k, attr in Platform.plat_types[type_][n]:
                     setattr(self, k, attr)
         else:
             if kind is not None:
-                for k, attr in Platform._types[type_][kind]:
+                for k, attr in Platform.plat_types[type_][kind]:
                     setattr(self, k, attr)
             for k, attr in kwargs:
                 setattr(self, k, attr)
@@ -269,13 +275,60 @@ class Platform(Serializable):
         return sortie
 
 
+class PlatformUnitsSchema(MappingSchema):
+    swath_width = approach_distance = depart_distance = SchemaNode(String(),
+                                                                   description='SI units for distance',
+                                                                   validator=OneOf(_valid_dist_units))
+    application_speed = transit_speed = reposition_speed = SchemaNode(String(),
+                                                                      description='SI units for speed',
+                                                                      validator=OneOf(_valid_vel_units))
+    pump_rate = SchemaNode(String(),
+                           description='SI units for discharge',
+                           validator=OneOf(_valid_dis_units))
+    payload = SchemaNode(String(),
+                         description='SI units for volume',
+                         validator=OneOf(_valid_vol_units))
+    max_operating_time = u_turn_time = takeoff_land_time = reload = refuel = SchemaNode(String(),
+                                                                                        description='SI units for time',
+                                                                                        validator=OneOf(_valid_time_units))
+
+
 class DisperseUnitsSchema(MappingSchema):
-    pass
+    transit = pass_length = cascade_distance = SchemaNode(String(),
+                                                          description='SI units for distance',
+                                                          validator=OneOf(_valid_dist_units))
+    dosage_unit = SchemaNode(String(),
+                             description='SI units for concentration',
+                             validator=OneOf(_valid_concentration_units))
 
 class DisperseSchema(ResponseSchema):
     pass
 
 class Disperse(Response):
+
+    _si_units = {'transit': 'nm',
+                 'pass_length': 'nm',
+                 'cascade_distance': 'nm',
+                 'dosage': 'gal/acre'}
+
+    plat_units = dict([(k, 'minutes') for k in ['taxi_time_landing',
+                                                'taxi_time_takeoff',
+                                                'takeoff_land_time'
+                                                'reload',
+                                                'refuel',
+                                                'u_turn_time',
+                                                'staging_area_brief']])
+    plat_units.update([(k, 'hours') for k in ['max_op_time']])
+    plat_units.update([(k, 'gal') for k in ['payload']])
+
+    _units_types = dict([(i[0], uc.UNIT_TYPES.get(i[1], None)) for i in (plat_units.items() + _si_units.items())])
+    _units_types['dosage'] = 'oilconcentration'  #because oil concentration is a pita
+
+    base_dir = os.path.dirname(__file__)
+    with open(os.path.join(base_dir, 'platforms.json'), 'r') as f:
+        js = json.load(f)
+        plat_types = dict(zip([t['name'] for t in js['vessel']], js['vessel']))
+        plat_types.update(dict(zip([t['name'] for t in js['aircraft']], js['aircraft'])))
 
     _state = copy.deepcopy(Response._state)
     _state += [Field('offset', save=True, update=True)]
@@ -283,67 +336,183 @@ class Disperse(Response):
     def __init__(self,
                  name=None,
                  transit=None,
-                 transit_unit='nm',
                  pass_length=4,
-                 pass_length_unit='nm',
                  dosage=None,
-                 dosage_unit='Gallon/Acre',
-                 cascade_on=None,
+                 cascade_on=False,
                  cascade_distance=None,
-                 platform=None,
                  timeseries=None,
-                 edac='0',
                  loading_type='simultaneous',
                  pass_type='bidirectional',
+                 platform=None,
                  **kwargs):
         super(Disperse, self).__init__(**kwargs)
         self.name = name
         self.transit = transit
-        self.transit_unit = transit_unit
         self.pass_length = pass_length
-        self.pass_length_unit = pass_length_unit
         self.dosage = dosage
-        self.dosage_unit = dosage_unit
         self.cascade_on = cascade_on
         self.cascade_distance = cascade_distance
-        self.platform = platform
-        self._platform = None
-        self.edac = edac
         self.loading_type = loading_type
         self.pass_type = pass_type
+        self.cur_state = self.prev_state = None
         # time to next state
         self._ttns = 0
+        if platform is not None:
+            if isinstance(platform, basestring):
+                #find platform name
+                self.platform = Disperse.plat_types[platform]
+            else:
+                #platform is defined as a dict
+                self.platform = platform
+#         pytest.set_trace()
+
 
     @property
-    def platform(self):
-        return self._platform.to_dict()
+    def next_state(self):
+        if self.cur_state is None:
+            return None
+        if self.cur_state == 'cascade' or self.cur_state == 'rtb':
+            return 'replenish'
+        elif self.cur_state == 'replenish':
+            return 'en_route'
+        elif self.cur_state == 'en_route':
+            return 'on_site'
 
-    @platform.setter
-    def platform(self, plt):
-        _type = None
-        if not isinstance(plt, basestring):
-            if 'type' in plt.keys():
-                _type = plt.pop('type')
-            elif plt['name'] in Platform._types['aircraft'].keys():
-                _type = 'aircraft'
-            elif plt['name'] in Platform._types['vessel'].keys():
-                _type = 'vessel'
-            else:
-                raise ValueError('Must specify platform type (aircraft/vessel)')
-            self._platform = Platform(_type,
-                                      kind=plt.pop('name', None),
-                                      **plt)
+    def conv_platform(self):
+        return [(i[0],uconv(i[0]))]
+
+    def uconv(self, attr, ):
+        if attr not in Disperse._units_types:
+            raise TypeError('invalid attribute or attribute does not have a unit')
+        u1 = Disperse._units_types[attr]
+        u2 = None
+        if u1 == 'time':
+            u2 = 'sec'
+        elif u1 == 'length':
+            u2 = 'nm'
+        elif u1 == 'volume':
+            u2 = 'gal'
+        elif u1 == 'speed':
+            u2 = 'knots'
         else:
-            p = Platform._types['aircraft'].get(plt, None)
-            if p is None:
-                p = Platform._types['vessel'].get(plt, None)
-            if p is None:
-                raise ValueError("Specified platform was not found")
-            self.platform = p
+            u2 = u1
+        v1 = None
+        try:
+            u1 = Disperse.plat_units[attr]
+            v1 = self.platform[attr]
+        except KeyError:
+            try:
+                u1 = Disperse._si_units[attr]
+                v1 = getattr(self, attr)
+            except KeyError:
+                'Invalid Attr'
+        print self.platform
+        v2 = uc.convert(u1, u2, v1)
+        return v2
+
+    @property
+    def cur_stage_duration(self):
+        if self.cur_state is None:
+            return None
+        if self.cur_state == 'cascade':
+            return Disperse.uconv(self.platform.cascade_time(self.cascade, payload=False))
+        if self.cur_state == 'replenish':
+            if self.loading_type =='simultaneous':
+                return Disperse.uconv(max(self.platform.reload, self.platform.refuel))
+            else:
+                return Disperse.uconv(self.platform.reload + self.platform.refuel)
+        if self.cur_state == 'en_route':
+            return
+
+#     @property
+#     def platform(self):
+#         return self._platform.to_dict()
+#
+#     @platform.setter
+#     def platform(self, plt):
+#         _type = None
+#         if not isinstance(plt, basestring):
+#             if 'type' in plt.keys():
+#                 _type = plt.pop('type')
+#             elif plt['name'] in Platform.plat_types['aircraft'].keys():
+#                 _type = 'aircraft'
+#             elif plt['name'] in Platform.plat_types['vessel'].keys():
+#                 _type = 'vessel'
+#             else:
+#                 raise ValueError('Must specify platform type (aircraft/vessel)')
+#             self._platform = Platform(_type,
+#                                       kind=plt.pop('name', None),
+#                                       **plt)
+#         else:
+#             p = Platform.plat_types['aircraft'].get(plt, None)
+#             if p is None:
+#                 p = Platform.plat_types['vessel'].get(plt, None)
+#             if p is None:
+#                 raise ValueError("Specified platform was not found")
+#             self.platform = p
+
+#     def prepare_for_model_run(self, sc):
+#         self._setup_report(sc)
+#         self._swath_width = 0.3 * self.boom_length
+#         self._area = self._swath_width * (0.4125 * self.boom_length / 3) * 2 / 3
+#         self._boom_capacity = self.boom_draft / 36 * self._area
+#         self._boom_capacity_remaining = self._boom_capacity
+#         self._offset_time = (self.offset * 0.00987 / self.speed) * 60
+#         self._area_coverage_rate = self._swath_width * self.speed / 430
+#
+#         if self._swath_width > 1000:
+#             self.report.append('Swaths > 1000 feet may not be achievable in the field')
+#
+#         if self.speed > 1.2:
+#             self.report.append('Excessive entrainment of oil likely to occur at speeds greater than 1.2 knots.')
+#
+#         if self.on:
+#             sc.mass_balance['burned'] = 0.0
+#             sc.mass_balance[self.id] = 0.0
+#             sc.mass_balance['boomed'] = 0.0
+#
+#         self._is_collecting = True
+#
+#     def prepare_for_model_step(self, sc, time_step, model_time):
+#         '''
+#         1. set 'active' flag based on timeseries and model_time
+#         2. Mark LEs to be burned, do them in order right now. assume all LEs
+#            that are released together will be burned together since they would
+#            be closer to each other in position.
+#         '''
+#
+#         self._ts_collected = 0.
+#         self._ts_burned = 0.
+#
+#         if self._is_active(model_time, time_step):
+#             self._active = True
+#         else:
+#             self._active = False
+#
+#         if not self.active:
+#             return
+#
+#         self._time_remaining = time_step
+#
+#         while self._time_remaining > 0.:
+#             if self._is_collecting:
+#                 self._collect(sc, time_step, model_time)
+#
+#             if self._is_transiting and self._is_boom_full:
+#                 self._transit(sc, time_step, model_time)
+#
+#             if self._is_burning:
+#                 self._burn(sc, time_step, model_time)
+#
+#             if self._is_cleaning:
+#                 self._clean(sc, time_step, model_time)
+#
+#             if self._is_transiting and not self._is_boom_full:
+#                 self._transit(sc, time_step, model_time)
 
     def prepare_for_model_run(self, sc):
-        p = self.platform
         self._setup_report(sc)
+        p = self.platform
         p.active = False
         p._disp_remaining = 0
         p._time_remaining = 0
@@ -702,13 +871,19 @@ class Skim(Response):
                  'decant_pump': 'gpm',
                  'nameplate_pump': 'gpm',
                  'speed': 'kts',
-                 'swath_width': 'ft'}
+                 'swath_width': 'ft',
+                 'transit_time': 'sec',
+                 'offload': 'sec',
+                 'rig_time': 'sec'}
 
     _units_types = {'storage': ('storage', _valid_vol_units),
                     'decant_pump': ('decant_pump', _valid_dis_units),
                     'nameplate_pump': ('nameplate_pump', _valid_dis_units),
                     'speed': ('speed', _valid_vel_units),
-                    'swath_width': ('swath_width', _valid_dist_units)}
+                    'swath_width': ('swath_width', _valid_dist_units),
+                    'transit_time': ('transit_time', _valid_time_units),
+                    'offload': ('offload', _valid_time_units),
+                    'rig_time': ('rig_time', _valid_time_units)}
 
     def __init__(self,
                  speed,
@@ -790,6 +965,12 @@ class Skim(Response):
                 if self._is_collecting:
                     self._collect(sc, time_step, model_time)
 
+                if self._is_transiting:
+                    self._transit(sc, time_step, model_time)
+
+                if self._is_offloading:
+                    self._offload(sc, time_step, model_time)
+
 
     def _collect(self, sc, time_step, model_time):
         thickness = self._get_thickness(sc)
@@ -846,7 +1027,12 @@ class Skim(Response):
                         time_collecting = self._time_remaining
                         self._time_remaining = 0.
                     else:
+                        # storage is filled during this timestep
                         time_collecting = timeToFill
+                        self._time_remaining -= timeToFill
+                        self._transit_remaining = self.transit
+                        self._collecting = False
+                        self._transiting = True
 
                     self._ts_fluid_collected = retainRate * time_collecting
                     self._ts_emulsion_collected = emulsionRecoveryRate * time_collecting
@@ -857,6 +1043,32 @@ class Skim(Response):
                     self._ts_area_covered = rate_of_coverage * time_collecting
 
                     self._storage_remaining -= uc.convert('Volume', 'gal', 'bbl', self._ts_fluid_collected)
+
+    def _transit(self, sc, time_step, model_time):
+        # transiting back to shore to offload
+        if self._time_remaining > self._transit_remaining:
+            self._time_remaining -= self._transit_remaining
+            self._transit_remaining = 0.
+            self._is_transiting = False
+            if self._storage_remaining == 0.0:
+                self._is_offloading = True
+            else:
+                self._is_collecting = True
+            self._offload_remaining = self.offload + self.rig_time
+        else:
+            self._transit_remaining -= self._time_remaining
+            self._time_remaining = 0.
+
+    def _offload(self, sc, time_step, model_time):
+        if self._time_remaining > self._offload_remaining:
+            self._time_remaining -= self_ofload_remaining
+            self._offload_remaining = 0.
+            self._storage_remaining = self.storage
+            self._offloading = False
+            self._transiting = True
+        else:
+            self._offload_remaining -= self._time_remaining
+            self._time_remaining = 0.
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -896,3 +1108,6 @@ class Skim(Response):
 
         return self.recovery
 
+if __name__ == '__main__':
+    print None
+    d = Disperse(name = 'test')
