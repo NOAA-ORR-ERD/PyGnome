@@ -379,7 +379,7 @@ class Disperse(Response):
             return 'on_site'
 
     def conv_platform(self):
-        return [(i[0],uconv(i[0]))]
+        pass
 
     def uconv(self, attr, ):
         if attr not in Disperse._units_types:
