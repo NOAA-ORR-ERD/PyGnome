@@ -6,6 +6,8 @@ import copy
 import inspect
 import zipfile
 
+import numpy as np
+
 from colander import (SchemaNode,
                       String, Float, Int, Bool,
                       drop, OneOf)
@@ -1447,15 +1449,24 @@ class Model(Serializable):
                 isvalid = False
 
             if spill.substance is not None:
-                min_k = spill.substance.get('pour_point_min_k')
+                #min_k1 = spill.substance.get('pour_point_min_k')
+                pour_point = spill.substance.pour_point()
                 if spill.water is not None:
                     water_temp = spill.water.get('temperature')
-                    if water_temp < min_k:
+                    if water_temp < pour_point[0]:
                         msg = ('The water temperature, {0} K, is less than the minimum pour ' 
                                'point of the selected oil, {1} K. '
-                               'The results may be unreliable.'.format(water_temp, min_k))
+                               'The results may be unreliable.'.format(water_temp, pour_point[0]))
                         self.logger.warning(msg)
                         msgs.append(self._warn_pre + msg)
+
+                    rho_h2o = spill.water.get('density')
+                    rho_oil = spill.substance.density_at_temp(water_temp)
+                    if np.any(rho_h2o < rho_oil):
+                        msg = ("Found particles with relative_buoyancy < 0. "
+                               "Oil is a sinker")
+                        raise GnomeRuntimeError(msg)
+
 
         if num_spills > 0 and not someSpillIntersectsModel:
             if num_spills > 1:
