@@ -126,9 +126,9 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'drop_size', 'on'),
                          [('oil_bahia', 311.15, 3,
-                           [231.19e-6, 221.98e-6, 212.91e-6], True),
+                           [239.92e-6, 231.33e-6, 222.85e-6], True),
                           ('oil_ans_mp', 311.15, 3,
-                           [234.08e-6, 221.6e-6, 213.08e-6], True),
+                           [245.32e-6, 233.54e-6, 225.35e-6], True),
                           ('oil_ans_mp', 311.15, 3,
                            [0.0, 0.0, 0.0], False)])
 def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
@@ -190,10 +190,10 @@ mb_params = [
              ('oil_bahia',  288.15, 15., 3, 3.6288e-3, True),
              ('oil_bahia',  288.15, 20., 3, 6.1597e-3, True),
              # temperature trends
-             ('oil_bahia',  273.15, 15., 3, 2.6198e-3, True),
-             ('oil_bahia',  283.15, 15., 3, 3.3789e-3, True),
-             ('oil_bahia',  293.15, 15., 3, 3.8367e-3, True),
-             ('oil_bahia',  303.15, 15., 3, 4.1746e-3, True),
+             ('oil_bahia',  273.15, 15., 3, 3.62526e-3, True),
+             ('oil_bahia',  283.15, 15., 3, 3.6267e-3, True),
+             ('oil_bahia',  293.15, 15., 3, 3.6568e-3, True),
+             ('oil_bahia',  303.15, 15., 3, 3.71499e-3, True),
              ]
 
 
@@ -277,8 +277,8 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
-                         [('oil_ans_mp', 288.7, 38.522),
-                          ('oil_bahia',  288.7, 137.774)])
+                         [('oil_ans_mp', 288.7, 38.632),
+                          ('oil_bahia',  288.7, 137.88038)])
 def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json
@@ -332,7 +332,7 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
                          # [(_sample_oils['benzene'], 288.7, 2.98716)
-                         [('benzene', 288.7, 9729.56707)])
+                         [('benzene', 288.7, 9731.38174)])
 def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json
