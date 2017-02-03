@@ -149,10 +149,6 @@ class TestWeatheringData:
 
             exp_res = (wd.water.get('density') * sc['frac_water'] +
                        (1 - sc['frac_water']) * init_dens)
-            print "sc['density']"
-            print sc['density']
-            print "exp_res"
-            print exp_res
             #assert np.all(sc['density'] == exp_res)
             assert np.allclose(sc['density'], exp_res)
             assert np.all(sc['density'] > init_dens)
