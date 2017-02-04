@@ -12,7 +12,7 @@ import json
 import os
 import logging
 
-from colander import (drop, SchemaNode, MappingSchema, Integer, Float, String, OneOf)
+from colander import (drop, SchemaNode, MappingSchema, Integer, Float, String, OneOf, Mapping)
 
 from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
@@ -146,27 +146,9 @@ class Response(Weatherer, Serializable):
         data['mass'] = data['mass_components'].sum(1)
 
 
-class PlatformUnitsSchema(MappingSchema):
-    swath_width = approach_distance = depart_distance = SchemaNode(String(),
-                                                                   description='SI units for distance',
-                                                                   validator=OneOf(_valid_dist_units))
-    application_speed = transit_speed = reposition_speed = SchemaNode(String(),
-                                                                      description='SI units for speed',
-                                                                      validator=OneOf(_valid_vel_units))
-    pump_rate = SchemaNode(String(),
-                           description='SI units for discharge',
-                           validator=OneOf(_valid_dis_units))
-    payload = SchemaNode(String(),
-                         description='SI units for volume',
-                         validator=OneOf(_valid_vol_units))
-    max_operating_time = u_turn_time = takeoff_land_time = reload = refuel = SchemaNode(String(),
-                                                                                        description='SI units for time',
-                                                                                        validator=OneOf(_valid_time_units))
-
-
 class Platform(Serializable):
 
-    __attr = {"swath_width_max": ('ft', 'length', _valid_dist_units),
+    _attr = {"swath_width_max": ('ft', 'length', _valid_dist_units),
               "swath_width": ('ft', 'length', _valid_dist_units),
               "swath_width_min": ('ft', 'length', _valid_dist_units),
               "reposition_speed": ('kts', 'velocity', _valid_vel_units),
@@ -198,9 +180,9 @@ class Platform(Serializable):
               "pump_rate_max": ('gal/min', 'discharge', _valid_dis_units),
               "pump_rate_min": ('gal/min', 'discharge', _valid_dis_units)}
 
-    _si_units = dict([(k, v[1]) for k, v in __attr.items()])
+    _si_units = dict([(k, v[1]) for k, v in _attr.items()])
 
-    _units_type = dict([(k, (v[0], v[1])) for k, v in __attr.items()])
+    _units_type = dict([(k, (v[0], v[1])) for k, v in _attr.items()])
 
     base_dir = os.path.dirname(__file__)
     with open(os.path.join(base_dir, 'platforms.json'), 'r') as f:
@@ -320,6 +302,33 @@ class Platform(Serializable):
         rf = self.get('refuel', 'sec')
         return max(rl, rf) if simul else rf + rl
 
+PlatformSchema = SchemaNode(Mapping)
+PlatformUnitsSchema = SchemaNode(Mapping)
+for k, v in Platform._attr.items():
+    PlatformSchema.add(SchemaNode(Float(), missing=drop, name=k))
+    PlatformUnitsSchema.add(SchemaNode(String(), missing=drop, validator=OneOf(v[2]), name=k))
+PlatformUnitsSchema.missing = drop
+PlatformUnitsSchema.name='units'
+PlatformSchema.add(PlatformUnitsSchema)
+
+
+class PlatformUnitsSchema(MappingSchema):
+    swath_width = approach_distance = depart_distance = SchemaNode(String(),
+                                                                   description='SI units for distance',
+                                                                   validator=OneOf(_valid_dist_units))
+    application_speed = transit_speed = reposition_speed = SchemaNode(String(),
+                                                                      description='SI units for speed',
+                                                                      validator=OneOf(_valid_vel_units))
+    pump_rate = SchemaNode(String(),
+                           description='SI units for discharge',
+                           validator=OneOf(_valid_dis_units))
+    payload = SchemaNode(String(),
+                         description='SI units for volume',
+                         validator=OneOf(_valid_vol_units))
+    max_operating_time = u_turn_time = takeoff_land_time = reload = refuel = SchemaNode(String(),
+                                                                                        description='SI units for time',
+                                                                                        validator=OneOf(_valid_time_units))
+
 
 class DisperseUnitsSchema(MappingSchema):
     transit = pass_length = cascade_distance = SchemaNode(String(),
@@ -334,14 +343,14 @@ class DisperseSchema(ResponseSchema):
 
 class Disperse(Response):
 
-    __attr = {'transit': ('nm', 'length', _valid_dist_units),
+    _attr = {'transit': ('nm', 'length', _valid_dist_units),
               'pass_length': ('nm', 'length', _valid_dist_units),
               'cascade_distance': ('nm', 'length', _valid_dist_units),
               'dosage': ('gal/acre', 'oilconcentration', _valid_concentration_units)}
 
-    _si_units = dict([(k, v[1]) for k, v in __attr.items()])
+    _si_units = dict([(k, v[1]) for k, v in _attr.items()])
 
-    _units_type = dict([(k, (v[0], v[1])) for k, v in __attr.items()])
+    _units_type = dict([(k, (v[0], v[1])) for k, v in _attr.items()])
 
 
 
@@ -381,27 +390,6 @@ class Disperse(Response):
                 self.platform = Platform(platform)
 #         pytest.set_trace()
 
-    def get(self, attr, unit=None):
-        val = None
-        if 'platform' in attr:
-            val = self.platform[attr.split('.')[1]]
-        else:
-            val = getattr(self, attr)
-        if unit is None:
-            if (attr not in self._si_units or
-                    self._si_units[attr] == self.units[attr]):
-                return val
-            else:
-                unit = self._si_units[attr]
-
-        if unit in self._units_type[attr][1]:
-            return uc.convert(self._units_type[attr][0], self.units[attr],
-                              unit, val)
-        else:
-            ex = uc.InvalidUnitError((unit, self._units_type[attr][0]))
-            self.logger.error(str(ex))
-            raise ex
-
     @property
     def next_state(self):
         if self.cur_state is None:
@@ -417,38 +405,6 @@ class Disperse(Response):
         for t in self.timeseries:
             if model_time >= t[0] and model_time + datetime.timedelta(seconds=time_step / 2) <= t[1]:
                 return True
-
-    def conv_platform(self):
-        pass
-
-    def uconv(self, attr, ):
-        if attr not in Disperse._units_types:
-            raise TypeError('invalid attribute or attribute does not have a unit')
-        u1 = Disperse._units_types[attr]
-        u2 = None
-        if u1 == 'time':
-            u2 = 'sec'
-        elif u1 == 'length':
-            u2 = 'nm'
-        elif u1 == 'volume':
-            u2 = 'gal'
-        elif u1 == 'speed':
-            u2 = 'knots'
-        else:
-            u2 = u1
-        v1 = None
-        try:
-            u1 = Disperse._plat_units[attr]
-            v1 = self.platform[attr]
-        except KeyError:
-            try:
-                u1 = Disperse._si_units[attr]
-                v1 = getattr(self, attr)
-            except KeyError:
-                'Invalid Attr'
-        print self.platform
-        v2 = uc.convert(u1, u2, v1)
-        return v2
 
     @property
     def cur_stage_duration(self):
