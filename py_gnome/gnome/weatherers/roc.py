@@ -91,7 +91,7 @@ class Response(Weatherer, Serializable):
         val = getattr(self, attr)
         if unit is None:
             if (attr not in self._si_units or
-                    self._is_units[attr] == self.units[attr]):
+                    self._si_units[attr] == self.units[attr]):
                 return val
             else:
                 unit = self._si_units[attr]
@@ -146,135 +146,6 @@ class Response(Weatherer, Serializable):
         data['mass'] = data['mass_components'].sum(1)
 
 
-class Platform(Serializable):
-    base_dir = os.path.dirname(__file__)
-    with open(os.path.join(base_dir, 'platforms.json'), 'r') as f:
-        plat_types = json.load(f)
-        plat_types['vessel'] = dict(zip([t['name'] for t in plat_types['vessel']], plat_types['vessel']))
-        plat_types['aircraft'] = dict(zip([t['name'] for t in plat_types['aircraft']], plat_types['aircraft']))
-
-    def __init__(self,
-                 type_,
-                 kind=None,
-                 **kwargs):
-
-        if kwargs is None:
-            if kind is None:
-                n = 'Typical Large Vessel' if type_ == 'vessel' else 'Test Platform'
-                for k, attr in Platform.plat_types[type_][n]:
-                    setattr(self, k, attr)
-        else:
-            if kind is not None:
-                for k, attr in Platform.plat_types[type_][kind]:
-                    setattr(self, k, attr)
-            for k, attr in kwargs:
-                setattr(self, k, attr)
-        self.type = type_
-
-        if self.type == 'aircraft':
-            self._all_states = {'cascade': 'refuel',
-                                'refuel': 'reload',
-                                'reload': 'taxi_takeoff',
-                                'taxi_takeoff': 'en_route',
-                                'en_route': 'at_site',
-                                'at_site': 'disperse',
-                                'disperse': 'return',
-                                'return': 'landing_taxi',
-                                'landing_taxi': 'refuel'}
-        else:
-            self._all_states = {'cascade': 'refuel',
-                                'refuel': 'reload',
-                                'reload': 'en_route',
-                                'en_route': 'at_site',
-                                'at_site': 'disperse',
-                                'disperse': 'return',
-                                'return': 'refuel'}
-
-        self._state = None
-        self._time_to_next = None
-        self.active = False
-        self.has_payload = False
-        self._state = 'cascade'
-        self._disp_remaining = 0
-
-    @property
-    def state(self):
-        return self._state
-
-    @state.setter
-    def state(self, s):
-        self._state = s
-
-    def get_next_state(self):
-        return self._all_states[self.state]
-
-    def goto_next_state(self):
-        self.state = self._all_states[self.state]
-
-    def get_state_time(self, dist=None, payload=False):
-        d = {'cascade': self.cascade_time(dist, payload),
-             'refuel': self.refuel,
-             'reload': self.reload,
-             'taxi_takeoff': self.taxi_time_takeoff,
-             'en_route': self.transit_time(dist, payload=True),
-             'at_site': self.max_onsite_time(dist),
-             'disperse': None,
-             'return': self.transit_time(dist, payload=False),
-             'landing_taxi': self.taxi_time_landing}
-
-    def release_rate(self, dosage):
-        return (dosage * self.application_speed * self.swadth_width) / 430
-
-    def one_way_transit_time(self, dist):
-        raw = dist / self.transit_speed
-        if self.type == 'aircraft':
-            raw += self.taxi_land_depart / 60
-        return raw * 60
-
-    def max_dosage(self):
-        return (self.pump_rate_max * 430) / (self.application_speed_min * self.swath_width_min)
-
-    def min_dosage(self):
-        return (self.pump_rate_min * 430) / (self.application_speed_max * self.swath_width_max)
-
-    def cascade_time(self, dist, payload=False):
-        max_range = self.max_range_with_payload if payload else self.max_range_no_payload
-        speed = self.cascade_transit_speed_with_payload if payload else self.cascade_transit_speed_without_payload
-
-        cascade_time = 0
-        if dist > max_range:
-            num_legs = dist / max_range
-            frac_leg = (num_legs * 1000) % 1000
-            num_legs = int(num_legs)
-            cascade_time += self.taxi_land_depart / 60
-            cascade_time += (num_legs * max_range)
-            inter_stop = (self.taxi_land_depart * 2 + self.fuel_load) / 60
-            cascade_time += num_legs * inter_stop
-            cascade_time += frac_leg * (max_range / speed)
-            cascade_time += self.taxi_land_depart / 60
-        else:
-            cascade_time += self.taxi_land_depart / 60 * 2
-            cascade_time += dist / speed
-        return cascade_time
-
-    def transit_time(self, dist, payload=False):
-        return dist / self.transit_speed
-
-    def max_onsite_time(self, dist):
-        rv = self.max_op_time - 2 * dist / self.transit_speed
-        if rv < 0:
-            if rv > (self.payload / self.max_pump_rate):
-                logging.warn("max onsite time is less than time expected to spray")
-            else:
-                logging.warn('max onsite time is less than zero')
-        return rv
-
-    def sortie_time(self, dist, simul_reload=False):
-        rel = max(self.fuel_load, self.dispersant_load) if simul_reload else self.fuel_load + self.dispersant_load
-        sortie = rel + self.taxi_land_depart + self.transit_time(dist, payload=True) + self.taxi_land_arrival
-        return sortie
-
-
 class PlatformUnitsSchema(MappingSchema):
     swath_width = approach_distance = depart_distance = SchemaNode(String(),
                                                                    description='SI units for distance',
@@ -293,6 +164,163 @@ class PlatformUnitsSchema(MappingSchema):
                                                                                         validator=OneOf(_valid_time_units))
 
 
+class Platform(Serializable):
+
+    __attr = {"swath_width_max": ('ft', 'length', _valid_dist_units),
+              "swath_width": ('ft', 'length', _valid_dist_units),
+              "swath_width_min": ('ft', 'length', _valid_dist_units),
+              "reposition_speed": ('kts', 'velocity', _valid_vel_units),
+              "application_speed_min": ('kts', 'velocity', _valid_vel_units),
+              "application_speed": ('kts', 'velocity', _valid_vel_units),
+              "application_speed_max": ('kts', 'velocity', _valid_vel_units),
+              "cascade_transit_speed_max_without_payload": ('kts', 'velocity', _valid_vel_units),
+              "cascade_transit_speed_without_payload": ('kts', 'velocity', _valid_vel_units),
+              "cascade_transit_speed_min_without_payload": ('kts', 'velocity', _valid_vel_units),
+              "cascade_transit_speed_with_payload": ('kts', 'velocity', _valid_vel_units),
+              "cascade_transit_speed_max_with_payload": ('kts', 'velocity', _valid_vel_units),
+              "cascade_transit_speed_min_with_payload": ('kts', 'velocity', _valid_vel_units),
+              "transit_speed_max": ('kts', 'velocity', _valid_vel_units),
+              "transit_speed_min": ('kts', 'velocity', _valid_vel_units),
+              "transit_speed": ('kts', 'velocity', _valid_vel_units),
+              "fuel_load": ('min', 'time', _valid_time_units),
+              "taxi_time_landing": ('min', 'time', _valid_time_units),
+              "staging_area_brief": ('min', 'time', _valid_time_units),
+              "dispersant_load": ('min', 'time', _valid_time_units),
+              "taxi_land_depart": ('min', 'time', _valid_time_units),
+              "taxi_time_takeoff": ('min', 'time', _valid_time_units),
+              "u_turn_time": ('min', 'time', _valid_time_units),
+              "max_op_time": ('hr', 'time', _valid_time_units),
+              "max_range_no_payload": ('nm', 'length', _valid_dist_units),
+              "max_range_with_payload": ('nm', 'length', _valid_dist_units),
+              "approach": ('nm', 'length', _valid_dist_units),
+              "departure": ('nm', 'length', _valid_dist_units),
+              "payload": ('gal', 'volume', _valid_vol_units),
+              "pump_rate_max": ('gal/min', 'discharge', _valid_dis_units),
+              "pump_rate_min": ('gal/min', 'discharge', _valid_dis_units)}
+
+    _si_units = dict([(k, v[1]) for k, v in __attr.items()])
+
+    _units_type = dict([(k, (v[0], v[1])) for k, v in __attr.items()])
+
+    base_dir = os.path.dirname(__file__)
+    with open(os.path.join(base_dir, 'platforms.json'), 'r') as f:
+        js = json.load(f)
+        plat_types = dict(zip([t['name'] for t in js['vessel']], js['vessel']))
+        plat_types.update(dict(zip([t['name'] for t in js['aircraft']], js['aircraft'])))
+
+    def __init__(self,
+                 **kwargs):
+
+        if '_name' in kwargs:
+            kwargs = self.plat_types[kwargs.pop('_name')]
+        for k, attr in kwargs:
+            setattr(self, k, attr)
+
+    def get(self, attr, unit=None):
+        val = getattr(self, attr)
+        if unit is None:
+            if (attr not in self._si_units or
+                    self._si_units[attr] == self.units[attr]):
+                return val
+            else:
+                unit = self._si_units[attr]
+
+        if unit in self._units_type[attr][1]:
+            return uc.convert(self._units_type[attr][0], self.units[attr],
+                              unit, val)
+        else:
+            ex = uc.InvalidUnitError((unit, self._units_type[attr][0]))
+            self.logger.error(str(ex))
+            raise ex
+
+    def set(self, attr, value, unit):
+        if unit not in self._units_type[attr][0]:
+            raise uc.InvalidUnitError((unit, self._units_type[attr][0]))
+
+        setattr(self, attr, value)
+        self.units[attr] = unit
+
+    def release_rate(self, dosage, unit='gal/acre'):
+        '''return unit = gal/min'''
+        if unit != 'gal/acre':
+            dosage = uc.Convert('oilconcentration', 'unit', 'gal/acre', dosage)
+        a_s = self.get('application_speed', 'ft/min')
+        s_w = self.get('swadth_width', 'ft')
+
+        return uc.convert('area', 'ft^2', 'acre', (dosage * a_s * s_w))
+
+    def one_way_transit_time(self, dist, unit='nm'):
+        '''return unit = hr'''
+        t_s = self.get('transit_speed', 'kts')
+        t_l_d = self.get('taxi_land_depart', 'hr')
+        raw = dist / t_s
+        if self.type == 'aircraft':
+            raw += t_l_d
+        return raw
+
+    def max_dosage(self):
+        '''return unit = gal/acre'''
+        p_r_m = self.get('pump_rate_max', 'm^3/sec')
+        a_s = self.get('application_speed', 'm/s')
+        s_w_m = self.get('swath_width_min', 'm')
+        dos = (p_r_m) / (a_s * s_w_m)
+        dos = uc.convert('length', 'm', 'micron', dos)
+        dos = uc.convert('oilconcentration', 'micron', 'gal/acre', dos)
+        return dos
+
+    def min_dosage(self):
+        '''return unit = gal/acre'''
+        p_r_m = self.get('pump_rate_min', 'm^3/sec')
+        a_s = self.get('application_speed', 'm/s')
+        s_w_m = self.get('swath_width_max', 'm')
+        dos = (p_r_m) / (a_s * s_w_m)
+        dos = uc.convert('length', 'm', 'micron', dos)
+        dos = uc.convert('oilconcentration', 'micron', 'gal/acre', dos)
+        return dos
+
+    def cascade_time(self, dist, unit='nm', payload=False):
+        '''return unit = hr'''
+        dist = dist if unit == 'nm' else uc.convert('length', unit, 'nm', dist)
+        max_range = self.get('max_rage_with_payload', 'nm') if payload else self.get('max_range_no_payload', 'nm')
+        speed = self.get('cascade_transit_speed_with_payload', 'kts') if payload else self.get('cascade_transit_speed_without_payload','kts')
+        taxi_land_depart = self.get('taxi_land_depart', 'hr')
+        fuel_load = self.get('refuel', 'hr')
+
+
+        cascade_time = 0
+        if dist > max_range:
+            num_legs = dist / max_range
+            frac_leg = (num_legs * 1000) % 1000
+            num_legs = int(num_legs)
+            cascade_time += taxi_land_depart / 60
+            cascade_time += (num_legs * max_range)
+            inter_stop = (taxi_land_depart * 2 + fuel_load) / 60
+            cascade_time += num_legs * inter_stop
+            cascade_time += frac_leg * (max_range / speed)
+            cascade_time += taxi_land_depart / 60
+        else:
+            cascade_time += taxi_land_depart / 60 * 2
+            cascade_time += dist / speed
+        return cascade_time
+
+    def transit_time(self, dist, payload=False):
+        return dist / self.transit_speed
+
+    def max_onsite_time(self, dist):
+        rv = self.max_op_time - 2 * dist / self.transit_speed
+        if rv < 0:
+            if rv > (self.payload / self.max_pump_rate):
+                logging.warn("max onsite time is less than time expected to spray")
+            else:
+                logging.warn('max onsite time is less than zero')
+        return rv
+
+    def refuel_reload(self, simul=False):
+        rl = self.get('reload', 'sec')
+        rf = self.get('refuel', 'sec')
+        return max(rl, rf) if simul else rf + rl
+
+
 class DisperseUnitsSchema(MappingSchema):
     transit = pass_length = cascade_distance = SchemaNode(String(),
                                                           description='SI units for distance',
@@ -306,29 +334,16 @@ class DisperseSchema(ResponseSchema):
 
 class Disperse(Response):
 
-    _si_units = {'transit': 'nm',
-                 'pass_length': 'nm',
-                 'cascade_distance': 'nm',
-                 'dosage': 'gal/acre'}
+    __attr = {'transit': ('nm', 'length', _valid_dist_units),
+              'pass_length': ('nm', 'length', _valid_dist_units),
+              'cascade_distance': ('nm', 'length', _valid_dist_units),
+              'dosage': ('gal/acre', 'oilconcentration', _valid_concentration_units)}
 
-    plat_units = dict([(k, 'minutes') for k in ['taxi_time_landing',
-                                                'taxi_time_takeoff',
-                                                'takeoff_land_time'
-                                                'reload',
-                                                'refuel',
-                                                'u_turn_time',
-                                                'staging_area_brief']])
-    plat_units.update([(k, 'hours') for k in ['max_op_time']])
-    plat_units.update([(k, 'gal') for k in ['payload']])
+    _si_units = dict([(k, v[1]) for k, v in __attr.items()])
 
-    _units_types = dict([(i[0], uc.UNIT_TYPES.get(i[1], None)) for i in (plat_units.items() + _si_units.items())])
-    _units_types['dosage'] = 'oilconcentration'  #because oil concentration is a pita
+    _units_type = dict([(k, (v[0], v[1])) for k, v in __attr.items()])
 
-    base_dir = os.path.dirname(__file__)
-    with open(os.path.join(base_dir, 'platforms.json'), 'r') as f:
-        js = json.load(f)
-        plat_types = dict(zip([t['name'] for t in js['vessel']], js['vessel']))
-        plat_types.update(dict(zip([t['name'] for t in js['aircraft']], js['aircraft'])))
+
 
     _state = copy.deepcopy(Response._state)
     _state += [Field('offset', save=True, update=True)]
@@ -360,12 +375,32 @@ class Disperse(Response):
         if platform is not None:
             if isinstance(platform, basestring):
                 #find platform name
-                self.platform = Disperse.plat_types[platform]
+                self.platform = Platform(_name=platform)
             else:
                 #platform is defined as a dict
-                self.platform = platform
+                self.platform = Platform(platform)
 #         pytest.set_trace()
 
+    def get(self, attr, unit=None):
+        val = None
+        if 'platform' in attr:
+            val = self.platform[attr.split('.')[1]]
+        else:
+            val = getattr(self, attr)
+        if unit is None:
+            if (attr not in self._si_units or
+                    self._si_units[attr] == self.units[attr]):
+                return val
+            else:
+                unit = self._si_units[attr]
+
+        if unit in self._units_type[attr][1]:
+            return uc.convert(self._units_type[attr][0], self.units[attr],
+                              unit, val)
+        else:
+            ex = uc.InvalidUnitError((unit, self._units_type[attr][0]))
+            self.logger.error(str(ex))
+            raise ex
 
     @property
     def next_state(self):
@@ -377,6 +412,11 @@ class Disperse(Response):
             return 'en_route'
         elif self.cur_state == 'en_route':
             return 'on_site'
+
+    def _is_active(self, model_time, time_step):
+        for t in self.timeseries:
+            if model_time >= t[0] and model_time + datetime.timedelta(seconds=time_step / 2) <= t[1]:
+                return True
 
     def conv_platform(self):
         pass
@@ -398,7 +438,7 @@ class Disperse(Response):
             u2 = u1
         v1 = None
         try:
-            u1 = Disperse.plat_units[attr]
+            u1 = Disperse._plat_units[attr]
             v1 = self.platform[attr]
         except KeyError:
             try:
@@ -590,10 +630,10 @@ class Burn(Response):
                  'boom_draft': 'in',
                  'speed': 'kts'}
 
-    _units_type = {'offset': ('offset', _valid_dist_units),
-                   'boom_length': ('boom_length', _valid_dist_units),
-                   'boom_draft': ('boom_draft', _valid_dist_units),
-                   'speed': ('speed', _valid_vel_units)}
+    _units_type = {'offset': ('length', _valid_dist_units),
+                   'boom_length': ('length', _valid_dist_units),
+                   'boom_draft': ('length', _valid_dist_units),
+                   'speed': ('velocity', _valid_vel_units)}
 
     def __init__(self,
                  offset,
