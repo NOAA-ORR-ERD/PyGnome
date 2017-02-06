@@ -146,39 +146,57 @@ class Response(Weatherer, Serializable):
         data['mass'] = data['mass_components'].sum(1)
 
 
+class PlatformUnitsSchema(MappingSchema):
+    def __init__(self, *args, **kwargs):
+        for k, v in Platform._attr.items():
+            self.add(SchemaNode(String(), missing=drop, name=k, validator=OneOf(v[2])))
+        super(PlatformUnitsSchema, self).__init__()
+
+
+class PlatformSchema(ResponseSchema):
+    def __init__(self, *args, **kwargs):
+        for k, v in Platform._attr.items():
+            self.add(SchemaNode(Float(), missing=drop, name=k))
+        pu = PlatformUnitsSchema()
+        pu.name = 'units'
+        pu.missing = drop
+        self.add(pu)
+        super(PlatformSchema, self).__init__()
+
+
 class Platform(Serializable):
 
     _attr = {"swath_width_max": ('ft', 'length', _valid_dist_units),
-              "swath_width": ('ft', 'length', _valid_dist_units),
-              "swath_width_min": ('ft', 'length', _valid_dist_units),
-              "reposition_speed": ('kts', 'velocity', _valid_vel_units),
-              "application_speed_min": ('kts', 'velocity', _valid_vel_units),
-              "application_speed": ('kts', 'velocity', _valid_vel_units),
-              "application_speed_max": ('kts', 'velocity', _valid_vel_units),
-              "cascade_transit_speed_max_without_payload": ('kts', 'velocity', _valid_vel_units),
-              "cascade_transit_speed_without_payload": ('kts', 'velocity', _valid_vel_units),
-              "cascade_transit_speed_min_without_payload": ('kts', 'velocity', _valid_vel_units),
-              "cascade_transit_speed_with_payload": ('kts', 'velocity', _valid_vel_units),
-              "cascade_transit_speed_max_with_payload": ('kts', 'velocity', _valid_vel_units),
-              "cascade_transit_speed_min_with_payload": ('kts', 'velocity', _valid_vel_units),
-              "transit_speed_max": ('kts', 'velocity', _valid_vel_units),
-              "transit_speed_min": ('kts', 'velocity', _valid_vel_units),
-              "transit_speed": ('kts', 'velocity', _valid_vel_units),
-              "fuel_load": ('min', 'time', _valid_time_units),
-              "taxi_time_landing": ('min', 'time', _valid_time_units),
-              "staging_area_brief": ('min', 'time', _valid_time_units),
-              "dispersant_load": ('min', 'time', _valid_time_units),
-              "taxi_land_depart": ('min', 'time', _valid_time_units),
-              "taxi_time_takeoff": ('min', 'time', _valid_time_units),
-              "u_turn_time": ('min', 'time', _valid_time_units),
-              "max_op_time": ('hr', 'time', _valid_time_units),
-              "max_range_no_payload": ('nm', 'length', _valid_dist_units),
-              "max_range_with_payload": ('nm', 'length', _valid_dist_units),
-              "approach": ('nm', 'length', _valid_dist_units),
-              "departure": ('nm', 'length', _valid_dist_units),
-              "payload": ('gal', 'volume', _valid_vol_units),
-              "pump_rate_max": ('gal/min', 'discharge', _valid_dis_units),
-              "pump_rate_min": ('gal/min', 'discharge', _valid_dis_units)}
+             "swath_width": ('ft', 'length', _valid_dist_units),
+             "swath_width_min": ('ft', 'length', _valid_dist_units),
+             "reposition_speed": ('kts', 'velocity', _valid_vel_units),
+             "application_speed_min": ('kts', 'velocity', _valid_vel_units),
+             "application_speed": ('kts', 'velocity', _valid_vel_units),
+             "application_speed_max": ('kts', 'velocity', _valid_vel_units),
+             "cascade_transit_speed_max_without_payload": ('kts', 'velocity', _valid_vel_units),
+             "cascade_transit_speed_without_payload": ('kts', 'velocity', _valid_vel_units),
+             "cascade_transit_speed_min_without_payload": ('kts', 'velocity', _valid_vel_units),
+             "cascade_transit_speed_with_payload": ('kts', 'velocity', _valid_vel_units),
+             "cascade_transit_speed_max_with_payload": ('kts', 'velocity', _valid_vel_units),
+             "cascade_transit_speed_min_with_payload": ('kts', 'velocity', _valid_vel_units),
+             "transit_speed_max": ('kts', 'velocity', _valid_vel_units),
+             "transit_speed_min": ('kts', 'velocity', _valid_vel_units),
+             "transit_speed": ('kts', 'velocity', _valid_vel_units),
+             "fuel_load": ('min', 'time', _valid_time_units),
+             "taxi_time_landing": ('min', 'time', _valid_time_units),
+             "staging_area_brief": ('min', 'time', _valid_time_units),
+             "dispersant_load": ('min', 'time', _valid_time_units),
+             "taxi_land_depart": ('min', 'time', _valid_time_units),
+             "taxi_time_takeoff": ('min', 'time', _valid_time_units),
+             "u_turn_time": ('min', 'time', _valid_time_units),
+             "max_op_time": ('hr', 'time', _valid_time_units),
+             "max_range_no_payload": ('nm', 'length', _valid_dist_units),
+             "max_range_with_payload": ('nm', 'length', _valid_dist_units),
+             "approach": ('nm', 'length', _valid_dist_units),
+             "departure": ('nm', 'length', _valid_dist_units),
+             "payload": ('gal', 'volume', _valid_vol_units),
+             "pump_rate_max": ('gal/min', 'discharge', _valid_dis_units),
+             "pump_rate_min": ('gal/min', 'discharge', _valid_dis_units)}
 
     _si_units = dict([(k, v[1]) for k, v in _attr.items()])
 
@@ -190,12 +208,23 @@ class Platform(Serializable):
         plat_types = dict(zip([t['name'] for t in js['vessel']], js['vessel']))
         plat_types.update(dict(zip([t['name'] for t in js['aircraft']], js['aircraft'])))
 
+    _schema = PlatformSchema
+
+    _state = copy.deepcopy(Serializable._state)
+
+    _state += [Field(k, save=True, update=True) for k in _attr.keys()]
+    _state += [Field('units', save=True, update=True)]
+
     def __init__(self,
                  **kwargs):
 
-        if '_name' in kwargs:
+        if '_name' in kwargs.keys():
             kwargs = self.plat_types[kwargs.pop('_name')]
-        for k, attr in kwargs:
+        units = dict([(k, v[0]) for k, v in self._attr.items()])
+        if 'units' in kwargs.keys():
+            units.update(kwargs.pop('units'))
+        self.units = units
+        for k, attr in kwargs.items():
             setattr(self, k, attr)
 
     def get(self, attr, unit=None):
@@ -302,32 +331,6 @@ class Platform(Serializable):
         rf = self.get('refuel', 'sec')
         return max(rl, rf) if simul else rf + rl
 
-PlatformSchema = SchemaNode(Mapping)
-PlatformUnitsSchema = SchemaNode(Mapping)
-for k, v in Platform._attr.items():
-    PlatformSchema.add(SchemaNode(Float(), missing=drop, name=k))
-    PlatformUnitsSchema.add(SchemaNode(String(), missing=drop, validator=OneOf(v[2]), name=k))
-PlatformUnitsSchema.missing = drop
-PlatformUnitsSchema.name='units'
-PlatformSchema.add(PlatformUnitsSchema)
-
-
-class PlatformUnitsSchema(MappingSchema):
-    swath_width = approach_distance = depart_distance = SchemaNode(String(),
-                                                                   description='SI units for distance',
-                                                                   validator=OneOf(_valid_dist_units))
-    application_speed = transit_speed = reposition_speed = SchemaNode(String(),
-                                                                      description='SI units for speed',
-                                                                      validator=OneOf(_valid_vel_units))
-    pump_rate = SchemaNode(String(),
-                           description='SI units for discharge',
-                           validator=OneOf(_valid_dis_units))
-    payload = SchemaNode(String(),
-                         description='SI units for volume',
-                         validator=OneOf(_valid_vol_units))
-    max_operating_time = u_turn_time = takeoff_land_time = reload = refuel = SchemaNode(String(),
-                                                                                        description='SI units for time',
-                                                                                        validator=OneOf(_valid_time_units))
 
 
 class DisperseUnitsSchema(MappingSchema):
@@ -344,18 +347,18 @@ class DisperseSchema(ResponseSchema):
 class Disperse(Response):
 
     _attr = {'transit': ('nm', 'length', _valid_dist_units),
-              'pass_length': ('nm', 'length', _valid_dist_units),
-              'cascade_distance': ('nm', 'length', _valid_dist_units),
-              'dosage': ('gal/acre', 'oilconcentration', _valid_concentration_units)}
+             'pass_length': ('nm', 'length', _valid_dist_units),
+             'cascade_distance': ('nm', 'length', _valid_dist_units),
+             'dosage': ('gal/acre', 'oilconcentration', _valid_concentration_units)}
 
     _si_units = dict([(k, v[1]) for k, v in _attr.items()])
 
     _units_type = dict([(k, (v[0], v[1])) for k, v in _attr.items()])
 
+    _state = copy.deepcopy(Serializable._state)
 
-
-    _state = copy.deepcopy(Response._state)
-    _state += [Field('offset', save=True, update=True)]
+    _state += [Field(k, save=True, update=True) for k in _attr.keys()]
+    _state += [Field('units', save=True, update=True)]
 
     def __init__(self,
                  name=None,
@@ -1107,3 +1110,7 @@ class Skim(Response):
 if __name__ == '__main__':
     print None
     d = Disperse(name = 'test')
+    p = Platform(_name='Test Platform')
+    import pprint as pp
+    pp.pprint(p.serialize())
+    pass
