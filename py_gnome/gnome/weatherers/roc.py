@@ -29,7 +29,8 @@ _valid_vel_units = _valid_units('Velocity')
 _valid_vol_units = _valid_units('Volume')
 _valid_dis_units = _valid_units('Discharge')
 _valid_time_units = _valid_units('Time')
-_valid_concentration_units = _valid_units('Oil Concentration')
+_valid_oil_concentration_units = _valid_units('Oil Concentration')
+_valid_concentration_units = _valid_units('Concentration In Water')
 
 
 class OnSceneTupleSchema(DefaultTupleSchema):
@@ -154,13 +155,14 @@ class PlatformUnitsSchema(MappingSchema):
 
 
 class PlatformSchema(ResponseSchema):
+
     def __init__(self, *args, **kwargs):
-        for k, v in Platform._attr.items():
+        for k in Platform._attr.keys():
             self.add(SchemaNode(Float(), missing=drop, name=k))
-        pu = PlatformUnitsSchema()
-        pu.name = 'units'
-        pu.missing = drop
-        self.add(pu)
+        units = PlatformUnitsSchema()
+        units.missing = drop
+        units.name = 'units'
+        self.add(units)
         super(PlatformSchema, self).__init__()
 
 
@@ -216,16 +218,18 @@ class Platform(Serializable):
     _state += [Field('units', save=True, update=True)]
 
     def __init__(self,
+                 units=None,
                  **kwargs):
 
         if '_name' in kwargs.keys():
             kwargs = self.plat_types[kwargs.pop('_name')]
-        units = dict([(k, v[0]) for k, v in self._attr.items()])
-        if 'units' in kwargs.keys():
-            units.update(kwargs.pop('units'))
+        if units is None:
+            units = dict([(k, v[0]) for k, v in self._attr.items()])
         self.units = units
-        for k, attr in kwargs.items():
-            setattr(self, k, attr)
+        for k in Platform._attr.keys():
+            setattr(self, k, kwargs.pop(k, None))
+
+        super(Platform, self).__init__()
 
     def get(self, attr, unit=None):
         val = getattr(self, attr)
@@ -259,6 +263,13 @@ class Platform(Serializable):
         s_w = self.get('swadth_width', 'ft')
 
         return uc.convert('area', 'ft^2', 'acre', (dosage * a_s * s_w))
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        '''
+        Need to override this, because what the default one does is insane
+        '''
+        return cls(**dict_)
 
     def one_way_transit_time(self, dist, unit='nm'):
         '''return unit = hr'''
@@ -334,22 +345,34 @@ class Platform(Serializable):
 
 
 class DisperseUnitsSchema(MappingSchema):
-    transit = pass_length = cascade_distance = SchemaNode(String(),
-                                                          description='SI units for distance',
-                                                          validator=OneOf(_valid_dist_units))
-    dosage_unit = SchemaNode(String(),
-                             description='SI units for concentration',
-                             validator=OneOf(_valid_concentration_units))
+    def __init__(self, *args, **kwargs):
+        for k, v in Disperse._attr.items():
+            self.add(SchemaNode(String(), missing=drop, name=k, validator=OneOf(v[2])))
+        super(DisperseUnitsSchema, self).__init__()
 
 class DisperseSchema(ResponseSchema):
-    pass
+
+    loading_type = SchemaNode(String(), missing=drop, validator=OneOf(['simultaneous', 'separate']))
+    dosage_type = SchemaNode(String(), missing=drop, validator=OneOf(['auto','custom']))
+    disp_oil_ratio = SchemaNode(Float(), missing=drop)
+    disp_eff = SchemaNode(Float(), missing=drop)
+    platform = PlatformSchema()
+
+    def __init__(self, *args, **kwargs):
+        for k, v in Disperse._attr.items():
+            self.add(SchemaNode(Float(), missing=drop, name=k))
+        units = DisperseUnitsSchema()
+        units.missing = drop
+        units.name = 'units'
+        self.add(units)
+        super(DisperseSchema, self).__init__()
 
 class Disperse(Response):
 
     _attr = {'transit': ('nm', 'length', _valid_dist_units),
              'pass_length': ('nm', 'length', _valid_dist_units),
              'cascade_distance': ('nm', 'length', _valid_dist_units),
-             'dosage': ('gal/acre', 'oilconcentration', _valid_concentration_units)}
+             'dosage': ('gal/acre', 'oilconcentration', _valid_oil_concentration_units)}
 
     _si_units = dict([(k, v[1]) for k, v in _attr.items()])
 
@@ -358,7 +381,12 @@ class Disperse(Response):
     _state = copy.deepcopy(Serializable._state)
 
     _state += [Field(k, save=True, update=True) for k in _attr.keys()]
-    _state += [Field('units', save=True, update=True)]
+    _state += [Field('units', save=True, update=True),
+               Field('disp_oil_ratio', save=True, update=True),
+               Field('disp_eff', save=True, update=True),
+               Field('platform', save=True, update=True),
+               Field('dosage_type', save=True, update=True),
+               Field('loading_type', save=True, update=True)]
 
     def __init__(self,
                  name=None,
@@ -1112,5 +1140,20 @@ if __name__ == '__main__':
     d = Disperse(name = 'test')
     p = Platform(_name='Test Platform')
     import pprint as pp
-    pp.pprint(p.serialize())
+    ser = p.serialize()
+    pp.pprint(ser)
+    deser = Platform.deserialize(ser)
+
+    pp.pprint(deser)
+
+    p2 = Platform.new_from_dict(deser)
+    ser2 = p2.serialize()
+    pp.pprint(ser2)
+
+    print 'INCORRECT BELOW'
+
+    for k, v in ser.items():
+        if p2.serialize()[k] != v:
+            print p2.serialize()[k]
+
     pass

@@ -10,7 +10,7 @@ import unit_conversion as us
 
 from gnome.basic_types import oil_status, fate
 
-from gnome.weatherers.roc import (Burn, Disperse)
+from gnome.weatherers.roc import (Burn, Disperse, Platform)
 from gnome.weatherers import (WeatheringData,
                               FayGravityViscous,
                               weatherer_sort,
@@ -192,11 +192,62 @@ class TestROCBurn(ROCTests):
         assert burn._is_cleaning == False
         assert burn._is_burning == True
 
+    def test_serialization(self):
+        b = TestROCBurn.burn
+        import pprint as pp
+        ser = b.serialize()
+        pp.pprint(ser)
+        deser = Burn.deserialize(ser)
+
+        pp.pprint(deser)
+
+        b2 = Burn.new_from_dict(deser)
+        ser2 = b2.serialize()
+        pp.pprint(ser2)
+
+        print 'INCORRECT BELOW'
+
+        ser.pop('id')
+        ser2.pop('id')
+        assert ser == ser2
+
 
     def test_step(self, sample_model_fcn2):
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
         self.reset_and_release()
         self.model.step()
+
+
+class TestPlatform(ROCTests):
+
+    def test_construction(self):
+        p = Platform()
+        assert p.units == dict([(k,v[0]) for k, v in Platform._attr.items()])
+        p = Platform(_name = "Test Platform")
+        assert p.transit_speed == 150
+        assert p.max_op_time == 4
+        p = Platform(_name = "Test Platform", units = {'transit_speed':'m/s'})
+        assert p.units['transit_speed'] == 'm/s'
+
+    def test_serialization(self):
+        p = Platform(_name='Test Platform')
+        import pprint as pp
+        ser = p.serialize()
+        pp.pprint(ser)
+        deser = Platform.deserialize(ser)
+
+        pp.pprint(deser)
+
+        p2 = Platform.new_from_dict(deser)
+        ser2 = p2.serialize()
+        pp.pprint(ser2)
+
+        print 'INCORRECT BELOW'
+
+        ser.pop('id')
+        ser2.pop('id')
+        assert ser == ser2
+
 
 
 class TestRocChemDispersion(ROCTests):
@@ -205,7 +256,4 @@ class TestRocChemDispersion(ROCTests):
         d = Disperse(name='testname',
                      transit=100,
                      platform='Test Platform')
-        r = d.uconv('payload')
         #payload in gallons, computation in gallons, so no conversion
-        assert d.platform['payload'] == r
-        assert False
