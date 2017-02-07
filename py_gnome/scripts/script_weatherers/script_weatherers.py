@@ -57,21 +57,21 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   uncertain=True)
 
 #     mapfile = get_datafile(os.path.join(base_dir, './ak_arctic.bna'))
-# 
+#
 #     print 'adding the map'
 #     model.map = MapFromBNA(mapfile, refloat_halflife=1)  # seconds
-# 
+#
 #     # draw_ontop can be 'uncertain' or 'forecast'
 #     # 'forecast' LEs are in black, and 'uncertain' are in red
 #     # default is 'forecast' LEs draw on top
 #     renderer = Renderer(mapfile, images_dir, size=(800, 600),
 #                         output_timestep=timedelta(hours=2),
 #                         draw_ontop='forecast')
-# 
+#
 #     print 'adding outputters'
 #     model.outputters += renderer
 
-    model.outputters += WeatheringOutput()
+    model.outputters += WeatheringOutput('.\\')
 
     netcdf_file = os.path.join(base_dir, 'script_weatherers.nc')
     scripting.remove_netcdf(netcdf_file)
@@ -98,11 +98,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.spills += spill
 
     print 'adding a RandomMover:'
-    #model.movers += RandomMover(diffusion_coef=50000)
+    # model.movers += RandomMover(diffusion_coef=50000)
 
     print 'adding a wind mover:'
 
-    series = np.zeros((2, ), dtype=datetime_value_2d)
+    series = np.zeros((2,), dtype=datetime_value_2d)
     series[0] = (start_time, (20, 0))
     series[1] = (start_time + timedelta(hours=23), (20, 0))
 
@@ -129,20 +129,20 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                 active_start=burn_start, efficiency=.2)
 
     chem_start = start_time + timedelta(hours=24)
-    c_disp = ChemicalDispersion(0.5, efficiency=0.4,
-                                active_start=chem_start,
-                                active_stop=chem_start + timedelta(hours=8))
+#     c_disp = ChemicalDispersion(0.5, efficiency=0.4,
+#                                 active_start=chem_start,
+#                                 active_stop=chem_start + timedelta(hours=8))
 
 
-    model.environment += [Water(280.928), wind,  waves]
+    model.environment += [Water(280.928), wind, waves]
 
-    model.weatherers += Evaporation(water,wind)
+    model.weatherers += Evaporation(water, wind)
     model.weatherers += Emulsification(waves)
-    model.weatherers += NaturalDispersion(waves,water)
+    model.weatherers += NaturalDispersion(waves, water)
     model.weatherers += skimmer1
     model.weatherers += skimmer2
     model.weatherers += burn
-    model.weatherers += c_disp
+#     model.weatherers += c_disp
 
     return model
 
