@@ -893,8 +893,6 @@ class Skim(Response):
                  decant_pump,
                  rig_time,
                  transit_time,
-                 offload_to,
-                 barge_arrival,
                  units=_si_units,
                  **kwargs):
 
@@ -912,8 +910,6 @@ class Skim(Response):
         self.decant_pump = decant_pump
         self.rig_time = rig_time
         self.transit_time = transit_time
-        self.offload_to = offload_to
-        self.barge_arrival = barge_arrival
         self._units = dict(self._si_units)
 
         self._is_collecting = False
