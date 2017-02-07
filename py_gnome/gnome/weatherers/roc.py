@@ -16,7 +16,7 @@ from colander import (drop, SchemaNode, MappingSchema, Integer, Float, String, O
 
 from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
-from gnome.persist.extend_colander import LocalDateTime, DefaultTupleSchema, NumpyArray
+from gnome.persist.extend_colander import LocalDateTime, DefaultTupleSchema, NumpyArray, TimeDelta
 from gnome.persist import validators, base_schema
 
 from gnome.weatherers.core import WeathererSchema
@@ -863,9 +863,10 @@ class SkimSchema(ResponseSchema):
     skim_efficiency_type = SchemaNode(String())
     decant = SchemaNode(Float())
     decant_pump = SchemaNode(Float())
-    rig_time = SchemaNode(Float())
-    transit_time = SchemaNode(Float())
+    rig_time = SchemaNode(TimeDelta())
+    transit_time = SchemaNode(TimeDelta())
     offload_to = SchemaNode(String())
+    offload = SchemaNode(TimeDelta())
     recovery = SchemaNode(String())
     recovery_ef = SchemaNode(Float())
     barge_arrival = SchemaNode(LocalDateTime(),
@@ -898,19 +899,13 @@ class Skim(Response):
                  'decant_pump': 'gpm',
                  'nameplate_pump': 'gpm',
                  'speed': 'kts',
-                 'swath_width': 'ft',
-                 'transit_time': 'sec',
-                 'offload': 'sec',
-                 'rig_time': 'sec'}
+                 'swath_width': 'ft'}
 
     _units_types = {'storage': ('storage', _valid_vol_units),
                     'decant_pump': ('decant_pump', _valid_dis_units),
                     'nameplate_pump': ('nameplate_pump', _valid_dis_units),
                     'speed': ('speed', _valid_vel_units),
-                    'swath_width': ('swath_width', _valid_dist_units),
-                    'transit_time': ('transit_time', _valid_time_units),
-                    'offload': ('offload', _valid_time_units),
-                    'rig_time': ('rig_time', _valid_time_units)}
+                    'swath_width': ('swath_width', _valid_dist_units)}
 
     def __init__(self,
                  speed,
@@ -919,6 +914,7 @@ class Skim(Response):
                  group,
                  throughput,
                  nameplate_pump,
+                 skim_efficiency_type,
                  recovery,
                  recovery_ef,
                  decant,
