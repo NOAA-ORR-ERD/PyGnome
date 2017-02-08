@@ -276,4 +276,6 @@ class TestRocSkim(ROCTests):
                 transit_time=2)
 
     def test_preare_for_model_run(self, sample_model_fcn2):
-        return True
+        (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+        self.reset_and_release()
+        self.skim.prepare_for_model_run(self.sc)
