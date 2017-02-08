@@ -10,7 +10,7 @@ import unit_conversion as us
 
 from gnome.basic_types import oil_status, fate
 
-from gnome.weatherers.roc import (Burn, Disperse, Platform)
+from gnome.weatherers.roc import (Burn, Disperse, Skim, Platform)
 from gnome.weatherers import (WeatheringData,
                               FayGravityViscous,
                               weatherer_sort,
@@ -284,7 +284,21 @@ class TestRocChemDispersion(ROCTests):
         assert ser2['platform']['swath_width'] == 100.0
         assert ser == ser2
 
-if __name__ == '__main__':
-    c = TestRocChemDispersion()
-    c.test_serialization()
-    pass
+
+class TestRocSkim(ROCTests):
+    skim = Skim(speed=2.0,
+                storage=2000.0,
+                swath_width=150,
+                group='A',
+                throughput=0.75,
+                nameplate_pump=100.0,
+                skim_efficiency_type='meh',
+                recovery=0.75,
+                recovery_ef=0.75,
+                decant=0.75,
+                decant_pump=150.0,
+                rig_time=30,
+                transit_time=2)
+
+    def test_preare_for_model_run(self, sample_model_fcn2):
+        return True

@@ -105,7 +105,7 @@ class PyGrid(Serializable):
         '''
         This function is the top level 'search for attributes' function. If there are any
         common attributes to all potential grid types, they will be sought here.
-        
+
         This function returns a dict, which maps an attribute name to a netCDF4
         Variable or numpy array object extracted from the dataset. When called from
         PyGrid_U or PyGrid_S, this function should provide all the kwargs needed to
@@ -115,7 +115,7 @@ class PyGrid(Serializable):
         init_args = {}
         init_args['filename'] = filename
         node_attrs = ['node_lon', 'node_lat']
-        node_coord_names = [['node_lon', 'node_lat'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
+        node_coord_names = [['node_lon', 'node_lat'], ['longitude','latitude'], ['lon', 'lat'], ['lon_psi', 'lat_psi']]
         composite_node_names = ['nodes', 'node']
         if grid_topology is None:
             for n1, n2 in node_coord_names:
@@ -443,5 +443,3 @@ class Grid(Environment, Serializable):
         _to_dict = schema.deserialize(json_)
 
         return _to_dict
-
-
