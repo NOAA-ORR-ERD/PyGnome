@@ -231,6 +231,7 @@ class TestPlatform(ROCTests):
 
     def test_serialization(self):
         p = Platform(_name='Test Platform')
+
         import pprint as pp
         ser = p.serialize()
         pp.pprint(ser)
@@ -257,8 +258,32 @@ class TestRocChemDispersion(ROCTests):
                      transit=100,
                      platform='Test Platform')
         #payload in gallons, computation in gallons, so no conversion
-        assert d.platform['payload'] == r
-        assert False
+
+    def test_serialization(self):
+        import pprint as pp
+        p = Disperse(platform='Test Platform')
+        ser = p.serialize()
+        print 'Ser'
+        pp.pprint(ser)
+        deser = Disperse.deserialize(ser)
+
+        print ''
+        print 'deser'
+        pp.pprint(deser)
+
+        p2 = Disperse.new_from_dict(deser)
+        ser2 = p2.serialize()
+        print
+        pp.pprint(ser2)
+
+        ser.pop('id')
+        ser2.pop('id')
+        ser['platform'].pop('id')
+        ser2['platform'].pop('id')
+        assert ser['platform']['swath_width'] == 100.0
+        assert ser2['platform']['swath_width'] == 100.0
+        assert ser == ser2
+
 
 class TestRocSkim(ROCTests):
     skim = Skim(speed=2.0,

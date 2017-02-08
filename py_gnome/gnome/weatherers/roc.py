@@ -154,7 +154,7 @@ class PlatformUnitsSchema(MappingSchema):
         super(PlatformUnitsSchema, self).__init__()
 
 
-class PlatformSchema(ResponseSchema):
+class PlatformSchema(base_schema.ObjType):
 
     def __init__(self, *args, **kwargs):
         for k in Platform._attr.keys():
@@ -200,9 +200,9 @@ class Platform(Serializable):
              "pump_rate_max": ('gal/min', 'discharge', _valid_dis_units),
              "pump_rate_min": ('gal/min', 'discharge', _valid_dis_units)}
 
-    _si_units = dict([(k, v[1]) for k, v in _attr.items()])
+    _si_units = dict([(k, v[0]) for k, v in _attr.items()])
 
-    _units_type = dict([(k, (v[0], v[1])) for k, v in _attr.items()])
+    _units_type = dict([(k, (v[1], v[2])) for k, v in _attr.items()])
 
     base_dir = os.path.dirname(__file__)
     with open(os.path.join(base_dir, 'platforms.json'), 'r') as f:
@@ -227,7 +227,7 @@ class Platform(Serializable):
             units = dict([(k, v[0]) for k, v in self._attr.items()])
         self.units = units
         for k in Platform._attr.keys():
-            setattr(self, k, kwargs.pop(k, None))
+            setattr(self, k, kwargs.get(k, None))
 
         super(Platform, self).__init__()
 
@@ -350,9 +350,9 @@ class DisperseUnitsSchema(MappingSchema):
             self.add(SchemaNode(String(), missing=drop, name=k, validator=OneOf(v[2])))
         super(DisperseUnitsSchema, self).__init__()
 
-class DisperseSchema(ResponseSchema):
 
-    loading_type = SchemaNode(String(), missing=drop, validator=OneOf(['simultaneous', 'separate']))
+class DisperseSchema(base_schema.ObjType):
+    loading_type = SchemaNode(String(), validator=OneOf(['simultaneous', 'separate']))
     dosage_type = SchemaNode(String(), missing=drop, validator=OneOf(['auto','custom']))
     disp_oil_ratio = SchemaNode(Float(), missing=drop)
     disp_eff = SchemaNode(Float(), missing=drop)
@@ -374,13 +374,15 @@ class Disperse(Response):
              'cascade_distance': ('nm', 'length', _valid_dist_units),
              'dosage': ('gal/acre', 'oilconcentration', _valid_oil_concentration_units)}
 
-    _si_units = dict([(k, v[1]) for k, v in _attr.items()])
+    _si_units = dict([(k, v[0]) for k, v in _attr.items()])
 
-    _units_type = dict([(k, (v[0], v[1])) for k, v in _attr.items()])
+    _units_type = dict([(k, (v[1], v[2])) for k, v in _attr.items()])
 
-    _state = copy.deepcopy(Serializable._state)
+    _schema = DisperseSchema
 
-    _state += [Field(k, save=True, update=True) for k in _attr.keys()]
+    _state = copy.deepcopy(Response._state)
+
+#     _state += [Field(k, save=True, update=True) for k in _attr.keys()]
     _state += [Field('units', save=True, update=True),
                Field('disp_oil_ratio', save=True, update=True),
                Field('disp_eff', save=True, update=True),
@@ -393,22 +395,29 @@ class Disperse(Response):
                  transit=None,
                  pass_length=4,
                  dosage=None,
+                 dosage_type=None,
                  cascade_on=False,
                  cascade_distance=None,
                  timeseries=None,
                  loading_type='simultaneous',
                  pass_type='bidirectional',
+                 disp_oil_ratio=None,
+                 disp_eff=None,
                  platform=None,
+                 units=None,
                  **kwargs):
         super(Disperse, self).__init__(**kwargs)
         self.name = name
         self.transit = transit
         self.pass_length = pass_length
         self.dosage = dosage
+        self.dosage_type = dosage_type
         self.cascade_on = cascade_on
         self.cascade_distance = cascade_distance
         self.loading_type = loading_type
         self.pass_type = pass_type
+        self.disp_oil_ratio = disp_oil_ratio
+        self.disp_eff = disp_eff
         self.cur_state = self.prev_state = None
         # time to next state
         self._ttns = 0
@@ -416,9 +425,16 @@ class Disperse(Response):
             if isinstance(platform, basestring):
                 #find platform name
                 self.platform = Platform(_name=platform)
+                print 'GOT THE PLATFORM', self.platform.serialize()
             else:
                 #platform is defined as a dict
-                self.platform = Platform(platform)
+                self.platform = Platform(**platform)
+        else:
+            self.platform = platform
+        if units is None:
+            units = dict([(k, v[0]) for k, v in self._attr.items()])
+        self._units = units
+
 #         pytest.set_trace()
 
     @property
