@@ -146,6 +146,56 @@ class Response(Weatherer, Serializable):
             (1 - rm_mass_frac) * data['mass_components']
         data['mass'] = data['mass_components'].sum(1)
 
+    def index_of(self, time):
+        '''
+        Returns the index of the timeseries entry that the time specified is within.
+        If it is not in one of the intervals, -1 will be returned
+        '''
+        for i, t in enumerate(self.timeseries):
+            if t >= t.start and t < t.end:
+                return i
+        return -1
+
+    def next_interval_index(self, time):
+        '''
+        returns the index of the next interval, even if outside interval.
+        returns None if there is no next interval
+        '''
+        if time >= self.timeseries[-1].end:
+            #off end
+            return None
+        if time < self.timeseries[0].start:
+            #before start
+            return 0
+        idx = self.index_of(time)
+        if idx > -1:
+            #inside valid interval
+            return idx + 1 if idx + 1 != len(self.timeseries) else None
+        if idx == -1:
+            #outside timeseries intervals
+            for i, t in enumerate(self.timeseries[0:-1]):
+                if time >= self.timeseries[i].end and time < self.timeseries[i+1].start:
+                    return i+1
+
+    def time_to_next_interval(self, time):
+        '''
+        if within an interval, returns time left in the interval.
+        if between intervals, returns time until start of next interval
+        if past end, or response deactivated, return None
+        '''
+        cur_idx = self.index_of(time)
+        if cur_idx == -1:
+            next_idx = self.next_interval_index(time)
+            if next_idx is None:
+                return None
+            else:
+                return self.timeseries[next_idx].start - time
+        else:
+            return self.timeseries[cur_idx].end - time
+
+    def is_operating(self, time):
+        return self.index_of(time) > -1
+
 
 class PlatformUnitsSchema(MappingSchema):
     def __init__(self, *args, **kwargs):
@@ -229,6 +279,9 @@ class Platform(Serializable):
         for k in Platform._attr.keys():
             setattr(self, k, kwargs.get(k, None))
 
+        self.disp_remaining = 0
+        self.cur_pump_rate = 0
+
         super(Platform, self).__init__()
 
     def get(self, attr, unit=None):
@@ -272,10 +325,10 @@ class Platform(Serializable):
         return cls(**dict_)
 
     def one_way_transit_time(self, dist, unit='nm'):
-        '''return unit = hr'''
+        '''return unit = sec'''
         t_s = self.get('transit_speed', 'kts')
-        t_l_d = self.get('taxi_land_depart', 'hr')
-        raw = dist / t_s
+        t_l_d = self.get('taxi_land_depart', 'sec')
+        raw = dist / t_s * 3600
         if self.type == 'aircraft':
             raw += t_l_d
         return raw
@@ -304,7 +357,7 @@ class Platform(Serializable):
         '''return unit = hr'''
         dist = dist if unit == 'nm' else uc.convert('length', unit, 'nm', dist)
         max_range = self.get('max_rage_with_payload', 'nm') if payload else self.get('max_range_no_payload', 'nm')
-        speed = self.get('cascade_transit_speed_with_payload', 'kts') if payload else self.get('cascade_transit_speed_without_payload','kts')
+        speed = self.get('cascade_transit_speed_with_payload', 'kts') if payload else self.get('cascade_transit_speed_without_payload', 'kts')
         taxi_land_depart = self.get('taxi_land_depart', 'hr')
         fuel_load = self.get('refuel', 'hr')
 
@@ -314,35 +367,71 @@ class Platform(Serializable):
             num_legs = dist / max_range
             frac_leg = (num_legs * 1000) % 1000
             num_legs = int(num_legs)
-            cascade_time += taxi_land_depart / 60
+            cascade_time += taxi_land_depart
             cascade_time += (num_legs * max_range)
-            inter_stop = (taxi_land_depart * 2 + fuel_load) / 60
+            inter_stop = (taxi_land_depart * 2 + fuel_load)
             cascade_time += num_legs * inter_stop
             cascade_time += frac_leg * (max_range / speed)
-            cascade_time += taxi_land_depart / 60
+            cascade_time += taxi_land_depart
         else:
-            cascade_time += taxi_land_depart / 60 * 2
+            cascade_time += taxi_land_depart * 2
             cascade_time += dist / speed
         return cascade_time
 
-    def transit_time(self, dist, payload=False):
-        return dist / self.transit_speed
-
     def max_onsite_time(self, dist):
-        rv = self.max_op_time - 2 * dist / self.transit_speed
-        if rv < 0:
-            if rv > (self.payload / self.max_pump_rate):
-                logging.warn("max onsite time is less than time expected to spray")
-            else:
-                logging.warn('max onsite time is less than zero')
+        '''
+        return time in sec
+        '''
+        m_o_t = self.get('max_op_time', 'sec')
+        o_w_t_t = self.one_way_transit_time()
+        rv = m_o_t - o_w_t_t * 2
+#         if rv < 0:
+#             logging.warn('max onsite time is less than zero')
+#         else:
+#             pld = self.get('payload', 'gal')
+#             m_p_r = self.get('max_pump_rate', 'gal/hr')
+#             if rv < (pld / m_p_r):
+#                 logging.warn("max onsite time is less than possible time to finsish spraying")
         return rv
 
+    def num_passes_possible(self, time, pass_len):
+        '''
+        In a given time (sec) compute maximum number of complete passes before
+        needing to return to base.
+
+        A pass consists of an approach, spray, u-turn, and reposition.
+        '''
+        appr_dist = self.get('approach', 'm')
+        uc.convert('pass_len')
+        dep_dist = self.get('departure', 'm')
+        rep_speed = self.get('reposition_speed', 'm/s')
+        appr_time = appr_dist / rep_speed
+        dep_time = dep_dist / rep_speed
+        u_turn = self.get('u_turn_time', 'sec')
+#         rep = self.get('reposition_speed', 'm/s')
+
+        pass_time = appr_time + self.pass_duration(pass_len) + u_turn + appr_time + dep_time
+        return int(time / pass_time)
+
     def refuel_reload(self, simul=False):
+        '''return unit = sec'''
         rl = self.get('reload', 'sec')
         rf = self.get('refuel', 'sec')
         return max(rl, rf) if simul else rf + rl
 
+    def pass_duration(self, pass_len):
+        '''
+        pass_len in nm
+        return in sec
+        '''
+        pass_len = self.get('pass_len', 'm')
+        app_speed = self.get('application_speed', 'm/s')
+        return pass_len / app_speed
 
+    def sortie_possible(self, time_avail, transit, pass_len):
+        #assume already refueled/reloaded
+        #possible if able to spray at least twice, else not possible
+        return self.max_onsite_time(transit) > self.pass_duration(pass_len)*2
 
 class DisperseUnitsSchema(MappingSchema):
     def __init__(self, *args, **kwargs):
@@ -353,10 +442,11 @@ class DisperseUnitsSchema(MappingSchema):
 
 class DisperseSchema(base_schema.ObjType):
     loading_type = SchemaNode(String(), validator=OneOf(['simultaneous', 'separate']))
-    dosage_type = SchemaNode(String(), missing=drop, validator=OneOf(['auto','custom']))
+    dosage_type = SchemaNode(String(), missing=drop, validator=OneOf(['auto', 'custom']))
     disp_oil_ratio = SchemaNode(Float(), missing=drop)
     disp_eff = SchemaNode(Float(), missing=drop)
     platform = PlatformSchema()
+    timeseries = OnSceneTimeSeriesSchema()
 
     def __init__(self, *args, **kwargs):
         for k, v in Disperse._attr.items():
@@ -388,7 +478,8 @@ class Disperse(Response):
                Field('disp_eff', save=True, update=True),
                Field('platform', save=True, update=True),
                Field('dosage_type', save=True, update=True),
-               Field('loading_type', save=True, update=True)]
+               Field('loading_type', save=True, update=True),
+               Field('timeseries', save=True, update=True)]
 
     def __init__(self,
                  name=None,
@@ -398,13 +489,13 @@ class Disperse(Response):
                  dosage_type=None,
                  cascade_on=False,
                  cascade_distance=None,
-                 timeseries=None,
                  loading_type='simultaneous',
                  pass_type='bidirectional',
                  disp_oil_ratio=None,
                  disp_eff=None,
                  platform=None,
                  units=None,
+                 timeseries=None,
                  **kwargs):
         super(Disperse, self).__init__(**kwargs)
         self.name = name
@@ -420,12 +511,10 @@ class Disperse(Response):
         self.disp_eff = disp_eff
         self.cur_state = self.prev_state = None
         # time to next state
-        self._ttns = 0
         if platform is not None:
             if isinstance(platform, basestring):
                 #find platform name
                 self.platform = Platform(_name=platform)
-                print 'GOT THE PLATFORM', self.platform.serialize()
             else:
                 #platform is defined as a dict
                 self.platform = Platform(**platform)
@@ -434,8 +523,10 @@ class Disperse(Response):
         if units is None:
             units = dict([(k, v[0]) for k, v in self._attr.items()])
         self._units = units
+        self.timeseries = timeseries
+        self._ttns = None
+        self._last_state_timestamp=None
 
-#         pytest.set_trace()
 
     @property
     def next_state(self):
@@ -447,146 +538,110 @@ class Disperse(Response):
             return 'en_route'
         elif self.cur_state == 'en_route':
             return 'on_site'
-
-    def _is_active(self, model_time, time_step):
-        for t in self.timeseries:
-            if model_time >= t[0] and model_time + datetime.timedelta(seconds=time_step / 2) <= t[1]:
-                return True
+        elif self.cur_state == 'inactive':
+            return 'replenish'
 
     @property
-    def cur_stage_duration(self):
+    def cur_state_duration(self):
         if self.cur_state is None:
-            return None
+            raise ValueError('Current state of None has no duration')
+        if self.cur_state == 'inactive':
+            raise ValueError('inactive has special duration and should not be requested')
         if self.cur_state == 'cascade':
-            return Disperse.uconv(self.platform.cascade_time(self.cascade, payload=False))
-        if self.cur_state == 'replenish':
-            if self.loading_type =='simultaneous':
-                return Disperse.uconv(max(self.platform.reload, self.platform.refuel))
-            else:
-                return Disperse.uconv(self.platform.reload + self.platform.refuel)
+            return self.platform.cascade_time(self.cascade_distance)
+        if self.cur_state == 'ready':
+            return self.platform.refuel_reload(self.loading_type)
         if self.cur_state == 'en_route':
-            return
-
-#     @property
-#     def platform(self):
-#         return self._platform.to_dict()
-#
-#     @platform.setter
-#     def platform(self, plt):
-#         _type = None
-#         if not isinstance(plt, basestring):
-#             if 'type' in plt.keys():
-#                 _type = plt.pop('type')
-#             elif plt['name'] in Platform.plat_types['aircraft'].keys():
-#                 _type = 'aircraft'
-#             elif plt['name'] in Platform.plat_types['vessel'].keys():
-#                 _type = 'vessel'
-#             else:
-#                 raise ValueError('Must specify platform type (aircraft/vessel)')
-#             self._platform = Platform(_type,
-#                                       kind=plt.pop('name', None),
-#                                       **plt)
-#         else:
-#             p = Platform.plat_types['aircraft'].get(plt, None)
-#             if p is None:
-#                 p = Platform.plat_types['vessel'].get(plt, None)
-#             if p is None:
-#                 raise ValueError("Specified platform was not found")
-#             self.platform = p
-
-#     def prepare_for_model_run(self, sc):
-#         self._setup_report(sc)
-#         self._swath_width = 0.3 * self.boom_length
-#         self._area = self._swath_width * (0.4125 * self.boom_length / 3) * 2 / 3
-#         self._boom_capacity = self.boom_draft / 36 * self._area
-#         self._boom_capacity_remaining = self._boom_capacity
-#         self._offset_time = (self.offset * 0.00987 / self.speed) * 60
-#         self._area_coverage_rate = self._swath_width * self.speed / 430
-#
-#         if self._swath_width > 1000:
-#             self.report.append('Swaths > 1000 feet may not be achievable in the field')
-#
-#         if self.speed > 1.2:
-#             self.report.append('Excessive entrainment of oil likely to occur at speeds greater than 1.2 knots.')
-#
-#         if self.on:
-#             sc.mass_balance['burned'] = 0.0
-#             sc.mass_balance[self.id] = 0.0
-#             sc.mass_balance['boomed'] = 0.0
-#
-#         self._is_collecting = True
-#
-#     def prepare_for_model_step(self, sc, time_step, model_time):
-#         '''
-#         1. set 'active' flag based on timeseries and model_time
-#         2. Mark LEs to be burned, do them in order right now. assume all LEs
-#            that are released together will be burned together since they would
-#            be closer to each other in position.
-#         '''
-#
-#         self._ts_collected = 0.
-#         self._ts_burned = 0.
-#
-#         if self._is_active(model_time, time_step):
-#             self._active = True
-#         else:
-#             self._active = False
-#
-#         if not self.active:
-#             return
-#
-#         self._time_remaining = time_step
-#
-#         while self._time_remaining > 0.:
-#             if self._is_collecting:
-#                 self._collect(sc, time_step, model_time)
-#
-#             if self._is_transiting and self._is_boom_full:
-#                 self._transit(sc, time_step, model_time)
-#
-#             if self._is_burning:
-#                 self._burn(sc, time_step, model_time)
-#
-#             if self._is_cleaning:
-#                 self._clean(sc, time_step, model_time)
-#
-#             if self._is_transiting and not self._is_boom_full:
-#                 self._transit(sc, time_step, model_time)
+            return self.platform.one_way_transit_time(self.transit)
+        if self.cur_state == 'on_site':
+            return self.platform.max_onsite_time(self.transit)
+        if self.cur_state == 'returning':
+            return self.platform.one_way_transit_time(self.transit)
 
     def prepare_for_model_run(self, sc):
         self._setup_report(sc)
-        p = self.platform
-        p.active = False
-        p._disp_remaining = 0
-        p._time_remaining = 0
+        if self.on:
+            sc.mass_balance[self.id] = 0.0
+            sc.mass_balance['dispersed'] = 0.0
         if self.cascade_on:
-            p._stage = 'cascade'
-            p._ttns = self.platform.cascade_time(self.cascade_distance, payload=False)
+            self.cur_state = 'cascade'
+            self._ttns = self.platform.cascade_time(self.cascade_distance, payload=False)
         else:
-            p._stage = 'en_route'
-            p._disp_remaining = self.payload
-            p._ttns = p.transit_time(self.transit, payload=True)
+            self.cur_state = 'inactive'
+            self._ttns = None
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
         '''
-        extra_time = 0
-        p = self.platform
-        p._ttns -= time_step
-        if p._ttns < 0:
-            extra_time = abs(p._ttns)
-            p.goto_next_state()
-            st = p.get_state_time(self.transit, payload=p.has_payload)
-            if st is None:
-                # DISPERSION STATE. Implementation for the time remaining in this stage is below
-                desired_dosage = self.dosage
-                achieved_pump_rate = desired_dosage * p.application_speed * p.swath_width
+        time_step = datetime.timedelta(seconds=time_step)
 
+        self._time_remaining = datetime.timedelta(seconds = time_step)
+        if self.cur_state is None:
+            # This is first step., setup inactivity if necessary
+            if self.next_interval_index != 0:
+                raise ValueError('disperse time series begins before time of first step!')
+            else:
+                self.cur_state = 'retired'
+            print('start up')
 
-            p._ttns = 5
-        elif p._ttns == 0:
-            p.goto_next_state()
-            p._ttns = 5
+        if self.cur_state == 'deactivated':
+            # do deactivated stuff
+            pass
+
+        while self._time_remaining > 0.:
+            ttni = self.time_to_next_interval(model_time)
+
+            if ttni is None:
+                if self.cur_state not in ['retired', 'reload', 'ready']:
+                    raise ValueError('Operation is being deactivated while platform is active!')
+                self.cur_state = 'deactivated'
+                print ('Disperse operation ', self.name, ' has reached the end and is deactivated')
+
+            if self.cur_state == 'retired':
+                self._time_remaining -= min(self._time_remaining, ttni)
+                if self._time_remaining > 0:
+                    # hit interval boundary before ending timestep.
+                    # If ending current interval or no remaining time, do nothing
+                    # if start of next interval, set state to 'ready'
+                    model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                    if self.index_of(model_time) > -1:
+                        # entering new operational interval
+                        self.cur_state = 'ready'
+                        print('starting new operational period at ', model_time)
+                    else:
+                        # ending current interval
+                        interval_idx = self.index_of(model_time - time_step + self._time_remaining)
+                        print('ending operational period ', interval_idx, 'at ', model_time)
+
+            elif self.cur_state == 'ready':
+                if self.platform.sortie_possible(ttni, self.transit, self.pass_length):
+                    # sortie is possible, so start immediately
+                    print('starting sortie at ', model_time)
+                    self._next_state_time = model_time + self.platform.one_way_transit_time(self.transit)
+                    self.cur_state = 'en_route'
+                else:
+                    # cannot sortie, so retire until next interval
+                    self.cur_state = 'retired'
+                    self._time_remaining -= min(self._time_remaining, ttni)
+                    model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+
+            elif self.cur_state == 'en_route':
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > 0:
+                    print('reached slick at ', model_time)
+                    self.cur_state = 'on_site'
+                    self._next_state_time = model_time + self.platform.max_onsite_time(self.transit)
+
+            elif self.cur_state == 'on_site':
+                pass
+
+    def update_time(self, time_remaining, model_time, time_step):
+        if time_remaining > 0:
+            return model_time + time_step - time_remaining, time_remaining
+        else:
+            return model_time, time_step
 
 
 class BurnUnitsSchema(MappingSchema):

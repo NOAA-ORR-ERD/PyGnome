@@ -221,11 +221,11 @@ class TestPlatform(ROCTests):
 
     def test_construction(self):
         p = Platform()
-        assert p.units == dict([(k,v[0]) for k, v in Platform._attr.items()])
+        assert p.units == dict([(k, v[0]) for k, v in Platform._attr.items()])
         p = Platform(_name = "Test Platform")
         assert p.transit_speed == 150
         assert p.max_op_time == 4
-        p = Platform(_name = "Test Platform", units = {'transit_speed':'m/s'})
+        p = Platform(_name = "Test Platform", units = {'transit_speed': 'm/s'})
         assert p.units['transit_speed'] == 'm/s'
 
     def test_serialization(self):
@@ -249,6 +249,20 @@ class TestPlatform(ROCTests):
         assert ser == ser2
 
 class TestRocChemDispersion(ROCTests):
+
+    disp = Disperse(name='test_disperse',
+                    transit=100,
+                    pass_length=4,
+                    dosage=5,
+                    cascade_on=False,
+                    cascade_distance=None,
+                    timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]),
+                    loading_type='simultaneous',
+                    pass_type='bidirectional',
+                    disp_oil_ratio=None,
+                    disp_eff=None,
+                    platform='Test Platform',
+                    units=None,)
 
     def test_construction(self):
         d = Disperse(name='testname',
@@ -280,6 +294,45 @@ class TestRocChemDispersion(ROCTests):
         assert ser['platform']['swath_width'] == 100.0
         assert ser2['platform']['swath_width'] == 100.0
         assert ser == ser2
+
+    def test_prepare_for_model_run(self, sample_model_fcn2):
+        (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+        self.reset_and_release()
+        self.disp.prepare_for_model_run(self.sc)
+        assert self.sc.mass_balance[self.disp.id] == 0.0
+        assert self.disp.cur_state == 'inactive'
+        assert len(self.sc.report[self.disp.id]) == 0
+        assert len(self.disp.timeseries) == 1
+
+#     def test_reports(self, sample_model_fcn2):
+#         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+#         self.reset_and_release()
+#         self.burn.boom_length = 3500.0
+#         self.burn.prepare_for_model_run(self.sc)
+#         assert self.burn._swath_width == 1050
+#         assert len(self.burn.report) == 2
+#
+#     def test_serialize(self, sample_model_fcn2):
+#         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+#         self.reset_and_release()
+#         self.burn.serialize()
+#
+#     def test_prepare_for_model_step(self, sample_model_fcn2):
+#         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+#         self.reset_and_release()
+#
+#         self.burn.prepare_for_model_run(self.sc)
+#         self.burn.prepare_for_model_step(self.sc, time_step, active_start)
+#
+#         assert self.burn._active == True
+#         assert self.burn._ts_collected == 93576.38888888889
+
+
+#     def test_inactive(self):
+#         d = Disperse(name='test',
+#                      platform='Test Platform',
+#                      timeseries=[(datetime(2000, 1, 1, 1, 0, 0), datetime(2000, 1, 1, 2, 0, 0))])
+#         d.prepare_for_model_run()
 
 
 class TestRocSkim(ROCTests):
