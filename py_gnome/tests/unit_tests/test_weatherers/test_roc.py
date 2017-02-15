@@ -217,7 +217,6 @@ class TestROCBurn(ROCTests):
         self.reset_and_release()
         self.model.step()
 
-
 class TestPlatform(ROCTests):
 
     def test_construction(self):
@@ -248,8 +247,6 @@ class TestPlatform(ROCTests):
         ser.pop('id')
         ser2.pop('id')
         assert ser == ser2
-
-
 
 class TestRocChemDispersion(ROCTests):
 

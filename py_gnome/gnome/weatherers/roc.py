@@ -853,10 +853,14 @@ class SkimUnitsSchema(MappingSchema):
                          validator=OneOf(_valid_vol_units))
 
     decant_pump = SchemaNode(String(),
-                             description='SI units for discharge',
+                             description='SI units for decant',
                              validator=OneOf(_valid_dis_units))
 
     nameplate_pump = SchemaNode(String(),
+                             description='SI units for nameplate',
+                             validator=OneOf(_valid_dis_units))
+
+    discharge_pump = SchemaNode(String(),
                              description='SI units for discharge',
                              validator=OneOf(_valid_dis_units))
 
@@ -881,8 +885,8 @@ class SkimSchema(ResponseSchema):
     decant_pump = SchemaNode(Float())
     rig_time = SchemaNode(TimeDelta())
     transit_time = SchemaNode(TimeDelta())
-    offload_to = SchemaNode(String())
-    offload = SchemaNode(TimeDelta())
+    offload_to = SchemaNode(String(), missing=drop)
+    discharge_pump = SchemaNode(Float())
     recovery = SchemaNode(String())
     recovery_ef = SchemaNode(Float())
     barge_arrival = SchemaNode(LocalDateTime(),
@@ -899,13 +903,12 @@ class Skim(Response):
                Field('group', save=True, update=True),
                Field('throughput', save=True, update=True),
                Field('nameplate_pump', save=True, update=True),
+               Field('discharge_pump', save=True, update=True),
                Field('skim_efficiency_type', save=True, update=True),
                Field('decant', save=True, update=True),
                Field('decant_pump', save=True, update=True),
                Field('rig_time', save=True, update=True),
                Field('transit_time', save=True, update=True),
-               Field('offload_to', save=True, update=True),
-               Field('barge_arrival', save=True, update=True),
                Field('recovery', save=True, update=True),
                Field('recovery_ef', save=True, update=True)]
 
@@ -915,13 +918,15 @@ class Skim(Response):
                  'decant_pump': 'gpm',
                  'nameplate_pump': 'gpm',
                  'speed': 'kts',
-                 'swath_width': 'ft'}
+                 'swath_width': 'ft',
+                 'discharge_pump': 'gpm'}
 
     _units_types = {'storage': ('storage', _valid_vol_units),
                     'decant_pump': ('decant_pump', _valid_dis_units),
                     'nameplate_pump': ('nameplate_pump', _valid_dis_units),
                     'speed': ('speed', _valid_vel_units),
-                    'swath_width': ('swath_width', _valid_dist_units)}
+                    'swath_width': ('swath_width', _valid_dist_units),
+                    'discharge_pump': ('discharge_pump', _valid_dis_units)}
 
     def __init__(self,
                  speed,
@@ -935,6 +940,7 @@ class Skim(Response):
                  recovery_ef,
                  decant,
                  decant_pump,
+                 discharge_pump,
                  rig_time,
                  transit_time,
                  units=_si_units,
@@ -953,6 +959,8 @@ class Skim(Response):
         self.decant = decant
         self.decant_pump = decant_pump
         self.rig_time = rig_time
+        self.discharge_pump = discharge_pump
+        self.skim_efficiency_type = skim_efficiency_type
         self.transit_time = transit_time
         self._units = dict(self._si_units)
 
@@ -965,6 +973,7 @@ class Skim(Response):
         self._setup_report(sc)
         self._storage_remaining = self.storage
         self._coverage_rate = self.swath_width * self.speed * 0.00233
+        self.offload = (self.storage * 42 / self.discharge_pump) * 60
 
         if self.on:
             sc.mass_balance['skimmed'] = 0.0
