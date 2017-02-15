@@ -667,6 +667,7 @@ class BurnSchema(ResponseSchema):
     boom_draft = SchemaNode(Integer())
     speed = SchemaNode(Float())
     throughput = SchemaNode(Float())
+    timeseries = OnSceneTimeSeriesSchema()
     burn_efficiency_type = SchemaNode(String())
     units = BurnUnitsSchema()
 
@@ -944,6 +945,7 @@ class SkimSchema(ResponseSchema):
     discharge_pump = SchemaNode(Float())
     recovery = SchemaNode(String())
     recovery_ef = SchemaNode(Float())
+    timeseries = OnSceneTimeSeriesSchema()
     barge_arrival = SchemaNode(LocalDateTime(),
                                validator=validators.convertible_to_seconds,
                                missing=drop)
