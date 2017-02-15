@@ -294,10 +294,33 @@ class TestRocSkim(ROCTests):
                 recovery_ef=0.75,
                 decant=0.75,
                 decant_pump=150.0,
-                rig_time=30,
-                transit_time=2)
+                discharge_pump=1000.0,
+                rig_time=timedelta(minutes=30),
+                
+                transit_time=timedelta(hours=2))
 
     def test_preare_for_model_run(self, sample_model_fcn2):
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
         self.reset_and_release()
         self.skim.prepare_for_model_run(self.sc)
+
+    def test_serialization(self):
+        s = TestRocSkim.skim
+        import pprint as pp
+        ser = s.serialize()
+        pp.pprint(ser)
+        deser = Skim.deserialize(ser)
+
+        pp.pprint(deser)
+
+        s2 = Skim.new_from_dict(deser)
+        ser2 = s2.serialize()
+        pp.pprint(ser2)
+
+        print 'INCORRECT BELOW'
+
+        ser.pop('id')
+        ser2.pop('id')
+        assert ser == ser2
+
+
