@@ -326,8 +326,13 @@ class TestRocChemDispersion(ROCTests):
             off = self.model.current_time_step * self.model.time_step
             print self.model.start_time + timedelta(seconds=off)
         assert 'disperse' in self.disp.cur_state
-        
-        while self.
+        while self.disp.cur_state != 'retired':
+            self.model.step()
+            off = self.model.current_time_step * self.model.time_step
+            print self.model.start_time + timedelta(seconds=off)
+        print self.disp.platform.min_dosage()
+        print self.disp.platform.max_dosage()
+        assert False
 
 #     def test_reports(self, sample_model_fcn2):
 #         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
@@ -374,7 +379,7 @@ class TestRocSkim(ROCTests):
                 decant_pump=150.0,
                 discharge_pump=1000.0,
                 rig_time=timedelta(minutes=30),
-                
+
                 transit_time=timedelta(hours=2))
 
     def test_preare_for_model_run(self, sample_model_fcn2):
@@ -400,5 +405,3 @@ class TestRocSkim(ROCTests):
         ser.pop('id')
         ser2.pop('id')
         assert ser == ser2
-
-

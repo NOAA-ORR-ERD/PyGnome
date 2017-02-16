@@ -335,7 +335,7 @@ class Platform(Serializable):
 
     def max_dosage(self):
         '''return unit = gal/acre'''
-        p_r_m = self.get('pump_rate_max', 'm^3/sec')
+        p_r_m = self.get('pump_rate_max', 'm^3/s')
         a_s = self.get('application_speed', 'm/s')
         s_w_m = self.get('swath_width_min', 'm')
         dos = (p_r_m) / (a_s * s_w_m)
@@ -345,7 +345,7 @@ class Platform(Serializable):
 
     def min_dosage(self):
         '''return unit = gal/acre'''
-        p_r_m = self.get('pump_rate_min', 'm^3/sec')
+        p_r_m = self.get('pump_rate_min', 'm^3/s')
         a_s = self.get('application_speed', 'm/s')
         s_w_m = self.get('swath_width_max', 'm')
         dos = (p_r_m) / (a_s * s_w_m)
@@ -360,7 +360,6 @@ class Platform(Serializable):
         speed = self.get('cascade_transit_speed_with_payload', 'kts') if payload else self.get('cascade_transit_speed_without_payload', 'kts')
         taxi_land_depart = self.get('taxi_land_depart', 'hr')
         fuel_load = self.get('refuel', 'hr')
-
 
         cascade_time = 0
         if dist > max_range:
@@ -408,11 +407,11 @@ class Platform(Serializable):
 
     def refuel_reload(self, simul=False):
         '''return unit = sec'''
-        rl = self.get('reload', 'sec')
-        rf = self.get('refuel', 'sec')
+        rl = self.get('dispersant_load', 'sec')
+        rf = self.get('fuel_load', 'sec')
         return max(rl, rf) if simul else rf + rl
 
-    def pass_duration(self, pass_len, units='nm'):
+    def pass_duration(self, pass_len, units='nm', bidirectional=False):
         '''
         pass_len in nm
         return in sec
@@ -427,7 +426,10 @@ class Platform(Serializable):
         pass_len = uc.convert('length', units, 'm', pass_len)
         app_speed = self.get('application_speed', 'm/s')
         spray_time = pass_len / app_speed
-        return appr_time + spray_time + u_turn + appr_time + dep_time
+        if bidirectional == True:
+            return appr_time + spray_time + u_turn + spray_time + dep_time
+        else:
+            return appr_time + spray_time + u_turn + appr_time + dep_time
 
     def sortie_possible(self, time_avail, transit, pass_len):
         #assume already refueled/reloaded
@@ -561,6 +563,36 @@ class Disperse(Response):
 #         if self.cur_state == 'returning':
 #             return self.platform.one_way_transit_time(self.transit)
 
+    def get_mission_data(self,
+                         dosage=None,
+                         area=None,
+                         pass_len=None,
+                         efficiency=None,
+                         units=None):
+        '''
+        Given a dosage and an area to spray, will return a tuple of information as follows:
+        Minimize number of passes by using high swath_width. If pump rate cannot get to the dosage necessary
+        reduce the swath width until it can.
+        Default units are ('gal/acre', 'm^3, 'nm', percent)
+        Return tuple is as below
+        (num_passes, disp/pass, oil/pass)
+        (number, gal, ft, gal/min)
+        '''
+        if units is None:
+            units = {'dosage': 'gal/acre',
+                     'area': 'm^3',
+                     'pass_len': 'nm',
+                     'efficiency': 'percent'}
+
+        # Efficiency determines how much of the pass length is
+        pass_area = self.get('swath_width', 'm') * uc.convert('length', units['pass_len'], 'm', pass_len)
+        pass_len = uc.convert('length', units['pass_len'], 'm', pass_len)
+        app_speed = self.get('application_speed', 'm/s')
+        spray_time = pass_len / app_speed
+        max_dos = (self.get('pump_rate_max', 'm^3/s') * spray_time / pass_area)
+        max_dos = uc.convert('length', 'm', 'micron', max_dos)
+        max_dos = uc.convert('oilconcentration', 'micron', 'gal/acre', max_dos)
+
     def prepare_for_model_run(self, sc):
         self._setup_report(sc)
         if self.on:
@@ -669,9 +701,11 @@ class Disperse(Response):
                     else:
                         # no passes possible, so RTB
                         print('cannot make another pass, returning to base')
-                        self._next_state_time = model_time + self.platform.one_way_transit_time(self.transit, payload=False)
+                        o_w_t_t = datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit, payload=False))
+                        self._next_state_time = model_time + o_w_t_t
                         self._op_start = self._op_end = None
                         self._cur_pass_num = 1
+                        self.cur_state = 'rtb'
                 else:
                     # entire ts was spent in a pass.
                     print('area sprayed = ', 'x')
@@ -682,7 +716,8 @@ class Disperse(Response):
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
                     print('reached base at ', model_time)
-                    self._next_state_time = model_time + self.platform.refuel_reload(simul=self.loading_type)
+                    refuel_reload = datetime.timedelta(seconds=self.platform.refuel_reload(simul=self.loading_type))
+                    self._next_state_time = model_time + refuel_reload
                     self.cur_state = 'refuel_reload'
 
             elif self.cur_state == 'refuel_reload':
