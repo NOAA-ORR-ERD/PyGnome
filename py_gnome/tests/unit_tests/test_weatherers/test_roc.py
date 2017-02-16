@@ -349,7 +349,7 @@ class TestRocSkim(ROCTests):
                 decant_pump=150.0,
                 discharge_pump=1000.0,
                 rig_time=timedelta(minutes=30),
-                
+                timeseries=[(datetime(2000, 1, 1, 1, 0, 0), datetime(2000, 1, 1, 2, 0, 0))],
                 transit_time=timedelta(hours=2))
 
     def test_preare_for_model_run(self, sample_model_fcn2):
