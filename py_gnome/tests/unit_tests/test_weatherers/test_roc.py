@@ -300,9 +300,39 @@ class TestRocChemDispersion(ROCTests):
         self.reset_and_release()
         self.disp.prepare_for_model_run(self.sc)
         assert self.sc.mass_balance[self.disp.id] == 0.0
-        assert self.disp.cur_state == 'inactive'
+        assert self.disp.cur_state == 'retired'
         assert len(self.sc.report[self.disp.id]) == 0
         assert len(self.disp.timeseries) == 1
+
+    def test_prepare_for_model_step(self, sample_model_fcn2):
+        (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+        self.model.weatherers += self.disp
+        self.reset_and_release()
+        print self.model.start_time
+        print self.disp.timeseries
+        assert self.disp.cur_state == 'retired'
+        self.model.step()
+        print self.model.current_time_step
+        self.model.step()
+        assert self.disp.cur_state == 'en_route'
+        print self.disp._next_state_time
+        self.model.step()
+        assert self.disp.cur_state == 'en_route'
+        print self.disp.transit
+        print self.disp.platform.transit_speed
+        print self.disp.platform.one_way_transit_time(self.disp.transit)/60
+        while self.disp.cur_state == 'en_route':
+            self.model.step()
+            off = self.model.current_time_step * self.model.time_step
+            print self.model.start_time + timedelta(seconds=off)
+        assert 'disperse' in self.disp.cur_state
+        while self.disp.cur_state != 'retired':
+            self.model.step()
+            off = self.model.current_time_step * self.model.time_step
+            print self.model.start_time + timedelta(seconds=off)
+        print self.disp.platform.min_dosage()
+        print self.disp.platform.max_dosage()
+        assert False
 
 #     def test_reports(self, sample_model_fcn2):
 #         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
@@ -375,5 +405,3 @@ class TestRocSkim(ROCTests):
         ser.pop('id')
         ser2.pop('id')
         assert ser == ser2
-
-
