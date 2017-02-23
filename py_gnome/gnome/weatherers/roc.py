@@ -11,6 +11,8 @@ import unit_conversion as uc
 import json
 import os
 import logging
+import numpy as np
+import math
 
 from colander import (drop, SchemaNode, MappingSchema, Integer, Float, String, OneOf, Mapping)
 
@@ -377,13 +379,14 @@ class Platform(Serializable):
             cascade_time += dist / speed
         return cascade_time * 3600
 
-    def max_onsite_time(self, dist):
+    def max_onsite_time(self, dist, simul=False):
         '''
         return time in sec
         '''
         m_o_t = self.get('max_op_time', 'sec')
         o_w_t_t = self.one_way_transit_time(dist)
-        rv = m_o_t - o_w_t_t * 2
+        r_r = self.refuel_reload(simul=simul)
+        rv = m_o_t - o_w_t_t * 2 - r_r
 #         if rv < 0:
 #             logging.warn('max onsite time is less than zero')
 #         else:
@@ -432,9 +435,29 @@ class Platform(Serializable):
             return appr_time + spray_time + u_turn + appr_time + dep_time
 
     def sortie_possible(self, time_avail, transit, pass_len):
-        #assume already refueled/reloaded
-        #possible if able to spray at least twice, else not possible
-        return self.max_onsite_time(transit) > self.pass_duration(pass_len)*2
+        # assume already refueled/reloaded
+        # possible if able to complete transit, at least one pass, and transit back within time available
+        min_spray_time = self.pass_duration(pass_len)
+        tot_mission_time = self.one_way_transit_time(transit) * 2 + min_spray_time
+        return time_avail > datetime.timedelta(seconds=tot_mission_time)
+
+    def eff_pump_rate(self, dosage, unit='gal/acre'):
+        '''
+        given a dosage, determine the pump rate necessary given the airspeed and area covered in a pass
+        return value = m^3/s
+        '''
+        dosage = uc.convert('oilconcentration', unit, 'micron', dosage)
+        dosage = uc.convert('length', 'micron', 'm', dosage)
+        app_speed = self.get('application_speed', 'm/s')
+        swath_width = self.get('swath_width', 'm')
+        eff_pr = dosage * app_speed * swath_width
+        max_pr = self.get('pump_rate_max', 'm^3/s')
+        if eff_pr > max_pr:
+            #log warning?
+            print 'computed pump rate is too high for this platform. using max instead'
+            return max_pr
+        else:
+            return eff_pr
 
 class DisperseUnitsSchema(MappingSchema):
     def __init__(self, *args, **kwargs):
@@ -482,13 +505,15 @@ class Disperse(Response):
                Field('platform', save=True, update=True),
                Field('dosage_type', save=True, update=True),
                Field('loading_type', save=True, update=True),
-               Field('timeseries', save=True, update=True)]
+               Field('timeseries', save=True, update=True),
+               Field('report', save=False, update=False),
+               Field('wind', save=True, update=True, save_reference=True)]
 
     def __init__(self,
                  name=None,
                  transit=None,
                  pass_length=4,
-                 dosage=None,
+                 dosage=1,
                  dosage_type=None,
                  cascade_on=False,
                  cascade_distance=None,
@@ -499,6 +524,7 @@ class Disperse(Response):
                  platform=None,
                  units=None,
                  timeseries=None,
+                 wind=None,
                  **kwargs):
         super(Disperse, self).__init__(**kwargs)
         self.name = name
@@ -510,8 +536,12 @@ class Disperse(Response):
         self.cascade_distance = cascade_distance
         self.loading_type = loading_type
         self.pass_type = pass_type
-        self.disp_oil_ratio = disp_oil_ratio
+        self.disp_oil_ratio = 20 if disp_oil_ratio is None else disp_oil_ratio
         self.disp_eff = disp_eff
+        if self.disp_eff is not None:
+            self._disp_eff_type = 'fixed'
+        else:
+            self._disp_eff_type = 'auto'
         # time to next state
         if platform is not None:
             if isinstance(platform, basestring):
@@ -526,11 +556,23 @@ class Disperse(Response):
             units = dict([(k, v[0]) for k, v in self._attr.items()])
         self._units = units
         self.timeseries = timeseries
-        self.cur_state = self.prev_state = None
+        self.wind = wind
+        self.cur_state = None
+        self.oil_treated_this_timestep = 0
         self._next_state_time = None
         self._op_start = None
         self._op_end = None
+        self._cur_sortie_num = 1
         self._cur_pass_num = 1
+        self._area_this_ts = 0
+        self._area_this_sortie = 0
+        self._disp_sprayed_this_timestep = 0
+        self._remaining_dispersant = None
+
+        self._dosage_m = uc.convert('oilconcentration', self.units['dosage'], 'micron', self.dosage)
+        self._dosage_m = uc.convert('length', 'micron', 'meters', self._dosage_m)
+        self.report=[]
+        self.array_types.update({'area', 'density', 'viscosity'})
 
 
 #     @property
@@ -602,10 +644,22 @@ class Disperse(Response):
             self.cur_state = 'cascade'
         else:
             self.cur_state = 'retired'
+        self._remaining_dispersant = self.platform.get('payload', 'm^3')
+
+    def get_disp_eff(self, sc, model_time):
+        eff_list = [15, 30, 45, 60, 70, 78, 80, 82, 83, 84, 84, 84, 84, 84, 83, 83, 82, 80, 79, 78, 77, 75, 73, 71, 69, 67, 65, 63, 60, 58, 55, 53, 50, 47, 44, 41, 38]
+        vel = self.wind.get_value(model_time)
+        spd = math.sqrt(vel[0]**2 + vel[1]**2)
+        return eff_list[int(spd)] / 100.
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
         '''
+
+        if self._disp_eff_type != 'fixed':
+            self.disp_eff = self.get_disp_eff(sc, model_time)
+        slick_area = 'WHAT??'
+
         if not isinstance(time_step, datetime.timedelta):
             time_step = datetime.timedelta(seconds=time_step)
 
@@ -630,13 +684,15 @@ class Disperse(Response):
                 if self.cur_state not in ['retired', 'reload', 'ready']:
                     raise ValueError('Operation is being deactivated while platform is active!')
                 self.cur_state = 'deactivated'
-                print ('Disperse operation ', self.name, ' has reached the end and is deactivated')
+                self.report.append((model_time, 'Disperse operation has ended and is deactivated'))
+                print self.report[-1]
 
             if self.cur_state == 'retired':
                 if self.index_of(model_time) > -1 and self.timeseries[self.index_of(model_time)][0] == model_time:
                     #landed right on interval start, so ready immediately
                     self.cur_state = 'ready'
-                    print('starting new operational period at ', model_time)
+                    self.report.append((model_time, 'Begin new operational period'))
+                    print self.report[-1]
                     continue
                 self._time_remaining -= min(self._time_remaining, ttni)
                 if self._time_remaining > zero:
@@ -648,20 +704,27 @@ class Disperse(Response):
                         # ending current interval
                     if self.index_of(model_time) > -1:
                         self.cur_state = 'ready'
-                        print('starting new operational period at ', model_time)
+                        self.report.append((model_time, 'Begin new operational period'))
+                        print self.report[-1]
                     else:
                         interval_idx = self.index_of(model_time - time_step + self._time_remaining)
-                        print('ending operational period ', interval_idx, 'at ', model_time)
+                        self.report.append((model_time, 'Ending current operational period'))
+                        print self.report[-1]
 
             elif self.cur_state == 'ready':
                 if self.platform.sortie_possible(ttni, self.transit, self.pass_length):
                     # sortie is possible, so start immediately
-                    print('starting sortie at ', model_time)
+                    self.report.append((model_time, 'Starting sortie'))
+                    print self.report[-1]
                     self._next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
                     self.cur_state = 'en_route'
+                    self._area_sprayed_this_sortie = 0
+                    self._area_sprayed_this_ts = 0
                 else:
                     # cannot sortie, so retire until next interval
                     self.cur_state = 'retired'
+                    self.report.append((model_time, 'Retiring due to insufficient time remaining to conduct sortie'))
+                    print self.report[-1]
                     self._time_remaining -= min(self._time_remaining, ttni)
                     model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
 
@@ -670,52 +733,94 @@ class Disperse(Response):
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
-                    print('reached slick at ', model_time)
+                    self.report.append((model_time, 'Reached slick'))
+                    print self.report[-1]
                     self._op_start = model_time
-                    self._op_end = model_time + datetime.timedelta(seconds=self.platform.max_onsite_time(self.transit))
-                    print('op ends at ', self._op_end)
+                    self._op_end = model_time + datetime.timedelta(seconds=self.platform.max_onsite_time(self.transit, self.loading_type))
                     self._cur_pass_num = 1
                     self.cur_state = 'disperse_' + str(self._cur_pass_num)
                     dur = datetime.timedelta(seconds=self.platform.pass_duration(self.pass_length))
-                    print dur.total_seconds()
                     self._next_state_time = model_time + dur
-                    print('starting disperse pass ', self._cur_pass_num, 'duration = ', dur)
+                    self.report.append((model_time, 'Starting disperse pass ' + str(self._cur_pass_num)))
+                    print self.report[-1]
 
             elif 'disperse' in self.cur_state:
                 pass_dur = datetime.timedelta(seconds=self.platform.pass_duration(self.pass_length))
                 time_left_in_pass = self._next_state_time - model_time
-                self._time_remaining -= min(self._time_remaining, time_left_in_pass)
+                spray_time = min(self._time_remaining, time_left_in_pass)
+                disp_possible = spray_time.total_seconds() * self.platform.eff_pump_rate(self.dosage)
+                disp_actual = min(self._remaining_dispersant, disp_possible)
+                oil_avail = self.dispersable_oil_amount(sc, 'gal')
+                treated_possible = disp_actual * self.disp_eff * self.disp_oil_ratio
+                area_sprayed = disp_actual / self._dosage_m
+                print ('oil sprayable', oil_avail)
+                print('disp sprayed ', uc.convert('volume', 'm^3', 'gal', disp_actual), 'gal')
+                print('area sprayed ', uc.convert('area', 'm^2', 'acre', area_sprayed), 'acres')
+                if self._remaining_dispersant == disp_actual:
+                    # out of dispersant early, so short circuit into RTB
+                    self._remaining_dispersant -= disp_actual
+                    self._disp_sprayed_this_timestep += disp_actual
+                    remainder_spray_time = datetime.timedelta(seconds=disp_actual / self.platform.eff_pump_rate(self.dosage))
+                    self._time_remaining -= remainder_spray_time
+                    self.model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                    self.report.append((model_time, 'Out of dispersant, returning to base'))
+                    print self.report[-1]
+                    o_w_t_t = datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit, payload=False))
+                    self._next_state_time = model_time + o_w_t_t
+                    self._op_start = self._op_end = None
+                    self.cur_state = 'rtb'
+                    continue
+
+                elif oil_avail < treated_possible:
+                    self.report.append((model_time, 'Treated all available oil'))
+                    disp_to_treat = oil_avail / self.disp_actual / self.disp_eff
+                    if disp_to_treat > disp_actual:
+                        1 / 0
+                    self._disp_sprayed_this_timestep += disp_to_treat
+                    remainder_spray_time = datetime.timedelta(seconds=disp_actual / self.platform.eff_pump_rate(self.dosage))
+                    self._time_remaining -= remainder_spray_time
+                    self._remaining_dispersant -= self._disp_sprayed_this_timestep
+                    model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                    continue
+
+                else:
+                    # spent entire remaining time spraying.
+                    self._time_remaining -= min(self._time_remaining, time_left_in_pass)
+                    self._remaining_dispersant -= disp_actual
+                    self._disp_sprayed_this_timestep += disp_actual
+                    self.oil_treated_this_timestep += treated_possible
                 # ~
                 # INSERT DISPERSION OF OIL HERE
                 # ~
                 model_time, time_step = self.update_time(self._time_remaining , model_time, time_step)
                 if self._time_remaining > zero:
                     # completed a pass, so start the next one if possible
-                    print('completed disperse pass ', self._cur_pass_num)
+                    self.report.append((model_time, 'Disperse pass ' + str(self._cur_pass_num) + ' completed'))
+                    print self.report[-1]
                     if self.platform.num_passes_possible(self._op_end - model_time, self.pass_length) > 0:
                         # can still make passes
                         self._cur_pass_num += 1
-                        print('starting disperse pass ', self._cur_pass_num, 'duration = ', pass_dur)
+                        self.report.append((model_time, 'Starting disperse pass ' + str(self._cur_pass_num)))
+                        print self.report[-1]
                         self.cur_state = 'disperse_' + str(self._cur_pass_num)
                         self._next_state_time = model_time + pass_dur
                     else:
                         # no passes possible, so RTB
-                        print('cannot make another pass, returning to base')
+                        self.report.append((model_time, 'No time for further passes, returning to base'))
+                        print self.report[-1]
                         o_w_t_t = datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit, payload=False))
                         self._next_state_time = model_time + o_w_t_t
                         self._op_start = self._op_end = None
                         self._cur_pass_num = 1
                         self.cur_state = 'rtb'
-                else:
-                    # entire ts was spent in a pass.
-                    print('area sprayed = ', 'x')
 
             elif self.cur_state == 'rtb':
                 time_left = self._next_state_time - model_time
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
-                    print('reached base at ', model_time)
+                    self.report.append((model_time, 'Returned to base'))
+                    print self.report[-1]
                     refuel_reload = datetime.timedelta(seconds=self.platform.refuel_reload(simul=self.loading_type))
                     self._next_state_time = model_time + refuel_reload
                     self.cur_state = 'refuel_reload'
@@ -725,7 +830,9 @@ class Disperse(Response):
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
-                    print('finished refueling')
+                    self.report.append((model_time, 'Refuel/reload complete'))
+                    print self.report[-1]
+                    self._remaining_dispersant = self.platform.get('payload', 'm^3')
                     self.cur_state = 'ready'
 
             elif self.cur_state == 'cascade':
@@ -735,7 +842,8 @@ class Disperse(Response):
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
-                    print('finished cascade at ', model_time)
+                    self.report.append((model_time, 'Cascade complete'))
+                    print self.report[-1]
                     self.cur_state = 'ready'
             else:
                 raise ValueError('current state is not recognized: ' + self.cur_state)
@@ -745,6 +853,24 @@ class Disperse(Response):
             return model_time + time_step - time_remaining, time_remaining
         else:
             return model_time, time_step
+
+    def dispersable_oil_amount(self, sc, units='gal'):
+        idxs = np.where(sc['viscosity'] < 3000)[0]
+        if units in _valid_vol_units:
+            tot_vol = np.sum(sc['mass'][idxs] / sc['density'][idxs])
+            return uc.convert('volume', 'm^3', 'gal', tot_vol)
+        else:
+            tot_mass = np.sum(sc['mass'][idxs])
+            return tot_mass
+
+    def weather_elements(self, sc, time_step, model_time):
+        print 'disp sprayed', self._disp_sprayed_this_timestep
+        print 'disp remaining', self._remaining_dispersant
+        print 'oil treated', self.oil_treated_this_timestep
+
+        self._disp_sprayed_this_timestep = 0
+        self.oil_treated_this_timestep = 0
+        pass
 
 
 class BurnUnitsSchema(MappingSchema):
