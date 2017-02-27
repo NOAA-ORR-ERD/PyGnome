@@ -13,6 +13,7 @@ import os
 import logging
 import numpy as np
 import math
+from collections import OrderedDict
 
 from colander import (drop, SchemaNode, MappingSchema, Integer, Float, String, OneOf, Mapping)
 
@@ -23,6 +24,7 @@ from gnome.persist import validators, base_schema
 
 from gnome.weatherers.core import WeathererSchema
 from gnome import _valid_units
+from gnome.basic_types import oil_status, fate as bt_fate
 
 
 # define valid units at module scope because the Schema and Object both use it
@@ -68,7 +70,6 @@ class Response(Weatherer, Serializable):
         oil_thickness = 0.0
         substance = self._get_substance(sc)
         if sc['area'].any() > 0:
-#             pytest.set_trace()
             volume_emul = (sc['mass'].mean() / substance.density_at_temp()) / (1.0 - sc['frac_water'].mean())
             oil_thickness = volume_emul / sc['area'].mean()
 
@@ -147,6 +148,13 @@ class Response(Weatherer, Serializable):
         data['mass_components'] = \
             (1 - rm_mass_frac) * data['mass_components']
         data['mass'] = data['mass_components'].sum(1)
+
+    def _remove_mass_indices(self, data, amounts, indices):
+        #removes mass from the mass components specified by an indices array
+        masses = data['mass'][indices]
+        rm_mass_frac = np.clip(amounts / masses, 0, 1)
+        data['mass_components'][indices] = (1 - rm_mass_frac)[:, np.newaxis] * data['mass_components'][indices]
+        data['mass'][indices] = data['mass_components'][indices].sum(1)
 
     def index_of(self, time):
         '''
@@ -509,6 +517,9 @@ class Disperse(Response):
                Field('report', save=False, update=False),
                Field('wind', save=True, update=True, save_reference=True)]
 
+    wind_eff_list = [15, 30, 45, 60, 70, 78, 80, 82, 83, 84, 84, 84, 84, 84, 83, 83, 82, 80, 79, 78, 77, 75, 73, 71, 69, 67, 65, 63, 60, 58, 55, 53, 50, 47, 44, 41, 38]
+    visc_eff_table = OrderedDict([(1, 68), (2, 71), (3, 72.5), (4, 74), (5, 75), (7, 77), (10, 78), (20, 80), (40, 83.5), (70, 85.5), (100, 87), (300, 89.5), (500, 90.5), (700, 91), (1000, 92), (2000, 91), (3000, 83), (5000, 52), (7000, 32), (10000, 17), (20000, 11), (30000, 8.5), (40000, 7), (50000, 6.5), (100000, 6), (1000000, 0)])
+
     def __init__(self,
                  name=None,
                  transit=None,
@@ -645,12 +656,19 @@ class Disperse(Response):
         else:
             self.cur_state = 'retired'
         self._remaining_dispersant = self.platform.get('payload', 'm^3')
+        self.oil_treated_this_timestep = 0
 
     def get_disp_eff(self, sc, model_time):
-        eff_list = [15, 30, 45, 60, 70, 78, 80, 82, 83, 84, 84, 84, 84, 84, 83, 83, 82, 80, 79, 78, 77, 75, 73, 71, 69, 67, 65, 63, 60, 58, 55, 53, 50, 47, 44, 41, 38]
+        wind_eff_list = Disperse.wind_eff_list
+        visc_eff_table = Disperse.visc_eff_table
         vel = self.wind.get_value(model_time)
         spd = math.sqrt(vel[0]**2 + vel[1]**2)
-        return eff_list[int(spd)] / 100.
+        wind_eff = wind_eff_list[int(spd)] / 100.
+        idxs = np.where(sc['viscosity'] * 1000000 < 5000)[0]
+        avg_visc = np.mean(sc['viscosity'][idxs] * 1000000) if len(idxs) > 0 else 1000000
+        print 'visc = ', avg_visc
+        visc_eff = visc_eff_table[visc_eff_table.keys()[np.searchsorted(visc_eff_table.keys(), avg_visc)]] / 100
+        return wind_eff * visc_eff
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -658,6 +676,7 @@ class Disperse(Response):
 
         if self._disp_eff_type != 'fixed':
             self.disp_eff = self.get_disp_eff(sc, model_time)
+#             print 'efficiency is ', self.disp_eff
         slick_area = 'WHAT??'
 
         if not isinstance(time_step, datetime.timedelta):
@@ -675,9 +694,27 @@ class Disperse(Response):
 
         if self.cur_state == 'deactivated':
             # do deactivated stuff
-            pass
+            return
 
         while self._time_remaining > zero:
+
+            if self.disp_eff == 0:
+                #special case to shut operation down when dispersant is ineffective
+                if self.cur_state == 'disperse' or self.cur_state == 'en_route':
+                    self.report.append((model_time, 'Dispersant less than 20% efficient due to oil or environmental conditions. Returning to base'))
+                    print self.report[-1]
+                    o_w_t_t = datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit, payload=False))
+                    self._op_start = self._op_end = None
+                    self.cur_state = 'rtb'
+                    if 'disperse' in self.cur_state:
+                        self._next_state_time = model_time + o_w_t_t
+                    else:
+                        return_time = o_w_t_t.total_seconds() - (self._next_state_time - model_time).total_seconds()
+
+                        self._next_state_time = model_time + datetime.timedelta(seconds=return_time)
+                elif self.cur_state in ['retired', 'refuel_reload', 'ready', 'inactive']:
+                    break
+
             ttni = self.time_to_next_interval(model_time)
 
             if ttni is None:
@@ -686,6 +723,7 @@ class Disperse(Response):
                 self.cur_state = 'deactivated'
                 self.report.append((model_time, 'Disperse operation has ended and is deactivated'))
                 print self.report[-1]
+                break
 
             if self.cur_state == 'retired':
                 if self.index_of(model_time) > -1 and self.timeseries[self.index_of(model_time)][0] == model_time:
@@ -750,17 +788,17 @@ class Disperse(Response):
                 spray_time = min(self._time_remaining, time_left_in_pass)
                 disp_possible = spray_time.total_seconds() * self.platform.eff_pump_rate(self.dosage)
                 disp_actual = min(self._remaining_dispersant, disp_possible)
-                oil_avail = self.dispersable_oil_amount(sc, 'gal')
+                oil_avail = self.dispersable_oil_amount(sc, 'm^3')
                 treated_possible = disp_actual * self.disp_eff * self.disp_oil_ratio
+                print 'treated_possible', treated_possible, 'disp_eff', self.disp_eff, 'ratio', self.disp_oil_ratio
                 area_sprayed = disp_actual / self._dosage_m
                 print ('oil sprayable', oil_avail)
-                print('disp sprayed ', uc.convert('volume', 'm^3', 'gal', disp_actual), 'gal')
-                print('area sprayed ', uc.convert('area', 'm^2', 'acre', area_sprayed), 'acres')
                 if self._remaining_dispersant == disp_actual:
                     # out of dispersant early, so short circuit into RTB
                     self._remaining_dispersant -= disp_actual
                     self._disp_sprayed_this_timestep += disp_actual
                     remainder_spray_time = datetime.timedelta(seconds=disp_actual / self.platform.eff_pump_rate(self.dosage))
+                    self.oil_treated_this_timestep += min(treated_possible, self.dispersable_oil_amount(sc, 'm^3') - self.oil_treated_this_timestep)
                     self._time_remaining -= remainder_spray_time
                     self.model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                     self.report.append((model_time, 'Out of dispersant, returning to base'))
@@ -772,15 +810,21 @@ class Disperse(Response):
                     continue
 
                 elif oil_avail < treated_possible:
-                    self.report.append((model_time, 'Treated all available oil'))
-                    disp_to_treat = oil_avail / self.disp_actual / self.disp_eff
+                    self.report.append((model_time, 'Treated all available oil, returning to base'))
+                    print self.report[-1]
+                    disp_to_treat = oil_avail / self.disp_oil_ratio / self.disp_eff
                     if disp_to_treat > disp_actual:
                         1 / 0
                     self._disp_sprayed_this_timestep += disp_to_treat
                     remainder_spray_time = datetime.timedelta(seconds=disp_actual / self.platform.eff_pump_rate(self.dosage))
                     self._time_remaining -= remainder_spray_time
                     self._remaining_dispersant -= self._disp_sprayed_this_timestep
+                    self.oil_treated_this_timestep += min(treated_possible, self.dispersable_oil_amount(sc, 'm^3') - self.oil_treated_this_timestep)
                     model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                    o_w_t_t = datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit, payload=False))
+                    self._next_state_time = model_time + o_w_t_t
+                    self._op_start = self._op_end = None
+                    self.cur_state = 'rtb'
                     continue
 
                 else:
@@ -788,7 +832,7 @@ class Disperse(Response):
                     self._time_remaining -= min(self._time_remaining, time_left_in_pass)
                     self._remaining_dispersant -= disp_actual
                     self._disp_sprayed_this_timestep += disp_actual
-                    self.oil_treated_this_timestep += treated_possible
+                    self.oil_treated_this_timestep += min(treated_possible, self.dispersable_oil_amount(sc, 'm^3') - self.oil_treated_this_timestep)
                 # ~
                 # INSERT DISPERSION OF OIL HERE
                 # ~
@@ -854,23 +898,50 @@ class Disperse(Response):
         else:
             return model_time, time_step
 
+    def dispersable_oil_idxs(self, sc):
+        # LEs must have a low viscosity, have not been fully chem dispersed, and must have a mass > 0
+        idxs = np.where(sc['viscosity'] * 1000000 < 5000)[0]
+        codes = sc['fate_status'][idxs] != bt_fate.disperse
+        idxs = idxs[codes]
+        nonzero_mass = sc['mass'][idxs] > 0
+        idxs = idxs[nonzero_mass]
+        return idxs
+
     def dispersable_oil_amount(self, sc, units='gal'):
-        idxs = np.where(sc['viscosity'] < 3000)[0]
+        idxs = self.dispersable_oil_idxs(sc)
         if units in _valid_vol_units:
             tot_vol = np.sum(sc['mass'][idxs] / sc['density'][idxs])
-            return uc.convert('volume', 'm^3', 'gal', tot_vol)
+            return max(0, uc.convert('volume', 'm^3', units, tot_vol))
         else:
             tot_mass = np.sum(sc['mass'][idxs])
-            return tot_mass
+            return max(0, tot_mass - self.oil_treated_this_timestep / np.mean(sc['density'][idxs]))
 
     def weather_elements(self, sc, time_step, model_time):
-        print 'disp sprayed', self._disp_sprayed_this_timestep
-        print 'disp remaining', self._remaining_dispersant
-        print 'oil treated', self.oil_treated_this_timestep
+#         print 'disp sprayed', self._disp_sprayed_this_timestep
+#         print 'disp remaining', self._remaining_dispersant
+#         print 'oil treated', self.oil_treated_this_timestep
 
-        self._disp_sprayed_this_timestep = 0
-        self.oil_treated_this_timestep = 0
-        pass
+        elems_to_remove_from = self.dispersable_oil_idxs(sc)
+        if self.oil_treated_this_timestep != 0:
+            print 'ottt', self.oil_treated_this_timestep
+            visc_eff_table = Disperse.visc_eff_table
+#             disp_eff_per_le = [visc_eff_table[visc_eff_table.keys()[np.searchsorted(visc_eff_table.keys(), le)]] / 100 for le in sc['viscosity'][elems_to_remove_from] * 1000000]
+#             proportions = disp_eff_per_le / np.mean(disp_eff_per_le)
+            proportions = sc['mass'][elems_to_remove_from] / np.mean(sc['mass'][elems_to_remove_from])
+            elem_densities = sc['density'][elems_to_remove_from]
+            vol_reductions = proportions * self.oil_treated_this_timestep / len(elems_to_remove_from)
+            mass_to_remove = vol_reductions * elem_densities  # oil_treated is in gallons, so need to change back to mass
+            print 'indices', elems_to_remove_from
+            print 'mass_to_remove', mass_to_remove
+            self._remove_mass_indices(sc, mass_to_remove, elems_to_remove_from)
+            zero_or_disp = np.isclose(sc['mass'][elems_to_remove_from], 0)
+            new_status = sc['fate_status'][elems_to_remove_from]
+            new_status[zero_or_disp] = bt_fate.disperse
+            sc['fate_status'][elems_to_remove_from] = new_status
+            self.oil_treated_this_timestep = 0
+            self.disp_sprayed_this_timestep = 0
+            print sc['mass']
+
 
 
 class BurnUnitsSchema(MappingSchema):
