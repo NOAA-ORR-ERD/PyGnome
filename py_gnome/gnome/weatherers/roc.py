@@ -934,6 +934,7 @@ class Disperse(Response):
             print 'indices', elems_to_remove_from
             print 'mass_to_remove', mass_to_remove
             self._remove_mass_indices(sc, mass_to_remove, elems_to_remove_from)
+            sc.mass_balance['dispersed'] += sum(mass_to_remove)
             zero_or_disp = np.isclose(sc['mass'][elems_to_remove_from], 0)
             new_status = sc['fate_status'][elems_to_remove_from]
             new_status[zero_or_disp] = bt_fate.disperse

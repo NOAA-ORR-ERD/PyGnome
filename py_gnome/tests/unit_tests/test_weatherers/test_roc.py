@@ -370,6 +370,7 @@ class TestRocChemDispersion(ROCTests):
                 off = self.model.current_time_step * self.model.time_step
                 print '********', self.model.start_time + timedelta(seconds=off)
                 print self.sc['mass']
+                print self.sc.mass_balance['dispersed']
         except StopIteration:
             pass
         assert False
