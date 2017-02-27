@@ -373,7 +373,7 @@ class TestRocChemDispersion(ROCTests):
                 print self.sc.mass_balance['dispersed']
         except StopIteration:
             pass
-        assert False
+#         assert False
 
 #     def test_reports(self, sample_model_fcn2):
 #         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
