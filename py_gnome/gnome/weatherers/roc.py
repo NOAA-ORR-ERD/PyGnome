@@ -51,16 +51,21 @@ class OnSceneTimeSeriesSchema(NumpyArray):
         validators.no_duplicate_datetime(node, cstruct)
         validators.ascending_datetime(node, cstruct)
 
-
 class ResponseSchema(WeathererSchema):
     timeseries = OnSceneTimeSeriesSchema()
 
-
 class Response(Weatherer, Serializable):
 
-    def __init__(self, **kwargs):
+    _schema = ResponseSchema
+    _state = copy.deepcopy(Weatherer._state)
+#    _state += [Field('timeseries', update=True, save=True)]
+    _oc_list = ['timeseries']
+
+
+    def __init__(self, timeseries=None, **kwargs):
         super(Response, self).__init__(**kwargs)
         self._report = []
+        self.timeseries = timeseries
 
     def _get_thickness(self, sc):
         oil_thickness = 0.0
@@ -196,6 +201,29 @@ class Response(Weatherer, Serializable):
     def is_operating(self, time):
         return self.index_of(time) > -1
 
+    def serialize(self, json_="webapi"):
+        serial = super(Response, self).serialize(json_)
+        if self.timeseries is not None: 
+            serial['timeseries'] = []
+            for v in self.timeseries:
+                serial['timeseries'].append([v[0].isoformat(), v[1].isoformat()])
+        return serial
+
+    @classmethod
+    def deserialize(cls, json):
+        schema = cls._schema()
+        deserial = schema.deserialize(json)
+        if 'timeseries' in json:
+            deserial['timeseries'] = []
+            for v in json['timeseries']:
+                deserial['timeseries'].append(
+                    (datetime.datetime.strptime(v[0], '%Y-%m-%dT%H:%M:%S'), 
+                     datetime.datetime.strptime(v[1], '%Y-%m-%dT%H:%M:%S')))
+
+        return deserial
+
+    def _no_op_step(self):
+        self._time_remaining = 0;
 
 class PlatformUnitsSchema(MappingSchema):
     def __init__(self, *args, **kwargs):
@@ -481,8 +509,7 @@ class Disperse(Response):
                Field('disp_eff', save=True, update=True),
                Field('platform', save=True, update=True),
                Field('dosage_type', save=True, update=True),
-               Field('loading_type', save=True, update=True),
-               Field('timeseries', save=True, update=True)]
+               Field('loading_type', save=True, update=True)]
 
     def __init__(self,
                  name=None,
@@ -770,7 +797,6 @@ class BurnSchema(ResponseSchema):
     boom_draft = SchemaNode(Integer())
     speed = SchemaNode(Float())
     throughput = SchemaNode(Float())
-    timeseries = OnSceneTimeSeriesSchema()
     burn_efficiency_type = SchemaNode(String())
     units = BurnUnitsSchema()
 
@@ -780,7 +806,6 @@ class Burn(Response):
                Field('boom_length', save=True, update=True),
                Field('boom_draft', save=True, update=True),
                Field('speed', save=True, update=True),
-               Field('timeseries', save=True, update=True),
                Field('throughput', save=True, update=True),
                Field('burn_efficiency_type', save=True, update=True),
                Field('units', save=True, update=True)]
@@ -1048,11 +1073,9 @@ class SkimSchema(ResponseSchema):
     discharge_pump = SchemaNode(Float())
     recovery = SchemaNode(String())
     recovery_ef = SchemaNode(Float())
-    timeseries = OnSceneTimeSeriesSchema()
     barge_arrival = SchemaNode(LocalDateTime(),
                                validator=validators.convertible_to_seconds,
                                missing=drop)
-
 
 class Skim(Response):
     _state = copy.deepcopy(Response._state)
@@ -1159,13 +1182,13 @@ class Skim(Response):
 
         self._time_remaining = time_step
 
-        if type(self.barge_arrival) is datetime.date:
+        if hasattr(self, 'barge_arrival'): #type(self.barge_arrival) is datetime.date:
             # if there's a barge so a modified cycle
             while self._time_remaining > 0.:
                 if self._is_collecting:
                     self._collect(sc, time_step, model_time)
         else:
-            while self_time_remaining > 0.:
+            while self._time_remaining > 0.:
                 if self._is_collecting:
                     self._collect(sc, time_step, model_time)
 
@@ -1217,8 +1240,8 @@ class Skim(Response):
                         decantRateDifference = computedDecantRate - self.decant_pump
 
                     recoveryRate = emulsionRecoveryRate + waterRecoveryRate
-                    retainRate = emulsionRecoveryRate + weaterRetainedRate + decantRateDifference
-                    oilRecoveryRate = emlusionRecoveryRate * (1 - sc['frac_water'].mean())
+                    retainRate = emulsionRecoveryRate + waterRetainedRate + decantRateDifference
+                    oilRecoveryRate = emulsionRecoveryRate * (1 - sc['frac_water'].mean())
 
                     freeWaterRecoveryRate = recoveryRate - emulsionRecoveryRate
                     freeWaterRetainedRate = retainRate - emulsionRecoveryRate
@@ -1234,7 +1257,7 @@ class Skim(Response):
                         # storage is filled during this timestep
                         time_collecting = timeToFill
                         self._time_remaining -= timeToFill
-                        self._transit_remaining = self.transit
+                        self._transit_remaining = self.transit_time
                         self._collecting = False
                         self._transiting = True
 
