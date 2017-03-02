@@ -1201,17 +1201,21 @@ class Skim(Response):
 
     def _collect(self, sc, time_step, model_time):
         thickness = self._get_thickness(sc)
-        self._maximum_effective_swath = self.nameplate_pump * self.recovery / (63.13 * self.speed * thickness * self.throughput)
+        if self.recovery_ef > 0 and self.throughput > 0 and thickness > 0:
+            self._maximum_effective_swath = self.nameplate_pump * self.recovery_ef / (63.13 * self.speed * thickness * self.throughput)
+        else: 
+            self._maximum_effective_swath = 0 
 
-        if self.swath > self._maximum_effective_swath:
+        if self.swath_width > self._maximum_effective_swath:
             swath = self._maximum_effective_swath;
+        else:
+            swath = self.swath_width
 
         if swath > 1000:
             self.report.append('Swaths > 1000 feet may not be achievable in the field.')
 
         encounter_rate = thickness * self.speed * swath * 63.13
         rate_of_coverage = swath * self.speed * 0.00233
-
         if encounter_rate > 0:
             recovery = self._getRecoveryEfficiency()
 
@@ -1227,6 +1231,8 @@ class Skim(Response):
                     msg = ('{0.name} - Total Fluid Recovery Rate is greater than Nameplate \
                             Pump Rate, recalculating Throughput Efficiency').format(self)
                     self.logger.warni(msg)
+                else:
+                    throughput = self.throughput
 
                 if throughput > 0:
                     emulsionRecoveryRate = encounter_rate * throughput
@@ -1270,6 +1276,14 @@ class Skim(Response):
                     self._ts_area_covered = rate_of_coverage * time_collecting
 
                     self._storage_remaining -= uc.convert('Volume', 'gal', 'bbl', self._ts_fluid_collected)
+                
+                else:
+                    self._no_op_step()
+            else:
+                self._no_op_step()
+        else:
+            self._no_op_step()
+        
 
     def _transit(self, sc, time_step, model_time):
         # transiting back to shore to offload
@@ -1288,7 +1302,7 @@ class Skim(Response):
 
     def _offload(self, sc, time_step, model_time):
         if self._time_remaining > self._offload_remaining:
-            self._time_remaining -= self_ofload_remaining
+            self._time_remaining -= self._offload_remaining
             self._offload_remaining = 0.
             self._storage_remaining = self.storage
             self._offloading = False
@@ -1310,12 +1324,12 @@ class Skim(Response):
             if len(data['mass']) is 0:
                 continue
 
-            if self._ts_oil_collected:
+            if hasattr(self, '_ts_oil_collected') and self._ts_oil_collected is not None:
                 sc.mass_balance['skimmed'] += self._ts_oil_collected
-                self._remove_mass_simple(data, amount)
+                self._remove_mass_simple(data, self._ts_oil_collected)
 
                 self.logger.debug('{0} amount boomed for {1}: {2}'
-                                  .format(self._pid, substance.name, self._ts_collected))
+                                  .format(self._pid, substance.name, self._ts_oil_collected))
 
                 platform_balance = sc.mass_balance[self.id]
                 platform_balance['fluid_collected'] += self._ts_fluid_collected
@@ -1333,7 +1347,7 @@ class Skim(Response):
         # will eventually include logic for calculating
         # recovery efficiency based on wind and oil visc.
 
-        return self.recovery
+        return self.recovery_ef
 
 if __name__ == '__main__':
     print None
