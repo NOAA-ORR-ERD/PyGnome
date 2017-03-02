@@ -924,7 +924,7 @@ class Burn(Response):
     def _collect(self, sc, time_step, model_time):
         # calculate amount collected this time_step
         if self._burn_time is None:
-            self._burn_rate = 0.14 * (100 - (sc['frac_water'].mean() * 100)) / 100
+            self._burn_rate = 0.14 * (1 - sc['frac_water'].mean())
             self._burn_time = (0.33 * self.boom_draft / self._burn_rate) * 60
             self._burn_time_remaining = self._burn_time
 
@@ -942,7 +942,7 @@ class Burn(Response):
         if time_to_fill > self._time_remaining:
             # doesn't finish fill the boom in this time step
             self._ts_collected = emulsion_rr * (self._time_remaining / 60)
-            self._boom_capacity_remaining -= self.collected
+            self._boom_capacity_remaining -= self._ts_collected
             self._time_remaining = 0.0
             self._time_collecting_in_sim += self._time_remaining
         elif self._time_remaining > 0:
