@@ -4,7 +4,7 @@ tests for ROC
 from datetime import datetime, timedelta
 
 import numpy as np
-from pytest import raises, mark
+from pytest import raises, mark, set_trace
 
 import unit_conversion as us
 
@@ -241,7 +241,7 @@ class TestRocChemDispersion(ROCTests):
     disp = Disperse(name='test_disperse',
                     transit=100,
                     pass_length=4,
-                    dosage=5,
+                    dosage=1,
                     cascade_on=False,
                     cascade_distance=None,
                     timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]),
@@ -295,13 +295,17 @@ class TestRocChemDispersion(ROCTests):
     def test_prepare_for_model_step(self, sample_model_fcn2):
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
         self.model.weatherers += self.disp
+        self.model.spills[0].amount = 1000
+        self.model.spills[0].units = 'gal'
         self.reset_and_release()
+        self.disp.prepare_for_model_run(self.sc)
         print self.model.start_time
         print self.disp.timeseries
         assert self.disp.cur_state == 'retired'
         self.model.step()
         print self.model.current_time_step
         self.model.step()
+        print self.model.spills.items()[0]['viscosity']
         assert self.disp.cur_state == 'en_route'
         print self.disp._next_state_time
         self.model.step()
@@ -313,14 +317,51 @@ class TestRocChemDispersion(ROCTests):
             self.model.step()
             off = self.model.current_time_step * self.model.time_step
             print self.model.start_time + timedelta(seconds=off)
-        assert 'disperse' in self.disp.cur_state
-        while self.disp.cur_state != 'retired':
-            self.model.step()
-            off = self.model.current_time_step * self.model.time_step
-            print self.model.start_time + timedelta(seconds=off)
-        print self.disp.platform.min_dosage()
-        print self.disp.platform.max_dosage()
-        assert False
+        print 'pump_rate ', self.disp.platform.eff_pump_rate(self.disp.dosage)
+        try:
+            for step in self.model:
+                off = self.model.current_time_step * self.model.time_step
+                print self.model.start_time + timedelta(seconds=off)
+        except StopIteration:
+            pass
+
+    def test_prepare_for_model_step_cont(self, sample_model_fcn2):
+        (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+        self.model.weatherers += self.disp
+        self.model.spills[0].amount = 20000
+        self.model.spills[0].units = 'gal'
+        self.model.spills[0].end_release_time = self.model.start_time + timedelta(hours=3)
+        self.reset_and_release()
+        self.disp.prepare_for_model_run(self.sc)
+#         print self.model.start_time
+#         print self.disp.timeseries
+#         assert self.disp.cur_state == 'retired'
+#         self.model.step()
+#         print self.model.current_time_step
+#         self.model.step()
+#         print self.model.spills.items()[0]['viscosity']
+#         assert self.disp.cur_state == 'en_route'
+#         print self.disp._next_state_time
+#         self.model.step()
+#         assert self.disp.cur_state == 'en_route'
+#         print self.disp.transit
+#         print self.disp.platform.transit_speed
+#         print self.disp.platform.one_way_transit_time(self.disp.transit)/60
+#         while self.disp.cur_state == 'en_route':
+#             self.model.step()
+#             off = self.model.current_time_step * self.model.time_step
+#             print self.model.start_time + timedelta(seconds=off)
+#         print 'pump_rate ', self.disp.platform.eff_pump_rate(self.disp.dosage)
+#         assert 'disperse' in self.disp.cur_state
+        try:
+            for step in self.model:
+                off = self.model.current_time_step * self.model.time_step
+                print '********', self.model.start_time + timedelta(seconds=off)
+                print self.sc['mass']
+                print self.sc.mass_balance['dispersed']
+        except StopIteration:
+            pass
+#         assert False
 
 #     def test_reports(self, sample_model_fcn2):
 #         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
