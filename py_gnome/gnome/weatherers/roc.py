@@ -51,12 +51,16 @@ class OnSceneTimeSeriesSchema(SequenceSchema):
 #         validators.no_duplicate_datetime(node, cstruct)
 #         validators.ascending_datetime(node, cstruct)
 
-
 class ResponseSchema(WeathererSchema):
     timeseries = OnSceneTimeSeriesSchema()
 
-
 class Response(Weatherer, Serializable):
+
+    _schema = ResponseSchema
+    _state = copy.deepcopy(Weatherer._state)
+#    _state += [Field('timeseries', update=True, save=True)]
+    _oc_list = ['timeseries']
+
     _schema = ResponseSchema
 
     _state = copy.deepcopy(Weatherer._state)
@@ -69,6 +73,7 @@ class Response(Weatherer, Serializable):
         super(Response, self).__init__(**kwargs)
         self.timeseries = timeseries
         self._report = []
+        self.timeseries = timeseries
 
     def _get_thickness(self, sc):
         oil_thickness = 0.0
@@ -213,6 +218,29 @@ class Response(Weatherer, Serializable):
     def is_operating(self, time):
         return self.index_of(time) > -1
 
+    def serialize(self, json_="webapi"):
+        serial = super(Response, self).serialize(json_)
+        if self.timeseries is not None: 
+            serial['timeseries'] = []
+            for v in self.timeseries:
+                serial['timeseries'].append([v[0].isoformat(), v[1].isoformat()])
+        return serial
+
+    @classmethod
+    def deserialize(cls, json):
+        schema = cls._schema()
+        deserial = schema.deserialize(json)
+        if 'timeseries' in json:
+            deserial['timeseries'] = []
+            for v in json['timeseries']:
+                deserial['timeseries'].append(
+                    (datetime.datetime.strptime(v[0], '%Y-%m-%dT%H:%M:%S'), 
+                     datetime.datetime.strptime(v[1], '%Y-%m-%dT%H:%M:%S')))
+
+        return deserial
+
+    def _no_op_step(self):
+        self._time_remaining = 0;
 
 class PlatformUnitsSchema(MappingSchema):
     def __init__(self, *args, **kwargs):
@@ -491,7 +519,7 @@ class DisperseSchema(ResponseSchema):
     disp_oil_ratio = SchemaNode(Float(), missing=drop)
     disp_eff = SchemaNode(Float(), missing=drop)
     platform = PlatformSchema()
-#     timeseries = OnSceneTimeSeriesSchema()
+    timeseries = OnSceneTimeSeriesSchema()
 
     def __init__(self, *args, **kwargs):
         for k, v in Disperse._attr.items():
@@ -989,7 +1017,6 @@ class BurnSchema(ResponseSchema):
     boom_draft = SchemaNode(Integer())
     speed = SchemaNode(Float())
     throughput = SchemaNode(Float())
-    timeseries = OnSceneTimeSeriesSchema()
     burn_efficiency_type = SchemaNode(String())
     units = BurnUnitsSchema()
 
@@ -1116,7 +1143,7 @@ class Burn(Response):
     def _collect(self, sc, time_step, model_time):
         # calculate amount collected this time_step
         if self._burn_time is None:
-            self._burn_rate = 0.14 * (100 - (sc['frac_water'].mean() * 100)) / 100
+            self._burn_rate = 0.14 * (1 - sc['frac_water'].mean())
             self._burn_time = (0.33 * self.boom_draft / self._burn_rate) * 60
             self._burn_time_remaining = self._burn_time
 
@@ -1134,7 +1161,7 @@ class Burn(Response):
         if time_to_fill > self._time_remaining:
             # doesn't finish fill the boom in this time step
             self._ts_collected = emulsion_rr * (self._time_remaining / 60)
-            self._boom_capacity_remaining -= self.collected
+            self._boom_capacity_remaining -= self._ts_collected
             self._time_remaining = 0.0
             self._time_collecting_in_sim += self._time_remaining
         elif self._time_remaining > 0:
@@ -1265,11 +1292,9 @@ class SkimSchema(ResponseSchema):
     discharge_pump = SchemaNode(Float())
     recovery = SchemaNode(String())
     recovery_ef = SchemaNode(Float())
-    timeseries = OnSceneTimeSeriesSchema()
     barge_arrival = SchemaNode(LocalDateTime(),
                                validator=validators.convertible_to_seconds,
                                missing=drop)
-
 
 class Skim(Response):
     _state = copy.deepcopy(Response._state)
@@ -1376,13 +1401,13 @@ class Skim(Response):
 
         self._time_remaining = time_step
 
-        if type(self.barge_arrival) is datetime.date:
+        if hasattr(self, 'barge_arrival'): #type(self.barge_arrival) is datetime.date:
             # if there's a barge so a modified cycle
             while self._time_remaining > 0.:
                 if self._is_collecting:
                     self._collect(sc, time_step, model_time)
         else:
-            while self_time_remaining > 0.:
+            while self._time_remaining > 0.:
                 if self._is_collecting:
                     self._collect(sc, time_step, model_time)
 
@@ -1395,17 +1420,21 @@ class Skim(Response):
 
     def _collect(self, sc, time_step, model_time):
         thickness = self._get_thickness(sc)
-        self._maximum_effective_swath = self.nameplate_pump * self.recovery / (63.13 * self.speed * thickness * self.throughput)
+        if self.recovery_ef > 0 and self.throughput > 0 and thickness > 0:
+            self._maximum_effective_swath = self.nameplate_pump * self.recovery_ef / (63.13 * self.speed * thickness * self.throughput)
+        else: 
+            self._maximum_effective_swath = 0 
 
-        if self.swath > self._maximum_effective_swath:
+        if self.swath_width > self._maximum_effective_swath:
             swath = self._maximum_effective_swath;
+        else:
+            swath = self.swath_width
 
         if swath > 1000:
             self.report.append('Swaths > 1000 feet may not be achievable in the field.')
 
         encounter_rate = thickness * self.speed * swath * 63.13
         rate_of_coverage = swath * self.speed * 0.00233
-
         if encounter_rate > 0:
             recovery = self._getRecoveryEfficiency()
 
@@ -1421,6 +1450,8 @@ class Skim(Response):
                     msg = ('{0.name} - Total Fluid Recovery Rate is greater than Nameplate \
                             Pump Rate, recalculating Throughput Efficiency').format(self)
                     self.logger.warni(msg)
+                else:
+                    throughput = self.throughput
 
                 if throughput > 0:
                     emulsionRecoveryRate = encounter_rate * throughput
@@ -1434,8 +1465,8 @@ class Skim(Response):
                         decantRateDifference = computedDecantRate - self.decant_pump
 
                     recoveryRate = emulsionRecoveryRate + waterRecoveryRate
-                    retainRate = emulsionRecoveryRate + weaterRetainedRate + decantRateDifference
-                    oilRecoveryRate = emlusionRecoveryRate * (1 - sc['frac_water'].mean())
+                    retainRate = emulsionRecoveryRate + waterRetainedRate + decantRateDifference
+                    oilRecoveryRate = emulsionRecoveryRate * (1 - sc['frac_water'].mean())
 
                     freeWaterRecoveryRate = recoveryRate - emulsionRecoveryRate
                     freeWaterRetainedRate = retainRate - emulsionRecoveryRate
@@ -1451,7 +1482,7 @@ class Skim(Response):
                         # storage is filled during this timestep
                         time_collecting = timeToFill
                         self._time_remaining -= timeToFill
-                        self._transit_remaining = self.transit
+                        self._transit_remaining = self.transit_time
                         self._collecting = False
                         self._transiting = True
 
@@ -1464,6 +1495,14 @@ class Skim(Response):
                     self._ts_area_covered = rate_of_coverage * time_collecting
 
                     self._storage_remaining -= uc.convert('Volume', 'gal', 'bbl', self._ts_fluid_collected)
+                
+                else:
+                    self._no_op_step()
+            else:
+                self._no_op_step()
+        else:
+            self._no_op_step()
+        
 
     def _transit(self, sc, time_step, model_time):
         # transiting back to shore to offload
@@ -1482,7 +1521,7 @@ class Skim(Response):
 
     def _offload(self, sc, time_step, model_time):
         if self._time_remaining > self._offload_remaining:
-            self._time_remaining -= self_ofload_remaining
+            self._time_remaining -= self._offload_remaining
             self._offload_remaining = 0.
             self._storage_remaining = self.storage
             self._offloading = False
@@ -1504,12 +1543,12 @@ class Skim(Response):
             if len(data['mass']) is 0:
                 continue
 
-            if self._ts_oil_collected:
+            if hasattr(self, '_ts_oil_collected') and self._ts_oil_collected is not None:
                 sc.mass_balance['skimmed'] += self._ts_oil_collected
-                self._remove_mass_simple(data, amount)
+                self._remove_mass_simple(data, self._ts_oil_collected)
 
                 self.logger.debug('{0} amount boomed for {1}: {2}'
-                                  .format(self._pid, substance.name, self._ts_collected))
+                                  .format(self._pid, substance.name, self._ts_oil_collected))
 
                 platform_balance = sc.mass_balance[self.id]
                 platform_balance['fluid_collected'] += self._ts_fluid_collected
@@ -1527,7 +1566,7 @@ class Skim(Response):
         # will eventually include logic for calculating
         # recovery efficiency based on wind and oil visc.
 
-        return self.recovery
+        return self.recovery_ef
 
 if __name__ == '__main__':
     print None

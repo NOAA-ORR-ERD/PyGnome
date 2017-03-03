@@ -11,6 +11,7 @@ import unit_conversion as us
 from gnome.basic_types import oil_status, fate
 
 from gnome.weatherers.roc import (Burn, Disperse, Skim, Platform)
+from gnome.persist import load
 from gnome.weatherers import (WeatheringData,
                               FayGravityViscous,
                               weatherer_sort,
@@ -141,8 +142,9 @@ class TestROCBurn(ROCTests):
 
     def test_weather_elements(self, sample_model_fcn2):
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+        self.model.time_step = 900
         self.reset_and_release()
-        burn = Burn(offset=3000.0,
+        burn = Burn(offset=6000.0,
                  boom_length=100.0,
                  boom_draft=10.0,
                  speed=2.0,
@@ -153,60 +155,46 @@ class TestROCBurn(ROCTests):
         self.model.weatherers.append(burn)
         self.model.rewind()
         self.model.step()
+        assert burn._is_burning == False
+        assert burn._is_collecting == True
         self.model.step()
-        assert burn._ts_collected == self.sc.mass_balance['boomed']
-        assert burn._ts_collected <= burn._boom_capacity
-        assert burn._burn_rate == 0.14
-        assert burn._burn_time == 1414.2857142857142
-        assert burn._is_boom_full == True
+        assert burn._is_burning == False
         assert burn._is_collecting == False
         assert burn._is_transiting == True
+        assert burn._is_boom_full == True
+        assert burn._burn_rate == 0.14
+        assert burn._burn_time == 1414.2857142857142
         collected = self.sc.mass_balance['boomed']
+        assert collected == burn._boom_capacity
+        self.model.step()
+        assert burn._is_collecting == False
+        assert burn._is_burning == True
+        assert burn._burn_time_remaining <= burn._burn_time
         self.model.step()
         assert burn._is_transiting == False
         assert burn._is_burning == True
+        assert burn._is_boom_full == False
         self.model.step()
         assert self.sc.mass_balance['burned'] != 0
-        assert burn._burn_time_remaining <= burn._burn_time
+        assert burn._is_burning == False
+        assert burn._is_cleaning == True
         self.model.step()
         assert self.sc.mass_balance['boomed'] == 0
         assert self.sc.mass_balance['burned'] == collected
         assert burn._is_burning == False
         assert burn._is_cleaning == True
-        self.model.step()
-        self.model.step()
-        self.model.step()
-        self.model.step()
-        self.model.step()
-        self.model.step()
-        assert burn._is_cleaning == False
-        assert burn._is_transiting == True
-        assert burn._is_boom_filled == False
 
-        self.model.step()
-        self.model.step()
-        self.model.step()
-        assert burn._active == True
-        assert burn._is_collecting == False
-        assert burn._is_transiting == False
-        assert burn._is_cleaning == False
-        assert burn._is_burning == True
-
+        self.model.rewind()
+        for step in self.model:
+            print step
+    
+         
     def test_serialization(self):
         b = TestROCBurn.burn
-        import pprint as pp
         ser = b.serialize()
-        pp.pprint(ser)
         deser = Burn.deserialize(ser)
-
-        pp.pprint(deser)
-
         b2 = Burn.new_from_dict(deser)
         ser2 = b2.serialize()
-        pp.pprint(ser2)
-
-        print 'INCORRECT BELOW'
-
         ser.pop('id')
         ser2.pop('id')
         assert ser == ser2
@@ -449,29 +437,66 @@ class TestRocSkim(ROCTests):
                 decant_pump=150.0,
                 discharge_pump=1000.0,
                 rig_time=timedelta(minutes=30),
-                timeseries=[(datetime(2000, 1, 1, 1, 0, 0), datetime(2000, 1, 1, 2, 0, 0))],
+                timeseries=[(datetime(2012, 9, 15, 12, 0), datetime(2012, 9, 16, 1, 0))],
                 transit_time=timedelta(hours=2))
 
-    def test_preare_for_model_run(self, sample_model_fcn2):
+    def test_prepare_for_model_run(self, sample_model_fcn2):
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
         self.reset_and_release()
         self.skim.prepare_for_model_run(self.sc)
 
+    def test_prepare_for_model_step(self, sample_model_fcn2):
+        (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+        self.reset_and_release()
+
+        self.skim.prepare_for_model_run(self.sc)
+        self.skim.prepare_for_model_step(self.sc, time_step, active_start)
+
+        assert self.skim._active == True
+
+    def test_weather_elements(self, sample_model_fcn2):
+        (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+        self.reset_and_release()
+        skim = Skim(speed=2.0,
+                storage=2000.0,
+                swath_width=150,
+                group='A',
+                throughput=0.75,
+                nameplate_pump=100.0,
+                skim_efficiency_type='meh',
+                recovery=0.75,
+                recovery_ef=0.75,
+                decant=0.75,
+                decant_pump=150.0,
+                discharge_pump=1000.0,
+                rig_time=timedelta(minutes=30),
+                timeseries=[(datetime(2012, 9, 15, 12, 0), datetime(2012, 9, 16, 1, 0))],
+                transit_time=timedelta(hours=2))
+
+        self.model.weatherers.append(skim)
+        self.model.rewind()
+        self.model.step()
+        self.model.step()
+        self.model.step()
+        self.model.step()
+
     def test_serialization(self):
         s = TestRocSkim.skim
-        import pprint as pp
+
         ser = s.serialize()
-        pp.pprint(ser)
+        assert 'timeseries' in ser
         deser = Skim.deserialize(ser)
-
-        pp.pprint(deser)
-
         s2 = Skim.new_from_dict(deser)
         ser2 = s2.serialize()
-        pp.pprint(ser2)
-
-        print 'INCORRECT BELOW'
-
         ser.pop('id')
         ser2.pop('id')
         assert ser == ser2
+
+    def test_model_save(self, sample_model_fcn2):
+        s = TestRocSkim.skim
+        (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+        self.model.weatherers.append(s)
+        self.model.save('./')
+
+    def test_model_load(self):
+        m = load('./Model.zip')
