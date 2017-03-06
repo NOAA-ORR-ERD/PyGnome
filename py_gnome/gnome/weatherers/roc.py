@@ -73,7 +73,6 @@ class Response(Weatherer, Serializable):
         super(Response, self).__init__(**kwargs)
         self.timeseries = timeseries
         self._report = []
-        self.timeseries = timeseries
 
     def _get_thickness(self, sc):
         oil_thickness = 0.0
@@ -220,7 +219,7 @@ class Response(Weatherer, Serializable):
 
     def serialize(self, json_="webapi"):
         serial = super(Response, self).serialize(json_)
-        if self.timeseries is not None: 
+        if self.timeseries is not None:
             serial['timeseries'] = []
             for v in self.timeseries:
                 serial['timeseries'].append([v[0].isoformat(), v[1].isoformat()])
@@ -234,7 +233,7 @@ class Response(Weatherer, Serializable):
             deserial['timeseries'] = []
             for v in json['timeseries']:
                 deserial['timeseries'].append(
-                    (datetime.datetime.strptime(v[0], '%Y-%m-%dT%H:%M:%S'), 
+                    (datetime.datetime.strptime(v[0], '%Y-%m-%dT%H:%M:%S'),
                      datetime.datetime.strptime(v[1], '%Y-%m-%dT%H:%M:%S')))
 
         return deserial
@@ -519,7 +518,6 @@ class DisperseSchema(ResponseSchema):
     disp_oil_ratio = SchemaNode(Float(), missing=drop)
     disp_eff = SchemaNode(Float(), missing=drop)
     platform = PlatformSchema()
-    timeseries = OnSceneTimeSeriesSchema()
 
     def __init__(self, *args, **kwargs):
         for k, v in Disperse._attr.items():
@@ -1049,7 +1047,6 @@ class Burn(Response):
                  speed,
                  throughput,
                  burn_efficiency_type=1,
-                 timeseries=None,
                  units=_si_units,
                  **kwargs):
 
@@ -1422,8 +1419,8 @@ class Skim(Response):
         thickness = self._get_thickness(sc)
         if self.recovery_ef > 0 and self.throughput > 0 and thickness > 0:
             self._maximum_effective_swath = self.nameplate_pump * self.recovery_ef / (63.13 * self.speed * thickness * self.throughput)
-        else: 
-            self._maximum_effective_swath = 0 
+        else:
+            self._maximum_effective_swath = 0
 
         if self.swath_width > self._maximum_effective_swath:
             swath = self._maximum_effective_swath;
@@ -1495,14 +1492,14 @@ class Skim(Response):
                     self._ts_area_covered = rate_of_coverage * time_collecting
 
                     self._storage_remaining -= uc.convert('Volume', 'gal', 'bbl', self._ts_fluid_collected)
-                
+
                 else:
                     self._no_op_step()
             else:
                 self._no_op_step()
         else:
             self._no_op_step()
-        
+
 
     def _transit(self, sc, time_step, model_time):
         # transiting back to shore to offload
