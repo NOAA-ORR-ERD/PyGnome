@@ -1,5 +1,5 @@
-Installation in Development Mode
-================================
+Installation without conda / Anaconda
+=====================================
 
 Since this is development work, it might be good to create and run this
 in a virtual environment. `Virtualenv <http://www.virtualenv.org/en/latest/>`__ and `Virtual envwrapper <http://virtualenvwrapper.readthedocs.org/en/latest/>`__ eases
@@ -12,9 +12,9 @@ may require a virtualenv in order to freely install python packages in
 python's site-packages area. (site-packages is the standard place where
 python installers will put packages after building them)
 
-You may also want to consider using conda environments.
+You may also want to consider using conda environments -- see above.
 
-There is C++/Cython code that must be built - you will need the corect C compiler and recent setuptools, etc.
+There is C++/Cython code that must be built - you will need the correct C compiler and recent setuptools, etc. See "Installing With Anaconda" for more detail.
 
 python.org
 ==========
@@ -22,11 +22,12 @@ python.org
 The following has been tested against `Python
 2.7 <https://www.python.org/downloads/>`__
 
-Linux (Tested in 32-bit, Ubuntu raring 13.04)
----------------------------------------------
+Linux (Tested in 64-bit, CentOS)
+--------------------------------
 
-For Linux use appropriate package manager (apt-get on ubuntu) to
+For Linux use appropriate package manager (yum on CentOS, apt-get on Ubuntu) to
 download/install binary dependencies.
+
 
 Binary Dependencies
 ...................
@@ -34,20 +35,15 @@ Binary Dependencies
 1. setuptools is required.
     ``> sudo apt-get install python-setuptools``
     \` \`
-2. `Pillow <http://pillow.readthedocs.org/en/latest/installation.html>`__
-   has binary dependencies. Visit the docs to get list of dependencies
-   for your system. Pillow requires Python's development libraries::
+
+2. To compile Python extensions, you need the development libs for Python:
 
     > sudo apt-get install python-dev
 
-This did not build symlinks to libraries for me in /usr/lib, so had to manually create them::
+3. netCDF4 python module requires NetCDF libraries:
 
-    > sudo ln -s /usr/lib/``\ uname
-   -i``-linux-gnu/libfreetype.so /usr/lib/``      ``> sudo ln -s /usr/lib/``\ uname
-   -i``-linux-gnu/libjpeg.so /usr/lib/``      ``> sudo ln -s /usr/lib/``\ uname
-   -i``-linux-gnu/libz.so /usr/lib/```` \`
+   libhdf5-serial-dev
 
-3. netCDF4 python module requires NetCDF libraries: libhdf5-serial-dev,
    libnetcdf-dev
 
 4. The following python packages, documented in PyGnome's
@@ -56,6 +52,7 @@ This did not build symlinks to libraries for me in /usr/lib, so had to manually 
 Binaries for
 
 `Numpy <http://packages.ubuntu.com/raring/python/python-numpy>`__ and
+
 `Cython <http://packages.ubuntu.com/raring/python/cython>`__
 can be installed using apt-get.
 
@@ -71,7 +68,6 @@ latest packages in your virtualenv once the above dependencies are met::
     > pip install numpy
     > pip install cython
     > pip install netCDF4
-    > pip install Pillow
 
 The remaining dependencies are python packages and can be installed using::
 
@@ -129,7 +125,7 @@ installed packages::
 
     >  pip
 
-    Usage:   
+    Usage:
       pip <command> [options]
 
     Commands:
@@ -185,7 +181,7 @@ Build PyGnome
 
 4. build the ``py_gnome`` module in develop mode first as install mode may
    still need some testing/work.
-    
+
    The other option you may need is ``cleanall``, which should clean the development environment -- good to do after puling new code from git.
 
 5. If this successfully completes, then run the unit tests::
