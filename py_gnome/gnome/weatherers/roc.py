@@ -217,26 +217,26 @@ class Response(Weatherer, Serializable):
     def is_operating(self, time):
         return self.index_of(time) > -1
 
-    def serialize(self, json_="webapi"):
-        serial = super(Response, self).serialize(json_)
-        if self.timeseries is not None:
-            serial['timeseries'] = []
-            for v in self.timeseries:
-                serial['timeseries'].append([v[0].isoformat(), v[1].isoformat()])
-        return serial
+#     def serialize(self, json_="webapi"):
+#         serial = super(Response, self).serialize(json_)
+#         if self.timeseries is not None:
+#             serial['timeseries'] = []
+#             for v in self.timeseries:
+#                 serial['timeseries'].append([v[0].isoformat(), v[1].isoformat()])
+#         return serial
+#
+#     @classmethod
+#     def deserialize(cls, json):
+#         schema = cls._schema()
+#         deserial = schema.deserialize(json)
+#         if 'timeseries' in json:
+#             deserial['timeseries'] = []
+#             for v in json['timeseries']:
+#                 deserial['timeseries'].append(
+#                     (datetime.datetime.strptime(v[0], '%Y-%m-%dT%H:%M:%S'),
+#                      datetime.datetime.strptime(v[1], '%Y-%m-%dT%H:%M:%S')))
 
-    @classmethod
-    def deserialize(cls, json):
-        schema = cls._schema()
-        deserial = schema.deserialize(json)
-        if 'timeseries' in json:
-            deserial['timeseries'] = []
-            for v in json['timeseries']:
-                deserial['timeseries'].append(
-                    (datetime.datetime.strptime(v[0], '%Y-%m-%dT%H:%M:%S'),
-                     datetime.datetime.strptime(v[1], '%Y-%m-%dT%H:%M:%S')))
-
-        return deserial
+#         return deserial
 
     def _no_op_step(self):
         self._time_remaining = 0;
@@ -474,7 +474,7 @@ class Platform(Serializable):
         if bidirectional == True:
             return appr_time + spray_time + u_turn + spray_time + dep_time
         else:
-            return appr_time + spray_time + u_turn + appr_time + dep_time
+            return appr_time + spray_time + u_turn + dep_time
 
     def sortie_possible(self, time_avail, transit, pass_len):
         # assume already refueled/reloaded
@@ -873,10 +873,12 @@ class Disperse(Response):
 
                 else:
                     # spent entire remaining time spraying.
-                    self._time_remaining -= min(self._time_remaining, time_left_in_pass)
+                    self.report.append((model_time, 'sprayed ' + treated_possible + ' in ' + str(spray_time) + 'seconds')
+                    self._time_remaining -= min(self._time_remaining, spray_time)
                     self._remaining_dispersant -= disp_actual
                     self._disp_sprayed_this_timestep += disp_actual
-                    self.oil_treated_this_timestep += min(treated_possible, self.dispersable_oil_amount(sc, 'm^3') - self.oil_treated_this_timestep)
+                    self.oil_treated_this_timestep += treated_possible
+#                     self.oil_treated_this_timestep += min(treated_possible, self.dispersable_oil_amount(sc, 'm^3') - self.oil_treated_this_timestep)
                 # ~
                 # INSERT DISPERSION OF OIL HERE
                 # ~
