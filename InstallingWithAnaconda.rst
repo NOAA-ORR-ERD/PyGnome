@@ -126,9 +126,8 @@ then in the default channel. This order should work well for PyGNOME. Be sure to
 It should return something like this::
 
     --add channels 'defaults'   # lowest priority
-    --add channels 'NOAA-ORR-ERD'
-    --add channels 'conda-forge'   # highest priority
-
+    --add channels 'conda-forge'
+    --add channels 'NOAA-ORR-ERD'   # highest priority
 
 conda environments
 ------------------
