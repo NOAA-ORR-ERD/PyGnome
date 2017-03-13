@@ -2,7 +2,7 @@ before_script:
   - yum update -y
   - yum install gcc gcc-c++ -y
   - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
-  - yum install libXext libSM libXrender  # needed by matplotlib on CentOS
+  - yum install libXext libSM libXrender -y  # needed by matplotlib on CentOS
   # make sure the conda channels are set up right
   # the last channel you add will be first on the list
   - conda config --add channels NOAA-ORR-ERD
