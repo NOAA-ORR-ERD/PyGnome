@@ -34,7 +34,7 @@ from gnome.persist import (extend_colander,
                            class_from_objtype)
 from gnome.persist.base_schema import (ObjType,
                                        CollectionItemsList)
-from gnome.exceptions import ReferencedObjectNotSet
+from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 
 
 class ModelSchema(ObjType):
@@ -431,7 +431,7 @@ class Model(Serializable):
 
     @current_time_step.setter
     def current_time_step(self, step):
-        self.model_time = self._start_time + timedelta(seconds=step * 
+        self.model_time = self._start_time + timedelta(seconds=step *
                                                        self.time_step)
         self._current_time_step = step
 
@@ -480,8 +480,8 @@ class Model(Serializable):
         # We do not count any remainder time.
         if self.duration is not None and self.time_step is not None:
             initial_0th_step = 1
-            self._num_time_steps = (initial_0th_step + 
-                                    int(self.duration.total_seconds() // 
+            self._num_time_steps = (initial_0th_step +
+                                    int(self.duration.total_seconds() //
                                         self.time_step))
         else:
             self._num_time_steps = None
@@ -584,14 +584,16 @@ class Model(Serializable):
                 if hasattr(item, '_req_refs'):
                     ref_dict = {}
                     for var in item._req_refs.keys():
-                        inst = self.find_by_attr('_ref_as', var, self.environment)
+                        inst = self.find_by_attr('_ref_as', var,
+                                                 self.environment)
                         if inst is not None:
                             ref_dict[var] = inst
                     if len(ref_dict) > 0:
                         item._attach_default_refs(ref_dict)
                 else:
                     if coll == 'weatherers':
-                        # by default turn WeatheringData and spreading object off
+                        # by default turn WeatheringData and spreading object
+                        # off
                         if isinstance(item, WeatheringData):
                             item.on = False
                             wd = item
@@ -1449,14 +1451,15 @@ class Model(Serializable):
                 isvalid = False
 
             if spill.substance is not None:
-                #min_k1 = spill.substance.get('pour_point_min_k')
+                # min_k1 = spill.substance.get('pour_point_min_k')
                 pour_point = spill.substance.pour_point()
                 if spill.water is not None:
                     water_temp = spill.water.get('temperature')
                     if water_temp < pour_point[0]:
-                        msg = ('The water temperature, {0} K, is less than the minimum pour ' 
-                               'point of the selected oil, {1} K. '
-                               'The results may be unreliable.'.format(water_temp, pour_point[0]))
+                        msg = ('The water temperature, {0} K, is less than '
+                               'the minimum pour point of the selected oil, '
+                               '{1} K.  The results may be unreliable.'
+                               .format(water_temp, pour_point[0]))
                         self.logger.warning(msg)
                         msgs.append(self._warn_pre + msg)
 
@@ -1466,7 +1469,6 @@ class Model(Serializable):
                         msg = ("Found particles with relative_buoyancy < 0. "
                                "Oil is a sinker")
                         raise GnomeRuntimeError(msg)
-
 
         if num_spills > 0 and not someSpillIntersectsModel:
             if num_spills > 1:
