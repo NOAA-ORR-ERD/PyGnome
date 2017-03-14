@@ -7,6 +7,8 @@ import copy
 
 import numpy as np
 
+import gnome
+
 from gnome.array_types import (frac_lost,  # due to evaporation and dissolution
                                age,
                                mass,
@@ -322,8 +324,11 @@ class Emulsification(Weatherer, Serializable):
 
             dict_ = schema.deserialize(json_)
             if 'waves' in json_:
-                waves = class_from_objtype(json_['waves'].pop('obj_type'))
-                dict_['waves'] = waves.deserialize(json_['waves'])
+                obj = json_['waves']['obj_type']
+                dict_['waves'] = (eval(obj).deserialize(json_['waves']))
+#             if 'waves' in json_:
+#                 waves = class_from_objtype(json_['waves'].pop('obj_type'))
+#                 dict_['waves'] = waves.deserialize(json_['waves'])
             return dict_
 
         else:
