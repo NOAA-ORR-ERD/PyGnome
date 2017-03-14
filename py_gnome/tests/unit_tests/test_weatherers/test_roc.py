@@ -251,7 +251,7 @@ class TestRocChemDispersion(ROCTests):
     disp = Disperse(name='test_disperse',
                     transit=100,
                     pass_length=4,
-                    dosage=1,
+#                     dosage=1,
                     cascade_on=False,
                     cascade_distance=None,
                     timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]),
@@ -303,31 +303,44 @@ class TestRocChemDispersion(ROCTests):
         assert len(self.disp.timeseries) == 1
 
     def test_prepare_for_model_step(self, sample_model_fcn2):
+        disp = Disperse(name='test_disperse',
+                transit=100,
+                pass_length=4,
+                    dosage=1,
+                cascade_on=False,
+                cascade_distance=None,
+                timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]),
+                loading_type='simultaneous',
+                pass_type='bidirectional',
+                disp_oil_ratio=None,
+                disp_eff=None,
+                platform='Test Platform',
+                units=None,)
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
-        self.model.weatherers += self.disp
+        self.model.weatherers += disp
         self.model.spills[0].amount = 1000
         self.model.spills[0].units = 'gal'
         self.reset_and_release()
-        self.disp.prepare_for_model_run(self.sc)
+        disp.prepare_for_model_run(self.sc)
         print self.model.start_time
         print self.disp.timeseries
-        assert self.disp.cur_state == 'retired'
+        assert disp.cur_state == 'retired'
         self.model.step()
         print self.model.current_time_step
         self.model.step()
         print self.model.spills.items()[0]['viscosity']
-        assert self.disp.cur_state == 'en_route'
-        print self.disp._next_state_time
+        assert disp.cur_state == 'en_route'
+        print disp._next_state_time
         self.model.step()
-        assert self.disp.cur_state == 'en_route'
-        print self.disp.transit
-        print self.disp.platform.transit_speed
-        print self.disp.platform.one_way_transit_time(self.disp.transit)/60
-        while self.disp.cur_state == 'en_route':
+        assert disp.cur_state == 'en_route'
+        print disp.transit
+        print disp.platform.transit_speed
+        print disp.platform.one_way_transit_time(disp.transit)/60
+        while disp.cur_state == 'en_route':
             self.model.step()
             off = self.model.current_time_step * self.model.time_step
             print self.model.start_time + timedelta(seconds=off)
-        print 'pump_rate ', self.disp.platform.eff_pump_rate(self.disp.dosage)
+        print 'pump_rate ', disp.platform.eff_pump_rate(disp.dosage)
         try:
             for step in self.model:
                 off = self.model.current_time_step * self.model.time_step
@@ -336,6 +349,19 @@ class TestRocChemDispersion(ROCTests):
             pass
 
     def test_prepare_for_model_step_cont(self, sample_model_fcn2):
+        self.disp = Disperse(name='test_disperse',
+                transit=100,
+                pass_length=4,
+#                     dosage=1,
+                cascade_on=False,
+                cascade_distance=None,
+                timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]),
+                loading_type='simultaneous',
+                pass_type='bidirectional',
+                disp_oil_ratio=None,
+                disp_eff=None,
+                platform='Test Platform',
+                units=None,)
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
         self.model.weatherers += self.disp
         self.model.spills[0].amount = 20000
@@ -366,12 +392,15 @@ class TestRocChemDispersion(ROCTests):
         try:
             for step in self.model:
                 off = self.model.current_time_step * self.model.time_step
-                print '********', self.model.start_time + timedelta(seconds=off)
-                print self.sc['mass']
-                print self.sc.mass_balance['dispersed']
+#                 print '********', self.model.start_time + timedelta(seconds=off)
+#                 print self.sc['mass']
+#                 print self.sc.mass_balance['dispersed']
+                assert all(self.sc['mass'] >= 0)
+                assert np.all(self.sc['mass_components'] >= 0)
+                assert self.sc.mass_balance['dispersed'] + self.sc.mass_balance['evaporated'] < sum(self.sc['init_mass'])
         except StopIteration:
             pass
-#         assert False
+        assert False
 
 #     def test_reports(self, sample_model_fcn2):
 #         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)

@@ -429,7 +429,7 @@ class Model(Serializable):
 
     @current_time_step.setter
     def current_time_step(self, step):
-        self.model_time = self._start_time + timedelta(seconds=step * 
+        self.model_time = self._start_time + timedelta(seconds=step *
                                                        self.time_step)
         self._current_time_step = step
 
@@ -478,8 +478,8 @@ class Model(Serializable):
         # We do not count any remainder time.
         if self.duration is not None and self.time_step is not None:
             initial_0th_step = 1
-            self._num_time_steps = (initial_0th_step + 
-                                    int(self.duration.total_seconds() // 
+            self._num_time_steps = (initial_0th_step +
+                                    int(self.duration.total_seconds() //
                                         self.time_step))
         else:
             self._num_time_steps = None
@@ -1018,6 +1018,8 @@ class Model(Serializable):
                 self.environment += obj_added.tide
 
         if hasattr(obj_added, 'waves') and obj_added.waves is not None:
+            import pytest
+            pytest.set_trace()
             if obj_added.waves.id not in self.environment:
                 self.environment += obj_added.waves
 
@@ -1451,7 +1453,7 @@ class Model(Serializable):
                 if spill.water is not None:
                     water_temp = spill.water.get('temperature')
                     if water_temp < min_k:
-                        msg = ('The water temperature, {0} K, is less than the minimum pour ' 
+                        msg = ('The water temperature, {0} K, is less than the minimum pour '
                                'point of the selected oil, {1} K. '
                                'The results may be unreliable.'.format(water_temp, min_k))
                         self.logger.warning(msg)
@@ -1683,15 +1685,15 @@ class Model(Serializable):
 #                 self.logger.warn('''Class {0} could not be constituted from netCDF file
 #                                         Exception: {1}'''.format(c.__name__, e))
 #             return obj
-# 
+#
 #         from gnome.utilities.file_tools.data_helpers import _get_dataset
 #         from gnome.environment.environment_objects import GriddedProp, GridVectorProp
 #         from gnome.environment import PyGrid
-# 
+#
 #         if filename is not None:
 #             data_file = filename
 #             grid_file = filename
-# 
+#
 #         ds = None
 #         dg = None
 #         if dataset is None:
@@ -1707,7 +1709,7 @@ class Model(Serializable):
 #                 dg = dataset
 #             ds = dataset
 #         dataset = ds
-# 
+#
 #         grid = kwargs.pop('grid', None)
 #         if grid is None:
 #             grid = PyGrid.from_netCDF(filename=filename, dataset=dg, **kwargs)
@@ -1721,7 +1723,7 @@ class Model(Serializable):
 #                     req_refs = c._req_refs
 #                 except AttributeError:
 #                     req_refs = None
-# 
+#
 #                 if req_refs is not None:
 #                     for ref, klass in req_refs.items():
 #                         for o in self.environment:
@@ -1734,11 +1736,11 @@ class Model(Serializable):
 #                             obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
 #                             clskwargs[ref] = obj
 #                             self.environment.append(obj)
-# 
+#
 #                 obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
 #                 if obj is not None:
 #                     self.environment.append(obj)
-#                     
+#
 #     def ice_env_from_netCDF(self, filename=None, **kwargs):
 #         cls_list = Environment._subclasses
 #         ice_cls_list = self.find_by_attr('_ref_as', 'ice_aware', cls_list, allitems=True)
