@@ -187,8 +187,8 @@ class TestROCBurn(ROCTests):
         self.model.rewind()
         for step in self.model:
             print step
-    
-         
+
+
     def test_serialization(self):
         b = TestROCBurn.burn
         ser = b.serialize()
@@ -260,7 +260,19 @@ class TestRocChemDispersion(ROCTests):
 
     def test_serialization(self):
         import pprint as pp
-        p = Disperse(platform='Test Platform')
+        p = Disperse(name='test_disperse',
+                    transit=100,
+                    pass_length=4,
+#                     dosage=1,
+                    cascade_on=False,
+                    cascade_distance=None,
+                    timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]),
+                    loading_type='simultaneous',
+                    pass_type='bidirectional',
+                    disp_oil_ratio=None,
+                    disp_eff=None,
+                    platform='Test Platform',
+                    units=None,)
         ser = p.serialize()
         print 'Ser'
         pp.pprint(ser)
@@ -421,8 +433,8 @@ class TestRocChemDispersion(ROCTests):
 #                      platform='Test Platform',
 #                      timeseries=[(datetime(2000, 1, 1, 1, 0, 0), datetime(2000, 1, 1, 2, 0, 0))])
 #         d.prepare_for_model_run()
-
-
+#
+#
 class TestRocSkim(ROCTests):
     skim = Skim(speed=2.0,
                 storage=2000.0,
