@@ -26,6 +26,10 @@ from gnome.weatherers.core import WeathererSchema
 from gnome import _valid_units
 from gnome.basic_types import oil_status, fate as bt_fate
 
+from gnome.array_types import (mass,
+                               density,
+                               fay_area,
+                               frac_water)
 
 # define valid units at module scope because the Schema and Object both use it
 _valid_dist_units = _valid_units('Length')
@@ -114,8 +118,8 @@ class Response(Weatherer, Serializable):
             raise ex
 
     def set(self, attr, value, unit):
-        if unit not in self._units_type[attr][0]:
-            raise uc.InvalidUnitError((unit, self._units_type[attr][0]))
+        if unit not in self._units_type[attr][1]:
+            raise uc.InvalidUnitError((unit, self._units_type[attr][1]))
 
         setattr(self, attr, value)
         self.units[attr] = unit
@@ -1013,12 +1017,14 @@ class Burn(Response):
     _si_units = {'offset': 'ft',
                  'boom_length': 'ft',
                  'boom_draft': 'in',
-                 'speed': 'kts'}
+                 'speed': 'kts',
+                 '_boom_capacity_max': 'ft^3'}
 
     _units_type = {'offset': ('length', _valid_dist_units),
                    'boom_length': ('length', _valid_dist_units),
                    'boom_draft': ('length', _valid_dist_units),
-                   'speed': ('velocity', _valid_vel_units)}
+                   'speed': ('velocity', _valid_vel_units),
+                   '_boom_capacity_max': ('volume', _valid_vol_units)}
 
     def __init__(self,
                  offset,
@@ -1032,6 +1038,9 @@ class Burn(Response):
                  **kwargs):
 
         super(Burn, self).__init__(**kwargs)
+        self.array_types.update({'mass':  mass,
+                                 'density': density,
+                                 'frac_water': frac_water})
 
         self.offset = offset
         self._units = dict(self._si_units)
@@ -1044,7 +1053,7 @@ class Burn(Response):
         self.burn_efficiency_type = burn_efficiency_type
         self._swath_width = None
         self._area = None
-        self._boom_capacity = None
+        self._boom_capacity_max = 0
         self._offset_time = None
 
         self._is_collecting = False
@@ -1059,28 +1068,35 @@ class Burn(Response):
         self._ts_burned = 0.
         self._ts_collected = 0.
         self._burn_time = None
+        self._burn_rate = None
 
     def prepare_for_model_run(self, sc):
         self._setup_report(sc)
-        self._swath_width = 0.3 * self.boom_length
-        self._area = self._swath_width * (0.4125 * self.boom_length / 3) * 2 / 3
-        self._boom_capacity = self.boom_draft / 36 * self._area
-        self._boom_capacity_remaining = self._boom_capacity
-        self._offset_time = (self.offset * 0.00987 / self.speed) * 60
-        self._area_coverage_rate = self._swath_width * self.speed / 430
+        self._swath_width = 0.3 * self.get('boom_length')
+        self._area = self._swath_width * (0.4125 * self.get('boom_length') / 3) * 2 / 3
+        self.set('_boom_capacity_max', self.get('boom_draft') / 36 * self._area, 'ft^3')
+        self._boom_capacity = self.get('_boom_capacity_max')
+        self._offset_time = (self.offset * 0.00987 / self.get('speed')) * 60
+        self._area_coverage_rate = self._swath_width * self.get('speed') / 430
 
         if self._swath_width > 1000:
             self.report.append('Swaths > 1000 feet may not be achievable in the field')
 
-        if self.speed > 1.2:
+        if self.get('speed') > 1.2:
             self.report.append('Excessive entrainment of oil likely to occur at speeds greater than 1.2 knots.')
 
         if self.on:
             sc.mass_balance['burned'] = 0.0
-            sc.mass_balance[self.id] = 0.0
+            if 'systems' not in sc.mass_balance:
+                sc.mass_balance['systems'] = {}
+            sc.mass_balance['systems'][self.id] = 0.0
             sc.mass_balance['boomed'] = 0.0
 
         self._is_collecting = True
+        self._is_transiting = False
+        self._is_cleaning = False
+        self._is_burning = False
+        self._is_boom_full = False
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -1107,7 +1123,7 @@ class Burn(Response):
             if self._is_collecting:
                 self._collect(sc, time_step, model_time)
 
-            if self._is_transiting and self._is_boom_full:
+            if self._is_transiting: 
                 self._transit(sc, time_step, model_time)
 
             if self._is_burning:
@@ -1116,41 +1132,36 @@ class Burn(Response):
             if self._is_cleaning:
                 self._clean(sc, time_step, model_time)
 
-            if self._is_transiting and not self._is_boom_full:
-                self._transit(sc, time_step, model_time)
-
     def _collect(self, sc, time_step, model_time):
         # calculate amount collected this time_step
-        if self._burn_time is None:
+        if self._burn_rate is None:
             self._burn_rate = 0.14 * (1 - sc['frac_water'].mean())
-            self._burn_time = (0.33 * self.boom_draft / self._burn_rate) * 60
-            self._burn_time_remaining = self._burn_time
 
         oil_thickness = self._get_thickness(sc)
-        encounter_rate = 63.13 * self._swath_width * oil_thickness * self.speed
+        encounter_rate =  63.13 * self._swath_width * oil_thickness * self.get('speed')
         emulsion_rr = encounter_rate * self.throughput
+        self._boomed_density = sc['density'].mean()
         if oil_thickness > 0:
             # old ROC equation
             # time_to_fill = (self._boom_capacity_remaining / emulsion_rr) * 60
             # new ebsp equation
-            time_to_fill = ((self._boom_capacity_remaining * 0.17811) * 42) / emulsion_rr
+            time_to_fill = uc.convert('Volume', 'ft^3', 'gal', self._boom_capacity) / emulsion_rr
+            #(self._boom_capacity * 0.17811) * 42 / emulsion_rr
         else:
             time_to_fill = 0.
 
         if time_to_fill > self._time_remaining:
             # doesn't finish fill the boom in this time step
-            self._ts_collected = emulsion_rr * (self._time_remaining / 60)
-            self._boom_capacity_remaining -= self._ts_collected
+            self._ts_collected = uc.convert('Volume', 'gal', 'ft^3', emulsion_rr * self_time_remaining)
+            self._boom_capacity -= self._ts_collected
             self._time_remaining = 0.0
             self._time_collecting_in_sim += self._time_remaining
         elif self._time_remaining > 0:
             # finishes filling the boom in this time step any time remaining
             # should be spend transiting to the burn position
-            self._ts_collected = self._boom_capacity_remaining
-
-            self._boom_capacity_remaining = 0.0
+            self._ts_collected = uc.convert('Volume', 'gal', 'ft^3', emulsion_rr * time_to_fill)
+            self._boom_capacity-= self._ts_collected 
             self._is_boom_full = True
-
             self._time_remaining -= time_to_fill
             self._time_collecting_in_sim += time_to_fill
             self._offset_time_remaining = self._offset_time
@@ -1174,19 +1185,27 @@ class Burn(Response):
 
     def _burn(self, sc, time_step, model_time):
         # burning
+        if self._burn_time is None:
+            self._burn_time = (0.33 * self.get('boom_draft') / self._burn_rate) * 60
+            self._burn_time_remaining = self._burn_time
+            if not np.isclose(self._boom_capacity, 0):
+                # this is a special case if the boom didn't fill up all the way
+                # due to lack of oil or somethig.
+                self._burn_time_remaining = self._burn_time * ((1 - self._boom_capacity) / self.get('_boom_capacity_max'))
+
         self._is_boom_full = False
         if self._time_remaining > self._burn_time_remaining:
             self._time_remaining -= self._burn_time_remaining
             self._burn_time_remaining = 0.
-            burned = self._boom_capacity - self._boom_capacity_remaining
+            burned = self.get('_boom_capacity_max') - self._boom_capacity
             self._ts_burned = burned
             self._is_burning = False
             self._is_cleaning = True
             self._cleaning_time_remaining = 3600  # 1hr in seconds
         elif self._time_remaining > 0:
             frac_burned = self._time_remaining / self._burn_time
-            burned = self._boom_capacity * frac_burned
-            self._boom_capacity_remaining += burned
+            burned = self.get('_boom_capacity_max') * frac_burned
+            self._boom_capacity += burned
             self._ts_burned = burned
             self._burn_time_remaining -= self._time_remaining
             self._time_remaining = 0.
@@ -1194,6 +1213,7 @@ class Burn(Response):
     def _clean(self, sc, time_step, model_time):
         # cleaning
         self._burn_time = None
+        self._burn_rate = None
         if self._time_remaining > self._cleaning_time_remaining:
             self._time_remaining -= self._cleaning_time_remaining
             self._cleaning_time_remaining = 0.
@@ -1217,17 +1237,27 @@ class Burn(Response):
             if len(data['mass']) is 0:
                 continue
 
-            if self._ts_collected:
-                sc.mass_balance['boomed'] += self._ts_collected
-                sc.mass_balance[self.id] += self._ts_collected
-                self._remove_mass_simple(data, self._ts_collected)
+            if self._ts_collected > 0:
+                collected = uc.convert('Volume', 'ft^3', 'm^3', self._ts_collected) * self._boomed_density
+                sc.mass_balance['boomed'] += collected
+                sc.mass_balance['systems'][self.id] += collected
+                self._remove_mass_simple(data, collected)
 
                 self.logger.debug('{0} amount boomed for {1}: {2}'
-                                  .format(self._pid, substance.name, self._ts_collected))
+                                  .format(self._pid, substance.name, collected))
 
-            if self._ts_burned:
-                sc.mass_balance['burned'] += self._ts_burned
-                sc.mass_balance['boomed'] -= self._ts_burned
+            if self._ts_burned > 0:
+                burned = uc.convert('Volume', 'ft^3', 'm^3', self._ts_burned) * self._boomed_density
+                sc.mass_balance['burned'] += burned
+                sc.mass_balance['boomed'] -= burned
+
+                # make sure we didn't burn more than we boomed if so correct the amount
+                if sc.mass_balance['boomed'] < 0:
+                    sc.mass_balance['burned'] += sc.mass_balance['boomed']
+                    sc.mass_balance['boomed'] = 0
+
+                self.logger.debug('{0} amount burned for {1}: {2}'
+                                  .format(self._pid, substance.name, burned))
 
 class SkimUnitsSchema(MappingSchema):
     storage = SchemaNode(String(),
