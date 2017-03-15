@@ -7,6 +7,8 @@ from dissolution import Dissolution
 from emulsification import Emulsification
 from weathering_data import WeatheringData
 from spreading import Langmuir, FayGravityViscous, ConstantArea
+from roc import Burn as ROC_Burn
+from roc import Disperse as ROC_Disperse
 
 '''
     Weatherers are to be ordered as follows:
@@ -42,6 +44,8 @@ __all__ = [Weatherer,
            ChemicalDispersion,
            Skimmer,
            Burn,
+           ROC_Burn,
+           ROC_Disperse,
            Beaching,
            Evaporation,
            NaturalDispersion,

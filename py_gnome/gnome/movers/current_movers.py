@@ -9,21 +9,23 @@ import numpy as np
 
 from colander import (SchemaNode, Bool, String, Float, drop)
 
-from gnome.persist.base_schema import ObjType, WorldPoint
-
-from gnome.movers import CyMover, ProcessSchema
-from gnome import environment
-from gnome.utilities import serializable
-from gnome.utilities import time_utils
-
 from gnome import basic_types
+
+from gnome.cy_gnome.cy_shio_time import CyShioTime
+from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_cats_mover import CyCatsMover
 from gnome.cy_gnome.cy_gridcurrent_mover import CyGridCurrentMover
 from gnome.cy_gnome.cy_ice_mover import CyIceMover
 from gnome.cy_gnome.cy_currentcycle_mover import CyCurrentCycleMover
-from gnome.cy_gnome.cy_shio_time import CyShioTime
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_component_mover import CyComponentMover
+
+from gnome.utilities.serializable import Serializable, Field
+from gnome.utilities.time_utils import sec_to_datetime
+
+from gnome.environment import Tide, TideSchema, Wind, WindSchema
+from gnome.movers import CyMover, ProcessSchema
+
+from gnome.persist.base_schema import ObjType, WorldPoint
 
 
 class CurrentMoversBaseSchema(ObjType, ProcessSchema):
@@ -48,6 +50,7 @@ class CurrentMoversBase(CyMover):
         '''
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
+
         super(CurrentMoversBase, self).__init__(**kwargs)
 
     uncertain_duration = property(lambda self:
@@ -72,6 +75,7 @@ class CurrentMoversBase(CyMover):
 
         dtype = triangle_data[0].dtype.descr
         unstructured_type = dtype[0][1]
+
         unstructured = (triangle_data.view(dtype=unstructured_type)
                         .reshape(-1, len(dtype))[:, :3])
 
@@ -87,6 +91,7 @@ class CurrentMoversBase(CyMover):
 
         dtype = cell_data[0].dtype.descr
         unstructured_type = dtype[0][1]
+
         unstructured = (cell_data.view(dtype=unstructured_type)
                         .reshape(-1, len(dtype))[:, 1:])
 
@@ -108,14 +113,6 @@ class CurrentMoversBase(CyMover):
         Center will be: (tl + ((br - tl) / 2.))
         '''
         return self.mover._get_center_points().view(dtype='<f8').reshape(-1, 2)
-
-#         cells = self.get_cells()
-#         raw_cells = cells.view(dtype='<f8').reshape(-1, 4, 2)
-#         centers = (raw_cells[:, 0, :] +
-#                    #(raw_cells[:, 3, :] - raw_cells[:, 0, :]) / 2.)
-#                    (raw_cells[:, 2, :] - raw_cells[:, 0, :]) / 2.)
-#
-#         return centers
 
     def get_points(self):
         points = (self.mover._get_points()
@@ -143,7 +140,7 @@ class CatsMoverSchema(CurrentMoversBaseSchema):
     uncertain_eddy_v0 = SchemaNode(Float(), missing=drop)
 
 
-class CatsMover(CurrentMoversBase, serializable.Serializable):
+class CatsMover(CurrentMoversBase, Serializable):
 
     _state = copy.deepcopy(CurrentMoversBase._state)
 
@@ -154,12 +151,11 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
     _create = []
     _create.extend(_update)
     _state.add(update=_update, save=_create)
-    _state.add_field([serializable.Field('filename',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('tide',
-                                         save=True, update=True,
-                                         save_reference=True)])
+    _state.add_field([Field('filename', save=True, read=True, isdatafile=True,
+                            test_for_eq=False),
+                      Field('tide', save=True, update=True,
+                            save_reference=True)])
+
     _schema = CatsMoverSchema
 
     def __init__(self, filename, tide=None, uncertain_duration=48,
@@ -310,7 +306,7 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
 
     @tide.setter
     def tide(self, tide_obj):
-        if not isinstance(tide_obj, environment.Tide):
+        if not isinstance(tide_obj, Tide):
             raise TypeError('tide must be of type environment.Tide')
 
         if isinstance(tide_obj.cy_obj, CyShioTime):
@@ -364,7 +360,7 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
             toserial['filename'] = self._filename
 
         if 'tide' in toserial:
-            schema.add(environment.TideSchema(name='tide'))
+            schema.add(TideSchema(name='tide'))
 
         return schema.serialize(toserial)
 
@@ -377,7 +373,7 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
             schema = cls._schema()
 
             if 'tide' in json_:
-                schema.add(environment.TideSchema())
+                schema.add(TideSchema())
 
             return schema.deserialize(json_)
         else:
@@ -395,21 +391,21 @@ class GridCurrentMoverSchema(CurrentMoversBaseSchema):
     is_data_on_cells = SchemaNode(Bool(), missing=drop)
 
 
-class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
+class GridCurrentMover(CurrentMoversBase, Serializable):
 
-    _update = ['uncertain_cross', 'uncertain_along', 'current_scale', 'extrapolate', 'time_offset']
-    _save = ['uncertain_cross', 'uncertain_along', 'current_scale', 'extrapolate', 'time_offset']
+    _update = ['uncertain_cross', 'uncertain_along',
+               'current_scale', 'extrapolate', 'time_offset']
+    _save = ['uncertain_cross', 'uncertain_along',
+             'current_scale', 'extrapolate', 'time_offset']
     _state = copy.deepcopy(CurrentMoversBase._state)
 
     _state.add(update=_update, save=_save)
-    _state.add_field([serializable.Field('filename',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('topology_file',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('is_data_on_cells',
-                                         save=False, read=True)])
+    _state.add_field([Field('filename', save=True, read=True,
+                            isdatafile=True, test_for_eq=False),
+                      Field('topology_file', save=True, read=True,
+                            isdatafile=True, test_for_eq=False),
+                      Field('is_data_on_cells', save=False, read=True)])
+
     _schema = GridCurrentMoverSchema
 
     def __init__(self, filename,
@@ -446,7 +442,6 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
 
         uses super, super(GridCurrentMover,self).__init__(\*\*kwargs)
         """
-
         # if child is calling, the self.mover is set by child - do not reset
         if type(self) == GridCurrentMover:
             self.mover = CyGridCurrentMover()
@@ -471,12 +466,15 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         self.current_scale = current_scale
         self.uncertain_along = uncertain_along
         self.uncertain_across = uncertain_across
+
         self.mover.text_read(filename, topology_file)
-        if type(self) != CurrentCycleMover:
-            self.real_data_start = time_utils.sec_to_datetime(self.mover.get_start_time())
-            self.real_data_stop = time_utils.sec_to_datetime(self.mover.get_end_time())
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
+
+        if type(self) != CurrentCycleMover:
+            self.real_data_start = sec_to_datetime(self.mover.get_start_time())
+            self.real_data_stop = sec_to_datetime(self.mover.get_end_time())
+
         self.num_method = num_method
 
         # super(GridCurrentMover, self).__init__(**kwargs)
@@ -493,7 +491,8 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                 'uncertain_along={0.uncertain_along}, '
                 'active_start={1.active_start}, '
                 'active_stop={1.active_stop}, '
-                'on={1.on})'.format(self.mover, self))
+                'on={1.on})'
+                .format(self.mover, self))
 
     def __str__(self):
         return ('GridCurrentMover - current _state.\n'
@@ -578,6 +577,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                 num_cells = num_vertices
         else:
             num_cells = num_tri / 2
+
         vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
 
         self.mover.get_scaled_velocities(time, vels)
@@ -614,19 +614,19 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
         :param offset_time=0: allow data to be in GMT with a time zone offset
                               (hours).
         """
-        return (self.mover.get_offset_time()) / 3600.
+        return self.mover.get_offset_time() / 3600.
 
     def get_start_time(self):
         """
         :this will be the real_data_start time (seconds).
         """
-        return (self.mover.get_start_time())
+        return self.mover.get_start_time()
 
     def get_end_time(self):
         """
         :this will be the real_data_stop time (seconds).
         """
-        return (self.mover.get_end_time())
+        return self.mover.get_end_time()
 
     def get_num_method(self):
         return self.mover.num_method
@@ -641,7 +641,7 @@ class IceMoverSchema(CurrentMoversBaseSchema):
     extrapolate = SchemaNode(Bool(), missing=drop)
 
 
-class IceMover(CurrentMoversBase, serializable.Serializable):
+class IceMover(CurrentMoversBase, Serializable):
 
     _update = ['uncertain_cross', 'uncertain_along',
                'current_scale', 'extrapolate']
@@ -650,12 +650,11 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
     _state = copy.deepcopy(CurrentMoversBase._state)
 
     _state.add(update=_update, save=_save)
-    _state.add_field([serializable.Field('filename',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('topology_file',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False)])
+    _state.add_field([Field('filename', save=True, read=True,
+                            isdatafile=True, test_for_eq=False),
+                      Field('topology_file', save=True, read=True,
+                            isdatafile=True, test_for_eq=False)])
+
     _schema = IceMoverSchema
 
     def __init__(self, filename,
@@ -708,10 +707,11 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
 
         # check if this is stored with cy_ice_mover?
         self.topology_file = topology_file
-
         self.mover.text_read(filename, topology_file)
+
         self.extrapolate = extrapolate
         self.mover.extrapolate_in_time(extrapolate)
+
         self.mover.offset_time(time_offset * 3600.)
 
         super(IceMover, self).__init__(**kwargs)
@@ -724,7 +724,8 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
                 'uncertain_along={0.uncertain_along}, '
                 'active_start={1.active_start}, '
                 'active_stop={1.active_stop}, '
-                'on={1.on})'.format(self.mover, self))
+                'on={1.on})'
+                .format(self.mover, self))
 
     def __str__(self):
         return ('IceMover - current _state.\n'
@@ -806,11 +807,13 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
                 [len(p) for p in box_to_merge] == [2, 2]):
             if left > box_to_merge[0][0]:
                 left = box_to_merge[0][0]
+
             if right < box_to_merge[1][0]:
                 right = box_to_merge[1][0]
 
             if bottom > box_to_merge[0][1]:
                 bottom = box_to_merge[0][1]
+
             if top < box_to_merge[1][1]:
                 top = box_to_merge[1][1]
 
@@ -827,10 +830,12 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
+
         if self.mover._is_triangle_grid():
             num_cells = num_tri
         else:
             num_cells = num_tri / 2
+
         vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
         self.mover.get_scaled_velocities(model_time, vels)
 
@@ -841,6 +846,7 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
+
         vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
         self.mover.get_ice_velocities(model_time, vels)
 
@@ -851,6 +857,7 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
+
         vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
         self.mover.get_movement_velocities(model_time, vels)
 
@@ -862,8 +869,10 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         """
         num_tri = self.mover.get_num_triangles()
         num_cells = num_tri / 2
+
         frac_coverage = np.zeros(num_cells, dtype=np.float64)
         thickness = np.zeros(num_cells, dtype=np.float64)
+
         self.mover.get_ice_fields(model_time, frac_coverage, thickness)
 
         return frac_coverage, thickness
@@ -912,11 +921,11 @@ class CurrentCycleMoverSchema(ObjType, ProcessSchema):
     uncertain_cross = SchemaNode(Float(), default=.25, missing=drop)
 
 
-class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
+class CurrentCycleMover(GridCurrentMover, Serializable):
     _state = copy.deepcopy(GridCurrentMover._state)
-    _state.add_field([serializable.Field('tide',
-                                         save=True, update=True,
-                                         save_reference=True)])
+    _state.add_field([Field('tide', save=True, update=True,
+                            save_reference=True)])
+
     _schema = CurrentCycleMoverSchema
 
     def __init__(self,
@@ -953,9 +962,9 @@ class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
         #       use super with kwargs to invoke base class __init__
         self.mover = CyCurrentCycleMover()
 
-        tide = kwargs.pop('tide', None)
         self._tide = None
 
+        tide = kwargs.pop('tide', None)
         if tide is not None:
             self.tide = tide
 
@@ -990,7 +999,7 @@ class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
 
     @tide.setter
     def tide(self, tide_obj):
-        if not isinstance(tide_obj, environment.Tide):
+        if not isinstance(tide_obj, Tide):
             raise TypeError('tide must be of type environment.Tide')
 
         if isinstance(tide_obj.cy_obj, CyShioTime):
@@ -1018,7 +1027,7 @@ class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
         schema = self.__class__._schema()
 
         if json_ == 'webapi' and 'tide' in toserial:
-            schema.add(environment.TideSchema(name='tide'))
+            schema.add(TideSchema(name='tide'))
 
         return schema.serialize(toserial)
 
@@ -1030,7 +1039,7 @@ class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
         schema = cls._schema()
 
         if 'tide' in json_:
-            schema.add(environment.TideSchema())
+            schema.add(TideSchema())
 
         return schema.deserialize(json_)
 
@@ -1046,7 +1055,7 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
 
 
 # class ComponentMover(CyMover, serializable.Serializable):
-class ComponentMover(CurrentMoversBase, serializable.Serializable):
+class ComponentMover(CurrentMoversBase, Serializable):
 
     # _state = copy.deepcopy(CyMover._state)
     _state = copy.deepcopy(CurrentMoversBase._state)
@@ -1059,15 +1068,13 @@ class ComponentMover(CurrentMoversBase, serializable.Serializable):
     _create = []
     _create.extend(_update)
     _state.add(update=_update, save=_create)
-    _state.add_field([serializable.Field('filename1',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('filename2',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('wind',
-                                         save=True, update=True,
-                                         save_reference=True)])
+    _state.add_field([Field('filename1', save=True, read=True, isdatafile=True,
+                            test_for_eq=False),
+                      Field('filename2', save=True, read=True, isdatafile=True,
+                            test_for_eq=False),
+                      Field('wind', save=True, update=True,
+                            save_reference=True)])
+
     _schema = ComponentMoverSchema
 
     def __init__(self, filename1, filename2=None, wind=None,
@@ -1115,21 +1122,12 @@ class ComponentMover(CurrentMoversBase, serializable.Serializable):
         if wind is not None:
             self.wind = wind
 
-        # self.scale = kwargs.pop('scale', self.mover.scale_type)
-        # self.scale_value = kwargs.get('scale_value',
-        #                               self.mover.scale_value)
-
         # TODO: no need to check for None since properties that are None
         #       are not persisted
 
         # I think this is required...
         if 'scale_refpoint' in kwargs:
             self.scale_refpoint = kwargs.pop('scale_refpoint')
-
-#         if self.scale and self.scale_value != 0.0 \
-#             and self.scale_refpoint is None:
-#             raise TypeError("Provide a reference point in 'scale_refpoint'."
-#                             )
 
         super(ComponentMover, self).__init__(**kwargs)
 
@@ -1140,15 +1138,6 @@ class ComponentMover(CurrentMoversBase, serializable.Serializable):
         return 'ComponentMover(filename={0})'.format(self.filename1)
 
     # Properties
-
-    # scale_type = property(lambda self: bool(self.mover.scale_type),
-    #                       lambda self, val: setattr(self.mover, 'scale_type',
-    #                                                 int(val)))
-
-    # scale_by = property(lambda self: bool(self.mover.scale_by),
-    #                     lambda self, val: setattr(self.mover, 'scale_by',
-    #                                               int(val)))
-
     pat1_angle = property(lambda self: self.mover.pat1_angle,
                           lambda self, val: setattr(self.mover, 'pat1_angle',
                                                     val))
@@ -1194,19 +1183,20 @@ class ComponentMover(CurrentMoversBase, serializable.Serializable):
                                                      val))
 
     use_averaged_winds = property(lambda self: self.mover.use_averaged_winds,
-                                  lambda self, val: setattr(self.mover,
-                                                            'use_averaged_winds',
-                                                            val))
+                                  lambda self, val:
+                                  setattr(self.mover, 'use_averaged_winds',
+                                          val))
 
     wind_power_factor = property(lambda self: self.mover.wind_power_factor,
                                  lambda self, val: setattr(self.mover,
                                                            'wind_power_factor',
                                                            val))
 
-    past_hours_to_average = property(lambda self: self.mover.past_hours_to_average,
-                                     lambda self, val: setattr(self.mover,
-                                                               'past_hours_to_average',
-                                                               val))
+    past_hours_to_average = property(lambda self: (self.mover
+                                                   .past_hours_to_average),
+                                     lambda self, val:
+                                     setattr(self.mover,
+                                             'past_hours_to_average', val))
 
     scale_factor_averaged_winds = property(lambda self: self.mover.scale_factor_averaged_winds,
                                            lambda self, val: setattr(self.mover,
@@ -1239,7 +1229,7 @@ class ComponentMover(CurrentMoversBase, serializable.Serializable):
 
     @wind.setter
     def wind(self, wind_obj):
-        if not isinstance(wind_obj, environment.Wind):
+        if not isinstance(wind_obj, Wind):
             raise TypeError('wind must be of type environment.Wind')
 
         self.mover.set_ossm(wind_obj.ossm)
@@ -1249,8 +1239,6 @@ class ComponentMover(CurrentMoversBase, serializable.Serializable):
         """
             Invokes the GetToplogyHdl method of TriGridVel_c object
         """
-        # we are assuming cats are always triangle grids,
-        # but may want to extend
         return self.get_triangles()
 
     def get_center_points(self):
@@ -1260,19 +1248,7 @@ class ComponentMover(CurrentMoversBase, serializable.Serializable):
         """
         Get file values scaled to ref pt value, with tide applied (if any)
         """
-        velocities = self.mover._get_velocity_handle()
-        # ref_scale = self.ref_scale  # this needs to be computed, needs a time
-
-        # if self._tide is not None:
-            # time_value = self._tide.cy_obj.get_time_value(model_time)
-            # tide = time_value[0][0]
-        # else:
-            # tide = 1
-
-        # velocities['u'] *= ref_scale * tide
-        # velocities['v'] *= ref_scale * tide
-
-        return velocities
+        return self.mover._get_velocity_handle()
 
     def serialize(self, json_='webapi'):
         """
@@ -1283,7 +1259,7 @@ class ComponentMover(CurrentMoversBase, serializable.Serializable):
         schema = self.__class__._schema()
 
         if json_ == 'webapi' and 'wind' in dict_:
-            schema.add(environment.WindSchema(name='wind'))
+            schema.add(WindSchema(name='wind'))
 
         return schema.serialize(dict_)
 
@@ -1298,7 +1274,6 @@ class ComponentMover(CurrentMoversBase, serializable.Serializable):
             # for 'webapi', there will be nested Wind structure
             # for 'save' option, there should be no nested 'wind'. It is
             # removed, loaded and added back after deserialization
-            schema.add(environment.WindSchema())
-        _to_dict = schema.deserialize(json_)
+            schema.add(WindSchema())
 
-        return _to_dict
+        return schema.deserialize(json_)

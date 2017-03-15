@@ -85,9 +85,12 @@ class Timeseries(GnomeId):
         self._filename = filename
 
         if filename is None:
-            self._check_timeseries(timeseries)  # will raise an Exception if it fails
+            # will raise an Exception if it fails
+            self._check_timeseries(timeseries)
+
             datetime_value_2d = self._xform_input_timeseries(timeseries)
             time_value_pair = to_time_value_pair(datetime_value_2d, format)
+
             self.ossm = CyTimeseries(timeseries=time_value_pair)
         else:
             ts_format = tsformat(format)
@@ -108,7 +111,9 @@ class Timeseries(GnomeId):
             else:
                 for i in timeseries:
                     if not self._is_timeseries_value(i):
-                        raise TimeseriesError('value: %s is not a timeseries value' % (i,))
+                        raise TimeseriesError('value: {} '
+                                              'is not a timeseries value'
+                                              .format(i))
                 return True
 
         if not self._timeseries_is_ascending(timeseries):
@@ -273,7 +278,8 @@ class Timeseries(GnomeId):
         if not np.all(self_ts['time'] == other_ts['time']):
             return False
 
-        if not np.allclose(self_ts['value'], other_ts['value'], atol=1e-10, rtol=1e-10):
+        if not np.allclose(self_ts['value'], other_ts['value'],
+                           atol=1e-10, rtol=1e-10):
             return False
 
         return True

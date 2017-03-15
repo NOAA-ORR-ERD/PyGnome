@@ -12,6 +12,8 @@ cy_*.c
 empty_BW_image.png
 .DS_Store
 .cache/
+*.swn
+*.swo
 
 *.ipynb_checkpoints/
 
