@@ -168,7 +168,7 @@ class TestROCBurn(ROCTests):
         assert burn._burn_time == 1414.2857142857142
         assert burn._burn_time_remaining <= burn._burn_time
         collected = self.sc.mass_balance['boomed']
-        assert collected == 1847.627695728137 
+        assert collected == 1847.627695728137
         assert burn._is_collecting == False
         assert burn._is_cleaning == False
         assert burn._is_burning == True
@@ -197,8 +197,7 @@ class TestROCBurn(ROCTests):
             print 'transiting', burn._is_transiting
             print 'burning', burn._is_burning
             print 'cleaning', burn._is_cleaning
-    
-         
+
     def test_serialization(self):
         b = TestROCBurn.burn
         ser = b.serialize()
@@ -270,7 +269,19 @@ class TestRocChemDispersion(ROCTests):
 
     def test_serialization(self):
         import pprint as pp
-        p = Disperse(platform='Test Platform')
+        p = Disperse(name='test_disperse',
+                    transit=100,
+                    pass_length=4,
+#                     dosage=1,
+                    cascade_on=False,
+                    cascade_distance=None,
+                    timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]),
+                    loading_type='simultaneous',
+                    pass_type='bidirectional',
+                    disp_oil_ratio=None,
+                    disp_eff=None,
+                    platform='Test Platform',
+                    units=None,)
         ser = p.serialize()
         print 'Ser'
         pp.pprint(ser)
@@ -431,8 +442,8 @@ class TestRocChemDispersion(ROCTests):
 #                      platform='Test Platform',
 #                      timeseries=[(datetime(2000, 1, 1, 1, 0, 0), datetime(2000, 1, 1, 2, 0, 0))])
 #         d.prepare_for_model_run()
-
-
+#
+#
 class TestRocSkim(ROCTests):
     skim = Skim(speed=2.0,
                 storage=2000.0,
