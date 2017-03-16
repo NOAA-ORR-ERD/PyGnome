@@ -221,10 +221,10 @@ class PolygonSet:
         old_length = self._PointsArray.shape[0]
 
         added_length = polygon.shape[0]
-        self._PointsArray.resize((old_length+added_length, 2))
+        self._PointsArray.resize((old_length + added_length, 2))
         self._PointsArray[-added_length:, :] = polygon
 
-        self._IndexArray.resize((self._IndexArray.shape[0]+1))
+        self._IndexArray.resize((self._IndexArray.shape[0] + 1))
         self._IndexArray[-1] = self._PointsArray.shape[0]
         self._MetaDataList.append(metadata)
 
@@ -318,6 +318,11 @@ class PolygonSet:
     def __len__(self):
         # there is an extra index at the end, so that IndexArray[i+1] works
         return len(self._IndexArray) - 1
+
+    def __bool__(self):
+        return bool(len(self))
+
+    __nonzero__ = __bool__  # for python 2
 
     def __getitem__(self, index):
         """

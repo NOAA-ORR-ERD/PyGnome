@@ -415,7 +415,7 @@ def plume(distribution_type='droplet_size',
                       )
 
     if density is not None:
-        # Assume density is at 15 K - convert density to api
+        # Assume density is at 15 C - convert density to api
         api = uc.convert('density', density_units, 'API', density)
         if substance_name is not None:
             substance = get_oil_props({'name': substance_name,

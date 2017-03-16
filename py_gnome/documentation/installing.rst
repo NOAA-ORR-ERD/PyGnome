@@ -3,7 +3,7 @@ Installing
 ##########
 
 PyGnome consists of compiled C++ code (`libgnome`), compiled Cython code (`*.pyx` files), and compiled python extensions.
-It can be installed either from source, in which case you'll need an appropriate compiler, or from binaries provided by NOAA
+It can be installed either from source, in which case you'll need an appropriate compiler, or from binaries provided by NOAA. However, note that at this time, NOAA is not maintaining current binaries.
 
 Dependencies
 ============
@@ -15,7 +15,7 @@ There are many dependencies that can be hard to build, so the easiest way is to 
 .. include:: ../../InstallingWithAnaconda.rst
 
 
-.. include:: ../../NormalInstall.rst 
+.. include:: ../../NormalInstall.rst
 
 
 
