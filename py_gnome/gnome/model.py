@@ -1022,8 +1022,6 @@ class Model(Serializable):
                 self.environment += obj_added.tide
 
         if hasattr(obj_added, 'waves') and obj_added.waves is not None:
-            import pytest
-            pytest.set_trace()
             if obj_added.waves.id not in self.environment:
                 self.environment += obj_added.waves
 
