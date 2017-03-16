@@ -1218,7 +1218,7 @@ class Burn(Response):
 
         if time_to_fill > self._time_remaining:
             # doesn't finish fill the boom in this time step
-            self._ts_collected = uc.convert('Volume', 'gal', 'ft^3', emulsion_rr * self_time_remaining)
+            self._ts_collected = uc.convert('Volume', 'gal', 'ft^3', emulsion_rr * self._time_remaining)
             self._boom_capacity -= self._ts_collected
             self._time_remaining = 0.0
             self._time_collecting_in_sim += self._time_remaining
