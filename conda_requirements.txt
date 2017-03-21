@@ -23,9 +23,14 @@ colander>=1.2
 sqlalchemy>=0.7.6
 zope.interface>=4.1
 zope.sqlalchemy>=0.7.6
+<<<<<<< HEAD
 # icu=58.*  # gdal now needs this version
-gdal>=2.1.1
+=======
+hdf5=1.8.*
 netCDF4=1.2.7
+icu=58.*  # gdal now needs this version
+>>>>>>> 6f399a43044156615b9d2a626d1cf797d34b2925
+gdal>=2.1.1
 awesome-slugify>=1.6
 regex>=2014.12
 unidecode>=0.04.19
