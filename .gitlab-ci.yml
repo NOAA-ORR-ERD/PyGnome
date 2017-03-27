@@ -6,9 +6,11 @@ before_script:
   # make sure the conda channels are set up right
   # the last channel you add will be first on the list
   - conda config --add channels defaults
-  - conda config --add channels conda-forge
   - conda config --add channels NOAA-ORR-ERD
+  - conda config --add channels conda-forge
+  # install the requirements
   - conda install --file conda_requirements.txt
+
   # get the oil libary package from gitlab
   - pip install -U git+https://srccontrol.orr.noaa.gov/gnome/OilLibrary.git@v0.0.9#egg=oil_library
   - cd ./py_gnome

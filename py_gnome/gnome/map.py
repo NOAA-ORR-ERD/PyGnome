@@ -102,8 +102,9 @@ class GnomeMap(Serializable):
 
         Optional parameters (kwargs)
 
-        :param map_bounds: The polygon bounding the map -- could be larger
-                           or smaller than the land raster
+        :param map_bounds: The polygon bounding the map if any elements are
+                           outside the map bounds, they are removed from the
+                           simulation.
 
         :param spillable_area: The PolygonSet bounding the spillable_area.
         :type spillable_area: Either a PolygonSet object or a list of lists
