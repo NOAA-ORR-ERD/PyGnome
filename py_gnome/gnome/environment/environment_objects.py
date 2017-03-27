@@ -60,7 +60,7 @@ class S_Depth_T1(object):
         self.bathymetry = bathymetry
         self.terms = terms
         if len(terms) == 0:
-            for s in S_Depth.default_terms:
+            for s in S_Depth_T1.default_terms:
                 for term in s:
                     self.terms[term] = ds[term][:]
 
@@ -81,7 +81,7 @@ class S_Depth_T1(object):
     @property
     def surface_index(self):
         return -1
-    
+
     @property
     def bottom_index(self):
         return 0
@@ -105,7 +105,7 @@ class S_Depth_T1(object):
         Cs_r = self.terms['Cs_r'][lvl]
         hc = self.terms['hc']
         return -(hc * (s_rho - Cs_r) + Cs_r * depths)
-    
+
     def interpolation_alphas(self, points, data_shape, _hash=None):
         '''
         Returns a pair of values. The 1st value is an array of the depth indices of all the particles.
@@ -140,7 +140,7 @@ class S_Depth_T1(object):
             if ulev == 0:
                 und_alph[within_layer] = -2
             else:
-                a = ((pts[:, 2].take(within_layer) - blev_depths.take(within_layer)) / 
+                a = ((pts[:, 2].take(within_layer) - blev_depths.take(within_layer)) /
                      (ulev_depths.take(within_layer) - blev_depths.take(within_layer)))
                 und_alph[within_layer] = a
             blev_depths = ulev_depths
@@ -232,7 +232,7 @@ class VelocityTS(TSVectorProp):
 #     def deserialize(cls, json_):
 #         if json_ == 'webapi':
 #             dict_ = super(VelocityTS, cls).deserialize(json_)
-#     
+#
 #             ts, data = zip(*dict_.pop('timeseries'))
 #             ts = np.array(ts)
 #             data = np.array(data).T
@@ -245,7 +245,7 @@ class VelocityTS(TSVectorProp):
 #                 u_data = u_t
 #                 data = np.array((u_data, v_data))
 #                 dict_['varnames'] = dict_['varnames'][2:]
-#     
+#
 #             units = units[0]
 #             dict_['units'] = units
 #             dict_['time'] = ts
@@ -253,7 +253,7 @@ class VelocityTS(TSVectorProp):
 #             return dict_
 #         else:
 #             return super(VelocityTS, cls).deserialize(json_)
-# 
+#
 #     @classmethod
 #     def new_from_dict(cls, dict_):
 #         varnames = dict_['varnames']
@@ -519,8 +519,15 @@ class GridCurrent(VelocityGrid, Environment):
 class GridWind(VelocityGrid, Environment):
 
     _ref_as = 'wind'
-
     default_names = [['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
+
+    def __init__(self, wet_dry_mask=None, *args, **kwargs):
+        super(GridWind, self).__init__(*args, **kwargs)
+        if wet_dry_mask != None:
+            if self.grid.infer_location(wet_dry_mask) != 'center':
+                raise ValueError('Wet/Dry mask does not correspond to grid cell centers')
+        self.wet_dry_mask = wet_dry_mask
+
 
     def at(self, points, time, units=None, extrapolate=False, **kwargs):
         '''
@@ -559,9 +566,47 @@ class GridWind(VelocityGrid, Environment):
             y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
             value[:, 0] = x
             value[:, 1] = y
+
+        if self.wet_dry_mask is not None:
+            idxs = self.grid.locate_faces(points)
+
         if mem:
             self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
         return value
+
+
+class LandMask(GriddedProp):
+    def __init__(self, *args, **kwargs):
+        data = kwargs.pop('data', None)
+        if data is None or not isinstance(data, (np.ma.MaskedArray, nc4.Variable, np.ndarray)):
+            raise ValueError('Must provide a netCDF4 Variable, masked numpy array, or an explicit mask on nodes or faces')
+        if isinstance(data, np.ma.MaskedArray):
+            data = data.mask
+        kwargs['data'] = data
+
+    def at(self, points, time, units=None, extrapolate=False, _hash=None, _mem=True, **kwargs):
+
+        if _hash is None:
+            _hash = self._get_hash(points, time)
+
+        if _mem:
+            res = self._get_memoed(points, time, self._result_memo, _hash=_hash)
+            if res is not None:
+                return res
+        idxs = self.grid.locate_faces(points)
+        time_idx = self.time.index_of(time)
+        order = self.dimension_ordering
+        if order[0] == 'time':
+            value = self._time_interp(points, time, extrapolate, _mem=_mem, _hash=_hash, **kwargs)
+        elif order[0] == 'depth':
+            value = self._depth_interp(points, time, extrapolate, _mem=_mem, _hash=_hash, **kwargs)
+        else:
+            value = self._xy_interp(points, time, extrapolate, _mem=_mem, _hash=_hash, **kwargs)
+
+        if _mem:
+            self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
+        return value
+
 
 
 class IceVelocity(VelocityGrid, Environment):
