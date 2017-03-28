@@ -1189,7 +1189,7 @@ class Burn(Response):
             if self._is_collecting:
                 self._collect(sc, time_step, model_time)
 
-            if self._is_transiting: 
+            if self._is_transiting:
                 self._transit(sc, time_step, model_time)
 
             if self._is_burning:
@@ -1226,7 +1226,7 @@ class Burn(Response):
             # finishes filling the boom in this time step any time remaining
             # should be spend transiting to the burn position
             self._ts_collected = uc.convert('Volume', 'gal', 'ft^3', emulsion_rr * time_to_fill)
-            self._boom_capacity-= self._ts_collected 
+            self._boom_capacity-= self._ts_collected
             self._is_boom_full = True
             self._time_remaining -= time_to_fill
             self._time_collecting_in_sim += time_to_fill
@@ -1524,7 +1524,7 @@ class Skim(Response):
                     totalFluidRecoveryRate = encounter_rate * (throughput / recovery)
                     msg = ('{0.name} - Total Fluid Recovery Rate is greater than Nameplate \
                             Pump Rate, recalculating Throughput Efficiency').format(self)
-                    self.logger.warni(msg)
+                    self.logger.warning(msg)
                 else:
                     throughput = self.throughput
 
