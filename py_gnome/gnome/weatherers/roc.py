@@ -474,12 +474,12 @@ class Platform(Serializable):
             return sum(times)
 
     def pass_duration_tuple(self, pass_len, pass_type, units='nm'):
-        appr_dist = self.get('approach', 'm')
-        dep_dist = self.get('departure', 'm')
-        rep_speed = self.get('reposition_speed', 'm/s')
+        appr_dist = self.get('approach', 'm') if self.approach is not None else 0
+        dep_dist = self.get('departure', 'm') if self.departure is not None else 0
+        rep_speed = self.get('reposition_speed', 'm/s') if self.reposition_speed is not None else 0
         appr_time = appr_dist / rep_speed
         dep_time = dep_dist / rep_speed
-        u_turn = self.get('u_turn_time', 'sec')
+        u_turn = self.get('u_turn_time', 'sec') if self.u_turn_time is not None else 0
 
         pass_len = uc.convert('length', units, 'm', pass_len)
         app_speed = self.get('application_speed', 'm/s')
@@ -765,7 +765,7 @@ class Disperse(Response):
         zero = datetime.timedelta(seconds=0)
         if self.cur_state is None:
             # This is first step., setup inactivity if necessary
-            if self.next_interval_index != 0:
+            if self.next_interval_index(model_time) != 0:
                 raise ValueError('disperse time series begins before time of first step!')
             else:
                 self.cur_state = 'retired'
@@ -774,224 +774,253 @@ class Disperse(Response):
             # do deactivated stuff
             return
 
-        while self._time_remaining > zero:
             if self.platform.is_boat:
                 self.simulate_boat(sc, time_step, model_time)
             else:
                 self.simulate_plane(sc, time_step, model_time)
 
     def simulate_boat(self, sc, time_step, model_time):
-        pass
+        zero = datetime.timedelta(seconds=0)
+        ttni = self.time_to_next_interval(model_time)
+        tte = self.timeseries[-1][-1] - model_time
+        if tte < 0:
+            return
+        while self._time_remaining > zero:
 
-    def simulate_planes(self, sc, time_step, model_time):
-#         if self.disp_eff == 0:
-#                 #special case to shut operation down when dispersant is ineffective
-#             if 'disperse' in self.cur_state  or self.cur_state in ['en_route', 'approach', 'departure', 'u_turn']:
-#                 self.report.append((model_time, 'Dispersant less than 20% efficient due to oil or environmental conditions. Returning to base'))
-#                 print self.report[-1]
-#                 o_w_t_t = datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit, payload=False))
-#                 self._op_start = self._op_end = None
-#                 self.cur_state = 'rtb'
-#                 if 'disperse' in self.cur_state:
-#                     self._next_state_time = model_time + o_w_t_t
-#                 else:
-#                     return_time = o_w_t_t.total_seconds() - (self._next_state_time - model_time).total_seconds()
-#
-#                     self._next_state_time = model_time + datetime.timedelta(seconds=return_time)
-#             elif self.cur_state in ['retired', 'refuel_reload', 'ready', 'inactive']:
-#                 break
+            if self.cur_state == 'retired':
+                if model_time < self.timeseries[0][0]:
+                    tts = self.timeseries[0][0] - model_time
+                    self._time_remaining -= min(self._time_remaining, tts)
+                    model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                    if self.time_remaining > 0:
+                        #must just have started. Get ready
+                        self.cur_state = 'ready'
+                        self.report.append((model_time, 'Begin new operational period'))
 
+            elif self.cur_state == 'ready':
+                if self.platform.sortie_possible(tte, self.transit, self.pass_length):
+                    # sortie is possible, so start immediately
+                    self.report.append((model_time, 'Starting sortie'))
+                    self._next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
+                    self.cur_state = 'en_route'
+                    self._area_sprayed_this_sortie = 0
+                    self._area_sprayed_this_ts = 0
+                else:
+                    # cannot sortie, so retire until next interval
+                    self.cur_state = 'retired'
+                    self.report.append((model_time, 'Retiring due to insufficient time remaining to conduct sortie'))
+                    print self.report[-1]
+                    self._time_remaining -= min(self._time_remaining, ttni)
+                    model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+
+            elif self.cur_state == 'en_route':
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > zero:
+                    self.report.append((model_time, 'Reached slick'))
+                    print self.report[-1]
+                    self._op_start = model_time
+                    self._op_end = model_time + datetime.timedelta(seconds=self.platform.max_onsite_time(self.transit, self.loading_type))
+                    self._cur_pass_num = 1
+                    self.cur_state = 'approach'
+                    dur = datetime.timedelta(seconds=self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[0])
+                    self._next_state_time = model_time + dur
+                    self.report.append((model_time, 'Starting approach for pass ' + str(self._cur_pass_num)))
+                    print self.report[-1]
+
+    def simulate_plane(self, sc, time_step, model_time):
         ttni = self.time_to_next_interval(model_time)
         zero = datetime.timedelta(seconds=0)
-
-        if ttni is None:
-            if self.cur_state not in ['retired', 'reload', 'ready']:
-                raise ValueError('Operation is being deactivated while platform is active!')
-            self.cur_state = 'deactivated'
-            self.report.append((model_time, 'Disperse operation has ended and is deactivated'))
-            print self.report[-1]
-            break
-
-        if self.cur_state == 'retired':
-            if self.index_of(model_time) > -1 and self.timeseries[self.index_of(model_time)][0] == model_time:
-                #landed right on interval start, so ready immediately
-                self.cur_state = 'ready'
-                self.report.append((model_time, 'Begin new operational period'))
+        while self._time_remaining > zero:
+            if ttni is None:
+                if self.cur_state not in ['retired', 'reload', 'ready']:
+                    raise ValueError('Operation is being deactivated while platform is active!')
+                self.cur_state = 'deactivated'
+                self.report.append((model_time, 'Disperse operation has ended and is deactivated'))
                 print self.report[-1]
-                continue
-            self._time_remaining -= min(self._time_remaining, ttni)
-            if self._time_remaining > zero:
-                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
-                # hit interval boundary before ending timestep.
-                # If ending current interval or no remaining time, do nothing
-                # if start of next interval, set state to 'ready'
-                    # entering new operational interval
-                    # ending current interval
-                if self.index_of(model_time) > -1:
+                break
+
+            if self.cur_state == 'retired':
+                if self.index_of(model_time) > -1 and self.timeseries[self.index_of(model_time)][0] == model_time:
+                    #landed right on interval start, so ready immediately
                     self.cur_state = 'ready'
                     self.report.append((model_time, 'Begin new operational period'))
                     print self.report[-1]
-                else:
-                    interval_idx = self.index_of(model_time - time_step + self._time_remaining)
-                    self.report.append((model_time, 'Ending current operational period'))
-                    print self.report[-1]
-
-        elif self.cur_state == 'ready':
-            if self.platform.sortie_possible(ttni, self.transit, self.pass_length):
-                # sortie is possible, so start immediately
-                self.report.append((model_time, 'Starting sortie'))
-                print self.report[-1]
-                self._next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
-                self.cur_state = 'en_route'
-                self._area_sprayed_this_sortie = 0
-                self._area_sprayed_this_ts = 0
-            else:
-                # cannot sortie, so retire until next interval
-                self.cur_state = 'retired'
-                self.report.append((model_time, 'Retiring due to insufficient time remaining to conduct sortie'))
-                print self.report[-1]
+                    continue
                 self._time_remaining -= min(self._time_remaining, ttni)
-                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
-
-        elif self.cur_state == 'en_route':
-            time_left = self._next_state_time - model_time
-            self._time_remaining -= min(self._time_remaining, time_left)
-            model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
-            if self._time_remaining > zero:
-                self.report.append((model_time, 'Reached slick'))
-                print self.report[-1]
-                self._op_start = model_time
-                self._op_end = model_time + datetime.timedelta(seconds=self.platform.max_onsite_time(self.transit, self.loading_type))
-                self._cur_pass_num = 1
-                self.cur_state = 'approach'
-                dur = datetime.timedelta(seconds=self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[0])
-                self._next_state_time = model_time + dur
-                self.report.append((model_time, 'Starting approach for pass ' + str(self._cur_pass_num)))
-                print self.report[-1]
-
-        elif self.cur_state == 'approach':
-            time_left = self._next_state_time - model_time
-            self._time_remaining -= min(self._time_remaining, time_left)
-            model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
-            if self._time_remaining > zero:
-                spray_time = self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[1]
-                self._next_state_time = model_time + datetime.timedelta(seconds=spray_time)
-                self.cur_state = 'disperse_' + str(self._cur_pass_num)
-                self.report.append((model_time, 'Starting pass ' + str(self._cur_pass_num)))
-
-        elif self.cur_state == 'u-turn':
-            if self.pass_type != 'bidirectional':
-                raise ValueError('u-turns should not happen in uni-directional passes')
-            time_left = self._next_state_time - model_time
-            self._time_remaining -= min(self._time_remaining, time_left)
-            model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
-            if self._time_remaining > zero:
-                spray_time = self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[1]
-                self._next_state_time = model_time + datetime.timedelta(seconds=spray_time)
-                self.cur_state = 'disperse_' + str(self._cur_pass_num) + 'u'
-                self.report.append((model_time, 'Begin return pass of pass ' + str(self._cur_pass_num)))
-
-        elif self.cur_state == 'departure':
-            time_left = self._next_state_time - model_time
-            self._time_remaining -= min(self._time_remaining, time_left)
-            model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
-            if self._time_remaining > zero:
-                self.report.append((model_time, 'Disperse pass ' + str(self._cur_pass_num) + ' completed'))
-                passes_possible = self.platform.num_passes_possible(self._op_end - model_time, self.pass_length, self.pass_type)
-                passes_possible_after_holding = self.platform.num_passes_possible(self._op_end - model_time + time_step, self.pass_length, self.pass_type)
-                o_w_t_t = datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit, payload=False))
-                self._cur_pass_num += 1
-                if self._remaining_dispersant == 0:
-                    # no dispersant, so return to base
-                    self.reset_for_return_to_base(model_time, 'No dispersant remaining, returning to base')
-                elif np.isclose(self.dispersable_oil_amount(sc, 'kg'), 0):
-                    if passes_possible_after_holding > 0:
-                        # no oil left, but can still do a pass after holding for one timestep
-                        self.cur_state = 'holding'
-                        self._next_state_time = model_time + datetime.timedelta(seconds=time_step)
+                if self._time_remaining > zero:
+                    model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                    # hit interval boundary before ending timestep.
+                    # If ending current interval or no remaining time, do nothing
+                    # if start of next interval, set state to 'ready'
+                        # entering new operational interval
+                        # ending current interval
+                    if self.index_of(model_time) > -1:
+                        self.cur_state = 'ready'
+                        self.report.append((model_time, 'Begin new operational period'))
+                        print self.report[-1]
                     else:
-                        self.reset_for_return_to_base(model_time, 'No oil, no time for holding pattern, returning to base')
-                elif passes_possible == 0:
-                    # no passes possible, so RTB
-                    self.reset_for_return_to_base(model_time, 'No time for further passes, returning to base')
-                else:
-                    # oil and payload still remaining. Spray again.
-                    self.report.append((model_time, 'Starting disperse pass ' + str(self._cur_pass_num)))
+                        interval_idx = self.index_of(model_time - time_step + self._time_remaining)
+                        self.report.append((model_time, 'Ending current operational period'))
+                        print self.report[-1]
+
+            elif self.cur_state == 'ready':
+                if self.platform.sortie_possible(ttni, self.transit, self.pass_length):
+                    # sortie is possible, so start immediately
+                    self.report.append((model_time, 'Starting sortie'))
                     print self.report[-1]
-                    self.cur_state = 'disperse_' + str(self._cur_pass_num)
-                    self._next_state_time = model_time + datetime.timedelta(seconds=self._pass_time_tuple[1])
-
-        elif self.cur_state == 'holding':
-            time_left = self._next_state_time - model_time
-            self._time_remaining -= min(self._time_remaining, time_left)
-            model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
-            self.cur_state = 'approach'
-
-        elif 'disperse' in self.cur_state:
-            pass_dur = datetime.timedelta(seconds=self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[1])
-            time_left_in_pass = self._next_state_time - model_time
-            spray_time = min(self._time_remaining, time_left_in_pass)
-            if self.dosage_type == 'auto':
-                self.dosage_from_thickness(sc)
-            dosage = self.dosage
-            disp_possible = spray_time.total_seconds() * self.platform.eff_pump_rate(dosage)
-            disp_actual = min(self._remaining_dispersant, disp_possible)
-            treated_possible = disp_actual * self.disp_oil_ratio
-            mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
-            oil_avail = self.dispersable_oil_amount(sc, 'kg')
-            self.report.append((model_time, 'Oil available: ' + str(oil_avail) + '  Treatable mass: ' + str(mass_treatable) + '  Dispersant Sprayed: ' + str(disp_actual)))
-            self.report.append((model_time, 'Sprayed ' + str(disp_actual) + 'm^3 dispersant in ' + str(spray_time) + ' seconds on ' + str(oil_avail) + ' kg of oil'))
-            print self.report[-1]
-            self._time_remaining -= spray_time
-            self._disp_sprayed_this_timestep += disp_actual
-            self._remaining_dispersant -= disp_actual
-            self.oil_treated_this_timestep += min(mass_treatable, oil_avail)
-
-            model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
-            if self._time_remaining > zero:
-                # completed a spray.
-                if self.pass_type == 'bidirectional' and self._remaining_dispersant > 0 and self.cur_state[-1] != 'u':
-                    self.cur_state = 'u-turn'
-                    self.report.append((model_time, 'Doing u-turn'))
-                    self._next_state_time = model_time + datetime.timedelta(seconds=self._pass_time_tuple[2])
+                    self._next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
+                    self.cur_state = 'en_route'
+                    self._area_sprayed_this_sortie = 0
+                    self._area_sprayed_this_ts = 0
                 else:
-                    self.cur_state = 'departure'
-                    self._next_state_time = model_time + datetime.timedelta(seconds=self._pass_time_tuple[-1])
+                    # cannot sortie, so retire until next interval
+                    self.cur_state = 'retired'
+                    self.report.append((model_time, 'Retiring due to insufficient time remaining to conduct sortie'))
+                    print self.report[-1]
+                    self._time_remaining -= min(self._time_remaining, ttni)
+                    model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
 
+            elif self.cur_state == 'en_route':
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > zero:
+                    self.report.append((model_time, 'Reached slick'))
+                    print self.report[-1]
+                    self._op_start = model_time
+                    self._op_end = model_time + datetime.timedelta(seconds=self.platform.max_onsite_time(self.transit, self.loading_type))
+                    self._cur_pass_num = 1
+                    self.cur_state = 'approach'
+                    dur = datetime.timedelta(seconds=self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[0])
+                    self._next_state_time = model_time + dur
+                    self.report.append((model_time, 'Starting approach for pass ' + str(self._cur_pass_num)))
+                    print self.report[-1]
 
-        elif self.cur_state == 'rtb':
-            time_left = self._next_state_time - model_time
-            self._time_remaining -= min(self._time_remaining, time_left)
-            model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
-            if self._time_remaining > zero:
-                self.report.append((model_time, 'Returned to base'))
+            elif self.cur_state == 'approach':
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > zero:
+                    spray_time = self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[1]
+                    self._next_state_time = model_time + datetime.timedelta(seconds=spray_time)
+                    self.cur_state = 'disperse_' + str(self._cur_pass_num)
+                    self.report.append((model_time, 'Starting pass ' + str(self._cur_pass_num)))
+
+            elif self.cur_state == 'u-turn':
+                if self.pass_type != 'bidirectional':
+                    raise ValueError('u-turns should not happen in uni-directional passes')
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > zero:
+                    spray_time = self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[1]
+                    self._next_state_time = model_time + datetime.timedelta(seconds=spray_time)
+                    self.cur_state = 'disperse_' + str(self._cur_pass_num) + 'u'
+                    self.report.append((model_time, 'Begin return pass of pass ' + str(self._cur_pass_num)))
+
+            elif self.cur_state == 'departure':
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > zero:
+                    self.report.append((model_time, 'Disperse pass ' + str(self._cur_pass_num) + ' completed'))
+                    passes_possible = self.platform.num_passes_possible(self._op_end - model_time, self.pass_length, self.pass_type)
+                    passes_possible_after_holding = self.platform.num_passes_possible(self._op_end - model_time + time_step, self.pass_length, self.pass_type)
+                    o_w_t_t = datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit, payload=False))
+                    self._cur_pass_num += 1
+                    if self._remaining_dispersant == 0:
+                        # no dispersant, so return to base
+                        self.reset_for_return_to_base(model_time, 'No dispersant remaining, returning to base')
+                    elif np.isclose(self.dispersable_oil_amount(sc, 'kg'), 0):
+                        if passes_possible_after_holding > 0:
+                            # no oil left, but can still do a pass after holding for one timestep
+                            self.cur_state = 'holding'
+                            self._next_state_time = model_time + datetime.timedelta(seconds=time_step)
+                        else:
+                            self.reset_for_return_to_base(model_time, 'No oil, no time for holding pattern, returning to base')
+                    elif passes_possible == 0:
+                        # no passes possible, so RTB
+                        self.reset_for_return_to_base(model_time, 'No time for further passes, returning to base')
+                    else:
+                        # oil and payload still remaining. Spray again.
+                        self.report.append((model_time, 'Starting disperse pass ' + str(self._cur_pass_num)))
+                        print self.report[-1]
+                        self.cur_state = 'disperse_' + str(self._cur_pass_num)
+                        self._next_state_time = model_time + datetime.timedelta(seconds=self._pass_time_tuple[1])
+
+            elif self.cur_state == 'holding':
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                self.cur_state = 'approach'
+
+            elif 'disperse' in self.cur_state:
+                pass_dur = datetime.timedelta(seconds=self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[1])
+                time_left_in_pass = self._next_state_time - model_time
+                spray_time = min(self._time_remaining, time_left_in_pass)
+                if self.dosage_type == 'auto':
+                    self.dosage_from_thickness(sc)
+                dosage = self.dosage
+                disp_possible = spray_time.total_seconds() * self.platform.eff_pump_rate(dosage)
+                disp_actual = min(self._remaining_dispersant, disp_possible)
+                treated_possible = disp_actual * self.disp_oil_ratio
+                mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
+                oil_avail = self.dispersable_oil_amount(sc, 'kg')
+                self.report.append((model_time, 'Oil available: ' + str(oil_avail) + '  Treatable mass: ' + str(mass_treatable) + '  Dispersant Sprayed: ' + str(disp_actual)))
+                self.report.append((model_time, 'Sprayed ' + str(disp_actual) + 'm^3 dispersant in ' + str(spray_time) + ' seconds on ' + str(oil_avail) + ' kg of oil'))
                 print self.report[-1]
-                refuel_reload = datetime.timedelta(seconds=self.platform.refuel_reload(simul=self.loading_type))
-                self._next_state_time = model_time + refuel_reload
-                self.cur_state = 'refuel_reload'
+                self._time_remaining -= spray_time
+                self._disp_sprayed_this_timestep += disp_actual
+                self._remaining_dispersant -= disp_actual
+                self.oil_treated_this_timestep += min(mass_treatable, oil_avail)
 
-        elif self.cur_state == 'refuel_reload':
-            time_left = self._next_state_time - model_time
-            self._time_remaining -= min(self._time_remaining, time_left)
-            model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
-            if self._time_remaining > zero:
-                self.report.append((model_time, 'Refuel/reload complete'))
-                print self.report[-1]
-                self._remaining_dispersant = self.platform.get('payload', 'm^3')
-                self.cur_state = 'ready'
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > zero:
+                    # completed a spray.
+                    if self.pass_type == 'bidirectional' and self._remaining_dispersant > 0 and self.cur_state[-1] != 'u':
+                        self.cur_state = 'u-turn'
+                        self.report.append((model_time, 'Doing u-turn'))
+                        self._next_state_time = model_time + datetime.timedelta(seconds=self._pass_time_tuple[2])
+                    else:
+                        self.cur_state = 'departure'
+                        self._next_state_time = model_time + datetime.timedelta(seconds=self._pass_time_tuple[-1])
 
-        elif self.cur_state == 'cascade':
-            if self._next_state_time is None:
-                self._next_state_time = model_time + datetime.timedelta(seconds=self.platform.cascade_time(self.cascade_distance, payload=False))
-            time_left = self._next_state_time - model_time
-            self._time_remaining -= min(self._time_remaining, time_left)
-            model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
-            if self._time_remaining > zero:
-                self.report.append((model_time, 'Cascade complete'))
-                print self.report[-1]
-                self.cur_state = 'ready'
-        else:
-            raise ValueError('current state is not recognized: ' + self.cur_state)
+
+            elif self.cur_state == 'rtb':
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > zero:
+                    self.report.append((model_time, 'Returned to base'))
+                    print self.report[-1]
+                    refuel_reload = datetime.timedelta(seconds=self.platform.refuel_reload(simul=self.loading_type))
+                    self._next_state_time = model_time + refuel_reload
+                    self.cur_state = 'refuel_reload'
+
+            elif self.cur_state == 'refuel_reload':
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > zero:
+                    self.report.append((model_time, 'Refuel/reload complete'))
+                    print self.report[-1]
+                    self._remaining_dispersant = self.platform.get('payload', 'm^3')
+                    self.cur_state = 'ready'
+
+            elif self.cur_state == 'cascade':
+                if self._next_state_time is None:
+                    self._next_state_time = model_time + datetime.timedelta(seconds=self.platform.cascade_time(self.cascade_distance, payload=False))
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > zero:
+                    self.report.append((model_time, 'Cascade complete'))
+                    print self.report[-1]
+                    self.cur_state = 'ready'
+            else:
+                raise ValueError('current state is not recognized: ' + self.cur_state)
 
     def reset_for_return_to_base(self, model_time, message):
         self.report.append((model_time, message))
