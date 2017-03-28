@@ -38,7 +38,7 @@ def test_exceptions(attr, unit):
 
 
 @pytest.mark.parametrize(("attr", "unit", "val", "si_val"),
-                         [('temperature', 'C', 0, 273.16),
+                         [('temperature', 'C', 0, 273.15),
                           ('sediment', 'mg/l', 5, 0.005),
                           ('sediment', 'percent', 0.005, 0.05),
                           ('wave_height', 'cm', 100.0, 1.0),
@@ -93,7 +93,7 @@ def test_Water_update_from_dict():
 
 
 @pytest.mark.parametrize(("attr", "unit", "val", "exp_si"),
-                         [('temperature', 'C', 0, 273.16),
+                         [('temperature', 'C', 0, 273.15),
                           ('sediment', 'mg/l', 5, 0.005),
                           ('wave_height', 'km', .001, 1),
                           ('fetch', 'km', .01, 10),
