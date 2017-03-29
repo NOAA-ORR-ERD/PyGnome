@@ -595,6 +595,7 @@ class Disperse(Response):
                  platform=None,
                  units=None,
                  wind=None,
+                 onsite_reload_refuel=False,
                  **kwargs):
         super(Disperse, self).__init__(**kwargs)
         self.name = name
@@ -608,6 +609,7 @@ class Disperse(Response):
         self.pass_type = pass_type
         self.disp_oil_ratio = 20 if disp_oil_ratio is None else disp_oil_ratio
         self.disp_eff = disp_eff
+        self.onsite_reload_refuel = onsite_reload_refuel
         if self.disp_eff is not None:
             self._disp_eff_type = 'fixed'
         else:
@@ -819,15 +821,82 @@ class Disperse(Response):
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Reached slick'))
-                    print self.report[-1]
                     self._op_start = model_time
-                    self._op_end = model_time + datetime.timedelta(seconds=self.platform.max_onsite_time(self.transit, self.loading_type))
+                    self._op_end = (self.timeseries[-1][-1] - datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))) - model_time
                     self._cur_pass_num = 1
-                    self.cur_state = 'approach'
-                    dur = datetime.timedelta(seconds=self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[0])
+                    self.cur_state = 'onsite'
+                    dur = datetime.timedelta(hours=self.platform.get('max_op_time', 'hrs'))
                     self._next_state_time = model_time + dur
-                    self.report.append((model_time, 'Starting approach for pass ' + str(self._cur_pass_num)))
+
+            elif self.cur_state == 'onsite':
+                remaining_op = self._op_end - model_time
+                if self.is_operating():
+                    interval_remaining = self.time_to_next_interval()
+                    spray_time = min(self._time_remaining, remaining_op, interval_remaining)
+                    if self.dosage_type == 'auto':
+                        self.dosage_from_thickness(sc)
+                    dosage = self.dosage
+                    disp_possible = spray_time.total_seconds() * self.platform.eff_pump_rate(dosage)
+                    disp_actual = min(self._remaining_dispersant, disp_possible)
+                    if disp_actual != disp_possible:
+                        spray_time = disp_actual / self.platform.eff_pump_rate(dosage)
+                    treated_possible = disp_actual * self.disp_oil_ratio
+                    mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
+                    oil_avail = self.dispersable_oil_amount(sc, 'kg')
+                    self.report.append((model_time, 'Oil available: ' + str(oil_avail) + '  Treatable mass: ' + str(mass_treatable) + '  Dispersant Sprayed: ' + str(disp_actual)))
+                    self.report.append((model_time, 'Sprayed ' + str(disp_actual) + 'm^3 dispersant in ' + str(spray_time) + ' seconds on ' + str(oil_avail) + ' kg of oil'))
                     print self.report[-1]
+                    self._time_remaining -= spray_time
+                    self._disp_sprayed_this_timestep += disp_actual
+                    self._remaining_dispersant -= disp_actual
+                    self.oil_treated_this_timestep += min(mass_treatable, oil_avail)
+                    model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                    if self._time_remaining > zero: #end of interval, end of operation, or out of dispersant/fuel
+                        if self._remaining_dispersant == 0:
+                            #go to reload
+                            if self.onsite_reload_refuel:
+                                self.cur_state = 'refuel_reload'
+                                refuel_reload = datetime.timedelta(seconds=self.platform.refuel_reload(simul=self.loading_type))
+                                self.next_state_time = model_time + refuel_reload
+                            else:
+                                #need to return to base
+                                self.cur_state = 'rtb'
+                                self.next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
+                        elif model_time == self._op_end:
+                            self.report.append((model_time, 'Operation complete, returning to base'))
+                            self.cur_state = 'rtb'
+                            self.next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
+                else:
+                    self._time_remaining -= min(self._time_remaining, remaining_op)
+                    model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                    if self._time_remaining > zero:
+                        self.cur_state = 'rtb'
+                        self.report.append((model_time, 'Operation complete, returning to base'))
+                        self.next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
+
+            elif self.cur_state == 'rtb':
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > zero:
+                    self.report.append((model_time, 'Returned to base'))
+                    print self.report[-1]
+                    refuel_reload = datetime.timedelta(seconds=self.platform.refuel_reload(simul=self.loading_type))
+                    self._next_state_time = model_time + refuel_reload
+                    self.cur_state = 'refuel_reload'
+
+            elif self.cur_state == 'refuel_reload':
+                time_left = self._next_state_time - model_time
+                self._time_remaining -= min(self._time_remaining, time_left)
+                model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                if self._time_remaining > zero:
+                    self.report.append((model_time, 'Refuel/reload complete'))
+                    print self.report[-1]
+                    self._remaining_dispersant = self.platform.get('payload', 'm^3')
+                    if self.onsite_reload_refuel:
+                        self.cur_state = 'onsite'
+                    else:
+                        self.cur_state = 'ready'
 
     def simulate_plane(self, sc, time_step, model_time):
         ttni = self.time_to_next_interval(model_time)
