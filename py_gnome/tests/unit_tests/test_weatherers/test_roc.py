@@ -380,6 +380,15 @@ class TestRocChemDispersion(ROCTests):
         self.model.spills[0].end_release_time = self.model.start_time + timedelta(hours=3)
         self.reset_and_release()
         self.disp.prepare_for_model_run(self.sc)
+        import pytest
+        pytest.set_trace()
+
+        try:
+            for step in self.model:
+                off = self.model.current_time_step * self.model.time_step
+                print self.model.start_time + timedelta(seconds=off)
+        except StopIteration:
+            pass
 #         print self.model.start_time
 #         print self.disp.timeseries
 #         assert self.disp.cur_state == 'retired'
@@ -412,6 +421,30 @@ class TestRocChemDispersion(ROCTests):
         except StopIteration:
             pass
         assert False
+
+    def test_prepare_for_model_step_boat(self, sample_model_fcn2):
+        self.disp = Disperse(name='boat_disperse',
+                transit=100,
+                pass_length=4,
+#                     dosage=1,
+                cascade_on=False,
+                cascade_distance=None,
+                timeseries=np.array([(rel_time, rel_time + timedelta(hours=12.))]),
+                loading_type='simultaneous',
+                pass_type='bidirectional',
+                disp_oil_ratio=None,
+                disp_eff=None,
+                platform='Typical Large Vessel',
+                units=None,)
+        (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
+        self.model.weatherers += self.disp
+        self.model.spills[0].amount = 20000
+        self.model.spills[0].units = 'gal'
+        self.model.spills[0].end_release_time = self.model.start_time + timedelta(hours=3)
+        self.reset_and_release()
+        self.disp.prepare_for_model_run(self.sc)
+
+
 
 #     def test_reports(self, sample_model_fcn2):
 #         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
