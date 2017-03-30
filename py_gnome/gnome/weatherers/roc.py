@@ -1637,7 +1637,7 @@ class Skim(Response):
                     totalFluidRecoveryRate = encounter_rate * (throughput / recovery)
                     msg = ('{0.name} - Total Fluid Recovery Rate is greater than Nameplate \
                             Pump Rate, recalculating Throughput Efficiency').format(self)
-                    self.logger.warni(msg)
+                    self.logger.warning(msg)
                 else:
                     throughput = self.throughput
 

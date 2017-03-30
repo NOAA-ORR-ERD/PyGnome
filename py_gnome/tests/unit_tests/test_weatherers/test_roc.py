@@ -168,7 +168,7 @@ class TestROCBurn(ROCTests):
         assert burn._burn_time == 1414.2857142857142
         assert burn._burn_time_remaining <= burn._burn_time
         collected = self.sc.mass_balance['boomed']
-        assert collected == 1847.627695728137
+        assert np.isclose(collected, 1847.627695728137, 0.001)
         assert burn._is_collecting == False
         assert burn._is_cleaning == False
         assert burn._is_burning == True
@@ -417,10 +417,9 @@ class TestRocChemDispersion(ROCTests):
 #                 print self.sc.mass_balance['dispersed']
                 assert all(self.sc['mass'] >= 0)
                 assert np.all(self.sc['mass_components'] >= 0)
-                assert self.sc.mass_balance['dispersed'] + self.sc.mass_balance['evaporated'] < sum(self.sc['init_mass'])
+                assert self.sc.mass_balance['chem_dispersed'] + self.sc.mass_balance['evaporated'] < sum(self.sc['init_mass'])
         except StopIteration:
             pass
-        assert False
 
     def test_prepare_for_model_step_boat(self, sample_model_fcn2):
         self.disp = Disperse(name='boat_disperse',
