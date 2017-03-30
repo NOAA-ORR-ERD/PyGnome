@@ -88,12 +88,11 @@ def test_dispersion_not_active(oil, temp, num_elems):
     assert np.all(sc.mass_balance['sedimentation'] == 0)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize(('oil', 'temp', 'dispersed'),
-                         [('ABU SAFAH', 288.7, 361.402),
+                         [('ABU SAFAH', 288.7, 63.076),
                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
-                           288.7, 552.632),
-                          ('BAHIA', 288.7, 525.503)
+                           288.7, 385.224),
+                          ('BAHIA', 288.7, 14.472)
                           ]
                          )
 def test_full_run(sample_model_fcn2, oil, temp, dispersed):
