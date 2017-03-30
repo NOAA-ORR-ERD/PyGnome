@@ -88,11 +88,14 @@ def test_dispersion_not_active(oil, temp, num_elems):
     assert np.all(sc.mass_balance['sedimentation'] == 0)
 
 
+# the test oils don't match the data base, using so tests don't depend on db 
 @pytest.mark.parametrize(('oil', 'temp', 'dispersed'),
                          [('ABU SAFAH', 288.7, 63.076),
-                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
-                           288.7, 385.224),
-                          ('BAHIA', 288.7, 14.472)
+                          #('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
+                          ('oil_ans_mp',
+                           288.7, 592.887),
+                          #('BAHIA', 288.7, 14.472)
+                          ('oil_bahia', 288.7, 133.784)
                           ]
                          )
 def test_full_run(sample_model_fcn2, oil, temp, dispersed):
