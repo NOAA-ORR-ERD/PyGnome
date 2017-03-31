@@ -466,7 +466,6 @@ class TestRocChemDispersion(ROCTests):
                 print self.model.start_time + timedelta(seconds=off)
         except StopIteration:
             pass
-        set_trace()
 
 #     def test_reports(self, sample_model_fcn2):
 #         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
