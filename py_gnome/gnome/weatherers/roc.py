@@ -1155,7 +1155,11 @@ class Burn(Response):
             sc.mass_balance['burned'] = 0.0
             if 'systems' not in sc.mass_balance:
                 sc.mass_balance['systems'] = {}
-            sc.mass_balance['systems'][self.id] = 0.0
+            sc.mass_balance['systems'][self.id] = {'boomed': 0.0,
+                                                   'burned': 0.0,
+                                                   'time_burning': 0.0,
+                                                   'num_burns': 0,
+                                                   'area_covered': 0.0}
             sc.mass_balance['boomed'] = 0.0
 
         self._is_collecting = True
@@ -1163,6 +1167,8 @@ class Burn(Response):
         self._is_cleaning = False
         self._is_burning = False
         self._is_boom_full = False
+
+        self._time_burning = 0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -1174,8 +1180,10 @@ class Burn(Response):
 
         self._ts_collected = 0.
         self._ts_burned = 0.
+        self._ts_num_burns = 0
+        self._ts_area_covered = 0.
 
-        if self._is_active(model_time, time_step):
+        if self._is_active(model_time, time_step) or self._is_burning:
             self._active = True
         else:
             self._active = False
@@ -1220,12 +1228,14 @@ class Burn(Response):
             # doesn't finish fill the boom in this time step
             self._ts_collected = uc.convert('Volume', 'gal', 'ft^3', emulsion_rr * self._time_remaining)
             self._boom_capacity -= self._ts_collected
-            self._time_remaining = 0.0
+            self._ts_area_covered = encounter_rate * (self._time_remaining / 60)
             self._time_collecting_in_sim += self._time_remaining
+            self._time_remaining = 0.0
         elif self._time_remaining > 0:
             # finishes filling the boom in this time step any time remaining
             # should be spend transiting to the burn position
             self._ts_collected = uc.convert('Volume', 'gal', 'ft^3', emulsion_rr * time_to_fill)
+            self._ts_area_covered = encounter_rate * (time_to_fill / 60)
             self._boom_capacity-= self._ts_collected
             self._is_boom_full = True
             self._time_remaining -= time_to_fill
@@ -1252,6 +1262,7 @@ class Burn(Response):
     def _burn(self, sc, time_step, model_time):
         # burning
         if self._burn_time is None:
+            self._ts_num_burns = 1
             self._burn_time = (0.33 * self.get('boom_draft') / self._burn_rate) * 60
             self._burn_time_remaining = self._burn_time
             if not np.isclose(self._boom_capacity, 0):
@@ -1262,6 +1273,7 @@ class Burn(Response):
         self._is_boom_full = False
         if self._time_remaining > self._burn_time_remaining:
             self._time_remaining -= self._burn_time_remaining
+            self._time_burning += self._burn_time_remaining
             self._burn_time_remaining = 0.
             burned = self.get('_boom_capacity_max') - self._boom_capacity
             self._ts_burned = burned
@@ -1273,6 +1285,7 @@ class Burn(Response):
             burned = self.get('_boom_capacity_max') * frac_burned
             self._boom_capacity += burned
             self._ts_burned = burned
+            self._time_burning += self._time_remaining
             self._burn_time_remaining -= self._time_remaining
             self._time_remaining = 0.
 
@@ -1303,10 +1316,13 @@ class Burn(Response):
             if len(data['mass']) is 0:
                 continue
 
+            sc.mass_balance['systems'][self.id]['area_covered'] += self._ts_area_covered
+            sc.mass_balance['systems'][self.id]['num_burns'] += self._ts_num_burns
+
             if self._ts_collected > 0:
                 collected = uc.convert('Volume', 'ft^3', 'm^3', self._ts_collected) * self._boomed_density
                 sc.mass_balance['boomed'] += collected
-                sc.mass_balance['systems'][self.id] += collected
+                sc.mass_balance['systems'][self.id]['boomed'] += collected
                 self._remove_mass_simple(data, collected)
 
                 self.logger.debug('{0} amount boomed for {1}: {2}'
@@ -1316,6 +1332,8 @@ class Burn(Response):
                 burned = uc.convert('Volume', 'ft^3', 'm^3', self._ts_burned) * self._boomed_density
                 sc.mass_balance['burned'] += burned
                 sc.mass_balance['boomed'] -= burned
+                sc.mass_balance['systems'][self.id]['burned'] += burned
+                sc.mass_balance['systems'][self.id]['time_burning'] = self._time_burning
 
                 # make sure we didn't burn more than we boomed if so correct the amount
                 if sc.mass_balance['boomed'] < 0:

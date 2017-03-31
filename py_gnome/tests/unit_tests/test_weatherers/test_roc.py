@@ -108,7 +108,7 @@ class TestROCBurn(ROCTests):
         assert self.sc.mass_balance['burned'] == 0.0
         assert 'systems' in self.sc.mass_balance
         assert self.burn.id in self.sc.mass_balance['systems']
-        assert self.sc.mass_balance['systems'][self.burn.id] == 0.0
+        assert self.sc.mass_balance['systems'][self.burn.id]['boomed'] == 0.0
         assert self.sc.mass_balance['boomed'] == 0.0
         assert self.burn._swath_width == 75
         assert self.burn._area == 1718.75
@@ -158,17 +158,19 @@ class TestROCBurn(ROCTests):
         self.model.step()
         assert burn._is_burning == False
         assert burn._is_collecting == True
+        assert self.sc.mass_balance['burned'] == 0
         self.model.step()
         assert burn._is_burning == False
         assert burn._boom_capacity == 0
         assert burn._is_transiting == True
         assert burn._is_boom_full == True
         assert burn._burn_rate == 0.14
+        assert self.sc.mass_balance['burned'] == 0
+        collected = self.sc.mass_balance['boomed']
         self.model.step()
         assert burn._burn_time == 1414.2857142857142
         assert burn._burn_time_remaining <= burn._burn_time
-        collected = self.sc.mass_balance['boomed']
-        assert np.isclose(collected, 1847.627695728137, 0.001)
+        assert np.isclose(collected, 1877.2886248344857, 0.001)
         assert burn._is_collecting == False
         assert burn._is_cleaning == False
         assert burn._is_burning == True
