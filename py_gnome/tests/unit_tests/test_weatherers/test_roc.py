@@ -308,7 +308,7 @@ class TestRocChemDispersion(ROCTests):
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
         self.reset_and_release()
         self.disp.prepare_for_model_run(self.sc)
-        assert self.sc.mass_balance[self.disp.id] == 0.0
+#         assert self.sc.mass_balance[self.disp.id] == 0.0
         assert self.disp.cur_state == 'retired'
         assert len(self.sc.report[self.disp.id]) == 0
         assert len(self.disp.timeseries) == 1
@@ -360,7 +360,7 @@ class TestRocChemDispersion(ROCTests):
             pass
 
     def test_prepare_for_model_step_cont(self, sample_model_fcn2):
-        self.disp = Disperse(name='test_disperse',
+        disp = Disperse(name='test_disperse',
                 transit=100,
                 pass_length=4,
 #                     dosage=1,
@@ -374,14 +374,12 @@ class TestRocChemDispersion(ROCTests):
                 platform='Test Platform',
                 units=None,)
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
-        self.model.weatherers += self.disp
+        self.model.weatherers += disp
         self.model.spills[0].amount = 20000
         self.model.spills[0].units = 'gal'
         self.model.spills[0].end_release_time = self.model.start_time + timedelta(hours=3)
         self.reset_and_release()
-        self.disp.prepare_for_model_run(self.sc)
-        import pytest
-        pytest.set_trace()
+        disp.prepare_for_model_run(self.sc)
 
         try:
             for step in self.model:
@@ -422,8 +420,8 @@ class TestRocChemDispersion(ROCTests):
             pass
 
     def test_prepare_for_model_step_boat(self, sample_model_fcn2):
-        self.disp = Disperse(name='boat_disperse',
-                transit=100,
+        disp = Disperse(name='boat_disperse',
+                transit=20,
                 pass_length=4,
 #                     dosage=1,
                 cascade_on=False,
@@ -434,16 +432,41 @@ class TestRocChemDispersion(ROCTests):
                 disp_oil_ratio=None,
                 disp_eff=None,
                 platform='Typical Large Vessel',
-                units=None,)
+                units=None,
+                onsite_reload_refuel=True)
         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)
-        self.model.weatherers += self.disp
+        self.model.weatherers += disp
         self.model.spills[0].amount = 20000
         self.model.spills[0].units = 'gal'
         self.model.spills[0].end_release_time = self.model.start_time + timedelta(hours=3)
         self.reset_and_release()
-        self.disp.prepare_for_model_run(self.sc)
-
-
+        disp.prepare_for_model_run(self.sc)
+        print self.model.start_time
+        print self.disp.timeseries
+        assert disp.cur_state == 'retired'
+        self.model.step()
+        print self.model.current_time_step
+        self.model.step()
+        print self.model.spills.items()[0]['viscosity']
+        assert disp.cur_state == 'en_route'
+        print disp._next_state_time
+        self.model.step()
+        assert disp.cur_state == 'en_route'
+        print disp.transit
+        print disp.platform.transit_speed
+        print disp.platform.one_way_transit_time(disp.transit)/60
+        while disp.cur_state == 'en_route':
+            self.model.step()
+            off = self.model.current_time_step * self.model.time_step
+            print self.model.start_time + timedelta(seconds=off)
+        print 'pump_rate ', disp.platform.eff_pump_rate(disp.dosage)
+        try:
+            for step in self.model:
+                off = self.model.current_time_step * self.model.time_step
+                print self.model.start_time + timedelta(seconds=off)
+        except StopIteration:
+            pass
+        set_trace()
 
 #     def test_reports(self, sample_model_fcn2):
 #         (self.sc, self.model) = ROCTests.mk_objs(sample_model_fcn2)

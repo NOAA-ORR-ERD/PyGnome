@@ -329,8 +329,10 @@ class Platform(Serializable):
 
         self.disp_remaining = 0
         self.cur_pump_rate = 0
-        if not hasattr(self, 'approach') or not hasattr(self, 'departure'):
-            self.is_boat=True
+        if self.approach is None or self.departure is None:
+            self.is_boat = True
+        else:
+            self.is_boat = False
 
         super(Platform, self).__init__()
 
@@ -377,7 +379,7 @@ class Platform(Serializable):
     def one_way_transit_time(self, dist, unit='nm', payload=False):
         '''return unit = sec'''
         t_s = self.get('transit_speed', 'kts')
-        t_l_d = self.get('taxi_land_depart', 'sec')
+        t_l_d = self.get('taxi_land_depart', 'sec') if self.taxi_land_depart is not None else None
         raw = dist / t_s * 3600
         if t_l_d is not None:
             raw += t_l_d
@@ -476,7 +478,7 @@ class Platform(Serializable):
     def pass_duration_tuple(self, pass_len, pass_type, units='nm'):
         appr_dist = self.get('approach', 'm') if self.approach is not None else 0
         dep_dist = self.get('departure', 'm') if self.departure is not None else 0
-        rep_speed = self.get('reposition_speed', 'm/s') if self.reposition_speed is not None else 0
+        rep_speed = self.get('reposition_speed', 'm/s') if self.reposition_speed is not None else 1
         appr_time = appr_dist / rep_speed
         dep_time = dep_dist / rep_speed
         u_turn = self.get('u_turn_time', 'sec') if self.u_turn_time is not None else 0
@@ -776,16 +778,16 @@ class Disperse(Response):
             # do deactivated stuff
             return
 
-            if self.platform.is_boat:
-                self.simulate_boat(sc, time_step, model_time)
-            else:
-                self.simulate_plane(sc, time_step, model_time)
+        if self.platform.is_boat:
+            self.simulate_boat(sc, time_step, model_time)
+        else:
+            self.simulate_plane(sc, time_step, model_time)
 
     def simulate_boat(self, sc, time_step, model_time):
         zero = datetime.timedelta(seconds=0)
         ttni = self.time_to_next_interval(model_time)
         tte = self.timeseries[-1][-1] - model_time
-        if tte < 0:
+        if tte < zero:
             return
         while self._time_remaining > zero:
 
@@ -798,6 +800,9 @@ class Disperse(Response):
                         #must just have started. Get ready
                         self.cur_state = 'ready'
                         self.report.append((model_time, 'Begin new operational period'))
+                else:
+                    self.cur_state = 'ready'
+                    self.report.append((model_time, 'Begin new operational period'))
 
             elif self.cur_state == 'ready':
                 if self.platform.sortie_possible(tte, self.transit, self.pass_length):
@@ -809,8 +814,8 @@ class Disperse(Response):
                     self._area_sprayed_this_ts = 0
                 else:
                     # cannot sortie, so retire until next interval
-                    self.cur_state = 'retired'
-                    self.report.append((model_time, 'Retiring due to insufficient time remaining to conduct sortie'))
+                    self.cur_state = 'deactivated'
+                    self.report.append((model_time, 'Deactivating due to insufficient time remaining to conduct sortie'))
                     print self.report[-1]
                     self._time_remaining -= min(self._time_remaining, ttni)
                     model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
@@ -822,7 +827,7 @@ class Disperse(Response):
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Reached slick'))
                     self._op_start = model_time
-                    self._op_end = (self.timeseries[-1][-1] - datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))) - model_time
+                    self._op_end = (self.timeseries[-1][-1] - datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit)))
                     self._cur_pass_num = 1
                     self.cur_state = 'onsite'
                     dur = datetime.timedelta(hours=self.platform.get('max_op_time', 'hrs'))
@@ -830,8 +835,8 @@ class Disperse(Response):
 
             elif self.cur_state == 'onsite':
                 remaining_op = self._op_end - model_time
-                if self.is_operating():
-                    interval_remaining = self.time_to_next_interval()
+                if self.is_operating(model_time):
+                    interval_remaining = self.time_to_next_interval(model_time)
                     spray_time = min(self._time_remaining, remaining_op, interval_remaining)
                     if self.dosage_type == 'auto':
                         self.dosage_from_thickness(sc)
@@ -839,12 +844,12 @@ class Disperse(Response):
                     disp_possible = spray_time.total_seconds() * self.platform.eff_pump_rate(dosage)
                     disp_actual = min(self._remaining_dispersant, disp_possible)
                     if disp_actual != disp_possible:
-                        spray_time = disp_actual / self.platform.eff_pump_rate(dosage)
+                        spray_time = datetime.timedelta(seconds=disp_actual / self.platform.eff_pump_rate(dosage))
                     treated_possible = disp_actual * self.disp_oil_ratio
                     mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
                     oil_avail = self.dispersable_oil_amount(sc, 'kg')
                     self.report.append((model_time, 'Oil available: ' + str(oil_avail) + '  Treatable mass: ' + str(mass_treatable) + '  Dispersant Sprayed: ' + str(disp_actual)))
-                    self.report.append((model_time, 'Sprayed ' + str(disp_actual) + 'm^3 dispersant in ' + str(spray_time) + ' seconds on ' + str(oil_avail) + ' kg of oil'))
+                    self.report.append((model_time, 'Sprayed ' + str(disp_actual) + 'm^3 dispersant in ' + str(spray_time) + ' on ' + str(oil_avail) + ' kg of oil'))
                     print self.report[-1]
                     self._time_remaining -= spray_time
                     self._disp_sprayed_this_timestep += disp_actual
@@ -857,22 +862,24 @@ class Disperse(Response):
                             if self.onsite_reload_refuel:
                                 self.cur_state = 'refuel_reload'
                                 refuel_reload = datetime.timedelta(seconds=self.platform.refuel_reload(simul=self.loading_type))
-                                self.next_state_time = model_time + refuel_reload
+                                self._next_state_time = model_time + refuel_reload
+                                self.report.append((model_time, 'Reloading/refueling'))
                             else:
                                 #need to return to base
                                 self.cur_state = 'rtb'
-                                self.next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
+                                self._next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
+                                self.report.append((model_time, 'Out of dispersant, returning to base'))
                         elif model_time == self._op_end:
                             self.report.append((model_time, 'Operation complete, returning to base'))
                             self.cur_state = 'rtb'
-                            self.next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
+                            self._next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
                 else:
                     self._time_remaining -= min(self._time_remaining, remaining_op)
                     model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                     if self._time_remaining > zero:
                         self.cur_state = 'rtb'
                         self.report.append((model_time, 'Operation complete, returning to base'))
-                        self.next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
+                        self._next_state_time = model_time + datetime.timedelta(seconds=self.platform.one_way_transit_time(self.transit))
 
             elif self.cur_state == 'rtb':
                 time_left = self._next_state_time - model_time
