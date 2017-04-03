@@ -285,6 +285,36 @@ Error: // JLM 	 10/27/98
 	
 }	
 
+OSErr GridWindMover_c::GetScaledVelocities(Seconds model_time, VelocityFRec *velocities)
+{
+	return timeGrid->GetScaledVelocities(model_time, velocities);
+}
+
+LongPointHdl GridWindMover_c::GetPointsHdl(void)
+{
+	if ((timeGrid->fVar.gridType)==CURVILINEAR)
+	{
+		return timeGrid->fGrid->GetPointsHdl();
+	}
+	else
+	{
+		return timeGrid->GetPointsHdl();
+	}
+}
+
+GridCellInfoHdl GridWindMover_c::GetCellDataHdl(void)
+{
+	return timeGrid->GetCellData();
+}
+
+WORLDPOINTH	GridWindMover_c::GetCellCenters(void)
+{	// should rename this function...
+	//if (IsTriangleGrid())
+		//return timeGrid->fGrid->GetCenterPointsHdl();
+	//else
+		return timeGrid->GetCellCenters();
+}
+
 long GridWindMover_c::GetNumTriangles(void)
 {
 	long numTriangles = 0;
@@ -292,5 +322,14 @@ long GridWindMover_c::GetNumTriangles(void)
 	if (topoH) numTriangles = _GetHandleSize((Handle)topoH)/sizeof(**topoH);
 	
 	return numTriangles;
+}
+
+long GridWindMover_c::GetNumPoints(void)
+{
+	long numPoints = 0;
+
+	numPoints = (timeGrid->fNumRows) * (timeGrid->fNumCols);	
+
+	return numPoints;
 }
 

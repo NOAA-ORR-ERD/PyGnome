@@ -16,15 +16,14 @@ import gnome.map
 from gnome.basic_types import oil_status, status_code_type
 from gnome.utilities.projections import NoProjection
 
-from gnome.map import GnomeMap, MapFromBNA, RasterMap, MapFromUGrid
+from gnome.map import GnomeMap, MapFromBNA, RasterMap  # , MapFromUGrid
 
 from conftest import sample_sc_release
 
 basedir = os.path.dirname(__file__)
-datadir = os.path.join(basedir, "../sample_data")
-testbnamap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
-test_tri_grid = os.path.join(basedir, '../sample_data',
-                             'small_trigrid_example.nc')
+datadir = os.path.normpath(os.path.join(basedir, "sample_data"))
+testbnamap = os.path.join(datadir, 'MapBounds_Island.bna')
+test_tri_grid = os.path.join(datadir, 'small_trigrid_example.nc')
 
 
 def test_in_water_resolution():
@@ -35,7 +34,6 @@ def test_in_water_resolution():
 
     # Create an 500x500 pixel map, with an LE refloat half-life of 2 hours
     # (specified here in seconds).
-
     m = gnome.map.MapFromBNA(filename=testbnamap, refloat_halflife=2,
                              raster_size=500 * 500)
 
@@ -921,11 +919,30 @@ def test_resurface_airborne_elements():
 
     assert spill['next_positions'][:, 2].min() == 0.
 
+
+def test_bna_no_map_bounds():
+    """
+    tests that the map bounds will get expanded to include
+    the bounding box of the land and spillable area.
+    """
+    test_no_bounds_bna = os.path.join(datadir, 'no_map_bounds.bna')
+    m = MapFromBNA(test_no_bounds_bna)
+
+    assert np.array_equal(m.map_bounds, [(3., 10.),
+                                         (3., 11.),
+                                         (6., 11.),
+                                         (6., 10.),
+                                         ])
+
+
 if __name__ == '__main__':
-    tester = Test_MapfromBNA()
-    print "running test"
-    # tester.test_map_on_land()
-    tester.test_map_spillable_lake()
+
+    map = test_bna_no_map_bounds()
+
+    # tester = Test_MapfromBNA()
+    # print "running test"
+    # # tester.test_map_on_land()
+    # tester.test_map_spillable_lake()
 
     # tester = Test_GnomeMap()
     # tester.test_on_map()

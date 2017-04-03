@@ -81,7 +81,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                    amount=90,  # default volume_units=m^3
                                    units='m^3',
                                    end_release_time=end_time,
-                                   density=600)
+                                   substance='oil_crude')
+                                   #density=600)
 
     model.spills += spill
 

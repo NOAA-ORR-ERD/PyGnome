@@ -55,6 +55,7 @@ class WeatheringData(Weatherer, Serializable):
         self.water = water
         self.array_types = {'fate_status', 'positions', 'status_codes',
                             'density', 'viscosity', 'mass_components', 'mass',
+                            'oil_density', 'oil_viscosity',
                             'init_mass', 'frac_water', 'frac_lost', 'age'}
 
         # following used to update viscosity
@@ -152,6 +153,7 @@ class WeatheringData(Weatherer, Serializable):
                                  .format(self._pid))
 
             data['density'] = new_rho
+            data['oil_density'] = oil_rho
 
             # following implementation results in an extra array called
             # fw_d_fref but is easy to read
@@ -165,6 +167,8 @@ class WeatheringData(Weatherer, Serializable):
                                      np.exp(kv1 * data['frac_lost']) *
                                      (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49
                                      )
+                data['oil_viscosity'] = (v0 *
+                                     np.exp(kv1 * data['frac_lost']) )
 
         sc.update_from_fatedataview(fate='all')
 
@@ -262,8 +266,10 @@ class WeatheringData(Weatherer, Serializable):
             self.logger.error(msg)
 
             data['density'][mask] = self.water.get('density')
+            data['oil_density'][mask] = self.water.get('density')
         else:
             data['density'][mask] = density
+            data['oil_density'][mask] = density
 
         # initialize mass_components -
         # sub-select mass_components array by substance.num_components.
@@ -284,6 +290,7 @@ class WeatheringData(Weatherer, Serializable):
         if substance_kvis is not None:
             'make sure we do not add NaN values'
             data['viscosity'][mask] = substance_kvis
+            data['oil_viscosity'][mask] = substance_kvis
 
         # initialize the fate_status array based on positions and status_codes
         self._init_fate_status(mask, data)

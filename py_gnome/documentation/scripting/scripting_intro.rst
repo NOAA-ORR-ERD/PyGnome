@@ -82,7 +82,7 @@ can do a full run::
 
 View the results
 ----------------
-The renderer that we added was  png images every 6 hours. Since we did not specify an output directory for these images, 
+The renderer that we added generated png images every 6 hours. Since we did not specify an output directory for these images, 
 they will have been saved in the same directory that the script was executed from. The sequence of images should show a cloud
 of particles moving east and spreading.
 

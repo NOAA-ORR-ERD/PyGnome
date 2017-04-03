@@ -85,7 +85,8 @@ def test_amount_mass_vol(amount, units):
     assert spill.units == units
 
     if units in Spill.valid_vol_units:
-        exp_mass = (spill.substance.density_at_temp(water.temperature) *
+        # use 15C (288.15K) for mass<=>volume conversion
+        exp_mass = (spill.substance.density_at_temp(288.15) *
                     uc.convert('Volume', units, 'm^3', spill.amount))
     else:
         exp_mass = uc.convert('Mass', units, 'kg', spill.amount)

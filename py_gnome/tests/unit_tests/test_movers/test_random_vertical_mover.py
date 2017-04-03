@@ -63,7 +63,7 @@ def test_vertical_zero():
     """
     checks that there is no vertical movement
     """
-    mv = RandomVerticalMover() # all defaults
+    mv = RandomVerticalMover(mixed_layer_depth=10.0) # mostly defaults
 
     num_elements = 100
 
@@ -73,9 +73,10 @@ def test_vertical_zero():
                            )
     # set z positions:
     sc['positions'][:, 2] = np.linspace(0, 50, num_elements)
+    print sc['positions']
 
-    mv.vertical_diffusion_coef_above_ml = 0;
-    mv.vertical_diffusion_coef_below_ml = 0;
+    mv.vertical_diffusion_coef_above_ml = 0.0
+    mv.vertical_diffusion_coef_below_ml = 0.0
 
     delta = mv.get_move(sc,
                         time_step,
@@ -98,7 +99,7 @@ def test_bottom_layer():
     total_time = 60000
 
     num_elements = 100
-    num_timesteps = total_time // time_step 
+    num_timesteps = total_time // time_step
 
     mv = RandomVerticalMover(vertical_diffusion_coef_below_ml=D_lower) # m
 
@@ -146,7 +147,7 @@ def test_mixed_layer():
     total_time = 600
 
     num_elements = 1000
-    num_timesteps = total_time // time_step 
+    num_timesteps = total_time // time_step
 
     mv = RandomVerticalMover(vertical_diffusion_coef_above_ml=D_mixed,
                              mixed_layer_depth=1000, # HUGE to avoid surface effects.
@@ -193,7 +194,7 @@ def test_mixed_layer2():
     total_time = 6000
 
     num_elements = 1000
-    num_timesteps = total_time // time_step 
+    num_timesteps = total_time // time_step
 
     mv = RandomVerticalMover(vertical_diffusion_coef_above_ml=D_mixed,
                              vertical_diffusion_coef_below_ml=0.0,

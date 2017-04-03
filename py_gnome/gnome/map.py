@@ -21,7 +21,6 @@ import math
 from osgeo import ogr
 
 import py_gd
-from osgeo import ogr
 # import pyugrid
 
 import numpy as np
@@ -84,7 +83,8 @@ class GnomeMap(Serializable):
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.
 
-    This also serves as a description of the interface
+    This also serves as a description of the interface and
+    base class for more complex maps
     """
     _update = ['map_bounds', 'spillable_area']
     _create = []
@@ -102,8 +102,9 @@ class GnomeMap(Serializable):
 
         Optional parameters (kwargs)
 
-        :param map_bounds: The polygon bounding the map -- could be larger
-                           or smaller than the land raster
+        :param map_bounds: The polygon bounding the map if any elements are
+                           outside the map bounds, they are removed from the
+                           simulation.
 
         :param spillable_area: The PolygonSet bounding the spillable_area.
         :type spillable_area: Either a PolygonSet object or a list of lists
@@ -116,7 +117,7 @@ class GnomeMap(Serializable):
             is a list of points defining a polygon.
 
         Note on 'map_bounds':
-            ( (x1,y1), (x2,y2),(x3,y3),..)
+            ( (x1,y1), (x2,y2), (x3,y3),..)
             An NX2 array of points that describe a polygon
             if no map bounds is provided -- the whole world is valid
         """
@@ -580,7 +581,7 @@ class ParamMap(GnomeMap):
         :param spill_container: the current spill container
         :type spill_container:  :class:`gnome.spill_container.SpillContainer`
         """
-        r_idx = np.where(spill_container['status_codes'] == 
+        r_idx = np.where(spill_container['status_codes'] ==
                          oil_status.on_land)[0]
 
         if r_idx.size == 0:  # no particles on land
@@ -589,7 +590,7 @@ class ParamMap(GnomeMap):
         if self._refloat_halflife > 0.0:
             # if 0.0, then r_idx is all of them -- they will all refloat.
             # refloat particles based on probability
-            refloat_probability = 1.0 - 0.5 ** (float(time_step) / 
+            refloat_probability = 1.0 - 0.5 ** (float(time_step) /
                                                 self._refloat_halflife)
             rnd = np.random.uniform(0, 1, len(r_idx))
 
@@ -934,7 +935,7 @@ class RasterMap(GnomeMap):
         """
         # index into array of particles on_land
 
-        r_idx = np.where(spill_container['status_codes'] == 
+        r_idx = np.where(spill_container['status_codes'] ==
                          oil_status.on_land)[0]
 
         if r_idx.size == 0:  # no particles on land
@@ -944,7 +945,7 @@ class RasterMap(GnomeMap):
             # if 0.0, then r_idx is all of them -- they will all refloat.
             # refloat particles based on probability
 
-            refloat_probability = 1.0 - 0.5 ** (float(time_step) / 
+            refloat_probability = 1.0 - 0.5 ** (float(time_step) /
                                                 self._refloat_halflife)
             rnd = np.random.uniform(0, 1, len(r_idx))
 
@@ -1035,14 +1036,14 @@ class MapFromBNA(RasterMap):
 
         :param filename: full path to the data file
 
-        :param refloat_halflife: the half-life (in hours) for the re-floating.
-
         :param raster_size: the total number of pixels (bytes) to make the
                             raster -- the actual size will match the
                             aspect ratio of the bounding box of the land
         :type raster_size: integer
 
         Optional arguments (kwargs):
+
+        :param refloat_halflife: the half-life (in hours) for the re-floating.
 
         :param map_bounds: The polygon bounding the map -- could be larger or
                            smaller than the land raster
@@ -1070,10 +1071,10 @@ class MapFromBNA(RasterMap):
         spillable_area = PolygonSet()
 
         for p in polygons:
-            if p.metadata[1].lower() == 'spillablearea':
+            if p.metadata[1].lower().replace(' ', '') == 'spillablearea':
                 spillable_area.append(p)
 
-            elif p.metadata[1].lower() == 'map bounds':
+            elif p.metadata[1].lower().replace(' ', '') == 'mapbounds':
                 map_bounds = p
             else:
                 land_polys.append(p)
@@ -1089,10 +1090,16 @@ class MapFromBNA(RasterMap):
         map_bounds = kwargs.pop('map_bounds', map_bounds)
 
         if map_bounds is None:
-            map_bounds = BB.AsPoly()
+            if spillable_area:  # add the spillable area to the bounds
+                saBB = spillable_area.bounding_box
+                saBB.Merge(BB)
+                map_bounds = saBB.AsPoly()
+            else:
+                map_bounds = BB.AsPoly()
 
-        if len(spillable_area) == 0:
+        elif spillable_area:
             spillable_area.append(map_bounds)
+
 
         # user defined spillable_area, map_bounds overrides data obtained
         # from polygons
@@ -1103,7 +1110,7 @@ class MapFromBNA(RasterMap):
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) * 
+        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
                         (BB.Width / BB.Height))
 
         w = int(np.sqrt(raster_size * aspect_ratio))
@@ -1291,7 +1298,7 @@ class MapFromUGrid(RasterMap):
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) * 
+        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
                         (BB.Width / BB.Height))
 
         w = int(np.sqrt(raster_size * aspect_ratio))
