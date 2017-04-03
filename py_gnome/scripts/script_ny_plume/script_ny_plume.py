@@ -35,7 +35,7 @@ from gnome.movers import (RandomMover,
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
-from gnome.movers.py_current_movers import PyGridCurrentMover
+from gnome.movers.py_current_movers import PyCurrentMover
 import gnome.utilities.profiledeco as pd
 
 # define base directory
@@ -132,7 +132,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
     gc = GridCurrent.from_netCDF(url)
-    u_mover = PyGridCurrentMover(gc, default_num_method='Trapezoid')
+    u_mover = PyCurrentMover(gc, default_num_method='Trapezoid')
     model.movers += u_mover
     # print 'adding a wind mover:'
 

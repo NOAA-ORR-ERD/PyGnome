@@ -251,10 +251,12 @@ class Spill(BaseSpill):
 
         self.element_type = element_type
 
-        self.on = on    # spill is active or not
+        self.on = on  # spill is active or not
         # raise Exception("stopping")
 
+        # fixme: shouldn't units default to 'kg'?
         self.units = None
+        # fixme -- and amount always be in kg?
         self.amount = amount
 
         if amount is not None:
@@ -265,9 +267,8 @@ class Spill(BaseSpill):
 
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
-        '''
-        fraction of area covered by oil
-        '''
+        # fixme: why is fractional area part of spill???
+        # fraction of area covered by oil
         self.frac_coverage = 1.0
         self.name = name
 
@@ -660,7 +661,6 @@ class Spill(BaseSpill):
         self.element_type.substance = subs
 
     def get_mass(self, units=None):
-
         """
         Return the mass released during the spill.
         User can also specify desired output units in the function.
@@ -668,18 +668,27 @@ class Spill(BaseSpill):
         If volume is given, then use density to find mass. Density is always
         at 15degC, consistent with API definition
         """
-
+        # fixme: This really should be re-factored to always store mass.
         if self.amount is None:
             return self.amount
 
-        # first convert amount to 'kg'
         if self.units in self.valid_mass_units:
+            # first convert amount to 'kg'
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
-            water_temp = self.water.get('temperature')
-            rho = self.element_type.substance.density_at_temp(water_temp)
-            vol = uc.convert('Volume', self.units, 'm^3', self.amount)
+            # need to convert to mass
+            if self.element_type.substance is None:
+                # unspecified substance gets a density 1000 kg/m^3
+                rho = 1000.0
+            else:
+                # DO NOT change this back!
+                # for the UI to be consistent, the conversion needs to use standard
+                #  density -- not the current water temp.
+                # water_temp = self.water.get('temperature')
+                # ideally substance would have a "standard_density" attribute for this.
+                rho = self.element_type.substance.density_at_temp(288.15)
 
+            vol = uc.convert('Volume', self.units, 'm^3', self.amount)
             mass = rho * vol
         else:
             raise ValueError("{} is not a valid mass or Volume unit"

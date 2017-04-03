@@ -76,27 +76,80 @@ class ElementType(Serializable):
                 'substance={0.substance!r}'
                 ')'.format(self))
 
-    def __getattr__(self, att):
-        """
-        delegates some attribute access to the element types.
+    # def __getattr__(self, att):
+    #     """
+    #     delegates some attribute access to the element types.
 
-        .. todo::
-            There is an issue in that if two initializers have the same
-            property - could be the case if they both define a 'distribution',
-            then it does not know which one to return
-        """
+    #     .. todo::
+    #         There is an issue in that if two initializers have the same
+    #         property - could be the case if they both define a 'distribution',
+    #         then it does not know which one to return
+    #     """
+    #     for initr in self.initializers:
+    #         try:
+    #             return getattr(initr, att)
+    #         except AttributeError:
+    #             pass
+
+    #     # nothing returned, then attribute was not found
+    #     msg = ('{0} attribute does not exist in element_type or initializers'
+    #            .format(att))
+    #     # NOTE: this would get trigggered by a a hasattr() call --
+    #     #       which isn't something we need to log
+    #     ## self.logger.warning(msg)
+    #     raise AttributeError(msg)
+
+    # properties for attributes the need to be pulled from initializers
+    @property
+    def windage_range(self):
         for initr in self.initializers:
             try:
-                return getattr(initr, att)
+                return getattr(initr, 'windage_range')
             except AttributeError:
                 pass
-
-        # nothing returned, then attribute was not found
-        msg = ('{0} attribute does not exist in element_type initializers'
-               .format(att))
+        msg = 'windage_range attribute does not exist any initializers'
 
         self.logger.warning(msg)
         raise AttributeError(msg)
+    @windage_range.setter
+    def windage_range(self, wr):
+        print self.initializers
+        for initr in self.initializers:
+            print "initr:"
+            if hasattr(initr, "windage_range"):
+                print "setting windage_range"
+                initr.windage_range = wr
+                return None
+        msg = "can't set windage_range: no initializer has it"
+
+        self.logger.warning(msg)
+        raise AttributeError(msg)
+
+    @property
+    def windage_persist(self):
+        for initr in self.initializers:
+            try:
+                return getattr(initr, 'windage_persist')
+            except AttributeError:
+                pass
+        msg = 'windage_persist attribute does not exist any initializers'
+
+        self.logger.warning(msg)
+        raise AttributeError(msg)
+    @windage_persist.setter
+    def windage_persist(self, wp):
+        print self.initializers
+        for initr in self.initializers:
+            print "initr:"
+            if hasattr(initr, "windage_persist"):
+                print "setting windage_persist"
+                initr.windage_persist = wp
+                return None
+        msg = "can't set windage_persist: no initializer has it"
+
+        self.logger.warning(msg)
+        raise AttributeError(msg)
+
 
     def contains_object(self, obj_id):
         for o in self.initializers:
@@ -362,7 +415,7 @@ def plume(distribution_type='droplet_size',
                       )
 
     if density is not None:
-        # Assume density is at 15 K - convert density to api
+        # Assume density is at 15 C - convert density to api
         api = uc.convert('density', density_units, 'API', density)
         if substance_name is not None:
             substance = get_oil_props({'name': substance_name,

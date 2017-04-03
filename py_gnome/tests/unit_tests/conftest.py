@@ -24,7 +24,7 @@ from gnome.model import Model
 from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
-from gnome.weatherers import Skimmer
+# from gnome.weatherers import Skimmer
 from gnome.environment import constant_wind, Water, Waves
 from gnome.utilities.remote_data import get_datafile
 import gnome.array_types as gat
@@ -190,7 +190,7 @@ def get_testdata():
     curr_dir = os.path.join(s_data, 'currents')
     tide_dir = os.path.join(s_data, 'tides')
     wind_dir = os.path.join(s_data, 'winds')
-    testmap = os.path.join(base_dir, '../sample_data', 'MapBounds_Island.bna')
+    testmap = os.path.join(s_data, 'MapBounds_Island.bna')
     bna_sample = os.path.join(s_data, 'MapBounds_2Spillable2Islands2Lakes.bna')
 
     data = dict()
@@ -522,8 +522,8 @@ def sample_sc_no_uncertainty():
     spills = [gnome.spill.point_line_release_spill(num_elements,
                                                    start_position,
                                                    release_time,
-                                                   water=water,
-                                                   amount=10, units='l'),
+                                                   amount=10, units='l',
+                                                   water=water),
               gnome.spill.point_line_release_spill(num_elements,
                                                    start_position,
                                                    release_time_2,
@@ -563,7 +563,8 @@ def sample_model():
 
     # the image output map
 
-    mapfile = os.path.join(os.path.dirname(__file__), '../sample_data',
+    mapfile = os.path.join(os.path.dirname(__file__),
+                           'sample_data',
                            'MapBounds_Island.bna')
 
     # the land-water map
@@ -677,7 +678,7 @@ def sample_model_weathering(sample_model_fcn,
 
     et = gnome.spill.elements.floating(substance=oil)
     start_time = model.start_time + timedelta(hours=1)
-    end_time = start_time + timedelta(seconds=model.time_step*3)
+    end_time = start_time + timedelta(seconds=model.time_step * 3)
     spill = gnome.spill.point_line_release_spill(num_les,
                                                  rel_pos,
                                                  start_time,

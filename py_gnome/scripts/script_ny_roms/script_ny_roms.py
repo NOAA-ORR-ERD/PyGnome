@@ -4,7 +4,7 @@ curvilinear gridded data
 
 This script uses:
 - GridCurrent
-- PyGridCurrentMover
+- PyCurrentMover
 - rendering of GridCurrent using Renderer
 """
 
@@ -28,7 +28,7 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.outputters import Renderer
-from gnome.movers.py_current_movers import PyGridCurrentMover
+from gnome.movers.py_current_movers import PyCurrentMover
 import gnome.utilities.profiledeco as pd
 
 # define base directory
@@ -91,7 +91,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     cf = GridCurrent.from_netCDF(url)
     renderer.add_grid(cf.grid)
     renderer.delay = 25
-    u_mover = PyGridCurrentMover(cf, default_num_method='Euler')
+    u_mover = PyCurrentMover(cf, default_num_method='Euler')
     model.movers += u_mover
 
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
