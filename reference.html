@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>PyGnome Class Reference &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>PyGnome Class Reference &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,7 +32,10 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html"/>
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="index.html"/>
         <link rel="prev" title="Units used in GNOME / PyGNOME" href="units.html"/> 
 
   
@@ -40,6 +45,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -59,7 +65,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -80,7 +86,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="structure.html">GNOME Structure</a></li>
@@ -116,8 +125,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -126,23 +137,40 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>PyGnome Class Reference</li>
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>PyGnome Class Reference</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="_sources/reference.txt" rel="nofollow"> View page source</a>
+            
+            <a href="_sources/reference.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -194,7 +222,7 @@ model run and in subsequent steps the model moves and weathers elements.</p>
 </div>
 <span class="target" id="module-gnome.model"></span><dl class="class">
 <dt id="gnome.model.Model">
-<em class="property">class </em><code class="descclassname">gnome.model.</code><code class="descname">Model</code><span class="sig-paren">(</span><em>time_step=None</em>, <em>start_time=datetime.datetime(2017</em>, <em>1</em>, <em>9</em>, <em>11</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>weathering_substeps=1</em>, <em>map=None</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>name=None</em>, <em>mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.model.</code><code class="descname">Model</code><span class="sig-paren">(</span><em>time_step=None</em>, <em>start_time=datetime.datetime(2017</em>, <em>4</em>, <em>3</em>, <em>17</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>weathering_substeps=1</em>, <em>map=None</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>name=None</em>, <em>mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.utilities.serializable.Serializable" title="gnome.utilities.serializable.Serializable"><code class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></code></a></p>
 <p>PyGnome Model Class</p>
 <p>Initializes a model.
@@ -204,15 +232,15 @@ All arguments have a default.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>time_step=timedelta(minutes=15)</strong> &#8211; model time step in seconds
+<li><strong>time_step=timedelta</strong><strong>(</strong><strong>minutes=15</strong><strong>)</strong><strong></strong> &#8211; model time step in seconds
 or as a timedelta object</li>
-<li><strong>start_time=datetime.now()</strong> &#8211; start time of model, datetime
+<li><strong>start_time=datetime.now</strong><strong>(</strong><strong></strong><strong>)</strong><strong></strong> &#8211; start time of model, datetime
 object. Rounded to the nearest hour.</li>
-<li><strong>duration=timedelta(days=1)</strong> &#8211; How long to run the model,
+<li><strong>duration=timedelta</strong><strong>(</strong><strong>days=1</strong><strong>)</strong><strong></strong> &#8211; How long to run the model,
 a timedelta object.</li>
 <li><strong>weathering_substeps=1</strong> (<em>int</em>) &#8211; How many weathering substeps to
 run inside a single model time step.</li>
-<li><strong>map=gnome.map.GnomeMap()</strong> &#8211; The land-water map.</li>
+<li><strong>map=gnome.map.GnomeMap</strong><strong>(</strong><strong></strong><strong>)</strong><strong></strong> &#8211; The land-water map.</li>
 <li><strong>uncertain=False</strong> &#8211; Flag for setting uncertainty.</li>
 <li><strong>cache_enabled=False</strong> &#8211; Flag for setting whether the model should
 cache results to disk.</li>
@@ -489,7 +517,7 @@ save the data in the SpillContainer&#8217;s if it is a mid-run save.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; If data is saved to zipfile (default behavior), then
@@ -635,7 +663,8 @@ extra space is not in the land map</li>
 <em class="property">class </em><code class="descclassname">gnome.map.</code><code class="descname">GnomeMap</code><span class="sig-paren">(</span><em>map_bounds=None</em>, <em>spillable_area=None</em>, <em>land_polys=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/map.html#GnomeMap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.map.GnomeMap" title="Permalink to this definition">¶</a></dt>
 <dd><p>The very simplest map for GNOME &#8211; all water
 with only a bounding box for the map bounds.</p>
-<p>This also serves as a description of the interface</p>
+<p>This also serves as a description of the interface and
+base class for more complex maps</p>
 <p>This __init__ will be different for other implementations</p>
 <p>Optional parameters (kwargs)</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -643,12 +672,13 @@ with only a bounding box for the map bounds.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>map_bounds</strong> &#8211; The polygon bounding the map &#8211; could be larger
-or smaller than the land raster</li>
-<li><strong>spillable_area</strong> (<em>Either a PolygonSet object or a list of lists
+<li><strong>map_bounds</strong> &#8211; The polygon bounding the map if any elements are
+outside the map bounds, they are removed from the
+simulation.</li>
+<li><strong>spillable_area</strong> (<em>Either a PolygonSet object</em><em> or </em><em>a list of lists
 from which a polygon set can be created. Each element in the list
 is a list of points defining a polygon.</em>) &#8211; The PolygonSet bounding the spillable_area.</li>
-<li><strong>land_polys</strong> (<em>Either a PolygonSet object or a list of lists
+<li><strong>land_polys</strong> (<em>Either a PolygonSet object</em><em> or </em><em>a list of lists
 from which a polygon set can be created. Each element in the list
 is a list of points defining a polygon.</em>) &#8211; The PolygonSet holding the land polygons</li>
 </ul>
@@ -658,7 +688,7 @@ is a list of points defining a polygon.</em>) &#8211; The PolygonSet holding the
 </table>
 <dl class="docutils">
 <dt>Note on &#8216;map_bounds&#8217;:</dt>
-<dd>( (x1,y1), (x2,y2),(x3,y3),..)
+<dd>( (x1,y1), (x2,y2), (x3,y3),..)
 An NX2 array of points that describe a polygon
 if no map bounds is provided &#8211; the whole world is valid</dd>
 </dl>
@@ -693,7 +723,7 @@ if no map bounds is provided &#8211; the whole world is valid</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> (<em>3-tuple of floats: (long, lat, depth) or a
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> (<em>3-tuple of floats:</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>depth</em><em>) or </em><em>a
 NX3 numpy array</em>) &#8211; location for test.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">bool array: True if the location is on the map,
@@ -715,7 +745,7 @@ so depth is ignored.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coord</strong> (<em>3-tuple of floats: (long, lat, depth)</em>) &#8211; location for test.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coord</strong> (<em>3-tuple of floats:</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>depth</em><em>)</em><em></em>) &#8211; location for test.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
 <li>Always returns False&#8211; no land in this implementation</li>
@@ -733,8 +763,8 @@ so depth is ignored.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> (<em>3-tuple of floats: (long, lat, depth)
-or an Nx3 array</em>) &#8211; location for test.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> (<em>3-tuple of floats:</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>depth</em><em>)
+or </em><em>an Nx3 array</em>) &#8211; location for test.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
 <li>True if the point is in the water,</li>
@@ -754,7 +784,7 @@ or an Nx3 array</em>) &#8211; location for test.</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coord</strong> (<em>3-tuple of floats: (long, lat, depth)</em>) &#8211; location for test.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coord</strong> (<em>3-tuple of floats:</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>depth</em><em>)</em><em></em>) &#8211; location for test.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
 <li>True if the point is an allowable spill position</li>
@@ -850,7 +880,7 @@ NOTE: Nothing new added to _state attribute for serialization</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>bitmap_array</strong> (<em>a (W,H) numpy array of type uint8</em>) &#8211; A numpy array that stores the land-water map
+<li><strong>bitmap_array</strong> (<em>a</em><em> (</em><em>W</em><em>,</em><em>H</em><em>) </em><em>numpy array of type uint8</em>) &#8211; A numpy array that stores the land-water map
 0 is water. 1 is land. In theory, other values
 could be used for other purposes. If the array
 is not C-contiguous, it will be copied to a
@@ -872,9 +902,9 @@ lat-long to pixels in the array</li>
 &#8211; assumed to be the same for all land.
 0.0 means all refloat every time step
 &lt; 0.0 means never re-float.</li>
-<li><strong>map_bounds</strong> (<em>(N,2) numpy array of floats</em>) &#8211; The polygon bounding the map &#8211; could be larger
+<li><strong>map_bounds</strong> (<em></em><em>(</em><em>N</em><em>,</em><em>2</em><em>) </em><em>numpy array of floats</em>) &#8211; The polygon bounding the map &#8211; could be larger
 or smaller than the land raster</li>
-<li><strong>spillable_area</strong> (<em>(N,2) numpy array of floats</em>) &#8211; The polygon bounding the spillable_area</li>
+<li><strong>spillable_area</strong> (<em></em><em>(</em><em>N</em><em>,</em><em>2</em><em>) </em><em>numpy array of floats</em>) &#8211; The polygon bounding the spillable_area</li>
 <li><strong>id</strong> (<em>string</em>) &#8211; unique ID of the object. Using UUID as a string.
 This is only used when loading object from save file.</li>
 </ul>
@@ -927,7 +957,7 @@ then land was hit.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coord</strong> (<em>3-tuple of floats -- (long, lat, depth)</em>) &#8211; (long, lat, depth) location &#8211; depth is ignored here.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coord</strong> (<em>3-tuple of floats --</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>depth</em><em>)</em><em></em>) &#8211; (long, lat, depth) location &#8211; depth is ignored here.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
 <li>1 if point on land</li>
@@ -1049,7 +1079,6 @@ from the data file &#8211; if they exist</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> &#8211; full path to the data file</li>
-<li><strong>refloat_halflife</strong> &#8211; the half-life (in hours) for the re-floating.</li>
 <li><strong>raster_size</strong> (<em>integer</em>) &#8211; the total number of pixels (bytes) to make the
 raster &#8211; the actual size will match the
 aspect ratio of the bounding box of the land</li>
@@ -1064,6 +1093,7 @@ aspect ratio of the bounding box of the land</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>refloat_halflife</strong> &#8211; the half-life (in hours) for the re-floating.</li>
 <li><strong>map_bounds</strong> &#8211; The polygon bounding the map &#8211; could be larger or
 smaller than the land raster</li>
 <li><strong>spillable_area</strong> &#8211; The polygon bounding the spillable_area</li>
@@ -1422,7 +1452,7 @@ This is base implementation and can be over-ridden</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -1773,7 +1803,7 @@ released at a single point, or over a line.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>release_time</strong> (<em>datetime.datetime</em>) &#8211; time the LEs are released (datetime object)</li>
-<li><strong>start_position</strong> (<em>3-tuple of floats (long, lat, z)</em>) &#8211; initial location the elements are released</li>
+<li><strong>start_position</strong> (<em>3-tuple of floats</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>z</em><em>)</em><em></em>) &#8211; initial location the elements are released</li>
 </ul>
 </td>
 </tr>
@@ -1993,7 +2023,7 @@ This is base implementation and can be over-ridden</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -2151,8 +2181,8 @@ with their initial positions pre-specified</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>release_time</strong> (<em>datetime.datetime</em>) &#8211; time the LEs are released</li>
-<li><strong>start_positions</strong> (<em>(num_elements, 3) numpy array of float64
--- (long, lat, z)</em>) &#8211; locations the LEs are released</li>
+<li><strong>start_positions</strong> (<em></em><em>(</em><em>num_elements</em><em>, </em><em>3</em><em>) </em><em>numpy array of float64
+--</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>z</em><em>)</em><em></em>) &#8211; locations the LEs are released</li>
 </ul>
 </td>
 </tr>
@@ -2311,7 +2341,7 @@ _state.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -2471,10 +2501,10 @@ flexible looping and list comprehension behavior.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>num_elements</strong> (<em>integer</em>) &#8211; total number of elements to be released</li>
-<li><strong>start_position</strong> (<em>3-tuple of floats (long, lat, z)</em>) &#8211; initial location the elements are released</li>
+<li><strong>start_position</strong> (<em>3-tuple of floats</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>z</em><em>)</em><em></em>) &#8211; initial location the elements are released</li>
 <li><strong>release_time</strong> (<em>datetime.datetime</em>) &#8211; time the LEs are released</li>
-<li><strong>start_positions</strong> (<em>(num_elements, 3) numpy array of float64
--- (long, lat, z)</em>) &#8211; locations the LEs are released</li>
+<li><strong>start_positions</strong> (<em></em><em>(</em><em>num_elements</em><em>, </em><em>3</em><em>) </em><em>numpy array of float64
+--</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>z</em><em>)</em><em></em>) &#8211; locations the LEs are released</li>
 </ul>
 </td>
 </tr>
@@ -2616,7 +2646,7 @@ _state.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -2999,7 +3029,7 @@ This is base implementation and can be over-ridden</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -3156,7 +3186,7 @@ and &#8216;windages&#8217; initialized with user specified parameters for distri
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>distribution_type='droplet_size'</strong> (<em>str</em>) &#8211; type of distribution</li>
 <li><strong>distribution=None</strong> (<a class="reference internal" href="#module-gnome.utilities.distributions" title="gnome.utilities.distributions"><em>gnome.utilities.distributions</em></a>) &#8211; </li>
-<li><strong>04)</strong> (<em>windage_range=(.01,</em>) &#8211; minimum and maximum windage</li>
+<li><strong>04</strong><strong>)</strong><strong></strong> (<em>windage_range=</em><em>(</em><em>01</em><em>,</em><em></em>) &#8211; minimum and maximum windage</li>
 <li><strong>windage_persist=900</strong> (<em>int</em>) &#8211; persistance of windage in seconds</li>
 <li><strong>substance_name=None</strong> (<em>str</em>) &#8211; </li>
 <li><strong>density = None</strong> (<em>float</em>) &#8211; </li>
@@ -3167,17 +3197,15 @@ and &#8216;windages&#8217; initialized with user specified parameters for distri
 </tbody>
 </table>
 <p>Distribution type Available options:</p>
-<ul>
+<ul class="simple">
 <li><dl class="first docutils">
 <dt>&#8216;droplet_size&#8217;: Droplet size is sampled from the specified distribution.</dt>
-<dd><p class="first last">No droplet size is computed.</p>
-</dd>
+<dd>No droplet size is computed.</dd>
 </dl>
 </li>
 <li><dl class="first docutils">
 <dt>&#8216;rise_velocity&#8217;: Rise velocity is directly sampled from the specified</dt>
-<dd><p class="first last">distribution.  Rise velocity is calculated.</p>
-</dd>
+<dd>distribution.  Rise velocity is calculated.</dd>
 </dl>
 </li>
 </ul>
@@ -3201,7 +3229,7 @@ need to have a <code class="docutils literal"><span class="pre">set_values()</sp
 </div>
 <div class="section" id="module-gnome.movers">
 <span id="gnome-movers-pygnome-mover-classes"></span><h2><code class="docutils literal"><span class="pre">gnome.movers</span></code> &#8211; PyGnome mover classes<a class="headerlink" href="#module-gnome.movers" title="Permalink to this headline">¶</a></h2>
-<p>__init__.py for the gnome package</p>
+<p>__init__.py for the gnome.movers package</p>
 <dl class="class">
 <dt id="gnome.movers.Process">
 <em class="property">class </em><code class="descclassname">gnome.movers.</code><code class="descname">Process</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/movers/movers.html#Process"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.movers.Process" title="Permalink to this definition">¶</a></dt>
@@ -3665,7 +3693,7 @@ couple more things specific to CyMover.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -4194,7 +4222,7 @@ couple more things specific to CyMover.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -4717,7 +4745,7 @@ Also updates windage for this timestep</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -4931,7 +4959,7 @@ in model_step_is_done()</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>conditions</strong> &#8211; gnome.environment.Conditions object which contains
 things like water temperature</li>
-<li><strong>wind</strong> (<em>Wind API, specifically must have get_value(time) method</em>) &#8211; wind object for obtaining speed at specified time</li>
+<li><strong>wind</strong> (<em>Wind API</em><em>, </em><em>specifically must have get_value</em><em>(</em><a class="reference internal" href="#gnome.environment.property.EnvProp.time" title="gnome.environment.property.EnvProp.time"><em>time</em></a><em>) </em><em>method</em>) &#8211; wind object for obtaining speed at specified time</li>
 </ul>
 </td>
 </tr>
@@ -5017,7 +5045,7 @@ need to add appropriate node to WindMover schema for &#8216;webapi&#8217;</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>conditions</strong> &#8211; gnome.environment.Conditions object which contains
 things like water temperature</li>
-<li><strong>waves</strong> (<em>get_emulsification_wind(model_time)</em>) &#8211; waves object for obtaining emulsification wind speed at specified time</li>
+<li><strong>waves</strong> (<em>get_emulsification_wind</em><em>(</em><em>model_time</em><em>)</em><em></em>) &#8211; waves object for obtaining emulsification wind speed at specified time</li>
 </ul>
 </td>
 </tr>
@@ -5034,6 +5062,13 @@ Assumes all spills have the same type of oil</p>
 <dt id="gnome.weatherers.Emulsification.prepare_for_model_step">
 <code class="descname">prepare_for_model_step</code><span class="sig-paren">(</span><em>sc</em>, <em>time_step</em>, <em>model_time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/weatherers/emulsification.html#Emulsification.prepare_for_model_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.weatherers.Emulsification.prepare_for_model_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set/update arrays used by emulsification module for this timestep:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.weatherers.Emulsification.new_weather_elements">
+<code class="descname">new_weather_elements</code><span class="sig-paren">(</span><em>sc</em>, <em>time_step</em>, <em>model_time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/weatherers/emulsification.html#Emulsification.new_weather_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.weatherers.Emulsification.new_weather_elements" title="Permalink to this definition">¶</a></dt>
+<dd><p>weather elements over time_step
+- sets &#8216;water_content&#8217; in sc.mass_balance</p>
 </dd></dl>
 
 <dl class="method">
@@ -5197,7 +5232,7 @@ This is base implementation and can be over-ridden</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -5537,7 +5572,7 @@ This is base implementation and can be over-ridden</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -5950,7 +5985,7 @@ This is base implementation and can be over-ridden</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -6062,7 +6097,7 @@ raise exception.</p>
 <p>environment module</p>
 <dl class="class">
 <dt id="gnome.environment.Tide">
-<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">Tide</code><span class="sig-paren">(</span><em>filename</em>, <em>yeardata='/Users/chris.barker/HAZMAT/GNOME-dev/GitLab/pygnome/py_gnome/gnome/data/yeardata'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/tide.html#Tide"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.Tide" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">Tide</code><span class="sig-paren">(</span><em>filename</em>, <em>yeardata='/Users/chris.barker/HAZMAT/GNOME-dev/gitHub/PyGnome/py_gnome/gnome/data/yeardata'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/tide.html#Tide"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.Tide" title="Permalink to this definition">¶</a></dt>
 <dd><p>todo: baseclass called ScaleTimeseries (or something like that)
 ScaleCurrent
 Define the tide for a spill</p>
@@ -6238,7 +6273,7 @@ any actions prior to a model run</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -6454,8 +6489,8 @@ C++ object and the timeseries is returned.</p>
 objects for which the value is desired</li>
 <li><strong>units</strong> (<em>string. Uses the unit_conversion module.</em>) &#8211; [optional] outputs data in these units. Default is to
 output data without unit conversion</li>
-<li><strong>format</strong> (<em>either string or integer value defined by
-basic_types.ts_format.* (see cy_basic_types.pyx)</em>) &#8211; output format for the times series:
+<li><strong>format</strong> (<em>either string</em><em> or </em><em>integer value defined by
+basic_types.ts_format.*</em><em> (</em><em>see cy_basic_types.pyx</em><em>)</em><em></em>) &#8211; output format for the times series:
 either &#8216;r-theta&#8217; or &#8216;uv&#8217;</li>
 </ul>
 </td>
@@ -6530,8 +6565,8 @@ C++ object and the timeseries is returned.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>datetime</strong> (<em>datetime object</em>) &#8211; [optional] datetime object or list of datetime
 objects for which the value is desired</li>
-<li><strong>format</strong> (<em>either string or integer value defined by
-basic_types.ts_format.* (see cy_basic_types.pyx)</em>) &#8211; output format for the times series:
+<li><strong>format</strong> (<em>either string</em><em> or </em><em>integer value defined by
+basic_types.ts_format.*</em><em> (</em><em>see cy_basic_types.pyx</em><em>)</em><em></em>) &#8211; output format for the times series:
 either &#8216;r-theta&#8217; or &#8216;uv&#8217;</li>
 </ul>
 </td>
@@ -6689,8 +6724,8 @@ cython/C++ object</p>
 <li><strong>datetime_value_2d</strong> (<em>numpy array of dtype
 basic_types.datetime_value_2d</em>) &#8211; timeseries of wind data defined in a
 numpy array</li>
-<li><strong>format</strong> (<em>either string or integer value defined by
-basic_types.format.* (see cy_basic_types.pyx)</em>) &#8211; output format for the times series; as defined by
+<li><strong>format</strong> (<em>either string</em><em> or </em><em>integer value defined by
+basic_types.format.*</em><em> (</em><em>see cy_basic_types.pyx</em><em>)</em><em></em>) &#8211; output format for the times series; as defined by
 basic_types.format.</li>
 </ul>
 </td>
@@ -6716,8 +6751,8 @@ basic_types.datetime_value_2d</em>) &#8211; timeseries of wind data defined in a
 numpy array</li>
 <li><strong>units</strong> &#8211; units associated with the data. Valid units defined in
 Wind.valid_vel_units list</li>
-<li><strong>format</strong> (<em>either string or integer value defined by
-basic_types.format.* (see cy_basic_types.pyx)</em>) &#8211; output format for the times series; as defined by
+<li><strong>format</strong> (<em>either string</em><em> or </em><em>integer value defined by
+basic_types.format.*</em><em> (</em><em>see cy_basic_types.pyx</em><em>)</em><em></em>) &#8211; output format for the times series; as defined by
 basic_types.format.</li>
 </ul>
 </td>
@@ -6791,7 +6826,7 @@ in &#8216;r-theta&#8217; format (speed, direction)</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time</strong> (<em>datetime object or sequence of datetime objects.</em>) &#8211; the time(s) you want the data for</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time</strong> (<em>datetime object</em><em> or </em><em>sequence of datetime objects.</em>) &#8211; the time(s) you want the data for</td>
 </tr>
 </tbody>
 </table>
@@ -6867,8 +6902,8 @@ we should probably do this only once.</p>
 <li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
 <li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
 <li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
-<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
-<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+<li><strong>units</strong> (<em>string such as</em><em> (</em><em>'m/s'</em><em>, </em><em>'knots'</em><em>, </em><em>etc</em><em>)</em><em></em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean</em><em> (</em><em>True</em><em> or </em><em>False</em><em>)</em><em></em>) &#8211; if True, extrapolation will be supported</li>
 </ul>
 </td>
 </tr>
@@ -6886,7 +6921,7 @@ we should probably do this only once.</p>
 
 <dl class="class">
 <dt id="gnome.environment.GridWind">
-<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">GridWind</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#GridWind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.GridWind" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">GridWind</code><span class="sig-paren">(</span><em>wet_dry_mask=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#GridWind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.GridWind" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment_objects.VelocityGrid</span></code>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
 <dl class="attribute">
 <dt id="gnome.environment.GridWind.default_names">
@@ -6905,8 +6940,8 @@ we should probably do this only once.</p>
 <li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
 <li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
 <li><strong>depth</strong> (<em>integer</em>) &#8211; Specifies the depth level of the variable</li>
-<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
-<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+<li><strong>units</strong> (<em>string such as</em><em> (</em><em>'m/s'</em><em>, </em><em>'knots'</em><em>, </em><em>etc</em><em>)</em><em></em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean</em><em> (</em><em>True</em><em> or </em><em>False</em><em>)</em><em></em>) &#8211; if True, extrapolation will be supported</li>
 </ul>
 </td>
 </tr>
@@ -6938,8 +6973,8 @@ class, and returns only a single value regardless of the time.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>name</strong> (<em>string</em>) &#8211; Name</li>
 <li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
-<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4.Variable, or Time object</em>) &#8211; Time axis of the data</li>
-<li><strong>data</strong> (<em>netCDF4.Variable or numpy.array</em>) &#8211; Value of the property</li>
+<li><strong>time</strong> (<em></em><em>[</em><em></em><em>] </em><em>of datetime.datetime</em><em>, </em><em>netCDF4.Variable</em><em>, or </em><em>Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>netCDF4.Variable</em><em> or </em><em>numpy.array</em>) &#8211; Value of the property</li>
 </ul>
 </td>
 </tr>
@@ -6985,8 +7020,8 @@ class, and returns only a single value regardless of the time.</p>
 <li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
 <li><strong>time</strong> (<em>integer</em>) &#8211; The time at which to query these points (T)</li>
 <li><strong>time</strong> &#8211; Specifies the time level of the variable</li>
-<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
-<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+<li><strong>units</strong> (<em>string such as</em><em> (</em><em>'m/s'</em><em>, </em><em>'knots'</em><em>, </em><em>etc</em><em>)</em><em></em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean</em><em> (</em><em>True</em><em> or </em><em>False</em><em>)</em><em></em>) &#8211; if True, extrapolation will be supported</li>
 </ul>
 </td>
 </tr>
@@ -7033,8 +7068,8 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>name</strong> (<em>string</em>) &#8211; Name of the Property</li>
 <li><strong>units</strong> (<em>string</em>) &#8211; Unit of the underlying data</li>
-<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4.Variable, or Time object</em>) &#8211; Time axis of the data</li>
-<li><strong>variables</strong> (<em>[] of EnvProp or numpy.array (Max len=2)</em>) &#8211; component data arrays</li>
+<li><strong>time</strong> (<em></em><em>[</em><em></em><em>] </em><em>of datetime.datetime</em><em>, </em><em>netCDF4.Variable</em><em>, or </em><em>Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>variables</strong> (<em></em><em>[</em><em></em><em>] </em><em>of EnvProp</em><em> or </em><em>numpy.array</em><em> (</em><em>Max len=2</em><em>)</em><em></em>) &#8211; component data arrays</li>
 </ul>
 </td>
 </tr>
@@ -7094,8 +7129,8 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 <li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
 <li><strong>time</strong> (<em>integer</em>) &#8211; The time at which to query these points (T)</li>
 <li><strong>time</strong> &#8211; Specifies the time level of the variable</li>
-<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
-<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+<li><strong>units</strong> (<em>string such as</em><em> (</em><em>'m/s'</em><em>, </em><em>'knots'</em><em>, </em><em>etc</em><em>)</em><em></em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean</em><em> (</em><em>True</em><em> or </em><em>False</em><em>)</em><em></em>) &#8211; if True, extrapolation will be supported</li>
 </ul>
 </td>
 </tr>
@@ -7120,7 +7155,7 @@ the phenomenon at a position in space and time. VectorProp is the base class</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>time</strong> (<em>netCDF4.Variable or [] of datetime.datetime</em>) &#8211; Ascending list of times to use</li>
+<li><strong>time</strong> (<em>netCDF4.Variable</em><em> or </em><em></em><em>[</em><em></em><em>] </em><em>of datetime.datetime</em>) &#8211; Ascending list of times to use</li>
 <li><strong>tz_offset</strong> (<em>datetime.timedelta</em>) &#8211; offset to compensate for time zone shifts</li>
 </ul>
 </td>
@@ -7240,9 +7275,9 @@ then call save method using super</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>name</strong> (<em>string</em>) &#8211; Name</li>
 <li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
-<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4 Variable, or Time object</em>) &#8211; Time axis of the data</li>
-<li><strong>data</strong> (<em>netCDF4.Variable or numpy.array</em>) &#8211; Underlying data source</li>
-<li><strong>grid</strong> (<em>pysgrid or pyugrid</em>) &#8211; Grid that the data corresponds with</li>
+<li><strong>time</strong> (<em></em><em>[</em><em></em><em>] </em><em>of datetime.datetime</em><em>, </em><em>netCDF4 Variable</em><em>, or </em><em>Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>netCDF4.Variable</em><em> or </em><em>numpy.array</em>) &#8211; Underlying data source</li>
+<li><strong>grid</strong> (<em>pysgrid</em><em> or </em><em>pyugrid</em>) &#8211; Grid that the data corresponds with</li>
 <li><strong>data_file</strong> (<em>string</em>) &#8211; Name of data source file</li>
 <li><strong>grid_file</strong> (<em>string</em>) &#8211; Name of grid source file</li>
 <li><strong>varname</strong> (<em>string</em>) &#8211; Name of the variable in the data source file</li>
@@ -7262,13 +7297,13 @@ then call save method using super</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<em>string</em>) &#8211; Default data source. Parameters below take precedence</li>
 <li><strong>varname</strong> (<em>string</em>) &#8211; Name of the variable in the data source file</li>
-<li><strong>grid_topology</strong> (<em>{string : string, ...}</em>) &#8211; Description of the relationship between grid attributes and variable names.</li>
+<li><strong>grid_topology</strong> (<em>{string : string</em><em>, </em><em>..}</em>) &#8211; Description of the relationship between grid attributes and variable names.</li>
 <li><strong>name</strong> (<em>string</em>) &#8211; Name of property</li>
 <li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
-<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4 Variable, or Time object</em>) &#8211; Time axis of the data</li>
-<li><strong>data</strong> (<em>netCDF4.Variable or numpy.array</em>) &#8211; Underlying data source</li>
-<li><strong>grid</strong> (<em>pysgrid or pyugrid</em>) &#8211; Grid that the data corresponds with</li>
-<li><strong>depth</strong> (<em>Depth, S_Depth or L_Depth</em>) &#8211; Depth axis object</li>
+<li><strong>time</strong> (<em></em><em>[</em><em></em><em>] </em><em>of datetime.datetime</em><em>, </em><em>netCDF4 Variable</em><em>, or </em><em>Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>netCDF4.Variable</em><em> or </em><em>numpy.array</em>) &#8211; Underlying data source</li>
+<li><strong>grid</strong> (<em>pysgrid</em><em> or </em><em>pyugrid</em>) &#8211; Grid that the data corresponds with</li>
+<li><strong>depth</strong> (<em>Depth</em><em>, </em><em>S_Depth</em><em> or </em><em>L_Depth</em>) &#8211; Depth axis object</li>
 <li><strong>dataset</strong> (<em>netCDF4.Dataset</em>) &#8211; Instance of open Dataset</li>
 <li><strong>data_file</strong> (<em>string</em>) &#8211; Name of data source file</li>
 <li><strong>grid_file</strong> (<em>string</em>) &#8211; Name of grid source file</li>
@@ -7309,8 +7344,8 @@ If the data has 3 dimensions, self.grid is a PyGrid_U, the ordering is [&#8216;t
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
 <li><strong>time</strong> (<em>datetime.datetime object</em>) &#8211; The time at which to query these points (T)</li>
-<li><strong>units</strong> (<em>string such as ('mem/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
-<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+<li><strong>units</strong> (<em>string such as</em><em> (</em><em>'mem/s'</em><em>, </em><em>'knots'</em><em>, </em><em>etc</em><em>)</em><em></em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean</em><em> (</em><em>True</em><em> or </em><em>False</em><em>)</em><em></em>) &#8211; if True, extrapolation will be supported</li>
 </ul>
 </td>
 </tr>
@@ -7705,7 +7740,7 @@ This is base implementation and can be over-ridden</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -7894,13 +7929,13 @@ raise exception.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<em>string</em>) &#8211; Default data source. Parameters below take precedence</li>
-<li><strong>varnames</strong> (<em>[] of string</em>) &#8211; Names of the variables in the data source file</li>
-<li><strong>grid_topology</strong> (<em>{string : string, ...}</em>) &#8211; Description of the relationship between grid attributes and variable names.</li>
+<li><strong>varnames</strong> (<em></em><em>[</em><em></em><em>] </em><em>of string</em>) &#8211; Names of the variables in the data source file</li>
+<li><strong>grid_topology</strong> (<em>{string : string</em><em>, </em><em>..}</em>) &#8211; Description of the relationship between grid attributes and variable names.</li>
 <li><strong>name</strong> (<em>string</em>) &#8211; Name of property</li>
 <li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
-<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4 Variable, or Time object</em>) &#8211; Time axis of the data</li>
-<li><strong>data</strong> (<em>netCDF4.Variable or numpy.array</em>) &#8211; Underlying data source</li>
-<li><strong>grid</strong> (<em>pysgrid or pyugrid</em>) &#8211; Grid that the data corresponds with</li>
+<li><strong>time</strong> (<em></em><em>[</em><em></em><em>] </em><em>of datetime.datetime</em><em>, </em><em>netCDF4 Variable</em><em>, or </em><em>Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>netCDF4.Variable</em><em> or </em><em>numpy.array</em>) &#8211; Underlying data source</li>
+<li><strong>grid</strong> (<em>pysgrid</em><em> or </em><em>pyugrid</em>) &#8211; Grid that the data corresponds with</li>
 <li><strong>dataset</strong> (<em>netCDF4.Dataset</em>) &#8211; Instance of open Dataset</li>
 <li><strong>data_file</strong> (<em>string</em>) &#8211; Name of data source file</li>
 <li><strong>grid_file</strong> (<em>string</em>) &#8211; Name of grid source file</li>
@@ -8259,7 +8294,7 @@ This is base implementation and can be over-ridden</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -8460,8 +8495,8 @@ raise exception.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>name</strong> (<em>string</em>) &#8211; Name</li>
 <li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
-<li><strong>time</strong> (<em>[] of datetime.datetime, netCDF4.Variable, or Time object</em>) &#8211; Time axis of the data</li>
-<li><strong>data</strong> (<em>numpy.array, list, or other iterable</em>) &#8211; Underlying data source</li>
+<li><strong>time</strong> (<em></em><em>[</em><em></em><em>] </em><em>of datetime.datetime</em><em>, </em><em>netCDF4.Variable</em><em>, or </em><em>Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>numpy.array</em><em>, </em><em>list</em><em>, or </em><em>other iterable</em>) &#8211; Underlying data source</li>
 </ul>
 </td>
 </tr>
@@ -8637,7 +8672,7 @@ This is base implementation and can be over-ridden</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -8843,8 +8878,8 @@ raise exception.</p>
 <li><strong>points</strong> (<em>Nx2 array of double</em>) &#8211; Coordinates to be queried (P)</li>
 <li><strong>time</strong> (<em>integer</em>) &#8211; The time at which to query these points (T)</li>
 <li><strong>time</strong> &#8211; Specifies the time level of the variable</li>
-<li><strong>units</strong> (<em>string such as ('m/s', 'knots', etc)</em>) &#8211; units the values will be returned in (or converted to)</li>
-<li><strong>extrapolate</strong> (<em>boolean (True or False)</em>) &#8211; if True, extrapolation will be supported</li>
+<li><strong>units</strong> (<em>string such as</em><em> (</em><em>'m/s'</em><em>, </em><em>'knots'</em><em>, </em><em>etc</em><em>)</em><em></em>) &#8211; units the values will be returned in (or converted to)</li>
+<li><strong>extrapolate</strong> (<em>boolean</em><em> (</em><em>True</em><em> or </em><em>False</em><em>)</em><em></em>) &#8211; if True, extrapolation will be supported</li>
 </ul>
 </td>
 </tr>
@@ -8985,7 +9020,7 @@ This is base implementation and can be over-ridden</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>saveloc</strong> (<em>A path as a string or unicode</em>) &#8211; zip archive or a valid directory. Model files are
+<li><strong>saveloc</strong> (<em>A path as a string</em><em> or </em><em>unicode</em>) &#8211; zip archive or a valid directory. Model files are
 either persisted here or a new model is re-created from the files
 stored here. The files are clobbered when save() is called.</li>
 <li><strong>name=None</strong> &#8211; filename to store json. If None, default name is:
@@ -9398,10 +9433,10 @@ from spill_num</li>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>map_filename=None</strong> (<em>str</em>) &#8211; name of file for basemap (BNA)</li>
 <li><strong>output_dir='./'</strong> (<em>str</em>) &#8211; directory to output the images</li>
-<li><strong>image_size=(800, 600)</strong> (<em>2-tuple</em>) &#8211; size of images to output</li>
+<li><strong>image_size=</strong><strong>(</strong><strong>800</strong><strong>, </strong><strong>600</strong><strong>)</strong><strong></strong> (<em>2-tuple</em>) &#8211; size of images to output</li>
 <li><strong>projection=None</strong> &#8211; projection instance to use:
 if None, set to projections.FlatEarthProjection()</li>
-<li><strong>viewport</strong> (<em>pair of (lon, lat) tuples ( lower_left, upper right )</em>) &#8211; viewport of map &#8211; what gets drawn and on what scale.
+<li><strong>viewport</strong> (<em>pair of</em><em> (</em><em>lon</em><em>, </em><em>lat</em><em>) </em><em>tuples</em><em> ( </em><em>lower_left</em><em>, </em><em>upper right</em><em> )</em><em></em>) &#8211; viewport of map &#8211; what gets drawn and on what scale.
 Default is full globe: (((-180, -90), (180, 90)))</li>
 <li><strong>map_BB=None</strong> &#8211; bounding box of map if None, it will use the
 bounding box of the mapfile.</li>
@@ -9645,7 +9680,7 @@ writes it to a NetCDF4 format file using the CF convention</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>netcdf_filename</strong> (<em>str. or unicode</em>) &#8211; Required parameter. The filename in which to
+<li><strong>netcdf_filename</strong> (<em>str.</em><em> or </em><em>unicode</em>) &#8211; Required parameter. The filename in which to
 store the NetCDF data.</li>
 <li><strong>which_data='standard'</strong> &#8211; If &#8216;standard&#8217;, write only standard data.
 If &#8216;most&#8217; means, write everything except the attributes we know are
@@ -10054,7 +10089,7 @@ for each element:</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ice_movers</strong> (<em>An ice_mover object or sequence of ice_mover
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ice_movers</strong> (<em>An ice_mover object</em><em> or </em><em>sequence of ice_mover
 objects.</em>) &#8211; ice_movers associated with this outputter.</td>
 </tr>
 </tbody>
@@ -10534,11 +10569,11 @@ or by bounding box</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>center</strong> (<em>tuple of floats (lon, lat)</em>) &#8211; The point around which the viewport is centered</li>
+<li><strong>center</strong> (<em>tuple of floats</em><em> (</em><em>lon</em><em>, </em><em>lat</em><em>)</em><em></em>) &#8211; The point around which the viewport is centered</li>
 <li><strong>width</strong> (<em>float</em>) &#8211; Width of the viewport in meters</li>
 <li><strong>height</strong> (<em>float</em>) &#8211; height of the viewport in meters</li>
 <li><strong>BB</strong> (<em>a list of tuples containing of the lower left and top right
-coordinates: ((min_x, min_y),(max_x, max_y))</em>) &#8211; Bounding box of the viewport
+coordinates:</em><em> (</em><em></em><em>(</em><em>min_x</em><em>, </em><em>min_y</em><em>)</em><em></em><em>,</em><em></em><em>(</em><em>max_x</em><em>, </em><em>max_y</em><em>)</em><em></em><em>)</em><em></em>) &#8211; Bounding box of the viewport
 (overrides all previous parameters)</li>
 </ul>
 </td>
@@ -10632,9 +10667,9 @@ into one</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>points</strong> (<em>Nx2 array of integers (or something that can be turned
-into one)</em>) &#8211; sequence of points</li>
-<li><strong>line_color=None</strong> (<em>color name (string) or index (int)</em>) &#8211; the color of the outline</li>
+<li><strong>points</strong> (<em>Nx2 array of integers</em><em> (or </em><em>something that can be turned
+into one</em><em>)</em><em></em>) &#8211; sequence of points</li>
+<li><strong>line_color=None</strong> (<em>color name</em><em> (</em><em>string</em><em>) or </em><a class="reference internal" href="#gnome.utilities.orderedcollection.OrderedCollection.index" title="gnome.utilities.orderedcollection.OrderedCollection.index"><em>index</em></a><em> (</em><em>int</em><em>)</em><em></em>) &#8211; the color of the outline</li>
 <li><strong>fill_color=None</strong> &#8211; the color of the filled polygon</li>
 <li><strong>line_width=1</strong> &#8211; width of line</li>
 <li><strong>background=False</strong> &#8211; whether to draw to the background image.</li>
@@ -10654,9 +10689,9 @@ into one)</em>) &#8211; sequence of points</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>points</strong> (<em>Nx2 array of integers (or something that can be turned
-into one)</em>) &#8211; sequence of points</li>
-<li><strong>line_color</strong> (<em>color name or index</em>) &#8211; the color of the outline</li>
+<li><strong>points</strong> (<em>Nx2 array of integers</em><em> (or </em><em>something that can be turned
+into one</em><em>)</em><em></em>) &#8211; sequence of points</li>
+<li><strong>line_color</strong> (<em>color name</em><em> or </em><a class="reference internal" href="#gnome.utilities.orderedcollection.OrderedCollection.index" title="gnome.utilities.orderedcollection.OrderedCollection.index"><em>index</em></a>) &#8211; the color of the outline</li>
 <li><strong>line_width=1</strong> &#8211; width of line</li>
 <li><strong>background=False</strong> &#8211; whether to draw to the background image.</li>
 </ul>
@@ -10675,13 +10710,13 @@ into one)</em>) &#8211; sequence of points</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>text_list</strong> (<em>['string', (lon, lat)]</em>) &#8211; sequence of strings to be printed, and the locations
+<li><strong>text_list</strong> (<em></em><em>[</em><em>'string'</em><em>, </em><em></em><em>(</em><em>lon</em><em>, </em><em>lat</em><em>)</em><em></em><em>]</em><em></em>) &#8211; sequence of strings to be printed, and the locations
 they are to be located</li>
 <li><strong>size</strong> (<em>one of the following strings:
-{'tiny', 'small', 'medium', 'large', 'giant'}</em>) &#8211; size of the text to be printed</li>
+{'tiny'</em><em>, </em><em>'small'</em><em>, </em><em>'medium'</em><em>, </em><em>'large'</em><em>, </em><em>'giant'}</em>) &#8211; size of the text to be printed</li>
 <li><strong>color</strong> (<em>a valid color string in the py_gd Image color palettes</em>) &#8211; color of the text to be printed</li>
 <li><strong>align</strong> (<em>one of the following strings:
-{'lt', 'ct', 'rt', 'r', 'rb', 'cb', 'lb', 'l'}</em>) &#8211; sets the principal point of the text bounding box.</li>
+{'lt'</em><em>, </em><em>'ct'</em><em>, </em><em>'rt'</em><em>, </em><em>'r'</em><em>, </em><em>'rb'</em><em>, </em><em>'cb'</em><em>, </em><em>'lb'</em><em>, </em><em>'l'}</em>) &#8211; sets the principal point of the text bounding box.</li>
 </ul>
 </td>
 </tr>
@@ -10707,7 +10742,7 @@ they are to be located</li>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<em>string</em>) &#8211; full path of file to be saved to</li>
 <li><strong>file_type</strong> (<em>one of the following:
-{'png', 'gif', 'jpeg', 'bmp'}</em>) &#8211; type of file to save</li>
+{'png'</em><em>, </em><em>'gif'</em><em>, </em><em>'jpeg'</em><em>, </em><em>'bmp'}</em>) &#8211; type of file to save</li>
 </ul>
 </td>
 </tr>
@@ -10728,7 +10763,7 @@ background image and saves teh whole thing.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<em>string</em>) &#8211; full path of file to be saved to</li>
 <li><strong>file_type</strong> (<em>one of the following:
-{'png', 'gif', 'jpeg', 'bmp'}</em>) &#8211; type of file to save</li>
+{'png'</em><em>, </em><em>'gif'</em><em>, </em><em>'jpeg'</em><em>, </em><em>'bmp'}</em>) &#8211; type of file to save</li>
 </ul>
 </td>
 </tr>
@@ -10752,7 +10787,7 @@ the current graticule</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>viewport</strong> (<em>tuple of lon/lat</em>) &#8211; bounding box of the viewport in question.</li>
-<li><strong>max_lines</strong> (<em>tuple of integers, (max, min)</em>) &#8211; How many lines to be displayed on the longest
+<li><strong>max_lines</strong> (<em>tuple of integers</em><em>, </em><em></em><em>(</em><em>max</em><em>, </em><em>min</em><em>)</em><em></em>) &#8211; How many lines to be displayed on the longest
 dimension of the viewport. Graticule will scale up
 or down only when the number of lines in the viewport
 falls outside the range.</li>
@@ -10925,7 +10960,7 @@ already</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>coords</strong> (<em>Nx3 numpy array or compatible sequence (lon, lat, depth)</em>) &#8211; The coords to project</li>
+<li><strong>coords</strong> (<em>Nx3 numpy array</em><em> or </em><em>compatible sequence</em><em> (</em><em>lon</em><em>, </em><em>lat</em><em>, </em><em>depth</em><em>)</em><em></em>) &#8211; The coords to project</li>
 <li><strong>asint</strong> &#8211; Flag to set whether to convert to a integer or not
 default is to leave it as the same type it came in,
 so you can have fractional pixels</li>
@@ -10945,7 +10980,7 @@ so you can have fractional pixels</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>coords</strong> (<em>Nx2 numpy array or compatible sequence (lon, lat)</em>) &#8211; The coords to project</li>
+<li><strong>coords</strong> (<em>Nx2 numpy array</em><em> or </em><em>compatible sequence</em><em> (</em><em>lon</em><em>, </em><em>lat</em><em>)</em><em></em>) &#8211; The coords to project</li>
 <li><strong>asint</strong> &#8211; flag to set whether to convert to a integer or not
 default is to leave it as the same type it came in,
 so you can have fractional pixels</li>
@@ -10980,7 +11015,7 @@ i.e. &#8220;geo-coordinates&#8221;</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>bounding_box</strong> &#8211; The bounding box of the map</li>
-<li><strong>image_size</strong> (<em>Struct of the form (width, height)</em>) &#8211; The size of the map image</li>
+<li><strong>image_size</strong> (<em>Struct of the form</em><em> (</em><em>width</em><em>, </em><em>height</em><em>)</em><em></em>) &#8211; The size of the map image</li>
 </ul>
 </td>
 </tr>
@@ -10997,8 +11032,8 @@ or the size of the image is changed</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>bounding_box</strong> (<em>Struct of the form: ((min_long, min_lat),
-(max_long, max_lat))</em>) &#8211; bounding box of the visual portion of the map</li>
+<li><strong>bounding_box</strong> (<em>Struct of the form:</em><em> (</em><em></em><em>(</em><em>min_long</em><em>, </em><em>min_lat</em><em>)</em><em></em><em>,
+</em><em></em><em>(</em><em>max_long</em><em>, </em><em>max_lat</em><em>)</em><em></em><em>)</em><em></em>) &#8211; bounding box of the visual portion of the map</li>
 <li><strong>image_size=None</strong> &#8211; The size of the image that will be drawn to.
 if not given, the previous size will be used.</li>
 </ul>
@@ -11069,12 +11104,12 @@ considered outside the map</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> (<em>Sequence of NX2::
-((long1, lat1),
-(long2, lat2),
-(long3, lat3),
-...
-)</em>) &#8211; An array of pixel coordinates (usually integer type</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> (<em>Sequence of NX2::</em><em>
+(</em><em></em><em>(</em><em>long1</em><em>, </em><em>lat1</em><em>)</em><em></em><em>,
+</em><em></em><em>(</em><em>long2</em><em>, </em><em>lat2</em><em>)</em><em></em><em>,
+</em><em></em><em>(</em><em>long3</em><em>, </em><em>lat3</em><em>)</em><em></em><em>,
+</em><em>..</em><em>
+)</em><em></em>) &#8211; An array of pixel coordinates (usually integer type</td>
 </tr>
 </tbody>
 </table>
@@ -11117,7 +11152,7 @@ map properties &#8211; but easy to compute, and it looks OK.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>bounding_box</strong> &#8211; The bounding box of the map</li>
-<li><strong>image_size</strong> (<em>Struct of the form (width, height)</em>) &#8211; The size of the map image</li>
+<li><strong>image_size</strong> (<em>Struct of the form</em><em> (</em><em>width</em><em>, </em><em>height</em><em>)</em><em></em>) &#8211; The size of the map image</li>
 </ul>
 </td>
 </tr>
@@ -11137,9 +11172,9 @@ dlon = dy * 8.9992801e-06 * cos(ref_lat)
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>meters</strong> (<em>NX3 numpy array of (dx, dy, dz)
-(dz is passed through untouched)</em>) &#8211; Distances in meters</li>
-<li><strong>ref_positions</strong> (<em>NX3, numpy array (Only lat is used here)</em>) &#8211; Reference positions in degrees</li>
+<li><strong>meters</strong> (<em>NX3 numpy array of</em><em> (</em><em>dx</em><em>, </em><em>dy</em><em>, </em><em>dz</em><em>)
+</em><em></em><em>(</em><em>dz is passed through untouched</em><em>)</em><em></em>) &#8211; Distances in meters</li>
+<li><strong>ref_positions</strong> (<em>NX3</em><em>, </em><em>numpy array</em><em> (</em><em>Only lat is used here</em><em>)</em><em></em>) &#8211; Reference positions in degrees</li>
 </ul>
 </td>
 </tr>
@@ -11172,10 +11207,10 @@ not on the equator</dd>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lon_lat</strong> (<em>NX3 numpy array of (dlon, dlat, dz)
-(dz is passed through untouched)</em>) &#8211; Distances in meters</li>
-<li><strong>ref_positions</strong> (<em>NX3, numpy array of (lon,lat,z)
-(Only lat is used here)</em>) &#8211; Reference positions in degrees</li>
+<li><strong>lon_lat</strong> (<em>NX3 numpy array of</em><em> (</em><em>dlon</em><em>, </em><em>dlat</em><em>, </em><em>dz</em><em>)
+</em><em></em><em>(</em><em>dz is passed through untouched</em><em>)</em><em></em>) &#8211; Distances in meters</li>
+<li><strong>ref_positions</strong> (<em>NX3</em><em>, </em><em>numpy array of</em><em> (</em><em>lon</em><em>,</em><em>lat</em><em>,</em><em>z</em><em>)
+</em><em></em><em>(</em><em>Only lat is used here</em><em>)</em><em></em>) &#8211; Reference positions in degrees</li>
 </ul>
 </td>
 </tr>
@@ -11231,8 +11266,8 @@ or the size of the image is changed</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>bounding_box</strong> (<em>Structure of the form: ((min_long, min_lat),
-(max_long, max_lat))</em>) &#8211; bounding box of the visual portion of the map</li>
+<li><strong>bounding_box</strong> (<em>Structure of the form:</em><em> (</em><em></em><em>(</em><em>min_long</em><em>, </em><em>min_lat</em><em>)</em><em></em><em>,
+</em><em></em><em>(</em><em>max_long</em><em>, </em><em>max_lat</em><em>)</em><em></em><em>)</em><em></em>) &#8211; bounding box of the visual portion of the map</li>
 <li><strong>image_size=None</strong> &#8211; the size of the image that will be drawn to.
 if not given, the previous size will be used.</li>
 </ul>
@@ -11289,7 +11324,7 @@ lat-lon location.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>coords</strong> (<em>Nx3 numpy array or compatible sequence (lon, lat, depth)</em>) &#8211; The coords to project</li>
+<li><strong>coords</strong> (<em>Nx3 numpy array</em><em> or </em><em>compatible sequence</em><em> (</em><em>lon</em><em>, </em><em>lat</em><em>, </em><em>depth</em><em>)</em><em></em>) &#8211; The coords to project</li>
 <li><strong>asint</strong> &#8211; Flag to set whether to convert to a integer or not
 default is to leave it as the same type it came in,
 so you can have fractional pixels</li>
@@ -11309,7 +11344,7 @@ so you can have fractional pixels</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>coords</strong> (<em>Nx2 numpy array or compatible sequence (lon, lat)</em>) &#8211; The coords to project</li>
+<li><strong>coords</strong> (<em>Nx2 numpy array</em><em> or </em><em>compatible sequence</em><em> (</em><em>lon</em><em>, </em><em>lat</em><em>)</em><em></em>) &#8211; The coords to project</li>
 <li><strong>asint</strong> &#8211; Flag to set whether to convert to a integer or not
 default is to leave it as the same type it came in,
 so you can have fractional pixels</li>
@@ -11328,12 +11363,12 @@ so you can have fractional pixels</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> (<em>Sequence of Nx2 (usually integer type)::
-((long1, lat1),
-(long2, lat2),
-(long3, lat3),
-...
-)</em>) &#8211; An array of pixel coordinates (as produced by to_pixel)</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coords</strong> (<em>Sequence of Nx2</em><em> (</em><em>usually integer type</em><em>)</em><em>::</em><em>
+(</em><em></em><em>(</em><em>long1</em><em>, </em><em>lat1</em><em>)</em><em></em><em>,
+</em><em></em><em>(</em><em>long2</em><em>, </em><em>lat2</em><em>)</em><em></em><em>,
+</em><em></em><em>(</em><em>long3</em><em>, </em><em>lat3</em><em>)</em><em></em><em>,
+</em><em>..</em><em>
+)</em><em></em>) &#8211; An array of pixel coordinates (as produced by to_pixel)</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the pixel coords as a similar Nx2 array of floating point
 x,y coordinates
@@ -11369,7 +11404,7 @@ simpler and should be faster.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>bounding_box</strong> &#8211; The bounding box of the map</li>
-<li><strong>image_size</strong> (<em>Struct of the form (width, height)</em>) &#8211; The size of the map image</li>
+<li><strong>image_size</strong> (<em>Struct of the form</em><em> (</em><em>width</em><em>, </em><em>height</em><em>)</em><em></em>) &#8211; The size of the map image</li>
 </ul>
 </td>
 </tr>
@@ -11386,8 +11421,8 @@ or the size of the image is changed</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>bounding_box</strong> (<em>Structure of the form: ((min_long, min_lat),
-(max_long, max_lat))</em>) &#8211; Bounding box of the visual portion of the map</li>
+<li><strong>bounding_box</strong> (<em>Structure of the form:</em><em> (</em><em></em><em>(</em><em>min_long</em><em>, </em><em>min_lat</em><em>)</em><em></em><em>,
+</em><em></em><em>(</em><em>max_long</em><em>, </em><em>max_lat</em><em>)</em><em></em><em>)</em><em></em>) &#8211; Bounding box of the visual portion of the map</li>
 <li><strong>image_size=None</strong> &#8211; The size of the image that will be drawn to.
 if not given, the previous size will be used.</li>
 </ul>
@@ -11468,7 +11503,7 @@ accessing again for output, etc.</p>
 
 <dl class="function">
 <dt id="gnome.utilities.cache.clean_up_cache">
-<code class="descclassname">gnome.utilities.cache.</code><code class="descname">clean_up_cache</code><span class="sig-paren">(</span><em>dir_name='/var/folders/7t/137hx7xn4s1fdqvjj1bhtdhskm0vyc/T/tmpAOe2Xu'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/cache.html#clean_up_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.cache.clean_up_cache" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gnome.utilities.cache.</code><code class="descname">clean_up_cache</code><span class="sig-paren">(</span><em>dir_name='/var/folders/7t/137hx7xn4s1fdqvjj1bhtdhskm0vyc/T/tmprrGSGR'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/cache.html#clean_up_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.cache.clean_up_cache" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deletes a cache dir.</p>
 <p>Designed to be called at program exit. and/or when
 individual cache objects are deleted</p>
@@ -11673,13 +11708,16 @@ are in ascending order</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="units.html" class="btn btn-neutral" title="Units used in GNOME / PyGNOME" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="units.html" class="btn btn-neutral" title="Units used in GNOME / PyGNOME" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -11710,10 +11748,11 @@ are in ascending order</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>

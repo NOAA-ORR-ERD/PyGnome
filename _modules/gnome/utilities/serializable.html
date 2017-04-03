@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.utilities.serializable &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>gnome.utilities.serializable &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,7 +32,10 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html"/>
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -40,6 +45,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -59,7 +65,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -80,7 +86,10 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
@@ -102,8 +111,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../../index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -116,19 +127,36 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../../../index.html">Docs</a> &raquo;</li>
-      
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
           <li><a href="../../index.html">Module code</a> &raquo;</li>
-      
-    <li>gnome.utilities.serializable</li>
+        
+      <li>gnome.utilities.serializable</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
+            
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -223,7 +251,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Field</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">__dict__</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
 
         <span class="k">return</span> <span class="kc">False</span>
@@ -234,13 +262,13 @@
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s1">&#39;unambiguous object representation&#39;</span>
         <span class="n">attr_vals</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">=</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
-                               <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
+                               <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
         <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0.__class__.__module__}</span><span class="s1">.</span><span class="si">{0.__class__.__name__}</span><span class="s1">&#39;</span>
                 <span class="s1">&#39;(</span><span class="si">{1}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_vals</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">attr_vals</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">=</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
-                               <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
+                               <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
         <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;Field Object: &#39;</span>
                 <span class="s1">&#39;</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_vals</span><span class="p">))</span></div>
 
@@ -288,25 +316,25 @@
         <span class="c1"># Field object is in flux - more properties were added so make</span>
         <span class="c1"># _valid_field_attr dynamic</span>
         <span class="n">test_obj</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span> <span class="o">=</span> <span class="n">test_obj</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span> <span class="o">=</span> <span class="n">test_obj</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        deep copy of _state object so makes a copy of the fields list</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">new_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">()</span>
+        <span class="n">new_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">new_</span> <span class="o">!=</span> <span class="bp">self</span><span class="p">:</span>
-            <span class="n">new_</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">,</span> <span class="n">memo</span><span class="p">))</span>
+            <span class="n">new_</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">,</span> <span class="n">memo</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">new_</span>
 
     <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        check for equality</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">__dict__</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="vm">__dict__</span>
 
     <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">__dict__</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="vm">__dict__</span>
 
     <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -618,7 +646,7 @@
                    <span class="n">update</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,))</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_restore_attr_from_save</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">new_obj</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_restore_attr_from_save</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">new_obj</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        restore attributes from save files that are not set during init - broke</span>
 <span class="sd">        out some functionality of new_from_dict so when child classes override</span>
@@ -634,7 +662,7 @@
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> is not an attribute &#39;</span>
-                                     <span class="s1">&#39;of </span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+                                     <span class="s1">&#39;of </span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="nb">setattr</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">dict_</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
             <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
@@ -642,7 +670,7 @@
                 <span class="k">raise</span>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Serializable.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        creates a new object from dictionary</span>
 
@@ -650,19 +678,19 @@
 <span class="sd">        this mixin</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">rqd</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">cls</span><span class="o">.</span><span class="n">mro</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">ismethod</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">__init__</span><span class="p">):</span>
-                <span class="n">kwargs</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">__init__</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">mro</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">ismethod</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="fm">__init__</span><span class="p">):</span>
+                <span class="n">kwargs</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="fm">__init__</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span>
 
                 <span class="c1"># pop kwargs for object creation into rqd dict</span>
                 <span class="n">rqd</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span>
                             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="p">})</span>
 
         <span class="c1"># create object with required input arguments</span>
-        <span class="n">new_obj</span> <span class="o">=</span> <span class="n">cls</span><span class="p">(</span><span class="o">**</span><span class="n">rqd</span><span class="p">)</span>
+        <span class="n">new_obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">rqd</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;json_&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;save&#39;</span><span class="p">:</span>
-            <span class="n">cls</span><span class="o">.</span><span class="n">_restore_attr_from_save</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">dict_</span><span class="p">)</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_restore_attr_from_save</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">dict_</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># for webapi, ignore the readonly attributes and set only</span>
             <span class="c1"># attributes that are updatable. At present, the &#39;webapi&#39; uses</span>
@@ -671,7 +699,7 @@
             <span class="k">if</span> <span class="n">dict_</span><span class="p">:</span>
                 <span class="n">new_obj</span><span class="o">.</span><span class="n">update_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
 
-        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;constructed object </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_obj</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;constructed object </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
         <span class="n">new_obj</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">new_obj</span><span class="o">.</span><span class="n">_pid</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">new_obj</span></div>
@@ -941,7 +969,7 @@
 
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">self_attr</span> <span class="o">-</span> <span class="n">other_attr</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">10</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">self_attr</span> <span class="o">-</span> <span class="n">other_attr</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-10</span><span class="p">:</span>
                         <span class="k">return</span> <span class="kc">False</span>
                 <span class="k">elif</span> <span class="n">self_attr</span> <span class="o">!=</span> <span class="n">other_attr</span><span class="p">:</span>
                     <span class="k">return</span> <span class="kc">False</span>
@@ -950,7 +978,7 @@
                     <span class="k">return</span> <span class="kc">False</span>
 
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="n">other_attr</span><span class="p">,</span>
-                                   <span class="n">rtol</span><span class="o">=</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">4</span><span class="p">):</span>
+                                   <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">):</span>
                     <span class="k">return</span> <span class="kc">False</span>
 
         <span class="k">return</span> <span class="kc">True</span>
@@ -1004,7 +1032,7 @@
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
         <span class="n">c_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;iscollection&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span><span class="p">:</span>
@@ -1023,14 +1051,14 @@
         <span class="k">return</span> <span class="n">serial</span></div>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Serializable.is_sparse"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.is_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">is_sparse</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.is_sparse"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.is_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">is_sparse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">            Sparse means that we have a previously created object,</span>
 <span class="sd">            and we are receiving a reference to the object using just</span>
 <span class="sd">            an obj_type and an id.  This is a valid payload that the</span>
 <span class="sd">            Web Client will send.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">r_attr_list</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s1">&#39;read&#39;</span><span class="p">)</span>
+        <span class="n">r_attr_list</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s1">&#39;read&#39;</span><span class="p">)</span>
         <span class="n">r_attr_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;json_&#39;</span><span class="p">)</span>
         <span class="n">attr_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">attr</span> <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">json_</span> <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">r_attr_list</span><span class="p">]</span>
 
@@ -1047,7 +1075,7 @@
         <span class="k">return</span> <span class="n">json_out</span></div>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Serializable.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            classmethod takes json structure as input, deserializes it using a</span>
 <span class="sd">            colander schema then invokes the new_from_dict method to create an</span>
@@ -1056,17 +1084,17 @@
 <span class="sd">            We also need to accept sparse json objects, in which case we will</span>
 <span class="sd">            not treat them, but just send them back.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
             <span class="c1"># if there are collections in object, dynamically update schema</span>
-            <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
-            <span class="n">c_fields</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;iscollection&#39;</span><span class="p">)</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+            <span class="n">c_fields</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;iscollection&#39;</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">json_</span><span class="p">[</span><span class="s1">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span><span class="p">:</span>
                 <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
                         <span class="n">_to_dict</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> \
-                            <span class="n">cls</span><span class="o">.</span><span class="n">deserialize_oc</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+                            <span class="bp">cls</span><span class="o">.</span><span class="n">deserialize_oc</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
             <span class="k">elif</span> <span class="n">json_</span><span class="p">[</span><span class="s1">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;save&#39;</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
@@ -1080,7 +1108,7 @@
             <span class="k">return</span> <span class="n">json_</span></div>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Serializable.deserialize_oc"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize_oc">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize_oc</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.deserialize_oc"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize_oc">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize_oc</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        check contents of orderered collections to figure out what schema to</span>
 <span class="sd">        use.</span>
@@ -1089,13 +1117,13 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">deserial</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
-            <span class="n">d_item</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_deserialize_nested_obj</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="n">d_item</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_deserialize_nested_obj</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
             <span class="n">deserial</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d_item</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">deserial</span></div>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_deserialize_nested_obj</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_deserialize_nested_obj</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">json_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">py_class</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;obj_type&#39;</span><span class="p">])</span>
 
@@ -1125,6 +1153,9 @@
         <span class="k">return</span> <span class="n">items</span></div>
 </pre></div>
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -1156,10 +1187,11 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../../_static/jquery.js"></script>

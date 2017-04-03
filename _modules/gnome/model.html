@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.model &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>gnome.model &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,7 +32,10 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../index.html"/>
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="../../index.html"/>
         <link rel="up" title="Module code" href="../index.html"/> 
 
   
@@ -40,6 +45,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -59,7 +65,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -80,7 +86,10 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../structure.html">GNOME Structure</a></li>
@@ -102,8 +111,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -116,19 +127,36 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../../index.html">Docs</a> &raquo;</li>
-      
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
           <li><a href="../index.html">Module code</a> &raquo;</li>
-      
-    <li>gnome.model</li>
+        
+      <li>gnome.model</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
+            
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -142,6 +170,8 @@
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">import</span> <span class="nn">zipfile</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span>
                       <span class="n">String</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span>
@@ -169,7 +199,7 @@
                            <span class="n">class_from_objtype</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="k">import</span> <span class="p">(</span><span class="n">ObjType</span><span class="p">,</span>
                                        <span class="n">CollectionItemsList</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">gnome.exceptions</span> <span class="k">import</span> <span class="n">ReferencedObjectNotSet</span>
+<span class="kn">from</span> <span class="nn">gnome.exceptions</span> <span class="k">import</span> <span class="n">ReferencedObjectNotSet</span><span class="p">,</span> <span class="n">GnomeRuntimeError</span>
 
 
 <span class="k">class</span> <span class="nc">ModelSchema</span><span class="p">(</span><span class="n">ObjType</span><span class="p">):</span>
@@ -208,7 +238,7 @@
                      <span class="n">name</span><span class="o">=</span><span class="s1">&#39;environment&#39;</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">CollectionItemsList</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span>
                      <span class="n">name</span><span class="o">=</span><span class="s1">&#39;outputters&#39;</span><span class="p">))</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ModelSchema</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ModelSchema</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../reference.html#gnome.model.Model">[docs]</a><span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">Serializable</span><span class="p">):</span>
@@ -250,7 +280,7 @@
     <span class="n">modes</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;gnome&#39;</span><span class="p">,</span> <span class="s1">&#39;adios&#39;</span><span class="p">,</span> <span class="s1">&#39;roc&#39;</span><span class="p">}</span>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Model.new_from_dict"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.new_from_dict"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
         <span class="s1">&#39;Restore model from previously persisted _state&#39;</span>
         <span class="n">json_</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;json_&#39;</span><span class="p">)</span>
         <span class="n">l_env</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;environment&#39;</span><span class="p">,</span> <span class="p">[])</span>
@@ -266,7 +296,7 @@
             <span class="n">l_spills</span> <span class="o">=</span> <span class="n">c_spills</span>
 
         <span class="c1"># define defaults for properties that a location file may not contain</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">__init__</span><span class="p">)</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="fm">__init__</span><span class="p">)</span>
         <span class="n">default_restore</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:],</span> <span class="n">kwargs</span><span class="p">[</span><span class="mi">3</span><span class="p">]))</span>
 
         <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span><span class="p">:</span>
@@ -276,7 +306,7 @@
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">default_restore</span><span class="p">:</span>
             <span class="n">default_restore</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default_restore</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
 
-        <span class="n">model</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="n">__new__</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
         <span class="n">model</span><span class="o">.</span><span class="n">__restore__</span><span class="p">(</span><span class="o">**</span><span class="n">default_restore</span><span class="p">)</span>
 
         <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">l_env</span><span class="p">]</span>
@@ -292,7 +322,7 @@
         <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span><span class="p">:</span>
             <span class="n">model</span><span class="o">.</span><span class="n">update_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">cls</span><span class="o">.</span><span class="n">_restore_attr_from_save</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">dict_</span><span class="p">)</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_restore_attr_from_save</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">dict_</span><span class="p">)</span>
 
         <span class="c1"># restore the spill data outside this method - let&#39;s not try to find</span>
         <span class="c1"># the saveloc here</span>
@@ -302,7 +332,7 @@
         <span class="k">return</span> <span class="n">model</span></div>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Model.load_savefile"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.load_savefile">[docs]</a>    <span class="k">def</span> <span class="nf">load_savefile</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.load_savefile"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.load_savefile">[docs]</a>    <span class="k">def</span> <span class="nf">load_savefile</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        load a model instance from a save file</span>
 
@@ -320,7 +350,7 @@
 
         <span class="c1"># check that this actually loaded a model object</span>
         <span class="c1">#  load() will load any gnome object from json...</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">cls</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;This does not appear to be a save file for a model</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;loaded a </span><span class="si">%s</span><span class="s2"> instead&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
@@ -451,7 +481,7 @@
 <span class="sd">        Resets model to defaults -- Caution -- clears all movers, spills, etc.</span>
 <span class="sd">        Takes same keyword arguments as :meth:`__init__()`</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Model.rewind"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -566,7 +596,7 @@
 
     <span class="nd">@current_time_step</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">current_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">step</span> <span class="o">*</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">step</span> <span class="o">*</span>
                                                        <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_current_time_step</span> <span class="o">=</span> <span class="n">step</span>
 
@@ -615,8 +645,8 @@
         <span class="c1"># We do not count any remainder time.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">initial_0th_step</span> <span class="o">=</span> <span class="mi">1</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">=</span> <span class="p">(</span><span class="n">initial_0th_step</span> <span class="o">+</span> 
-                                    <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">//</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">=</span> <span class="p">(</span><span class="n">initial_0th_step</span> <span class="o">+</span>
+                                    <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">//</span>
                                         <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">=</span> <span class="kc">None</span>
@@ -719,14 +749,16 @@
                 <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;_req_refs&#39;</span><span class="p">):</span>
                     <span class="n">ref_dict</span> <span class="o">=</span> <span class="p">{}</span>
                     <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">_req_refs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                        <span class="n">inst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s1">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
+                        <span class="n">inst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s1">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span>
+                                                 <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
                         <span class="k">if</span> <span class="n">inst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                             <span class="n">ref_dict</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">inst</span>
                     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ref_dict</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="n">item</span><span class="o">.</span><span class="n">_attach_default_refs</span><span class="p">(</span><span class="n">ref_dict</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">coll</span> <span class="o">==</span> <span class="s1">&#39;weatherers&#39;</span><span class="p">:</span>
-                        <span class="c1"># by default turn WeatheringData and spreading object off</span>
+                        <span class="c1"># by default turn WeatheringData and spreading object</span>
+                        <span class="c1"># off</span>
                         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">WeatheringData</span><span class="p">):</span>
                             <span class="n">item</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="kc">False</span>
                             <span class="n">wd</span> <span class="o">=</span> <span class="n">item</span>
@@ -1014,7 +1046,7 @@
                 <span class="n">output</span> <span class="o">=</span> <span class="n">outputter</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">output_info</span><span class="p">[</span><span class="n">outputter</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="n">output</span>
+                <span class="n">output_info</span><span class="p">[</span><span class="n">outputter</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="n">output</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_info</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="c1"># append &#39;valid&#39; flag to output</span>
@@ -1186,10 +1218,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="n">check</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Model</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="n">check</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Model</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">check</span><span class="p">:</span>
             <span class="c1"># also check the data in ordered collections</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">__class__</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
                 <span class="k">return</span> <span class="kc">False</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">spills</span><span class="p">:</span>
@@ -1422,7 +1454,7 @@
 <span class="sd">        treat special-case attributes of Model.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
 
         <span class="n">o_json_</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
         <span class="n">o_json_</span><span class="p">[</span><span class="s1">&#39;map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
@@ -1447,11 +1479,11 @@
         <span class="k">return</span> <span class="n">o_json_</span></div>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Model.deserialize"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.deserialize"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        treat special-case attributes of Model.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;json_&#39;</span><span class="p">])</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;json_&#39;</span><span class="p">])</span>
         <span class="n">deserial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="s1">&#39;map&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
@@ -1469,12 +1501,12 @@
 <span class="sd">                    even if list is empty, deserialize it because we still need</span>
 <span class="sd">                    to sync up with client</span>
 <span class="sd">                    &#39;&#39;&#39;</span>
-                    <span class="n">deserial</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">deserialize_oc</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">attr</span><span class="p">])</span>
+                    <span class="n">deserial</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">deserialize_oc</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">attr</span><span class="p">])</span>
 
         <span class="k">return</span> <span class="n">deserial</span></div>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Model.loads"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.loads"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        loads a model from json_data</span>
 
@@ -1491,14 +1523,14 @@
 <span class="sd">            it will pass a references object. It is not required.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">references</span> <span class="o">=</span> <span class="p">(</span><span class="n">references</span><span class="p">,</span> <span class="n">References</span><span class="p">())[</span><span class="n">references</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
-        <span class="n">ref_dict</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_load_refs</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
+        <span class="n">ref_dict</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_load_refs</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
 
         <span class="c1"># there are no datafiles for model properties; so no need for following</span>
         <span class="c1"># at present</span>
-        <span class="n">cls</span><span class="o">.</span><span class="n">_update_datafile_path</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_update_datafile_path</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">)</span>
 
         <span class="c1"># deserialize after removing references</span>
-        <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+        <span class="n">_to_dict</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">ref_dict</span><span class="p">:</span>
             <span class="n">_to_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ref_dict</span><span class="p">)</span>
@@ -1512,19 +1544,19 @@
             <span class="n">_to_dict</span><span class="p">[</span><span class="s1">&#39;map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">map_obj</span>
 
         <span class="c1"># load collections</span>
-        <span class="k">for</span> <span class="n">oc</span> <span class="ow">in</span> <span class="n">cls</span><span class="o">.</span><span class="n">_oc_list</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">oc</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_oc_list</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">oc</span> <span class="ow">in</span> <span class="n">_to_dict</span><span class="p">:</span>
-                <span class="n">_to_dict</span><span class="p">[</span><span class="n">oc</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_load_collection</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
+                <span class="n">_to_dict</span><span class="p">[</span><span class="n">oc</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_load_collection</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
                                                     <span class="n">_to_dict</span><span class="p">[</span><span class="n">oc</span><span class="p">],</span>
                                                     <span class="n">references</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">spill</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;spills&#39;</span><span class="p">,</span> <span class="s1">&#39;uncertain_spills&#39;</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">spill</span> <span class="ow">in</span> <span class="n">_to_dict</span><span class="p">:</span>
-                <span class="n">_to_dict</span><span class="p">[</span><span class="n">spill</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_load_collection</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
+                <span class="n">_to_dict</span><span class="p">[</span><span class="n">spill</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_load_collection</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
                                                        <span class="n">_to_dict</span><span class="p">[</span><span class="n">spill</span><span class="p">],</span>
                                                        <span class="n">references</span><span class="p">)</span>
             <span class="c1"># also need to load spill data for mid-run save!</span>
 
-        <span class="n">model</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">_to_dict</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">_to_dict</span><span class="p">)</span>
 
         <span class="n">model</span><span class="o">.</span><span class="n">_load_spill_data</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s1">&#39;spills_data_arrays.nc&#39;</span><span class="p">)</span>
 
@@ -1534,7 +1566,7 @@
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        merge &#39;model&#39; into self</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
             <span class="k">if</span> <span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span>
                     <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
                 <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
@@ -1580,19 +1612,29 @@
                 <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> has release time before model start time&#39;</span>
                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spill</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;error: &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+                <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;error: &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
                 <span class="n">isvalid</span> <span class="o">=</span> <span class="kc">False</span>
 
             <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">substance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">min_k</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">substance</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pour_point_min_k&#39;</span><span class="p">)</span>
+                <span class="c1"># min_k1 = spill.substance.get(&#39;pour_point_min_k&#39;)</span>
+                <span class="n">pour_point</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">substance</span><span class="o">.</span><span class="n">pour_point</span><span class="p">()</span>
                 <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">water</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">water_temp</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;temperature&#39;</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">water_temp</span> <span class="o">&lt;</span> <span class="n">min_k</span><span class="p">:</span>
-                        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;The water temperature, </span><span class="si">{0}</span><span class="s1"> K, is less than the minimum pour &#39;</span> 
-                               <span class="s1">&#39;point of the selected oil, </span><span class="si">{1}</span><span class="s1"> K. &#39;</span>
-                               <span class="s1">&#39;The results may be unreliable.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">water_temp</span><span class="p">,</span> <span class="n">min_k</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">water_temp</span> <span class="o">&lt;</span> <span class="n">pour_point</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;The water temperature, </span><span class="si">{0}</span><span class="s1"> K, is less than &#39;</span>
+                               <span class="s1">&#39;the minimum pour point of the selected oil, &#39;</span>
+                               <span class="s1">&#39;</span><span class="si">{1}</span><span class="s1"> K.  The results may be unreliable.&#39;</span>
+                               <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">water_temp</span><span class="p">,</span> <span class="n">pour_point</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                        
                         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
                         <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_warn_pre</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+
+                    <span class="n">rho_h2o</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;density&#39;</span><span class="p">)</span>
+                    <span class="n">rho_oil</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">substance</span><span class="o">.</span><span class="n">density_at_temp</span><span class="p">(</span><span class="n">water_temp</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">rho_h2o</span> <span class="o">&lt;</span> <span class="n">rho_oil</span><span class="p">):</span>
+                        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Found particles with relative_buoyancy &lt; 0. &quot;</span>
+                               <span class="s2">&quot;Oil is a sinker&quot;</span><span class="p">)</span>
+                        <span class="k">raise</span> <span class="n">GnomeRuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">num_spills</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">someSpillIntersectsModel</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">num_spills</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
@@ -1603,7 +1645,7 @@
                        <span class="s1">&#39;being modeled.&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>  <span class="c1"># for now make this a warning</span>
             <span class="c1"># self.logger.error(msg)</span>
-            <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;warning: &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+            <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;warning: &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
             <span class="c1"># isvalid = False</span>
 
         <span class="k">return</span> <span class="p">(</span><span class="n">msgs</span><span class="p">,</span> <span class="n">isvalid</span><span class="p">)</span></div>
@@ -1666,7 +1708,7 @@
                 <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> has release time before model start time&#39;</span>
                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spill</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;error: &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+                <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;error: &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
                 <span class="n">isvalid</span> <span class="o">=</span> <span class="kc">False</span>
 
 <span class="c1">#             if msg is not None:</span>
@@ -1804,7 +1846,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">o</span><span class="o">.</span><span class="n">__class__</span> <span class="o">==</span> <span class="n">item</span><span class="o">.</span><span class="n">__class__</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">o</span><span class="o">.</span><span class="vm">__class__</span> <span class="o">==</span> <span class="n">item</span><span class="o">.</span><span class="vm">__class__</span><span class="p">:</span>
                         <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
                         <span class="k">break</span>
@@ -1820,15 +1862,15 @@
 <span class="c1">#                 self.logger.warn(&#39;&#39;&#39;Class {0} could not be constituted from netCDF file</span>
 <span class="c1">#                                         Exception: {1}&#39;&#39;&#39;.format(c.__name__, e))</span>
 <span class="c1">#             return obj</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1">#         from gnome.utilities.file_tools.data_helpers import _get_dataset</span>
 <span class="c1">#         from gnome.environment.environment_objects import GriddedProp, GridVectorProp</span>
 <span class="c1">#         from gnome.environment import PyGrid</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1">#         if filename is not None:</span>
 <span class="c1">#             data_file = filename</span>
 <span class="c1">#             grid_file = filename</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1">#         ds = None</span>
 <span class="c1">#         dg = None</span>
 <span class="c1">#         if dataset is None:</span>
@@ -1844,7 +1886,7 @@
 <span class="c1">#                 dg = dataset</span>
 <span class="c1">#             ds = dataset</span>
 <span class="c1">#         dataset = ds</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1">#         grid = kwargs.pop(&#39;grid&#39;, None)</span>
 <span class="c1">#         if grid is None:</span>
 <span class="c1">#             grid = PyGrid.from_netCDF(filename=filename, dataset=dg, **kwargs)</span>
@@ -1858,7 +1900,7 @@
 <span class="c1">#                     req_refs = c._req_refs</span>
 <span class="c1">#                 except AttributeError:</span>
 <span class="c1">#                     req_refs = None</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1">#                 if req_refs is not None:</span>
 <span class="c1">#                     for ref, klass in req_refs.items():</span>
 <span class="c1">#                         for o in self.environment:</span>
@@ -1871,11 +1913,11 @@
 <span class="c1">#                             obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)</span>
 <span class="c1">#                             clskwargs[ref] = obj</span>
 <span class="c1">#                             self.environment.append(obj)</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1">#                 obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)</span>
 <span class="c1">#                 if obj is not None:</span>
 <span class="c1">#                     self.environment.append(obj)</span>
-<span class="c1">#                     </span>
+<span class="c1">#</span>
 <span class="c1">#     def ice_env_from_netCDF(self, filename=None, **kwargs):</span>
 <span class="c1">#         cls_list = Environment._subclasses</span>
 <span class="c1">#         ice_cls_list = self.find_by_attr(&#39;_ref_as&#39;, &#39;ice_aware&#39;, cls_list, allitems=True)</span>
@@ -1888,6 +1930,9 @@
 <span class="c1">#         self.env_from_netCDF(filename=filename, _cls_list=ice_cls_list, **kwargs)</span>
 </pre></div>
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -1919,10 +1964,11 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>

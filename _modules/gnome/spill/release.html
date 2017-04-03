@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.spill.release &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>gnome.spill.release &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,7 +32,10 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html"/>
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -40,6 +45,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -59,7 +65,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -80,7 +86,10 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
@@ -102,8 +111,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../../index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -116,19 +127,36 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../../../index.html">Docs</a> &raquo;</li>
-      
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
           <li><a href="../../index.html">Module code</a> &raquo;</li>
-      
-    <li>gnome.spill.release</li>
+        
+      <li>gnome.spill.release</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
+            
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -172,7 +200,7 @@
             <span class="c1"># used to create a new Release object if model is persisted mid-run</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">Int</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;num_released&#39;</span><span class="p">))</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">BaseReleaseSchema</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BaseReleaseSchema</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">ReleaseSchema</span><span class="p">(</span><span class="n">BaseReleaseSchema</span><span class="p">):</span>
@@ -324,7 +352,7 @@
 <div class="viewcode-block" id="Release.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Release.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s1">&#39;webapi&#39;</span><span class="p">):</span>
         <span class="s1">&#39;define schema based on type of desired output&#39;</span>
         <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
         <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">serial</span></div>
@@ -351,8 +379,8 @@
         <span class="k">return</span> <span class="mi">0</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;json_&#39;</span><span class="p">])</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;json_&#39;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span></div>
 
 
@@ -422,7 +450,7 @@
                    <span class="s1">&#39; num_per_timestep must be given, not both&#39;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">PointLineRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PointLineRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span>
                                                <span class="n">num_elements</span><span class="p">,</span>
                                                <span class="n">name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_num_per_timestep</span> <span class="o">=</span> <span class="n">num_per_timestep</span>
@@ -738,7 +766,7 @@
         <span class="n">positions</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_next_release_pos</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next_release_pos</span> <span class="o">+</span>
                      <span class="p">(</span><span class="n">num_new_particles</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delta_pos</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_position</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_position</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_next_release_pos</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delta_pos</span>
 
         <span class="k">return</span> <span class="n">positions</span>
@@ -1004,12 +1032,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">start_position</span><span class="p">,</span>
                                           <span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span>
                                <span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">SpatialRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SpatialRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span>
                                              <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
                                              <span class="n">name</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="SpatialRelease.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.SpatialRelease.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+<div class="viewcode-block" id="SpatialRelease.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.SpatialRelease.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">            Custom new_from_dict() functionality for SpatialRelease</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -1017,7 +1045,7 @@
             <span class="n">dict_</span><span class="p">[</span><span class="s1">&#39;release_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iso8601</span><span class="o">.</span><span class="n">parse_date</span><span class="p">(</span><span class="n">dict_</span><span class="p">[</span><span class="s1">&#39;release_time&#39;</span><span class="p">],</span>
                                                        <span class="n">default_timezone</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">SpatialRelease</span><span class="p">,</span> <span class="n">cls</span><span class="p">)</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">SpatialRelease</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SpatialRelease.num_elements_to_release"><a class="viewcode-back" href="../../../reference.html#gnome.spill.SpatialRelease.num_elements_to_release">[docs]</a>    <span class="k">def</span> <span class="nf">num_elements_to_release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1094,7 +1122,7 @@
 <span class="sd">        num_elements and release_time passed to base class __init__ using super</span>
 <span class="sd">        See base :class:`Release` documentation</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">Release</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span>
+        <span class="n">Release</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span>
                          <span class="n">num_elements</span><span class="p">,</span>
                          <span class="n">name</span><span class="p">)</span>
 
@@ -1168,7 +1196,7 @@
 <span class="sd">        :type start_positions: (num_elements, 3) numpy array of float64</span>
 <span class="sd">            -- (long, lat, z)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">VerticalPlumeRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">VerticalPlumeRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span>
                                                    <span class="n">num_elements</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">start_position</span><span class="p">,</span>
@@ -1259,7 +1287,7 @@
             <span class="n">release_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;current_time_stamp&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
 
         <span class="nb">super</span><span class="p">(</span><span class="n">InitElemsFromFile</span><span class="p">,</span>
-              <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_init_data</span><span class="p">[</span><span class="s1">&#39;positions&#39;</span><span class="p">]))</span>
+              <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_init_data</span><span class="p">[</span><span class="s1">&#39;positions&#39;</span><span class="p">]))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">set_newparticle_positions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_data_arrays</span>
 
@@ -1323,6 +1351,9 @@
 </pre></div>
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
@@ -1353,10 +1384,11 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../../_static/jquery.js"></script>

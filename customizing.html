@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Customizing pygnome &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>Customizing pygnome &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,7 +32,10 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html"/>
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="index.html"/>
         <link rel="next" title="The logging system" href="logging.html"/>
         <link rel="prev" title="A subsurface (mixed layer) release" href="scripting/mixedlayer_release.html"/> 
 
@@ -41,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -60,7 +66,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -81,7 +87,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="structure.html">GNOME Structure</a></li>
@@ -89,6 +98,11 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Customizing pygnome</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#writing-a-custom-mover">Writing a custom mover</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#writing-a-custom-weatherer">Writing a custom weatherer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#writing-a-custom-map">Writing a custom Map</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#key-attributes">Key Attributes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#key-methods">Key methods</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="logging.html">The logging system</a></li>
@@ -107,8 +121,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -117,23 +133,40 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Customizing pygnome</li>
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Customizing pygnome</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="_sources/customizing.txt" rel="nofollow"> View page source</a>
+            
+            <a href="_sources/customizing.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -156,19 +189,71 @@
 <h2>Writing a custom weatherer<a class="headerlink" href="#writing-a-custom-weatherer" title="Permalink to this headline">¶</a></h2>
 <p>And here&#8217;s how to do this...</p>
 </div>
+<div class="section" id="writing-a-custom-map">
+<h2>Writing a custom Map<a class="headerlink" href="#writing-a-custom-map" title="Permalink to this headline">¶</a></h2>
+<p>The Model has to have a Map at all times. After moving and weathering the elements, the map determines whether elements have impacted the shoreline, or gone off the map, and also refloats any elements that should be refloated.</p>
+<p>The base map object: :class gnome.GnomeMap: represents a &#8220;water world&#8221; &#8211; no land anywhere, and unlimited map bounds. But it also provides a base class with the full API. To create another map object, you derive from GnomeMap, an override the methods that you want to implement in a different way. In addition, it should have a few attributes used by the model:</p>
+<div class="section" id="key-attributes">
+<h3>Key Attributes<a class="headerlink" href="#key-attributes" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal"><span class="pre">map_bounds</span></code>: The polygon bounding the map if any elements are outside the map bounds, they are removed from the simulation.</p>
+<p><code class="docutils literal"><span class="pre">spillable_area</span></code>: The PolygonSet bounding the spillable_area. Either a PolygonSet object or a list of lists from which a polygon set can be created. Each element in the list is a list of points defining a polygon.</p>
+<p><code class="docutils literal"><span class="pre">land_polys</span></code>: The PolygonSet holding the land polygons. These are only used for display. Either a PolygonSet object or a list of lists from which a polygon set can be created. Each element in the list is a list of points defining a polygon.</p>
+<p>Each of these defaults to the whole world with no land.</p>
+</div>
+<div class="section" id="key-methods">
+<h3>Key methods<a class="headerlink" href="#key-methods" title="Permalink to this headline">¶</a></h3>
+<p>The key methods to override include:</p>
+<p><code class="docutils literal"><span class="pre">__init__</span></code>: Whatever you need to initialize your map object</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>beach_elements(spill):
+
+    Determines which elements were or weren&#39;t beached or moved off_map.
+
+    It is passed a &quot;SpillContainer&quot;, which is essentially a dictionary that
+    holds the data associated with the elements.
+
+    Called by the model in the main time loop, after all movers have acted.
+
+    spill[&#39;status_code&#39;] is changed to oil_status.off_maps if off the map.
+
+    :param spill: current SpillContainer
+    :type spill:  :class:`gnome.spill_container.SpillContainer`
+
+    subclasses that override this probably want to make sure that:
+
+    self.resurface_airborne_elements(spill)
+    self._set_off_map_status(spill)
+
+    are called. Unless those functions are overloaded
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">refloat_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spill_container</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This method performs the re-float logic -- changing the element</span>
+<span class="sd">    status flag, and moving the element to the last known water position</span>
+
+<span class="sd">    :param spill_container: current SpillContainer</span>
+<span class="sd">    :type spill_container:  :class:`gnome.spill_container.SpillContainer`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="logging.html" class="btn btn-neutral float-right" title="The logging system" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="logging.html" class="btn btn-neutral float-right" title="The logging system" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="scripting/mixedlayer_release.html" class="btn btn-neutral" title="A subsurface (mixed layer) release" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="scripting/mixedlayer_release.html" class="btn btn-neutral" title="A subsurface (mixed layer) release" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -199,10 +284,11 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>

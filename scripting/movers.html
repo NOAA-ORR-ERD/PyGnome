@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Movers &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>Movers &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,10 +32,13 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html"/>
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="../index.html"/>
         <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
         <link rel="next" title="Weatherers" href="weatherers.html"/>
-        <link rel="prev" title="Property Objects" href="property_objects.html"/> 
+        <link rel="prev" title="Spills" href="spills.html"/> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -42,6 +47,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -61,7 +67,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -82,7 +88,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../structure.html">GNOME Structure</a></li>
@@ -91,14 +100,13 @@
 <li class="toctree-l2"><a class="reference internal" href="utilities.html">Scripting utilities</a></li>
 <li class="toctree-l2"><a class="reference internal" href="maps.html">Maps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="spills.html">Spills</a></li>
-<li class="toctree-l2"><a class="reference internal" href="property_objects.html">Property Objects</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Movers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#pymovers">PyMovers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#wind-movers">Wind movers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#gridded-wind-movers">Gridded wind movers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#current-movers">Current movers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#random-movers">Random movers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#rise-velocity-movers">Rise velocity movers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pymovers">PyMovers</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="weatherers.html">Weatherers</a></li>
@@ -123,8 +131,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -133,25 +143,42 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
           <li><a href="../scripting.html">Scripting pygnome</a> &raquo;</li>
-      
-    <li>Movers</li>
+        
+      <li>Movers</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/scripting/movers.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/scripting/movers.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -163,38 +190,6 @@
 diffusive movement of LEs due to unresolved turbulent flow fields, and prescribed behavior of the LEs (e.g. rise velocity of oil droplets
 or larval swimming.)</p>
 <p>Some examples and common use cases are shown here. For complete documentation see <a class="reference internal" href="../reference.html#module-gnome.movers" title="gnome.movers"><code class="xref py py-mod docutils literal"><span class="pre">gnome.movers</span></code></a></p>
-<div class="section" id="pymovers">
-<h2>PyMovers<a class="headerlink" href="#pymovers" title="Permalink to this headline">¶</a></h2>
-<p>This new type of mover includes the gnome.environment.PyGridCurrentMover and gnome.environment.PyWindMover. They are built to work with
-the Property objects, and also provide multiple types of numerical methods for moving the particles.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.environment.property_classes</span> <span class="k">import</span> <span class="n">GridCurrent</span>
-<span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="k">import</span> <span class="n">PyGridCurrentMover</span>
-<span class="n">fn</span> <span class="o">=</span> <span class="s1">&#39;my_data.nc&#39;</span>
-<span class="n">current</span> <span class="o">=</span> <span class="n">GridCurrent</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fn</span><span class="p">)</span>
-<span class="n">curr_mover</span> <span class="o">=</span> <span class="n">PyGridCurrentMover</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>There are three types of numerical methods currently supported.</p>
-<ol class="arabic simple">
-<li>Euler method (&#8216;Euler&#8217;)</li>
-<li>Trapezoidal/Heun&#8217;s 2nd order method (&#8216;Trapezoid&#8217;)</li>
-<li>Runge-Kutta 4th order method (&#8216;RK4&#8217;)</li>
-</ol>
-<p>To use them, set the &#8216;default_num_method&#8217; argument when constructing a mover. Alternatively, you may alter the mover as follows:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">fn</span> <span class="o">=</span> <span class="s1">&#39;my_data.nc&#39;</span>
-<span class="n">current</span> <span class="o">=</span> <span class="n">GridCurrent</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fn</span><span class="p">)</span>
-<span class="n">curr_mover</span> <span class="o">=</span> <span class="n">PyGridCurrentMover</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">default_num_method</span> <span class="o">=</span> <span class="s1">&#39;RK4&#39;</span><span class="p">)</span>
-
-<span class="c1">#RK4 is too slow, so lets go to the 2nd order method.</span>
-<span class="n">curr_mover</span><span class="o">.</span><span class="n">default_num_method</span> <span class="o">=</span> <span class="s1">&#39;Trapezoid&#39;</span>
-</pre></div>
-</div>
-<p>The get_move function has the same interface as previous movers. You may also pass in a numerical method here and it will use it instead
-of the default.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">curr_mover</span><span class="o">.</span><span class="n">get_move</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time_datetime</span><span class="p">,</span> <span class="n">num_method</span> <span class="o">=</span> <span class="s1">&#39;Euler&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
 <div class="section" id="wind-movers">
 <h2>Wind movers<a class="headerlink" href="#wind-movers" title="Permalink to this headline">¶</a></h2>
 <p>Wind movers are tied to a wind object in the Environment class which is described
@@ -225,7 +220,7 @@ create a wind mover from a single point time series in a text file:</p>
 </pre></div>
 </div>
 <p>The format of the text file is described in the GNOME file formats document available <a class="reference external" href="http://response.restoration.noaa.gov/sites/default/files/GNOME_DataFormats.pdf">here</a>.
-Briefly, it has 3 header lines, followed by comma seperated data. An example is given here with
+Briefly, it has 3 header lines, followed by comma seperated data. Alternatively, the An example is given here with
 annotations in brackets at the end of the lines:</p>
 <div class="line-block">
 <div class="line">23NM W Cape Mohican AK <em>(Location name, can be blank)</em></div>
@@ -235,6 +230,7 @@ annotations in brackets at the end of the lines:</p>
 <div class="line">14, 10, 2015, 11, 0, 16.00, 20</div>
 <div class="line">14, 10, 2015, 12, 0, 16.00, 20</div>
 <div class="line">14, 10, 2015, 13, 0, 13.00, 20</div>
+<div class="line"><br /></div>
 </div>
 </div>
 <div class="section" id="gridded-wind-movers">
@@ -331,19 +327,56 @@ with the same value for high and low parameters. Here&#8217;s a complete example
 </pre></div>
 </div>
 </div>
+<div class="section" id="pymovers">
+<h2>PyMovers<a class="headerlink" href="#pymovers" title="Permalink to this headline">¶</a></h2>
+<p>This new type of mover includes the gnome.environment.PyGridCurrentMover and gnome.environment.PyWindMover. They are
+being developed to work more seamlessly with native model grids (e.g. staggered grids) and will ultimately replace GridCurrentMover and GridWindMover. However, they are still under active development and this documentation may not
+accurately reflect the current state of development.</p>
+<p>PyMovers are built to work with the Property objects, and also provide multiple types of numerical methods for moving the particles.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.environment.property_classes</span> <span class="k">import</span> <span class="n">GridCurrent</span>
+<span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="k">import</span> <span class="n">PyGridCurrentMover</span>
+<span class="n">fn</span> <span class="o">=</span> <span class="s1">&#39;my_data.nc&#39;</span>
+<span class="n">current</span> <span class="o">=</span> <span class="n">GridCurrent</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fn</span><span class="p">)</span>
+<span class="n">curr_mover</span> <span class="o">=</span> <span class="n">PyGridCurrentMover</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>There are three types of numerical methods currently supported.</p>
+<ol class="arabic simple">
+<li>Euler method (&#8216;Euler&#8217;)</li>
+<li>Trapezoidal/Heun&#8217;s 2nd order method (&#8216;Trapezoid&#8217;)</li>
+<li>Runge-Kutta 4th order method (&#8216;RK4&#8217;)</li>
+</ol>
+<p>To use them, set the &#8216;default_num_method&#8217; argument when constructing a mover. Alternatively, you may alter the mover as follows:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">fn</span> <span class="o">=</span> <span class="s1">&#39;my_data.nc&#39;</span>
+<span class="n">current</span> <span class="o">=</span> <span class="n">GridCurrent</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fn</span><span class="p">)</span>
+<span class="n">curr_mover</span> <span class="o">=</span> <span class="n">PyGridCurrentMover</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">default_num_method</span> <span class="o">=</span> <span class="s1">&#39;RK4&#39;</span><span class="p">)</span>
+
+<span class="c1">#RK4 is too slow, so lets go to the 2nd order method.</span>
+<span class="n">curr_mover</span><span class="o">.</span><span class="n">default_num_method</span> <span class="o">=</span> <span class="s1">&#39;Trapezoid&#39;</span>
+</pre></div>
+</div>
+<p>The get_move function has the same interface as previous movers. You may also pass in a numerical method here and it will use it instead
+of the default.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">curr_mover</span><span class="o">.</span><span class="n">get_move</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time_datetime</span><span class="p">,</span> <span class="n">num_method</span> <span class="o">=</span> <span class="s1">&#39;Euler&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="weatherers.html" class="btn btn-neutral float-right" title="Weatherers" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="weatherers.html" class="btn btn-neutral float-right" title="Weatherers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="property_objects.html" class="btn btn-neutral" title="Property Objects" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="spills.html" class="btn btn-neutral" title="Spills" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -374,10 +407,11 @@ with the same value for high and low parameters. Here&#8217;s a complete example
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

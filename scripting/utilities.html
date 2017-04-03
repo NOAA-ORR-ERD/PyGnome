@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Scripting utilities &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>Scripting utilities &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,7 +32,10 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html"/>
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="../index.html"/>
         <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
         <link rel="next" title="Maps" href="maps.html"/>
         <link rel="prev" title="Overview" href="scripting_intro.html"/> 
@@ -42,6 +47,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -61,7 +67,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -82,7 +88,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../structure.html">GNOME Structure</a></li>
@@ -94,7 +103,6 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="maps.html">Maps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="spills.html">Spills</a></li>
-<li class="toctree-l2"><a class="reference internal" href="property_objects.html">Property Objects</a></li>
 <li class="toctree-l2"><a class="reference internal" href="movers.html">Movers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="weatherers.html">Weatherers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="outputters.html">Outputters</a></li>
@@ -118,8 +126,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -128,25 +138,42 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
           <li><a href="../scripting.html">Scripting pygnome</a> &raquo;</li>
-      
-    <li>Scripting utilities</li>
+        
+      <li>Scripting utilities</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/scripting/utilities.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/scripting/utilities.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -157,6 +184,8 @@
 <p>GNOME has a scripting module where many utilties and helper functions can be accessed to simplify
 common tasks. These include helper functions for easier creation of certain types of spills and movers.
 To use these functions import gnome.scripting</p>
+<p>NOTE: the scripting utilities are under active development as we determine which helper functions will
+be useful to make setting up and running pyGNOME easier.</p>
 <div class="section" id="module-gnome.scripting">
 <span id="gnome-scripting"></span><h2><a class="reference internal" href="#module-gnome.scripting" title="gnome.scripting"><code class="xref py py-mod docutils literal"><span class="pre">gnome.scripting</span></code></a><a class="headerlink" href="#module-gnome.scripting" title="Permalink to this headline">¶</a></h2>
 <p>Scripting package for GNOME with assorted utilities that make it easier to
@@ -257,7 +286,7 @@ If it already exists, delete all old output files</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>num_elements</strong> (<em>integer</em>) &#8211; total number of elements to be released</li>
-<li><strong>start_position</strong> (<em>3-tuple of floats (long, lat, z)</em>) &#8211; initial location the elements are released</li>
+<li><strong>start_position</strong> (<em>3-tuple of floats</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>z</em><em>)</em><em></em>) &#8211; initial location the elements are released</li>
 <li><strong>release_time</strong> (<em>datetime.datetime</em>) &#8211; time the LEs are released (datetime object)</li>
 <li><strong>end_position=None</strong> &#8211; Optional. For moving source, the end position
 If None, then release is from a point source</li>
@@ -266,7 +295,7 @@ the end release time. If None, then release is instantaneous</li>
 <li><strong>substance=None</strong> &#8211; Type of oil spilled.</li>
 <li><strong>amount=None</strong> (<em>float</em>) &#8211; mass or volume of oil spilled</li>
 <li><strong>units=None</strong> (<em>str</em>) &#8211; units for amount spilled</li>
-<li><strong>windage_range=(.01, .04)</strong> (<em>tuple</em>) &#8211; Percentage range for windage.
+<li><strong>windage_range=</strong><strong>(</strong><strong>01</strong><strong>, </strong><strong>04</strong><strong>)</strong><strong></strong> (<em>tuple</em>) &#8211; Percentage range for windage.
 Active only for surface particles
 when a mind mover is added</li>
 <li><strong>windage_persist=900</strong> (<em>int</em>) &#8211; Persistence for windage values in seconds.
@@ -290,7 +319,7 @@ randomly reset on this time scale</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>num_elements</strong> (<em>integer</em>) &#8211; total number of elements to be released</li>
-<li><strong>start_position</strong> (<em>3-tuple of floats (long, lat, z)</em>) &#8211; initial location the elements are released</li>
+<li><strong>start_position</strong> (<em>3-tuple of floats</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>z</em><em>)</em><em></em>) &#8211; initial location the elements are released</li>
 <li><strong>release_time</strong> (<em>datetime.datetime</em>) &#8211; time the LEs are released (datetime object)</li>
 <li><strong>distribution=None</strong> &#8211; An object capable of generating a probability
 distribution.  Right now, we have:
@@ -311,7 +340,7 @@ Density of spilled material.</li>
 <li><strong>density_units='kg/m^3'</strong> (<em>str</em>) &#8211; </li>
 <li><strong>amount=None</strong> (<em>float</em>) &#8211; mass or volume of oil spilled.</li>
 <li><strong>units=None</strong> (<em>str</em>) &#8211; must provide units for amount spilled.</li>
-<li><strong>windage_range=(.01, .04)</strong> (<em>tuple</em>) &#8211; Percentage range for windage.
+<li><strong>windage_range=</strong><strong>(</strong><strong>01</strong><strong>, </strong><strong>04</strong><strong>)</strong><strong></strong> (<em>tuple</em>) &#8211; Percentage range for windage.
 Active only for surface particles
 when a mind mover is added</li>
 <li><strong>windage_persist=900</strong> &#8211; Persistence for windage values in seconds.
@@ -330,15 +359,18 @@ randomly reset on this time scale.</li>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="maps.html" class="btn btn-neutral float-right" title="Maps" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="maps.html" class="btn btn-neutral float-right" title="Maps" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="scripting_intro.html" class="btn btn-neutral" title="Overview" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="scripting_intro.html" class="btn btn-neutral" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -369,10 +401,11 @@ randomly reset on this time scale.</li>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.movers.current_movers &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>gnome.movers.current_movers &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,7 +32,10 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html"/>
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -40,6 +45,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -59,7 +65,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -80,7 +86,10 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
@@ -102,8 +111,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../../index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -116,19 +127,36 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../../../index.html">Docs</a> &raquo;</li>
-      
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
           <li><a href="../../index.html">Module code</a> &raquo;</li>
-      
-    <li>gnome.movers.current_movers</li>
+        
+      <li>gnome.movers.current_movers</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
+            
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -146,21 +174,23 @@
 
 <span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">drop</span><span class="p">)</span>
 
-<span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="k">import</span> <span class="n">ObjType</span><span class="p">,</span> <span class="n">WorldPoint</span>
-
-<span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="k">import</span> <span class="n">CyMover</span><span class="p">,</span> <span class="n">ProcessSchema</span>
-<span class="kn">from</span> <span class="nn">gnome</span> <span class="k">import</span> <span class="n">environment</span>
-<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="k">import</span> <span class="n">serializable</span>
-<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="k">import</span> <span class="n">time_utils</span>
-
 <span class="kn">from</span> <span class="nn">gnome</span> <span class="k">import</span> <span class="n">basic_types</span>
+
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_shio_time</span> <span class="k">import</span> <span class="n">CyShioTime</span>
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_ossm_time</span> <span class="k">import</span> <span class="n">CyOSSMTime</span>
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_cats_mover</span> <span class="k">import</span> <span class="n">CyCatsMover</span>
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_gridcurrent_mover</span> <span class="k">import</span> <span class="n">CyGridCurrentMover</span>
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_ice_mover</span> <span class="k">import</span> <span class="n">CyIceMover</span>
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_currentcycle_mover</span> <span class="k">import</span> <span class="n">CyCurrentCycleMover</span>
-<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_shio_time</span> <span class="k">import</span> <span class="n">CyShioTime</span>
-<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_ossm_time</span> <span class="k">import</span> <span class="n">CyOSSMTime</span>
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_component_mover</span> <span class="k">import</span> <span class="n">CyComponentMover</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="k">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.time_utils</span> <span class="k">import</span> <span class="n">sec_to_datetime</span>
+
+<span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="k">import</span> <span class="n">Tide</span><span class="p">,</span> <span class="n">TideSchema</span><span class="p">,</span> <span class="n">Wind</span><span class="p">,</span> <span class="n">WindSchema</span>
+<span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="k">import</span> <span class="n">CyMover</span><span class="p">,</span> <span class="n">ProcessSchema</span>
+
+<span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="k">import</span> <span class="n">ObjType</span><span class="p">,</span> <span class="n">WorldPoint</span>
 
 
 <span class="k">class</span> <span class="nc">CurrentMoversBaseSchema</span><span class="p">(</span><span class="n">ObjType</span><span class="p">,</span> <span class="n">ProcessSchema</span><span class="p">):</span>
@@ -185,7 +215,8 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_duration</span> <span class="o">=</span> <span class="n">uncertain_duration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_time_delay</span> <span class="o">=</span> <span class="n">uncertain_time_delay</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="n">uncertain_duration</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span>
                                   <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">uncertain_duration</span> <span class="o">/</span> <span class="mf">3600.</span><span class="p">,</span>
@@ -209,6 +240,7 @@
 
         <span class="n">dtype</span> <span class="o">=</span> <span class="n">triangle_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">descr</span>
         <span class="n">unstructured_type</span> <span class="o">=</span> <span class="n">dtype</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
         <span class="n">unstructured</span> <span class="o">=</span> <span class="p">(</span><span class="n">triangle_data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">unstructured_type</span><span class="p">)</span>
                         <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dtype</span><span class="p">))[:,</span> <span class="p">:</span><span class="mi">3</span><span class="p">])</span>
 
@@ -224,6 +256,7 @@
 
         <span class="n">dtype</span> <span class="o">=</span> <span class="n">cell_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">descr</span>
         <span class="n">unstructured_type</span> <span class="o">=</span> <span class="n">dtype</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
         <span class="n">unstructured</span> <span class="o">=</span> <span class="p">(</span><span class="n">cell_data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">unstructured_type</span><span class="p">)</span>
                         <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dtype</span><span class="p">))[:,</span> <span class="mi">1</span><span class="p">:])</span>
 
@@ -245,14 +278,6 @@
 <span class="sd">        Center will be: (tl + ((br - tl) / 2.))</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_get_center_points</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;&lt;f8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
-<span class="c1">#         cells = self.get_cells()</span>
-<span class="c1">#         raw_cells = cells.view(dtype=&#39;&lt;f8&#39;).reshape(-1, 4, 2)</span>
-<span class="c1">#         centers = (raw_cells[:, 0, :] +</span>
-<span class="c1">#                    #(raw_cells[:, 3, :] - raw_cells[:, 0, :]) / 2.)</span>
-<span class="c1">#                    (raw_cells[:, 2, :] - raw_cells[:, 0, :]) / 2.)</span>
-<span class="c1">#</span>
-<span class="c1">#         return centers</span>
 
     <span class="k">def</span> <span class="nf">get_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">points</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_get_points</span><span class="p">()</span>
@@ -280,7 +305,7 @@
     <span class="n">uncertain_eddy_v0</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">CatsMover</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">CatsMover</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
 
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
 
@@ -291,12 +316,11 @@
     <span class="n">_create</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
     <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="n">_create</span><span class="p">)</span>
-    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span>
-                                         <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                         <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;tide&#39;</span><span class="p">,</span>
-                                         <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                         <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+                      <span class="n">Field</span><span class="p">(</span><span class="s1">&#39;tide&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">CatsMoverSchema</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">tide</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">uncertain_duration</span><span class="o">=</span><span class="mi">48</span><span class="p">,</span>
@@ -369,7 +393,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">scale_refpoint</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Provide a reference point in &#39;scale_refpoint&#39;.&quot;</span><span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">CatsMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">uncertain_duration</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CatsMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">uncertain_duration</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s1">&#39;CatsMover(filename=</span><span class="si">{0}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
@@ -447,7 +471,7 @@
 
     <span class="nd">@tide</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">tide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tide_obj</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tide_obj</span><span class="p">,</span> <span class="n">environment</span><span class="o">.</span><span class="n">Tide</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tide_obj</span><span class="p">,</span> <span class="n">Tide</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;tide must be of type environment.Tide&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tide_obj</span><span class="o">.</span><span class="n">cy_obj</span><span class="p">,</span> <span class="n">CyShioTime</span><span class="p">):</span>
@@ -495,26 +519,26 @@
 <span class="sd">        and &#39;save&#39; option, need to add appropriate node to WindMover schema</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;save&#39;</span><span class="p">:</span>
             <span class="n">toserial</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span>
 
         <span class="k">if</span> <span class="s1">&#39;tide&#39;</span> <span class="ow">in</span> <span class="n">toserial</span><span class="p">:</span>
-            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">environment</span><span class="o">.</span><span class="n">TideSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;tide&#39;</span><span class="p">))</span>
+            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">TideSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;tide&#39;</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        append correct schema for wind object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
-            <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
 
             <span class="k">if</span> <span class="s1">&#39;tide&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
-                <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">environment</span><span class="o">.</span><span class="n">TideSchema</span><span class="p">())</span>
+                <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">TideSchema</span><span class="p">())</span>
 
             <span class="k">return</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -532,21 +556,21 @@
     <span class="n">is_data_on_cells</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Bool</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="GridCurrentMover"><a class="viewcode-back" href="../../../reference.html#gnome.movers.GridCurrentMover">[docs]</a><span class="k">class</span> <span class="nc">GridCurrentMover</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
+<div class="viewcode-block" id="GridCurrentMover"><a class="viewcode-back" href="../../../reference.html#gnome.movers.GridCurrentMover">[docs]</a><span class="k">class</span> <span class="nc">GridCurrentMover</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
 
-    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;uncertain_cross&#39;</span><span class="p">,</span> <span class="s1">&#39;uncertain_along&#39;</span><span class="p">,</span> <span class="s1">&#39;current_scale&#39;</span><span class="p">,</span> <span class="s1">&#39;extrapolate&#39;</span><span class="p">,</span> <span class="s1">&#39;time_offset&#39;</span><span class="p">]</span>
-    <span class="n">_save</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;uncertain_cross&#39;</span><span class="p">,</span> <span class="s1">&#39;uncertain_along&#39;</span><span class="p">,</span> <span class="s1">&#39;current_scale&#39;</span><span class="p">,</span> <span class="s1">&#39;extrapolate&#39;</span><span class="p">,</span> <span class="s1">&#39;time_offset&#39;</span><span class="p">]</span>
+    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;uncertain_cross&#39;</span><span class="p">,</span> <span class="s1">&#39;uncertain_along&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;current_scale&#39;</span><span class="p">,</span> <span class="s1">&#39;extrapolate&#39;</span><span class="p">,</span> <span class="s1">&#39;time_offset&#39;</span><span class="p">]</span>
+    <span class="n">_save</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;uncertain_cross&#39;</span><span class="p">,</span> <span class="s1">&#39;uncertain_along&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;current_scale&#39;</span><span class="p">,</span> <span class="s1">&#39;extrapolate&#39;</span><span class="p">,</span> <span class="s1">&#39;time_offset&#39;</span><span class="p">]</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
 
     <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="n">_save</span><span class="p">)</span>
-    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span>
-                                         <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                         <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;topology_file&#39;</span><span class="p">,</span>
-                                         <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                         <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;is_data_on_cells&#39;</span><span class="p">,</span>
-                                         <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+                      <span class="n">Field</span><span class="p">(</span><span class="s1">&#39;topology_file&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+                      <span class="n">Field</span><span class="p">(</span><span class="s1">&#39;is_data_on_cells&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">GridCurrentMoverSchema</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span>
@@ -583,7 +607,6 @@
 
 <span class="sd">        uses super, super(GridCurrentMover,self).__init__(\*\*kwargs)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="c1"># if child is calling, the self.mover is set by child - do not reset</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="n">GridCurrentMover</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">mover</span> <span class="o">=</span> <span class="n">CyGridCurrentMover</span><span class="p">()</span>
@@ -597,7 +620,7 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Path for Topology file does not exist: </span><span class="si">{0}</span><span class="s1">&#39;</span>
                                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">topology_file</span><span class="p">))</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">GridCurrentMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GridCurrentMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="c1"># check if this is stored with cy_gridcurrent_mover?</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
@@ -608,12 +631,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">current_scale</span> <span class="o">=</span> <span class="n">current_scale</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_along</span> <span class="o">=</span> <span class="n">uncertain_along</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_across</span> <span class="o">=</span> <span class="n">uncertain_across</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">text_read</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">topology_file</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">!=</span> <span class="n">CurrentCycleMover</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">real_data_start</span> <span class="o">=</span> <span class="n">time_utils</span><span class="o">.</span><span class="n">sec_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_start_time</span><span class="p">())</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">real_data_stop</span> <span class="o">=</span> <span class="n">time_utils</span><span class="o">.</span><span class="n">sec_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_end_time</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">extrapolate_in_time</span><span class="p">(</span><span class="n">extrapolate</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">offset_time</span><span class="p">(</span><span class="n">time_offset</span> <span class="o">*</span> <span class="mf">3600.</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">!=</span> <span class="n">CurrentCycleMover</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">real_data_start</span> <span class="o">=</span> <span class="n">sec_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_start_time</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">real_data_stop</span> <span class="o">=</span> <span class="n">sec_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_end_time</span><span class="p">())</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">num_method</span> <span class="o">=</span> <span class="n">num_method</span>
 
         <span class="c1"># super(GridCurrentMover, self).__init__(**kwargs)</span>
@@ -630,7 +656,8 @@
                 <span class="s1">&#39;uncertain_along=</span><span class="si">{0.uncertain_along}</span><span class="s1">, &#39;</span>
                 <span class="s1">&#39;active_start=</span><span class="si">{1.active_start}</span><span class="s1">, &#39;</span>
                 <span class="s1">&#39;active_stop=</span><span class="si">{1.active_stop}</span><span class="s1">, &#39;</span>
-                <span class="s1">&#39;on=</span><span class="si">{1.on}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span> <span class="bp">self</span><span class="p">))</span>
+                <span class="s1">&#39;on=</span><span class="si">{1.on}</span><span class="s1">)&#39;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span> <span class="bp">self</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;GridCurrentMover - current _state.</span><span class="se">\n</span><span class="s1">&#39;</span>
@@ -715,6 +742,7 @@
                 <span class="n">num_cells</span> <span class="o">=</span> <span class="n">num_vertices</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">num_cells</span> <span class="o">=</span> <span class="n">num_tri</span> <span class="o">/</span> <span class="mi">2</span>
+
         <span class="n">vels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_cells</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">velocity_rec</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_scaled_velocities</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">vels</span><span class="p">)</span>
@@ -751,19 +779,19 @@
 <span class="sd">        :param offset_time=0: allow data to be in GMT with a time zone offset</span>
 <span class="sd">                              (hours).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_offset_time</span><span class="p">())</span> <span class="o">/</span> <span class="mf">3600.</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_offset_time</span><span class="p">()</span> <span class="o">/</span> <span class="mf">3600.</span></div>
 
 <div class="viewcode-block" id="GridCurrentMover.get_start_time"><a class="viewcode-back" href="../../../reference.html#gnome.movers.GridCurrentMover.get_start_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :this will be the real_data_start time (seconds).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_start_time</span><span class="p">())</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_start_time</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="GridCurrentMover.get_end_time"><a class="viewcode-back" href="../../../reference.html#gnome.movers.GridCurrentMover.get_end_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_end_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :this will be the real_data_stop time (seconds).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_end_time</span><span class="p">())</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_end_time</span><span class="p">()</span></div>
 
     <span class="k">def</span> <span class="nf">get_num_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">num_method</span></div>
@@ -778,7 +806,7 @@
     <span class="n">extrapolate</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Bool</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">IceMover</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">IceMover</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
 
     <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;uncertain_cross&#39;</span><span class="p">,</span> <span class="s1">&#39;uncertain_along&#39;</span><span class="p">,</span>
                <span class="s1">&#39;current_scale&#39;</span><span class="p">,</span> <span class="s1">&#39;extrapolate&#39;</span><span class="p">]</span>
@@ -787,12 +815,11 @@
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
 
     <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="n">_save</span><span class="p">)</span>
-    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span>
-                                         <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                         <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;topology_file&#39;</span><span class="p">,</span>
-                                         <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                         <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)])</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+                      <span class="n">Field</span><span class="p">(</span><span class="s1">&#39;topology_file&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)])</span>
+
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">IceMoverSchema</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span>
@@ -845,13 +872,14 @@
 
         <span class="c1"># check if this is stored with cy_ice_mover?</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">topology_file</span> <span class="o">=</span> <span class="n">topology_file</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">text_read</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">topology_file</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">extrapolate</span> <span class="o">=</span> <span class="n">extrapolate</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">extrapolate_in_time</span><span class="p">(</span><span class="n">extrapolate</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">offset_time</span><span class="p">(</span><span class="n">time_offset</span> <span class="o">*</span> <span class="mf">3600.</span><span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">IceMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">IceMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;IceMover(&#39;</span>
@@ -861,7 +889,8 @@
                 <span class="s1">&#39;uncertain_along=</span><span class="si">{0.uncertain_along}</span><span class="s1">, &#39;</span>
                 <span class="s1">&#39;active_start=</span><span class="si">{1.active_start}</span><span class="s1">, &#39;</span>
                 <span class="s1">&#39;active_stop=</span><span class="si">{1.active_stop}</span><span class="s1">, &#39;</span>
-                <span class="s1">&#39;on=</span><span class="si">{1.on}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span> <span class="bp">self</span><span class="p">))</span>
+                <span class="s1">&#39;on=</span><span class="si">{1.on}</span><span class="s1">)&#39;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span> <span class="bp">self</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;IceMover - current _state.</span><span class="se">\n</span><span class="s1">&#39;</span>
@@ -943,11 +972,13 @@
                 <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">box_to_merge</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]):</span>
             <span class="k">if</span> <span class="n">left</span> <span class="o">&gt;</span> <span class="n">box_to_merge</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
                 <span class="n">left</span> <span class="o">=</span> <span class="n">box_to_merge</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
             <span class="k">if</span> <span class="n">right</span> <span class="o">&lt;</span> <span class="n">box_to_merge</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
                 <span class="n">right</span> <span class="o">=</span> <span class="n">box_to_merge</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">bottom</span> <span class="o">&gt;</span> <span class="n">box_to_merge</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
                 <span class="n">bottom</span> <span class="o">=</span> <span class="n">box_to_merge</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
             <span class="k">if</span> <span class="n">top</span> <span class="o">&lt;</span> <span class="n">box_to_merge</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
                 <span class="n">top</span> <span class="o">=</span> <span class="n">box_to_merge</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
 
@@ -964,10 +995,12 @@
 <span class="sd">        :param model_time=0:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">num_tri</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_num_triangles</span><span class="p">()</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_is_triangle_grid</span><span class="p">():</span>
             <span class="n">num_cells</span> <span class="o">=</span> <span class="n">num_tri</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">num_cells</span> <span class="o">=</span> <span class="n">num_tri</span> <span class="o">/</span> <span class="mi">2</span>
+
         <span class="n">vels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_cells</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">velocity_rec</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_scaled_velocities</span><span class="p">(</span><span class="n">model_time</span><span class="p">,</span> <span class="n">vels</span><span class="p">)</span>
 
@@ -978,6 +1011,7 @@
 <span class="sd">        :param model_time=0:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">num_tri</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_num_triangles</span><span class="p">()</span>
+
         <span class="n">vels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_tri</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">velocity_rec</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_ice_velocities</span><span class="p">(</span><span class="n">model_time</span><span class="p">,</span> <span class="n">vels</span><span class="p">)</span>
 
@@ -988,6 +1022,7 @@
 <span class="sd">        :param model_time=0:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">num_tri</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_num_triangles</span><span class="p">()</span>
+
         <span class="n">vels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_tri</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">basic_types</span><span class="o">.</span><span class="n">velocity_rec</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_movement_velocities</span><span class="p">(</span><span class="n">model_time</span><span class="p">,</span> <span class="n">vels</span><span class="p">)</span>
 
@@ -999,8 +1034,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">num_tri</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_num_triangles</span><span class="p">()</span>
         <span class="n">num_cells</span> <span class="o">=</span> <span class="n">num_tri</span> <span class="o">/</span> <span class="mi">2</span>
+
         <span class="n">frac_coverage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_cells</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
         <span class="n">thickness</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_cells</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_ice_fields</span><span class="p">(</span><span class="n">model_time</span><span class="p">,</span> <span class="n">frac_coverage</span><span class="p">,</span> <span class="n">thickness</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">frac_coverage</span><span class="p">,</span> <span class="n">thickness</span>
@@ -1049,11 +1086,11 @@
     <span class="n">uncertain_cross</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">default</span><span class="o">=.</span><span class="mi">25</span><span class="p">,</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">CurrentCycleMover</span><span class="p">(</span><span class="n">GridCurrentMover</span><span class="p">,</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">CurrentCycleMover</span><span class="p">(</span><span class="n">GridCurrentMover</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">GridCurrentMover</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
-    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;tide&#39;</span><span class="p">,</span>
-                                         <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                         <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;tide&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">CurrentCycleMoverSchema</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -1090,13 +1127,13 @@
         <span class="c1">#       use super with kwargs to invoke base class __init__</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span> <span class="o">=</span> <span class="n">CyCurrentCycleMover</span><span class="p">()</span>
 
-        <span class="n">tide</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;tide&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tide</span> <span class="o">=</span> <span class="kc">None</span>
 
+        <span class="n">tide</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;tide&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">tide</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tide</span> <span class="o">=</span> <span class="n">tide</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">CurrentCycleMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CurrentCycleMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span>
                                                 <span class="n">topology_file</span><span class="o">=</span><span class="n">topology_file</span><span class="p">,</span>
                                                 <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
@@ -1127,7 +1164,7 @@
 
     <span class="nd">@tide</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">tide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tide_obj</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tide_obj</span><span class="p">,</span> <span class="n">environment</span><span class="o">.</span><span class="n">Tide</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tide_obj</span><span class="p">,</span> <span class="n">Tide</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;tide must be of type environment.Tide&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tide_obj</span><span class="o">.</span><span class="n">cy_obj</span><span class="p">,</span> <span class="n">CyShioTime</span><span class="p">):</span>
@@ -1152,22 +1189,22 @@
 <span class="sd">        CurrentCycleMover schema</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span> <span class="ow">and</span> <span class="s1">&#39;tide&#39;</span> <span class="ow">in</span> <span class="n">toserial</span><span class="p">:</span>
-            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">environment</span><span class="o">.</span><span class="n">TideSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;tide&#39;</span><span class="p">))</span>
+            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">TideSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;tide&#39;</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        append correct schema for tide object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="s1">&#39;tide&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
-            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">environment</span><span class="o">.</span><span class="n">TideSchema</span><span class="p">())</span>
+            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">TideSchema</span><span class="p">())</span>
 
         <span class="k">return</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
 
@@ -1183,7 +1220,7 @@
 
 
 <span class="c1"># class ComponentMover(CyMover, serializable.Serializable):</span>
-<span class="k">class</span> <span class="nc">ComponentMover</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">ComponentMover</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
 
     <span class="c1"># _state = copy.deepcopy(CyMover._state)</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
@@ -1196,15 +1233,13 @@
     <span class="n">_create</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
     <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="n">_create</span><span class="p">)</span>
-    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename1&#39;</span><span class="p">,</span>
-                                         <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                         <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename2&#39;</span><span class="p">,</span>
-                                         <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                         <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;wind&#39;</span><span class="p">,</span>
-                                         <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                         <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename1&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+                      <span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename2&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+                      <span class="n">Field</span><span class="p">(</span><span class="s1">&#39;wind&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">ComponentMoverSchema</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename1</span><span class="p">,</span> <span class="n">filename2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wind</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -1252,10 +1287,6 @@
         <span class="k">if</span> <span class="n">wind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wind</span> <span class="o">=</span> <span class="n">wind</span>
 
-        <span class="c1"># self.scale = kwargs.pop(&#39;scale&#39;, self.mover.scale_type)</span>
-        <span class="c1"># self.scale_value = kwargs.get(&#39;scale_value&#39;,</span>
-        <span class="c1">#                               self.mover.scale_value)</span>
-
         <span class="c1"># TODO: no need to check for None since properties that are None</span>
         <span class="c1">#       are not persisted</span>
 
@@ -1263,12 +1294,7 @@
         <span class="k">if</span> <span class="s1">&#39;scale_refpoint&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scale_refpoint</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;scale_refpoint&#39;</span><span class="p">)</span>
 
-<span class="c1">#         if self.scale and self.scale_value != 0.0 \</span>
-<span class="c1">#             and self.scale_refpoint is None:</span>
-<span class="c1">#             raise TypeError(&quot;Provide a reference point in &#39;scale_refpoint&#39;.&quot;</span>
-<span class="c1">#                             )</span>
-
-        <span class="nb">super</span><span class="p">(</span><span class="n">ComponentMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ComponentMover</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1277,15 +1303,6 @@
         <span class="k">return</span> <span class="s1">&#39;ComponentMover(filename=</span><span class="si">{0}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename1</span><span class="p">)</span>
 
     <span class="c1"># Properties</span>
-
-    <span class="c1"># scale_type = property(lambda self: bool(self.mover.scale_type),</span>
-    <span class="c1">#                       lambda self, val: setattr(self.mover, &#39;scale_type&#39;,</span>
-    <span class="c1">#                                                 int(val)))</span>
-
-    <span class="c1"># scale_by = property(lambda self: bool(self.mover.scale_by),</span>
-    <span class="c1">#                     lambda self, val: setattr(self.mover, &#39;scale_by&#39;,</span>
-    <span class="c1">#                                               int(val)))</span>
-
     <span class="n">pat1_angle</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">pat1_angle</span><span class="p">,</span>
                           <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span> <span class="s1">&#39;pat1_angle&#39;</span><span class="p">,</span>
                                                     <span class="n">val</span><span class="p">))</span>
@@ -1331,19 +1348,20 @@
                                                      <span class="n">val</span><span class="p">))</span>
 
     <span class="n">use_averaged_winds</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">use_averaged_winds</span><span class="p">,</span>
-                                  <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span>
-                                                            <span class="s1">&#39;use_averaged_winds&#39;</span><span class="p">,</span>
-                                                            <span class="n">val</span><span class="p">))</span>
+                                  <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span>
+                                  <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span> <span class="s1">&#39;use_averaged_winds&#39;</span><span class="p">,</span>
+                                          <span class="n">val</span><span class="p">))</span>
 
     <span class="n">wind_power_factor</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">wind_power_factor</span><span class="p">,</span>
                                  <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span>
                                                            <span class="s1">&#39;wind_power_factor&#39;</span><span class="p">,</span>
                                                            <span class="n">val</span><span class="p">))</span>
 
-    <span class="n">past_hours_to_average</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">past_hours_to_average</span><span class="p">,</span>
-                                     <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span>
-                                                               <span class="s1">&#39;past_hours_to_average&#39;</span><span class="p">,</span>
-                                                               <span class="n">val</span><span class="p">))</span>
+    <span class="n">past_hours_to_average</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span>
+                                                   <span class="o">.</span><span class="n">past_hours_to_average</span><span class="p">),</span>
+                                     <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span>
+                                     <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span>
+                                             <span class="s1">&#39;past_hours_to_average&#39;</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
 
     <span class="n">scale_factor_averaged_winds</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">scale_factor_averaged_winds</span><span class="p">,</span>
                                            <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="p">,</span>
@@ -1376,7 +1394,7 @@
 
     <span class="nd">@wind</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">wind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wind_obj</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wind_obj</span><span class="p">,</span> <span class="n">environment</span><span class="o">.</span><span class="n">Wind</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wind_obj</span><span class="p">,</span> <span class="n">Wind</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;wind must be of type environment.Wind&#39;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">set_ossm</span><span class="p">(</span><span class="n">wind_obj</span><span class="o">.</span><span class="n">ossm</span><span class="p">)</span>
@@ -1386,8 +1404,6 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Invokes the GetToplogyHdl method of TriGridVel_c object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># we are assuming cats are always triangle grids,</span>
-        <span class="c1"># but may want to extend</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_triangles</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">get_center_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1397,19 +1413,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get file values scaled to ref pt value, with tide applied (if any)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">velocities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_get_velocity_handle</span><span class="p">()</span>
-        <span class="c1"># ref_scale = self.ref_scale  # this needs to be computed, needs a time</span>
-
-        <span class="c1"># if self._tide is not None:</span>
-            <span class="c1"># time_value = self._tide.cy_obj.get_time_value(model_time)</span>
-            <span class="c1"># tide = time_value[0][0]</span>
-        <span class="c1"># else:</span>
-            <span class="c1"># tide = 1</span>
-
-        <span class="c1"># velocities[&#39;u&#39;] *= ref_scale * tide</span>
-        <span class="c1"># velocities[&#39;v&#39;] *= ref_scale * tide</span>
-
-        <span class="k">return</span> <span class="n">velocities</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_get_velocity_handle</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s1">&#39;webapi&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1417,30 +1421,32 @@
 <span class="sd">        and &#39;save&#39; option, need to add appropriate node to WindMover schema</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">dict_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span> <span class="ow">and</span> <span class="s1">&#39;wind&#39;</span> <span class="ow">in</span> <span class="n">dict_</span><span class="p">:</span>
-            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">environment</span><span class="o">.</span><span class="n">WindSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;wind&#39;</span><span class="p">))</span>
+            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">WindSchema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;wind&#39;</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        append correct schema for wind object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="s1">&#39;wind&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
             <span class="c1"># for &#39;webapi&#39;, there will be nested Wind structure</span>
             <span class="c1"># for &#39;save&#39; option, there should be no nested &#39;wind&#39;. It is</span>
             <span class="c1"># removed, loaded and added back after deserialization</span>
-            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">environment</span><span class="o">.</span><span class="n">WindSchema</span><span class="p">())</span>
-        <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+            <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">WindSchema</span><span class="p">())</span>
 
-        <span class="k">return</span> <span class="n">_to_dict</span>
+        <span class="k">return</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
 </pre></div>
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -1472,10 +1478,11 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../../_static/jquery.js"></script>

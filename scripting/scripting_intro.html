@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Overview &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>Overview &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,7 +32,10 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html"/>
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="../index.html"/>
         <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
         <link rel="next" title="Scripting utilities" href="utilities.html"/>
         <link rel="prev" title="Scripting pygnome" href="../scripting.html"/> 
@@ -42,6 +47,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -61,7 +67,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -82,7 +88,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../structure.html">GNOME Structure</a></li>
@@ -100,7 +109,6 @@
 <li class="toctree-l2"><a class="reference internal" href="utilities.html">Scripting utilities</a></li>
 <li class="toctree-l2"><a class="reference internal" href="maps.html">Maps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="spills.html">Spills</a></li>
-<li class="toctree-l2"><a class="reference internal" href="property_objects.html">Property Objects</a></li>
 <li class="toctree-l2"><a class="reference internal" href="movers.html">Movers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="weatherers.html">Weatherers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="outputters.html">Outputters</a></li>
@@ -124,8 +132,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -134,25 +144,42 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
           <li><a href="../scripting.html">Scripting pygnome</a> &raquo;</li>
-      
-    <li>Overview</li>
+        
+      <li>Overview</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/scripting/scripting_intro.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/scripting/scripting_intro.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -242,7 +269,7 @@ can do a full run:</p>
 </div>
 <div class="section" id="view-the-results">
 <h2>View the results<a class="headerlink" href="#view-the-results" title="Permalink to this headline">¶</a></h2>
-<p>The renderer that we added was  png images every 6 hours. Since we did not specify an output directory for these images,
+<p>The renderer that we added generated png images every 6 hours. Since we did not specify an output directory for these images,
 they will have been saved in the same directory that the script was executed from. The sequence of images should show a cloud
 of particles moving east and spreading.</p>
 </div>
@@ -250,15 +277,18 @@ of particles moving east and spreading.</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="utilities.html" class="btn btn-neutral float-right" title="Scripting utilities" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="utilities.html" class="btn btn-neutral float-right" title="Scripting utilities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../scripting.html" class="btn btn-neutral" title="Scripting pygnome" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../scripting.html" class="btn btn-neutral" title="Scripting pygnome" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -289,10 +319,11 @@ of particles moving east and spreading.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

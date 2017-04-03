@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Spills &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>Spills &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,9 +32,12 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html"/>
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="../index.html"/>
         <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
-        <link rel="next" title="Property Objects" href="property_objects.html"/>
+        <link rel="next" title="Movers" href="movers.html"/>
         <link rel="prev" title="Maps" href="maps.html"/> 
 
   
@@ -42,6 +47,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -61,7 +67,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -82,7 +88,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../structure.html">GNOME Structure</a></li>
@@ -99,7 +108,6 @@
 <li class="toctree-l3"><a class="reference internal" href="#the-spill-class">The Spill Class</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="property_objects.html">Property Objects</a></li>
 <li class="toctree-l2"><a class="reference internal" href="movers.html">Movers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="weatherers.html">Weatherers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="outputters.html">Outputters</a></li>
@@ -123,8 +131,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -133,25 +143,42 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
           <li><a href="../scripting.html">Scripting pygnome</a> &raquo;</li>
-      
-    <li>Spills</li>
+        
+      <li>Spills</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/scripting/spills.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/scripting/spills.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -206,7 +233,7 @@ specifying different types of distributions. In this case we specify a uniform d
 droplets ranging from 10-300 microns:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.scripting</span> <span class="k">import</span> <span class="n">subsurface_plume_spill</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities.distributions</span> <span class="k">import</span> <span class="n">UniformDistribution</span>
-<span class="n">ud</span> <span class="o">=</span> <span class="n">UniformDistribution</span><span class="p">(</span><span class="mi">10</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span><span class="mi">300</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span> <span class="c1">#droplets in the range 10-300 microns</span>
+<span class="n">ud</span> <span class="o">=</span> <span class="n">UniformDistribution</span><span class="p">(</span><span class="mf">10e-6</span><span class="p">,</span><span class="mf">300e-6</span><span class="p">)</span> <span class="c1">#droplets in the range 10-300 microns</span>
 <span class="n">spill</span> <span class="o">=</span> <span class="n">subsurface_plume_spill</span><span class="p">(</span><span class="n">num_elements</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
                                <span class="n">start_position</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">144</span><span class="p">,</span><span class="mf">48.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
                                <span class="n">release_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
@@ -263,15 +290,18 @@ the PointLineRelease class:</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="property_objects.html" class="btn btn-neutral float-right" title="Property Objects" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="movers.html" class="btn btn-neutral float-right" title="Movers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="maps.html" class="btn btn-neutral" title="Maps" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="maps.html" class="btn btn-neutral" title="Maps" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -302,10 +332,11 @@ the PointLineRelease class:</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>

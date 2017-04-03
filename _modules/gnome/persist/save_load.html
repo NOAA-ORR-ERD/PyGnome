@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.persist.save_load &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>gnome.persist.save_load &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,7 +32,10 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html"/>
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -40,6 +45,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -59,7 +65,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -80,7 +86,10 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
@@ -102,8 +111,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../../index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -116,19 +127,36 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../../../index.html">Docs</a> &raquo;</li>
-      
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
           <li><a href="../../index.html">Module code</a> &raquo;</li>
-      
-    <li>gnome.persist.save_load</li>
+        
+      <li>gnome.persist.save_load</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
+            
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -151,7 +179,7 @@
 <span class="c1"># logger will work. If loggers are configured after this module is loaded and</span>
 <span class="c1"># the default behavior to disable_existing_loggers is True, then this will no</span>
 <span class="c1"># longer work</span>
-<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">References</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -218,7 +246,7 @@
         <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">key</span>
 
-        <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">.json&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">))</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">.json&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
         <span class="k">return</span> <span class="n">key</span>
@@ -304,8 +332,8 @@
     <span class="n">fd</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="c1"># create a reference to the object being loaded</span>
-    <span class="n">cls</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;obj_type&#39;</span><span class="p">))</span>
-    <span class="n">obj</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
+    <span class="bp">cls</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">json_data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;obj_type&#39;</span><span class="p">))</span>
+    <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># object failed to load - look in log messages for clues</span>
@@ -393,7 +421,7 @@
         <span class="n">json_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_and_save_refs</span><span class="p">(</span><span class="n">json_</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
 
         <span class="n">f_name</span> <span class="o">=</span> \
-            <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">.json&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">))[</span><span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">.json&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))[</span><span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
 
         <span class="c1"># add yourself to references</span>
         <span class="k">try</span><span class="p">:</span>
@@ -512,13 +540,13 @@
         <span class="k">return</span> <span class="n">json_</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_load_refs</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_load_refs</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        loads up references. First looks for object in references, if not found</span>
 <span class="sd">        then it creates object from json and adds a reference to it. If found</span>
 <span class="sd">        in references, it just uses/returns the object</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">ref_fields</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;save_reference&#39;</span><span class="p">)</span>
+        <span class="n">ref_fields</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;save_reference&#39;</span><span class="p">)</span>
 
         <span class="c1"># pop references from json_data, create objects for them</span>
         <span class="n">ref_dict</span> <span class="o">=</span> <span class="p">{}</span>
@@ -535,13 +563,13 @@
         <span class="k">return</span> <span class="n">ref_dict</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_update_datafile_path</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_update_datafile_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        update path to attributes that use a datafile</span>
 <span class="sd">        if saveloc is a zipfile, then extract the datafile to same location</span>
 <span class="sd">        as zipfile and upate path in json_data.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">datafiles</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;isdatafile&#39;</span><span class="p">)</span>
+        <span class="n">datafiles</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;isdatafile&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datafiles</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span>
 
@@ -564,7 +592,7 @@
                                                          <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        loads object from json_data</span>
 
@@ -590,26 +618,26 @@
 <span class="sd">        :returns: object constructed from json_data.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">references</span> <span class="o">=</span> <span class="p">(</span><span class="n">references</span><span class="p">,</span> <span class="n">References</span><span class="p">())[</span><span class="n">references</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
-        <span class="n">ref_dict</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_load_refs</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
-        <span class="n">cls</span><span class="o">.</span><span class="n">_update_datafile_path</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">)</span>
+        <span class="n">ref_dict</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_load_refs</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_update_datafile_path</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">)</span>
 
         <span class="c1"># deserialize after removing references</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+            <span class="n">_to_dict</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">colander</span><span class="o">.</span><span class="n">Invalid</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Class </span><span class="si">{0}</span><span class="s1"> failed to deserialize.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Class </span><span class="si">{0}</span><span class="s1"> failed to deserialize.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
             <span class="k">raise</span> <span class="n">e</span>
 
         <span class="k">if</span> <span class="n">ref_dict</span><span class="p">:</span>
             <span class="n">_to_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ref_dict</span><span class="p">)</span>
 
-        <span class="n">c_fields</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;iscollection&#39;</span><span class="p">)</span>
+        <span class="n">c_fields</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;iscollection&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
-            <span class="n">_to_dict</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_load_collection</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
+            <span class="n">_to_dict</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_load_collection</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
                                                         <span class="n">_to_dict</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">],</span>
                                                         <span class="n">references</span><span class="p">)</span>
 
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">_to_dict</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">_to_dict</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">obj</span>
 
@@ -637,7 +665,7 @@
                 <span class="n">coll_json</span><span class="p">[</span><span class="n">count</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj_ref</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_load_collection</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">l_coll_dict</span><span class="p">,</span> <span class="n">refs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_load_collection</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">l_coll_dict</span><span class="p">,</span> <span class="n">refs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        doesn&#39;t need to be classmethod of the Model, but its only used by</span>
 <span class="sd">        Model at present</span>
@@ -755,6 +783,9 @@
 </pre></div>
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
@@ -785,10 +816,11 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../../_static/jquery.js"></script>

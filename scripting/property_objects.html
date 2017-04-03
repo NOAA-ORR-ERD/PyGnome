@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Property Objects &mdash; pyGNOME 0.1.1 documentation</title>
+  <title>Property Objects &mdash; pyGNOME 0.4.0 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,10 +32,10 @@
   
 
   
-    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../index.html"/>
-        <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
-        <link rel="next" title="Movers" href="movers.html"/>
-        <link rel="prev" title="Spills" href="spills.html"/> 
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="pyGNOME 0.4.0 documentation" href="../index.html"/> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -42,6 +44,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -61,7 +64,7 @@
             
             
               <div class="version">
-                0.1
+                0.4
               </div>
             
           
@@ -82,27 +85,14 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../structure.html">GNOME Structure</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../scripting.html">Scripting pygnome</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="scripting_intro.html">Overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utilities.html">Scripting utilities</a></li>
-<li class="toctree-l2"><a class="reference internal" href="maps.html">Maps</a></li>
-<li class="toctree-l2"><a class="reference internal" href="spills.html">Spills</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Property Objects</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#background">Background</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#examples">Examples</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#defining-a-new-property">Defining a new Property</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="movers.html">Movers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="weatherers.html">Weatherers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="outputters.html">Outputters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="scripting_examples.html">Examples</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="../scripting.html">Scripting pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -120,8 +110,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../index.html">pyGNOME</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyGNOME</a>
+        
       </nav>
 
 
@@ -130,25 +122,40 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="../index.html">Docs</a> &raquo;</li>
-      
-          <li><a href="../scripting.html">Scripting pygnome</a> &raquo;</li>
-      
-    <li>Property Objects</li>
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Property Objects</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="../_sources/scripting/property_objects.txt" rel="nofollow"> View page source</a>
+            
+            <a href="../_sources/scripting/property_objects.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -161,7 +168,7 @@ can represent a space-independent time series or gridded, time dependent data. T
 They are the core means for representing natural phenomena in the latest versions of PyGNOME.</p>
 <p>Examples of things that Property objects can represent include: temperature, water velocity, wind speed &amp; direction time series, etc.</p>
 <p>For documentation of the API see <a class="reference internal" href="../reference.html#module-gnome.environment.property" title="gnome.environment.property"><code class="xref py py-mod docutils literal"><span class="pre">gnome.environment.property</span></code></a>
-For documentation of implemented Properties, see <a class="reference internal" href="../reference.html#module-gnome.environment.property_classes" title="gnome.environment.property_classes"><code class="xref py py-mod docutils literal"><span class="pre">gnome.environment.property_classes</span></code></a></p>
+For documentation of implemented Properties, see <code class="xref py py-mod docutils literal"><span class="pre">gnome.environment.property_classes</span></code></p>
 <div class="section" id="background">
 <h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
 <p>The environmental models in GNOME are often driven with data created by other models, such as ROMS, HYCOM, etc. In the past, the output from
@@ -276,17 +283,11 @@ is not very useful except as a demonstration.</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="movers.html" class="btn btn-neutral float-right" title="Movers" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="spills.html" class="btn btn-neutral" title="Spills" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>
@@ -315,10 +316,11 @@ is not very useful except as a demonstration.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.1.1',
+            VERSION:'0.4.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
