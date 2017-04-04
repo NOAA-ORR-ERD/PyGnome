@@ -108,9 +108,6 @@
 <li class="toctree-l4"><a class="reference internal" href="#adding-extra-channels-to-conda">Adding extra channels to conda:</a></li>
 </ul>
 </li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#head">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#conda-environments">conda environments</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#download-gnome">Download GNOME</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#downloading-a-single-release">Downloading a single release</a></li>
@@ -325,23 +322,13 @@ then in the default channel. This order should work well for PyGNOME. Be sure to
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">conda</span> <span class="n">config</span> <span class="o">--</span><span class="n">get</span> <span class="n">channels</span>
 </pre></div>
 </div>
-</div>
-</div>
-</div>
-<div class="section" id="head">
-<h2>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD<a class="headerlink" href="#head" title="Permalink to this headline">¶</a></h2>
 <p>It should return something like this:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">--</span><span class="n">add</span> <span class="n">channels</span> <span class="s1">&#39;defaults&#39;</span>   <span class="c1"># lowest priority</span>
 <span class="o">--</span><span class="n">add</span> <span class="n">channels</span> <span class="s1">&#39;NOAA-ORR-ERD&#39;</span>
 <span class="o">--</span><span class="n">add</span> <span class="n">channels</span> <span class="s1">&#39;conda-forge&#39;</span>   <span class="c1"># highest priority</span>
 </pre></div>
 </div>
-<p>&gt;&gt;&gt;&gt;&gt;&gt;&gt; develop</p>
-<p>It should return something like this:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">--</span><span class="n">add</span> <span class="n">channels</span> <span class="s1">&#39;defaults&#39;</span>   <span class="c1"># lowest priority</span>
-<span class="o">--</span><span class="n">add</span> <span class="n">channels</span> <span class="s1">&#39;conda-forge&#39;</span>
-<span class="o">--</span><span class="n">add</span> <span class="n">channels</span> <span class="s1">&#39;NOAA-ORR-ERD&#39;</span>   <span class="c1"># highest priority</span>
-</pre></div>
+</div>
 </div>
 <div class="section" id="conda-environments">
 <h3>conda environments<a class="headerlink" href="#conda-environments" title="Permalink to this headline">¶</a></h3>
@@ -377,11 +364,7 @@ and all the packages <code class="docutils literal"><span class="pre">py_gnome</
 and kept separate from your main Anaconda install.</p>
 <p>You will need to activate the environment any time you want to work with
 <code class="docutils literal"><span class="pre">py_gnome</span></code> in the future</p>
-<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
-<strong>NOTE:</strong> Again, if you are only using Python / Anaconda for GNOME, there is not reason to deal with the complications of environments.
-=======
-<strong>NOTE:</strong> Again, if you are only using Python / Anaconda for GNOME, it is not necessary to deal with the complications of environments.
-&gt;&gt;&gt;&gt;&gt;&gt;&gt; develop</p>
+<p><strong>NOTE:</strong> Again, if you are only using Python / conda for GNOME, it is not necessary to deal with the complications of environments.</p>
 </div>
 <div class="section" id="download-gnome">
 <h3>Download GNOME<a class="headerlink" href="#download-gnome" title="Permalink to this headline">¶</a></h3>
