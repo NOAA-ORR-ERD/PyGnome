@@ -969,9 +969,11 @@ class Serializable(GnomeId, Savable):
     def _collection_to_dict(self, coll):
         '''
         Method takes the instance of a collection containing serializable gnome
-        objects and outputs a list of dicts, each with two fields:
-            {obj_type: object type <module.class>,
-            id: IDs of each object.}
+        objects and outputs a list of dicts, each with two fields::
+
+          {obj_type: object type <module.class>,
+           id: IDs of each object.}
+
         This is a general way to make a dict for a collection which is then
         serialized to a 'save' file
         '''
