@@ -122,21 +122,12 @@ install a package, conda will first look in conda-forge, then NOAA-ORR-ERD, and
 then in the default channel. This order should work well for PyGNOME. Be sure to add the channels in the order we specify. You can see what channels you have with::
 
     > conda config --get channels
-<<<<<<< HEAD
-=======
 
 It should return something like this::
 
     --add channels 'defaults'   # lowest priority
     --add channels 'NOAA-ORR-ERD'
     --add channels 'conda-forge'   # highest priority
->>>>>>> develop
-
-It should return something like this::
-
-    --add channels 'defaults'   # lowest priority
-    --add channels 'conda-forge'
-    --add channels 'NOAA-ORR-ERD'   # highest priority
 
 conda environments
 ------------------
@@ -178,11 +169,8 @@ and kept separate from your main Anaconda install.
 You will need to activate the environment any time you want to work with
 ``py_gnome`` in the future
 
-<<<<<<< HEAD
-**NOTE:** Again, if you are only using Python / Anaconda for GNOME, there is not reason to deal with the complications of environments.
-=======
-**NOTE:** Again, if you are only using Python / Anaconda for GNOME, it is not necessary to deal with the complications of environments.
->>>>>>> develop
+**NOTE:** Again, if you are only using Python / conda for GNOME, it is not necessary to deal with the complications of environments.
+
 
 Download GNOME
 --------------
