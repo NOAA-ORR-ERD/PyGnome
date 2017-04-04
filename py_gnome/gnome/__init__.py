@@ -14,11 +14,7 @@ from gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
 # using a PEP 404 compliant version name
-# the "dev" is for "develop" -- we can increment the number if we want
-# (it needs to stay an integer) -- but probably no need
-# but this will keep systems from accidentally overwrting an older, non-develop version
-# the "dev" should be removed when we push to gitHub
-__version__ = 'v0.0.4'
+__version__ = '0.0.5'
 
 
 # a few imports so that the basic stuff is there
@@ -85,14 +81,16 @@ from . import (map, environment,
                spill_container, spill,
                movers, outputters)
 
-__all__ = [GnomeId,
-           map,
-           spill,
-           spill_container,
-           movers,
-           environment,
-           model,
-           outputters,
-           initialize_log,
-           AddLogger,
-           multi_model_broadcast]
+# __all__ should be strings, not names
+# but we shoudn't use it anyway.
+# __all__ = [GnomeId,
+#            map,
+#            spill,
+#            spill_container,
+#            movers,
+#            environment,
+#            model,
+#            outputters,
+#            initialize_log,
+#            AddLogger,
+#            multi_model_broadcast]
