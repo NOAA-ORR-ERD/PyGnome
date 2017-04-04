@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>PyGnome Class Reference &mdash; pyGNOME 0.4.0 documentation</title>
+  <title>PyGnome Class Reference &mdash; pyGNOME 0.5.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="pyGNOME 0.4.0 documentation" href="index.html"/>
+    <link rel="top" title="pyGNOME 0.5.0 documentation" href="index.html"/>
         <link rel="prev" title="Units used in GNOME / PyGNOME" href="units.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.4
+                0.5
               </div>
             
           
@@ -106,7 +106,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.movers"><code class="docutils literal"><span class="pre">gnome.movers</span></code> &#8211; PyGnome mover classes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.weatherers"><code class="docutils literal"><span class="pre">gnome.weatherers</span></code> &#8211; PyGnome/Adios weathering/mass removal classes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.environment"><code class="docutils literal"><span class="pre">gnome.environment</span></code> &#8211; PyGnome environment classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#gnome-environment-property-classes-pygnome-implemented-property-classes"><code class="docutils literal"><span class="pre">gnome.environment.property_classes</span></code> &#8211; PyGnome implemented property classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gnome-environment-property-pygnome-implemented-property-classes"><code class="docutils literal"><span class="pre">gnome.environment.property</span></code> &#8211; PyGnome implemented property classes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.environment.property"><code class="docutils literal"><span class="pre">gnome.environment.property</span></code> &#8211; PyGnome abstract property classes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.outputters"><code class="docutils literal"><span class="pre">gnome.outputter</span></code> &#8211; PyGnome outputters module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-gnome.utilities.distributions"><code class="docutils literal"><span class="pre">gnome.utilities</span></code> &#8211; PyGnome utilities module</a></li>
@@ -6868,28 +6868,18 @@ we should probably do this only once.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="gnome-environment-property-classes-pygnome-implemented-property-classes">
-<h2><code class="docutils literal"><span class="pre">gnome.environment.property_classes</span></code> &#8211; PyGnome implemented property classes<a class="headerlink" href="#gnome-environment-property-classes-pygnome-implemented-property-classes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="gnome-environment-property-pygnome-implemented-property-classes">
+<h2><code class="docutils literal"><span class="pre">gnome.environment.property</span></code> &#8211; PyGnome implemented property classes<a class="headerlink" href="#gnome-environment-property-pygnome-implemented-property-classes" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="gnome.environment.IceConcentration">
 <em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">IceConcentration</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#IceConcentration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.IceConcentration" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.environment.grid_property.GriddedProp" title="gnome.environment.grid_property.GriddedProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.grid_property.GriddedProp</span></code></a>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
-<dl class="attribute">
-<dt id="gnome.environment.IceConcentration.default_names">
-<code class="descname">default_names</code><em class="property"> = ['ice_fraction']</em><a class="headerlink" href="#gnome.environment.IceConcentration.default_names" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="gnome.environment.GridCurrent">
 <em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">GridCurrent</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#GridCurrent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.GridCurrent" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment_objects.VelocityGrid</span></code>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
-<dl class="attribute">
-<dt id="gnome.environment.GridCurrent.default_names">
-<code class="descname">default_names</code><em class="property"> = [['u', 'v', 'w'], ['U', 'V', 'W'], ['u', 'v'], ['U', 'V'], ['water_u', 'water_v'], ['curr_ucmp', 'curr_vcmp']]</em><a class="headerlink" href="#gnome.environment.GridCurrent.default_names" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="method">
 <dt id="gnome.environment.GridCurrent.at">
 <code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>extrapolate=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#GridCurrent.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.GridCurrent.at" title="Permalink to this definition">¶</a></dt>
@@ -6923,11 +6913,6 @@ we should probably do this only once.</p>
 <dt id="gnome.environment.GridWind">
 <em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">GridWind</code><span class="sig-paren">(</span><em>wet_dry_mask=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#GridWind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.GridWind" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment_objects.VelocityGrid</span></code>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
-<dl class="attribute">
-<dt id="gnome.environment.GridWind.default_names">
-<code class="descname">default_names</code><em class="property"> = [['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]</em><a class="headerlink" href="#gnome.environment.GridWind.default_names" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="method">
 <dt id="gnome.environment.GridWind.at">
 <code class="descname">at</code><span class="sig-paren">(</span><em>points</em>, <em>time</em>, <em>units=None</em>, <em>extrapolate=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#GridWind.at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.GridWind.at" title="Permalink to this definition">¶</a></dt>
@@ -6955,6 +6940,55 @@ we should probably do this only once.</p>
 </table>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">IceConcentration</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#IceConcentration"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.environment.grid_property.GriddedProp" title="gnome.environment.grid_property.GriddedProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.grid_property.GriddedProp</span></code></a>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.environment.GridTemperature">
+<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">GridTemperature</code><span class="sig-paren">(</span><em>name=None</em>, <em>units=None</em>, <em>time=None</em>, <em>data=None</em>, <em>grid=None</em>, <em>depth=None</em>, <em>data_file=None</em>, <em>grid_file=None</em>, <em>dataset=None</em>, <em>varname=None</em>, <em>fill_value=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#GridTemperature"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.GridTemperature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.environment.grid_property.GriddedProp" title="gnome.environment.grid_property.GriddedProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.grid_property.GriddedProp</span></code></a>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
+<p>This class represents a phenomenon using gridded data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>string</em>) &#8211; Name</li>
+<li><strong>units</strong> (<em>string</em>) &#8211; Units</li>
+<li><strong>time</strong> (<em></em><em>[</em><em></em><em>] </em><em>of datetime.datetime</em><em>, </em><em>netCDF4 Variable</em><em>, or </em><em>Time object</em>) &#8211; Time axis of the data</li>
+<li><strong>data</strong> (<em>netCDF4.Variable</em><em> or </em><em>numpy.array</em>) &#8211; Underlying data source</li>
+<li><strong>grid</strong> (<em>pysgrid</em><em> or </em><em>pyugrid</em>) &#8211; Grid that the data corresponds with</li>
+<li><strong>data_file</strong> (<em>string</em>) &#8211; Name of data source file</li>
+<li><strong>grid_file</strong> (<em>string</em>) &#8211; Name of grid source file</li>
+<li><strong>varname</strong> (<em>string</em>) &#8211; Name of the variable in the data source file</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.environment.IceAwareCurrent">
+<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">IceAwareCurrent</code><span class="sig-paren">(</span><em>ice_velocity=None</em>, <em>ice_concentration=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#IceAwareCurrent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.IceAwareCurrent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment_objects.GridCurrent</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.environment.IceAwareWind">
+<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">IceAwareWind</code><span class="sig-paren">(</span><em>ice_concentration=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#IceAwareWind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.IceAwareWind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment_objects.GridWind</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.environment.TemperatureTS">
+<em class="property">class </em><code class="descclassname">gnome.environment.</code><code class="descname">TemperatureTS</code><span class="sig-paren">(</span><em>name=None</em>, <em>units='K'</em>, <em>time=None</em>, <em>data=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/environment/environment_objects.html#TemperatureTS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.environment.TemperatureTS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.environment.ts_property.TimeSeriesProp" title="gnome.environment.ts_property.TimeSeriesProp"><code class="xref py py-class docutils literal"><span class="pre">gnome.environment.ts_property.TimeSeriesProp</span></code></a>, <code class="xref py py-class docutils literal"><span class="pre">gnome.environment.environment.Environment</span></code></p>
 </dd></dl>
 
 </div>
@@ -7469,9 +7503,10 @@ with the union of the corresponding lists.</p>
 <code class="descname">_collection_to_dict</code><span class="sig-paren">(</span><em>coll</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GriddedProp._collection_to_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method takes the instance of a collection containing serializable gnome
 objects and outputs a list of dicts, each with two fields:</p>
-<blockquote>
-<div>{obj_type: object type &lt;module.class&gt;,
-id: IDs of each object.}</div></blockquote>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">obj_type</span><span class="p">:</span> <span class="nb">object</span> <span class="nb">type</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">.</span><span class="n">class</span><span class="o">&gt;</span><span class="p">,</span>
+ <span class="nb">id</span><span class="p">:</span> <span class="n">IDs</span> <span class="n">of</span> <span class="n">each</span> <span class="nb">object</span><span class="o">.</span><span class="p">}</span>
+</pre></div>
+</div>
 <p>This is a general way to make a dict for a collection which is then
 serialized to a &#8216;save&#8217; file</p>
 </dd></dl>
@@ -8024,9 +8059,10 @@ with the union of the corresponding lists.</p>
 <code class="descname">_collection_to_dict</code><span class="sig-paren">(</span><em>coll</em><span class="sig-paren">)</span><a class="headerlink" href="#gnome.environment.grid_property.GridVectorProp._collection_to_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method takes the instance of a collection containing serializable gnome
 objects and outputs a list of dicts, each with two fields:</p>
-<blockquote>
-<div>{obj_type: object type &lt;module.class&gt;,
-id: IDs of each object.}</div></blockquote>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">obj_type</span><span class="p">:</span> <span class="nb">object</span> <span class="nb">type</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">.</span><span class="n">class</span><span class="o">&gt;</span><span class="p">,</span>
+ <span class="nb">id</span><span class="p">:</span> <span class="n">IDs</span> <span class="n">of</span> <span class="n">each</span> <span class="nb">object</span><span class="o">.</span><span class="p">}</span>
+</pre></div>
+</div>
 <p>This is a general way to make a dict for a collection which is then
 serialized to a &#8216;save&#8217; file</p>
 </dd></dl>
@@ -11503,7 +11539,7 @@ accessing again for output, etc.</p>
 
 <dl class="function">
 <dt id="gnome.utilities.cache.clean_up_cache">
-<code class="descclassname">gnome.utilities.cache.</code><code class="descname">clean_up_cache</code><span class="sig-paren">(</span><em>dir_name='/var/folders/7t/137hx7xn4s1fdqvjj1bhtdhskm0vyc/T/tmprrGSGR'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/cache.html#clean_up_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.cache.clean_up_cache" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gnome.utilities.cache.</code><code class="descname">clean_up_cache</code><span class="sig-paren">(</span><em>dir_name='/var/folders/7t/137hx7xn4s1fdqvjj1bhtdhskm0vyc/T/tmpUOPYlv'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gnome/utilities/cache.html#clean_up_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.utilities.cache.clean_up_cache" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deletes a cache dir.</p>
 <p>Designed to be called at program exit. and/or when
 individual cache objects are deleted</p>
@@ -11748,7 +11784,7 @@ are in ascending order</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.4.0',
+            VERSION:'0.5.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
