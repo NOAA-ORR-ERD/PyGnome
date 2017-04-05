@@ -138,7 +138,9 @@ model run and in subsequent steps the model moves and weathers elements.
     :inherited-members:
 
 ``gnome.environment.property`` -- PyGnome implemented property classes
+
 --------------------------------------------------------------------------------
+
 .. .. automodule:: gnome.environment.property
 
 .. autoclass:: IceConcentration
