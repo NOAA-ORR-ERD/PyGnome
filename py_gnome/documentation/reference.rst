@@ -137,33 +137,47 @@ model run and in subsequent steps the model moves and weathers elements.
     :members:
     :inherited-members:
 
-``gnome.environment.environment_objects`` -- PyGnome implemented property classes
+``gnome.environment.property`` -- PyGnome implemented property classes
+
 --------------------------------------------------------------------------------
-.. automodule:: gnome.environment.environment_objects
+
+.. .. automodule:: gnome.environment.property
 
 .. autoclass:: IceConcentration
     :members:
     :show-inheritance:
 
-    .. autoattribute:: default_names
 
 .. autoclass:: GridCurrent
     :members:
     :show-inheritance:
 
-    .. autoattribute:: default_names
 
 .. autoclass:: GridWind
     :members:
     :show-inheritance:
 
-    .. autoattribute:: default_names
-
-.. autoclass:: IceVelocity
+.. autoclass:: IceConcentration
     :members:
     :show-inheritance:
 
-    .. autoattribute:: default_names
+.. autoclass:: GridTemperature
+    :members:
+    :show-inheritance:
+
+.. autoclass:: IceAwareCurrent
+    :members:
+    :show-inheritance:
+
+.. autoclass:: IceAwareWind
+    :members:
+    :show-inheritance:
+
+.. autoclass:: TemperatureTS
+    :members:
+    :show-inheritance:
+
+
 
 ``gnome.environment.property`` -- PyGnome abstract property classes
 ---------------------------------------------------------------------

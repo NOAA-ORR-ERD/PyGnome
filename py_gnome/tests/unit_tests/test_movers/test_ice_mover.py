@@ -86,6 +86,7 @@ def test_ice_fields():
     checks there is non-zero motion.
     """
 
+    pytest.set_trace()
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
     ice_mover = IceMover(ice_file, topology_file)
     vels = ice_mover.get_ice_velocities(test_time)

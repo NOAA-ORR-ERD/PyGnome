@@ -129,7 +129,6 @@ It should return something like this::
     --add channels 'NOAA-ORR-ERD'
     --add channels 'conda-forge'   # highest priority
 
-
 conda environments
 ------------------
 
@@ -170,7 +169,8 @@ and kept separate from your main Anaconda install.
 You will need to activate the environment any time you want to work with
 ``py_gnome`` in the future
 
-**NOTE:** Again, if you are only using Python / Anaconda for GNOME, it is not necessary to deal with the complications of environments.
+**NOTE:** Again, if you are only using Python / conda for GNOME, it is not necessary to deal with the complications of environments.
+
 
 Download GNOME
 --------------
