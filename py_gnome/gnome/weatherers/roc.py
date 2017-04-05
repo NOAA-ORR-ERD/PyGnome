@@ -62,7 +62,6 @@ class Response(Weatherer, Serializable):
 
     _schema = ResponseSchema
     _state = copy.deepcopy(Weatherer._state)
-#    _state += [Field('timeseries', update=True, save=True)]
     _oc_list = ['timeseries']
 
     _schema = ResponseSchema
@@ -220,27 +219,6 @@ class Response(Weatherer, Serializable):
 
     def is_operating(self, time):
         return self.index_of(time) > -1
-
-#     def serialize(self, json_="webapi"):
-#         serial = super(Response, self).serialize(json_)
-#         if self.timeseries is not None:
-#             serial['timeseries'] = []
-#             for v in self.timeseries:
-#                 serial['timeseries'].append([v[0].isoformat(), v[1].isoformat()])
-#         return serial
-#
-#     @classmethod
-#     def deserialize(cls, json):
-#         schema = cls._schema()
-#         deserial = schema.deserialize(json)
-#         if 'timeseries' in json:
-#             deserial['timeseries'] = []
-#             for v in json['timeseries']:
-#                 deserial['timeseries'].append(
-#                     (datetime.datetime.strptime(v[0], '%Y-%m-%dT%H:%M:%S'),
-#                      datetime.datetime.strptime(v[1], '%Y-%m-%dT%H:%M:%S')))
-
-#         return deserial
 
     def _no_op_step(self):
         self._time_remaining = 0;
@@ -437,13 +415,6 @@ class Platform(Serializable):
         o_w_t_t = self.one_way_transit_time(dist)
         r_r = self.refuel_reload(simul=simul)
         rv = m_o_t - o_w_t_t * 2 - r_r
-#         if rv < 0:
-#             logging.warn('max onsite time is less than zero')
-#         else:
-#             pld = self.get('payload', 'gal')
-#             m_p_r = self.get('max_pump_rate', 'gal/hr')
-#             if rv < (pld / m_p_r):
-#                 logging.warn("max onsite time is less than possible time to finsish spraying")
         return rv
 
     def num_passes_possible(self, time, pass_len, pass_type):
@@ -453,8 +424,6 @@ class Platform(Serializable):
 
         A pass consists of an approach, spray, u-turn, and reposition.
         '''
-
-#         rep = self.get('reposition_speed', 'm/s')
 
         return int(time.total_seconds() / int(self.pass_duration(pass_len, pass_type)))
 
@@ -569,7 +538,6 @@ class Disperse(Response):
 
     _state = copy.deepcopy(Response._state)
 
-#     _state += [Field(k, save=True, update=True) for k in _attr.keys()]
     _state += [Field('units', save=True, update=True),
                Field('disp_oil_ratio', save=True, update=True),
                Field('disp_eff', save=True, update=True),
@@ -648,37 +616,6 @@ class Disperse(Response):
             self._dosage_m = uc.convert('length', 'micron', 'meters', self._dosage_m)
         self.report=[]
         self.array_types.update({'area', 'density', 'viscosity'})
-
-
-#     @property
-#     def next_state(self):
-#         if self.cur_state is None:
-#             return None
-#         if self.cur_state == 'cascade' or self.cur_state == 'rtb':
-#             return 'replenish'
-#         elif self.cur_state == 'replenish':
-#             return 'en_route'
-#         elif self.cur_state == 'en_route':
-#             return 'on_site'
-#         elif self.cur_state == 'inactive':
-#             return 'replenish'
-#
-#     @property
-#     def cur_state_duration(self):
-#         if self.cur_state is None:
-#             raise ValueError('Current state of None has no duration')
-#         if self.cur_state == 'inactive':
-#             raise ValueError('inactive has special duration and should not be requested')
-#         if self.cur_state == 'cascade':
-#             return self.platform.cascade_time(self.cascade_distance)
-#         if self.cur_state == 'ready':
-#             return self.platform.refuel_reload(self.loading_type)
-#         if self.cur_state == 'en_route':
-#             return self.platform.one_way_transit_time(self.transit)
-#         if self.cur_state == 'on_site':
-#             return self.platform.max_onsite_time(self.transit)
-#         if self.cur_state == 'returning':
-#             return self.platform.one_way_transit_time(self.transit)
 
     def get_mission_data(self,
                          dosage=None,
@@ -759,7 +696,6 @@ class Disperse(Response):
 
         if self._disp_eff_type != 'fixed':
             self.disp_eff = self.get_disp_eff_avg(sc, model_time)
-#             print 'efficiency is ', self.disp_eff
         slick_area = 'WHAT??'
 
         if not isinstance(time_step, datetime.timedelta):
@@ -1117,7 +1053,6 @@ class Disperse(Response):
     def dispersable_oil_idxs(self, sc):
         # LEs must have a low viscosity, have not been fully chem dispersed, and must have a mass > 0
         idxs = np.where(sc['viscosity'] * 1000000 < 1000000)[0]
-#         idxs = np.arange(0, len(sc['mass']))
         codes = sc['fate_status'][idxs] != bt_fate.disperse
         idxs = idxs[codes]
         nonzero_mass = sc['mass'][idxs] > 0
@@ -1139,11 +1074,6 @@ class Disperse(Response):
         if self.oil_treated_this_timestep != 0:
             visc_eff_table = Disperse.visc_eff_table
             wind_eff_list = Disperse.wind_eff_list
-#             visc_disp_eff_per_le = [visc_eff_table[visc_eff_table.keys()[np.searchsorted(visc_eff_table.keys(), le)]] / 100 for le in sc['viscosity'][idxs] * 1000000]
-#             vel = self.wind.get_value(model_time)
-#             spd = math.sqrt(vel[0]**2 + vel[1]**2)
-#             wind_disp_eff_per_le = wind_eff_list[int(self.wind.get_value(spd))]
-#             proportions = disp_eff_per_le / np.mean(disp_eff_per_le)
             mass_proportions = sc['mass'][idxs] / np.sum(sc['mass'][idxs])
             eff_reductions = self.get_disp_eff(sc, model_time)
             mass_to_remove = self.oil_treated_this_timestep * mass_proportions * eff_reductions
