@@ -1,4 +1,4 @@
-Terms & Definitions
+Glossary
 =================
 
 Cells

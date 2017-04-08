@@ -177,9 +177,6 @@ class VelocityTS(TSVectorProp):
 
         return t1 and t2
 
-    def __str__(self):
-        return self.serialize(json_='save').__repr__()
-
     @classmethod
     def constant(cls,
                  name='',
@@ -300,9 +297,6 @@ class VelocityGrid(GridVectorProp):
                 break
 
         return t1 and t2
-
-    def __str__(self):
-        return self.serialize(json_='save').__repr__()
 
 
 class WindTS(VelocityTS, Environment):
@@ -456,9 +450,6 @@ class IceConcentration(GriddedProp, Environment):
 #         t2 = self.data == o.data
 #         return t1 and t2
 
-    def __str__(self):
-        return self.serialize(json_='save').__repr__()
-
 
 class Bathymetry(GriddedProp):
     default_names = ['h']
@@ -527,7 +518,6 @@ class GridWind(VelocityGrid, Environment):
             if self.grid.infer_location(wet_dry_mask) != 'center':
                 raise ValueError('Wet/Dry mask does not correspond to grid cell centers')
         self.wet_dry_mask = wet_dry_mask
-
 
     def at(self, points, time, units=None, extrapolate=False, **kwargs):
         '''

@@ -82,9 +82,6 @@ class GriddedProp(EnvProp):
         self._result_memo = OrderedDict()
         self.fill_value = fill_value
 
-#     def __repr__(self):
-#         return str(self.serialize())
-
     @classmethod
     def from_netCDF(cls,
                     filename=None,
@@ -517,7 +514,7 @@ class GridVectorPropSchema(VectorPropSchema):
     grid = PyGridSchema(missing=drop)
     data_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
     grid_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
-     
+
     def __init__(self, json_='webapi', *args, **kwargs):
         if json_ == 'save':
             self.add(SchemaNode(typ=Sequence(), children=[SchemaNode(EnvProp())], name='variables'))
@@ -558,9 +555,6 @@ class GridVectorProp(VectorProp):
 
 #         self._check_consistency()
         self._result_memo = OrderedDict()
-
-    def __repr__(self):
-        return str(self.serialize())
 
     @classmethod
     def from_netCDF(cls,
@@ -639,9 +633,9 @@ class GridVectorProp(VectorProp):
                                     dataset=ds,
                                     datavar=data)
         if depth is None:
-            if (isinstance(grid, PyGrid_S) and len(data.shape) == 4 or 
-                        (len(data.shape) == 3 and time is None) or 
-                    (isinstance(grid, PyGrid_U) and len(data.shape) == 3 or 
+            if (isinstance(grid, PyGrid_S) and len(data.shape) == 4 or
+                        (len(data.shape) == 3 and time is None) or
+                    (isinstance(grid, PyGrid_U) and len(data.shape) == 3 or
                         (len(data.shape) == 2 and time is None))):
                 from gnome.environment.environment_objects import Depth
                 depth = Depth(surface_index=-1)

@@ -74,7 +74,7 @@ With memoization, the equation is as follows::
 
     ops = P*locate_points + P*interpolation_alphas + N*P*multiply&sum + N*hash(P)
 
-Considering locate_points and interpolation_alphas are much more expensive than multiply&sum and hash, this is
+Considering locate_points and interpolation_alphas are much more computationally expensive than multiply&sum and hash, this is
 a dramatic performance gain for even N=2
 
 

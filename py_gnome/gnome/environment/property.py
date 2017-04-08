@@ -37,10 +37,10 @@ class PropertySchema(base_schema.ObjType):
 
 
 class EnvProp(serializable.Serializable):
-    
+
     _state = copy.deepcopy(serializable.Serializable._state)
     _schema = PropertySchema
-    
+
     _state.add_field([serializable.Field('units', save=True, update=True),
                       serializable.Field('time', save=True, update=True, save_reference=True)])
 
@@ -74,17 +74,6 @@ class EnvProp(serializable.Serializable):
         for k in kwargs:
             setattr(self, k, kwargs[k])
 
-    def __str__(self):
-        return self.__repr__()
-
-    def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'name="{0.name}", '
-                'time="{0.time}", '
-                'units="{0.units}", '
-                'data="{0.data}", '
-                ')').format(self)
-
     '''
     Subclasses should override\add any attribute property function getter/setters as needed
     '''
@@ -93,7 +82,7 @@ class EnvProp(serializable.Serializable):
 #     def data(self):
 #         '''
 #         Underlying data
-# 
+#
 #         :rtype: netCDF4.Variable or numpy.array
 #         '''
 #         return self._data
@@ -179,7 +168,7 @@ class VectorPropSchema(base_schema.ObjType):
 
 
 class VectorProp(serializable.Serializable):
-    
+
     _state = copy.deepcopy(serializable.Serializable._state)
     _schema = VectorPropSchema
 
@@ -227,17 +216,6 @@ class VectorProp(serializable.Serializable):
 #             print(unused_args)
             kwargs = {}
         super(VectorProp, self).__init__(**kwargs)
-
-    def __str__(self):
-        return self.__repr__()
-
-    def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'name="{0.name}", '
-                'time="{0.time}", '
-                'units="{0.units}", '
-                'variables="{0.variables}", '
-                ')').format(self)
 
     @property
     def time(self):
@@ -312,7 +290,7 @@ class Time(serializable.Serializable):
 
     _state = copy.deepcopy(serializable.Serializable._state)
     _schema = TimeSchema
-    
+
     _state.add_field([serializable.Field('filename', save=True, update=True, isdatafile=True),
                       serializable.Field('varname', save=True, update=True),
                       serializable.Field('data', save=True, update=True)])
@@ -545,4 +523,3 @@ class Time(serializable.Serializable):
         t0 = self.time[i0 - 1]
         t1 = self.time[i0]
         return (time - t0).total_seconds() / (t1 - t0).total_seconds()
-
