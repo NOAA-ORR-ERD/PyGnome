@@ -1,5 +1,5 @@
 Glossary
-=================
+================
 
 Cells
   This is generally synonymous with faces, although it is not a term used in the code or API
