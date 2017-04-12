@@ -1,8 +1,11 @@
 """
 spill.py - An implementation of the spill class(s)
 
-A "spill" is essentially a source of elements. These classes provide
-the logic about where an when the elements are released
+A "spill" is essentially a source of elements. These classes combine
+
+Releases: where and when elements are released
+and
+Element_types -- what the types of the elements are.
 
 """
 
@@ -1083,3 +1086,31 @@ def point_line_release_spill(num_elements,
                   units=units,
                   name=name)
     return spill
+
+def spatial_release_spill(   start_positions,
+                             release_time,
+                             element_type=None,
+                             substance=None,
+                             water=None,
+                             on=True,
+                             amount=None,
+                             units=None,
+                             name='spatial_release'):
+    '''
+    Helper function returns a Spill object containing a spatial release
+
+    A spatial release is a spill that releases elements at known locations.
+    '''
+    release = SpatialRelease(release_time,
+                             start_position=start_positions,
+                             name=name)
+    spill = Spill(release,
+                  water=water,
+                  element_type=element_type,
+                  substance=substance,
+                  on=on,
+                  amount=amount,
+                  units=units,
+                  name=name)
+    return spill
+
