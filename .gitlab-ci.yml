@@ -13,8 +13,6 @@ before_script:
   # install the requirements
   - conda install --file conda_requirements.txt
 
-  # get the oil libary package from gitlab
-  - pip install -U git+https://srccontrol.orr.noaa.gov/gnome/OilLibrary.git@v0.0.9#egg=oil_library
   - cd ./py_gnome
   - python ./setup.py develop
 

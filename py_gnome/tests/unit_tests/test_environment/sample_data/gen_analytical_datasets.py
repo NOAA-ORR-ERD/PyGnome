@@ -32,7 +32,7 @@ def gen_vortex_3D(filename=None):
     g = PyGrid(node_lon=x,
                node_lat=y)
     g.build_celltree()
-    lin_nodes = g._trees['node'][1]
+    lin_nodes = g._cell_trees['node'][1]
     lin_faces = np.array([np.array([([lx, lx + x_size + 1, lx + 1], [lx, lx + x_size, lx + x_size + 1]) for lx in range(0, x_size - 1, 1)]) + ly * x_size for ly in range(0, y_size - 1)])
     lin_faces = lin_faces.reshape(-1, 3)
     # y += np.sin(x) / 1
@@ -232,10 +232,10 @@ def gen_sinusoid(filename=None):
                      'lat_rho': ('xi_rho', 'eta_rho', y),
                      'lon_psi': ('xi_psi', 'eta_psi', xc),
                      'lat_psi': ('xi_psi', 'eta_psi', yc),
-                     'lat_u': ('xi_rho', 'eta_psi', xu),
-                     'lon_u': ('xi_rho', 'eta_psi', yu),
-                     'lat_v': ('xi_psi', 'eta_rho', xv),
-                     'lon_v': ('xi_psi', 'eta_rho', yv),
+                     'lon_u': ('xi_rho', 'eta_psi', xu),
+                     'lat_u': ('xi_rho', 'eta_psi', yu),
+                     'lon_v': ('xi_psi', 'eta_rho', xv),
+                     'lat_v': ('xi_psi', 'eta_rho', yv),
                      }.items():
             ds.createVariable(k, 'f8', dimensions=v[0:2])
             ds[k][:] = v[2]
@@ -249,8 +249,8 @@ def gen_sinusoid(filename=None):
             ds[k][:] = v[2]
             ds[k].units = 'm/s'
         ds.grid_type = 'sgrid'
-        ds.createVariable('angle', 'f8', dimensions=('xi_rho', 'eta_rho'))
-        ds['angle'][:] = angle
+        #ds.createVariable('angle', 'f8', dimensions=('xi_rho', 'eta_rho'))
+        #ds['angle'][:] = angle
     if ds is not None:
         # Need to test the dataset...
 #         from gnome.environment import GridCurrent

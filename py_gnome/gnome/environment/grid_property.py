@@ -1,7 +1,7 @@
 import netCDF4 as nc4
 import numpy as np
 
-from collections import OrderedDict
+from collections import namedtuple
 from colander import SchemaNode, SchemaType, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, List
 from gnome.utilities.file_tools.data_helpers import _get_dataset
 from gnome.environment.property import *
@@ -32,6 +32,7 @@ class GriddedProp(EnvProp):
                       serializable.Field('grid_file', save=True, update=True, isdatafile=True)])
 
     default_names = []
+    cf_names = []
     _def_count = 0
 
     def __init__(self,
@@ -81,9 +82,6 @@ class GriddedProp(EnvProp):
         self.varname = varname
         self._result_memo = OrderedDict()
         self.fill_value = fill_value
-
-#     def __repr__(self):
-#         return str(self.serialize())
 
     @classmethod
     def from_netCDF(cls,
@@ -491,7 +489,9 @@ class GriddedProp(EnvProp):
     @classmethod
     def _gen_varname(cls,
                      filename=None,
-                     dataset=None):
+                     dataset=None,
+                     names_list=None,
+                     std_names_list=None):
         """
         Function to find the default variable names if they are not provided.
 
@@ -506,9 +506,16 @@ class GriddedProp(EnvProp):
             df = dataset
         else:
             df = _get_dataset(filename)
-        for n in cls.default_names:
+        if names_list is None:
+            names_list = cls.default_names
+        for n in names_list:
             if n in df.variables.keys():
                 return n
+        for n in std_names_list:
+            for var in df.variables.values():
+                if hasattr(var, 'standard_name') or hasattr(var, 'long_name'):
+                    if var.name == n:
+                        return n
         raise ValueError("Default names not found.")
 
 
@@ -517,7 +524,7 @@ class GridVectorPropSchema(VectorPropSchema):
     grid = PyGridSchema(missing=drop)
     data_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
     grid_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
-     
+
     def __init__(self, json_='webapi', *args, **kwargs):
         if json_ == 'save':
             self.add(SchemaNode(typ=Sequence(), children=[SchemaNode(EnvProp())], name='variables'))
@@ -534,7 +541,9 @@ class GridVectorProp(VectorProp):
                       serializable.Field('data_file', save=True, update=True, isdatafile=True),
                       serializable.Field('grid_file', save=True, update=True, isdatafile=True)])
 
-    default_names = []
+    default_names = {}
+    cf_names = {}
+    comp_order=[]
 
     _def_count = 0
 
@@ -558,9 +567,8 @@ class GridVectorProp(VectorProp):
 
 #         self._check_consistency()
         self._result_memo = OrderedDict()
-
-    def __repr__(self):
-        return str(self.serialize())
+        for i, comp in enumerate(self.__class__.comp_order):
+            setattr(self, comp, self.variables[i])
 
     @classmethod
     def from_netCDF(cls,
@@ -639,9 +647,9 @@ class GridVectorProp(VectorProp):
                                     dataset=ds,
                                     datavar=data)
         if depth is None:
-            if (isinstance(grid, PyGrid_S) and len(data.shape) == 4 or 
-                        (len(data.shape) == 3 and time is None) or 
-                    (isinstance(grid, PyGrid_U) and len(data.shape) == 3 or 
+            if (isinstance(grid, PyGrid_S) and len(data.shape) == 4 or
+                        (len(data.shape) == 3 and time is None) or
+                    (isinstance(grid, PyGrid_U) and len(data.shape) == 3 or
                         (len(data.shape) == 2 and time is None))):
                 from gnome.environment.environment_objects import Depth
                 depth = Depth(surface_index=-1)
@@ -654,18 +662,19 @@ class GridVectorProp(VectorProp):
 #                                             **kwargs)
         variables = OrderedCollection(dtype=EnvProp)
         for vn in varnames:
-            variables.append(GriddedProp.from_netCDF(filename=filename,
-                                                     varname=vn,
-                                                     grid_topology=grid_topology,
-                                                     units=units,
-                                                     time=time,
-                                                     grid=grid,
-                                                     depth=depth,
-                                                     data_file=data_file,
-                                                     grid_file=grid_file,
-                                                     dataset=ds,
-                                                     load_all=load_all,
-                                                     **kwargs))
+            if vn is not None:
+                variables.append(GriddedProp.from_netCDF(filename=filename,
+                                                         varname=vn,
+                                                         grid_topology=grid_topology,
+                                                         units=units,
+                                                         time=time,
+                                                         grid=grid,
+                                                         depth=depth,
+                                                         data_file=data_file,
+                                                         grid_file=grid_file,
+                                                         dataset=ds,
+                                                         load_all=load_all,
+                                                         **kwargs))
         if units is None:
             units = [v.units for v in variables]
             if all(u == units[0] for u in units):
@@ -688,7 +697,9 @@ class GridVectorProp(VectorProp):
     @classmethod
     def _gen_varnames(cls,
                       filename=None,
-                      dataset=None):
+                      dataset=None,
+                      names_dict=None,
+                      std_names_dict=None):
         """
         Function to find the default variable names if they are not provided.
 
@@ -696,17 +707,36 @@ class GridVectorProp(VectorProp):
         :param dataset: Existing instance of a netCDF4.Dataset
         :type filename: string
         :type dataset: netCDF.Dataset
-        :return: List of default variable names, or None if none are found
+        :return: dict of component to name mapping (eg {'u': 'water_u', 'v': 'water_v', etc})
         """
         df = None
         if dataset is not None:
             df = dataset
         else:
             df = _get_dataset(filename)
-        for n in cls.default_names:
-            if all([sn in df.variables.keys() for sn in n]):
-                return n
-        raise ValueError("Default names not found.")
+        if names_dict is None:
+            names_dict = cls.default_names
+        if std_names_dict is None:
+            std_names_dict = cls.cf_names
+        rd = {}
+        for k in cls.comp_order:
+            v = names_dict[k] if k in names_dict else []
+            for n in v:
+                if n in df.variables.keys():
+                    rd[k] = n
+                    continue
+            if k not in rd.keys():
+                rd[k] = None
+        for k in cls.comp_order:
+            v = std_names_dict[k] if k in std_names_dict else []
+            if rd[k] is None:
+                for n in v:
+                    for var in df.variables.values():
+                        if (hasattr(var, 'standard_name') and var.standard_name == n or
+                                hasattr(var, 'long_name') and var.long_name == n):
+                            rd[k] = var.name
+                            break
+        return namedtuple('varnames', cls.comp_order)(**rd)
 
     @property
     def is_data_on_nodes(self):
@@ -821,9 +851,9 @@ class GridVectorProp(VectorProp):
                 if _mod('grid'):
                     gt = kws.get('grid_topology', None)
                     kws['grid'] = PyGrid.from_netCDF(kws['grid_file'], dataset=dg, grid_topology=gt)
-                if kws.get('varnames', None) is None:
-                    varnames = cls._gen_varnames(kws['data_file'],
-                                                 dataset=ds)
+#                 if kws.get('varnames', None) is None:
+#                     varnames = cls._gen_varnames(kws['data_file'],
+#                                                  dataset=ds)
 #                 if _mod('time'):
 #                     time = Time.from_netCDF(filename=kws['data_file'],
 #                                             dataset=ds,

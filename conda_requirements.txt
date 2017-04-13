@@ -30,7 +30,7 @@ regex>=2014.12
 unidecode>=0.04.19
 pyshp>=1.2
 pyugrid>=0.2.2
-pysgrid>=0.3.3
+pysgrid>=0.3.4
 
 # NOAA maintained packages
 unit_conversion=2.5.5
@@ -46,5 +46,6 @@ testfixtures
 matplotlib
 sphinx
 sphinx_bootstrap_theme
+nbsphinx
 ipython
 

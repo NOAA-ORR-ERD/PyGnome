@@ -62,7 +62,6 @@ class Response(Weatherer, Serializable):
 
     _schema = ResponseSchema
     _state = copy.deepcopy(Weatherer._state)
-#    _state += [Field('timeseries', update=True, save=True)]
     _oc_list = ['timeseries']
 
     _schema = ResponseSchema
@@ -221,27 +220,6 @@ class Response(Weatherer, Serializable):
     def is_operating(self, time):
         return self.index_of(time) > -1
 
-#     def serialize(self, json_="webapi"):
-#         serial = super(Response, self).serialize(json_)
-#         if self.timeseries is not None:
-#             serial['timeseries'] = []
-#             for v in self.timeseries:
-#                 serial['timeseries'].append([v[0].isoformat(), v[1].isoformat()])
-#         return serial
-#
-#     @classmethod
-#     def deserialize(cls, json):
-#         schema = cls._schema()
-#         deserial = schema.deserialize(json)
-#         if 'timeseries' in json:
-#             deserial['timeseries'] = []
-#             for v in json['timeseries']:
-#                 deserial['timeseries'].append(
-#                     (datetime.datetime.strptime(v[0], '%Y-%m-%dT%H:%M:%S'),
-#                      datetime.datetime.strptime(v[1], '%Y-%m-%dT%H:%M:%S')))
-
-#         return deserial
-
     def _no_op_step(self):
         self._time_remaining = 0;
 
@@ -261,6 +239,7 @@ class PlatformSchema(base_schema.ObjType):
         units.missing = drop
         units.name = 'units'
         self.add(units)
+        self.add(SchemaNode(String(), name="type", missing=drop))
         super(PlatformSchema, self).__init__()
 
 
@@ -314,9 +293,11 @@ class Platform(Serializable):
 
     _state += [Field(k, save=True, update=True) for k in _attr.keys()]
     _state += [Field('units', save=True, update=True)]
+    _state += [Field('type', save=True, update=True)]
 
     def __init__(self,
                  units=None,
+                 type='Platform',
                  **kwargs):
 
         if '_name' in kwargs.keys():
@@ -324,6 +305,7 @@ class Platform(Serializable):
         if units is None:
             units = dict([(k, v[0]) for k, v in self._attr.items()])
         self.units = units
+        self.type = type
         for k in Platform._attr.keys():
             setattr(self, k, kwargs.get(k, None))
 
@@ -437,13 +419,6 @@ class Platform(Serializable):
         o_w_t_t = self.one_way_transit_time(dist)
         r_r = self.refuel_reload(simul=simul)
         rv = m_o_t - o_w_t_t * 2 - r_r
-#         if rv < 0:
-#             logging.warn('max onsite time is less than zero')
-#         else:
-#             pld = self.get('payload', 'gal')
-#             m_p_r = self.get('max_pump_rate', 'gal/hr')
-#             if rv < (pld / m_p_r):
-#                 logging.warn("max onsite time is less than possible time to finsish spraying")
         return rv
 
     def num_passes_possible(self, time, pass_len, pass_type):
@@ -453,8 +428,6 @@ class Platform(Serializable):
 
         A pass consists of an approach, spray, u-turn, and reposition.
         '''
-
-#         rep = self.get('reposition_speed', 'm/s')
 
         return int(time.total_seconds() / int(self.pass_duration(pass_len, pass_type)))
 
@@ -569,7 +542,6 @@ class Disperse(Response):
 
     _state = copy.deepcopy(Response._state)
 
-#     _state += [Field(k, save=True, update=True) for k in _attr.keys()]
     _state += [Field('units', save=True, update=True),
                Field('disp_oil_ratio', save=True, update=True),
                Field('disp_eff', save=True, update=True),
@@ -649,37 +621,6 @@ class Disperse(Response):
         self.report=[]
         self.array_types.update({'area', 'density', 'viscosity'})
 
-
-#     @property
-#     def next_state(self):
-#         if self.cur_state is None:
-#             return None
-#         if self.cur_state == 'cascade' or self.cur_state == 'rtb':
-#             return 'replenish'
-#         elif self.cur_state == 'replenish':
-#             return 'en_route'
-#         elif self.cur_state == 'en_route':
-#             return 'on_site'
-#         elif self.cur_state == 'inactive':
-#             return 'replenish'
-#
-#     @property
-#     def cur_state_duration(self):
-#         if self.cur_state is None:
-#             raise ValueError('Current state of None has no duration')
-#         if self.cur_state == 'inactive':
-#             raise ValueError('inactive has special duration and should not be requested')
-#         if self.cur_state == 'cascade':
-#             return self.platform.cascade_time(self.cascade_distance)
-#         if self.cur_state == 'ready':
-#             return self.platform.refuel_reload(self.loading_type)
-#         if self.cur_state == 'en_route':
-#             return self.platform.one_way_transit_time(self.transit)
-#         if self.cur_state == 'on_site':
-#             return self.platform.max_onsite_time(self.transit)
-#         if self.cur_state == 'returning':
-#             return self.platform.one_way_transit_time(self.transit)
-
     def get_mission_data(self,
                          dosage=None,
                          area=None,
@@ -722,7 +663,16 @@ class Disperse(Response):
         self.oil_treated_this_timestep = 0
         if 'systems' not in sc.mass_balance:
             sc.mass_balance['systems'] = {}
-        sc.mass_balance['systems'][self.id] = 0.0
+        sc.mass_balance['systems'][self.id] = {
+            'time_spraying': 0.0,
+            'dispersed': 0.0,
+            'payloads_delivered': 0,
+            'dispersant_applied': 0.0,
+            'oil_treated': 0.0,
+            'area_covered': 0.0
+        }
+
+        self._payloads_delivered = 0
 
     def dosage_from_thickness(self, sc):
         thickness = self._get_thickness(sc) # inches
@@ -759,7 +709,6 @@ class Disperse(Response):
 
         if self._disp_eff_type != 'fixed':
             self.disp_eff = self.get_disp_eff_avg(sc, model_time)
-#             print 'efficiency is ', self.disp_eff
         slick_area = 'WHAT??'
 
         if not isinstance(time_step, datetime.timedelta):
@@ -1034,6 +983,7 @@ class Disperse(Response):
 
             elif 'disperse' in self.cur_state:
                 pass_dur = datetime.timedelta(seconds=self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[1])
+                self._time_spraying = pass_dur.seconds
                 time_left_in_pass = self._next_state_time - model_time
                 spray_time = min(self._time_remaining, time_left_in_pass)
                 if self.dosage_type == 'auto':
@@ -1046,7 +996,6 @@ class Disperse(Response):
                 oil_avail = self.dispersable_oil_amount(sc, 'kg')
                 self.report.append((model_time, 'Oil available: ' + str(oil_avail) + '  Treatable mass: ' + str(mass_treatable) + '  Dispersant Sprayed: ' + str(disp_actual)))
                 self.report.append((model_time, 'Sprayed ' + str(disp_actual) + 'm^3 dispersant in ' + str(spray_time) + ' seconds on ' + str(oil_avail) + ' kg of oil'))
-                print self.report[-1]
                 self._time_remaining -= spray_time
                 self._disp_sprayed_this_timestep += disp_actual
                 self._remaining_dispersant -= disp_actual
@@ -1070,7 +1019,6 @@ class Disperse(Response):
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Returned to base'))
-                    print self.report[-1]
                     refuel_reload = datetime.timedelta(seconds=self.platform.refuel_reload(simul=self.loading_type))
                     self._next_state_time = model_time + refuel_reload
                     self.cur_state = 'refuel_reload'
@@ -1107,6 +1055,7 @@ class Disperse(Response):
         self._cur_pass_num = 1
         self._disp_sprayed_this_timestep = 0
         self.cur_state = 'rtb'
+        self._payloads_delivered += 1
 
     def update_time(self, time_remaining, model_time, time_step):
         if time_remaining > datetime.timedelta(seconds=0):
@@ -1117,7 +1066,6 @@ class Disperse(Response):
     def dispersable_oil_idxs(self, sc):
         # LEs must have a low viscosity, have not been fully chem dispersed, and must have a mass > 0
         idxs = np.where(sc['viscosity'] * 1000000 < 1000000)[0]
-#         idxs = np.arange(0, len(sc['mass']))
         codes = sc['fate_status'][idxs] != bt_fate.disperse
         idxs = idxs[codes]
         nonzero_mass = sc['mass'][idxs] > 0
@@ -1139,11 +1087,6 @@ class Disperse(Response):
         if self.oil_treated_this_timestep != 0:
             visc_eff_table = Disperse.visc_eff_table
             wind_eff_list = Disperse.wind_eff_list
-#             visc_disp_eff_per_le = [visc_eff_table[visc_eff_table.keys()[np.searchsorted(visc_eff_table.keys(), le)]] / 100 for le in sc['viscosity'][idxs] * 1000000]
-#             vel = self.wind.get_value(model_time)
-#             spd = math.sqrt(vel[0]**2 + vel[1]**2)
-#             wind_disp_eff_per_le = wind_eff_list[int(self.wind.get_value(spd))]
-#             proportions = disp_eff_per_le / np.mean(disp_eff_per_le)
             mass_proportions = sc['mass'][idxs] / np.sum(sc['mass'][idxs])
             eff_reductions = self.get_disp_eff(sc, model_time)
             mass_to_remove = self.oil_treated_this_timestep * mass_proportions * eff_reductions
@@ -1153,7 +1096,11 @@ class Disperse(Response):
             print 'index, original mass, removed mass, final mass'
             masstab = np.column_stack((idxs, org_mass, mass_to_remove, sc['mass'][idxs]))
             sc.mass_balance['chem_dispersed'] += sum(removed)
-            sc.mass_balance['systems'][self.id] += sum(removed)
+            sc.mass_balance['systems'][self.id]['dispersed'] += sum(removed)
+            sc.mass_balance['systems'][self.id]['area_covered'] += self._area_sprayed_this_ts
+            sc.mass_balance['systems'][self.id]['dispersant_applied'] += self._disp_sprayed_this_timestep
+            sc.mass_balance['systems'][self.id]['oil_treated'] += self.oil_treated_this_timestep
+            sc.mass_balance['systems'][self.id]['payloads_delivered']
             sc.mass_balance['floating'] -= sum(removed)
             zero_or_disp = np.isclose(sc['mass'][idxs], 0)
             new_status = sc['fate_status'][idxs]
