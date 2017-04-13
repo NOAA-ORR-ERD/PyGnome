@@ -45,5 +45,6 @@ pytest
 testfixtures
 matplotlib
 sphinx
+sphinx_bootstrap_theme
 ipython
 
