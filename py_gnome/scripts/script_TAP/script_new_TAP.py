@@ -24,7 +24,6 @@ from gnome.movers.py_wind_movers import PyWindMover
 from gnome.movers.py_current_movers import PyCurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
-from gnome.environment.vector_field import ice_field
 import gnome.utilities.profiledeco as pd
 from gnome.environment.environment_objects import IceVelocity
 
@@ -104,10 +103,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'loading entire current data'
     ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
                                                  grid_topology=gt)
-    
+
 #     env1 = get_env_from_netCDF(filename)
 #     mov = PyCurrentMover.from_netCDF(filename)
-    
+
     ice_aware_curr.ice_velocity.variables[0].dimension_ordering = ['time', 'x', 'y']
     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
                                               ice_velocity=ice_aware_curr.ice_velocity,

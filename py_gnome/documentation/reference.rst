@@ -137,39 +137,41 @@ model run and in subsequent steps the model moves and weathers elements.
     :members:
     :inherited-members:
 
-``gnome.environment.property`` -- PyGnome implemented property classes
+``gnome.environment.environment_objects`` -- PyGnome implemented environment objects
 --------------------------------------------------------------------------------
-.. .. automodule:: gnome.environment.property
 
-.. autoclass:: IceConcentration
-    :members:
-    :show-inheritance:
-
+.. .. automodule:: gnome.environment.environment_objects
 
 .. autoclass:: GridCurrent
-    :members:
+    :members: from_netCDF, at
     :show-inheritance:
-
+    :inherited-members: from_netCDF, at
+    :undoc-members: default_names
 
 .. autoclass:: GridWind
     :members:
     :show-inheritance:
+    :undoc-members: default_names
 
 .. autoclass:: IceConcentration
     :members:
     :show-inheritance:
+    :undoc-members: default_names
 
 .. autoclass:: GridTemperature
     :members:
     :show-inheritance:
+    :undoc-members: default_names
 
 .. autoclass:: IceAwareCurrent
     :members:
     :show-inheritance:
+    :undoc-members: default_names
 
 .. autoclass:: IceAwareWind
     :members:
     :show-inheritance:
+    :undoc-members: default_names
 
 .. autoclass:: TemperatureTS
     :members:
@@ -177,26 +179,17 @@ model run and in subsequent steps the model moves and weathers elements.
 
 
 
-``gnome.environment.property`` -- PyGnome abstract property classes
+``gnome.environment.grid_property`` -- PyGnome base environment objects
 ---------------------------------------------------------------------
-.. automodule:: gnome.environment.property
-.. autoclass:: EnvProp
-    :members:
-.. autoclass:: VectorProp
-    :members:
 .. autoclass:: Time
     :members:
 .. automodule:: gnome.environment.grid_property
 .. autoclass:: GriddedProp
-    :members:
-    :private-members: _gen_varname
+    :members: at, from_netCDF
     :show-inheritance:
-    :inherited-members:
 .. autoclass:: GridVectorProp
-    :members:
-    :private-members: _gen_varnames
+    :members: at, from_netCDF
     :show-inheritance:
-    :inherited-members:
 .. automodule:: gnome.environment.ts_property
 .. autoclass:: TimeSeriesProp
     :members:

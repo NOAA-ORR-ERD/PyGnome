@@ -33,7 +33,7 @@ class Environment(object):
     This is primarily to define a dtype such that the OrderedCollection
     defined in the Model object requires it.
     """
-    
+
     _subclasses = []
     _state = copy.deepcopy(serializable.Serializable._state)
 
@@ -328,7 +328,7 @@ def env_from_netCDF(filename=None, dataset=None, grid_file=None, data_file=None,
     instantiating another. This function tries ALL gridded types by default. This means if a particular
     subclass of object is possible to be built, it is likely that all it's parents will be built and included
     as well.
-    
+
     If you wish to limit the types of environment objects that will be used, pass a list of the types
     using "_cls_list" kwarg'''
     def attempt_from_netCDF(cls, **klskwargs):
@@ -416,3 +416,26 @@ def ice_env_from_netCDF(filename=None, **kwargs):
 #                         'ice_aware' in c._ref_as):
 #                     ice_cls_list.append(c)
     return env_from_netCDF(filename=filename, _cls_list=ice_cls_list, **kwargs)
+
+
+def get_file_analysis(filename):
+    from gnome.utilities.file_tools.data_helpers import _get_dataset
+
+    def grid_detection_report(filename):
+        from gnome.environment.grid import PyGrid
+        topo = PyGrid._find_topology_var(filename)
+        report = ['Grid report:']
+        if topo is None:
+            report.append('    A standard grid topology was not found in the file')
+            report.append('    topology breakdown future feature')
+        else:
+            report.append('    A grid topology was found in the file: {0}'.format(topo))
+        return report
+
+    env = env_from_netCDF(filename=filename)
+    classes = copy.copy(Environment._subclasses)
+    if len(env) > 0:
+        report = ['Can create {0} types of environment objects'.format(len([env.__class__ for e in env]))]
+        report.append('Types are: {0}'.format(str([e.__class__ for e in env])))
+    report = report + grid_detection_report(filename)
+    return report

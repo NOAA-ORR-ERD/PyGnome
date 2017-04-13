@@ -14,6 +14,7 @@ Contents
   installing
   structure
   scripting
+  env_obj
   customizing
   logging
   serialization

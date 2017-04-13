@@ -105,7 +105,7 @@ class PyGrid(Serializable):
         '''
         This function is the top level 'search for attributes' function. If there are any
         common attributes to all potential grid types, they will be sought here.
-        
+
         This function returns a dict, which maps an attribute name to a netCDF4
         Variable or numpy array object extracted from the dataset. When called from
         PyGrid_U or PyGrid_S, this function should provide all the kwargs needed to
@@ -251,6 +251,23 @@ class PyGrid(Serializable):
                 self.filename = saveloc
         return super(PyGrid, self).save(saveloc, references, name)
 
+    def draw_to_plot(self, plt, features=None, style=None):
+        def_style = {'node': {'color': 'green',
+                               'linestyle': 'dashed',
+                               'marker': 'o'},
+                     'center': {'color': 'blue',
+                                 'linestyle': 'solid'},
+                     'edge1': {'color': 'purple'},
+                     'edge2': {'color': 'olive'}}
+        if features is None:
+            features = ['node']
+        if style is None:
+            style=def_style
+        for f in features:
+            s = style['f']
+            lon, lat = self._get_grid_attrs(f)
+            plt.plot(lon, lat, *s)
+            plt.plot(lon.T, lat.T, *s)
 
 class PyGrid_U(PyGrid, pyugrid.UGrid):
 
@@ -278,6 +295,17 @@ class PyGrid_U(PyGrid, pyugrid.UGrid):
             return init_args, gf_vars
         else:
             raise ValueError('Unable to find faces variable')
+
+    def draw_to_plot(self, ax, features=None, style=None):
+        import matplotlib
+        def_style = {'color': 'blue',
+                     'linestyle': 'solid'}
+        s = def_style.copy()
+        if style is not None:
+            s.update(style)
+        lines = self.get_lines()
+        lines = matplotlib.collections.LineCollection(lines, **s)
+        ax.add_collection(lines)
 
 
 class PyGrid_S(PyGrid, pysgrid.SGrid):
@@ -313,6 +341,25 @@ class PyGrid_S(PyGrid, pysgrid.SGrid):
                     init_args[n] = gf_vars[v][:]
         return init_args, gf_vars
 
+    def draw_to_plot(self, ax, features=None, style=None):
+        def_style = {'node': {'color': 'green',
+                              'linestyle': 'dashed',
+                              'marker': 'o'},
+                     'center': {'color': 'blue',
+                                'linestyle': 'solid'},
+                     'edge1': {'color': 'purple'},
+                     'edge2': {'color': 'olive'}}
+        if features is None:
+            features = ['node']
+        st = def_style.copy()
+        if style is not None:
+            for k in style.keys():
+                st[k].update(style[k])
+        for f in features:
+            s = st[f]
+            lon, lat = self._get_grid_vars(f)
+            ax.plot(lon, lat, **s)
+            ax.plot(lon.T, lat.T, **s)
 
 class GridSchema(base_schema.ObjType):
     name = 'grid'
@@ -443,5 +490,3 @@ class Grid(Environment, Serializable):
         _to_dict = schema.deserialize(json_)
 
         return _to_dict
-
-
