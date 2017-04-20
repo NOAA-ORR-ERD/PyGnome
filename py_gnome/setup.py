@@ -494,7 +494,7 @@ setup(name='pyGnome',
                    "might follow in or on a body of water, such as in an "
                    "oil spill.\n\n"
                    "It can also be used as a customizable general particle tracking code"),
-      license= "Public Domain"
+      license="Public Domain",
       keywords="oilspill modeling particle_tracking",
       url="https://github.com/NOAA-ORR-ERD/PyGnome"
       )
