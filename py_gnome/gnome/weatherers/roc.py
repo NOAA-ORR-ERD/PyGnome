@@ -542,6 +542,7 @@ class Disperse(Response):
 
     _state = copy.deepcopy(Response._state)
 
+    _state += [Field(k, save=True, update=True) for k in _attr.keys()]
     _state += [Field('units', save=True, update=True),
                Field('disp_oil_ratio', save=True, update=True),
                Field('disp_eff', save=True, update=True),
