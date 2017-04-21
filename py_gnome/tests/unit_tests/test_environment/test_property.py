@@ -44,7 +44,7 @@ tri_ring = nc.Dataset(tri_ring)
 class TestTime:
     time_var = circular_3D['time']
     time_arr = nc.num2date(time_var[:], units=time_var.units)
-    
+
     def test_construction(self):
 
         t1 = Time(TestTime.time_var)
@@ -229,40 +229,40 @@ class TestTSprop:
         assert (u.at(corners, t5, extrapolate=True) == np.array([10])).all()
 
 # class TestTSVectorProp:
-# 
+#
 #     def test_construction(self, u, v):
 #         vp = None
 #         vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data, v_data])
 #         pytest.set_trace()
 #         assert vp.variables[0].data == u_data
-# 
+#
 #         # 3 components
 #         vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data, v_data, u_data])
-# 
+#
 #         # Using TimeSeriesProp
 #         vp = TSVectorProp(name='vp', variables=[u, v])
 #         assert vp.time == vp.variables[0].time == vp.variables[1].time
-# 
+#
 #         # SHORT TIME
 #         with pytest.raises(ValueError):
 #             vp = TSVectorProp(name='vp', units='m/s', time=dates, variables=[u_data, v_data])
-# 
+#
 #         # DIFFERENT LENGTH VARS
 #         with pytest.raises(ValueError):
 #             vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[s_data, v_data])
-# 
+#
 #         # UNSUPPORTED UNITS
 #         with pytest.raises(ValueError):
 #             vp = TSVectorProp(name='vp', units='km/s', time=dates2, variables=[s_data, v_data, u_data])
-# 
+#
 #     def test_unit_conversion(self, vp):
 #         nvp = vp.in_units('km/hr')
 #         assert round(nvp.variables[0].data[0], 2) == 7.2
-# 
+#
 #         with pytest.raises(unit_conversion.NotSupportedUnitError):
 #             # mismatched data and dates length
 #             nvp = vp.in_units('nm/hr')
-# 
+#
 #         assert nvp != vp
 #         assert all(nvp.variables[0].data != vp.variables[0].data)
 
@@ -270,40 +270,40 @@ class TestTSprop:
 #         print u_data
 #         vp.variables = [u_data, v_data, u_data]
 #         assert (vp._variables[0].data == u_data).all()
-# 
+#
 #         with pytest.raises(ValueError):
 #             # mismatched data and time length
 #             vp.variables = [[5], [6], [7]]
-# 
+#
 #     def test_set_attr(self, vp):
-# 
+#
 #         # mismatched data and time length
 #         with pytest.raises(ValueError):
 #             vp.set_attr(time=dates2, variables=[s_data, s_data])
-# 
+#
 #         vp.set_attr(name='vp1')
 #         assert vp.name == 'vp1'
-# 
+#
 #         with pytest.raises(ValueError):
 #             vp.set_attr(time=dates, variables=[u_data, v_data])
-# 
+#
 #         vp.set_attr(time=dates, variables=[s_data, s_data])
 #         assert vp.variables[0].data[0] == 20
-# 
+#
 #         vp.set_attr(variables=[[50, 60, 70], s_data])
 #         assert vp.variables[0].data[0] == 50
-# 
+#
 #         vp.set_attr(time=[datetime.datetime(2000, 1, 3, 1),
 #                          datetime.datetime(2000, 1, 3, 2),
 #                          datetime.datetime(2000, 1, 3, 3)])
-# 
+#
 #         vp.set_attr(units='km/hr')
-# 
+#
 #         assert vp.units == 'km/hr'
-# 
+#
 #         with pytest.raises(ValueError):
 #             vp.set_attr(units='nm/hr')
-# 
+#
 #     def test_at(self, vp):
 #         corners = np.array(((1, 1, 0), (2, 2, 0)))
 #         t1 = dt.datetime(1999, 12, 31, 23)
@@ -311,18 +311,18 @@ class TestTSprop:
 #         t3 = dt.datetime(2000, 1, 1, 1)
 #         t4 = dt.datetime(2000, 1, 1, 8)
 #         t5 = dt.datetime(2000, 1, 1, 9)
-# 
+#
 #         # No extrapolation. out of bounds time should fail
 #         with pytest.raises(ValueError):
 #             vp.at(corners, t1)
-# 
+#
 #         print vp.name
 #         assert (vp.at(corners, t2) == np.array([2, 5])).all()
 #         assert (vp.at(corners, t3) == np.array([3, 6])).all()
 #         assert (vp.at(corners, t4) == np.array([10, 13])).all()
 #         with pytest.raises(ValueError):
 #             vp.at(corners, t5)
-# 
+#
 #         # turn extrapolation on
 #         assert (vp.at(corners, t1, extrapolate=True) == np.array([2, 5])).all()
 #         assert (vp.at(corners, t5, extrapolate=True) == np.array([10, 13])).all()
@@ -396,13 +396,14 @@ class TestGriddedProp:
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
         u = GriddedProp.from_netCDF(filename=curr_file, varname='u_rho')
         v = GriddedProp.from_netCDF(filename=curr_file, varname='v_rho')
-        
+
         points = np.array(([0, 0, 0], [np.pi, 1, 0], [2 * np.pi, 0, 0]))
         time = datetime.datetime.now()
-        
+
         assert all(u.at(points, time) == [1, 1, 1])
         print np.cos(points[:, 0] / 2) / 2
         assert all(np.isclose(v.at(points, time), np.cos(points[:, 0] / 2) / 2))
+
 
 class TestGridVectorProp:
 
@@ -415,16 +416,46 @@ class TestGridVectorProp:
         assert gvp.units == 'm/s'
         assert gvp.varnames[0] == 'u_rho'
 #         pytest.set_trace()
-        
+
     def test_at(self):
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
         gvp = GridVectorProp.from_netCDF(filename=curr_file,
                                          varnames=['u_rho', 'v_rho'])
         points = np.array(([0, 0, 0], [np.pi, 1, 0], [2 * np.pi, 0, 0]))
         time = datetime.datetime.now()
-        
+
         assert all(np.isclose(gvp.at(points, time)[:, 1], np.cos(points[:, 0] / 2) / 2))
 
+    def test_gen_varnames(self):
+        import netCDF4 as nc4
+        from gnome.environment import GridCurrent, GridWind, IceVelocity
+        ds = nc4.Dataset('testname', 'w', diskless=True, persist=False)
+        ds.createDimension('y', 5)
+        ds.createDimension('x', 5)
+        ds.createVariable('x', 'f8', dimensions=('x', 'y'))
+        ds['x'].standard_name = 'eastward_sea_water_velocity'
+        ds.createVariable('y', 'f8', dimensions=('x', 'y'))
+        ds['y'].standard_name = 'northward_sea_water_velocity'
+        ds.createVariable('xw', 'f8', dimensions=('x', 'y'))
+        ds['xw'].long_name = 'eastward_wind'
+        ds.createVariable('yw', 'f8', dimensions=('x', 'y'))
+        ds['yw'].long_name = 'northward_wind'
+        ds.createVariable('ice_u', 'f8', dimensions=('x', 'y'))
+        ds.createVariable('ice_v', 'f8', dimensions=('x', 'y'))
+        names = GridCurrent._gen_varnames(dataset=ds)
+        assert names[0] == names.u == 'x'
+        assert names[1] == names.v == 'y'
+        names = GridWind._gen_varnames(dataset=ds)
+        assert names[0] == names.u == 'xw'
+        assert names[1] == names.v == 'yw'
+        names = IceVelocity._gen_varnames(dataset=ds)
+        assert names[0] == names.u == 'ice_u'
+        assert names[1] == names.v == 'ice_v'
+
+        curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
+        gc = GridCurrent.from_netCDF(filename=curr_file)
+        assert gc.u == gc.variables[0]
+        assert gc.varnames[0] == 'u'
 
 if __name__ == "__main__":
     pass

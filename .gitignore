@@ -26,7 +26,7 @@ py_gnome/gnome/pyGnome.egg-info/*
 py_gnome/documentation/_build/
 
 # ignore sphinx built docs
-py_gnome_documentation/_build/
+py_gnome/documentation/_build/
 
 # ignore built documention in WebGNOME
 web/gnome/webgnome/doc/_build/*
