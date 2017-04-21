@@ -531,7 +531,7 @@ class GridCurrent(VelocityGrid, Environment):
 
         value = super(GridCurrent, self).at(points, time, units, extrapolate=extrapolate, **kwargs)
         if self.angle is not None:
-            angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs)
+            angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs).reshape(-1)
             x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
             y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
             value[:, 0] = x
@@ -591,7 +591,7 @@ class GridWind(VelocityGrid, Environment):
         value = super(GridWind, self).at(points, time, units, extrapolate=extrapolate, **kwargs)
         value[points[:, 2] > 0.0] = 0  # no wind underwater!
         if self.angle is not None:
-            angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs)
+            angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs).reshape(-1)
             x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
             y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
             value[:, 0] = x
