@@ -25,7 +25,7 @@ using std::cout;
 #ifndef pyGNOME
 IceMover_c::IceMover_c (TMap *owner, char *name) : GridCurrentMover_c(owner, name), CurrentMover_c(owner, name)
 {
-	timeGrid = 0;
+	//timeGrid = 0;
 	memset(&fUncertainParams,0,sizeof(fUncertainParams));
 	//fArrowScale = 1.;
 	//fArrowDepth = 0;
@@ -111,12 +111,12 @@ IceMover_c::IceMover_c () : GridCurrentMover_c()
 
 void IceMover_c::Dispose ()
 {
-	if (timeGrid)
+	/*if (timeGrid)
 	{
 		timeGrid -> Dispose();
 		delete timeGrid;	// this causes a crash...
 		timeGrid = nil;
-	}
+	}*/
 	
 	GridCurrentMover_c::Dispose ();
 }
