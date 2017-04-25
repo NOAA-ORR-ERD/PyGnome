@@ -341,6 +341,16 @@ def test_serialize_deserialize():
     assert n_et == et
 
 
+def test_standard_density():
+    et = floating()
+    dict_ = et.serialize()
+    assert dict_['standard_density'] == 1000
+
+    et = floating(substance=oil)
+    dict_ = et.serialize()
+    assert dict_['standard_density'] == et.substance.density_at_temp(288.15)
+
+
 @pytest.mark.parametrize(("test_obj"), test_l)
 def test_save_load(saveloc_, test_obj):
     '''

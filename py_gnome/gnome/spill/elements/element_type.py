@@ -26,9 +26,9 @@ import unit_conversion as uc
 
 class ElementType(Serializable):
     _state = copy.deepcopy(Serializable._state)
-    _state.add(save=['initializers'],
-               update=['initializers'])
-    _state += Field('substance', save=True, update=True, test_for_eq=False)
+    _state += [Field('substance', save=True, update=True, test_for_eq=False),
+               Field('initializers', save=True, update=True),
+               Field('standard_density', update=True, read=True)]
     _schema = base_schema.ObjType
 
     def __init__(self, initializers=[], substance=None):
@@ -150,6 +150,14 @@ class ElementType(Serializable):
         self.logger.warning(msg)
         raise AttributeError(msg)
 
+    @property
+    def standard_density(self):
+        if self.substance is None:
+            return 1000
+        elif hasattr(self.substance, 'standard_density'):
+            return self.substance.standard_density
+        else:
+            return self.substance.density_at_temp(288.15)
 
     def contains_object(self, obj_id):
         for o in self.initializers:
@@ -288,6 +296,7 @@ class ElementType(Serializable):
         et_json_['initializers'] = s_init
         if 'substance' in dict_:
             et_json_['substance'] = dict_['substance']
+        et_json_['standard_density'] = self.standard_density
 
         return et_json_
 

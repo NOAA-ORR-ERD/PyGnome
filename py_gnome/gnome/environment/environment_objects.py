@@ -25,18 +25,38 @@ from gnome.utilities.file_tools.data_helpers import _get_dataset
 
 
 class Depth(object):
+    """Basic object that represents the vertical dimension
+
+    This is the base class of all depth axis representations. It provides
+    the minimum functionality that will allow environment objects to 'overlook'
+    a depth dimension and only look at a single vertical layer of data.
+    """
 
     def __init__(self,
                  surface_index=-1):
+        """
+        :param surface_index: Integer index of a layer of data meant to represent the ocean surface (z=0)
+        :type surface_index: int
+        """
         self.surface_index = surface_index
         self.bottom_index = surface_index
 
     @classmethod
     def from_netCDF(cls,
                     surface_index=-1):
+        """
+        :param surface_index: Integer index of a layer of data meant to represent the ocean surface (z=0)
+        :type surface_index: int
+        """
         return cls(surface_index)
 
     def interpolation_alphas(self, points, data_shape, _hash=None):
+        """
+        :param points: 3D points in the world (lon, lat, z(meters))
+        :type points: Nx3 array of floats
+        :param data_shape: shape of data being represented by parent object
+        :type data_shape: iterable
+        """
         return None, None
 
 
@@ -267,21 +287,30 @@ class VelocityTS(TSVectorProp):
 
 class VelocityGrid(GridVectorProp):
 
-    def __init__(self, **kwargs):
+    comp_order = ['u', 'v', 'w']
+
+    def __init__(self, angle=None, **kwargs):
+        """
+        :param angle: scalar field of cell rotation angles (for rotated/distorted grids)
+        """
         if 'variables' in kwargs:
             variables = kwargs['variables']
             if len(variables) == 2:
                 variables.append(TimeSeriesProp(name='constant w', data=[0.0], time=Time.constant_time(), units='m/s'))
             kwargs['variables'] = variables
-        self.angle = None
-        df = None
-        if kwargs.get('dataset', None) is not None:
-            df = kwargs['dataset']
-        elif kwargs.get('grid_file', None) is not None:
-            df = _get_dataset(kwargs['grid_file'])
-        if df is not None and 'angle' in df.variables.keys():
-            # Unrotated ROMS Grid!
-            self.angle = GriddedProp(name='angle', units='radians', time=None, grid=kwargs['grid'], data=df['angle'])
+        if angle is None:
+            df = None
+            if kwargs.get('dataset', None) is not None:
+                df = kwargs['dataset']
+            elif kwargs.get('grid_file', None) is not None:
+                df = _get_dataset(kwargs['grid_file'])
+            if df is not None and 'angle' in df.variables.keys():
+                # Unrotated ROMS Grid!
+                self.angle = GriddedProp(name='angle', units='radians', time=None, grid=kwargs['grid'], data=df['angle'])
+            else:
+                self.angle = None
+        else:
+            self.angle = angle
         super(VelocityGrid, self).__init__(**kwargs)
 
     def __eq__(self, o):
@@ -399,6 +428,8 @@ class TemperatureTS(TimeSeriesProp, Environment):
 class GridTemperature(GriddedProp, Environment):
     default_names = ['water_t', 'temp']
 
+    cf_names = ['sea_water_temperature', 'sea_surface_temperature']
+
 
 class SalinityTS(TimeSeriesProp, Environment):
 
@@ -412,6 +443,8 @@ class SalinityTS(TimeSeriesProp, Environment):
 
 class GridSalinity(GriddedProp, Environment):
     default_names = ['salt']
+
+    cf_names = ['sea_water_salinity', 'sea_surface_salinity']
 
 
 class WaterDensityTS(TimeSeriesProp, Environment):
@@ -438,6 +471,7 @@ class GridSediment(GriddedProp, Environment):
 class IceConcentration(GriddedProp, Environment):
     _ref_as = ['ice_concentration', 'ice_aware']
     default_names = ['ice_fraction', ]
+    cf_names = ['sea_ice_area_fraction']
 
     def __init__(self, *args, **kwargs):
         super(IceConcentration, self).__init__(*args, **kwargs)
@@ -453,17 +487,18 @@ class IceConcentration(GriddedProp, Environment):
 
 class Bathymetry(GriddedProp):
     default_names = ['h']
+    cf_names = ['depth']
 
 
 class GridCurrent(VelocityGrid, Environment):
     _ref_as = 'current'
 
-    default_names = [['u', 'v', 'w'],
-                     ['U', 'V', 'W'],
-                     ['u', 'v'],
-                     ['U', 'V'],
-                     ['water_u', 'water_v'],
-                     ['curr_ucmp', 'curr_vcmp']]
+    default_names = {'u': ['u', 'U', 'water_u', 'curr_ucmp'],
+                     'v': ['v', 'V', 'water_v', 'curr_vcmp'],
+                     'w': ['w', 'W']}
+    cf_names = {'u': ['eastward_sea_water_velocity'],
+                'v': ['northward_sea_water_velocity'],
+                'w': ['upward_sea_water_velocity']}
 
     def at(self, points, time, units=None, extrapolate=False, **kwargs):
         '''
@@ -496,7 +531,7 @@ class GridCurrent(VelocityGrid, Environment):
 
         value = super(GridCurrent, self).at(points, time, units, extrapolate=extrapolate, **kwargs)
         if self.angle is not None:
-            angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs)
+            angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs).reshape(-1)
             x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
             y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
             value[:, 0] = x
@@ -510,7 +545,12 @@ class GridCurrent(VelocityGrid, Environment):
 class GridWind(VelocityGrid, Environment):
 
     _ref_as = 'wind'
-    default_names = [['air_u', 'air_v'], ['Air_U', 'Air_V'], ['air_ucmp', 'air_vcmp'], ['wind_u', 'wind_v']]
+
+    default_names = {'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u'],
+                     'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v']}
+
+    cf_names = {'u': ['eastward_wind'],
+                'v': ['northward_wind']}
 
     def __init__(self, wet_dry_mask=None, *args, **kwargs):
         super(GridWind, self).__init__(*args, **kwargs)
@@ -551,7 +591,7 @@ class GridWind(VelocityGrid, Environment):
         value = super(GridWind, self).at(points, time, units, extrapolate=extrapolate, **kwargs)
         value[points[:, 2] > 0.0] = 0  # no wind underwater!
         if self.angle is not None:
-            angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs)
+            angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs).reshape(-1)
             x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
             y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
             value[:, 0] = x
@@ -598,10 +638,13 @@ class LandMask(GriddedProp):
         return value
 
 
-
 class IceVelocity(VelocityGrid, Environment):
     _ref_as = ['ice_velocity', 'ice_aware']
-    default_names = [['ice_u', 'ice_v', ], ]
+    default_names = {'u': ['ice_u'],
+                     'v': ['ice_v']}
+
+    cf_names = {'u': ['eastward_sea_ice_velocity'],
+                'v': ['northward_sea_ice_velocity']}
 
 
 class IceAwarePropSchema(GridVectorPropSchema):
@@ -714,15 +757,3 @@ class IceAwareWind(GridWind):
             return vels
         else:
             return super(IceAwareWind, self).at(points, time, units, extrapolate, **kwargs)
-
-def load_all_from_netCDF(filename=None,
-                         grid_topology=None,
-                         name=None,
-                         time=None,
-                         grid=None,
-                         depth=None,
-                         dataset=None,
-                         data_file=None,
-                         grid_file=None,
-                         **kwargs):
-    pass

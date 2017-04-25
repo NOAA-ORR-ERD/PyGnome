@@ -78,6 +78,6 @@ Considering locate_points and interpolation_alphas are much more computationally
 a dramatic performance gain for even N=2
 
 
-Insert Link to demonstrations here
+:ref:`env_obj/examples.ipynb#Demonstration-of-component-sharing`
 
    

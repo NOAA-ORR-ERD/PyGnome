@@ -20,7 +20,6 @@ Contents
   serialization
   units
   reference
-  env_obj/examples
   
 
 Indices and tables

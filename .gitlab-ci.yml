@@ -14,7 +14,7 @@ before_script:
   - conda install --file conda_requirements.txt
 
   - cd ./py_gnome
-  - python ./setup.py develop
+  - python ./setup.py install
 
 master:
   script:

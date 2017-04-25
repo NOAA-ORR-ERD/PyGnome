@@ -239,6 +239,7 @@ class PlatformSchema(base_schema.ObjType):
         units.missing = drop
         units.name = 'units'
         self.add(units)
+        self.add(SchemaNode(String(), name="type", missing=drop))
         super(PlatformSchema, self).__init__()
 
 
@@ -292,9 +293,11 @@ class Platform(Serializable):
 
     _state += [Field(k, save=True, update=True) for k in _attr.keys()]
     _state += [Field('units', save=True, update=True)]
+    _state += [Field('type', save=True, update=True)]
 
     def __init__(self,
                  units=None,
+                 type='Platform',
                  **kwargs):
 
         if '_name' in kwargs.keys():
@@ -302,6 +305,7 @@ class Platform(Serializable):
         if units is None:
             units = dict([(k, v[0]) for k, v in self._attr.items()])
         self.units = units
+        self.type = type
         for k in Platform._attr.keys():
             setattr(self, k, kwargs.get(k, None))
 
@@ -538,6 +542,7 @@ class Disperse(Response):
 
     _state = copy.deepcopy(Response._state)
 
+    _state += [Field(k, save=True, update=True) for k in _attr.keys()]
     _state += [Field('units', save=True, update=True),
                Field('disp_oil_ratio', save=True, update=True),
                Field('disp_eff', save=True, update=True),
@@ -659,7 +664,16 @@ class Disperse(Response):
         self.oil_treated_this_timestep = 0
         if 'systems' not in sc.mass_balance:
             sc.mass_balance['systems'] = {}
-        sc.mass_balance['systems'][self.id] = 0.0
+        sc.mass_balance['systems'][self.id] = {
+            'time_spraying': 0.0,
+            'dispersed': 0.0,
+            'payloads_delivered': 0,
+            'dispersant_applied': 0.0,
+            'oil_treated': 0.0,
+            'area_covered': 0.0
+        }
+
+        self._payloads_delivered = 0
 
     def dosage_from_thickness(self, sc):
         thickness = self._get_thickness(sc) # inches
@@ -970,6 +984,7 @@ class Disperse(Response):
 
             elif 'disperse' in self.cur_state:
                 pass_dur = datetime.timedelta(seconds=self.platform.pass_duration_tuple(self.pass_length, self.pass_type)[1])
+                self._time_spraying = pass_dur.seconds
                 time_left_in_pass = self._next_state_time - model_time
                 spray_time = min(self._time_remaining, time_left_in_pass)
                 if self.dosage_type == 'auto':
@@ -982,7 +997,6 @@ class Disperse(Response):
                 oil_avail = self.dispersable_oil_amount(sc, 'kg')
                 self.report.append((model_time, 'Oil available: ' + str(oil_avail) + '  Treatable mass: ' + str(mass_treatable) + '  Dispersant Sprayed: ' + str(disp_actual)))
                 self.report.append((model_time, 'Sprayed ' + str(disp_actual) + 'm^3 dispersant in ' + str(spray_time) + ' seconds on ' + str(oil_avail) + ' kg of oil'))
-                print self.report[-1]
                 self._time_remaining -= spray_time
                 self._disp_sprayed_this_timestep += disp_actual
                 self._remaining_dispersant -= disp_actual
@@ -1006,7 +1020,6 @@ class Disperse(Response):
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Returned to base'))
-                    print self.report[-1]
                     refuel_reload = datetime.timedelta(seconds=self.platform.refuel_reload(simul=self.loading_type))
                     self._next_state_time = model_time + refuel_reload
                     self.cur_state = 'refuel_reload'
@@ -1043,6 +1056,7 @@ class Disperse(Response):
         self._cur_pass_num = 1
         self._disp_sprayed_this_timestep = 0
         self.cur_state = 'rtb'
+        self._payloads_delivered += 1
 
     def update_time(self, time_remaining, model_time, time_step):
         if time_remaining > datetime.timedelta(seconds=0):
@@ -1083,7 +1097,11 @@ class Disperse(Response):
             print 'index, original mass, removed mass, final mass'
             masstab = np.column_stack((idxs, org_mass, mass_to_remove, sc['mass'][idxs]))
             sc.mass_balance['chem_dispersed'] += sum(removed)
-            sc.mass_balance['systems'][self.id] += sum(removed)
+            sc.mass_balance['systems'][self.id]['dispersed'] += sum(removed)
+            sc.mass_balance['systems'][self.id]['area_covered'] += self._area_sprayed_this_ts
+            sc.mass_balance['systems'][self.id]['dispersant_applied'] += self._disp_sprayed_this_timestep
+            sc.mass_balance['systems'][self.id]['oil_treated'] += self.oil_treated_this_timestep
+            sc.mass_balance['systems'][self.id]['payloads_delivered']
             sc.mass_balance['floating'] -= sum(removed)
             zero_or_disp = np.isclose(sc['mass'][idxs], 0)
             new_status = sc['fate_status'][idxs]
