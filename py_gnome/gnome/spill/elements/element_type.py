@@ -26,9 +26,9 @@ import unit_conversion as uc
 
 class ElementType(Serializable):
     _state = copy.deepcopy(Serializable._state)
-    _state.add(save=['initializers'],
-               update=['initializers'])
-    _state += Field('substance', save=True, update=True, test_for_eq=False)
+    _state += [Field('substance', save=True, update=True, test_for_eq=False),
+               Field('initializers', save=True, update=True),
+               Field('standard_density', update=True, read=True)]
     _schema = base_schema.ObjType
 
     def __init__(self, initializers=[], substance=None):
@@ -76,29 +76,6 @@ class ElementType(Serializable):
                 'substance={0.substance!r}'
                 ')'.format(self))
 
-    # def __getattr__(self, att):
-    #     """
-    #     delegates some attribute access to the element types.
-
-    #     .. todo::
-    #         There is an issue in that if two initializers have the same
-    #         property - could be the case if they both define a 'distribution',
-    #         then it does not know which one to return
-    #     """
-    #     for initr in self.initializers:
-    #         try:
-    #             return getattr(initr, att)
-    #         except AttributeError:
-    #             pass
-
-    #     # nothing returned, then attribute was not found
-    #     msg = ('{0} attribute does not exist in element_type or initializers'
-    #            .format(att))
-    #     # NOTE: this would get trigggered by a a hasattr() call --
-    #     #       which isn't something we need to log
-    #     ## self.logger.warning(msg)
-    #     raise AttributeError(msg)
-
     # properties for attributes the need to be pulled from initializers
     @property
     def windage_range(self):
@@ -111,6 +88,7 @@ class ElementType(Serializable):
 
         self.logger.warning(msg)
         raise AttributeError(msg)
+
     @windage_range.setter
     def windage_range(self, wr):
         print self.initializers
@@ -136,6 +114,7 @@ class ElementType(Serializable):
 
         self.logger.warning(msg)
         raise AttributeError(msg)
+
     @windage_persist.setter
     def windage_persist(self, wp):
         print self.initializers
@@ -150,6 +129,19 @@ class ElementType(Serializable):
         self.logger.warning(msg)
         raise AttributeError(msg)
 
+    @property
+    def standard_density(self):
+        '''
+            Get the substance's standard density if it exists, otherwise
+            default to 1000.0 kg/m^3.
+            Any valid substance object needs to have a property named
+            standard_density.
+        '''
+        if (self.substance is not None and
+                hasattr(self.substance, 'standard_density')):
+            return self.substance.standard_density
+        else:
+            return 1000.0
 
     def contains_object(self, obj_id):
         for o in self.initializers:
@@ -288,6 +280,7 @@ class ElementType(Serializable):
         et_json_['initializers'] = s_init
         if 'substance' in dict_:
             et_json_['substance'] = dict_['substance']
+        et_json_['standard_density'] = self.standard_density
 
         return et_json_
 

@@ -6,6 +6,7 @@
 '''
 from .lee_huibers import LeeHuibers
 from .banerjee_huibers import BanerjeeHuibers
+from .huibers_lehr import HuibersLehr
 from .riazi import Riazi
 from .stokes import Stokes
 from .pierson_moskowitz import PiersonMoskowitz

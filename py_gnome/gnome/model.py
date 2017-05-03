@@ -9,7 +9,7 @@ import zipfile
 import numpy as np
 
 from colander import (SchemaNode,
-                      String, Float, Int, Bool,
+                      String, Float, Int, Bool, List,
                       drop, OneOf)
 
 from gnome.environment import Environment
@@ -52,6 +52,7 @@ class ModelSchema(ObjType):
     mode = SchemaNode(String(),
                       validator=OneOf(['gnome', 'adios', 'roc']),
                       missing=drop)
+    location = SchemaNode(List(), missing=drop)
 
     def __init__(self, json_='webapi', *args, **kwargs):
         '''
@@ -91,7 +92,8 @@ class Model(Serializable):
                'movers',
                'weatherers',
                'environment',
-               'outputters']
+               'outputters',
+               'location']
 
     _create = []
     _create.extend(_update)
@@ -201,7 +203,8 @@ class Model(Serializable):
                  uncertain=False,
                  cache_enabled=False,
                  name=None,
-                 mode=None):
+                 mode=None,
+                 location=[]):
         '''
         Initializes a model.
         All arguments have a default.
@@ -231,7 +234,7 @@ class Model(Serializable):
         '''
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
-                         uncertain, cache_enabled, map, name, mode)
+                         uncertain, cache_enabled, map, name, mode, location)
 
         self._register_callbacks()
 
@@ -254,7 +257,7 @@ class Model(Serializable):
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map,
-                    name, mode):
+                    name, mode, location):
         '''
         Take out initialization that does not register the callback here.
         This is because new_from_dict will use this to restore the model _state
@@ -310,6 +313,8 @@ class Model(Serializable):
         # model creates references to weatherers/environment if
         # make_default_refs is True
         self.make_default_refs = True
+
+        self.location = location
 
     def reset(self, **kwargs):
         '''

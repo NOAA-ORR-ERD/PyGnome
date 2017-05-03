@@ -2984,7 +2984,8 @@ done:
 	return fGridCellInfoH;
 }
 
-TimeGridWindIce_c::TimeGridWindIce_c () : TimeGridWindCurv_c(), TimeGridVel_c()
+//TimeGridWindIce_c::TimeGridWindIce_c () : TimeGridWindCurv_c(), TimeGridVel_c()
+TimeGridWindIce_c::TimeGridWindIce_c () : TimeGridWindCurv_c()
 {
 	memset(&fStartDataIce,0,sizeof(fStartDataIce));
 	fStartDataIce.timeIndex = UNASSIGNEDINDEX; 

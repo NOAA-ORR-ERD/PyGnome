@@ -680,19 +680,15 @@ class Spill(BaseSpill):
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
             # need to convert to mass
-            if self.element_type.substance is None:
-                # unspecified substance gets a density 1000 kg/m^3
-                rho = 1000.0
-            else:
                 # DO NOT change this back!
                 # for the UI to be consistent, the conversion needs to use standard
                 #  density -- not the current water temp.
                 # water_temp = self.water.get('temperature')
                 # ideally substance would have a "standard_density" attribute for this.
-                rho = self.element_type.substance.density_at_temp(288.15)
+            std_rho = self.element_type.standard_density
 
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = rho * vol
+            mass = std_rho * vol
         else:
             raise ValueError("{} is not a valid mass or Volume unit"
                              .format(self.units))
