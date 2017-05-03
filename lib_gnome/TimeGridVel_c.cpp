@@ -6818,7 +6818,8 @@ done:
 	return fGridCellInfoH;
 }
 
-TimeGridVelIce_c::TimeGridVelIce_c () : TimeGridVelCurv_c(), TimeGridVel_c()
+//TimeGridVelIce_c::TimeGridVelIce_c () : TimeGridVelCurv_c(), TimeGridVel_c()
+TimeGridVelIce_c::TimeGridVelIce_c () : TimeGridVelCurv_c()
 {
 	memset(&fStartDataIce,0,sizeof(fStartDataIce));
 	fStartDataIce.timeIndex = UNASSIGNEDINDEX; 
@@ -8301,7 +8302,8 @@ OSErr TimeGridVelIce_c::GetMovementVelocities(Seconds time, VelocityFRec *moveme
 	return err;
 }
 
-TimeGridVelTri_c::TimeGridVelTri_c () : TimeGridVelCurv_c(), TimeGridVel_c()
+//TimeGridVelTri_c::TimeGridVelTri_c () : TimeGridVelCurv_c(), TimeGridVel_c()
+TimeGridVelTri_c::TimeGridVelTri_c () : TimeGridVelCurv_c()
 {
 	fNumNodes = 0;
 	fNumEles = 0;

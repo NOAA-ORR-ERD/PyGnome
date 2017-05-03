@@ -38,7 +38,7 @@ IceWindMover_c::IceWindMover_c (TMap *owner, char *name) : GridWindMover_c(owner
 	fWindScale = 1.;
 	fArrowScale = 10.;
 	
-	timeGrid = 0;
+	//timeGrid = 0;
 	
 }
 #endif
@@ -57,12 +57,12 @@ IceWindMover_c::IceWindMover_c () : GridWindMover_c()
 
 void IceWindMover_c::Dispose ()
 {
-	if (timeGrid)
+	/*if (timeGrid)
 	{
 		timeGrid -> Dispose();
 		delete timeGrid;	// this causes a crash...
 		timeGrid = nil;
-	}
+	}*/
 	
 	GridWindMover_c::Dispose ();
 }

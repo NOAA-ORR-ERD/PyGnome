@@ -150,6 +150,8 @@ WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeS
 		depthAtPoint = GetDepthAtPoint(refPoint);
 		if (depthAtPoint <= 0) depthAtPoint = INFINITE_DEPTH;	// this should be taken care of in GetDepthAtPoint	
 		// if (depthAtPoint < eps) // should this be an error?
+		totalLEDepth = (*theLE).z+deltaPoint.z;
+
 		if ((*theLE).z<=mixedLayerDepth)
 		{
 			if (fVerticalDiffusionCoefficient==0) return deltaPoint;	
