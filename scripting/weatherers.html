@@ -181,7 +181,41 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="weatherers">
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast,
+.nboutput.nblast {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast + .nbinput {
+    margin-top: -19px;
+}
+
+/* nice headers on first paragraph of info/warning boxes */
+.admonition .first {
+    margin: -12px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
+    color: #fff;
+    line-height: 1;
+    display: block;
+}
+.admonition.warning .first {
+    background: #f0b37e;
+}
+.admonition.note .first {
+    background: #6ab0de;
+}
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+</style>
+<div class="section" id="weatherers">
 <h1>Weatherers<a class="headerlink" href="#weatherers" title="Permalink to this headline">¶</a></h1>
 <p>Processes that change the properties of the LEs are termed &#8220;weatherers&#8221; in GNOME.
 For example, evaporation reduces the mass of LEs that remain floating on the water surface,
@@ -190,8 +224,8 @@ while increasing their density and viscosity.</p>
 sedimentation, emulsification, and biodegredation. (Note: as of October 2015 many
 of these algorithms are still being implemented and refined &#8211; please contact GNOME developers for
 current status).</p>
-<p>Some examples and common use cases are shown here. For complete documentation see <a class="reference internal" href="../reference.html#module-gnome.weatherers" title="gnome.weatherers"><code class="xref py py-mod docutils literal"><span class="pre">gnome.weatherers</span></code></a> and
-<a class="reference internal" href="../reference.html#module-gnome.environment" title="gnome.environment"><code class="xref py py-mod docutils literal"><span class="pre">gnome.environment</span></code></a></p>
+<p>Some examples and common use cases are shown here. For complete documentation see <code class="xref py py-mod docutils literal"><span class="pre">gnome.weatherers</span></code> and
+<code class="xref py py-mod docutils literal"><span class="pre">gnome.environment</span></code></p>
 <div class="section" id="the-environment-class">
 <h2>The Environment Class<a class="headerlink" href="#the-environment-class" title="Permalink to this headline">¶</a></h2>
 <p>As weathering processes depend on a variety of environmental conditions (e.g. wind, waves, and water properties),
@@ -309,7 +343,7 @@ explicitly required but is needed by the Waves object. Adding on to our example 
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

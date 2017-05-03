@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Scripting utilities &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Glossary &mdash; pyGNOME 0.5.0 documentation</title>
   
 
   
@@ -35,10 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/>
-        <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
-        <link rel="next" title="Maps" href="maps.html"/>
-        <link rel="prev" title="Overview" href="scripting_intro.html"/> 
+    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -91,24 +88,11 @@
               
             
             
-              <ul class="current">
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../structure.html">GNOME Structure</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../scripting.html">Scripting pygnome</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="scripting_intro.html">Overview</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Scripting utilities</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#gnome-scripting"><code class="docutils literal"><span class="pre">gnome.scripting</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="maps.html">Maps</a></li>
-<li class="toctree-l2"><a class="reference internal" href="spills.html">Spills</a></li>
-<li class="toctree-l2"><a class="reference internal" href="movers.html">Movers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="weatherers.html">Weatherers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="outputters.html">Outputters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="scripting_examples.html">Examples</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="../scripting.html">Scripting pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -158,15 +142,13 @@
     
       <li><a href="../index.html">Docs</a> &raquo;</li>
         
-          <li><a href="../scripting.html">Scripting pygnome</a> &raquo;</li>
-        
-      <li>Scripting utilities</li>
+      <li>Glossary</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="../_sources/scripting/utilities.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/env_obj/glossary.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -213,16 +195,22 @@
     margin-right: 4px;  /* make room for the exclamation icon */
 }
 </style>
-<div class="section" id="scripting-utilities">
-<h1>Scripting utilities<a class="headerlink" href="#scripting-utilities" title="Permalink to this headline">¶</a></h1>
-<p>GNOME has a scripting module where many utilties and helper functions can be accessed to simplify
-common tasks. These include helper functions for easier creation of certain types of spills and movers.
-To use these functions import gnome.scripting</p>
-<p>NOTE: the scripting utilities are under active development as we determine which helper functions will
-be useful to make setting up and running pyGNOME easier.</p>
-<div class="section" id="gnome-scripting">
-<h2><code class="xref py py-mod docutils literal"><span class="pre">gnome.scripting</span></code><a class="headerlink" href="#gnome-scripting" title="Permalink to this headline">¶</a></h2>
-</div>
+<div class="section" id="glossary">
+<h1>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>Cells</dt>
+<dd>This is generally synonymous with faces, although it is not a term used in the code or API</dd>
+<dt>Faces</dt>
+<dd>A collection of group of integer indices that define the polygons of the grid. Generally used for unstructured triangular grids to describe the triangulation of the nodes.</dd>
+<dt>Grid</dt>
+<dd>A conceptual 2D surface that is represented by at minimum a collection of nodes and optionally collections of faces, edges, and/or neighbors.</dd>
+<dt>Gridded data</dt>
+<dd>Up to 4-dimensional data (time, depth, lon, lat) that shares the shape of the nodes or faces in the last dimension(s). For example, if the nodes have a shape of 100x100, and the data’s final two dimensions are also 100x100, the data can be referred to as being ‘on the nodes’ If the data has a shape of 99x99, it can be referred to as being ‘on the faces/centers’</dd>
+<dt>Grid topology</dt>
+<dd>Data that describes associations between parts of a grid and data structures. At minimum it must define what the nodes of a grid are if the grid is structured, and must define the nodes and faces of a grid if it is unstructured.</dd>
+<dt>Nodes</dt>
+<dd>A collection of 2D points which define the corners of the cells in a grid. Generally consists of two collections of variables, often referred to as ‘node_lon’ and ‘node_lat’</dd>
+</dl>
 </div>
 
 
@@ -232,15 +220,6 @@ be useful to make setting up and running pyGNOME easier.</p>
            </div>
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="maps.html" class="btn btn-neutral float-right" title="Maps" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="scripting_intro.html" class="btn btn-neutral" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>

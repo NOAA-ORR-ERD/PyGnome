@@ -182,7 +182,41 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="outputters">
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast,
+.nboutput.nblast {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast + .nbinput {
+    margin-top: -19px;
+}
+
+/* nice headers on first paragraph of info/warning boxes */
+.admonition .first {
+    margin: -12px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
+    color: #fff;
+    line-height: 1;
+    display: block;
+}
+.admonition.warning .first {
+    background: #f0b37e;
+}
+.admonition.note .first {
+    background: #6ab0de;
+}
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+</style>
+<div class="section" id="outputters">
 <h1>Outputters<a class="headerlink" href="#outputters" title="Permalink to this headline">¶</a></h1>
 <p>Outputters allow us to save our model run results. Options include saving images, netcdf, kmlz, and geoJSON formats.</p>
 <div class="section" id="the-outputter-api">
@@ -200,7 +234,7 @@
 <p><code class="docutils literal"><span class="pre">output_timestep</span></code> specifies when you want the output written &#8211; it defaults to every model timestep, but you may only want output every hour, or every 6 hours, or...</p>
 <p><code class="docutils literal"><span class="pre">output_zero_timestep</span></code> specified whether you want the zeroth timestep (before any elements have been moved or altered) output</p>
 <p><code class="docutils literal"><span class="pre">output_last_timestep</span></code> specifies whether you want the final timestep output, regardless of whether it lands on a the specified output_timestep.</p>
-<p>See <a class="reference internal" href="../reference.html#gnome.outputters.Outputter" title="gnome.outputters.Outputter"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.Outputter</span></code></a> for the full API.</p>
+<p>See <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.Outputter</span></code> for the full API.</p>
 </div>
 <div class="section" id="renderer">
 <h2>Renderer<a class="headerlink" href="#renderer" title="Permalink to this headline">¶</a></h2>
@@ -217,7 +251,7 @@
 <span class="n">model</span><span class="o">.</span><span class="n">outputters</span> <span class="o">+=</span> <span class="n">renderer</span>
 </pre></div>
 </div>
-<p>See <a class="reference internal" href="../reference.html#gnome.outputters.Renderer" title="gnome.outputters.Renderer"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.Renderer</span></code></a> for some additional parameters that can be passed to the renderer.</p>
+<p>See <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.Renderer</span></code> for some additional parameters that can be passed to the renderer.</p>
 </div>
 <div class="section" id="netcdf-output">
 <h2>NetCDF Output<a class="headerlink" href="#netcdf-output" title="Permalink to this headline">¶</a></h2>
@@ -247,7 +281,7 @@
 <p>in addition, you can specifically set exactly which data are output by altering the <code class="docutils literal"><span class="pre">.arrays_to_output</span></code> attribute of the outputter. It is a python set, and data array names can be added or removed before the model is run.</p>
 <p>The resulting netcdf files are in the &#8220;nc_particles&#8221; format. This format allows storage of arbitrary data associated with the elements, and different numbers of elements at each timestep. Code to read this format can be found here in the GnomeTools repository on gitHub:</p>
 <p><a class="reference external" href="https://github.com/NOAA-ORR-ERD/GnomeTools/blob/master/post_gnome/post_gnome/nc_particles.py">https://github.com/NOAA-ORR-ERD/GnomeTools/blob/master/post_gnome/post_gnome/nc_particles.py</a></p>
-<p>See <a class="reference internal" href="../reference.html#gnome.outputters.NetCDFOutput" title="gnome.outputters.NetCDFOutput"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.NetCDFOutput</span></code></a> for some additional parameters that can be passed to the constructor to customize the output.</p>
+<p>See <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.NetCDFOutput</span></code> for some additional parameters that can be passed to the constructor to customize the output.</p>
 </div>
 <div class="section" id="kmz-output">
 <h2>KMZ Output<a class="headerlink" href="#kmz-output" title="Permalink to this headline">¶</a></h2>
@@ -257,7 +291,7 @@
 </pre></div>
 </div>
 <p>The KMZ contains a kml file with layers for each output timestep, unceratain and certain elements, ans beached and floating elements, along with icons to render the elements.</p>
-<p>See <a class="reference internal" href="../reference.html#gnome.outputters.KMZOutput" title="gnome.outputters.KMZOutput"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.KMZOutput</span></code></a> for the full documentation</p>
+<p>See <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.KMZOutput</span></code> for the full documentation</p>
 </div>
 </div>
 
@@ -315,7 +349,7 @@
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

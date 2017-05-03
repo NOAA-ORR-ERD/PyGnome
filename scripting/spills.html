@@ -184,7 +184,41 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="spills">
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast,
+.nboutput.nblast {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast + .nbinput {
+    margin-top: -19px;
+}
+
+/* nice headers on first paragraph of info/warning boxes */
+.admonition .first {
+    margin: -12px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
+    color: #fff;
+    line-height: 1;
+    display: block;
+}
+.admonition.warning .first {
+    background: #f0b37e;
+}
+.admonition.note .first {
+    background: #6ab0de;
+}
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+</style>
+<div class="section" id="spills">
 <h1>Spills<a class="headerlink" href="#spills" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="using-helper-functions">
 <h2>Using helper functions<a class="headerlink" href="#using-helper-functions" title="Permalink to this headline">¶</a></h2>
@@ -193,7 +227,7 @@ details on setting up the Spill object can be found below, but for a lot of typi
 the scripting package can be utilized. Examples include:</p>
 <div class="section" id="surface-spill">
 <h3>Surface spill<a class="headerlink" href="#surface-spill" title="Permalink to this headline">¶</a></h3>
-<p>We use the <a class="reference internal" href="utilities.html#gnome.scripting.surface_point_line_spill" title="gnome.scripting.surface_point_line_spill"><code class="xref py py-func docutils literal"><span class="pre">gnome.scripting.surface_point_line_spill()</span></code></a> helper function to inialize a release along a line
+<p>We use the <code class="xref py py-func docutils literal"><span class="pre">gnome.scripting.surface_point_line_spill()</span></code> helper function to inialize a release along a line
 that occurs over one day. The oil type is specified as an Alaskan Crude from the ADIOS database with a spill volume
 of 5000 barrels. Here we change the default windage range to be 1-2% with an infinite persistence (particles keep
 the same windage value for all time).</p>
@@ -228,7 +262,7 @@ the same windage value for all time).</p>
 <span id="id1"></span><h3>Subsurface plume<a class="headerlink" href="#subsurface-plume" title="Permalink to this headline">¶</a></h3>
 <p>For initialization of a subsurface plume, we can use the subsurface_plume_spill helper function.
 Required parameters in this case also include a specification of the droplet size distribution
-or of the rise velocities. The <a class="reference internal" href="../reference.html#module-gnome.utilities.distributions" title="gnome.utilities.distributions"><code class="xref py py-mod docutils literal"><span class="pre">gnome.utilities.distributions</span></code></a> module includes methods for
+or of the rise velocities. The <code class="xref py py-mod docutils literal"><span class="pre">gnome.utilities.distributions</span></code> module includes methods for
 specifying different types of distributions. In this case we specify a uniform distribution of
 droplets ranging from 10-300 microns:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.scripting</span> <span class="k">import</span> <span class="n">subsurface_plume_spill</span>
@@ -342,7 +376,7 @@ the PointLineRelease class:</p>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

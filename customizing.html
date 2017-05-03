@@ -172,7 +172,41 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="customizing-pygnome">
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast,
+.nboutput.nblast {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast + .nbinput {
+    margin-top: -19px;
+}
+
+/* nice headers on first paragraph of info/warning boxes */
+.admonition .first {
+    margin: -12px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
+    color: #fff;
+    line-height: 1;
+    display: block;
+}
+.admonition.warning .first {
+    background: #f0b37e;
+}
+.admonition.note .first {
+    background: #6ab0de;
+}
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+</style>
+<div class="section" id="customizing-pygnome">
 <h1>Customizing pygnome<a class="headerlink" href="#customizing-pygnome" title="Permalink to this headline">¶</a></h1>
 <p>The pygnome Mover and Weatherer APIs are defined so that you can write your own movers and/or weatherers.</p>
 <div class="section" id="writing-a-custom-mover">
@@ -183,7 +217,7 @@
 <span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>That doesn&#8217;t do much. You can find out more in <a class="reference internal" href="reference.html#module-gnome.movers" title="gnome.movers"><code class="xref py py-mod docutils literal"><span class="pre">gnome.movers</span></code></a></p>
+<p>That doesn&#8217;t do much. You can find out more in <code class="xref py py-mod docutils literal"><span class="pre">gnome.movers</span></code></p>
 </div>
 <div class="section" id="writing-a-custom-weatherer">
 <h2>Writing a custom weatherer<a class="headerlink" href="#writing-a-custom-weatherer" title="Permalink to this headline">¶</a></h2>
@@ -294,7 +328,7 @@
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

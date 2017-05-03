@@ -182,7 +182,41 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="maps">
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast,
+.nboutput.nblast {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast + .nbinput {
+    margin-top: -19px;
+}
+
+/* nice headers on first paragraph of info/warning boxes */
+.admonition .first {
+    margin: -12px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
+    color: #fff;
+    line-height: 1;
+    display: block;
+}
+.admonition.warning .first {
+    background: #f0b37e;
+}
+.admonition.note .first {
+    background: #6ab0de;
+}
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+</style>
+<div class="section" id="maps">
 <h1>Maps<a class="headerlink" href="#maps" title="Permalink to this headline">¶</a></h1>
 <p>Maps can be created manually (e.g. in the case of all water), generated from a model grid, or loaded from a file.
 The map file format supported by GNOME is the BNA shoreline format (see the GNOME file formats document).
@@ -191,7 +225,7 @@ Support for shapefiles is currently being implemented.</p>
 added to the model, it may be desirable to have the shoreline generated from the currents grid so that it matches
 (both in exact position and in resolution). See the section below on Generating Map from Currents Grid.</p>
 <p>Some of the more common use cases and map options are shown below.
-For complete documentation see <a class="reference internal" href="../reference.html#module-gnome.map" title="gnome.map"><code class="xref py py-mod docutils literal"><span class="pre">gnome.map</span></code></a></p>
+For complete documentation see <code class="xref py py-mod docutils literal"><span class="pre">gnome.map</span></code></p>
 <div class="section" id="manual-creation">
 <h2>Manual Creation<a class="headerlink" href="#manual-creation" title="Permalink to this headline">¶</a></h2>
 <p>Create an all water map &#8211; if map_bounds is not specified, a spill can be added anywhere in the &#8220;water world&#8221;:</p>
@@ -294,7 +328,7 @@ If no refloating is desired set this value to -1.</dd>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

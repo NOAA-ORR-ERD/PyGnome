@@ -1,0 +1,341 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Environment Objects &mdash; pyGNOME 0.5.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pyGNOME
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../structure.html">GNOME Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../units.html">Units used in GNOME / PyGNOME</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">PyGnome Class Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyGNOME</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Environment Objects</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/env_obj/environment_objects.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast,
+.nboutput.nblast {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast + .nbinput {
+    margin-top: -19px;
+}
+
+/* nice headers on first paragraph of info/warning boxes */
+.admonition .first {
+    margin: -12px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
+    color: #fff;
+    line-height: 1;
+    display: block;
+}
+.admonition.warning .first {
+    background: #f0b37e;
+}
+.admonition.note .first {
+    background: #6ab0de;
+}
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+</style>
+<div class="section" id="environment-objects">
+<h1>Environment Objects<a class="headerlink" href="#environment-objects" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>Environment objects are designed to accomplish the following objectives:</dt>
+<dd><ul class="first last simple">
+<li>Provide easy-to-create representations of compatible data</li>
+<li>Allow a reasonably Python-literate PyGNOME user to create a PyGNOME-compatible representation of
+non-standard gridded data without having to resort to reformatting their data source.</li>
+<li>Provide functions that make working with gridded data convenient, such as interpolation of data,
+automatic vector rotation, etc.</li>
+<li>Allow a skilled PyGNOME user to easily create new environment objects that represent more nuanced
+phenomena, such as a surface current that is affected by ice coverage, or a wind that is sensitive to
+locations of tidal flats.</li>
+<li>Whenever possible, accomplish data representation with objects that share a generic, interchangable API</li>
+<li>Allow and encourage sharing of common resources among environment objects to increase simulation performance</li>
+</ul>
+</dd>
+</dl>
+<p>Environment objects are designed to represent a natural phenomenon and provide an interface that can be queried in time and space. These objects
+can represent a space-independent time series or gridded, time dependent data. They can also represent scalar and (2D) vector phenomena.
+They are the core means for representing natural phenomena in the latest versions of PyGNOME.</p>
+<p>Examples of things that environment objects can represent include: temperature, water velocity, wind speed &amp; direction time series, etc.</p>
+<p>For documentation of the API and implemented objects see <code class="xref py py-mod docutils literal"><span class="pre">gnome.environment.environment_objects</span></code></p>
+<div class="section" id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>The environmental models in GNOME are often driven with data created by other models, such as ROMS, HYCOM, etc. In the past, the output from
+these models were processed by renaming and regridding to conform to GNOME&#8217;s expectations before use. Regridding every new dataset is inconvenient,
+and also immediately introduces inaccuracies into the representation of reality.</p>
+</div>
+<div class="section" id="scalar-or-vector">
+<h2>Scalar or Vector<a class="headerlink" href="#scalar-or-vector" title="Permalink to this headline">¶</a></h2>
+<p>All environment objects represent either scalar or vector data. All environment objects that represent vector
+data are composed of environment objects representing scalar data. However, some more advanced vector objects
+can be composed of other vector objects and use them in various custom ways</p>
+</div>
+<div class="section" id="shared-components-and-memoization">
+<h2>Shared Components and Memoization<a class="headerlink" href="#shared-components-and-memoization" title="Permalink to this headline">¶</a></h2>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p class="last">This is a performance-critical feature! Understanding and usage is highly recommended</p>
+</div>
+<p>A key design goal was to allow two objects to share common components. For example, if a user has a data file containing
+temperature and salinity on the same grid, we likely do not want to create two separate representations of the grid, time, etc to
+attach to the objects. As noted above, this is a key performance optimization that allows these objects to efficiently
+represent the data within a file. By sharing components in this manner, memoization allows large performance increases
+when sets of query points do not change between every function call.</p>
+<p>Consider the following situation. Assume you have 100,000 points, and you want to find the water velocity
+at all of them, using linear interpolation between data points. Water velocity is represented by a GridCurrent,
+which in turn is represented by a <em>u-component</em> and <em>v-component</em></p>
+<ol class="arabic simple">
+<li>To determine the <em>u-component</em> at any given point, you need to find which cell the point is in.</li>
+<li>Then you compute the interpolation weights from the point to the nodes of the cell containig the point.</li>
+<li>Finally, you multiply the values at the nodes with the interpolation alphas &amp; sum to get the final value</li>
+</ol>
+<ul class="simple">
+<li>Note that all of the above operations are vectorized over the 100,000 points.</li>
+</ul>
+<p>However, this only gets you the <em>u-component</em> of the result. The above computations must be repeated for the
+<em>v-component</em>. Parts 1 and 2 are the responsibility of the grid component of each object. The grid object&#8217;s
+interpolation alpha and point location functions both implement result memoization based on a hash of the
+array of points provided. If the <em>u-component</em> and <em>v-component</em> share a grid object, it will be able to
+recognize when it receives the same set of points again, and therefore return the same answer for parts 1 and 2,
+allowing computation to skip directly to part 3.</p>
+<p>This combination of sharing and memoization is key to efficient composition of environment objects without
+requiring custom results aggregation code for every new combination. Consider the operations required to
+interpolate N variables to P points without memoization:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ops</span> <span class="o">=</span> <span class="n">N</span><span class="o">*</span><span class="p">(</span><span class="n">P</span><span class="o">*</span><span class="n">locate_points</span> <span class="o">+</span> <span class="n">P</span><span class="o">*</span><span class="n">interpolation_alphas</span> <span class="o">+</span> <span class="n">P</span><span class="o">*</span><span class="n">multiply</span><span class="o">&amp;</span><span class="nb">sum</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With memoization, the equation is as follows:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ops</span> <span class="o">=</span> <span class="n">P</span><span class="o">*</span><span class="n">locate_points</span> <span class="o">+</span> <span class="n">P</span><span class="o">*</span><span class="n">interpolation_alphas</span> <span class="o">+</span> <span class="n">N</span><span class="o">*</span><span class="n">P</span><span class="o">*</span><span class="n">multiply</span><span class="o">&amp;</span><span class="nb">sum</span> <span class="o">+</span> <span class="n">N</span><span class="o">*</span><span class="nb">hash</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Considering locate_points and interpolation_alphas are much more computationally expensive than multiply&amp;sum and hash, this is
+a dramatic performance gain for even N=2</p>
+<p><span class="xref std std-ref">env_obj/examples.ipynb#Demonstration-of-component-sharing</span></p>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.5.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
