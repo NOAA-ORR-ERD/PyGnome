@@ -130,7 +130,7 @@ class GnomeMap(Serializable):
                                         (360, 90), (360, -90)),
                                        dtype=np.float64)
 
-        if spillable_area is None:
+        if spillable_area is None or len(spillable_area) == 0:
             self.spillable_area = PolygonSet()
             self.spillable_area.append(self.map_bounds)
         else:
