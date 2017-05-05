@@ -1,8 +1,8 @@
 
 
-# PyGnome
+![Gnome Logo](graphics/new_gnome_icon/GNOME_logo.png)
 
-<img src=graphics/new_gnome_icon/GNOME_logo.png alt="Gnome Logo" title="Gnome" align="left">
+# PyGnome
 
 ## [Project Documentation](http://noaa-orr-erd.github.io/PyGnome/) ##
 ## [FAQ -- Troubleshoot](https://github.com/NOAA-ORR-ERD/GNOME2/wiki/FAQ---Troubleshoot) ##
