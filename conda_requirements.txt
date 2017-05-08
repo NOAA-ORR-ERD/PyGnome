@@ -28,7 +28,7 @@ netCDF4=1.2.7
 awesome-slugify>=1.6
 regex>=2014.12
 unidecode>=0.04.19
-pyshp>=1.2
+pyshp=1.2.10
 pyugrid=0.2.3
 pysgrid=0.3.5
 
