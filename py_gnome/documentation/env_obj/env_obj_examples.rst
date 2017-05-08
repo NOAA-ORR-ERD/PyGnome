@@ -70,7 +70,7 @@ a GridCurrent representing circular currents around the origin.::
     vg = GridCurrent(variables = [vels_y, vels_x], time=[t], grid=g, units='m/s')
 
 Defining a new environment object
-------------------------
+---------------------------------
 
 To create a new environment object, let us take the example of water temperature.
 
@@ -92,7 +92,7 @@ That's it! Now, you can do the following in your scripts: ::
     temp = WaterTemperature.from_netCDF(filename=fn)
     first_temp_at_point = temp.at(point, temp.time.min_time)
 
-Lets do a more advanced example. 
+Lets do a more advanced example.
 
 
 

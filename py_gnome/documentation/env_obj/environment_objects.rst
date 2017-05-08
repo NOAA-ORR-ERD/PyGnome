@@ -1,10 +1,10 @@
 Environment Objects
-================
+===================
 
 Environment objects are designed to accomplish the following objectives:
- - Provide easy-to-create representations of compatible data 
- - Allow a reasonably Python-literate PyGNOME user to create a PyGNOME-compatible representation of 
-   non-standard gridded data without having to resort to reformatting their data source. 
+ - Provide easy-to-create representations of compatible data
+ - Allow a reasonably Python-literate PyGNOME user to create a PyGNOME-compatible representation of
+   non-standard gridded data without having to resort to reformatting their data source.
  - Provide functions that make working with gridded data convenient, such as interpolation of data,
    automatic vector rotation, etc.
  - Allow a skilled PyGNOME user to easily create new environment objects that represent more nuanced
@@ -36,13 +36,15 @@ All environment objects represent either scalar or vector data. All environment 
 data are composed of environment objects representing scalar data. However, some more advanced vector objects
 can be composed of other vector objects and use them in various custom ways
 
+
 Shared Components and Memoization
------------------
-.. important:: 
+---------------------------------
+
+.. important::
    This is a performance-critical feature! Understanding and usage is highly recommended
 
-A key design goal was to allow two objects to share common components. For example, if a user has a data file containing 
-temperature and salinity on the same grid, we likely do not want to create two separate representations of the grid, time, etc to 
+A key design goal was to allow two objects to share common components. For example, if a user has a data file containing
+temperature and salinity on the same grid, we likely do not want to create two separate representations of the grid, time, etc to
 attach to the objects. As noted above, this is a key performance optimization that allows these objects to efficiently
 represent the data within a file. By sharing components in this manner, memoization allows large performance increases
 when sets of query points do not change between every function call.
@@ -65,7 +67,7 @@ recognize when it receives the same set of points again, and therefore return th
 allowing computation to skip directly to part 3.
 
 This combination of sharing and memoization is key to efficient composition of environment objects without
-requiring custom results aggregation code for every new combination. Consider the operations required to 
+requiring custom results aggregation code for every new combination. Consider the operations required to
 interpolate N variables to P points without memoization::
 
     ops = N*(P*locate_points + P*interpolation_alphas + P*multiply&sum)
@@ -80,4 +82,4 @@ a dramatic performance gain for even N=2
 
 :ref:`env_obj/examples.ipynb#Demonstration-of-component-sharing`
 
-   
+
