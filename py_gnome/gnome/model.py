@@ -26,7 +26,8 @@ from gnome.movers import Mover
 from gnome.weatherers import (weatherer_sort,
                               Weatherer,
                               WeatheringData,
-                              FayGravityViscous)
+                              FayGravityViscous,
+                              Langmuir)
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.persist import (extend_colander,
                            validators,
@@ -585,6 +586,7 @@ class Model(Serializable):
         weather_data = set()
         wd = None
         spread = None
+        langmuir = None
         for coll in ('environment', 'weatherers', 'movers'):
             for item in getattr(self, coll):
                 if hasattr(item, '_req_refs'):
@@ -608,6 +610,14 @@ class Model(Serializable):
                             if item._ref_as == 'spreading':
                                 item.on = False
                                 spread = item
+
+                        except AttributeError:
+                            pass
+
+                        try:
+                            if item._ref_as == 'langmuir':
+                                item.on = False
+                                langmuir = item
 
                         except AttributeError:
                             pass
@@ -660,6 +670,17 @@ class Model(Serializable):
                     for at in attr:
                         if hasattr(spread, at):
                             spread.water = attr['water']
+
+            if langmuir is None:
+                self.weatherers += Langmuir(attr['water'],attr['wind'])
+            else:
+                # turn spreading on and make references
+                langmuir.on = True
+                if langmuir.make_default_refs:
+                    for at in attr:
+                        if hasattr(langmuir, at):
+                            langmuir.water = attr['water']
+                            langmuir.wind = attr['wind']
 
     def setup_model_run(self):
         '''

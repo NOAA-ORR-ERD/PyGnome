@@ -224,6 +224,8 @@ class TestLangmuir(ObjForTests):
         assert updated
         assert self.l.serialize() == j
 
+	# langmuir temporarily turned off
+    @pytest.mark.xfail
     def test_weather_elements(self):
         '''
         use ObjMakeTests from test_cleanup to setup test
