@@ -3,6 +3,7 @@ import os
 import copy
 import StringIO
 import zipfile
+import pytest
 
 import netCDF4 as nc4
 import numpy as np
@@ -298,17 +299,20 @@ class Time(serializable.Serializable):
     _const_time = None
 
     def __init__(self,
-                 time=None,
+                 time=(datetime.now()),
                  filename=None,
                  varname=None,
                  tz_offset=None,
-                 offset=None,
+                 origin=None,
+                 displacement=timedelta(seconds=0),
                  **kwargs):
         '''
         Representation of a time axis. Provides interpolation alphas and indexing.
 
         :param time: Ascending list of times to use
         :param tz_offset: offset to compensate for time zone shifts
+        :param displacement: displacement to apply to the time data. Allows shifting entire time interval into future or past
+        :param origin: shifts the time interval to begin at the time specified
         :type time: netCDF4.Variable or [] of datetime.datetime
         :type tz_offset: datetime.timedelta
 
@@ -316,7 +320,13 @@ class Time(serializable.Serializable):
         if isinstance(time, (nc4.Variable, nc4._netCDF4._Variable)):
             self.time = nc4.num2date(time[:], units=time.units)
         else:
-            self.time = time
+            self.time = np.array(time)
+
+        if origin is not None:
+            diff = self.time[0] - origin
+            self.time -= diff
+
+        self.time += displacement
 
         self.filename = filename
         self.varname = varname
@@ -350,7 +360,7 @@ class Time(serializable.Serializable):
             else:
                 varname = datavar.dimensions[0] if 'time' in datavar.dimensions[0] else None
                 if varname is None:
-                    return None
+                    return cls.constant_time()
         time = cls(time=dataset[varname],
                    filename=filename,
                    varname=varname,
@@ -426,10 +436,7 @@ class Time(serializable.Serializable):
 
     @property
     def data(self):
-        if self.filename is None:
-            return self.time
-        else:
-            return None
+        return self.time
 
     def __len__(self):
         return len(self.time)

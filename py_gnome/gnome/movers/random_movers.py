@@ -271,17 +271,3 @@ class RandomVerticalMover(CyMover, Serializable):
                         self.horizontal_diffusion_coef_above_ml,
                         self.horizontal_diffusion_coef_below_ml,
                         self.active_start, self.active_stop, self.on))
-
-
-
-
-
-
-
-
-
-
-
-
-
-

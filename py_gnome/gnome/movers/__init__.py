@@ -2,7 +2,7 @@
     __init__.py for the gnome.movers package
 '''
 
-from movers import Mover, Process, CyMover, ProcessSchema
+from movers import Mover, Process, CyMover, ProcessSchema, PyMover
 from simple_mover import SimpleMover
 from wind_movers import (WindMover,
                          constant_wind_mover,

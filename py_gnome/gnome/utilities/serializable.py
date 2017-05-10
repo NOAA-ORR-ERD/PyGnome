@@ -446,8 +446,10 @@ class State(object):
 
         return names
 
+from colander import SchemaType
 
-class Serializable(GnomeId, Savable):
+
+class Serializable(GnomeId, Savable, SchemaType):
 
     """
     contains the to_dict and update_from_dict method to output properties of

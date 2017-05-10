@@ -2,8 +2,10 @@ import movers
 import numpy as np
 import datetime
 import copy
+import pytest
 from gnome import basic_types
 from gnome.environment import GridCurrent, GridVectorPropSchema
+from gnome.environment.grid import PyGrid_U
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
@@ -21,6 +23,8 @@ class PyCurrentMoverSchema(base_schema.ObjType):
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
     current = GridVectorPropSchema(missing=drop)
+    data_start_time = SchemaNode(DateTime(), missing=drop)
+    data_end_time = SchemaNode(DateTime(), missing=drop)
 
 
 class PyCurrentMover(movers.PyMover, serializable.Serializable):
@@ -30,18 +34,23 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
     _state.add_field([serializable.Field('filename',
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
-                      serializable.Field('current', save=True, read=True, save_reference=True)])
+                      serializable.Field('current', read=True, save_reference=True),
+                      serializable.Field('data_start_time', read=True),
+                      serializable.Field('data_end_time', read=True),
+                      ])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
     _schema = PyCurrentMoverSchema
 
     _ref_as = 'py_current_movers'
-    
+
     _req_refs = {'current': GridCurrent}
+    _def_count = 0
 
     def __init__(self,
-                 current=None,
                  filename=None,
+                 current=None,
+                 name=None,
                  extrapolate=False,
                  time_offset=0,
                  current_scale=1,
@@ -53,8 +62,16 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                  default_num_method='Trapezoid',
                  **kwargs
                  ):
-        self.current = current
         self.filename = filename
+        self.current = current
+        if self.current is None:
+            if filename is None:
+                raise ValueError("must provide a filename or current object")
+            else:
+                self.current = GridCurrent.from_netCDF(filename=self.filename, **kwargs)
+        if name is None:
+            name = self.__class__.__name__ + str(self.__class__._def_count)
+            self.__class__._def_count += 1
         self.extrapolate = extrapolate
         self.current_scale = current_scale
         self.uncertain_along = uncertain_along
@@ -65,6 +82,8 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         self.positions = np.zeros((0, 3), dtype=world_point_type)
         self.delta = np.zeros((0, 3), dtype=world_point_type)
         self.status_codes = np.zeros((0, 1), dtype=status_code_type)
+        if self.current.time is None or len(self.current.time.data) == 1:
+            self.extrapolate = True
 
         # either a 1, or 2 depending on whether spill is certain or not
         self.spill_type = 0
@@ -79,6 +98,7 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
     @classmethod
     def from_netCDF(cls,
                     filename=None,
+                    name=None,
                     extrapolate=False,
                     time_offset=0,
                     current_scale=1,
@@ -89,7 +109,11 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                     uncertain_cross=.25,
                     **kwargs):
         current = GridCurrent.from_netCDF(filename, **kwargs)
-        return cls(current=current,
+        if name is None:
+            name = cls.__name__ + str(cls._def_count)
+            cls._def_count += 1
+        return cls(name=name,
+                   current=current,
                    filename=filename,
                    extrapolate=extrapolate,
                    time_offset=time_offset,
@@ -99,13 +123,61 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                    uncertain_cross=uncertain_cross,
                    **kwargs)
 
+    @property
+    def data_start_time(self):
+        return self.current.time.min_time
+
+    @property
+    def data_end_time(self):
+        return self.current.time.max_time
+
+    @property
+    def is_data_on_cells(self):
+        return self.current.grid.infer_location(self.current.u.data) != 'node'
+
+    def get_grid_data(self):
+        """
+            The main function for getting grid data from the mover
+        """
+        if isinstance(self.current.grid, PyGrid_U):
+            return self.current.grid.nodes[self.current.grid.faces[:]]
+        else:
+            lons = self.current.grid.node_lon
+            lats = self.current.grid.node_lat
+            return np.column_stack((lons.reshape(-1), lats.reshape(-1)))
+
+    def get_center_points(self):
+        if hasattr(self.current.grid, 'center_lon') and self.current.grid.center_lon is not None:
+            lons = self.current.grid.center_lon
+            lats = self.current.grid.center_lat
+            return np.column_stack((lons.reshape(-1), lats.reshape(-1)))
+        else:
+            lons = self.current.grid.node_lon
+            lats = self.current.grid.node_lat
+            if len(lons.shape) == 1: #ugrid
+                triangles = self.current.grid.nodes[self.current.grid.faces[:]]
+                centroids = np.zeros((self.current.grid.faces.shape[0], 2))
+                centroids[:, 0] = np.sum(triangles[:, :, 0], axis=1) / 3
+                centroids[:, 1] = np.sum(triangles[:, :, 1], axis=1) / 3
+
+            else:
+                c_lons = (lons[0:-1, :] + lons[1:, :]) /2
+                c_lats = (lats[:, 0:-1] + lats[:, 1:]) /2
+                centroids = np.column_stack((c_lons.reshape(-1), c_lats.reshape(-1)))
+            return centroids
+
 
     def get_scaled_velocities(self, time):
         """
         :param model_time=0:
         """
-        points = None
-        vels = self.grid.interpolated_velocities(time, points)
+        current = self.current
+        lons = current.grid.node_lon
+        lats = current.grid.node_lat
+
+        #GridCurrent.at needs Nx3 points [lon, lat, z] and a time T
+        points = np.column_stack((lons.reshape(-1), lats.reshape(-1), np.zeros_like(current.grid.node_lon.reshape(-1))))
+        vels = current.at(points, time)
 
         return vels
 

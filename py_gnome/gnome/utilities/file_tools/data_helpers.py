@@ -6,6 +6,7 @@ import netCDF4 as nc4
 import pyugrid
 import pysgrid
 import numpy as np
+import collections
 
 
 def _construct_environment_objects(**kwargs):
@@ -139,7 +140,8 @@ def _get_dataset(filename, dataset=None):
     df = None
     if isinstance(filename, basestring):
         df = nc4.Dataset(filename)
+    elif isinstance(filename, collections.Iterable) and len(filename) == 1:
+        df = nc4.Dataset(filename[0])
     else:
         df = nc4.MFDataset(filename)
     return df
-
