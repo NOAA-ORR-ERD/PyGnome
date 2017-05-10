@@ -20,6 +20,7 @@ from gnome.utilities.serializable import Serializable, Field
 from gnome.persist import class_from_objtype
 
 from .outputter import Outputter, BaseSchema
+from gnome.movers import PyMover
 
 
 class CurrentJsonSchema(BaseSchema):
@@ -86,22 +87,28 @@ class CurrentJsonOutput(Outputter, Serializable):
 
         for sc in self.cache.load_timestep(step_num).items():
             model_time = date_to_sec(sc.current_time_stamp)
+            #model_time = sc.current_time_stamp
             iso_time = sc.current_time_stamp.isoformat()
 
         json_ = {}
         for cm in self.current_movers:
-
+            is_pymover = isinstance(cm, PyMover)
+            if is_pymover:
+                model_time = sc.current_time_stamp
             velocities = cm.get_scaled_velocities(model_time)
-            velocities = self.get_rounded_velocities(velocities)
-            x = velocities[:,0]
-            y = velocities[:,1]
-            direction = np.arctan2(y,x) - np.pi/2
+            if is_pymover:
+                velocities = velocities[:, 0:2].round(decimals=2)
+            else:
+                velocities = self.get_rounded_velocities(velocities)
+            x = velocities[:, 0]
+            y = velocities[:, 1]
+            direction = np.arctan2(y, x) - np.pi/2
             magnitude = np.sqrt(x**2 + y**2)
-            direction = np.round(direction,2)
-            magnitude = np.round(magnitude,2)
+            direction = np.round(direction, 2)
+            magnitude = np.round(magnitude, 2)
 
-            json_[cm.id]={'magnitude':magnitude.tolist(),
-                         'direction':direction.tolist()
+            json_[cm.id]={'magnitude': magnitude.tolist(),
+                         'direction': direction.tolist()
                          }
         return json_
 

@@ -91,6 +91,7 @@ class GriddedProp(EnvProp):
                     name=None,
                     units=None,
                     time=None,
+                    time_origin=None,
                     grid=None,
                     depth=None,
                     dataset=None,
@@ -109,6 +110,7 @@ class GriddedProp(EnvProp):
         :param name: Name of property
         :param units: Units
         :param time: Time axis of the data
+        :param time_origin: Shifts time axis to begin at specified time
         :param data: Underlying data source
         :param grid: Grid that the data corresponds with
         :param depth: Depth axis object
@@ -169,6 +171,9 @@ class GriddedProp(EnvProp):
             time = Time.from_netCDF(filename=data_file,
                                     dataset=ds,
                                     datavar=data)
+            if time_origin is not None:
+                time = Time(time=time.data, filename=data_file, varname=time.varname, origin=time_origin)
+
         if depth is None:
             if (isinstance(grid, PyGrid_S) and len(data.shape) == 4 or
                     isinstance(grid, PyGrid_U) and len(data.shape) == 3):
@@ -536,7 +541,7 @@ class GridVectorProp(VectorProp):
     _schema = GridVectorPropSchema
 
     _state.add_field([serializable.Field('grid', save=True, update=True, save_reference=True),
-                      serializable.Field('variables', save=True, update=True, iscollection=True),
+                      serializable.Field('variables', save=True, update=True, read=True, iscollection=True),
                       serializable.Field('varnames', save=True, update=True),
                       serializable.Field('data_file', save=True, update=True, isdatafile=True),
                       serializable.Field('grid_file', save=True, update=True, isdatafile=True)])
@@ -578,6 +583,7 @@ class GridVectorProp(VectorProp):
                     name=None,
                     units=None,
                     time=None,
+                    time_origin=None,
                     grid=None,
                     depth=None,
                     data_file=None,
@@ -595,6 +601,7 @@ class GridVectorProp(VectorProp):
         :param name: Name of property
         :param units: Units
         :param time: Time axis of the data
+        :param time_origin: Shifts time axis to begin at specified time
         :param data: Underlying data source
         :param grid: Grid that the data corresponds with
         :param dataset: Instance of open Dataset
@@ -646,6 +653,8 @@ class GridVectorProp(VectorProp):
             time = Time.from_netCDF(filename=data_file,
                                     dataset=ds,
                                     datavar=data)
+            if time_origin is not None:
+                time = Time(time=time.data, filename=data_file, varname=time.varname, origin=time_origin)
         if depth is None:
             if (isinstance(grid, PyGrid_S) and len(data.shape) == 4 or
                         (len(data.shape) == 3 and time is None) or
@@ -693,6 +702,16 @@ class GridVectorProp(VectorProp):
                    dataset=ds,
                    load_all=load_all,
                    **kwargs)
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        if 'variables' not in dict_:
+            if 'varnames' in dict_:
+                vn = dict_.get('varnames')
+                if 'constant' in vn[-1]:
+                    dict_['varnames'] = dict_['varnames'][0:2]
+            return cls.from_netCDF(**dict_)
+        return super(GridVectorProp, cls).new_from_dict(dict_)
 
     @classmethod
     def _gen_varnames(cls,
@@ -815,7 +834,6 @@ class GridVectorProp(VectorProp):
         if mem:
             self._memoize_result(points, time, value, self._result_memo, _hash=_hash)
         return value
-
 
     @classmethod
     def _get_shared_vars(cls, *sh_args):

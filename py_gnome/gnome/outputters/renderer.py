@@ -14,6 +14,7 @@ import copy
 import zipfile
 import numpy as np
 import py_gd
+import pytest
 
 from colander import SchemaNode, String, drop
 
@@ -724,10 +725,26 @@ class GridVisLayer:
                  ):
         self.grid = grid
         self.projection = projection
-        self.lines = self.grid.get_lines()
+        self.lines = self._get_lines(grid)
         self.on = on
         self.color = color
         self.width = width
+
+    def _get_lines(self, grid):
+        from gnome.environment.grid import PyGrid_S, PyGrid_U
+        if isinstance(grid, PyGrid_S):
+            grid_names = ['node', 'center', 'edge1', 'edge2']
+            name = 'node'
+#             if grid not in grid_names:
+#                 raise ValueError(
+#                     'Name not recognized. Grid must be in {0}'.format(grid_names))
+            lons = getattr(grid, name + '_lon')
+            lats = getattr(grid, name + '_lat')
+            return np.ma.dstack((lons[:], lats[:]))
+        else:
+            if grid.edges is None:
+                grid.build_edges()
+            return grid.nodes[self.edges]
 
     def draw_to_image(self, img):
         '''
@@ -736,6 +753,7 @@ class GridVisLayer:
         if not self.on:
             return
 
+        pytest.set_trace()
         lines = self.projection.to_pixel_multipoint(self.lines, asint=True)
         for l in lines:
             img.draw_polyline(l,
@@ -807,9 +825,9 @@ class GridPropVisLayer:
         if hasattr(data_u, 'mask'):
             end[data_u.mask] = [0., 0.]
         bounds = self.projection.image_box
-        pt1 = ((bounds[0][0] <= start[:, 0]) * (start[:, 0] <= bounds[1][0]) * 
+        pt1 = ((bounds[0][0] <= start[:, 0]) * (start[:, 0] <= bounds[1][0]) *
                (bounds[0][1] <= start[:, 1]) * (start[:, 1] <= bounds[1][1]))
-        pt2 = ((bounds[0][0] <= end[:, 0]) * (end[:, 0] <= bounds[1][0]) * 
+        pt2 = ((bounds[0][0] <= end[:, 0]) * (end[:, 0] <= bounds[1][0]) *
                (bounds[0][1] <= end[:, 1]) * (end[:, 1] <= bounds[1][1]))
         start = start[pt1 * pt2]
         end = end[pt1 * pt2]

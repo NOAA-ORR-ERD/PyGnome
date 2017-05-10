@@ -62,6 +62,15 @@ class TestTime:
         t = Time(TestTime.time_arr.copy(), tz_offset=dt.timedelta(hours=1))
         assert t.time[0] == TestTime.time_arr[0] + dt.timedelta(hours=1)
 
+        diff = t.time[1] - t.time[0]
+        now = dt.datetime.now()
+        t = Time(TestTime.time_arr.copy(), origin=now)
+        assert t.time[0] == now
+        assert t.time[1] - diff == t.time[0]
+
+        t = Time(TestTime.time_arr.copy(), displacement=dt.timedelta(hours=1))
+        assert t.time[0] == TestTime.time_arr[0] + dt.timedelta(hours=1)
+
     def test_save_load(self):
         t1 = Time(TestTime.time_var)
         fn = 'time.txt'
@@ -404,6 +413,12 @@ class TestGriddedProp:
         print np.cos(points[:, 0] / 2) / 2
         assert all(np.isclose(v.at(points, time), np.cos(points[:, 0] / 2) / 2))
 
+    def test_time_offset(self):
+        curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
+        now = dt.datetime.now()
+        u = GriddedProp.from_netCDF(filename=curr_file, varname='u_rho', time_origin=now)
+        v = GriddedProp.from_netCDF(filename=curr_file, varname='v_rho')
+        assert all(u.time.data > v.time.data)
 
 class TestGridVectorProp:
 

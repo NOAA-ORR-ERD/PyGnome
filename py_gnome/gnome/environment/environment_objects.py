@@ -489,7 +489,6 @@ class Bathymetry(GriddedProp):
     default_names = ['h']
     cf_names = ['depth']
 
-
 class GridCurrent(VelocityGrid, Environment):
     _ref_as = 'current'
 
@@ -532,6 +531,8 @@ class GridCurrent(VelocityGrid, Environment):
         value = super(GridCurrent, self).at(points, time, units, extrapolate=extrapolate, **kwargs)
         if self.angle is not None:
             angs = self.angle.at(points, time, extrapolate=extrapolate, **kwargs).reshape(-1)
+            if 'degree' in self.angle.units:
+                angs = angs * np.pi/180.
             x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
             y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
             value[:, 0] = x

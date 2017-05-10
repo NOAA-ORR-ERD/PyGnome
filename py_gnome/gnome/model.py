@@ -580,6 +580,7 @@ class Model(Serializable):
         attr['wind'] = self.find_by_attr('_ref_as', 'wind', self.environment)
         attr['water'] = self.find_by_attr('_ref_as', 'water', self.environment)
         attr['waves'] = self.find_by_attr('_ref_as', 'waves', self.environment)
+        attr['current'] = self.find_by_attr('_ref_as', 'current', self.environment)
 
         weather_data = set()
         wd = None
@@ -1033,6 +1034,9 @@ class Model(Serializable):
         if hasattr(obj_added, 'water') and obj_added.water is not None:
             if obj_added.water.id not in self.environment:
                 self.environment += obj_added.water
+        if hasattr(obj_added, 'current') and obj_added.current is not None:
+            if obj_added.current.id not in self.environment:
+                self.environment += obj_added.current
 
     def _callback_add_mover(self, obj_added):
         'Callback after mover has been added'
@@ -1465,7 +1469,7 @@ class Model(Serializable):
                                'the minimum pour point of the selected oil, '
                                '{1} K.  The results may be unreliable.'
                                .format(water_temp, pour_point[0]))
-                        
+
                         self.logger.warning(msg)
                         msgs.append(self._warn_pre + msg)
 
