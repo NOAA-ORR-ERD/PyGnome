@@ -14,7 +14,7 @@ from gnome.cy_gnome.cy_weatherers import disperse_oil
 from gnome.array_types import (viscosity,
                                mass,
                                density,
-                               fay_area,
+                               area,
                                frac_water,
                                droplet_avg_size)
 
@@ -48,7 +48,7 @@ class NaturalDispersion(Weatherer, Serializable):
         self.array_types.update({'viscosity': viscosity,
                                  'mass':  mass,
                                  'density': density,
-                                 'fay_area': fay_area,
+                                 'area': area,
                                  'frac_water': frac_water,
                                  'droplet_avg_size': droplet_avg_size,
                                  })
@@ -119,7 +119,7 @@ class NaturalDispersion(Weatherer, Serializable):
                          data['mass'],
                          data['viscosity'],
                          data['density'],
-                         data['fay_area'],
+                         data['area'],
                          disp,
                          sed,
                          droplet_avg_size,
@@ -171,7 +171,7 @@ class NaturalDispersion(Weatherer, Serializable):
                      mass,
                      viscosity,
                      density,
-                     fay_area,
+                     area,
                      disp_out,
                      sed_out,
                      frac_breaking_waves,
@@ -198,7 +198,7 @@ class NaturalDispersion(Weatherer, Serializable):
 
         for i, (rho, mass, visc, Y, A) in enumerate(zip(density, mass,
                                                         viscosity, frac_water,
-                                                        fay_area)):
+                                                        area)):
             pass
 
     def serialize(self, json_='webapi'):

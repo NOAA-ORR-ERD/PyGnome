@@ -121,7 +121,7 @@ class TestCyTimeseries:
 
         actual = np.array(self.tval['value'], dtype=velocity_rec)
         time = np.array(self.tval['time'], dtype=seconds)
-        vel_rec = ossm.get_time_value(time)
+        vel_rec, err = ossm.get_time_value(time)
         print vel_rec
 
         tol = 1e-6
@@ -183,7 +183,7 @@ class TestCyTimeseries:
         actual = np.array(t_val['value'], dtype=velocity_rec)
         time = np.array(t_val['time'] + (0, 100), dtype=seconds)
 
-        vel_rec = ossmT.get_time_value(time)
+        vel_rec, err = ossmT.get_time_value(time)
 
         tol = 1e-6
         msg = ('{0} is not within a tolerance of '

@@ -432,6 +432,8 @@ class Langmuir(Weatherer, Serializable):
     _state += [Field('wind', update=True, save=True, save_reference=True),
                Field('water', update=True, save=True, save_reference=True)]
 
+    _ref_as = 'langmuir'
+
     def __init__(self,
                  water=None,
                  wind=None,
@@ -496,6 +498,7 @@ class Langmuir(Weatherer, Serializable):
         if not self.active or sc.num_released == 0:
             return
 
+        return
         rho_h2o = self.water.get('density', 'kg/m^3')
         for _, data in sc.itersubstancedata(self.array_types):
             for s_num in np.unique(data['spill_num']):

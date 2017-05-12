@@ -217,17 +217,18 @@ cdef class CyOSSMTime(object):
         cdef unsigned int i
         cdef OSErr err
 
+        err = 0
         vel_rec = np.empty((modelTimeArray.size,),
                            dtype=basic_types.velocity_rec)
 
         for i in range(0, modelTimeArray.size):
             err = self.time_dep.GetTimeValue(modelTimeArray[i], &vel_rec[i])
-            if err != 0:
-                raise ValueError('Error invoking TimeValue_c.GetTimeValue '
-                                 'method in CyOSSMTime: '
-                                 'C++ OSERR = {0}'.format(err))
+            #if err != 0:
+                #raise ValueError('Error invoking TimeValue_c.GetTimeValue '
+                                 #'method in CyOSSMTime: '
+                                 #'C++ OSERR = {0}'.format(err))
 
-        return vel_rec
+        return vel_rec, err
 
     def _read_time_values(self, filename):
         """
