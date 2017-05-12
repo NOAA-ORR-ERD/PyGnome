@@ -310,6 +310,25 @@ class PyGrid_U(PyGrid, pyugrid.UGrid):
 
 class PyGrid_S(PyGrid, pysgrid.SGrid):
 
+    '''OVERRIDE'''
+    def infer_location(self, variable):
+        """
+        Assuming default is psi grid, check variable dimensions to determine which grid
+        it is on.
+        """
+        shape = np.array(variable.shape)
+        difference = (shape[-2:] - self.node_lon.shape).tolist()
+        if difference == [1, 1] or difference == [-1, -1]:
+            return 'center'
+        elif difference == [1, 0]:
+            return 'edge1'
+        elif difference == [0, 1]:
+            return 'edge2'
+        elif difference == [0, 0]:
+            return 'node'
+        else:
+            return None
+
     @classmethod
     def _find_required_grid_attrs(cls, filename, dataset=None, grid_topology=None):
 
