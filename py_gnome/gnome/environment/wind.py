@@ -493,6 +493,10 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         '''
         msgs = []
         if np.all(self.timeseries['value'][:, 0] == 0.0):
+            print "self.timeseries['value'][:,0]"
+            print self.timeseries
+            print self.timeseries['value']
+            print self.timeseries['value'][:,0]
             msg = 'wind speed is 0'
             self.logger.warning(msg)
             msgs.append(self._warn_pre + msg)

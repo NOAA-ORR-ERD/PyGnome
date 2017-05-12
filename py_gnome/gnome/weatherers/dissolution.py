@@ -276,7 +276,8 @@ class Dissolution(Weatherer, Serializable):
     def water_column_time_fraction(self, model_time,
                                    water_phase_xfer_velocity):
         wave_height = self.waves.get_value(model_time)[0]
-        wind_speed = max(.1, self.waves.wind.get_value(model_time)[0])
+        #wind_speed = max(.1, self.waves.wind.get_value(model_time)[0])
+        wind_speed = max(.1, self.get_wind_value(self.waves.wind, model_time))
         wave_period = PiersonMoskowitz.peak_wave_period(wind_speed)
 
         f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
@@ -288,7 +289,8 @@ class Dissolution(Weatherer, Serializable):
 
     def calm_between_wave_breaks(self, model_time, time_step,
                                  time_spent_in_wc=0.0):
-        wind_speed = max(.1, self.waves.wind.get_value(model_time)[0])
+        #wind_speed = max(.1, self.waves.wind.get_value(model_time)[0])
+        wind_speed = max(.1, self.get_wind_value(self.waves.wind, model_time))
         wave_period = PiersonMoskowitz.peak_wave_period(wind_speed)
 
         f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
@@ -405,7 +407,8 @@ class Dissolution(Weatherer, Serializable):
         assert oil_concentration.shape[-1] == partition_coeff.shape[-1]
         assert len(partition_coeff.shape) == 1  # single dimension
 
-        U_10 = max(.1, self.waves.wind.get_value(model_time)[0])
+        #U_10 = max(.1, self.waves.wind.get_value(model_time)[0])
+        U_10 = max(.1, self.get_wind_value(self.waves.wind, model_time))
         c_oil = oil_concentration
         k_ow = partition_coeff
 

@@ -10,6 +10,7 @@ import gsw
 from repoze.lru import lru_cache
 
 from gnome.utilities import serializable
+from gnome.utilities.time_utils import date_to_sec, sec_to_datetime
 from gnome.persist import base_schema
 from gnome import constants
 
@@ -70,6 +71,34 @@ class Environment(object):
         any actions prior to a model run
         """
         pass
+
+    def get_wind_value(self, wind, model_time):
+        '''        
+        Wrapper so wind can be extrapolated
+        '''
+        new_model_time = self.check_time(wind, model_time)
+        return wind.get_value(new_model_time)[0]
+
+    def check_time(self, wind, model_time):
+        """
+        Should have an option to extrapolate but for now we do by default
+        """
+        new_model_time = model_time
+        if wind is not None:
+            if model_time is not None:
+                timeval = date_to_sec(model_time)
+                start_time = wind.get_start_time()
+                end_time = wind.get_end_time()
+                if end_time == start_time:
+                    return model_time
+                if timeval < start_time:
+                    new_model_time = sec_to_datetime(start_time)
+                if timeval > end_time:
+                    new_model_time = sec_to_datetime(end_time)
+            else:
+                return model_time
+
+        return new_model_time
 
 # define valid units at module scope because the Schema and Object both use it
 _valid_temp_units = _valid_units('Temperature')

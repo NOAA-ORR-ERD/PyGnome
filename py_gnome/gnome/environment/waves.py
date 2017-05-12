@@ -113,7 +113,8 @@ class Waves(Environment, serializable.Serializable):
         wave_height = self.water.wave_height
 
         if wave_height is None:
-            U = self.wind.get_value(time)[0]  # only need velocity
+            #U = self.wind.get_value(time)[0]  # only need velocity
+            U = self.get_wind_value(self.wind, time)  # only need velocity
             H = self.compute_H(U)
         else:  # user specified a wave height
             H = wave_height
@@ -143,7 +144,8 @@ class Waves(Environment, serializable.Serializable):
                given by the user for dispersion, why not for emulsification?
         """
         wave_height = self.water.wave_height
-        U = self.wind.get_value(time)[0]  # only need velocity
+        #U = self.wind.get_value(time)[0]  # only need velocity
+        U = self.get_wind_value(self.wind, time)  # only need velocity
         if wave_height is None:
             return U
         else:  # user specified a wave height
@@ -170,7 +172,8 @@ class Waves(Environment, serializable.Serializable):
 
         :returns: peak wave period (s)
         '''
-        U = self.wind.get_value(time)[0]
+        #U = self.wind.get_value(time)[0]
+        U = self.get_wind_value(self.wind, time)  # only need velocity
         return PiersonMoskowitz.peak_wave_period(U)
 
     def dissipative_wave_energy(self, H):

@@ -72,7 +72,8 @@ class Evaporation(Weatherer, Serializable):
 
         .. note:: wind speed is at least 1 m/s.
         '''
-        wind_speed = max(1, self.wind.get_value(model_time)[0])
+        #wind_speed = max(1, self.wind.get_value(model_time)[0])
+        wind_speed = max(1, self.get_wind_value(self.wind, model_time))
         c_evap = 0.0025     # if wind_speed in m/s
         if wind_speed <= 10.0:
             return c_evap * wind_speed ** 0.78

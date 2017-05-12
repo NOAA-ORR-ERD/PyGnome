@@ -198,7 +198,7 @@ class FayGravityViscous(Weatherer, Serializable):
                 '''
                 only update initial area, A_0, if age is past the transient
                 phase. Expect this to be the case since t0 is on the order of
-                minutes; but do a check incase we want to experiment with
+                minutes; but do a check in case we want to experiment with
                 smaller timesteps.
                 '''
                 continue
@@ -464,7 +464,8 @@ class Langmuir(Weatherer, Serializable):
         the bounds of (0.1, or 1.0), then limit it to:
             0.1 <= frac_cov <= 1.0
         '''
-        v_max = self.wind.get_value(model_time)[0] * 0.005
+        v_max = self.get_wind_value(self.wind, model_time)*.005
+        #v_max = self.wind.get_value(model_time)[0] * 0.005
         cr_k = (v_max ** 2 *
                 4 *
                 np.pi ** 2 /

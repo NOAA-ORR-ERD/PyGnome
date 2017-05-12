@@ -10,6 +10,7 @@ from gnome.persist.base_schema import ObjType
 
 from gnome.array_types import mass_components
 from gnome.utilities.serializable import Serializable, Field
+from gnome.utilities.time_utils import date_to_sec, sec_to_datetime
 from gnome.exceptions import ReferencedObjectNotSet
 from gnome.movers.movers import Process, ProcessSchema
 
@@ -103,6 +104,34 @@ class Weatherer(Process):
         '''
         mass_remain = M_0 * np.exp(lambda_ * time)
         return mass_remain
+
+    def get_wind_value(self, wind, model_time):
+        '''        
+        Wrapper for the weatherers so they can extrapolate
+        '''
+        new_model_time = self.check_time(wind, model_time)
+        return wind.get_value(new_model_time)[0]
+
+    def check_time(self, wind, model_time):
+        """
+        Should have an option to extrapolate but for now we do by default
+        """
+        new_model_time = model_time
+        if wind is not None:
+            if model_time is not None:
+                timeval = date_to_sec(model_time)
+                start_time = wind.get_start_time()
+                end_time = wind.get_end_time()
+                if end_time == start_time:
+                    return model_time
+                if timeval < start_time:
+                    new_model_time = sec_to_datetime(start_time)
+                if timeval > end_time:
+                    new_model_time = sec_to_datetime(end_time)
+            else:
+                return model_time
+
+        return new_model_time
 
 
 class HalfLifeWeathererSchema(WeathererSchema):
