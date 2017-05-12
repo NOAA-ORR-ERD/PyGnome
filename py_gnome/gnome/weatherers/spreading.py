@@ -55,6 +55,7 @@ class FayGravityViscous(Weatherer, Serializable):
         # varies over time, may want to do something different
         self._init_relative_buoyancy = None
         self.thickness_limit = None
+        self.is_first_step = True
 
     @lru_cache(4)
     def _gravity_spreading_t0(self,
@@ -211,7 +212,128 @@ class FayGravityViscous(Weatherer, Serializable):
                                                    relative_buoyancy,
                                                    blob_init_volume[m_age][0],
                                                    age[m_age][0])
+                
+                if blob_area >= max_area:
+                    area[m_age] = max_area / m_age.sum()
+                else:
+                    area[m_age] = blob_area / m_age.sum()
 
+                self.logger.debug('{0}\tarea after update: {1}'
+                                  .format(self._pid, blob_area))
+
+        return area
+
+    def update_area2(self,
+                    water_viscosity,
+                    relative_buoyancy,
+                    blob_init_volume,
+                    area,
+                    time_step,
+                    age):
+        '''
+        update area array in place, also return area array
+        each blob is defined by its age. This updates the area of each blob,
+        as such, use the mean relative_buoyancy for each blob. Still check
+        and ensure relative buoyancy is > 0 for all LEs
+
+        :param water_viscosity: viscosity of water
+        :type water_viscosity: float
+        :param relative_buoyancy: relative buoyancy of oil wrt water at release
+            time. This does not change over time.
+        :type relative_buoyancy: float
+        :param blob_init_volume: numpy array of floats containing initial
+            release volume of blob. This is the same for all LEs released
+            together.
+        :type blob_init_volume: numpy array
+        :param area: numpy array of floats containing area of each LE. Assume
+            The LEs with same age belong to the same blob. Sum these up to
+            get the area of the blob to compare it to max_area (or min
+            thickness). Keep updating blob area till max_area is achieved.
+            Equally divide updated_blob_area into the number of LEs used to
+            model the blob.
+        :type area: numpy array
+        :param age: numpy array the same size as area and blob_init_volume.
+            This is the age of each LE. The LEs with the same age belong to
+            the same blob. Age is in seconds.
+        :type age: numpy array of int32
+        :param at_max_area: np.bool array. If a blob reaches max_area beyond
+            which it will not spread, toggle the LEs associated with that blob
+            to True. Max spreading is based on min thickness based on initial
+            viscosity of oil. This is used by Langmuir since the process acts
+            on particles after spreading completes.
+        :type at_max_area: numpy array of bools
+
+        :returns: (updated 'area' array, updated 'at_max_area' array).
+            It also changes the input 'area' array and the 'at_max_area' bool
+            array inplace. However, the input arrays could be copies so best
+            to also return the updates.
+        '''
+        if np.any(age == 0):
+            msg = "use init_area for age == 0"
+            raise ValueError(msg)
+
+        # update area for each blob of LEs
+        for b_age in np.unique(age):
+            # within each age blob_init_volume should also be the same
+            m_age = b_age == age
+            t0 = self._gravity_spreading_t0(water_viscosity,
+                                            relative_buoyancy,
+                                            blob_init_volume[m_age][0])
+
+            if b_age <= t0:
+                '''
+                only update initial area, A_0, if age is past the transient
+                phase. Expect this to be the case since t0 is on the order of
+                minutes; but do a check in case we want to experiment with
+                smaller timesteps.
+                '''
+                continue
+
+            # now update area of old LEs - only update till max area is reached
+            max_area = blob_init_volume[m_age][0] / self.thickness_limit
+            if area[m_age].sum() < max_area:
+                if self.is_first_step:
+                    self.is_first_step = False
+                    # update area
+                    blob_area = self._update_blob_area(water_viscosity,
+                                                       relative_buoyancy,
+                                                       blob_init_volume[m_age][0],
+                                                       age[m_age][0])
+
+#                 blob_area2 = self._update_blob_area(water_viscosity,
+#                                                    relative_buoyancy,
+#                                                    blob_init_volume[m_age][0],
+#                                                    age[m_age][0]/2)
+
+                else:
+                    blob_area4 = self._update_blob_area(water_viscosity,
+                                                       relative_buoyancy,
+                                                       blob_init_volume[m_age][0],
+                                                       age[m_age][0])
+
+                    C = (np.pi *
+                        self.spreading_const[1] ** 2 *
+                        (blob_init_volume[m_age][0] ** 2 *
+                        constants.gravity *
+                        relative_buoyancy /
+                        np.sqrt(water_viscosity)) ** (1. / 3.))
+                    
+                    #blob_area_fgv = .5 * C**2 / area[m_age].sum()	# make sure area > 0
+                    #blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
+                    #blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
+                    blob_area_fgv = area[m_age].sum() + .5 * (C**2 / area[m_age].sum()) * time_step	# make sure area > 0
+                    #blob_area_fgv = blob_area2 + .5 * (C**2 / blob_area2) * time_step	# make sure area > 0
+                
+                    K = 4 * np.pi * 2 * .033
+                    #blob_area_diffusion = (7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)
+                    blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
+                    #blob_area_diffusion = area[m_age][0] + ((7 / 6) * K * (area[m_age][0] / K) ** (1 / 7)) * time_step
+                    #blob_area_diffusion = blob_area2 + ((7 / 6) * K * (blob_area2 / K) ** (1 / 7)) * time_step
+
+                    #blob_area = blob_area_fgv
+                    blob_area = blob_area_fgv + blob_area_diffusion
+                    #blob_area = blob_area_diffusion
+                
                 if blob_area >= max_area:
                     area[m_age] = max_area / m_age.sum()
                 else:
@@ -259,6 +381,8 @@ class FayGravityViscous(Weatherer, Serializable):
         # reset _init_relative_buoyancy for every run
         # make it None so no stale data
         self._init_relative_buoyancy = None
+
+        self.is_first_step = True
 
     def _set_init_relative_buoyancy(self, substance):
         '''
@@ -344,11 +468,17 @@ class FayGravityViscous(Weatherer, Serializable):
             for s_num in np.unique(data['spill_num']):
                 s_mask = data['spill_num'] == s_num
                 data['fay_area'][s_mask] = \
-                    self.update_area(water_kvis,
+                    self.update_area2(water_kvis,
                                      self._init_relative_buoyancy,
                                      data['bulk_init_volume'][s_mask],
                                      data['fay_area'][s_mask],
+                                     time_step,
                                      data['age'][s_mask] + time_step)
+#                     self.update_area(water_kvis,
+#                                      self._init_relative_buoyancy,
+#                                      data['bulk_init_volume'][s_mask],
+#                                      data['fay_area'][s_mask],
+#                                      data['age'][s_mask] + time_step)
 
                 data['area'][s_mask] = data['fay_area'][s_mask]
 
@@ -470,8 +600,9 @@ class Langmuir(Weatherer, Serializable):
                 4 *
                 np.pi ** 2 /
                 (thickness * rel_buoy * gravity)) ** (1. / 3.)
+        cr_k[np.isnan(cr_k)] = 10.	# if density becomes equal to water density
         frac_cov = 1. / cr_k
-
+            
         frac_cov[frac_cov < 0.1] = 0.1
         frac_cov[frac_cov > 1.0] = 1.0
 
@@ -499,9 +630,13 @@ class Langmuir(Weatherer, Serializable):
         if not self.active or sc.num_released == 0:
             return
 
-        return
+        #return
         rho_h2o = self.water.get('density', 'kg/m^3')
         for _, data in sc.itersubstancedata(self.array_types):
+            #if len(data['area']) == 0:
+            if len(data['fay_area']) == 0:
+                continue
+
             for s_num in np.unique(data['spill_num']):
                 s_mask = data['spill_num'] == s_num
                 # thickness for blob of oil released together - need per spill
