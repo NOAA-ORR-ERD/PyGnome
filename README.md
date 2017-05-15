@@ -1,6 +1,6 @@
 
 
-![Gnome Logo](graphics/new_gnome_icon/GNOME_logo.png)
+![Gnome Logo](graphics/new_gnome_icon/GNOME_logo_450px-wide.png)
 
 # PyGnome
 
