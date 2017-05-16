@@ -103,11 +103,7 @@ class ModelConsumer(mp.Process):
 
                 self.stream.send_unicode(dumps(res))
             except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                fmt = traceback.format_exception(exc_type, exc_value,
-                                                 exc_traceback)
-
-                self.stream.send_unicode(dumps(fmt))
+                self.stream.send_unicode(dumps(sys.exc_info()))
 
     def _rewind(self):
         return self.model.rewind()
