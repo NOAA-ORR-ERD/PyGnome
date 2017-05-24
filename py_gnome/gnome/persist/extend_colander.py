@@ -4,11 +4,10 @@ of gnome specific types
 '''
 import datetime
 
-import numpy
-np = numpy
+import numpy as np
 
-from colander import Float, DateTime, Sequence, Tuple, \
-    TupleSchema, SequenceSchema, null, List
+from colander import (Float, DateTime, Sequence, Tuple, List,
+                      TupleSchema, SequenceSchema, null)
 
 import gnome.basic_types
 from gnome.utilities import inf_datetime

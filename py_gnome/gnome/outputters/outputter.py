@@ -26,8 +26,8 @@ class BaseSchema(base_schema.ObjType, MappingSchema):
     output_last_step = SchemaNode(Bool())
     output_timestep = SchemaNode(extend_colander.TimeDelta(), missing=drop)
     output_start_time = SchemaNode(extend_colander.LocalDateTime(),
-                            validator=validators.convertible_to_seconds,
-                            missing=drop)
+                                   validator=validators.convertible_to_seconds,
+                                   missing=None)
 
 
 class Outputter(Serializable):
@@ -87,10 +87,12 @@ class Outputter(Serializable):
         self.on = on
         self.output_zero_step = output_zero_step
         self.output_last_step = output_last_step
+
         if output_timestep:
             self._output_timestep = int(output_timestep.total_seconds())
         else:
             self._output_timestep = None
+
         if output_start_time:
             self.output_start_time = output_start_time
         else:
@@ -172,17 +174,16 @@ class Outputter(Serializable):
         # this breaks tests -- probably should fix the tests...
         if model_start_time is None:
             raise TypeError("model_start_time is a required parameter")
-        # if spills is None:
-        #    raise TypeError("spills is a required parameter")
-        # if model_time_step is None:
-        #     raise TypeError("model_time_step is a required parameter")
 
         self._model_start_time = model_start_time
         self.model_timestep = model_time_step
+
         if self.output_start_time is None:
             self.output_start_time = model_start_time
+
         self.sc_pair = spills
         cache = kwargs.pop('cache', None)
+
         if cache is not None:
             self.cache = cache
 
@@ -213,14 +214,17 @@ class Outputter(Serializable):
 
         """
         d = timedelta(seconds=time_step)
+
         if self.output_start_time != self._model_start_time:
             if model_time + d < self.output_start_time:
                 self._write_step = False
                 return
+
             if model_time + d == self.output_start_time:
                 self._write_step = True
                 self._is_first_output = False
                 return
+
             if model_time + d > self.output_start_time:
                 if self._is_first_output:
                     self._write_step = True
@@ -230,6 +234,7 @@ class Outputter(Serializable):
         if self._output_timestep is not None:
             self._write_step = False
             self._dt_since_lastoutput += time_step
+
             if self._dt_since_lastoutput >= self._output_timestep:
                 self._write_step = True
                 self._dt_since_lastoutput = (self._dt_since_lastoutput %
@@ -259,7 +264,7 @@ class Outputter(Serializable):
         """
         if step_num == 0:
             if self.output_zero_step:
-                self._write_step = True	# this is the default
+                self._write_step = True  # this is the default
             else:
                 self._write_step = False
 

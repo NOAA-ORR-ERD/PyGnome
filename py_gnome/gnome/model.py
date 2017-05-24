@@ -989,8 +989,11 @@ class Model(Serializable):
         # till we go through the prepare_for_model_step
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output(isvalid)
-        self.logger.debug("{0._pid} Completed step: {0.current_time_step} "
-                          "for {0.name}".format(self))
+
+        self.logger.debug('{0._pid} '
+                          'Completed step: {0.current_time_step} for {0.name}'
+                          .format(self))
+
         return output_info
 
     def __iter__(self):

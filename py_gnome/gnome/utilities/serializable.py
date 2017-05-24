@@ -6,6 +6,8 @@ import inspect
 
 import numpy as np
 
+from colander import SchemaType
+
 from gnome import GnomeId
 from gnome.persist import Savable
 from gnome.utilities.orderedcollection import OrderedCollection
@@ -445,8 +447,6 @@ class State(object):
                           if getattr(field_, attr)])
 
         return names
-
-from colander import SchemaType
 
 
 class Serializable(GnomeId, Savable, SchemaType):
@@ -928,6 +928,7 @@ class Serializable(GnomeId, Savable, SchemaType):
 
             if json_['json_'] == 'webapi':
                 _to_dict = schema.deserialize(json_)
+
                 for field in c_fields:
                     if field.name in json_:
                         _to_dict[field.name] = \

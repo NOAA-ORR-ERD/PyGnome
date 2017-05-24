@@ -5,8 +5,7 @@ Define general purpose functions that can used as validators
 '''
 import time
 
-import numpy
-np = numpy
+import numpy as np
 
 from colander import Invalid
 
