@@ -114,11 +114,6 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
 
         super(TrajectoryGeoJsonOutput, self).prepare_for_model_run(*args,
                                                                    **kwargs)
-
-        # override base class so there is always output
-        model_start_time = kwargs.pop('model_start_time')
-        self.output_start_time = model_start_time
-
         self.clean_output_files()
 
     def write_output(self, step_num, islast_step=False):
