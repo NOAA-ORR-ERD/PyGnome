@@ -41,73 +41,6 @@ tri_ring = os.path.join(s_data, 'tri_ring.nc')
 tri_ring = nc.Dataset(tri_ring)
 
 
-class TestTime:
-    time_var = circular_3D['time']
-    time_arr = nc.num2date(time_var[:], units=time_var.units)
-
-    def test_construction(self):
-
-        t1 = Time(TestTime.time_var)
-        assert all(TestTime.time_arr == t1.time)
-
-        t2 = Time(TestTime.time_arr)
-        assert all(TestTime.time_arr == t2.time)
-
-        t = Time(TestTime.time_var, tz_offset=dt.timedelta(hours=1))
-        print TestTime.time_arr
-        print t.time
-        print TestTime.time_arr[0] + dt.timedelta(hours=1)
-        assert t.time[0] == (TestTime.time_arr[0] + dt.timedelta(hours=1))
-
-        t = Time(TestTime.time_arr.copy(), tz_offset=dt.timedelta(hours=1))
-        assert t.time[0] == TestTime.time_arr[0] + dt.timedelta(hours=1)
-
-        diff = t.time[1] - t.time[0]
-        now = dt.datetime.now()
-        t = Time(TestTime.time_arr.copy(), origin=now)
-        assert t.time[0] == now
-        assert t.time[1] - diff == t.time[0]
-
-        t = Time(TestTime.time_arr.copy(), displacement=dt.timedelta(hours=1))
-        assert t.time[0] == TestTime.time_arr[0] + dt.timedelta(hours=1)
-
-    def test_save_load(self):
-        t1 = Time(TestTime.time_var)
-        fn = 'time.txt'
-        t1._write_time_to_file('time.txt')
-        t2 = Time.from_file(fn)
-#         pytest.set_trace()
-        assert all(t1.time == t2.time)
-        os.remove(fn)
-
-    def test_extrapolation(self):
-        ts = Time(TestTime.time_var)
-        before = TestTime.time_arr[0] - dt.timedelta(hours=1)
-        after = TestTime.time_arr[-1] + dt.timedelta(hours=1)
-        assert ts.index_of(before, True) == 0
-        assert ts.index_of(after, True) == 11
-        assert ts.index_of(ts.time[-1], True) == 10
-        assert ts.index_of(ts.time[0], True) == 0
-        with pytest.raises(ValueError):
-            ts.index_of(before, False)
-        with pytest.raises(ValueError):
-            ts.index_of(after, False)
-        assert ts.index_of(ts.time[-1], True) == 10
-        assert ts.index_of(ts.time[0], True) == 0
-
-    @pytest.mark.parametrize('_json_', ['save', 'webapi'])
-    def test_serialization(self, _json_):
-        ts = Time(TestTime.time_var)
-        ser = ts.serialize(_json_)
-        if _json_ == 'webapi':
-            deser = Time.deserialize(ser)
-            t2 = Time.new_from_dict(deser)
-            assert all(ts.data == t2.data)
-            assert 'data' in ser
-        else:
-            assert 'data' in ser
-
-
 class TestS_Depth_T1:
 
     def test_construction(self):
@@ -164,8 +97,6 @@ class TestS_Depth_T1:
         print alph
         assert all(res == [3, 2, 1])
         assert np.allclose(alph, np.array([0.397539, 0.5, 0]))
-
-
 
 
 class TestTSprop:
@@ -356,8 +287,8 @@ Triangular
                      - interpolation elsewhere
                  2D surface (time=t, depth=None)
                      - as above, validate time interpolation
-                 
-    
+
+
 
 Quad
     grid shape: (nodes:(x,y))

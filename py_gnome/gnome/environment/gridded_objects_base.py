@@ -1,19 +1,58 @@
 import gridded
-import pytest
 from gnome.environment import Environment
 import copy
-
-# org_new = dict([(c, c.__new__) for c in [Variable, VectorVariable, Time, Grid, Grid_U, Grid_S, Depth]])
-
-
-class Time(gridded.time.Time):
-    pass
-#     @classmethod
-#     def from_netCDF(cls, *args, **kwargs):
-#         return monkeypatch_gridded(super(cls, Time).from_netCDF, args, kwargs)
+from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
+from gnome.persist.base_schema import ObjType
+from gnome.utilities import serializable
+from gnome.persist import base_schema
 
 
-class Grid(gridded.grids.Grid):
+class TimeSchema(base_schema.ObjType):
+    filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
+    varname = SchemaNode(String(), missing=drop)
+    data = SchemaNode(typ=Sequence(), children=[SchemaNode(DateTime(None))], missing=drop)
+
+
+class GridSchema(base_schema.ObjType):
+    filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
+
+
+class VariableSchemaBase(base_schema.ObjType):
+    name = SchemaNode(String(), missing=drop)
+    units = SchemaNode(String(), missing=drop)
+    time = TimeSchema(missing=drop)  # SequenceSchema(SchemaNode(DateTime(default_tzinfo=None), missing=drop), missing=drop)
+
+
+class VariableSchema(VariableSchemaBase):
+    varname = SchemaNode(String())
+    grid = GridSchema(missing=drop)
+    data_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
+    grid_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
+
+
+class VectorVariableSchema(VariableSchemaBase):
+    varnames = SequenceSchema(SchemaNode(String()))
+    grid = GridSchema(missing=drop)
+    data_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
+    grid_file = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())])
+
+
+class Time(gridded.time.Time, serializable.Serializable):
+
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = TimeSchema
+
+    _state.add_field([serializable.Field('filename', save=True, update=True, isdatafile=True),
+                      serializable.Field('varname', save=True, update=True),
+                      serializable.Field('data', save=True, update=True)])
+
+
+class Grid(gridded.grids.Grid, serializable.Serializable):
+
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = GridSchema
+    _state.add_field([serializable.Field('filename', save=True, update=True, isdatafile=True)])
+
     def __new__(cls, *args, **kwargs):
         '''
         If you construct a Grid object directly, you will always
@@ -28,32 +67,68 @@ class Grid(gridded.grids.Grid):
 
 
 class Grid_U(gridded.grids.Grid_U):
-    pass
-#     @classmethod
-#     def from_netCDF(cls, *args, **kwargs):
-#         return monkeypatch_gridded(super(cls, Grid_U).from_netCDF, args, kwargs)
+    def draw_to_plot(self, ax, features=None, style=None):
+        import matplotlib
+        def_style = {'color': 'blue',
+                     'linestyle': 'solid'}
+        s = def_style.copy()
+        if style is not None:
+            s.update(style)
+        lines = self.get_lines()
+        lines = matplotlib.collections.LineCollection(lines, **s)
+        ax.add_collection(lines)
 
 
 class Grid_S(gridded.grids.Grid_S):
-    pass
-#     @classmethod
-#     def from_netCDF(cls, *args, **kwargs):
-#         return monkeypatch_gridded(super(cls, Grid_S).from_netCDF, args, kwargs)
+    def draw_to_plot(self, ax, features=None, style=None):
+        def_style = {'node': {'color': 'green',
+                              'linestyle': 'dashed',
+                              'marker': 'o'},
+                     'center': {'color': 'blue',
+                                'linestyle': 'solid'},
+                     'edge1': {'color': 'purple'},
+                     'edge2': {'color': 'olive'}}
+        if features is None:
+            features = ['node']
+        st = def_style.copy()
+        if style is not None:
+            for k in style.keys():
+                st[k].update(style[k])
+        for f in features:
+            s = st[f]
+            lon, lat = self._get_grid_vars(f)
+            ax.plot(lon, lat, **s)
+            ax.plot(lon.T, lat.T, **s)
+
 
 
 class Depth(gridded.depth.Depth):
     pass
 
 
-class Variable(gridded.Variable, Environment):
+class Variable(gridded.Variable, serializable.Serializable):
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = VariableSchema
+    _state.add_field([serializable.Field('units', save=True, update=True),
+                      serializable.Field('time', save=True, update=True, save_reference=True),
+                      serializable.Field('grid', save=True, update=True, save_reference=True),
+                      serializable.Field('varname', save=True, update=True),
+                      serializable.Field('data_file', save=True, update=True, isdatafile=True),
+                      serializable.Field('grid_file', save=True, update=True, isdatafile=True)])
+
+    default_names = []
+    cf_names = []
+
     _default_component_types = copy.deepcopy(gridded.Variable._default_component_types)
     _default_component_types.update({'time': Time,
                                      'grid': Grid,
                                      'depth': Depth})
 
-#     @classmethod
-#     def from_netCDF(cls, *args, **kwargs):
-#         return monkeypatch_gridded(super(cls, Variable).from_netCDF, args, kwargs)
+    @classmethod
+    def new_from_dict(cls, dict_):
+        if 'data' not in dict_:
+            return cls.from_netCDF(**dict_)
+        return super(Variable, cls).new_from_dict(dict_)
 
     @property
     def time(self):
@@ -64,15 +139,34 @@ class Variable(gridded.Variable, Environment):
         self._time = t
 
 
-class VectorVariable(gridded.VectorVariable, Environment):
+class VectorVariable(gridded.VectorVariable, serializable.Serializable):
+
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = VectorVariableSchema
+    _state.add_field([serializable.Field('units', save=True, update=True),
+                      serializable.Field('time', save=True, update=True, save_reference=True),
+                      serializable.Field('grid', save=True, update=True, save_reference=True),
+                      serializable.Field('variables', save=True, update=True, read=True, iscollection=True),
+                      serializable.Field('varnames', save=True, update=True),
+                      serializable.Field('data_file', save=True, update=True, isdatafile=True),
+                      serializable.Field('grid_file', save=True, update=True, isdatafile=True)])
+
+
     _default_component_types = copy.deepcopy(gridded.VectorVariable._default_component_types)
     _default_component_types.update({'time': Time,
                                      'grid': Grid,
                                      'depth': Depth,
                                      'variable': Variable})
-#     @classmethod
-#     def from_netCDF(cls, *args, **kwargs):
-#         return monkeypatch_gridded(super(cls, VectorVariable).from_netCDF, args, kwargs)
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        if 'variables' not in dict_:
+            if 'varnames' in dict_:
+                vn = dict_.get('varnames')
+                if 'constant' in vn[-1]:
+                    dict_['varnames'] = dict_['varnames'][0:2]
+            return cls.from_netCDF(**dict_)
+        return super(VectorVariable, cls).new_from_dict(dict_)
 
     @property
     def time(self):
@@ -81,42 +175,3 @@ class VectorVariable(gridded.VectorVariable, Environment):
     @time.setter
     def time(self, t):
         self._time = t
-# replacements = {gridded.variable.Variable: Variable,
-#                 gridded.variable.VectorVariable: VectorVariable,
-#                 gridded.time.Time: Time,
-#                 gridded.grids.Grid_U: Grid_U,
-#                 gridded.grids.Grid_S: Grid_S,
-#                 gridded.depth.Depth: Depth
-#                 }
-#
-#
-# def patch__new__(cls, *args, **kwargs):
-#     newcls = replacements.get(cls, cls)
-#     return object.__new__(newcls, *args, **kwargs)
-#
-#
-# def monkeypatch_gridded(func, args, kwargs):
-#     '''
-#     Monkeypatches gridded to use the classes within this file, runs the function
-#     with the args and kwargs, and undoes the patch
-#     '''
-#     pytest.set_trace()
-#     cls_list = [gridded.variable.Variable,
-#                 gridded.variable.VectorVariable,
-#                 gridded.time.Time,
-#                 gridded.grids.Grid_U,
-#                 gridded.grids.Grid_S,
-#                 gridded.depth.Depth]
-#     orig_new = dict([(kls, kls.__new__) for kls in cls_list])
-#     for cls in cls_list:
-#         print 'setting {0}.__new__ to patch__new__'.format(cls)
-#         cls.__new__ = staticmethod(patch__new__)
-#
-#     pytest.set_trace()
-#     rv = func(*args, **kwargs)
-#
-#     for cls in cls_list:
-#         print 'resetting {0}.__new__ to {1}'.format(cls, orig_new[cls])
-#         cls.__new__ = orig_new[cls]
-#
-#     return rv

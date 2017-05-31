@@ -33,10 +33,10 @@ class TimeSeriesProp(EnvProp, serializable.Serializable):
 
     _state = copy.deepcopy(EnvProp._state)
     _schema = TimeSeriesPropSchema
-    
+
     _state.add_field([serializable.Field('timeseries', save=False, update=True),
-                      serializable.Field('data', save=True, update=False)])
-    
+                      serializable.Field('data', save=True, update=True)])
+
 #     _state.update('time', update=False)
 
     def __init__(self,
