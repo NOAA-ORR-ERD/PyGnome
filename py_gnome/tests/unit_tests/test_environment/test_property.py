@@ -5,14 +5,12 @@ import datetime as dt
 import numpy as np
 import pysgrid
 import datetime
-from gnome.environment.property import Time
-from gnome.environment import GriddedProp, GridVectorProp
+from gnome.environment.gridded_objects_base import Variable, VectorVariable, Grid_S, Grid
 from gnome.environment.ts_property import TimeSeriesProp, TSVectorProp
 from gnome.environment.environment_objects import (VelocityGrid,
                                                    VelocityTS,
                                                    Bathymetry,
                                                    S_Depth_T1)
-from gnome.environment.grid import PyGrid, PyGrid_S, PyGrid_U
 from gnome.utilities.remote_data import get_datafile
 from unit_conversion import NotSupportedUnitError
 import netCDF4 as nc
@@ -45,7 +43,7 @@ class TestS_Depth_T1:
 
     def test_construction(self):
 
-        test_grid = PyGrid_S(node_lon=np.array([[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]]),
+        test_grid = Grid_S(node_lon=np.array([[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]]),
                             node_lat=np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]]))
 
         u = np.zeros((3, 4, 4), dtype=np.float64)
@@ -313,19 +311,19 @@ class TestGriddedProp:
     def test_construction(self):
 
         data = sinusoid['u'][:]
-        grid = PyGrid.from_netCDF(dataset=sinusoid)
+        grid = Grid.from_netCDF(dataset=sinusoid)
         time = None
 
-        u = GriddedProp(name='u',
-                        units='m/s',
-                        data=data,
-                        grid=grid,
-                        time=time,
-                        data_file='staggered_sine_channel.nc',
-                        grid_file='staggered_sine_channel.nc')
+        u = Variable(name='u',
+                     units='m/s',
+                     data=data,
+                     grid=grid,
+                     time=time,
+                     data_file='staggered_sine_channel.nc',
+                     grid_file='staggered_sine_channel.nc')
 
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
-        k = GriddedProp.from_netCDF(filename=curr_file, varname='u', name='u')
+        k = Variable.from_netCDF(filename=curr_file, varname='u', name='u')
         assert k.name == u.name
         assert k.units == 'm/s'
         # fixme: this was failing
@@ -334,8 +332,8 @@ class TestGriddedProp:
 
     def test_at(self):
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
-        u = GriddedProp.from_netCDF(filename=curr_file, varname='u_rho')
-        v = GriddedProp.from_netCDF(filename=curr_file, varname='v_rho')
+        u = Variable.from_netCDF(filename=curr_file, varname='u_rho')
+        v = Variable.from_netCDF(filename=curr_file, varname='v_rho')
 
         points = np.array(([0, 0, 0], [np.pi, 1, 0], [2 * np.pi, 0, 0]))
         time = datetime.datetime.now()
@@ -347,17 +345,17 @@ class TestGriddedProp:
     def test_time_offset(self):
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
         now = dt.datetime.now()
-        u = GriddedProp.from_netCDF(filename=curr_file, varname='u_rho', time_origin=now)
-        v = GriddedProp.from_netCDF(filename=curr_file, varname='v_rho')
+        u = Variable.from_netCDF(filename=curr_file, varname='u_rho', time_origin=now)
+        v = Variable.from_netCDF(filename=curr_file, varname='v_rho')
         assert all(u.time.data > v.time.data)
 
 class TestGridVectorProp:
 
     def test_construction(self):
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
-        u = GriddedProp.from_netCDF(filename=curr_file, varname='u_rho')
-        v = GriddedProp.from_netCDF(filename=curr_file, varname='v_rho')
-        gvp = GridVectorProp(name='velocity', units='m/s', time=u.time, variables=[u, v])
+        u = Variable.from_netCDF(filename=curr_file, varname='u_rho')
+        v = Variable.from_netCDF(filename=curr_file, varname='v_rho')
+        gvp = VectorVariable(name='velocity', units='m/s', time=u.time, variables=[u, v])
         assert gvp.name == 'velocity'
         assert gvp.units == 'm/s'
         assert gvp.varnames[0] == 'u_rho'
@@ -365,7 +363,7 @@ class TestGridVectorProp:
 
     def test_at(self):
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
-        gvp = GridVectorProp.from_netCDF(filename=curr_file,
+        gvp = VectorVariable.from_netCDF(filename=curr_file,
                                          varnames=['u_rho', 'v_rho'])
         points = np.array(([0, 0, 0], [np.pi, 1, 0], [2 * np.pi, 0, 0]))
         time = datetime.datetime.now()

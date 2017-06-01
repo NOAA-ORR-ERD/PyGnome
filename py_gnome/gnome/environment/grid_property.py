@@ -5,6 +5,7 @@ from collections import namedtuple
 from colander import SchemaNode, SchemaType, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, List
 from gnome.utilities.file_tools.data_helpers import _get_dataset
 from gnome.environment.property import *
+from gnome.environment.gridded_objects_base import Time, TimeSchema
 from gnome.environment.grid import PyGrid, PyGrid_U, PyGrid_S, PyGridSchema
 
 import hashlib
