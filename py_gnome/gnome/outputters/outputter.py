@@ -178,8 +178,9 @@ class Outputter(Serializable):
         self._model_start_time = model_start_time
         self.model_timestep = model_time_step
 
-        if self.output_start_time is None:
-            self.output_start_time = model_start_time
+        # don't set a time if output_start_time is None; output all the steps
+        #if self.output_start_time is None:
+            #self.output_start_time = model_start_time
 
         self.sc_pair = spills
         cache = kwargs.pop('cache', None)
@@ -215,21 +216,22 @@ class Outputter(Serializable):
         """
         d = timedelta(seconds=time_step)
 
-        if self.output_start_time != self._model_start_time:
-            if model_time + d < self.output_start_time:
-                self._write_step = False
-                return
+        if self.output_start_time is not None:
+            if self.output_start_time != self._model_start_time:
+                if model_time + d < self.output_start_time:
+                    self._write_step = False
+                    return
 
-            if model_time + d == self.output_start_time:
-                self._write_step = True
-                self._is_first_output = False
-                return
-
-            if model_time + d > self.output_start_time:
-                if self._is_first_output:
+                if model_time + d == self.output_start_time:
                     self._write_step = True
                     self._is_first_output = False
                     return
+
+                if model_time + d > self.output_start_time:
+                    if self._is_first_output:
+                        self._write_step = True
+                        self._is_first_output = False
+                        return
 
         if self._output_timestep is not None:
             self._write_step = False
