@@ -335,9 +335,9 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
 
         data_arrays['droplet_diameter'][-num_new_particles:] = drop_size
 
-        #don't require a water object
-        #water_temp = spill.water.get('temperature')
-        #le_density[:] = substance.density_at_temp(water_temp)
+        # Don't require a water object
+        # water_temp = spill.water.get('temperature')
+        # le_density[:] = substance.density_at_temp(water_temp)
 
         if spill.water is not None:
             water_temp = spill.water.get('temperature')

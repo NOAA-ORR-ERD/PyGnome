@@ -15,13 +15,16 @@ Note: An ElementType needs a bunch of initializers -- but that is an
 
 import copy
 
+import unit_conversion as uc
+
 from gnome.utilities.serializable import Serializable, Field
+from gnome.persist import base_schema, class_from_objtype
+
+from .substance import NonWeatheringSubstance
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromPlume)
-from gnome.persist import base_schema, class_from_objtype
-import unit_conversion as uc
 
 
 class ElementType(Serializable):
@@ -408,14 +411,8 @@ def plume(distribution_type='droplet_size',
                       )
 
     if density is not None:
-        # Assume density is at 15 C - convert density to api
-        api = uc.convert('density', density_units, 'API', density)
-        if substance_name is not None:
-            substance = get_oil_props({'name': substance_name,
-                                       'api': api},
-                                      2)
-        else:
-            substance = get_oil_props({'api': api}, 2)
+        # Assume density is at 15 C
+        substance = NonWeatheringSubstance(standard_density=density)
     elif substance_name is not None:
         # model 2 cuts if fake oil
         substance = get_oil_props(substance_name, 2)
