@@ -1,8 +1,10 @@
 import gridded
 import datetime
 import StringIO
-from gnome.environment import Environment
 import copy
+import numpy as np
+import pdb
+from gnome.environment import Environment
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
 from gnome.persist.base_schema import ObjType
 from gnome.utilities import serializable
@@ -97,16 +99,6 @@ class Time(gridded.time.Time, serializable.Serializable):
         for t in self.time:
             fd.write(t.strftime('%c') + '\n')
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        if 'varname' not in dict_:
-            dict_['time'] = dict_['data']
-#             if 'filename' not in dict_:
-#                 raise ValueError
-            return cls(**dict_)
-        else:
-            return cls.from_netCDF(**dict_)
-
 
 class Grid_U(gridded.grids.Grid_U, serializable.Serializable):
 
@@ -135,8 +127,11 @@ class Grid_U(gridded.grids.Grid_U, serializable.Serializable):
         rv.__class__._def_count -= 1
         return rv
 
-        def get_cells(self):
-            return self.nodes[self.faces]
+    def get_cells(self):
+        return self.nodes[self.faces]
+
+    def get_nodes(self):
+        return self.nodes[:]
 
 class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
 
@@ -177,9 +172,15 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
     def get_cells(self):
         if not hasattr(self, '_cell_trees'):
             self.build_celltree()
+        ns = self._cell_trees['node'][1]
+        fs = self._cell_trees['node'][2]
+        return ns[fs]
+
+    def get_nodes(self):
+        if not hasattr(self, '_cell_trees'):
+            self.build_celltree()
         n = self._cell_trees['node'][1]
-        f = self._cell_trees['node'][2]
-        return n[f]
+        return n
 
 
 class Grid(gridded.grids.Grid):
@@ -189,6 +190,10 @@ class Grid(gridded.grids.Grid):
         kwargs['_default_types'] = (('ugrid', Grid_U), ('sgrid', Grid_S))
         return gridded.grids.Grid.from_netCDF(*args, **kwargs)
 
+    @staticmethod
+    def _get_grid_type(*args, **kwargs):
+        kwargs['_default_types'] = (('ugrid', Grid_U), ('sgrid', Grid_S))
+        return gridded.grids.Grid._get_grid_type(*args, **kwargs)
 
 
 class Depth(gridded.depth.Depth):
@@ -248,3 +253,36 @@ class VectorVariable(gridded.VectorVariable, serializable.Serializable):
                     dict_['varnames'] = dict_['varnames'][0:2]
             return cls.from_netCDF(**dict_)
         return super(VectorVariable, cls).new_from_dict(dict_)
+
+    def get_data_vectors(self):
+        '''
+        return array of shape (time_slices, len_linearized_data,2)
+        first is magnitude, second is direction
+        '''
+#         start_time_idx = self.time.index_of(start_time, extrapolate=True)
+#         end_time_idx = self.time.index_of(end_time, extrapolate=True)
+#         raw_u = self.variables[0].data[start_time_idx:end_time_idx]
+#         raw_v = self.variables[1].data[start_time_idx:end_time_idx]
+#         if isinstance(self.grid, Grid_U):
+#             # assume time, ele
+#         else:
+        raw_u = self.variables[0].data[:]
+        raw_v = self.variables[1].data[:]
+
+        if self.depth is not None:
+            raw_u = raw_u[:,self.depth.surface_index]
+            raw_v = raw_v[:,self.depth.surface_index]
+
+        if np.any(np.array(raw_u.shape) != np.array(raw_v.shape)): # must be roms-style staggered
+            raw_u = (raw_u[:,0:-1,:] + raw_u[:,1:,:]) /2
+            raw_v = (raw_v[:,:,0:-1] + raw_v[:,:,1:]) /2
+
+        #direction = np.arctan2(raw_v, raw_u) - np.pi/2
+        #magnitude = np.sqrt(raw_u**2 + raw_v**2)
+
+        raw_u = raw_u.reshape(raw_u.shape[0], -1)
+        raw_v = raw_v.reshape(raw_v.shape[0], -1)
+        r = np.stack((raw_u, raw_v))
+        return np.ascontiguousarray(r, np.float32)
+
+

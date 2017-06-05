@@ -1,8 +1,7 @@
 import numpy as np
 import netCDF4 as nc4
 
-from pysgrid import SGrid
-from gnome.environment.grid_property import GriddedProp
+from gnome.environment.gridded_objects_base import Grid_S, Grid
 
 import os
 from datetime import datetime, timedelta
@@ -18,7 +17,6 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.environment import GridCurrent
-from gnome.environment import PyGrid, PyGrid_U
 from gnome.movers.py_current_movers import PyCurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
@@ -29,7 +27,7 @@ def gen_vortex_3D(filename=None):
     x = np.ascontiguousarray(x.T)
     x_size = 61
     y_size = 61
-    g = PyGrid(node_lon=x,
+    g = Grid_S(node_lon=x,
                node_lat=y)
     g.build_celltree()
     lin_nodes = g._cell_trees['node'][1]
@@ -134,15 +132,13 @@ def gen_vortex_3D(filename=None):
             ds[k][:] = v
             if 'lin' in k:
                 ds[k].units = 'm/s'
-        PyGrid._get_grid_type(ds, grid_topology={'node_lon': 'x', 'node_lat': 'y'})
-        PyGrid._get_grid_type(ds)
+        Grid._get_grid_type(ds, grid_topology={'node_lon': 'x', 'node_lat': 'y'})
+        Grid._get_grid_type(ds)
         ds.setncattr('grid_type', 'sgrid')
     if ds is not None:
         # Need to test the dataset...
-        from gnome.environment import GridCurrent
-        from gnome.environment.grid_property import GriddedProp
         sgt = {'node_lon': 'x', 'node_lat': 'y'}
-        sg = PyGrid.from_netCDF(dataset=ds, grid_topology=sgt, grid_type='sgrid')
+        sg = Grid.from_netCDF(dataset=ds, grid_topology=sgt, grid_type='sgrid')
         sgc1 = GridCurrent.from_netCDF(dataset=ds, varnames=['vx', 'vy'], grid_topology=sgt)
         sgc2 = GridCurrent.from_netCDF(dataset=ds, varnames=['tvx', 'tvy'], grid_topology=sgt)
         sgc3 = GridCurrent.from_netCDF(dataset=ds, varnames=['dvx', 'dvy'], grid_topology=sgt)

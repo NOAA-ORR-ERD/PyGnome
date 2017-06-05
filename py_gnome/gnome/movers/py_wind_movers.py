@@ -3,7 +3,6 @@ import numpy as np
 import datetime
 import copy
 from gnome import basic_types
-from gnome.environment import GridCurrent, GridVectorPropSchema
 from gnome.utilities import serializable, rand
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.environment import GridWind
@@ -21,7 +20,7 @@ class PyWindMoverSchema(base_schema.ObjType):
     current_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
-    wind = GridVectorPropSchema(missing=drop)
+    wind = GridWind._schema(missing=drop)
 
 
 class PyWindMover(movers.PyMover, serializable.Serializable):
@@ -37,7 +36,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
     _schema = PyWindMoverSchema
 
     _ref_as = 'py_wind_movers'
-    
+
     _req_refs = {'wind': GridWind}
 
     def __init__(self,

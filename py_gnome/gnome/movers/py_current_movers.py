@@ -4,8 +4,8 @@ import datetime
 import copy
 import pytest
 from gnome import basic_types
-from gnome.environment import GridCurrent, GridVectorPropSchema
-from gnome.environment.grid import PyGrid_U
+from gnome.environment import GridCurrent
+from gnome.environment.gridded_objects_base import Grid_U
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
@@ -22,7 +22,7 @@ class PyCurrentMoverSchema(base_schema.ObjType):
     current_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
-    current = GridVectorPropSchema(missing=drop)
+    current = GridCurrent._schema(missing=drop)
     data_start_time = SchemaNode(DateTime(), missing=drop)
     data_end_time = SchemaNode(DateTime(), missing=drop)
 
@@ -139,7 +139,7 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         """
             The main function for getting grid data from the mover
         """
-        if isinstance(self.current.grid, PyGrid_U):
+        if isinstance(self.current.grid, Grid_U):
             return self.current.grid.nodes[self.current.grid.faces[:]]
         else:
             lons = self.current.grid.node_lon
