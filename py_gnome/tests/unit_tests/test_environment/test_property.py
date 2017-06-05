@@ -3,9 +3,8 @@ import sys
 import pytest
 import datetime as dt
 import numpy as np
-import pysgrid
 import datetime
-from gnome.environment.gridded_objects_base import Variable, VectorVariable, Grid_S, Grid
+from gnome.environment.gridded_objects_base import Variable, VectorVariable, Grid_S, PyGrid
 from gnome.environment.ts_property import TimeSeriesProp, TSVectorProp
 from gnome.environment.environment_objects import (VelocityGrid,
                                                    VelocityTS,
@@ -15,7 +14,6 @@ from gnome.utilities.remote_data import get_datafile
 from unit_conversion import NotSupportedUnitError
 import netCDF4 as nc
 import unit_conversion
-import pprint as pp
 
 base_dir = os.path.dirname(__file__)
 sys.path.append(os.path.join(base_dir, 'sample_data'))
@@ -311,7 +309,7 @@ class TestGriddedProp:
     def test_construction(self):
 
         data = sinusoid['u'][:]
-        grid = Grid.from_netCDF(dataset=sinusoid)
+        grid = PyGrid.from_netCDF(dataset=sinusoid)
         time = None
 
         u = Variable(name='u',
@@ -342,12 +340,6 @@ class TestGriddedProp:
         print np.cos(points[:, 0] / 2) / 2
         assert all(np.isclose(v.at(points, time), np.cos(points[:, 0] / 2) / 2))
 
-    def test_time_offset(self):
-        curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
-        now = dt.datetime.now()
-        u = Variable.from_netCDF(filename=curr_file, varname='u_rho', time_origin=now)
-        v = Variable.from_netCDF(filename=curr_file, varname='v_rho')
-        assert all(u.time.data > v.time.data)
 
 class TestGridVectorProp:
 

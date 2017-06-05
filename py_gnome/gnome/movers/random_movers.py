@@ -14,7 +14,7 @@ from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
 from gnome.utilities.serializable import Serializable, Field
 
 from gnome.environment import IceConcentration
-from gnome.environment.gridded_objects_base import Grid
+from gnome.environment.gridded_objects_base import PyGrid
 from gnome.environment.gridded_objects_base import VariableSchema
 
 from gnome.movers import CyMover, ProcessSchema

@@ -183,7 +183,7 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
         return n
 
 
-class Grid(gridded.grids.Grid):
+class PyGrid(gridded.grids.Grid):
 
     @staticmethod
     def from_netCDF(*args, **kwargs):
@@ -215,7 +215,7 @@ class Variable(gridded.Variable, serializable.Serializable):
 
     _default_component_types = copy.deepcopy(gridded.Variable._default_component_types)
     _default_component_types.update({'time': Time,
-                                     'grid': Grid,
+                                     'grid': PyGrid,
                                      'depth': Depth})
 
     @classmethod
@@ -240,7 +240,7 @@ class VectorVariable(gridded.VectorVariable, serializable.Serializable):
 
     _default_component_types = copy.deepcopy(gridded.VectorVariable._default_component_types)
     _default_component_types.update({'time': Time,
-                                     'grid': Grid,
+                                     'grid': PyGrid,
                                      'depth': Depth,
                                      'variable': Variable})
 

@@ -3,8 +3,6 @@ an assortment of utilities to help with various netcdf grid files.
 """
 
 import netCDF4 as nc4
-import pyugrid
-import pysgrid
 import numpy as np
 import collections
 

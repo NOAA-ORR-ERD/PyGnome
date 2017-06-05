@@ -13,10 +13,7 @@ from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, 
 from gnome.persist.base_schema import ObjType
 from gnome.utilities import serializable
 from gnome.persist import base_schema
-from gnome.utilities.file_tools.data_helpers import _get_dataset
 
-import pyugrid
-import pysgrid
 import unit_conversion
 import collections
 from collections import OrderedDict

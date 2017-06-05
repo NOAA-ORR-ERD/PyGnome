@@ -1,7 +1,7 @@
 import os
 import pytest
 import netCDF4 as nc
-from gnome.environment.gridded_objects_base import Grid, Grid_U, Grid_S
+from gnome.environment.gridded_objects_base import PyGrid, Grid_U, Grid_S
 from gnome.utilities.remote_data import get_datafile
 import pprint as pp
 
@@ -20,7 +20,7 @@ def sg_topology():
 
 @pytest.fixture()
 def sg():
-    return Grid.from_netCDF(sg_data()[0], sg_data()[1], grid_topology=sg_topology())
+    return PyGrid.from_netCDF(sg_data()[0], sg_data()[1], grid_topology=sg_topology())
 
 @pytest.fixture()
 def ug_data():
@@ -36,7 +36,7 @@ def ug_topology():
 
 @pytest.fixture()
 def ug():
-    return Grid.from_netCDF(ug_data()[0], ug_data()[1], grid_topology=ug_topology())
+    return PyGrid.from_netCDF(ug_data()[0], ug_data()[1], grid_topology=ug_topology())
 
 class TestPyGrid_S:
     def test_construction(self, sg_data, sg_topology):
@@ -49,8 +49,8 @@ class TestPyGrid_S:
         sg2 = Grid_S.from_netCDF(filename)
         assert sg2.filename == filename
 
-        sg3 = Grid.from_netCDF(filename, dataset, grid_topology=grid_topology)
-        sg4 = Grid.from_netCDF(filename)
+        sg3 = PyGrid.from_netCDF(filename, dataset, grid_topology=grid_topology)
+        sg4 = PyGrid.from_netCDF(filename)
         print sg3.shape
         print sg4.shape
         assert sg == sg3
@@ -108,8 +108,8 @@ class TestPyGrid_U:
 #         assert isinstance(ug2.node_lon, nc.Variable)
 #         assert ug2.node_lon.name == 'lon'
 
-        ug3 = Grid.from_netCDF(filename, dataset, grid_topology=grid_topology)
-        ug4 = Grid.from_netCDF(filename)
+        ug3 = PyGrid.from_netCDF(filename, dataset, grid_topology=grid_topology)
+        ug4 = PyGrid.from_netCDF(filename)
         print ug3.shape
         print ug4.shape
         assert ug == ug3

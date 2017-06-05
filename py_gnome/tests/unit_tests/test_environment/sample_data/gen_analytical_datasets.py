@@ -1,7 +1,7 @@
 import numpy as np
 import netCDF4 as nc4
 
-from gnome.environment.gridded_objects_base import Grid_S, Grid
+from gnome.environment.gridded_objects_base import Grid_S, PyGrid
 
 import os
 from datetime import datetime, timedelta
@@ -132,13 +132,13 @@ def gen_vortex_3D(filename=None):
             ds[k][:] = v
             if 'lin' in k:
                 ds[k].units = 'm/s'
-        Grid._get_grid_type(ds, grid_topology={'node_lon': 'x', 'node_lat': 'y'})
-        Grid._get_grid_type(ds)
+        PyGrid._get_grid_type(ds, grid_topology={'node_lon': 'x', 'node_lat': 'y'})
+        PyGrid._get_grid_type(ds)
         ds.setncattr('grid_type', 'sgrid')
     if ds is not None:
         # Need to test the dataset...
         sgt = {'node_lon': 'x', 'node_lat': 'y'}
-        sg = Grid.from_netCDF(dataset=ds, grid_topology=sgt, grid_type='sgrid')
+        sg = PyGrid.from_netCDF(dataset=ds, grid_topology=sgt, grid_type='sgrid')
         sgc1 = GridCurrent.from_netCDF(dataset=ds, varnames=['vx', 'vy'], grid_topology=sgt)
         sgc2 = GridCurrent.from_netCDF(dataset=ds, varnames=['tvx', 'tvy'], grid_topology=sgt)
         sgc3 = GridCurrent.from_netCDF(dataset=ds, varnames=['dvx', 'dvy'], grid_topology=sgt)
