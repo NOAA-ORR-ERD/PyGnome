@@ -99,8 +99,7 @@ class FateDataView(AddLogger):
             dict_to_update = getattr(self, fate)
             for at in array_types:
                 array = sc._array_name(at)
-                if array not in dict_to_update:
-                    dict_to_update[array] = sc[array][fate_mask]
+                dict_to_update[array] = sc[array][fate_mask]
 
             setattr(self, fate, dict_to_update)
 
