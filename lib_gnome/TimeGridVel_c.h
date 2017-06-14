@@ -422,6 +422,8 @@ public:
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
 
 	virtual	bool 		IsTriangleGrid(){return true;}
+	virtual	bool 		IsDataOnCells(){return false;}	// data is on the points
+	virtual OSErr 		GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity);
 };
 
 

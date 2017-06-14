@@ -557,7 +557,12 @@ GridCellInfoHdl GridCurrentMover_c::GetCellDataHdl(void)
 WORLDPOINTH	GridCurrentMover_c::GetTriangleCenters(void)
 {	// should rename this function...
 	if (IsTriangleGrid())
-		return timeGrid->fGrid->GetCenterPointsHdl();
+	{
+		if (IsDataOnCells())
+			return timeGrid->fGrid->GetCenterPointsHdl();
+		else
+			return timeGrid->fGrid->GetWorldPointsHdl();
+	}
 	else
 		return timeGrid->GetCellCenters();
 }
