@@ -171,6 +171,11 @@ public:
 
 	FLOATH fDepthsH;	// check what this is, maybe rename
 	DepthDataInfoH fDepthDataInfo;
+
+	//WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
+	WORLDPOINTH fCenterPtsH;		// for curvilinear, all vertex points from file
+	GridCellInfoHdl fGridCellInfoH;
+	LongPointHdl fPtsH;
 	//double fFileScaleFactor;
 
 	//Boolean fAllowVerticalExtrapolationOfCurrents;
@@ -202,6 +207,11 @@ public:
 	
 	virtual OSErr		TextRead(const char *path, const char *topFilePath);
 
+	virtual LongPointHdl		GetPointsHdl();
+	virtual WORLDPOINTH 	GetCellCenters();
+	virtual GridCellInfoHdl 	GetCellData();
+	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
+
 	virtual	bool 		IsRegularGrid(){return true;}
 };
 
@@ -213,8 +223,8 @@ public:
 	
 	LONGH fVerdatToNetCDFH;	// for curvilinear
 	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
-	WORLDPOINTH fCenterPtsH;		// for curvilinear, all vertex points from file
-	GridCellInfoHdl fGridCellInfoH;
+	//WORLDPOINTH fCenterPtsH;		// for curvilinear, all vertex points from file
+	//GridCellInfoHdl fGridCellInfoH;
 	Boolean bVelocitiesOnNodes;		// default is velocities on cells
 
 	TimeGridVelCurv_c ();

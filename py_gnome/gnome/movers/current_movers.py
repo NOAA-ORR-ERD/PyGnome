@@ -576,7 +576,10 @@ class GridCurrentMover(CurrentMoversBase, Serializable):
                 num_vertices = self.mover.get_num_points()
                 num_cells = num_vertices
         else:
-            num_cells = num_tri / 2
+            if self.mover._is_regular_grid():
+                num_cells = self.mover.get_num_points()
+            else:
+                num_cells = num_tri / 2
 
         vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
 
