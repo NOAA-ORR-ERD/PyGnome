@@ -18,9 +18,8 @@ geojson
 repoze.lru
 colander
 gsw             # Thermodynamic Equations Of Seawater - density computation
-pyugrid
-pysgrid
 pyshp
+gridded
 
 
 # Binary dependencies that can probably be pip installed

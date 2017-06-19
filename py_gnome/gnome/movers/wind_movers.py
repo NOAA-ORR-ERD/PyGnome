@@ -230,12 +230,6 @@ class WindMover(WindMoversBase, Serializable):
         # set optional attributes
         super(WindMover, self).__init__(**kwargs)
 
-        # this will have to be updated when wind is set or changed
-        if self.wind is not None:
-            self.real_data_start = sec_to_datetime(self.wind.ossm
-                                                   .get_start_time())
-            self.real_data_stop = sec_to_datetime(self.wind.ossm
-                                                  .get_end_time())
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}(\n{1})'
@@ -261,7 +255,29 @@ class WindMover(WindMoversBase, Serializable):
         else:
             # update reference to underlying cython object
             self._wind = value
-            self.mover.set_ossm(self.wind.ossm)
+            self.mover.set_ossm(self._wind.ossm)
+
+    @property
+    def real_data_start(self):
+        if self.wind is not None:
+            return sec_to_datetime(self.wind.ossm.get_start_time())
+        else:
+            return self._r_d_s
+
+    @real_data_start.setter
+    def real_data_start(self, value):
+        self._r_d_s = value
+
+    @property
+    def real_data_stop(self):
+        if self.wind is not None:
+            return sec_to_datetime(self.wind.ossm.get_end_time())
+        else:
+            return self._r_d_e
+
+    @real_data_stop.setter
+    def real_data_stop(self, value):
+        self._r_d_e = value
 
     def prepare_for_model_run(self):
         '''
