@@ -7,10 +7,10 @@ import numpy as np
 from datetime import datetime, timedelta
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
 from gnome.utilities import serializable
+import gridded
 
 from gnome.environment import Environment
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp, TimeSeriesPropSchema
-from gnome.utilities.file_tools.data_helpers import _get_dataset
 
 from gnome.environment.gridded_objects_base import (Time,
                                                     Depth,
@@ -39,7 +39,7 @@ class S_Depth_T1(object):
                 data_file = bathymetry.data_file
                 if data_file is None:
                     raise ValueError("Need data_file or dataset containing sigma equation terms")
-            ds = _get_dataset(data_file)
+            ds = gridded.utilities.get_dataset(data_file)
         self.bathymetry = bathymetry
         self.terms = terms
         if len(terms) == 0:
@@ -266,7 +266,7 @@ class VelocityGrid(VectorVariable):
             if kwargs.get('dataset', None) is not None:
                 df = kwargs['dataset']
             elif kwargs.get('grid_file', None) is not None:
-                df = _get_dataset(kwargs['grid_file'])
+                df = gridded.utilities.get_dataset(kwargs['grid_file'])
             if df is not None and 'angle' in df.variables.keys():
                 # Unrotated ROMS Grid!
                 self.angle = Variable(name='angle', units='radians', time=Time.constant_time(), grid=kwargs['grid'], data=df['angle'])

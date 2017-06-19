@@ -17,7 +17,6 @@ from gnome.persist import base_schema
 from .environment import Environment
 
 import zipfile
-from gnome.utilities.file_tools.data_helpers import _get_dataset, _gen_topology
 
 
 class GridSchema(base_schema.ObjType):
