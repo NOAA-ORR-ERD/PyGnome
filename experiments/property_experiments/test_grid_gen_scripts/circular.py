@@ -1,7 +1,5 @@
 import numpy as np
 
-from pysgrid import SGrid
-from gnome.environment.grid_property import GriddedProp
 
 import os
 from datetime import datetime, timedelta
@@ -20,12 +18,15 @@ from gnome.environment import GridCurrent
 from gnome.movers.py_current_movers import PyCurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
+
+from gnome.environment.gridded_objects_base import Grid_S, Variable
+
 x, y = np.mgrid[-30:30:61j, -30:30:61j]
 y = np.ascontiguousarray(y.T)
 x = np.ascontiguousarray(x.T)
 # y += np.sin(x) / 1
 # x += np.sin(x) / 5
-g = SGrid(node_lon=x,
+g = Grid_S(node_lon=x,
           node_lat=y)
 g.build_celltree()
 t = datetime(2000, 1, 1, 0, 0)
@@ -49,8 +50,8 @@ vy = vy[np.newaxis, :] * 20
 # value[:,0] = x
 # value[:,1] = y
 
-vels_x = GriddedProp(name='v_x', units='m/s', time=[t], grid=g, data=vx)
-vels_y = GriddedProp(name='v_y', units='m/s', time=[t], grid=g, data=vy)
+vels_x = Variable(name='v_x', units='m/s', time=[t], grid=g, data=vx)
+vels_y = Variable(name='v_y', units='m/s', time=[t], grid=g, data=vy)
 vg = GridCurrent(variables=[vels_y, vels_x], time=[t], grid=g, units='m/s')
 point = np.zeros((1, 2))
 print vg.at(point, t)

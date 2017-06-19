@@ -136,6 +136,22 @@ class Process(AddLogger):
         self._check_active_startstop(self._active_start, value)
         self._active_stop = value
 
+    @property
+    def real_data_start(self):
+        return self._r_d_s
+
+    @real_data_start.setter
+    def real_data_start(self, value):
+        self._r_d_s = value
+
+    @property
+    def real_data_stop(self):
+        return self._r_d_e
+
+    @real_data_stop.setter
+    def real_data_stop(self, value):
+        self._r_d_e = value
+
     def datetime_to_seconds(self, model_time):
         """
         Put the time conversion call here - in case we decide to change it, it

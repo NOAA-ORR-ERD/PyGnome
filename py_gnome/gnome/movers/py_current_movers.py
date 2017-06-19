@@ -4,8 +4,8 @@ import datetime
 import copy
 import pytest
 from gnome import basic_types
-from gnome.environment import GridCurrent, GridVectorPropSchema
-from gnome.environment.grid import PyGrid_U
+from gnome.environment import GridCurrent
+from gnome.environment.gridded_objects_base import Grid_U
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
@@ -15,17 +15,26 @@ from gnome.basic_types import (world_point,
                                status_code_type)
 from gnome.persist import base_schema
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, Bool
-
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 class PyCurrentMoverSchema(base_schema.ObjType):
     filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
     current_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
-    current = GridVectorPropSchema(missing=drop)
-    data_start_time = SchemaNode(DateTime(), missing=drop)
-    data_end_time = SchemaNode(DateTime(), missing=drop)
-
+    current = GridCurrent._schema(missing=drop)
+    real_data_start = SchemaNode(DateTime(), missing=drop)
+    real_data_stop = SchemaNode(DateTime(), missing=drop)
+    on = SchemaNode(Bool(), missing=drop)
+    active_start = SchemaNode(LocalDateTime(), missing=drop,
+                              validator=convertible_to_seconds)
+    active_stop = SchemaNode(LocalDateTime(), missing=drop,
+                             validator=convertible_to_seconds)
+    real_data_start = SchemaNode(LocalDateTime(), missing=drop,
+                                 validator=convertible_to_seconds)
+    real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
+                                validator=convertible_to_seconds)
 
 class PyCurrentMover(movers.PyMover, serializable.Serializable):
 
@@ -35,8 +44,6 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
                       serializable.Field('current', read=True, save_reference=True),
-                      serializable.Field('data_start_time', read=True),
-                      serializable.Field('data_end_time', read=True),
                       ])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
@@ -124,12 +131,20 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                    **kwargs)
 
     @property
-    def data_start_time(self):
-        return self.current.time.min_time
+    def real_data_start(self):
+        return self.current.time.min_time.replace(tzinfo=None)
+
+    @real_data_start.setter
+    def real_data_start(self, value):
+        self._r_d_s = value
 
     @property
-    def data_end_time(self):
-        return self.current.time.max_time
+    def real_data_stop(self):
+        return self.current.time.max_time.replace(tzinfo=None)
+
+    @real_data_stop.setter
+    def real_data_stop(self, value):
+        self._r_d_e = value
 
     @property
     def is_data_on_cells(self):
@@ -139,7 +154,7 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         """
             The main function for getting grid data from the mover
         """
-        if isinstance(self.current.grid, PyGrid_U):
+        if isinstance(self.current.grid, Grid_U):
             return self.current.grid.nodes[self.current.grid.faces[:]]
         else:
             lons = self.current.grid.node_lon
