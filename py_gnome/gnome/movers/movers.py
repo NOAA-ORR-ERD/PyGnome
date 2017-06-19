@@ -226,11 +226,11 @@ class Mover(Process):
 
 class PyMover(Mover):
     def __init__(self,
-                 default_num_method='Trapezoid',
+                 default_num_method='RK2',
                  **kwargs):
         self.num_methods = {'RK4': self.get_delta_RK4,
                             'Euler': self.get_delta_Euler,
-                            'Trapezoid': self.get_delta_Trapezoid}
+                            'RK2': self.get_delta_RK2}
         self.default_num_method = default_num_method
 
         if 'env' in kwargs:
@@ -247,7 +247,7 @@ class PyMover(Mover):
 
         return vels * time_step
 
-    def get_delta_Trapezoid(self, sc, time_step, model_time, pos, vel_field):
+    def get_delta_RK2(self, sc, time_step, model_time, pos, vel_field):
         dt = timedelta(seconds=time_step)
         dt_s = dt.seconds
         t = model_time

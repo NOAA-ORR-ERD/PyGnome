@@ -66,9 +66,34 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                  uncertain_along=.5,
                  uncertain_across=.25,
                  uncertain_cross=.25,
-                 default_num_method='Trapezoid',
+                 default_num_method='RK2',
                  **kwargs
                  ):
+        """
+        Initialize a PyCurrentMover
+
+        :param filename: absolute or relative path to the data file(s):
+                         could be a string or list of strings in the
+                         case of a multi-file dataset
+        :param current: Environment object representing currents to be
+                        used. If this is not specified, a GridCurrent object
+                        will attempt to be instantiated from the file
+        :param active_start: datetime when the mover should be active
+        :param active_stop: datetime after which the mover should be inactive
+        :param current_scale: Value to scale current data
+        :param uncertain_duration: how often does a given uncertain element
+                                   get reset
+        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_cross: Scale for uncertainty perpendicular to the flow
+        :param uncertain_along: Scale for uncertainty parallel to the flow
+        :param extrapolate: Allow current data to be extrapolated
+                            before and after file data
+        :param time_offset: Time zone shift if data is in GMT
+        :param num_method: Numerical method for calculating movement delta.
+                           Choices:('Euler', 'RK2', 'RK4')
+                           Default: RK2
+
+        """
         self.filename = filename
         self.current = current
         if self.current is None:
@@ -115,6 +140,9 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                     uncertain_across=.25,
                     uncertain_cross=.25,
                     **kwargs):
+        """
+        Function for specifically creating a PyCurrentMover from a file
+        """
         current = GridCurrent.from_netCDF(filename, **kwargs)
         if name is None:
             name = cls.__name__ + str(cls._def_count)
