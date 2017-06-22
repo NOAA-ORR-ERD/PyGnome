@@ -3,21 +3,17 @@ import sys
 import pytest
 import datetime as dt
 import numpy as np
-import pysgrid
 import datetime
-from gnome.environment.property import Time
-from gnome.environment import GriddedProp, GridVectorProp
+from gnome.environment.gridded_objects_base import Variable, VectorVariable, Grid_S, PyGrid
 from gnome.environment.ts_property import TimeSeriesProp, TSVectorProp
 from gnome.environment.environment_objects import (VelocityGrid,
                                                    VelocityTS,
                                                    Bathymetry,
                                                    S_Depth_T1)
-from gnome.environment.grid import PyGrid, PyGrid_S, PyGrid_U
 from gnome.utilities.remote_data import get_datafile
 from unit_conversion import NotSupportedUnitError
 import netCDF4 as nc
 import unit_conversion
-import pprint as pp
 
 base_dir = os.path.dirname(__file__)
 sys.path.append(os.path.join(base_dir, 'sample_data'))
@@ -41,78 +37,11 @@ tri_ring = os.path.join(s_data, 'tri_ring.nc')
 tri_ring = nc.Dataset(tri_ring)
 
 
-class TestTime:
-    time_var = circular_3D['time']
-    time_arr = nc.num2date(time_var[:], units=time_var.units)
-
-    def test_construction(self):
-
-        t1 = Time(TestTime.time_var)
-        assert all(TestTime.time_arr == t1.time)
-
-        t2 = Time(TestTime.time_arr)
-        assert all(TestTime.time_arr == t2.time)
-
-        t = Time(TestTime.time_var, tz_offset=dt.timedelta(hours=1))
-        print TestTime.time_arr
-        print t.time
-        print TestTime.time_arr[0] + dt.timedelta(hours=1)
-        assert t.time[0] == (TestTime.time_arr[0] + dt.timedelta(hours=1))
-
-        t = Time(TestTime.time_arr.copy(), tz_offset=dt.timedelta(hours=1))
-        assert t.time[0] == TestTime.time_arr[0] + dt.timedelta(hours=1)
-
-        diff = t.time[1] - t.time[0]
-        now = dt.datetime.now()
-        t = Time(TestTime.time_arr.copy(), origin=now)
-        assert t.time[0] == now
-        assert t.time[1] - diff == t.time[0]
-
-        t = Time(TestTime.time_arr.copy(), displacement=dt.timedelta(hours=1))
-        assert t.time[0] == TestTime.time_arr[0] + dt.timedelta(hours=1)
-
-    def test_save_load(self):
-        t1 = Time(TestTime.time_var)
-        fn = 'time.txt'
-        t1._write_time_to_file('time.txt')
-        t2 = Time.from_file(fn)
-#         pytest.set_trace()
-        assert all(t1.time == t2.time)
-        os.remove(fn)
-
-    def test_extrapolation(self):
-        ts = Time(TestTime.time_var)
-        before = TestTime.time_arr[0] - dt.timedelta(hours=1)
-        after = TestTime.time_arr[-1] + dt.timedelta(hours=1)
-        assert ts.index_of(before, True) == 0
-        assert ts.index_of(after, True) == 11
-        assert ts.index_of(ts.time[-1], True) == 10
-        assert ts.index_of(ts.time[0], True) == 0
-        with pytest.raises(ValueError):
-            ts.index_of(before, False)
-        with pytest.raises(ValueError):
-            ts.index_of(after, False)
-        assert ts.index_of(ts.time[-1], True) == 10
-        assert ts.index_of(ts.time[0], True) == 0
-
-    @pytest.mark.parametrize('_json_', ['save', 'webapi'])
-    def test_serialization(self, _json_):
-        ts = Time(TestTime.time_var)
-        ser = ts.serialize(_json_)
-        if _json_ == 'webapi':
-            deser = Time.deserialize(ser)
-            t2 = Time.new_from_dict(deser)
-            assert all(ts.data == t2.data)
-            assert 'data' in ser
-        else:
-            assert 'data' in ser
-
-
 class TestS_Depth_T1:
 
     def test_construction(self):
 
-        test_grid = PyGrid_S(node_lon=np.array([[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]]),
+        test_grid = Grid_S(node_lon=np.array([[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]]),
                             node_lat=np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]]))
 
         u = np.zeros((3, 4, 4), dtype=np.float64)
@@ -164,8 +93,6 @@ class TestS_Depth_T1:
         print alph
         assert all(res == [3, 2, 1])
         assert np.allclose(alph, np.array([0.397539, 0.5, 0]))
-
-
 
 
 class TestTSprop:
@@ -356,8 +283,8 @@ Triangular
                      - interpolation elsewhere
                  2D surface (time=t, depth=None)
                      - as above, validate time interpolation
-                 
-    
+
+
 
 Quad
     grid shape: (nodes:(x,y))
@@ -385,16 +312,16 @@ class TestGriddedProp:
         grid = PyGrid.from_netCDF(dataset=sinusoid)
         time = None
 
-        u = GriddedProp(name='u',
-                        units='m/s',
-                        data=data,
-                        grid=grid,
-                        time=time,
-                        data_file='staggered_sine_channel.nc',
-                        grid_file='staggered_sine_channel.nc')
+        u = Variable(name='u',
+                     units='m/s',
+                     data=data,
+                     grid=grid,
+                     time=time,
+                     data_file='staggered_sine_channel.nc',
+                     grid_file='staggered_sine_channel.nc')
 
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
-        k = GriddedProp.from_netCDF(filename=curr_file, varname='u', name='u')
+        k = Variable.from_netCDF(filename=curr_file, varname='u', name='u')
         assert k.name == u.name
         assert k.units == 'm/s'
         # fixme: this was failing
@@ -403,8 +330,8 @@ class TestGriddedProp:
 
     def test_at(self):
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
-        u = GriddedProp.from_netCDF(filename=curr_file, varname='u_rho')
-        v = GriddedProp.from_netCDF(filename=curr_file, varname='v_rho')
+        u = Variable.from_netCDF(filename=curr_file, varname='u_rho')
+        v = Variable.from_netCDF(filename=curr_file, varname='v_rho')
 
         points = np.array(([0, 0, 0], [np.pi, 1, 0], [2 * np.pi, 0, 0]))
         time = datetime.datetime.now()
@@ -413,20 +340,14 @@ class TestGriddedProp:
         print np.cos(points[:, 0] / 2) / 2
         assert all(np.isclose(v.at(points, time), np.cos(points[:, 0] / 2) / 2))
 
-    def test_time_offset(self):
-        curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
-        now = dt.datetime.now()
-        u = GriddedProp.from_netCDF(filename=curr_file, varname='u_rho', time_origin=now)
-        v = GriddedProp.from_netCDF(filename=curr_file, varname='v_rho')
-        assert all(u.time.data > v.time.data)
 
 class TestGridVectorProp:
 
     def test_construction(self):
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
-        u = GriddedProp.from_netCDF(filename=curr_file, varname='u_rho')
-        v = GriddedProp.from_netCDF(filename=curr_file, varname='v_rho')
-        gvp = GridVectorProp(name='velocity', units='m/s', time=u.time, variables=[u, v])
+        u = Variable.from_netCDF(filename=curr_file, varname='u_rho')
+        v = Variable.from_netCDF(filename=curr_file, varname='v_rho')
+        gvp = VectorVariable(name='velocity', units='m/s', time=u.time, variables=[u, v])
         assert gvp.name == 'velocity'
         assert gvp.units == 'm/s'
         assert gvp.varnames[0] == 'u_rho'
@@ -434,7 +355,7 @@ class TestGridVectorProp:
 
     def test_at(self):
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
-        gvp = GridVectorProp.from_netCDF(filename=curr_file,
+        gvp = VectorVariable.from_netCDF(filename=curr_file,
                                          varnames=['u_rho', 'v_rho'])
         points = np.array(([0, 0, 0], [np.pi, 1, 0], [2 * np.pi, 0, 0]))
         time = datetime.datetime.now()

@@ -89,7 +89,7 @@ def test_loop_gridcurrent():
 
     return delta
 
-
+@pytest.mark.skip
 def test_ice_fields():
     """
     test that data is loaded

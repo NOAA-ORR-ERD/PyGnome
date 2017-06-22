@@ -4,8 +4,8 @@ import datetime
 import copy
 import pytest
 from gnome import basic_types
-from gnome.environment import GridCurrent, GridVectorPropSchema
-from gnome.environment.grid import PyGrid_U
+from gnome.environment import GridCurrent
+from gnome.environment.gridded_objects_base import Grid_U
 from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
@@ -15,17 +15,26 @@ from gnome.basic_types import (world_point,
                                status_code_type)
 from gnome.persist import base_schema
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, Bool
-
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 class PyCurrentMoverSchema(base_schema.ObjType):
     filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
     current_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
-    current = GridVectorPropSchema(missing=drop)
-    data_start_time = SchemaNode(DateTime(), missing=drop)
-    data_end_time = SchemaNode(DateTime(), missing=drop)
-
+    current = GridCurrent._schema(missing=drop)
+    real_data_start = SchemaNode(DateTime(), missing=drop)
+    real_data_stop = SchemaNode(DateTime(), missing=drop)
+    on = SchemaNode(Bool(), missing=drop)
+    active_start = SchemaNode(LocalDateTime(), missing=drop,
+                              validator=convertible_to_seconds)
+    active_stop = SchemaNode(LocalDateTime(), missing=drop,
+                             validator=convertible_to_seconds)
+    real_data_start = SchemaNode(LocalDateTime(), missing=drop,
+                                 validator=convertible_to_seconds)
+    real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
+                                validator=convertible_to_seconds)
 
 class PyCurrentMover(movers.PyMover, serializable.Serializable):
 
@@ -35,8 +44,6 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
                       serializable.Field('current', read=True, save_reference=True),
-                      serializable.Field('data_start_time', read=True),
-                      serializable.Field('data_end_time', read=True),
                       ])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
@@ -59,9 +66,34 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                  uncertain_along=.5,
                  uncertain_across=.25,
                  uncertain_cross=.25,
-                 default_num_method='Trapezoid',
+                 default_num_method='RK2',
                  **kwargs
                  ):
+        """
+        Initialize a PyCurrentMover
+
+        :param filename: absolute or relative path to the data file(s):
+                         could be a string or list of strings in the
+                         case of a multi-file dataset
+        :param current: Environment object representing currents to be
+                        used. If this is not specified, a GridCurrent object
+                        will attempt to be instantiated from the file
+        :param active_start: datetime when the mover should be active
+        :param active_stop: datetime after which the mover should be inactive
+        :param current_scale: Value to scale current data
+        :param uncertain_duration: how often does a given uncertain element
+                                   get reset
+        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_cross: Scale for uncertainty perpendicular to the flow
+        :param uncertain_along: Scale for uncertainty parallel to the flow
+        :param extrapolate: Allow current data to be extrapolated
+                            before and after file data
+        :param time_offset: Time zone shift if data is in GMT
+        :param num_method: Numerical method for calculating movement delta.
+                           Choices:('Euler', 'RK2', 'RK4')
+                           Default: RK2
+
+        """
         self.filename = filename
         self.current = current
         if self.current is None:
@@ -108,6 +140,9 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                     uncertain_across=.25,
                     uncertain_cross=.25,
                     **kwargs):
+        """
+        Function for specifically creating a PyCurrentMover from a file
+        """
         current = GridCurrent.from_netCDF(filename, **kwargs)
         if name is None:
             name = cls.__name__ + str(cls._def_count)
@@ -124,12 +159,20 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                    **kwargs)
 
     @property
-    def data_start_time(self):
-        return self.current.time.min_time
+    def real_data_start(self):
+        return self.current.time.min_time.replace(tzinfo=None)
+
+    @real_data_start.setter
+    def real_data_start(self, value):
+        self._r_d_s = value
 
     @property
-    def data_end_time(self):
-        return self.current.time.max_time
+    def real_data_stop(self):
+        return self.current.time.max_time.replace(tzinfo=None)
+
+    @real_data_stop.setter
+    def real_data_stop(self, value):
+        self._r_d_e = value
 
     @property
     def is_data_on_cells(self):
@@ -139,7 +182,7 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         """
             The main function for getting grid data from the mover
         """
-        if isinstance(self.current.grid, PyGrid_U):
+        if isinstance(self.current.grid, Grid_U):
             return self.current.grid.nodes[self.current.grid.faces[:]]
         else:
             lons = self.current.grid.node_lon

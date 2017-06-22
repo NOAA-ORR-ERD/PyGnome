@@ -1,63 +1,26 @@
-import warnings
 import copy
 
 import netCDF4 as nc4
 import numpy as np
 
-from numbers import Number
 
 from datetime import datetime, timedelta
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
-from gnome.persist.base_schema import ObjType
 from gnome.utilities import serializable
-from gnome.persist import base_schema
+import gridded
 
-import pyugrid
-import pysgrid
-import unit_conversion
-from .. import _valid_units
 from gnome.environment import Environment
-from gnome.environment.grid import PyGrid
-from gnome.environment.property import Time, PropertySchema, VectorProp, EnvProp
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp, TimeSeriesPropSchema
-from gnome.environment.grid_property import GridVectorProp, GriddedProp, GridPropSchema, GridVectorPropSchema
-from gnome.utilities.file_tools.data_helpers import _get_dataset
 
-
-class Depth(object):
-    """Basic object that represents the vertical dimension
-
-    This is the base class of all depth axis representations. It provides
-    the minimum functionality that will allow environment objects to 'overlook'
-    a depth dimension and only look at a single vertical layer of data.
-    """
-
-    def __init__(self,
-                 surface_index=-1):
-        """
-        :param surface_index: Integer index of a layer of data meant to represent the ocean surface (z=0)
-        :type surface_index: int
-        """
-        self.surface_index = surface_index
-        self.bottom_index = surface_index
-
-    @classmethod
-    def from_netCDF(cls,
-                    surface_index=-1):
-        """
-        :param surface_index: Integer index of a layer of data meant to represent the ocean surface (z=0)
-        :type surface_index: int
-        """
-        return cls(surface_index)
-
-    def interpolation_alphas(self, points, data_shape, _hash=None):
-        """
-        :param points: 3D points in the world (lon, lat, z(meters))
-        :type points: Nx3 array of floats
-        :param data_shape: shape of data being represented by parent object
-        :type data_shape: iterable
-        """
-        return None, None
+from gnome.environment.gridded_objects_base import (Time,
+                                                    Depth,
+                                                    Grid_U,
+                                                    Grid_S,
+                                                    Variable,
+                                                    VectorVariable,
+                                                    VariableSchema,
+                                                    VectorVariableSchema,
+                                                    )
 
 
 class S_Depth_T1(object):
@@ -76,7 +39,7 @@ class S_Depth_T1(object):
                 data_file = bathymetry.data_file
                 if data_file is None:
                     raise ValueError("Need data_file or dataset containing sigma equation terms")
-            ds = _get_dataset(data_file)
+            ds = gridded.utilities.get_dataset(data_file)
         self.bathymetry = bathymetry
         self.terms = terms
         if len(terms) == 0:
@@ -212,7 +175,7 @@ class VelocityTS(TSVectorProp):
         :param units='m/s': units for speed, as a string, i.e. "knots", "m/s",
                            "cm/s", etc.
 
-        .. note:: 
+        .. note::
             The time for a constant wind timeseries is irrelevant. This
             function simply sets it to datetime.now() accurate to hours.
         """
@@ -285,7 +248,7 @@ class VelocityTS(TSVectorProp):
 #         return super(VelocityTS, cls).new_from_dict(dict_)
 
 
-class VelocityGrid(GridVectorProp):
+class VelocityGrid(VectorVariable):
 
     comp_order = ['u', 'v', 'w']
 
@@ -303,10 +266,10 @@ class VelocityGrid(GridVectorProp):
             if kwargs.get('dataset', None) is not None:
                 df = kwargs['dataset']
             elif kwargs.get('grid_file', None) is not None:
-                df = _get_dataset(kwargs['grid_file'])
+                df = gridded.utilities.get_dataset(kwargs['grid_file'])
             if df is not None and 'angle' in df.variables.keys():
                 # Unrotated ROMS Grid!
-                self.angle = GriddedProp(name='angle', units='radians', time=None, grid=kwargs['grid'], data=df['angle'])
+                self.angle = Variable(name='angle', units='radians', time=Time.constant_time(), grid=kwargs['grid'], data=df['angle'])
             else:
                 self.angle = None
         else:
@@ -425,7 +388,7 @@ class TemperatureTS(TimeSeriesProp, Environment):
         return cls.constant(name=name, data=temperature, units=units)
 
 
-class GridTemperature(GriddedProp, Environment):
+class GridTemperature(Variable, Environment):
     default_names = ['water_t', 'temp']
 
     cf_names = ['sea_water_temperature', 'sea_surface_temperature']
@@ -441,7 +404,7 @@ class SalinityTS(TimeSeriesProp, Environment):
         return cls.constant(name=name, data=salinity, units=units)
 
 
-class GridSalinity(GriddedProp, Environment):
+class GridSalinity(Variable, Environment):
     default_names = ['salt']
 
     cf_names = ['sea_water_salinity', 'sea_surface_salinity']
@@ -464,11 +427,11 @@ class WaterDensityTS(TimeSeriesProp, Environment):
         TimeSeriesProp.__init__(self, name, units, time=density_times, data=data)
 
 
-class GridSediment(GriddedProp, Environment):
+class GridSediment(Variable, Environment):
     default_names = ['sand_06']
 
 
-class IceConcentration(GriddedProp, Environment):
+class IceConcentration(Variable, Environment):
     _ref_as = ['ice_concentration', 'ice_aware']
     default_names = ['ice_fraction', ]
     cf_names = ['sea_ice_area_fraction']
@@ -485,7 +448,7 @@ class IceConcentration(GriddedProp, Environment):
 #         return t1 and t2
 
 
-class Bathymetry(GriddedProp):
+class Bathymetry(Variable):
     default_names = ['h']
     cf_names = ['depth']
 
@@ -606,7 +569,7 @@ class GridWind(VelocityGrid, Environment):
         return value
 
 
-class LandMask(GriddedProp):
+class LandMask(Variable):
     def __init__(self, *args, **kwargs):
         data = kwargs.pop('data', None)
         if data is None or not isinstance(data, (np.ma.MaskedArray, nc4.Variable, np.ndarray)):
@@ -648,12 +611,12 @@ class IceVelocity(VelocityGrid, Environment):
                 'v': ['northward_sea_ice_velocity']}
 
 
-class IceAwarePropSchema(GridVectorPropSchema):
-    ice_concentration = GridPropSchema(missing=drop)
+class IceAwarePropSchema(VectorVariableSchema):
+    ice_concentration = VariableSchema(missing=drop)
 
 
 class IceAwareCurrentSchema(IceAwarePropSchema):
-    ice_velocity = GridVectorPropSchema(missing=drop)
+    ice_velocity = VectorVariableSchema(missing=drop)
 
 
 class IceAwareCurrent(GridCurrent):

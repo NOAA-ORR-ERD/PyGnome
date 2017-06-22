@@ -3,7 +3,6 @@ import numpy as np
 import datetime
 import copy
 from gnome import basic_types
-from gnome.environment import GridCurrent, GridVectorPropSchema
 from gnome.utilities import serializable, rand
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.environment import GridWind
@@ -21,7 +20,7 @@ class PyWindMoverSchema(base_schema.ObjType):
     current_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
-    wind = GridVectorPropSchema(missing=drop)
+    wind = GridWind._schema(missing=drop)
 
 
 class PyWindMover(movers.PyMover, serializable.Serializable):
@@ -37,37 +36,58 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
     _schema = PyWindMoverSchema
 
     _ref_as = 'py_wind_movers'
-    
+
     _req_refs = {'wind': GridWind}
 
     def __init__(self,
-                 wind=None,
                  filename=None,
+                 wind=None,
+                 name=None,
                  extrapolate=False,
                  time_offset=0,
                  uncertain_duration=3,
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4,
-                 default_num_method='Trapezoid',
+                 default_num_method='RK2',
                  **kwargs):
         """
-        Uses super to call CyMover base class __init__
+        Initialize a PyWindMover
 
-        :param wind: wind object -- provides the wind time series for the mover
+        :param filename: absolute or relative path to the data file(s):
+                         could be a string or list of strings in the
+                         case of a multi-file dataset
+        :param wind: Environment object representing wind to be
+                        used. If this is not specified, a GridWind object
+                        will attempt to be instantiated from the file
+        :param active_start: datetime when the mover should be active
+        :param active_stop: datetime after which the mover should be inactive
+        :param current_scale: Value to scale current data
+        :param uncertain_duration: how often does a given uncertain element
+                                   get reset
+        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_cross: Scale for uncertainty perpendicular to the flow
+        :param uncertain_along: Scale for uncertainty parallel to the flow
+        :param extrapolate: Allow current data to be extrapolated
+                            before and after file data
+        :param time_offset: Time zone shift if data is in GMT
+        :param num_method: Numerical method for calculating movement delta.
+                           Choices:('Euler', 'RK2', 'RK4')
+                           Default: RK2
 
-        Remaining kwargs are passed onto WindMoversBase __init__ using super.
-        See Mover documentation for remaining valid kwargs.
-
-        .. note:: Can be initialized with wind=None; however, wind must be
-            set before running. If wind is not None, toggle make_default_refs
-            to False since user provided a valid Wind and does not wish to
-            use the default from the Model.
         """
-        self._wind = wind
+        self.wind = wind
         self.make_default_refs = False
 
         self.filename = filename
+        if self.wind is None:
+            if filename is None:
+                raise ValueError("must provide a filename or wind object")
+            else:
+                self.wind = GridWind.from_netCDF(filename=self.filename, **kwargs)
+        if name is None:
+            name = self.__class__.__name__ + str(self.__class__._def_count)
+            self.__class__._def_count += 1
         self.extrapolate = extrapolate
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
@@ -93,7 +113,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                     uncertain_along=.5,
                     uncertain_across=.25,
                     uncertain_cross=.25,
-                    default_num_method='Trapezoid',
+                    default_num_method='RK2',
                     **kwargs):
 
         wind = GridWind.from_netCDF(filename, **kwargs)
@@ -106,14 +126,6 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                    uncertain_across=uncertain_across,
                    uncertain_cross=uncertain_cross,
                    default_num_method=default_num_method)
-
-    @property
-    def wind(self):
-        return self._wind
-
-    @wind.setter
-    def wind(self, value):
-        self._wind = value
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
