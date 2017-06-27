@@ -145,7 +145,8 @@ class WindMoversBase(CyMover):
         if sc.num_released is None or sc.num_released == 0:
             return
 
-        random_with_persistance(sc['windage_range'][:, 0],
+        if self.active:
+            random_with_persistance(sc['windage_range'][:, 0],
                                 sc['windage_range'][:, 1],
                                 sc['windages'],
                                 sc['windage_persist'],
