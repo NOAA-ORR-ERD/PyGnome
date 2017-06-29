@@ -255,6 +255,7 @@ public:
 
 	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
 	VelocityRec 	GetInterpolatedValue(const Seconds& model_time, InterpolationValBilinear interpolationVal,float depth,float totalDepth);
+	virtual	bool 		IsRegularGrid(){return false;}
 	virtual	bool 		IsDataOnCells(){return !bVelocitiesOnNodes;}
 	virtual GridCellInfoHdl 	GetCellData();
 	virtual WORLDPOINTH 	GetCellCenters();
@@ -301,6 +302,7 @@ public:
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
 
 	virtual	bool 		IsTriangleGrid(){return true;}
+	virtual	bool 		IsRegularGrid(){return false;}
 	virtual	bool 		IsDataOnCells(){return bVelocitiesOnTriangles;}
 	virtual OSErr 		GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity);
 };
