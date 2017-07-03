@@ -464,6 +464,40 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
         return tuple(data[0]['value'])
 
+    def at(self, points, time, format='r-theta', extrapolate=True):
+        '''
+        Returns the value of the wind at the specified points at the specified
+        time. Valid format specifications include 'r-theta', 'r', 'theta',
+        'uv', 'u' or 'v'. This function is for API compatibility with the new
+        environment objects.
+
+        :param points: Nx2 or Nx3 array of positions (lon, lat, [z]).
+                       This may not be None. To get wind values
+                       position-independently, use get_value(time)
+        :param time: Datetime of the time to be queried
+        :param format: String describing the data and organization.
+        :param extrapolate: extrapolation on/off (ignored for now)
+        '''
+        if format in ('r-theta','r','theta'):
+            data = self.get_wind_data(time, 'm/s', 'r-theta')[0]['value']
+            if format == 'r-theta':
+                return np.array(data).reshape(2,1)
+            else:
+                r = np.array([data[0]])
+                theta = np.array([data[1]])
+                return r if format =='r' else theta
+        elif format in ('uv','u','v'):
+            data = self.get_wind_data(time, 'm/s', 'uv')[0]['value']
+            if format == 'uv':
+                return np.array(data).reshape(2,1)
+            else:
+                u = np.array([data[0]])
+                v = np.array([data[1]])
+                return u if format =='u' else v
+        else:
+            raise ValueError('invalid format {0}'.format(format))
+
+        return tuple(data[0]['value'])
     def set_speed_uncertainty(self, up_or_down=None):
         '''
         This function shifts the wind speed values in our time series

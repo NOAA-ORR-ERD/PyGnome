@@ -41,6 +41,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
     _ref_as = 'py_wind_movers'
 
     _req_refs = {'wind': GridWind}
+    _def_count = 0
 
     def __init__(self,
                  filename=None,

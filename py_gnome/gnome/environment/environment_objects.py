@@ -13,10 +13,14 @@ from gnome.environment import Environment
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
 
 from gnome.environment.gridded_objects_base import (Time,
+                                                    Depth,
+                                                    Grid_U,
+                                                    Grid_S,
                                                     Variable,
                                                     VectorVariable,
                                                     VariableSchema,
-                                                    VectorVariableSchema)
+                                                    VectorVariableSchema,
+                                                    )
 
 
 class S_Depth_T1(object):
@@ -542,8 +546,8 @@ class GridWind(VelocityGrid, Environment):
     default_names = {'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u'],
                      'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v']}
 
-    cf_names = {'u': ['eastward_wind'],
-                'v': ['northward_wind']}
+    cf_names = {'u': ['eastward_wind', 'eastward wind'],
+                'v': ['northward_wind', 'northward wind']}
 
     def __init__(self, wet_dry_mask=None, *args, **kwargs):
         super(GridWind, self).__init__(*args, **kwargs)
@@ -555,7 +559,7 @@ class GridWind(VelocityGrid, Environment):
 
         self.wet_dry_mask = wet_dry_mask
 
-    def at(self, points, time, units=None, extrapolate=False, **kwargs):
+    def at(self, points, time, units=None, extrapolate=False, format='uv', _auto_align=True, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -564,53 +568,72 @@ class GridWind(VelocityGrid, Environment):
         :param depth: Specifies the depth level of the variable
         :param units: units the values will be returned in (or converted to)
         :param extrapolate: if True, extrapolation will be supported
+        :param format: String describing the data and organization.
         :type points: Nx2 array of double
         :type time: datetime.datetime object
         :type depth: integer
         :type units: string such as ('m/s', 'knots', etc)
         :type extrapolate: boolean (True or False)
+        :type format: string, one of ('uv','u','v','r-theta','r','theta')
         :return: returns a Nx2 array of interpolated values
         :rtype: double
         '''
+        pts = gridded.utilities._reorganize_spatial_data(points)
+        value = None
+        has_depth = pts.shape[1] > 2
+
         mem = kwargs['memoize'] if 'memoize' in kwargs else True
         _hash = kwargs['_hash'] if '_hash' in kwargs else None
 
         if _hash is None:
-            _hash = self._get_hash(points, time)
+            _hash = self._get_hash(pts, time)
             if '_hash' not in kwargs:
                 kwargs['_hash'] = _hash
 
         if mem:
-            res = self._get_memoed(points, time,
+            res = self._get_memoed(pts, time,
                                    self._result_memo, _hash=_hash)
             if res is not None:
-                return res
+                value = res
+                if _auto_align:
+                    value = gridded.utilities._align_results_to_spatial_data(value, points)
+                return value
 
-        value = super(GridWind, self).at(points, time, units,
-                                         extrapolate=extrapolate,
-                                         **kwargs)
-        value[points[:, 2] > 0.0] = 0  # no wind underwater!
+        if value is None:
+            value = super(GridWind, self).at(pts, time, units, extrapolate=extrapolate, _auto_align=False, **kwargs)
+            if has_depth:
+                value[pts[:, 2] > 0.0] = 0  # no wind underwater!
+            if self.angle is not None:
+                angs = self.angle.at(pts, time, extrapolate=extrapolate, _auto_align=False, **kwargs).reshape(-1)
+                x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
+                y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
+                value[:, 0] = x
+                value[:, 1] = y
 
-        if self.angle is not None:
-            angs = (self.angle.at(points, time, extrapolate=extrapolate,
-                                  **kwargs)
-                    .reshape(-1))
-
-            x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
-            y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
-
-            value[:, 0] = x
-            value[:, 1] = y
-
-        if self.wet_dry_mask is not None:
-            # why is this here?  idxs is not used.
-            _idxs = self.grid.locate_faces(points)
+        if format == 'u':
+            value = value[:,0]
+        elif format == 'v':
+            value = value[:,1]
+        elif format in ('r-theta', 'r', 'theta'):
+            _mag = np.sqrt(value[:,0]**2 + value[:,1]**2)
+            _dir = np.arctan2(value[:,1], value[:,0]) * 180./np.pi
+            if format == 'r':
+                value = _mag
+            elif format == 'theta':
+                value = _dir
+            else:
+                value = np.column_stack((_mag, _dir))
+        if _auto_align:
+            value = gridded.utilities._align_results_to_spatial_data(value, points)
 
         if mem:
-            self._memoize_result(points, time, value,
-                                 self._result_memo, _hash=_hash)
-
+            self._memoize_result(pts, time, value, self._result_memo, _hash=_hash)
         return value
+
+    def get_start_time(self):
+        return self.time.min_time
+    def get_end_time(self):
+        return self.time.max_time
 
 
 class LandMask(Variable):

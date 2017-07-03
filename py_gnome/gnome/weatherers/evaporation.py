@@ -59,7 +59,7 @@ class Evaporation(Weatherer, Serializable):
             msg = ("{0._pid} init 'evaporated' key to 0.0").format(self)
             self.logger.debug(msg)
 
-    def _mass_transport_coeff(self, model_time):
+    def _mass_transport_coeff(self, points, model_time):
         '''
         Is wind a function of only model_time? How about time_step?
         at present yes since wind only contains timeseries data
@@ -72,17 +72,17 @@ class Evaporation(Weatherer, Serializable):
 
         .. note:: wind speed is at least 1 m/s.
         '''
-        #wind_speed = max(1, self.wind.get_value(model_time)[0])
-        wind_speed = max(1, self.get_wind_value(self.wind, model_time))
+        wind_speed = self.get_wind_speed(points, model_time, fill_value=1.0)
+        wind_speed[wind_speed < 1.0] = 1.0
         c_evap = 0.0025     # if wind_speed in m/s
-        if wind_speed <= 10.0:
-            return c_evap * wind_speed ** 0.78
-        else:
-            return 0.06 * c_evap * wind_speed ** 2
+        return np.where(wind_speed <= 10.0,
+                        c_evap * wind_speed ** 0.78,
+                        0.06 * c_evap * wind_speed ** 2)
 
     def _set_evap_decay_constant(self, model_time, data, substance, time_step):
         # used to compute the evaporation decay constant
-        K = self._mass_transport_coeff(model_time)
+        positions = data['positions']
+        K = self._mass_transport_coeff(positions, model_time)
         water_temp = self.water.get('temperature', 'K')
 
         f_diff = 1.0
@@ -96,7 +96,7 @@ class Evaporation(Weatherer, Serializable):
 
         #mw = substance.molecular_weight
         # evaporation expects mw in kg/mol, database is in g/mol
-        mw = substance.molecular_weight / 1000.	
+        mw = substance.molecular_weight / 1000.
 
         sum_mi_mw = (data['mass_components'][:, :len(vp)] / mw).sum(axis=1)
         # d_numer = -1/rho * f_diff.reshape(-1, 1) * K * vp
@@ -256,7 +256,7 @@ class BlobEvaporation(Evaporation):
 
         #mw = substance.molecular_weight
         # evaporation expects mw in kg/mol, database is in g/mol
-        mw = substance.molecular_weight / 1000.	
+        mw = substance.molecular_weight / 1000.
 
 
         # for now, for testing, assume instantaneous spill so get the

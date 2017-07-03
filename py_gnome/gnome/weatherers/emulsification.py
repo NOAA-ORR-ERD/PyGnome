@@ -51,8 +51,8 @@ class Emulsification(Weatherer, Serializable):
 
         super(Emulsification, self).__init__(**kwargs)
         self.array_types.update({'age', 'bulltime', 'frac_water',
-                                 'density', 'viscosity', 
-                                 'oil_density', 'oil_viscosity', 
+                                 'density', 'viscosity',
+                                 'oil_density', 'oil_viscosity',
                                  'mass', 'interfacial_area', 'frac_lost'})
 
     def prepare_for_model_run(self, sc):
@@ -97,13 +97,13 @@ class Emulsification(Weatherer, Serializable):
             #if len(data['frac_water']) == 0:
                 # substance does not contain any surface_weathering LEs
                 continue
-                
+
             product_type = substance.get('product_type')
             if product_type == 'Refined':
                 data['frac_water'][:] = 0.0	# since there can only be one product type this could be return...
                 continue	# since there can only be one product type this could be return...
 
-			# compute energy dissipation rate (m^2/s^3) based on wave height
+            # compute energy dissipation rate (m^2/s^3) based on wave height
             wave_height = self.waves.get_value(model_time)[0]
             if wave_height > 0:
                 eps = (.0355 * wave_height ** .215) / ((np.log(6.31 / wave_height ** 1.45)) ** 3)
@@ -125,9 +125,9 @@ class Emulsification(Weatherer, Serializable):
                 delta_T_emul = 1630 + 450 / wave_height ** (1.5)
             else:
                 continue
-			
+
             visc_min = .00001 # 10 cSt
-            visc_max = .01 # 10000 cSt 
+            visc_max = .01 # 10000 cSt
             sigma_min = .01 # 10 dyne/com
             # new suggestion .03 <= f_asph <= .2
             # latest update, min only .03 <= f_asph
@@ -137,7 +137,7 @@ class Emulsification(Weatherer, Serializable):
             r_max = 1.4
             rho_min = 600	#kg/m^3
             drop_min = .000008	# 8 microns
-            
+
             #k_emul2 = 2.3 / delta_T_emul
             k_emul2 = 1. / delta_T_emul
             k_emul = self._water_uptake_coeff(model_time, substance)
@@ -166,23 +166,23 @@ class Emulsification(Weatherer, Serializable):
             f_res3 = (resin_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
             f_asph3 = (asphaltene_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
 
-            if f_res > 0:	
-                r_oil = f_asph / f_res	
-            else:	
+            if f_res > 0:
+                r_oil = f_asph / f_res
+            else:
                 #r_oil = 0
                 continue
-            if f_asph <= 0:	
-                continue	
+            if f_asph <= 0:
+                continue
             r_oil3 = np.where(f_res3 > 0, f_asph3 / f_res3, 0)	# check if limits are just for S_b calculation
 
             Y_max = .61 + .5 * r_oil - .28 * r_oil **2
             # limit on r_oil3 values or just final Y_max or set Y_max = 0 if out of bounds?
             if Y_max > .9:
                 Y_max = .9
-                
+
             m = .5 * (visc_max + visc_min)
             x_visc = (visc_oil - m) / (visc_max - visc_min)
-            
+
             x_sig_min = (sigma_ow[0] - sigma_min) / sigma_ow[0]
 
             #m = .5 * (f_max + f_min)
@@ -194,21 +194,21 @@ class Emulsification(Weatherer, Serializable):
             x_r = (r_oil - m) / (r_max - r_min)
 
             x_s = 0 		# placeholder since this isn't used
-		
+
             # decide which factors use initial value and which use current value
             # once Bw is set it stays on
             Bw = self._Bw(x_visc,x_sig_min,x_fasph,x_r,x_s)
 
             T_week = 604800
 
-			# Bill's calculation uses sigma_ow[0] in dynes/cm, visc in cSt and a fudge factor of .478834
-			# so we need to convert and scale
-            print "dens_oil" 
-            print dens_oil 
-            print "visc_oil" 
-            print visc_oil 
-            print "r_oil" 
-            print r_oil 
+            # Bill's calculation uses sigma_ow[0] in dynes/cm, visc in cSt and a fudge factor of .478834
+            # so we need to convert and scale
+            print "dens_oil"
+            print dens_oil
+            print "visc_oil"
+            print visc_oil
+            print "r_oil"
+            print r_oil
             S_b = .478834 * ((dens_oil * (1000000*visc_oil)**.25 / (1000*sigma_ow[0])) * r_oil * np.exp(-2 * r_oil**2))**(1/6)
             S_b[S_b > 1] = 1.
             S_b[S_b < 0] = 0.
@@ -216,9 +216,9 @@ class Emulsification(Weatherer, Serializable):
             print S_b
             T_week = 604800
 
-            
+
             k_lw = np.where(data['frac_water'] > 0, (1 - S_b) / T_week, 0.)
-            
+
             #data['frac_water'] += (Bw * (k_emul2 * (Y_max - data['frac_water'])) - k_lw * data['frac_water']) * time_step
             Y_prime = 1.582 * Y_max  # Y_max / (1 - 1/e)
             data['frac_water'] += (Bw * (k_emul2 * (Y_prime - data['frac_water'])) - k_lw * data['frac_water']) * time_step
@@ -269,7 +269,8 @@ class Emulsification(Weatherer, Serializable):
                 # substance does not contain any surface_weathering LEs
                 continue
 
-            k_emul = self._water_uptake_coeff(model_time, substance)
+            points = data['positions']
+            k_emul = self._water_uptake_coeff(points, model_time, substance)
 
             # bulltime is not in database, but could be set by user
             #emul_time = substance.get_bulltime()
@@ -358,7 +359,7 @@ class Emulsification(Weatherer, Serializable):
         logistic function for turning on emulsification
         '''
         H_log = 1 / (1 + np.exp(-1*k*x))
-        
+
         return H_log
 
     def _H_4(self, k, x):
@@ -366,7 +367,7 @@ class Emulsification(Weatherer, Serializable):
         symmetric function for turning on emulsification
         '''
         H_4 = 1 / (1 + x**(2*k))
-        
+
         return H_4
 
     def _Bw(self, x_visc, x_sig_min, x_fasph, x_r, x_s):
@@ -377,7 +378,7 @@ class Emulsification(Weatherer, Serializable):
         k_fasph = 3
         k_r = 2
         k_s = 1.5
-        
+
         # for now, I think P_min will be determined elsewhere
         U = 0
         P_min = .03
@@ -389,32 +390,32 @@ class Emulsification(Weatherer, Serializable):
 
         k = 4
         P_2 = self._H_4(k,x_visc)
-        
+
         k = 3
         P_3 = self._H_4(k,x_fasph)
-        
+
         k = 2
         P_4 = self._H_4(k,x_r)
-        
+
         k = 1.5
         #P_5 = self._H_log(k,x_s)
         P_5 = 1 # placeholder until Bill comes up with a good option
         # in his AMOP paper he is using slick thickness...
-        
+
         P_all = P_1 * P_2 * P_3 * P_4 * P_5
         #P_all = self._H_log(k_v,x_v_min) * self._H_log(k_v,x_v_max) * self._H_log(k_sig,x_sig_min) * self._H_log(k_fasph,x_fasph) * self._H_log(k_r,x_r_min) * self._H_log(k_r,x_r_max) * self._H_log(k_s,x_s_min)
 
         #if (P_all.any() < P_min):
         if (P_all.all() < P_min):
-            Bw = 0 
+            Bw = 0
         else:
             Bw = 1
-             
+
         Bw =  np.where(P_all < .03, 0, 1)
-        
+
         return Bw
 
-    def _water_uptake_coeff(self, model_time, substance):
+    def _water_uptake_coeff(self, points, model_time, substance):
         '''
         Use higher of wind or pseudo wind corresponding to wave height
 
@@ -426,7 +427,7 @@ class Emulsification(Weatherer, Serializable):
         '''
 
         ## higher of real or psuedo wind
-        wind_speed = self.waves.get_emulsification_wind(model_time)
+        wind_speed = self.waves.get_emulsification_wind(points, model_time)
 
         # water uptake rate constant - get this from database
         K0Y = substance.get('k0y')

@@ -28,20 +28,23 @@ class Adios2(object):
         # wind stress factor
         # Transition at U = 4.433049525859078 for linear scale with wind speed.
         #   4.433049525859078 is where the solutions match
-        ws = 0.71 * U ** 1.23 if U < 4.433049525859078 else U
+        ws = np.where(U < 4.433049525859078, 0.71 * U ** 1.23, U)
+#         ws = 0.71 * U ** 1.23 if U < 4.433049525859078 else U
 
         # (2268 * ws ** 2) is limit of fetch limited case.
-        if (fetch is not None) and (fetch < 2268 * ws ** 2):
-            H = 0.0016 * np.sqrt(fetch / g) * ws
-        else:  # fetch unlimited
+        if fetch is None:
             H = 0.243 * ws * ws / g
+        else:
+            H = np.where(fetch < 2268 * ws ** 2,
+                         0.0016 * np.sqrt(fetch / g) * ws,
+                         0.243 * ws * ws / g)
 
         Hrms = 0.707 * H
 
         # arbitrary limit at 30 m -- about the largest waves recorded
         # fixme -- this really depends on water depth -- should take that
         #          into account?
-        return Hrms if Hrms < 30.0 else 30.0
+        return np.clip(H, None, 30.0)
 
     @staticmethod
     def wind_speed_from_height(H):
@@ -72,15 +75,17 @@ class Adios2(object):
         if wave_height is None:
             ws = U * 0.71 * U ** 1.23  # fixme -- linear for large windspeed?
 
-            if (fetch is None) or (fetch >= 2268 * ws ** 2):
-                # fetch unlimited
+            if fetch is None:
                 T = 0.83 * ws
             else:
-                # eq 3-34 (SPM?)
-                T = 0.06238 * (fetch * ws) ** 0.3333333333
+                T = np.where(fetch >= 2268* ws ** 2,
+                             0.83 * ws,
+                             0.06238 * (fetch * ws) ** 0.333333333)
         else:
             # user-specified wave height
             T = 7.508 * np.sqrt(wave_height)
+        if not isinstance(T, np.array):
+            raise TypeError('wave_height or period is not array')
 
         return T
 

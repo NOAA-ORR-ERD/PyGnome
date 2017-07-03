@@ -95,7 +95,7 @@ cdef extern from "Weatherers_c.h":
                    double *frac_evap,
                    int32_t *age,
                    double *bulltime,
-                   double k_emul,
+                   double *k_emul,
                    double emul_time,
                    double emul_C,
                    double S_max,

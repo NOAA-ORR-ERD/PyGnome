@@ -9,6 +9,8 @@ from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
 
 import gsw
 
+import numpy as np
+
 import unit_conversion as uc
 
 from gnome import constants
@@ -72,12 +74,13 @@ class Environment(object):
         """
         pass
 
-    def get_wind_value(self, wind, model_time):
+    def get_wind_speed(self, points, model_time, format='r', fill_value=1.0):
         '''
-        Wrapper so wind can be extrapolated
+        Wrapper for the weatherers so they can extrapolate
         '''
-        new_model_time = self.check_time(wind, model_time)
-        return wind.get_value(new_model_time)[0]
+#         new_model_time = self.check_time(wind, model_time)
+        retval = self.wind.at(points, model_time, format=format)
+        return retval.filled(fill_value) if isinstance(retval, np.ma.MaskedArray) else retval
 
     def check_time(self, wind, model_time):
         """
