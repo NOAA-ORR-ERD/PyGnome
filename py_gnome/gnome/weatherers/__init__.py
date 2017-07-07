@@ -43,6 +43,9 @@ sort_order = [ChemicalDispersion,
               ROC_Burn,
               ROC_Disperse,
               Beaching,
+              FayGravityViscous,
+              ConstantArea,
+              Langmuir,
               HalfLifeWeatherer,
               Evaporation,
               NaturalDispersion,
@@ -51,12 +54,10 @@ sort_order = [ChemicalDispersion,
               # Biodegradation,
               Emulsification,
               WeatheringData,
-              FayGravityViscous,
-              ConstantArea,
-              Langmuir,
               ]
 
 weatherers_idx = dict([(v, i) for i, v in enumerate(sort_order)])
+
 
 def weatherer_sort(weatherer):
     '''
