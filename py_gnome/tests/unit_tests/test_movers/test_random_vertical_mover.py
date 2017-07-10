@@ -60,7 +60,7 @@ def test_horizontal_zero():
     assert np.alltrue(delta[:, 0:2] == 0.0)
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(True, reason="changed algorithm, needs update")
 def test_vertical_zero():
     """
     checks that there is no vertical movement
