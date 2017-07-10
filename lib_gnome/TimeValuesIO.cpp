@@ -101,11 +101,14 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 		// check if this is a valid data line, then it is probably a valid tide file
 		// tide files with header have same first 3 lines as long wind files, followed by data
 		
-		// Not sure what is going on here - this is not an optional line
-		//std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
+		std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
 
-		//if (!ParseLine(currentLine, time, val1Str, val2Str))
-			//return false;
+		if (!ParseLine(currentLine, time, val1Str, val2Str))
+		{
+			// not a data line so keep checking
+		}
+		else 
+			return false; // not a long wind file since it has a 3 line header 
 
 	}
 
