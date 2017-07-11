@@ -179,6 +179,31 @@ class Waves(Environment, serializable.Serializable):
     def dissipative_wave_energy(self, H):
         return Adios2.dissipative_wave_energy(self.water.density, H)
 
+    def energy_dissipation_rate(self, H, U):
+        '''
+        c_ub = 100 = dimensionless empirical coefficient to correct
+        for non-Law-of-the-Wall results (Umlauf and Burchard, 2003)
+
+        u_c = water friction velocity (m/s)
+               sqrt(rho_air / rho_w) * u_a ~ .03 * u_a
+        u_a = air friction velocity (m/s)
+        z_0 = surface roughness (m) (Taylor and Yelland)
+        c_p = peak wave speed for Pierson-Moskowitz spectrum
+        w_p = peak angular frequency for Pierson-Moskowitz spectrum (1/s)
+        '''
+        if H is 0 or U is 0:
+            return 0
+
+        c_ub = 100
+        c_p = PiersonMoskowitz.peak_wave_speed(U)
+        w_p = PiersonMoskowitz.peak_angular_frequency(U)
+        z_0 = 1200 * H * ((H / c_p) * w_p)**4.5
+        u_a = .4 * U / np.log(10 / z_0)
+        u_c = .03 * u_a
+        eps = c_ub * u_c**3 / H
+
+        return eps
+
     def serialize(self, json_='webapi'):
         """
         Since 'wind'/'water' property is saved as references in save file
