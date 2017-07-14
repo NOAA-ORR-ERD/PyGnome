@@ -58,9 +58,8 @@ class Adios2(object):
         """
         # U_h = 2.0286 * g * sqrt(H / g) # Bill's version
         U_h = np.sqrt(g * H / 0.243)
-
-        if U_h < 4.433049525859078:  # check if low wind case
-            U_h = (U_h / 0.71) ** 0.813008
+        low = U_h < 4.433049525859078
+        U_h[U_h < 4.433049525859078] = (low / 0.71) ** 0.813008
 
         return U_h
 
@@ -84,8 +83,6 @@ class Adios2(object):
         else:
             # user-specified wave height
             T = 7.508 * np.sqrt(wave_height)
-        if not isinstance(T, np.array):
-            raise TypeError('wave_height or period is not array')
 
         return T
 

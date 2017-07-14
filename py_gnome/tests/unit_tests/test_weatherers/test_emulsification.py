@@ -146,13 +146,13 @@ def test_bullwinkle():
 
     et = floating(substance=test_oil)
 
-    # our test_oil is the sample oile 
+    # our test_oil is the sample oile
     assert np.isclose(et.substance.bullwinkle, 0.1937235)
 
     et.substance.bullwinkle = .4
     assert et.substance.bullwinkle == .4
 
-
+@pytest.mark.skipif(reason="serialization for weatherers overall needs review")
 def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'
     wind = constant_wind(15., 0)

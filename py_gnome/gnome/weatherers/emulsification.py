@@ -316,44 +316,6 @@ class Emulsification(Weatherer, Serializable):
 
         sc.update_from_fatedataview()
 
-    def serialize(self, json_='webapi'):
-        """
-        Since 'wind'/'waves' property is saved as references in save file
-        need to add appropriate node to WindMover schema for 'webapi'
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        serial = schema.serialize(toserial)
-
-        if json_ == 'webapi':
-            if self.waves is not None:
-                serial['waves'] = self.waves.serialize(json_)
-#             if self.wind is not None:
-#                 serial['wind'] = self.wind.serialize(json_)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for waves object
-        """
-        if not cls.is_sparse(json_):
-            schema = cls._schema()
-
-            dict_ = schema.deserialize(json_)
-            if 'waves' in json_:
-                obj = json_['waves']['obj_type']
-                dict_['waves'] = (eval(obj).deserialize(json_['waves']))
-#             if 'waves' in json_:
-#                 waves = class_from_objtype(json_['waves'].pop('obj_type'))
-#                 dict_['waves'] = waves.deserialize(json_['waves'])
-            return dict_
-
-        else:
-            return json_
-
-
     def _H_log(self, k, x):
         '''
         logistic function for turning on emulsification

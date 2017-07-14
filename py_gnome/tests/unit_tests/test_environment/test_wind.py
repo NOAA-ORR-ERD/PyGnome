@@ -155,9 +155,10 @@ def test_at(_format, wind_circ):
         d_val0 = rec['value'][0]
         d_val1 = rec['value'][1]
         val1 = wind.at(tp1, time, format=_format)
+        print val1
         if _format in ('r-theta', 'uv'):
             assert np.isclose(val1[0][0], d_val0)
-            assert np.isclose(val1[1][0], d_val1)
+            assert np.isclose(val1[0][1], d_val1)
         else:
             if _format in ('theta', 'v'):
                 assert np.isclose(val1[0], d_val1)

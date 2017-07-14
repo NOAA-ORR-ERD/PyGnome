@@ -484,28 +484,6 @@ class FayGravityViscous(Weatherer, Serializable):
 
         sc.update_from_fatedataview()
 
-    def serialize(self, json_="webapi"):
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-
-        if json_ == 'webapi':
-            if self.water is not None:
-                schema.add(WaterSchema(name="water"))
-
-        serial = schema.serialize(toserial)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-        schema = cls._schema(name=cls.__name__)
-        if 'water' in json_:
-            schema.add(WaterSchema(name="water"))
-
-        _to_dict = schema.deserialize(json_)
-
-        return _to_dict
-
 
 class ConstantArea(Weatherer, Serializable):
     '''
@@ -574,10 +552,7 @@ class Langmuir(Weatherer, Serializable):
         super(Langmuir, self).__init__(**kwargs)
         self.array_types.update(('area', 'fay_area', 'frac_coverage', 'spill_num', 'bulk_init_volume', 'density'))
 
-        if wind is None:
-            self.wind = constant_wind(0, 0)
-        else:
-            self.wind = wind
+        self.wind = wind
 
         # need water object to find relative buoyancy
         self.water = water
@@ -663,36 +638,3 @@ class Langmuir(Weatherer, Serializable):
 
         sc.update_from_fatedataview()
 
-    def serialize(self, json_='webapi'):
-        """
-        Since 'wind' property is saved as a reference when used in save file
-        and 'save' option, need to add appropriate node to WindMover schema
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema(name=self.__class__.__name__)
-        if json_ == 'webapi':
-            # add wind schema
-            schema.add(WindSchema(name='wind'))
-
-            if self.water is not None:
-                schema.add(WaterSchema(name='water'))
-
-        serial = schema.serialize(toserial)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for wind object
-        """
-        schema = cls._schema(name=cls.__name__)
-        if 'wind' in json_:
-            schema.add(WindSchema(name='wind'))
-
-        if 'water' in json_:
-            schema.add(WaterSchema(name='water'))
-
-        _to_dict = schema.deserialize(json_)
-
-        return _to_dict

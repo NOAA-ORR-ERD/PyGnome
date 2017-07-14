@@ -2,7 +2,7 @@
 test manual_beaching
 '''
 from datetime import datetime, timedelta
-
+import pytest
 import numpy as np
 
 from gnome.basic_types import datetime_value_1d
@@ -118,6 +118,7 @@ class TestBeaching(ObjForTests):
         assert np.isclose(self.sc.mass_balance['observed_beached'],
                           total_mass)
 
+    @pytest.mark.skipif(reason="serialization for weatherers overall needs review")
     def test_serialize_deserialize_update_from_dict(self):
         '''
         test serialize/deserialize works correctly for datetime_value_1d dtype

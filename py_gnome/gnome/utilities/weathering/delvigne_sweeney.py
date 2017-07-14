@@ -17,4 +17,4 @@ class DelvigneSweeney(object):
         '''
         F_wc = 0.032 * (wind_speed - 5.0) / peak_wave_period
 
-        return np.clip(F_wc, 0.0, 1.0)
+        return np.clip(F_wc, 0.01, 1.0)

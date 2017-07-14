@@ -21,6 +21,8 @@ from gnome.array_types import (area,
                                partition_coeff,
                                droplet_avg_size)
 
+from gnome.scripting import constant_wind
+
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 
@@ -42,12 +44,16 @@ class Dissolution(Weatherer, Serializable):
 
     _schema = WeathererSchema
 
-    def __init__(self, waves=None, **kwargs):
+    def __init__(self, waves=None, wind=None, **kwargs):
         '''
             :param waves: waves object for obtaining wave_height, etc. at a
                           given time
         '''
         self.waves = waves
+        self.wind = wind
+
+        if self.wind is None:
+            self.wind = constant_wind(0,0)
 
         super(Dissolution, self).__init__(**kwargs)
 
@@ -133,6 +139,7 @@ class Dissolution(Weatherer, Serializable):
         fmasses = data['mass_components']
         droplet_avg_sizes = data['droplet_avg_size']
         areas = data['area']
+        points = data['positions']
 
         # print 'droplet_avg_sizes = ', droplet_avg_sizes
 
@@ -147,7 +154,7 @@ class Dissolution(Weatherer, Serializable):
         # for each LE.
         # K_ow for non-aromatics are masked to 0.0
         K_ow_comp = arom_mask * BanerjeeHuibers.partition_coeff(mol_wt, rho)
-        data['partition_coeff'] = ((fmasses * K_ow_comp / mol_wt).sum(axis=1) / 
+        data['partition_coeff'] = ((fmasses * K_ow_comp / mol_wt).sum(axis=1) /
                                    (fmasses / mol_wt).sum(axis=1))
 
         avg_rhos = self.oil_avg_density(fmasses, rho)
@@ -163,11 +170,11 @@ class Dissolution(Weatherer, Serializable):
 
         total_volumes = self.oil_total_volume(fmasses, rho)
 
-        f_wc_i = self.water_column_time_fraction(model_time, k_w_i)
+        f_wc_i = self.water_column_time_fraction(points,model_time, k_w_i)
         T_wc_i = f_wc_i * time_step
         # print 'T_wc_i = ', T_wc_i
 
-        T_calm_i = self.calm_between_wave_breaks(model_time, time_step, T_wc_i)
+        T_calm_i = self.calm_between_wave_breaks(points,model_time, time_step, T_wc_i)
         # print 'T_calm_i = ', T_calm_i
 
         assert np.alltrue(T_calm_i <= float(time_step))
@@ -196,7 +203,8 @@ class Dissolution(Weatherer, Serializable):
         # with printoptions(precision=2):
         #     print 'mass_dissolved_in_wc = ', mass_dissolved_in_wc
 
-        N_s_i = self.slick_subsurface_mass_xfer_rate(model_time,
+        N_s_i = self.slick_subsurface_mass_xfer_rate(points,
+                                                     model_time,
                                                      oil_concentrations,
                                                      K_ow_comp,
                                                      areas,
@@ -273,11 +281,12 @@ class Dissolution(Weatherer, Serializable):
     def beta_coeff(self, k_w, K_ow, v_inert):
         return 4.84 * k_w / K_ow * v_inert ** (2.0 / 3.0)
 
-    def water_column_time_fraction(self, model_time,
+    def water_column_time_fraction(self,
+                                   points,
+                                   model_time,
                                    water_phase_xfer_velocity):
-        wave_height = self.waves.get_value(model_time)[0]
-        #wind_speed = max(.1, self.waves.wind.get_value(model_time)[0])
-        wind_speed = max(.1, self.get_wind_value(self.waves.wind, model_time))
+        wave_height = self.waves.get_value(points, model_time)[0]
+        wind_speed = np.clip(self.get_wind_speed(points, model_time), 0.01, None)
         wave_period = PiersonMoskowitz.peak_wave_period(wind_speed)
 
         f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
@@ -287,10 +296,13 @@ class Dissolution(Weatherer, Serializable):
                                                      wave_height,
                                                      water_phase_xfer_velocity)
 
-    def calm_between_wave_breaks(self, model_time, time_step,
+    def calm_between_wave_breaks(self,
+                                 points,
+                                 model_time,
+                                 time_step,
                                  time_spent_in_wc=0.0):
         #wind_speed = max(.1, self.waves.wind.get_value(model_time)[0])
-        wind_speed = max(.1, self.get_wind_value(self.waves.wind, model_time))
+        wind_speed = np.clip(self.get_wind_speed(points, model_time), 0.01, None)
         wave_period = PiersonMoskowitz.peak_wave_period(wind_speed)
 
         f_bw = DelvigneSweeney.breaking_waves_frac(wind_speed, wave_period)
@@ -387,7 +399,9 @@ class Dissolution(Weatherer, Serializable):
 
         return np.nan_to_num(N_drop)
 
-    def slick_subsurface_mass_xfer_rate(self, model_time,
+    def slick_subsurface_mass_xfer_rate(self,
+                                        points,
+                                        model_time,
                                         oil_concentration,
                                         partition_coeff,
                                         slick_area,
@@ -408,7 +422,7 @@ class Dissolution(Weatherer, Serializable):
         assert len(partition_coeff.shape) == 1  # single dimension
 
         #U_10 = max(.1, self.waves.wind.get_value(model_time)[0])
-        U_10 = max(.1, self.get_wind_value(self.waves.wind, model_time))
+        U_10 = np.clip(self.get_wind_speed(points, model_time), 0.01, None).reshape(-1,1)
         c_oil = oil_concentration
         k_ow = partition_coeff
 
@@ -419,15 +433,15 @@ class Dissolution(Weatherer, Serializable):
         if len(c_oil.shape) == 1:
             # a single LE of mass components
             # mass xfer rate (per unit area)
-            N_s_a = (0.01 * 
-                     (U_10 / 3600.0) * 
+            N_s_a = (0.01 *
+                     (U_10 / 3600.0) *
                      (c_oil / k_ow))
 
             N_s = N_s_a * slick_area
         else:
             # multiple LE mass components in a 2D array
-            N_s_a = (0.01 * 
-                     (U_10 / 3600.0) * 
+            N_s_a = (0.01 * np.prod((U_10 / 3600.0))
+                      *
                      (c_oil / k_ow))
 
             # with printoptions(precision=2):
@@ -477,33 +491,3 @@ class Dissolution(Weatherer, Serializable):
 
         sc.update_from_fatedataview()
 
-    def serialize(self, json_='webapi'):
-        """
-            'water'/'waves' property is saved as references in save file
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        serial = schema.serialize(toserial)
-
-        if json_ == 'webapi':
-            if self.waves:
-                serial['waves'] = self.waves.serialize(json_)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-            Append correct schema for water / waves
-        """
-        if not cls.is_sparse(json_):
-            schema = cls._schema()
-            dict_ = schema.deserialize(json_)
-
-            if 'waves' in json_:
-                obj = json_['waves']['obj_type']
-                dict_['waves'] = (eval(obj).deserialize(json_['waves']))
-
-            return dict_
-        else:
-            return json_

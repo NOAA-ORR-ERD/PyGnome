@@ -7,6 +7,7 @@ import os
 import copy
 import StringIO
 import zipfile
+import gridded
 
 import numpy as np
 
@@ -464,7 +465,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
         return tuple(data[0]['value'])
 
-    def at(self, points, time, format='r-theta', extrapolate=True):
+    def at(self, points, time, format='r-theta', extrapolate=True, _auto_align=True):
         '''
         Returns the value of the wind at the specified points at the specified
         time. Valid format specifications include 'r-theta', 'r', 'theta',
@@ -478,26 +479,33 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         :param format: String describing the data and organization.
         :param extrapolate: extrapolation on/off (ignored for now)
         '''
-        if format in ('r-theta','r','theta'):
-            data = self.get_wind_data(time, 'm/s', 'r-theta')[0]['value']
-            if format == 'r-theta':
-                return np.array(data).reshape(2,1)
+        pts = gridded.utilities._reorganize_spatial_data(points)
+
+        ret_data = np.zeros_like(pts, dtype='float64')
+        if format in ('r-theta','uv'):
+            data = self.get_wind_data(time, 'm/s', format)[0]['value']
+            ret_data[:,0] = data[0]
+            ret_data[:,1] = data[1]
+        elif format in ('u','v','r','theta'):
+            f = None
+            if format in ('u','v'):
+                f = 'uv'
             else:
-                r = np.array([data[0]])
-                theta = np.array([data[1]])
-                return r if format =='r' else theta
-        elif format in ('uv','u','v'):
-            data = self.get_wind_data(time, 'm/s', 'uv')[0]['value']
-            if format == 'uv':
-                return np.array(data).reshape(2,1)
+                f = 'r-theta'
+            data = self.get_wind_data(time, 'm/s', f)[0]['value']
+            if format in ('u','r'):
+                ret_data[:,0] = data[0]
+                ret_data = ret_data[:,0]
             else:
-                u = np.array([data[0]])
-                v = np.array([data[1]])
-                return u if format =='u' else v
+                ret_data[:,1] = data[1]
+                ret_data = ret_data[:,1]
         else:
             raise ValueError('invalid format {0}'.format(format))
 
-        return tuple(data[0]['value'])
+        if _auto_align:
+            ret_data = gridded.utilities._align_results_to_spatial_data(ret_data, points)
+        return ret_data
+
     def set_speed_uncertainty(self, up_or_down=None):
         '''
         This function shifts the wind speed values in our time series

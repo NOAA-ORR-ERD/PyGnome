@@ -128,11 +128,9 @@ class CleanUpBase(RemoveMass, Weatherer):
         '''
         if value is None:
             self._efficiency = value
-        elif value >= 0.0 and value <= 1.0:
-            self._efficiency = value
         else:
-            self.logger.warning('Efficiency must be either None or a number '
-                                'between 0 and 1.0')
+             valid = np.logical_and(value >= 0, value <= 1)
+             self._efficiency = np.where(valid, value, self._efficiency)
 
     def _get_substance(self, sc):
         '''
@@ -669,7 +667,7 @@ class Burn(CleanUpBase, Serializable):
         avg_frac_oil = self._avg_frac_oil(data)
         self._init_rate_duration(avg_frac_oil)
 
-    def _set_efficiency(self, model_time):
+    def _set_efficiency(self, points, model_time):
         '''
         return burn efficiency either from efficiency attribute or computed
         from wind
@@ -683,14 +681,9 @@ class Burn(CleanUpBase, Serializable):
 
         if self.efficiency is None:
             # get it from wind
-            ws = self.wind.get_value(model_time)
-            if ws > 1. / 0.07:
-                self.logger.warning('wind speed is greater than {0}. '
-                                    'Set efficiency to 0'
-                                    .format(1. / 0.07))
-                self._efficiency = 0
-            else:
-                self.efficiency = 1 - 0.07 * ws
+            ws = self.wind.get_value(points, model_time)
+            self.efficiency = np.where(ws > (1. / 0.07), 0, 1 - 0.07 * ws)
+            print self.efficiency
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -703,12 +696,12 @@ class Burn(CleanUpBase, Serializable):
         if not self.active or len(sc) == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self.array_types,
-                                                    fate='burn'):
+        for substance, data in sc.itersubstancedata(self.array_types, fate='burn'):
             if len(data['mass']) is 0:
                 continue
 
-            self._set_efficiency(model_time)
+            points = sc['positions']
+            self._set_efficiency(points, model_time)
 
             # scale rate by efficiency
             # this is volume of oil burned - need to get mass from this
@@ -874,23 +867,17 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                 (rm_total_mass_si /
                  (self.active_stop - self.active_start).total_seconds())
 
-    def _set_efficiency(self, model_time):
+    def _set_efficiency(self, points, model_time):
         if self.efficiency is None:
             # if wave height > 6.4 m, we get negative results - log and
             # reset to 0 if this occurs
             # can efficiency go to 0? Is there a minimum threshold?
-            w = 0.3 * self.waves.get_value(model_time)[0]
+            w = 0.3 * self.waves.get_value(points, model_time)[0]
             efficiency = (0.241 + 0.587*w - 0.191*w**2 +
                           0.02616*w**3 - 0.0016 * w**4 -
                           0.000037*w**5)
-            if efficiency < 0:
-                self._efficiency = 0
-                self.logger.warning(("wave height {0} "
-                                     "- results in negative efficiency. "
-                                     "Reset to 0"
-                                     .format(w)))
-            else:
-                self.efficiency = efficiency
+            np.clip(efficiency, 0, None)
+            self.efficiency = efficiency
 
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
@@ -900,7 +887,8 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                 if len(data['mass']) is 0:
                     continue
 
-                self._set_efficiency(model_time)
+                points = sc['positions']
+                self._set_efficiency(points, model_time)
 
                 # rm_mass = self._rate * self._timestep * self.efficiency
                 rm_mass = self._rate * self._timestep  # rate includes efficiency

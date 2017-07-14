@@ -89,7 +89,7 @@ def test_dispersion_not_active(oil, temp, num_elems):
 
 
 @pytest.mark.xfail
-# the test oils don't match the data base, using so tests don't depend on db 
+# the test oils don't match the data base, using so tests don't depend on db
 @pytest.mark.parametrize(('oil', 'temp', 'dispersed'),
                          [('ABU SAFAH', 288.7, 63.076),
                           #('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
@@ -150,7 +150,7 @@ def test_full_run_disp_not_active(sample_model_fcn):
         # print ("Completed step: {0}"
         #        .format(step['step_num']))
 
-
+@pytest.mark.skipif(reason="serialization for weatherers overall needs review")
 def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'
     wind = constant_wind(15., 0)

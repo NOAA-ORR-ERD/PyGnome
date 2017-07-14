@@ -558,6 +558,8 @@ class GridWind(VelocityGrid, Environment):
                                  'grid cell centers')
 
         self.wet_dry_mask = wet_dry_mask
+        if self.units is None:
+            self.units='m/s'
 
     def at(self, points, time, units=None, extrapolate=False, format='uv', _auto_align=True, **kwargs):
         '''

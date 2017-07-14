@@ -41,7 +41,7 @@ class Evaporation(Weatherer, Serializable):
             make_default_refs = True
 
         super(Evaporation, self).__init__(make_default_refs=make_default_refs, **kwargs)
-        self.array_types.update({'area', 'evap_decay_constant',
+        self.array_types.update({'positions', 'area', 'evap_decay_constant',
                                  'frac_water', 'frac_lost', 'init_mass'})
 
     def prepare_for_model_run(self, sc):
@@ -79,10 +79,9 @@ class Evaporation(Weatherer, Serializable):
                         c_evap * wind_speed ** 0.78,
                         0.06 * c_evap * wind_speed ** 2)
 
-    def _set_evap_decay_constant(self, model_time, data, substance, time_step):
+    def _set_evap_decay_constant(self, points, model_time, data, substance, time_step):
         # used to compute the evaporation decay constant
-        positions = data['positions']
-        K = self._mass_transport_coeff(positions, model_time)
+        K = self._mass_transport_coeff(points, model_time)
         water_temp = self.water.get('temperature', 'K')
 
         f_diff = 1.0
@@ -171,9 +170,10 @@ class Evaporation(Weatherer, Serializable):
             if len(data['mass']) is 0:
                 continue
 
+            points = data['positions']
             # set evap_decay_constant array
-            self._set_evap_decay_constant(model_time, data, substance,
-                                          time_step)
+            self._set_evap_decay_constant(points, model_time, data,
+                                          substance, time_step)
             mass_remain = self._exp_decay(data['mass_components'],
                                           data['evap_decay_constant'],
                                           time_step)
@@ -193,37 +193,6 @@ class Evaporation(Weatherer, Serializable):
             # add frac_lost
             data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
         sc.update_from_fatedataview()
-
-    def serialize(self, json_='webapi'):
-        """
-        Since 'wind'/'water' property is saved as references in save file
-        need to add appropriate node to WindMover schema for 'webapi'
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-
-        if json_ == 'webapi':
-            if self.wind:
-                schema.add(WindSchema(name='wind'))
-            if self.water:
-                schema.add(WaterSchema(name='water'))
-
-        return schema.serialize(toserial)
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for wind object
-        """
-        schema = cls._schema()
-
-        if 'wind' in json_:
-            schema.add(WindSchema(name='wind'))
-
-        if 'water' in json_:
-            schema.add(WaterSchema(name='water'))
-
-        return schema.deserialize(json_)
 
 
 class BlobEvaporation(Evaporation):
