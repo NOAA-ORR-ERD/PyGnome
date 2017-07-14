@@ -36,6 +36,6 @@ class PiersonMoskowitz(object):
             peak angular frequency (1/s)
         '''
         if wind_speed > 0:
-            return .86 / (g * wind_speed)
+            return .86 * g / wind_speed
         else:
-            return .86 / g	# set minimum wind U=1 ?
+            return .86 * g	# set minimum wind U=1 ?
