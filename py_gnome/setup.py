@@ -225,12 +225,12 @@ if sys.platform is "darwin" or "win32":
                         for l in netcdf_names]
 
 
-print netcdf_base
-print netcdf_libs
-print netcdf_inc
-print netcdf_lib_files
+# print netcdf_base
+# print netcdf_libs
+# print netcdf_inc
+# print netcdf_lib_files
 
-raise Exception("stopping here")
+# raise Exception("stopping here")
 
 
 # the cython extensions to build -- each should correspond to a *.pyx file
