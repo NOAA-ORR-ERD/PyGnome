@@ -1,3 +1,5 @@
+import pytest
+
 import os
 
 from datetime import datetime, timedelta
@@ -114,7 +116,7 @@ def make_model(uncertain=False,
 
     return model
 
-
+@pytest.mark.slow
 def test_init():
     model = make_model()
 
@@ -132,7 +134,7 @@ def test_init():
 
     model_broadcaster.stop()
 
-
+@pytest.mark.slow
 def test_uncertainty_array_size():
     model = make_model()
 
@@ -154,7 +156,7 @@ def test_uncertainty_array_size():
     assert len(model_broadcaster.tasks) == 9
     model_broadcaster.stop()
 
-
+@pytest.mark.slow
 def test_uncertainty_array_indexing():
     model = make_model()
 
@@ -179,7 +181,7 @@ def test_uncertainty_array_indexing():
 
     model_broadcaster.stop()
 
-
+@pytest.mark.slow
 def test_rewind():
     model = make_model()
 
@@ -194,7 +196,7 @@ def test_rewind():
 
     model_broadcaster.stop()
 
-
+@pytest.mark.slow
 def test_step():
     model = make_model()
 
@@ -207,7 +209,7 @@ def test_step():
 
     model_broadcaster.stop()
 
-
+@pytest.mark.slow
 def test_full_run():
     model = make_model()
 
@@ -228,7 +230,7 @@ def test_full_run():
 
     model_broadcaster.stop()
 
-
+@pytest.mark.slow
 def test_cache_dirs():
     model = make_model()
 
@@ -243,7 +245,7 @@ def test_cache_dirs():
 
     model_broadcaster.stop()
 
-
+@pytest.mark.slow
 def test_spill_containers_have_uncertainty_off():
     model = make_model(uncertain=True)
 
@@ -257,7 +259,7 @@ def test_spill_containers_have_uncertainty_off():
 
     model_broadcaster.stop()
 
-
+@pytest.mark.slow
 def test_weathering_output_only():
     model = make_model(geojson_output=True)
 

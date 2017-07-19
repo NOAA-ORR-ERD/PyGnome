@@ -25,6 +25,7 @@ from gnome.utilities.rand import random_with_persistance
 
 
 from gnome import environment
+from gnome.environment.wind import constant_wind
 from gnome import basic_types
 from gnome.movers import CyMover, ProcessSchema
 
@@ -333,6 +334,7 @@ def wind_mover_from_file(filename, **kwargs):
 
 
 def constant_wind_mover(speed, direction, units='m/s'):
+    # fixme: use gnome.wind.constant_wind here.
     """
     utility function to create a mover with a constant wind
 
@@ -355,7 +357,7 @@ def constant_wind_mover(speed, direction, units='m/s'):
     series[0] = (dt, (speed, direction))
     wind = environment.Wind(timeseries=series, units=units)
 
-    return WindMover(wind)
+    return WindMover(wind, extrapolate=True)
 
 
 class GridWindMoverSchema(WindMoversBaseSchema):
