@@ -338,7 +338,7 @@ def constant_wind_mover(speed, direction, units='m/s'):
     series[0] = (dt, (speed, direction))
     wind = environment.Wind(timeseries=series, units=units)
 
-    return WindMover(wind)
+    return WindMover(wind, extrapolate=True)
 
 
 class GridWindMoverSchema(WindMoversBaseSchema):
