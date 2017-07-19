@@ -126,9 +126,9 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'drop_size', 'on'),
                          [('oil_bahia', 311.15, 3,
-                           [239.92e-6, 231.33e-6, 222.85e-6], True),
+                           [239.92e-6, 231.11e-6, 222.4e-6], True),
                           ('oil_ans_mp', 311.15, 3,
-                           [245.32e-6, 233.54e-6, 225.35e-6], True),
+                           [245.32e-6, 233.62e-6, 225.5e-6], True),
                           ('oil_ans_mp', 311.15, 3,
                            [0.0, 0.0, 0.0], False)])
 def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
@@ -187,13 +187,13 @@ mb_params = [
              # wind speed trends
              ('oil_bahia',  288.15,  5., 3, 9.4939e-4, True),
              ('oil_bahia',  288.15, 10., 3, 2.02355e-3, True),
-             ('oil_bahia',  288.15, 15., 3, 3.6288e-3, True),
-             ('oil_bahia',  288.15, 20., 3, 6.1597e-3, True),
+             ('oil_bahia',  288.15, 15., 3, 3.627e-3, True),
+             ('oil_bahia',  288.15, 20., 3, 6.15e-3, True),
              # temperature trends
-             ('oil_bahia',  273.15, 15., 3, 3.62526e-3, True),
-             ('oil_bahia',  283.15, 15., 3, 3.6267e-3, True),
-             ('oil_bahia',  293.15, 15., 3, 3.6568e-3, True),
-             ('oil_bahia',  303.15, 15., 3, 3.71499e-3, True),
+             ('oil_bahia',  273.15, 15., 3, 3.6217e-3, True),
+             ('oil_bahia',  283.15, 15., 3, 3.6244e-3, True),
+             ('oil_bahia',  293.15, 15., 3, 3.6555e-3, True),
+             ('oil_bahia',  303.15, 15., 3, 3.7145e-3, True),
              ]
 
 
@@ -276,10 +276,10 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     #     assert False
 
 
-@pytest.mark.xfail
+# @pytest.mark.xfail
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
-                         [('oil_ans_mp', 288.7, 38.632),
-                          ('oil_bahia',  288.7, 137.88038)])
+                         [('oil_ans_mp', 288.7, 55.34),
+                          ('oil_bahia',  288.7, 158.77)])
 def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json
@@ -331,10 +331,14 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     assert np.isclose(dissolved[-1], expected_balance, rtol=1e-4)
 
 
+# We are xfailing this for now.  But we need to get from Bill the expected
+# dissolution rates of benzene, a substance entirely made of aromatics
+# we would expect the dissolution rates to be pretty high, but right now
+# they are entirely dissolving at the end of the model run.
 @pytest.mark.xfail
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
                          # [(_sample_oils['benzene'], 288.7, 2.98716)
-                         [('benzene', 288.7, 9731.05479)])
+                         [('benzene', 288.15, 9731.05479)])
 def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json
@@ -348,12 +352,18 @@ def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
     model.weatherers += NaturalDispersion(low_waves, Water(temp))
     model.weatherers += Dissolution(low_waves)
 
+    print ('Model start time: {}, Duration: {}, Time step: {}'
+           .format(model.start_time, model.duration, model.time_step))
+
     for sc in model.spills.items():
-        print sc.__dict__.keys()
-        print sc._data_arrays
+        print '\nSpill dict keys: ', sc.__dict__.keys()
+        print '\nSpill data arrays: ', sc._data_arrays
 
         print 'num spills:', len(sc.spills)
-        print 'spill[0] amount:', sc.spills[0].amount
+        print ('spill[0] amount: {} {} ({})'
+               .format(sc.spills[0].amount, sc.spills[0].units,
+                       sc.spills[0].substance.name)
+               )
         original_amount = sc.spills[0].amount
 
     # set make_default_refs to True for objects contained in model after adding
@@ -362,7 +372,7 @@ def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
     model.setup_model_run()
 
     dissolved = []
-    for step in model:
+    for step_num, step in enumerate(model):
         for sc in model.spills.items():
             if step['step_num'] > 0:
                 assert (sc.mass_balance['dissolution'] > 0)
@@ -371,7 +381,8 @@ def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
 
             dissolved.append(sc.mass_balance['dissolution'])
 
-            print ("\nDissolved: {0}".
+            print ('\n#Step: {}'.format(step_num))
+            print ("Dissolved: {0}".
                    format(sc.mass_balance['dissolution']))
             print ("Mass: {0}".
                    format(sc._data_arrays['mass']))

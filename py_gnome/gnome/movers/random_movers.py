@@ -14,8 +14,8 @@ from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
 from gnome.utilities.serializable import Serializable, Field
 
 from gnome.environment import IceConcentration
-from gnome.environment.grid import PyGrid
-from gnome.environment.grid_property import GridPropSchema
+from gnome.environment.gridded_objects_base import PyGrid
+from gnome.environment.gridded_objects_base import VariableSchema
 
 from gnome.movers import CyMover, ProcessSchema
 from gnome.persist.base_schema import ObjType
@@ -83,7 +83,7 @@ class RandomMover(CyMover, Serializable):
 
 
 class IceAwareRandomMoverSchema(RandomMoverSchema):
-    ice_concentration = GridPropSchema(missing=drop)
+    ice_concentration = VariableSchema(missing=drop)
 
 
 class IceAwareRandomMover(RandomMover):
@@ -115,8 +115,8 @@ class IceAwareRandomMover(RandomMover):
             grid_file = filename
 
         if grid is None:
-            grid = PyGrid.from_netCDF(grid_file,
-                                      grid_topology=grid_topology)
+            grid = Grid.from_netCDF(grid_file,
+                                    grid_topology=grid_topology)
 
         if ice_concentration is None:
             ice_concentration = (IceConcentration

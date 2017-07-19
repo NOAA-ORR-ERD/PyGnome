@@ -594,7 +594,7 @@ short M51Click(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			// should dispose if exists ?
 			gEditContourLevels = (DOUBLEH)_NewHandleClear(0);
 			// code goes here, should init fContourLevelsH if nil
-	 if((dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH)
+	 		if((dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH)
 			{
 				gEditContourLevels = (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH;
 				if(_HandToHand((Handle *)&gEditContourLevels))
@@ -656,21 +656,28 @@ OSErr M50Init(DialogPtr dialog, VOIDPTR data)
 	
 	Float2EditText(dialog,M50REFLOATTIME, gDialogTMap -> fRefloatHalfLifeInHrs , 4);
 	
-	SetButton (dialog, M25WANTEDCHANGEBOUNDS, dialogPtCurMap -> fUseBitMapBounds); // !EquaLWRect()
+	if (gDialogTMap ->IAm(TYPE_MAP3D)) 	
+	{
+		SetButton (dialog, M25WANTEDCHANGEBOUNDS, false); // !EquaLWRect()
+		ShowHideBounds(dialog);	// for now using same enum values as M25 vector map dialog
+		ShowHideDialogItem(dialog,M25WANTEDCHANGEBOUNDS,false);
+		ShowHideDialogItem(dialog,M25FROST1,false);
+	}
+	else
+	{
+		SetButton (dialog, M25WANTEDCHANGEBOUNDS, dialogPtCurMap -> fUseBitMapBounds); // !EquaLWRect()
 	
-	//SetButton (dialog, M25REPLACEMAP, false); 
+		wp.pLat = dialogPtCurMap -> fBitMapBounds.hiLat;
+		wp.pLong = dialogPtCurMap -> fBitMapBounds.loLong;
+		LL2EditTexts (dialog, M25TOPLATDEGREES, &wp);
 	
-	wp.pLat = dialogPtCurMap -> fBitMapBounds.hiLat;
-	wp.pLong = dialogPtCurMap -> fBitMapBounds.loLong;
-	LL2EditTexts (dialog, M25TOPLATDEGREES, &wp);
+		wp.pLat = dialogPtCurMap -> fBitMapBounds.loLat;
+		wp.pLong = dialogPtCurMap -> fBitMapBounds.hiLong;
+		LL2EditTexts (dialog, M25BOTTOMLATDEGREES, &wp);
 	
-	wp.pLat = dialogPtCurMap -> fBitMapBounds.loLat;
-	wp.pLong = dialogPtCurMap -> fBitMapBounds.hiLong;
-	LL2EditTexts (dialog, M25BOTTOMLATDEGREES, &wp);
-	
-	//ShowHideBitMapBounds(dialog);
-	ShowHideBounds(dialog);	// for now using same enum values as M25 vector map dialog
-	
+		//ShowHideBitMapBounds(dialog);
+		ShowHideBounds(dialog);	// for now using same enum values as M25 vector map dialog
+	}
 	if (gDialogTMap ->IAm(TYPE_OSSMMAP)) 	// don't show refloat stuff since it varies with each grid cell
 	{
 		ShowHideDialogItem(dialog,M50REFLOATLABEL,false);
@@ -703,59 +710,67 @@ short M50Click(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 
 		case M50OK:
 			gDialogTMap -> fRefloatHalfLifeInHrs = EditText2Float(dialog,M50REFLOATTIME);
+			
 			tempUseBounds = GetButton (dialog, M25WANTEDCHANGEBOUNDS);
 			
-			if (tempUseBounds != dialogPtCurMap -> fUseBitMapBounds || tempUseBounds == true)
+			if (gDialogTMap ->IAm(TYPE_MAP3D)) 	
 			{
-				needToResetBitMap = true;
-			}
-			
-			if(tempUseBounds)
-			{
-				long oneSecond = (1000000/3600);
-				// retrieve the extendedBounds
-				err = EditTexts2LL(dialog, M25TOPLATDEGREES, &p,TRUE);
-				if(err)break;
-				err = EditTexts2LL(dialog, M25BOTTOMLATDEGREES, &p2,TRUE);
-				if(err)break;
-				
-				// get original map bounds for comparison
-				//origBounds = dialogTVectorMap -> fMapBounds;  // if use GetMapBounds() may return extended bounds
-				origBounds = gDialogTMap -> fMapBounds;  // if use GetMapBounds() may return extended bounds
-				
-				// check extended bounds (oneSecond handles accuracy issue in reading from dialog)			
-				if (p.pLat > origBounds.hiLat + oneSecond || p2.pLat< origBounds.loLat - oneSecond
-					|| p.pLong < origBounds.loLong - oneSecond || p2.pLong > origBounds.hiLong + oneSecond)
-				{
-					printError("The bitmap bounds must be less than the original bounds."); 
-					return 0; 
-				}
-				
-				// just in case of round off
-				p.pLat = _min(p.pLat,origBounds.hiLat);
-				p.pLong = _max(p.pLong,origBounds.loLong);
-				p2.pLat = _max(p2.pLat,origBounds.loLat);
-				p2.pLong = _min(p2.pLong,origBounds.hiLong);
-			}
-			
-			dialogPtCurMap -> fUseBitMapBounds = GetButton (dialog, M25WANTEDCHANGEBOUNDS);
-			
-			if (dialogPtCurMap -> fUseBitMapBounds)
-			{
-				dialogPtCurMap -> fBitMapBounds.hiLat = p.pLat;
-				dialogPtCurMap -> fBitMapBounds.loLong = p.pLong;
-				dialogPtCurMap -> fBitMapBounds.loLat = p2.pLat;
-				dialogPtCurMap -> fBitMapBounds.hiLong = p2.pLong;
-				//err = dialogPtCurMap -> MakeBitmaps();
-				//if (!err) ChangeCurrentView(UnionWRect(settings.currentView, AddWRectBorders(dialogPtCurMap -> fBitMapBounds, 10)), TRUE, TRUE);
 			}
 			else
-				dialogPtCurMap -> fBitMapBounds = dialogPtCurMap -> GetMapBounds();			
-			
-			if (needToResetBitMap) 
 			{
-				err = dialogPtCurMap -> MakeBitmaps();
-				if (!err) ChangeCurrentView(AddWRectBorders(dialogPtCurMap -> fBitMapBounds, 10), TRUE, TRUE);
+
+				if (tempUseBounds != dialogPtCurMap -> fUseBitMapBounds || tempUseBounds == true)
+				{
+					needToResetBitMap = true;
+				}
+			
+				if(tempUseBounds)
+				{
+					long oneSecond = (1000000/3600);
+					// retrieve the extendedBounds
+					err = EditTexts2LL(dialog, M25TOPLATDEGREES, &p,TRUE);
+					if(err)break;
+					err = EditTexts2LL(dialog, M25BOTTOMLATDEGREES, &p2,TRUE);
+					if(err)break;
+				
+					// get original map bounds for comparison
+					//origBounds = dialogTVectorMap -> fMapBounds;  // if use GetMapBounds() may return extended bounds
+					origBounds = gDialogTMap -> fMapBounds;  // if use GetMapBounds() may return extended bounds
+				
+					// check extended bounds (oneSecond handles accuracy issue in reading from dialog)			
+					if (p.pLat > origBounds.hiLat + oneSecond || p2.pLat< origBounds.loLat - oneSecond
+						|| p.pLong < origBounds.loLong - oneSecond || p2.pLong > origBounds.hiLong + oneSecond)
+					{
+						printError("The bitmap bounds must be less than the original bounds."); 
+						return 0; 
+					}
+				
+					// just in case of round off
+					p.pLat = _min(p.pLat,origBounds.hiLat);
+					p.pLong = _max(p.pLong,origBounds.loLong);
+					p2.pLat = _max(p2.pLat,origBounds.loLat);
+					p2.pLong = _min(p2.pLong,origBounds.hiLong);
+				}
+			
+				dialogPtCurMap -> fUseBitMapBounds = GetButton (dialog, M25WANTEDCHANGEBOUNDS);
+			
+				if (dialogPtCurMap -> fUseBitMapBounds)
+				{
+					dialogPtCurMap -> fBitMapBounds.hiLat = p.pLat;
+					dialogPtCurMap -> fBitMapBounds.loLong = p.pLong;
+					dialogPtCurMap -> fBitMapBounds.loLat = p2.pLat;
+					dialogPtCurMap -> fBitMapBounds.hiLong = p2.pLong;
+					//err = dialogPtCurMap -> MakeBitmaps();
+					//if (!err) ChangeCurrentView(UnionWRect(settings.currentView, AddWRectBorders(dialogPtCurMap -> fBitMapBounds, 10)), TRUE, TRUE);
+				}
+				else
+					dialogPtCurMap -> fBitMapBounds = dialogPtCurMap -> GetMapBounds();			
+			
+				if (needToResetBitMap) 
+				{
+					err = dialogPtCurMap -> MakeBitmaps();
+					if (!err) ChangeCurrentView(AddWRectBorders(dialogPtCurMap -> fBitMapBounds, 10), TRUE, TRUE);
+				}
 			}
 					
 			return itemNum;

@@ -182,6 +182,11 @@ OSErr adios2_disperse(int n, unsigned long step_len,
 			         sqrt(Hrms * De * fbw / (rho_w * visc_w)) *
 			         C_oil * C_sed / rho);
 		}
+		else
+		{
+			double droplet = 0.613 * thickness;
+            droplet_avg_size[i] = droplet;
+		}
 
 		//total vol oil loss due to dispersion
 		d_disp_out = Q_disp * step_len;

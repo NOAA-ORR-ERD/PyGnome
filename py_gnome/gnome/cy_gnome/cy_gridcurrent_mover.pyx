@@ -357,6 +357,12 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         return num_tri
 
+    def _is_regular_grid(self):
+        """
+            Invokes the IsRegularGrid TimeGridVel_c object
+        """
+        return self.grid_current.IsRegularGrid()
+
     def get_num_points(self):
         """
             Invokes the GetNumPoints method of TriGridVel_c object

@@ -601,6 +601,7 @@ class Langmuir(Weatherer, Serializable):
                 np.pi ** 2 /
                 (thickness * rel_buoy * gravity)) ** (1. / 3.)
         cr_k[np.isnan(cr_k)] = 10.	# if density becomes equal to water density
+        cr_k[cr_k==0] = 1.	
         frac_cov = 1. / cr_k
             
         frac_cov[frac_cov < 0.1] = 0.1

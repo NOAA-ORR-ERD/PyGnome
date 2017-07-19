@@ -4,8 +4,9 @@ import copy
 import netCDF4 as nc4
 import numpy as np
 
-from gnome.environment.property import EnvProp, VectorProp, Time, PropertySchema, TimeSchema, \
+from gnome.environment.property import EnvProp, VectorProp, PropertySchema, \
     VectorPropSchema
+from gnome.environment.gridded_objects_base import Time, TimeSchema
 from datetime import datetime, timedelta
 from dateutil import parser
 from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime
@@ -33,10 +34,10 @@ class TimeSeriesProp(EnvProp, serializable.Serializable):
 
     _state = copy.deepcopy(EnvProp._state)
     _schema = TimeSeriesPropSchema
-    
+
     _state.add_field([serializable.Field('timeseries', save=False, update=True),
-                      serializable.Field('data', save=True, update=False)])
-    
+                      serializable.Field('data', save=True, update=True)])
+
 #     _state.update('time', update=False)
 
     def __init__(self,
@@ -84,7 +85,7 @@ class TimeSeriesProp(EnvProp, serializable.Serializable):
 
         :rtype: list of (datetime, double) tuples
         '''
-        return map(lambda x, y: (x, y), self.time.time, self.data)
+        return map(lambda x, y: (x, y), self.time.data, self.data)
 
     @property
     def data(self):

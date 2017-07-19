@@ -119,6 +119,7 @@ cdef extern from "GridCurrentMover_c.h":
         WORLDPOINTH  GetCellCenters()
         long  GetNumTriangles()
         long  GetNumPoints()
+        bool  IsRegularGrid()
         bool  IsTriangleGrid()
         bool  IsDataOnCells()
 

@@ -2,7 +2,6 @@ import copy
 
 from gnome.utilities.serializable import Serializable, Field
 from gnome.persist.base_schema import ObjType
-from decorator import decorate
 
 
 class NonWeatheringSubstance(Serializable):

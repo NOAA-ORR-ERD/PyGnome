@@ -81,6 +81,7 @@ public:
 			long 		GetNumPoints(void);
 			bool 		IsTriangleGrid(){return timeGrid->IsTriangleGrid();}
 			bool 		IsDataOnCells(){return timeGrid->IsDataOnCells();}
+			bool 		IsRegularGrid(){return timeGrid->IsRegularGrid();}
 
 			OSErr		get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID);
 

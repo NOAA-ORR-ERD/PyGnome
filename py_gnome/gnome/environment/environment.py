@@ -73,7 +73,7 @@ class Environment(object):
         pass
 
     def get_wind_value(self, wind, model_time):
-        '''        
+        '''
         Wrapper so wind can be extrapolated
         '''
         new_model_time = self.check_time(wind, model_time)
@@ -370,8 +370,8 @@ def env_from_netCDF(filename=None, dataset=None, grid_file=None, data_file=None,
                                     Exception: {1}'''.format(c.__name__, e))
         return obj
 
-    from gnome.utilities.file_tools.data_helpers import _get_dataset
-    from gnome.environment.environment_objects import GriddedProp, GridVectorProp
+    from gnome.environment.gridded_objects_base import Variable, VectorVariable
+    from gridded.utilities import get_dataset
     from gnome.environment import PyGrid, Environment
     import copy
 
@@ -385,13 +385,13 @@ def env_from_netCDF(filename=None, dataset=None, grid_file=None, data_file=None,
     dg = None
     if dataset is None:
         if grid_file == data_file:
-            ds = dg = _get_dataset(grid_file)
+            ds = dg = get_dataset(grid_file)
         else:
-            ds = _get_dataset(data_file)
-            dg = _get_dataset(grid_file)
+            ds = get_dataset(data_file)
+            dg = get_dataset(grid_file)
     else:
         if grid_file is not None:
-            dg = _get_dataset(grid_file)
+            dg = get_dataset(grid_file)
         else:
             dg = dataset
         ds = dataset
@@ -403,7 +403,7 @@ def env_from_netCDF(filename=None, dataset=None, grid_file=None, data_file=None,
         kwargs['grid'] = grid
     scs = copy.copy(Environment._subclasses) if _cls_list is None else _cls_list
     for c in scs:
-        if issubclass(c, (GriddedProp, GridVectorProp)) and not any([isinstance(o, c) for o in new_env]):
+        if issubclass(c, (Variable, VectorVariable)) and not any([isinstance(o, c) for o in new_env]):
             clskwargs = copy.copy(kwargs)
             obj = None
             try:
@@ -448,10 +448,8 @@ def ice_env_from_netCDF(filename=None, **kwargs):
 
 
 def get_file_analysis(filename):
-    from gnome.utilities.file_tools.data_helpers import _get_dataset
-
     def grid_detection_report(filename):
-        from gnome.environment.grid import PyGrid
+        from gnome.environment.gridded_objects_base import PyGrid
         topo = PyGrid._find_topology_var(filename)
         report = ['Grid report:']
         if topo is None:

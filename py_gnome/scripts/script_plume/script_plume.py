@@ -75,14 +75,16 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     end_time = start_time + timedelta(hours=24)
 
     spill = subsurface_plume_spill(num_elements=10,
-                                   start_position=(-76.126872, 37.680952, 1700),
+                                   start_position=(-76.126872, 37.680952,
+                                                   1700.0),
                                    release_time=start_time,
                                    distribution=wd,
                                    amount=90,  # default volume_units=m^3
                                    units='m^3',
                                    end_release_time=end_time,
-                                   substance='oil_crude')
-                                   #density=600)
+                                   # substance='oil_crude',
+                                   density=900,
+                                   )
 
     model.spills += spill
 
@@ -92,10 +94,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     spill = point_line_release_spill(num_elements=10, amount=90,
                                      units='m^3',
-                                     start_position=(-76.126872, 37.680952, 1800),
+                                     start_position=(-76.126872, 37.680952,
+                                                     1800.0),
                                      release_time=start_time,
                                      element_type=plume(distribution=wd,
-                                                        substance_name='oil_crude')
+                                                        density=900.0)
                                      )
     model.spills += spill
 
