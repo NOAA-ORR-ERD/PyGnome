@@ -350,12 +350,12 @@ def constant_wind_mover(speed, direction, units='m/s'):
         The time for a constant wind timeseries is irrelevant.
         This function simply sets it to datetime.now() accurate to hours.
     """
-    series = np.zeros((1, ), dtype=datetime_value_2d)
+    # series = np.zeros((1, ), dtype=datetime_value_2d)
 
-    # note: if there is ony one entry, the time is arbitrary
-    dt = datetime.now().replace(microsecond=0, second=0, minute=0)
-    series[0] = (dt, (speed, direction))
-    wind = environment.Wind(timeseries=series, units=units)
+    # # note: if there is ony one entry, the time is arbitrary
+    # dt = datetime.now().replace(microsecond=0, second=0, minute=0)
+    # series[0] = (dt, (speed, direction))
+    wind = constant_wind(speed, direction, units=units)
 
     return WindMover(wind, extrapolate=True)
 

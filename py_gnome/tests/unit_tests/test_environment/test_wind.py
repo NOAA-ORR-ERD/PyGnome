@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 from datetime import datetime, timedelta
 import shutil
 
@@ -381,6 +382,22 @@ def test_constant_wind():
     dt = datetime(2013, 1, 10, 12, 0)
     assert np.allclose(wind.get_wind_data(datetime=dt, units='knots')[0][1],
                        (10, 45))
+
+
+def test_constant_wind_bounds():
+    """
+    tests that a constan_wind returns the limit bounds
+    """
+    wind = constant_wind(10, 45, 'knots')
+
+    print wind.ossm.get_start_time()
+    print wind.ossm.get_end_time()
+
+    assert wind.ossm.get_start_time() == 0
+
+    end_time = wind.ossm.get_end_time()
+
+    assert end_time >= sys.maxint
 
 
 def test_eq():
