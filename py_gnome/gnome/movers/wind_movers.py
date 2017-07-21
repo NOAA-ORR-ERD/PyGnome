@@ -262,7 +262,7 @@ class WindMover(WindMoversBase, Serializable):
     @property
     def real_data_start(self):
         if self.wind is not None:
-            return sec_to_datetime(self.wind.ossm.get_start_time())
+            return self.wind.data_start
         else:
             return self._r_d_s
 
@@ -273,7 +273,7 @@ class WindMover(WindMoversBase, Serializable):
     @property
     def real_data_stop(self):
         if self.wind is not None:
-            return sec_to_datetime(self.wind.ossm.get_end_time())
+            return self.wind.data_stop
         else:
             return self._r_d_e
 

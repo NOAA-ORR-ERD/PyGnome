@@ -23,7 +23,7 @@
 using namespace std;
 
 OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c()
-{
+{ 
 	fileName[0]=0;
 	filePath[0]=0;
 	timeValues = 0;
@@ -45,12 +45,12 @@ OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c()
 }
 
 #ifndef pyGNOME
-OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner)
-{
+OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner) 
+{ 
 	fileName[0]=0;
 	filePath[0]=0;
 	timeValues = 0;
-	fUserUnits = kUndefined;
+	fUserUnits = kUndefined; 
 	fFileType = OSSMTIMEFILE;
 	fScaleFactor = 0.;
 	fStationName[0] = 0;
@@ -75,7 +75,7 @@ OSSMTimeValue_c::~OSSMTimeValue_c ()
 OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
 {
 	// NOTE: Must be called with a < b, else bogus value may be returned.
-
+	
 	if (a < b)
 		(*dt) = INDEXH(timeValues, b).time - INDEXH(timeValues, a).time;
 	else //if (b < a)
@@ -83,7 +83,7 @@ OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
 
 	if (*dt == 0) {
 		// better error message, JLM 4/11/01
-		// printError("Duplicate times in time/value table."); return -1;
+		// printError("Duplicate times in time/value table."); return -1; 
 		char msg[256];
 		char timeS[128];
 		DateTimeRec time;
@@ -110,7 +110,7 @@ OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
 
 		return -1;
 	}
-
+	
 	return 0;
 }
 
@@ -127,23 +127,23 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 
 	bool useExtrapolationCode = false;
 	bool linear = false;
-
+	
 	// interpolate value from timeValues array
-
+	
 	// only one element => values are constant
 	if (n == 1) {
 		VelocityRec vRec = INDEXH(timeValues, 0).value;
-		*value = UorV(vRec, index);
-		return 0;
+		*value = UorV(vRec, index); 
+		return 0; 
 	}
-
+	
 	// only two elements => use linear interpolation
 	if (n == 2) {
 		a = 0;
 		b = 1;
 		linear = true;
 	}
-
+	
 	if (forTime < INDEXH(timeValues, 0).time) {
 		// before first element
 #ifdef pyGNOME
@@ -163,7 +163,7 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 			return 0;
 		}
 	}
-
+	
 	if (forTime > INDEXH(timeValues, n - 1).time) {
 		// after last element
 #ifdef pyGNOME
@@ -183,11 +183,11 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 			return 0;
 		}
 	}
-
+	
 	if (linear) {
 		if ((err = GetTimeChange(a, b, &dt)) != 0)
 			return err;
-
+		
 		dv = UorV(INDEXH(timeValues, b).value, index)
 		   - UorV(INDEXH(timeValues, a).value, index);
 
@@ -196,16 +196,16 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 		intercept = UorV(INDEXH(timeValues, a).value, index)
 				  - slope * INDEXH(timeValues, a).time;
 		(*value) = slope * forTime + intercept;
-
+		
 		return 0;
 	}
-
+	
 	// find before and after elements
-
+	
 	/////////////////////////////////////////////////
 	// JLM 7/21/00, we need to speed this up for when we have a lot of values
 	// code goes here, (should we use a static to remember a guess of where to start) before we do the binary search ?
-	// use a binary method
+	// use a binary method 
 	startIndex = 0;
 	endIndex = n - 1;
 	while(endIndex - startIndex > 3) {
@@ -224,7 +224,7 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 				(*value) = UorV(INDEXH(timeValues, i).value, index);
 				return 0;
 			}
-
+			
 			a = i - 1;
 			b = i;
 			break;
@@ -239,7 +239,7 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 		(*value) = UorV(INDEXH(timeValues, b).value, index);
 		return 0;
 	}
-
+	
 	if ((err = GetTimeChange(a, b, &dt)) != 0)
 		return err;
 
@@ -251,15 +251,15 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 				  - slope * INDEXH(timeValues, a).time;
 
 		(*value) = slope * forTime + intercept;
-
+		
 		return 0;
 	}
-
-
+	
+	
 	// interpolated value is between positions a and b
-
+	
 	// compute slopes before using Hermite()
-
+	
 	if (b == 1) {
 		// special case: between first two elements
 		slope1 = dv / dt;
@@ -332,7 +332,7 @@ void OSSMTimeValue_c::Dispose()
 		DisposeHandle((Handle)timeValues);
 		timeValues = 0;
 	}
-
+	
 	TimeValue_c::Dispose();
 }
 
@@ -344,18 +344,14 @@ OSErr OSSMTimeValue_c::GetDataStartTime(Seconds *startTime)
 	*startTime = 0;
 
 	if (!timeValues || _GetHandleSize((Handle)timeValues) == 0) {
-		return -1;
+		return -1; 
 	}
-	if (n == 1) {
-		// if only one value, we extrapolate -- so startTime is 0!
-		*startTime = 0;
-		return err;
-	}
+	
 	*startTime = INDEXH(timeValues, 0).time;
-
+	
 	return err;
 }
-
+	
 OSErr OSSMTimeValue_c::GetDataEndTime(Seconds *endTime)
 {
 	long n = GetNumValues();
@@ -363,25 +359,20 @@ OSErr OSSMTimeValue_c::GetDataEndTime(Seconds *endTime)
 	OSErr err = 0;
 
 	if (!timeValues || _GetHandleSize((Handle)timeValues) == 0) {
-		return -1;
-	}
-	if (n == 1) {
-		// if only one value, we extrapolate -- so startTime is 0!
-		*endTime = std::numeric_limits<Seconds>::max();
-		return err;
+		return -1; 
 	}
 
 	*endTime = INDEXH(timeValues, n-1).time;
-
+	
 	return err;
 }
-
+	
 OSErr OSSMTimeValue_c::CheckStartTime(Seconds forTime)
 {
 	long n = GetNumValues();
 
 	if (!timeValues || _GetHandleSize((Handle)timeValues) == 0) {
-		return -1;
+		return -1; 
 	}
 
 	// only one element => values are constant
@@ -392,7 +383,7 @@ OSErr OSSMTimeValue_c::CheckStartTime(Seconds forTime)
 		// before first element
 		return -3;
 	}
-
+	
 	if (forTime > INDEXH(timeValues, n - 1).time) {
 		// after last element
 		return -3;
@@ -410,7 +401,7 @@ OSErr OSSMTimeValue_c::GetTimeValue(const Seconds& forTime, VelocityRec *value)
 		// no value to return
 		value->u = 0;
 		value->v = 0;
-		return -1;
+		return -1; 
 	}
 
 	if ((err = GetInterpolatedComponent(forTime, &value->u, kUCode)) != 0)
@@ -511,7 +502,7 @@ OSErr OSSMTimeValue_c::ReadNCDCWind(char *path)
 	numDataLines = numLines - numHeaderLines;
 
     this->SetUserUnits(kMilesPerHour);	//check this
-
+	
 	timeValues = (TimeValuePairH)_NewHandle(numDataLines * sizeof(TimeValuePair));
 	if (!timeValues) {
 		err = -1;
@@ -540,7 +531,7 @@ OSErr OSSMTimeValue_c::ReadNCDCWind(char *path)
 						  stationStr, hdrStr, timeStr,
 						  value1S, value2S);
 		if (numScanned < 5)	{
-			// scan will allow comment at end of line, for now just ignore
+			// scan will allow comment at end of line, for now just ignore 
 			err = -1;
 			TechError("TOSSMTimeValue::ReadNDBCWind()", "sscanf() < 6", 0);
 			goto done;
@@ -557,7 +548,7 @@ OSErr OSSMTimeValue_c::ReadNCDCWind(char *path)
 						  &time.year, &time.month, &time.day,
 						  &time.hour, &time.minute);
 		if (numScanned < 5) {
-			// scan will allow comment at end of line, for now just ignore
+			// scan will allow comment at end of line, for now just ignore 
 			err = -1;
 			TechError("TOSSMTimeValue::ReadNDBCWind()", "sscanf() < 6", 0);
 			goto done;
@@ -619,7 +610,7 @@ OSErr OSSMTimeValue_c::ReadNCDCWind(char *path)
 
 				ConvertToUV(magnitude, ConvertToDegrees(value1S), &value1, &value2);
 		}
-
+		
 		memset(&pair, 0, sizeof(pair));
 		DateToSeconds(&time, &pair.time);
 
@@ -828,7 +819,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 	bool askForUnits = true;
 	bool isHydrologyFile = false, isLongWindFile = false;
 	bool dataInGMT = false;
-
+	
 	if ((err = TimeValue_c::InitTimeFunc()) != noErr)
 		return err;
 
@@ -874,9 +865,9 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 		// numHeaderLines = 1; (or 2 - format includes minutes)
 		// units/format always the same
 	}
-
+	
 	if (IsNCDCWindFile(linesInFile)) {
-		err = ReadNCDCWind(path);
+		err = ReadNCDCWind(path); 
 		return err;
 		// or
 		// selectedUnits = kMetersPerSec;
@@ -884,7 +875,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 		// numHeaderLines = 1;
 		// units/format always the same
 	}
-
+	
 	if( numLines >= 5)
 	{
 		if (IsLongWindFile(linesInFile, &selectedUnits, &dataInGMT)) {
@@ -911,7 +902,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 		askForUnits = TRUE;
 	else
 		askForUnits = FALSE;
-
+	
 #ifdef pyGNOME
 
 	// askForUnits must be FALSE if using pyGNOME
@@ -931,7 +922,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 			goto done;
 		}
 	}
-#endif
+#endif		
 
 	switch (selectedUnits) {
 		case kKnots:
@@ -952,7 +943,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 	}
 
 	this->SetUserUnits(selectedUnits);
-
+	
 	if (dataInGMT) {
 		printError("GMT data is not yet implemented.");
 		err = -2;
@@ -969,7 +960,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 			this->fScaleFactor = conversionFactor;
 		}
 	}
-
+	
 	numDataLines = numLines - numHeaderLines;
 	timeValues = (TimeValuePairH)_NewHandle(numDataLines * sizeof(TimeValuePair));
 	if (!timeValues) {
@@ -977,7 +968,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 		TechError("TOSSMTimeValue::ReadTimeValues()", "_NewHandle()", 0);
 		goto done;
 	}
-
+	
 	for (long i = 0; i < numLines; i++)
 	{
 		if (i % 200 == 0)
@@ -994,13 +985,13 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 			continue; // it's a blank line, allow this and skip the line
 
 		std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
-
+		
 		istringstream lineStream(currentLine);
 		lineStream >> time.day >> time.month >> time.year
 					   >> time.hour >> time.minute;
 
 		if (lineStream.fail()) {
-			// scan will allow comment at end of line, for now just ignore
+			// scan will allow comment at end of line, for now just ignore 
 			err = -1;
 			TechError("TOSSMTimeValue::ReadTimeValues()", "scan date/time", 0);
 			goto done;
@@ -1042,10 +1033,10 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 				goto done;
 			}
 		}
-
+		
 		INDEXH(timeValues, numValues++) = pair;
 	}
-
+	
 	if (numValues > 0) {
 		// JS: 9/17/12 - Following does not work for cython.
 		// Leave it commented so we can repro and try to do debugging
@@ -1090,13 +1081,13 @@ done:
 	err = MyGetFileSize(0, 0, path, &fileLength);
 	if (err)
 		return err;
-
+	
 	lenToRead = _min(512, fileLength);
-
+	
 	err = ReadSectionOfFile(0, 0, path, 0, lenToRead, firstPartOfFile, 0);
 	if (err)
 		return err;
-
+	
 	firstPartOfFile[lenToRead - 1] = 0; // make sure it is a cString
 	NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); // station name
 	RemoveLeadingAndTrailingWhiteSpace(strLine);
@@ -1106,7 +1097,7 @@ done:
 	NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); // station position - lat deg, lat min, long deg, long min
 	RemoveLeadingAndTrailingWhiteSpace(strLine);
 	StringSubstitute(strLine, ',', ' ');
-
+	
 	numScanned = sscanf(strLine, "%f %f %f %f",
 						&latdeg, &latmin, &longdeg, &longmin);
 	if (numScanned == 4) {
@@ -1128,7 +1119,7 @@ done:
 	}
 
 	fStationPosition = wp;
-
+	
 	NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); // units
 	RemoveLeadingAndTrailingWhiteSpace(strLine);
 
@@ -1153,45 +1144,45 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader(vector<string> &linesInFile)
 	char	strLine [512];
 	char	firstPartOfFile [512], errmsg[256];
 	OSErr	err = noErr;
-
+	
 	long	line = 0;
 	long lenToRead, fileLength, numScanned;
 	float latdeg, latmin, longdeg, longmin;
-
+	
 	string currentLine;
 	char* stationName;
 
 	WorldPoint3D wp = {0, 0, 0};
 	//wp.z = 0;
-
+	
 	memset(strLine, 0, 512);
 	memset(firstPartOfFile, 0, 512);
-
+	
 	//err = MyGetFileSize(0, 0, path, &fileLength);
 	//if (err)
 		//return err;
-
+	
 	//lenToRead = _min(512, fileLength);
-
+	
 	//err = ReadSectionOfFile(0, 0, path, 0, lenToRead, firstPartOfFile, 0);
 	//if (err)
 		//return err;
-
+	
 	currentLine = trim(linesInFile[line++]);
 	//firstPartOfFile[lenToRead - 1] = 0; // make sure it is a cString
 	//NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); // station name
 	//RemoveLeadingAndTrailingWhiteSpace(strLine);
-
-	stationName = strdup(currentLine.c_str());
+	
+	stationName = strdup(currentLine.c_str());	
 	strncpy(fStationName,stationName,kMaxNameLen);
 
 	//strncpy(fStationName, strLine, kMaxNameLen);
 	//fStationName[kMaxNameLen - 1] = 0;
 
 	currentLine = trim(linesInFile[(line)++]);
-
+	
 	std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
-
+	
 	istringstream lineStream(currentLine);
 	lineStream >> latdeg >> latmin >> longdeg >> longmin;
 	if (lineStream.fail()) {
@@ -1220,7 +1211,7 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader(vector<string> &linesInFile)
 	//NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); // station position - lat deg, lat min, long deg, long min
 	//RemoveLeadingAndTrailingWhiteSpace(strLine);
 	//StringSubstitute(strLine, ',', ' ');
-
+	
 	//numScanned = sscanf(strLine, "%f %f %f %f",
 						//&latdeg, &latmin, &longdeg, &longmin);
 	/*if (numScanned == 4) {
@@ -1230,9 +1221,9 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader(vector<string> &linesInFile)
 		wp.pLong = -(longdeg + longmin / 60.) * 1000000;
 		bOSSMStyle = true;
 	}*/
-
+	
 	fStationPosition = wp;
-
+	
 	currentLine = trim(linesInFile[line++]);
 	std::transform(currentLine.begin(),
 				   currentLine.end(),
@@ -1252,7 +1243,7 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader(vector<string> &linesInFile)
 
 	//NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); // units
 	//RemoveLeadingAndTrailingWhiteSpace(strLine);
-
+		
 done:
 	return err;
 }
@@ -1260,7 +1251,7 @@ done:
 OSErr OSSMTimeValue_c::ReadHydrologyHeader(char *path)
 {
 	vector<string> linesInFile;
-
+	
 	if (ReadLinesInFile(path, linesInFile)) {
 		return ReadHydrologyHeader(linesInFile);
 	}
@@ -1282,7 +1273,7 @@ OSErr OSSMTimeValue_c::ReadOSSMTimeHeader(char *path)
 	short selectedUnits;
 
 	WorldPoint3D wp = {0, 0, 0};
-
+	
 
 	memset(strLine, 0, 512);
 	memset(firstPartOfFile, 0, 512);
@@ -1290,13 +1281,13 @@ OSErr OSSMTimeValue_c::ReadOSSMTimeHeader(char *path)
 	err = MyGetFileSize(0, 0, path, &fileLength);
 	if (err)
 		return err;
-
+	
 	lenToRead = _min(512, fileLength);
-
+	
 	err = ReadSectionOfFile(0, 0, path, 0, lenToRead, firstPartOfFile, 0);
 	if (err)
 		return err;
-
+	
 	firstPartOfFile[lenToRead - 1] = 0; // make sure it is a cString
 	NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512);    // station name
 	RemoveLeadingAndTrailingWhiteSpace(strLine);
@@ -1436,20 +1427,20 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage,
 	double speed = 0, speed1 = 0, speed2 = 0;
 	Boolean calculateAll = true;
 	//char errmsg[256];
-
+	
 	long i, j, numTimeValues = 0, numRunningAverageValues = 0;
-
+	
 	// could have OSSMTimeValue do this and return the running average
 	if (!timeValues) {err = -1; return runningAverageTimeValues;}
-
+	
 	numTimeValues = this -> GetNumValues();
-
+	
 	if (numTimeValues == 0) {err = -1; return runningAverageTimeValues;}
 
-
+	
 	firstTime = (*timeValues)[0].time;
 	lastTime = (*timeValues)[numTimeValues-1].time;
-
+	
 	if ((lastTime - firstTime) > 48. * 3600) // if time series is really long don't calculate entire thing
 		calculateAll = false;
 
@@ -1480,12 +1471,12 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage,
 		if (timeDiff < runningAverageTimeStep && runningAverageTimeStep > 0) runningAverageTimeStep = timeDiff;	// 10 minute minimum instead?
 		//sprintf(errmsg,"Time Diff = %ld\n",timeDiff);
 		//printNote(errmsg);
-
+	
 	}
-
+	
 	//sprintf(errmsg,"Num Time Values = %ld\n",numTimeValues);
 	//printNote(errmsg);
-
+	
 	//if (lastTime == firstTime)
 	if (endTime == startTime)
 		numRunningAverageValues = 1;
@@ -1493,17 +1484,17 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage,
 		//numRunningAverageValues = (lastTime - firstTime) / timeDiff + 1;
 		//numRunningAverageValues = (lastTime - firstTime) / runningAverageTimeStep + 1;
 		numRunningAverageValues = (endTime - startTime) / runningAverageTimeStep + 1;
-
+	
 	//sprintf(errmsg,"numRunningAverageValues  = %ld\n",numRunningAverageValues);
 	//printNote(errmsg);
-
+	
 	runningAverageTimeValues = (TimeValuePairH)_NewHandle(numRunningAverageValues * sizeof(TimeValuePair));
 	if (!runningAverageTimeValues) {
 		err = -1;
 		TechError("OSSMTimeValue_c::CalculateRunningAverage()", "_NewHandle()", 0);
 		goto done;
 	}
-
+	
 	/*for (i=0; i<numRunningAverageValues; i++)
 	{
 		speed = 0;
@@ -1514,7 +1505,7 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage,
 		{
 			timeToAverage = currentTime - j * 3600; 	// will get first value for any time before time zero
 			GetTimeValue(timeToAverage, &velocity);
-
+			
 			speed = speed + sqrt(velocity.u*velocity.u + velocity.v*velocity.v);
 			//sprintf(errmsg,"speed = %lf, time = %lu\n",speed,timeToAverage);
 			//printNote(errmsg);
@@ -1526,7 +1517,7 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage,
 		(*runningAverageTimeValues)[i].time = currentTime;
 		//sprintf(errmsg,"average speed = %lf, time = %lu\n",average.u,currentTime);
 		//printNote(errmsg);
-
+	
 	}*/
 	// try to make it more of an integral between the past time and current time
 	for (i=0; i<numRunningAverageValues; i++)
@@ -1543,15 +1534,15 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage,
 			{
 				Seconds start_time, end_time;
 
-				err = GetDataStartTime(&start_time);
-				err = GetDataEndTime(&end_time);
+				err = GetDataStartTime(&start_time);	
+				err = GetDataEndTime(&end_time);	
 
 				if (model_time < start_time)
 					{err = GetTimeValue (start_time,&velocity); if (err) return 0;}
 				if (model_time > end_time)
 					{err = GetTimeValue (end_time,&velocity); if (err) return 0;}
 			}
-
+			
 			speed2 = sqrt(velocity.u*velocity.u + velocity.v*velocity.v);
 			if (j > 0)
 			{
@@ -1569,9 +1560,9 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage,
 		(*runningAverageTimeValues)[i].time = currentTime;
 		//sprintf(errmsg,"average speed = %lf, time = %lu\n",average.u,currentTime);
 		//printNote(errmsg);
-
+	
 	}
-
+	
 done:
 	return runningAverageTimeValues;
 }

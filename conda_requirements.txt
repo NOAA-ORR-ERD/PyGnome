@@ -41,6 +41,7 @@ cython=0.24.1
 
 # nice to have for development, not required to run
 pytest
+pytest-cov
 testfixtures
 matplotlib
 sphinx

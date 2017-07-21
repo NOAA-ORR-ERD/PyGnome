@@ -195,6 +195,12 @@ class TestCyTimeseries:
                                        msg, 0)
 
 
+def test_get_num_values():
+    ts = CyOSSMTime(testdata['timeseries']['wind_ts'], 5)
+    # 5 is ts_format.magnitude_direction
+    assert ts.get_num_values() == 4
+
+
 if __name__ == '__main__':
     # tt = TestTimeSeriesInit()
     # tt.test_init_timeseries()
