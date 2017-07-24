@@ -8,7 +8,9 @@
 # the "InstallingWithAnaconda.rst" file for details
 
 pytest
+pytest-timeout
 testfixtures
+
 psutil
 sphinx
 progressbar
