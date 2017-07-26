@@ -223,6 +223,7 @@ class WindMover(WindMoversBase, Serializable):
         self._wind = None
         if wind is not None:
             self.wind = wind
+            self.name = wind.name
             kwargs['make_default_refs'] = kwargs.pop('make_default_refs',
                                                      False)
             kwargs['name'] = kwargs.pop('name', wind.name)
@@ -328,8 +329,7 @@ def wind_mover_from_file(filename, **kwargs):
     :returns mover: returns a wind mover, built from the file
     """
     w = environment.Wind(filename=filename, format='r-theta')
-
-    return WindMover(w, **kwargs)
+    return WindMover(w, name=w.name, **kwargs)
 
 
 def constant_wind_mover(speed, direction, units='m/s'):
