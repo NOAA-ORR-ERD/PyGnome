@@ -58,6 +58,7 @@ sort_order = [ChemicalDispersion,
 
 weatherers_idx = dict([(v, i) for i, v in enumerate(sort_order)])
 
+
 def weatherer_sort(weatherer):
     '''
         Returns an int describing the sorting order of the weatherer

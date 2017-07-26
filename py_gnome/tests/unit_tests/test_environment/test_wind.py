@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 from datetime import datetime, timedelta
 import shutil
 
@@ -15,6 +16,7 @@ from gnome.basic_types import datetime_value_2d
 from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
 from gnome.utilities.timeseries import TimeseriesError
+from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Wind, constant_wind, wind_from_values
 
 # from colander import Invalid
@@ -364,6 +366,16 @@ class TestWind:
         # =====================================================================
 
 
+def test_data_start(wind_circ):
+    w = wind_circ['wind']
+    assert w.data_start == datetime(2012, 11, 6, 20, 10)
+
+
+def test_data_stop(wind_circ):
+    w = wind_circ['wind']
+    assert w.data_stop == datetime(2012, 11, 6, 20, 15)
+
+
 def test_constant_wind():
     """
     tests the utility function for creating a constant wind
@@ -381,6 +393,17 @@ def test_constant_wind():
     dt = datetime(2013, 1, 10, 12, 0)
     assert np.allclose(wind.get_wind_data(datetime=dt, units='knots')[0][1],
                        (10, 45))
+
+
+def test_constant_wind_bounds():
+    """
+    tests that a constan_wind returns the limit bounds
+    """
+    wind = constant_wind(10, 45, 'knots')
+
+    assert wind.data_start == InfDateTime("-inf")
+
+    assert wind.data_stop == InfDateTime("inf")
 
 
 def test_eq():

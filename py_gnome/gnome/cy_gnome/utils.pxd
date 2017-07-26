@@ -22,7 +22,7 @@ cdef extern from "StringFunctions.h":
     void SecondsToDate(Seconds, DateTimeRec *)
 
 """
-Declare methods for interpolation of timeseries from 
+Declare methods for interpolation of timeseries from
 lib_gnome/OSSMTimeValue_c class and ShioTimeValue
 """
 cdef extern from "OSSMTimeValue_c.h":
@@ -46,6 +46,7 @@ cdef extern from "OSSMTimeValue_c.h":
         short   GetUserUnits()
         void    SetUserUnits(short)
         OSErr   CheckStartTime(Seconds)
+        long    GetNumValues()
         void    Dispose()
         WorldPoint3D    GetStationLocation()
         OSErr           GetDataStartTime(Seconds *startTime)

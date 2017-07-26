@@ -125,11 +125,17 @@ class Timeseries(GnomeId):
 
         return True
 
+    def __len__(self):
+        """
+        length is the number of data points in the timeseries
+        """
+        return self.ossm.get_num_values()
+
     def get_start_time(self):
         """
         :this will be the real_data_start time (seconds).
         """
-        return (self.ossm.get_start_time())
+        return self.ossm.get_start_time()
 
     def get_end_time(self):
         """

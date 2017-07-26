@@ -41,7 +41,10 @@ cython=0.24.1
 
 # nice to have for development, not required to run
 pytest
+pytest-cov
+pytest-timeout
 testfixtures
+
 matplotlib
 sphinx
 sphinx_rtd_theme

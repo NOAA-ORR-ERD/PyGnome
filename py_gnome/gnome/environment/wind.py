@@ -11,16 +11,18 @@ import zipfile
 
 import numpy as np
 
-from colander import (SchemaNode, drop, OneOf,
-                      Float, String, Range)
 import unit_conversion as uc
 
 from gnome import basic_types
 
 from gnome.utilities import serializable
+from gnome.utilities.time_utils import sec_to_datetime
+from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.utilities.distributions import RayleighDistribution as rayleigh
 
+from colander import (SchemaNode, drop, OneOf,
+                      Float, String, Range)
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
                                            DatetimeValue2dArraySchema)
@@ -220,6 +222,32 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         C++ object stores timeseries in 'm/s'
         '''
         self.set_wind_data(value, units=self.units)
+
+    @property
+    def data_start(self):
+        """
+        The start time of the valid data for this wind timeseries
+
+        If there is one data point -- it's a constant wind
+        so data_start is -InfDateTime
+        """
+
+        if self.ossm.get_num_values() == 1:
+            return InfDateTime("-inf")
+        else:
+            return sec_to_datetime(self.ossm.get_start_time())
+
+    @property
+    def data_stop(self):
+        """The stop time of the valid data for this wind timeseries
+
+        If there is one data point -- it's a constant wind
+        so data_start is -InfDateTime
+        """
+        if self.ossm.get_num_values() == 1:
+            return InfDateTime("inf")
+        else:
+            return sec_to_datetime(self.ossm.get_end_time())
 
     def timeseries_to_dict(self):
         '''

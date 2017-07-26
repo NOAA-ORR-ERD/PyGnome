@@ -25,6 +25,7 @@ from gnome.utilities.rand import random_with_persistance
 
 
 from gnome import environment
+from gnome.environment.wind import constant_wind
 from gnome import basic_types
 from gnome.movers import CyMover, ProcessSchema
 
@@ -262,7 +263,7 @@ class WindMover(WindMoversBase, Serializable):
     @property
     def real_data_start(self):
         if self.wind is not None:
-            return sec_to_datetime(self.wind.ossm.get_start_time())
+            return self.wind.data_start
         else:
             return self._r_d_s
 
@@ -273,7 +274,7 @@ class WindMover(WindMoversBase, Serializable):
     @property
     def real_data_stop(self):
         if self.wind is not None:
-            return sec_to_datetime(self.wind.ossm.get_end_time())
+            return self.wind.data_stop
         else:
             return self._r_d_e
 
@@ -333,6 +334,7 @@ def wind_mover_from_file(filename, **kwargs):
 
 
 def constant_wind_mover(speed, direction, units='m/s'):
+    # fixme: use gnome.wind.constant_wind here.
     """
     utility function to create a mover with a constant wind
 
@@ -348,14 +350,14 @@ def constant_wind_mover(speed, direction, units='m/s'):
         The time for a constant wind timeseries is irrelevant.
         This function simply sets it to datetime.now() accurate to hours.
     """
-    series = np.zeros((1, ), dtype=datetime_value_2d)
+    # series = np.zeros((1, ), dtype=datetime_value_2d)
 
-    # note: if there is ony one entry, the time is arbitrary
-    dt = datetime.now().replace(microsecond=0, second=0, minute=0)
-    series[0] = (dt, (speed, direction))
-    wind = environment.Wind(timeseries=series, units=units)
+    # # note: if there is ony one entry, the time is arbitrary
+    # dt = datetime.now().replace(microsecond=0, second=0, minute=0)
+    # series[0] = (dt, (speed, direction))
+    wind = constant_wind(speed, direction, units=units)
 
-    return WindMover(wind)
+    return WindMover(wind, extrapolate=True)
 
 
 class GridWindMoverSchema(WindMoversBaseSchema):

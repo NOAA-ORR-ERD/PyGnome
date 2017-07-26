@@ -200,6 +200,11 @@ cdef class CyOSSMTime(object):
         elif cmp == 3:
             return not self.__eq(other)
 
+    def get_num_values(self):
+        cdef long num_values
+        num_values = self.time_dep.GetNumValues()
+        return num_values
+
     def get_time_value(self, modelTime):
         """
           GetTimeValue - for a specified modelTime or array of model times,
@@ -435,7 +440,6 @@ cdef class CyTimeseries(CyOSSMTime):
 
         memcpy(&tval[0], time_val_hdlH[0], sz)
         return tval
-
 
     def get_start_time(self):
         cdef OSErr err
