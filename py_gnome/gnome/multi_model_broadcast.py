@@ -253,7 +253,6 @@ class ModelBroadcaster(GnomeId):
                             If an index is passed in, the uncertainty values
                             will be ignored.
         '''
-        print 'timeout: ', timeout
         if len(self.tasks) == 0:
             msg = ('Broadcaster is stopped.  Cannot execute command: {}({})'
                    .format(command,
@@ -276,11 +275,9 @@ class ModelBroadcaster(GnomeId):
             out = []
 
             if timeout is not None:
-                print 'setting the timeout...'
                 old_timeouts = [t.getsockopt(zmq.RCVTIMEO) for t in self.tasks]
                 [t.setsockopt(zmq.RCVTIMEO, timeout * 1000)
                  for t in self.tasks]
-                print 'old_timeouts: ', old_timeouts
 
             if in_parallel:
                 [t.send(request) for t in self.tasks]

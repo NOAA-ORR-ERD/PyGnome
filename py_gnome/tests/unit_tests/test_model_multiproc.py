@@ -235,9 +235,13 @@ def test_timeout(secs, timeout, expected_runtime, valid_func):
 
         rt = end - begin
 
-        # duraton should be the expected timeout plus a bit of overhead
+        # runtime duraton should be either:
+        # - the expected response time plus a bit of overhead
+        # - the expected timeout plus a bit of overhead
+        print 'runtime: ', rt
         assert rt >= expected_runtime
         assert rt < expected_runtime + (expected_runtime * 0.01)
+
         assert valid_func(res)
     finally:
         model_broadcaster.stop()
