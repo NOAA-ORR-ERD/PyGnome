@@ -812,7 +812,7 @@ def test_callback_add_mover_midrun():
 
     # model = setup_simple_model()
 
-    for i in range(2):
+    for _i in range(2):
         model.step()
 
     assert model.current_time_step > -1
@@ -1340,19 +1340,21 @@ class TestValidateModel():
         mismatch with release time
         '''
         model = Model(start_time=self.start_time)
-        (msgs, isvalid) = model.validate()
+        (msgs, isvalid) = model.check_inputs()
 
+        print model.environment
+        print msgs, isvalid
         assert len(msgs) == 1 and isvalid
         assert ('{0} contains no spills'.format(model.name) in msgs[0])
 
         model.spills += Spill(Release(self.start_time + timedelta(hours=1), 1))
-        (msgs, isvalid) = model.validate()
+        (msgs, isvalid) = model.check_inputs()
 
         assert len(msgs) == 1 and isvalid
         assert ('Spill has release time after model start time' in msgs[0])
 
         model.spills[0].release_time = self.start_time - timedelta(hours=1)
-        (msgs, isvalid) = model.validate()
+        (msgs, isvalid) = model.check_inputs()
 
         assert len(msgs) == 1 and not isvalid
         assert ('Spill has release time before model start time' in msgs[0])

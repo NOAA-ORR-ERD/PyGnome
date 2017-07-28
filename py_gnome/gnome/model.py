@@ -672,7 +672,7 @@ class Model(Serializable):
                             spread.water = attr['water']
 
             if langmuir is None:
-                self.weatherers += Langmuir(attr['water'],attr['wind'])
+                self.weatherers += Langmuir(attr['water'], attr['wind'])
             else:
                 # turn spreading on and make references
                 langmuir.on = True
@@ -1463,14 +1463,14 @@ class Model(Serializable):
         todo: check if all spills start after model ends
         '''
         (msgs, isvalid) = self.validate()
-        
+
         someSpillIntersectsModel = False
         num_spills = len(self.spills)
         if num_spills == 0:
             msg = '{0} contains no spills'.format(self.name)
             self.logger.warning(msg)
             msgs.append(self._warn_pre + msg)
-        
+
         num_spills_on = 0
         for spill in self.spills:
             msg = None
@@ -1478,29 +1478,35 @@ class Model(Serializable):
                 num_spills_on += 1
                 if spill.release_time < self.start_time + self.duration:
                     someSpillIntersectsModel = True
-                    
+
                 if spill.release_time > self.start_time:
                     msg = ('{0} has release time after model start time'.
                            format(spill.name))
                     self.logger.warning(msg)
+
                     msgs.append(self._warn_pre + msg)
 
                 elif spill.release_time < self.start_time:
                     msg = ('{0} has release time before model start time'
                            .format(spill.name))
                     self.logger.error(msg)
-                    msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
+
+                    msgs.append('error: {}: {}'
+                                .format(self.__class__.__name__, msg))
                     isvalid = False
 
                 if spill.substance is not None:
                     # min_k1 = spill.substance.get('pour_point_min_k')
                     pour_point = spill.substance.pour_point()
+
                     if spill.water is not None:
                         water_temp = spill.water.get('temperature')
+
                         if water_temp < pour_point[0]:
-                            msg = ('The water temperature, {0} K, is less than '
-                                   'the minimum pour point of the selected oil, '
-                                   '{1} K.  The results may be unreliable.'
+                            msg = ('The water temperature, {0} K, '
+                                   'is less than the minimum pour point '
+                                   'of the selected oil, {1} K.  '
+                                   'The results may be unreliable.'
                                    .format(water_temp, pour_point[0]))
 
                             self.logger.warning(msg)
@@ -1508,9 +1514,10 @@ class Model(Serializable):
 
                         rho_h2o = spill.water.get('density')
                         rho_oil = spill.substance.density_at_temp(water_temp)
+
                         if np.any(rho_h2o < rho_oil):
-                            msg = ("Found particles with relative_buoyancy < 0. "
-                                   "Oil is a sinker")
+                            msg = ('Found particles with '
+                                   'relative_buoyancy < 0. Oil is a sinker')
                             raise GnomeRuntimeError(msg)
 
         if num_spills_on > 0 and not someSpillIntersectsModel:
@@ -1520,6 +1527,7 @@ class Model(Serializable):
             else:
                 msg = ('The spill is released after the time interval '
                        'being modeled.')
+
             self.logger.warning(msg)  # for now make this a warning
             # self.logger.error(msg)
             msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
