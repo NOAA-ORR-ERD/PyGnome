@@ -338,7 +338,7 @@ class CatsMover(CurrentMoversBase, Serializable):
         ref_scale = self.ref_scale  # this needs to be computed, needs a time
 
         if self._tide is not None:
-            time_value, err = self._tide.cy_obj.get_time_value(model_time)
+            time_value, _err = self._tide.cy_obj.get_time_value(model_time)
             tide = time_value[0][0]
         else:
             tide = 1

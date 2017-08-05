@@ -40,6 +40,7 @@ class AddLogger(object):
         '''
         if self._log is None:
             self._log = init_obj_log(self)
+
         return self._log
 
     @property

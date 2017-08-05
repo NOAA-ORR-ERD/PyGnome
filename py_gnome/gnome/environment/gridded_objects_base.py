@@ -80,18 +80,6 @@ class Time(gridded.time.Time, serializable.Serializable):
         Write Wind timeseries to file or to zip,
         then call save method using super
         '''
-#         if self.filename is None:
-#             self.filename = self.id + '_time.txt'
-#             if zipfile.is_zipfile(saveloc):
-#                 self._write_time_to_zip(saveloc, self.filename)
-#             else:
-#                 datafile = os.path.join(saveloc, self.filename)
-#                 self._write_time_to_file(datafile)
-#             rv = super(Time, self).save(saveloc, references, name)
-#             self.filename = None
-#         else:
-#             rv = super(Time, self).save(saveloc, references, name)
-#         return rv
         super(Time, self).save(saveloc, references, name)
 
     def _write_time_to_zip(self, saveloc, ts_name):

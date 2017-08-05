@@ -1,22 +1,17 @@
 """
 grid for wind or current data
 """
-
 import copy
 
-import numpy as np
+from colander import (SchemaNode, drop, Float)
 
-from colander import (SchemaNode, drop, Float, String, SequenceSchema, Sequence)
-
+from gnome.utilities.time_utils import date_to_sec
+from gnome.utilities.serializable import Serializable
+from gnome.persist import base_schema
 from gnome.cy_gnome.cy_grid_curv import CyTimeGridWindCurv
 from gnome.cy_gnome.cy_grid_rect import CyTimeGridWindRect
-from gnome.utilities.time_utils import date_to_sec
-from gnome.utilities.serializable import Serializable, Field
-from gnome.persist import base_schema
 
 from .environment import Environment
-
-import zipfile
 
 
 class GridSchema(base_schema.ObjType):
@@ -43,14 +38,15 @@ class Grid(Environment, Serializable):
                  extrapolate=False, time_offset=0,
                  **kwargs):
         """
-        Initializes a grid object from a file and a grid type
+            Initializes a grid object from a file and a grid type.
 
-        maybe allow a grid to be passed in eventually, otherwise filename required
+            Maybe allow a grid to be passed in eventually, otherwise
+            filename required
 
-        All other keywords are optional. Optional parameters (kwargs):
+            All other keywords are optional. Optional parameters (kwargs):
 
-        :param grid_type: default is 1 - regular grid (eventually figure this out from file)
-
+            :param grid_type: default is 1 - regular grid
+                              (eventually figure this out from file)
         """
         self._grid_type = grid_type
 
@@ -71,8 +67,8 @@ class Grid(Environment, Serializable):
     def __repr__(self):
         self_ts = None
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'timeseries={1}'
-                ')').format(self, self_ts)
+                'timeseries={1})'
+                .format(self, self_ts))
 
     def __str__(self):
         return ("Grid ( "
