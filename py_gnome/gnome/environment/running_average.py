@@ -2,7 +2,6 @@
 running average time series for a given wind, tide, or
 generic time series
 """
-
 import datetime
 import copy
 
@@ -82,14 +81,6 @@ class RunningAverage(Environment, Serializable):
     _state.add(save=_create, update=_update)
     _schema = RunningAverageSchema
 
-    # _state.add_field([serializable.Field('timeseries', save=True,
-    #                                      update=True)
-    #                   ])
-    # _state['name'].test_for_eq = False
-
-    # list of valid velocity units for timeseries
-    # valid_vel_units = _valid_units('Velocity')
-
     def __init__(self, wind=None, timeseries=None, past_hours_to_average=3,
                  **kwargs):
         """
@@ -115,27 +106,24 @@ class RunningAverage(Environment, Serializable):
         if (wind is None and timeseries is None):
             mvg_timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])],
                                       dtype=basic_types.datetime_value_2d)
-            moving_timeseries = self._convert_to_time_value_pair(mvg_timeseries)
-
+            moving_ts = self._convert_to_time_value_pair(mvg_timeseries)
+        elif wind is not None:
+            moving_ts = (wind.ossm
+                         .create_running_average(self._past_hours_to_average))
         else:
-            if wind is not None:
-                moving_timeseries = wind.ossm.create_running_average(self._past_hours_to_average)
-            else:
-                self.wind = Wind(timeseries, units='mps', format='uv')
-                moving_timeseries = self.wind.ossm.create_running_average(self._past_hours_to_average)
+            self.wind = Wind(timeseries, units='mps', format='uv')
+            moving_ts = (self.wind.ossm
+                         .create_running_average(self._past_hours_to_average))
 
-        # print "moving_timeseries"
-        # print moving_timeseries
-
-        self.ossm = CyTimeseries(timeseries=moving_timeseries)
+        self.ossm = CyTimeseries(timeseries=moving_ts)
 
         super(RunningAverage, self).__init__(**kwargs)
 
     def __repr__(self):
         self_ts = self.timeseries.__repr__()
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'timeseries={1}'
-                ')').format(self, self_ts)
+                'timeseries={1})'
+                .format(self, self_ts))
 
     def __str__(self):
         return ("Running Average ( "
@@ -171,12 +159,6 @@ class RunningAverage(Environment, Serializable):
             datetime_value_2d = np.asarray([datetime_value_2d],
                                            dtype=basic_types.datetime_value_2d)
 
-        # self._check_units(units)
-        # self._check_timeseries(datetime_value_2d, units)
-        # datetime_value_2d['value'] = \
-        #     self._convert_units(datetime_value_2d['value'],
-        #                         fmt, units, 'meter per second')
-
         timeval = to_time_value_pair(datetime_value_2d, "uv")
         return timeval
 
@@ -202,10 +184,12 @@ class RunningAverage(Environment, Serializable):
             datetimeval = to_datetime_value_2d(self.ossm.timeseries, 'uv')
         else:
             datetime = np.asarray(datetime, dtype='datetime64[s]').reshape(-1)
+
             timeval = np.zeros((len(datetime), ),
                                dtype=basic_types.time_value_pair)
             timeval['time'] = date_to_sec(datetime)
             timeval['value'] = self.ossm.get_time_value(timeval['time'])
+
             datetimeval = to_datetime_value_2d(timeval, 'uv')
 
         return datetimeval
@@ -228,13 +212,9 @@ class RunningAverage(Environment, Serializable):
         Make sure we are up to date with the referenced time series
         """
         model_time = date_to_sec(model_time)
+
         if self.ossm.check_time_in_range(model_time):
             return
-        else:
-            if self.wind.ossm.check_time_in_range(model_time):
-                # there is wind data for this time so create
-                # a new running average
-                self.create_running_average_timeseries(self._past_hours_to_average, model_time)
 
         self.create_running_average_timeseries(self._past_hours_to_average,
                                                model_time)
@@ -249,12 +229,13 @@ class RunningAverage(Environment, Serializable):
         # first get the time series from the C++ function
         # self.timeseries = wind.ossm.create_running_average(past_hours)
         # do we need to dispose of old one here?
-        moving_timeseries = self.wind.ossm.create_running_average(past_hours_to_average, model_time)
+        moving_timeseries = (self.wind.ossm
+                             .create_running_average(past_hours_to_average,
+                                                     model_time))
 
         # here should set the timeseries since the CyOSSMTime
         # should already exist
         self.ossm.timeseries = moving_timeseries
-        # self.ossm = CyOSSMTime(timeseries=moving_timeseries)
 
     def get_value(self, time):
         '''
@@ -283,6 +264,7 @@ class RunningAverage(Environment, Serializable):
         """
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
+
         if json_ == 'webapi':
             if self.wind:
                 # add wind schema
@@ -298,6 +280,7 @@ class RunningAverage(Environment, Serializable):
         append correct schema for wind object
         """
         schema = cls._schema()
+
         if 'wind' in json_:
             schema.add(WindSchema(name='wind'))
 
