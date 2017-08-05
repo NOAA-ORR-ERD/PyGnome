@@ -2,7 +2,6 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
-
 import datetime
 import os
 import copy
@@ -11,26 +10,27 @@ import zipfile
 
 import numpy as np
 
+from colander import (SchemaNode, drop, OneOf,
+                      Float, String, Range)
+
 import unit_conversion as uc
 
 from gnome import basic_types
 
 from gnome.utilities import serializable
 from gnome.utilities.time_utils import sec_to_datetime
+from gnome.utilities.timeseries import Timeseries
 from gnome.utilities.inf_datetime import InfDateTime
-
 from gnome.utilities.distributions import RayleighDistribution as rayleigh
 
-from colander import (SchemaNode, drop, OneOf,
-                      Float, String, Range)
+from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
+
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
                                            DatetimeValue2dArraySchema)
 from gnome.persist import validators, base_schema
 
 from .environment import Environment
-from gnome.utilities.timeseries import Timeseries
-from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 from .. import _valid_units
 
 
@@ -153,14 +153,18 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         """
         self.updated_at = kwargs.pop('updated_at', None)
         self.source_id = kwargs.pop('source_id', 'undefined')
+
         self.longitude = longitude
         self.latitude = latitude
+
         self.description = kwargs.pop('description', 'Wind Object')
         self.speed_uncertainty_scale = speed_uncertainty_scale
 
         if filename is not None:
             self.source_type = kwargs.pop('source_type', 'file')
+
             super(Wind, self).__init__(filename=filename, format=format)
+
             self.name = kwargs.pop('name', os.path.split(self.filename)[1])
             # set _user_units attribute to match user_units read from file.
             self._user_units = self.ossm.user_units
@@ -178,6 +182,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
             super(Wind, self).__init__(format=format)
 
             self.units = 'mps'  # units for default object
+
             if timeseries is not None:
                 if units is None:
                     raise TypeError('Units must be provided with timeseries')
@@ -201,10 +206,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                 'source_type="{0.source_type}", '
                 'units="{0.units}", '
                 'updated_at="{0.updated_at}", '
-                'timeseries={1}'
-                ')').format(self, self_ts)
-
-    # user_units = property( lambda self: self._user_units)
+                'timeseries={1})'
+                .format(self, self_ts))
 
     @property
     def timeseries(self):
@@ -255,6 +258,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         '''
         ts = self.get_wind_data(units=self.units)
         ts['value'][:] = np.round(ts['value'], 2)
+
         return ts
 
     @property
@@ -307,6 +311,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
             datafile = os.path.join(saveloc, ts_name)
             self._write_timeseries_to_file(datafile)
             self._filename = datafile
+
         return super(Wind, self).save(saveloc, references, name)
 
     def _write_timeseries_to_zip(self, saveloc, ts_name):
@@ -339,6 +344,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                   '{0}\n'
                   'LTime\n'
                   '0,0,0,0,0,0,0,0\n').format(data_units)
+
         data = self.get_wind_data(units=data_units)
         val = data['value']
         dt = data['time'].astype(datetime.datetime)
@@ -351,9 +357,10 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                      '{0.year:04}, '
                      '{0.hour:02}, '
                      '{0.minute:02}, '
-                     '{1:02.2f}, {2:02.2f}\n'.format(idt,
-                                                     round(val[i, 0], 4),
-                                                     round(val[i, 1], 4)))
+                     '{1:02.2f}, {2:02.2f}\n'
+                     .format(idt,
+                             round(val[i, 0], 4),
+                             round(val[i, 1], 4)))
 
     def update_from_dict(self, data):
         '''
@@ -362,6 +369,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         Internally all data is stored in SI units.
         '''
         updated = self.update_attr('units', data.pop('units', self.units))
+
         if super(Wind, self).update_from_dict(data):
             return True
         else:
@@ -453,6 +461,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         .. note:: It invokes get_wind_data(..) function
         '''
         data = self.get_wind_data(time, 'm/s', 'r-theta')
+
         return tuple(data[0]['value'])
 
     def set_speed_uncertainty(self, up_or_down=None):
@@ -490,6 +499,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
         for tse in time_series:
             sigma = rayleigh.sigma_from_wind(tse['value'][0])
+
             if up_or_down == 'up':
                 tse['value'][0] = rayleigh.quantile(0.5 + percent_uncertainty,
                                                     sigma)
@@ -521,12 +531,9 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         '''
         msgs = []
         if np.all(self.timeseries['value'][:, 0] == 0.0):
-            print "self.timeseries['value'][:,0]"
-            print self.timeseries
-            print self.timeseries['value']
-            print self.timeseries['value'][:,0]
             msg = 'wind speed is 0'
             self.logger.warning(msg)
+
             msgs.append(self._warn_pre + msg)
 
         return (msgs, True)
@@ -572,5 +579,3 @@ def wind_from_values(values, units='m/s'):
         wind_vel['value'][i] = tuple(record[1:3])
 
     return Wind(timeseries=wind_vel, format='r-theta', units=units)
-
-
