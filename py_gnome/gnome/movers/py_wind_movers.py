@@ -1,22 +1,24 @@
 import movers
-import numpy as np
-import datetime
 import copy
-from gnome import basic_types
+
+from colander import (SchemaNode,
+                      Bool, Float, String, Sequence,
+                      drop)
+
+from gnome.basic_types import (oil_status,
+                               spill_type)
+
 from gnome.utilities import serializable, rand
 from gnome.utilities.projections import FlatEarthProjection
+
 from gnome.environment import GridWind
-from gnome.basic_types import oil_status
-from gnome.basic_types import (world_point,
-                               world_point_type,
-                               spill_type,
-                               status_code_type)
 from gnome.persist import base_schema
-from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, Bool
 
 
 class PyWindMoverSchema(base_schema.ObjType):
-    filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
+    filename = SchemaNode(typ=Sequence(accept_scalar=True),
+                          children=[SchemaNode(String())],
+                          missing=drop)
     current_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
@@ -30,7 +32,8 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
     _state.add_field([serializable.Field('filename',
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
-                      serializable.Field('wind', save=True, read=True, save_reference=True)])
+                      serializable.Field('wind', save=True, read=True,
+                                         save_reference=True)])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
     _schema = PyWindMoverSchema
@@ -80,14 +83,18 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
         self.make_default_refs = False
 
         self.filename = filename
+
         if self.wind is None:
             if filename is None:
                 raise ValueError("must provide a filename or wind object")
             else:
-                self.wind = GridWind.from_netCDF(filename=self.filename, **kwargs)
+                self.wind = GridWind.from_netCDF(filename=self.filename,
+                                                 **kwargs)
+
         if name is None:
             name = self.__class__.__name__ + str(self.__class__._def_count)
             self.__class__._def_count += 1
+
         self.extrapolate = extrapolate
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
@@ -95,8 +102,9 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
 
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
-        super(PyWindMover, self).__init__(default_num_method=default_num_method,
-                                          **kwargs)
+
+        (super(PyWindMover, self)
+         .__init__(default_num_method=default_num_method, **kwargs))
 
         self.array_types.update({'windages',
                                  'windage_range',
@@ -117,6 +125,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                     **kwargs):
 
         wind = GridWind.from_netCDF(filename, **kwargs)
+
         return cls(wind=wind,
                    filename=filename,
                    extrapolate=extrapolate,
@@ -137,11 +146,11 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
         :param model_time_datetime: current time of model as a date time object
         """
         super(PyWindMover, self).prepare_for_model_step(sc, time_step,
-                                                           model_time_datetime)
+                                                        model_time_datetime)
 
         # if no particles released, then no need for windage
         # TODO: revisit this since sc.num_released shouldn't be None
-        if sc.num_released is None  or sc.num_released == 0:
+        if sc.num_released is None or sc.num_released == 0:
             return
 
         rand.random_with_persistance(sc['windage_range'][:, 0],
@@ -168,6 +177,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
         All movers must implement get_move() since that's what the model calls
         """
         method = None
+
         if num_method is None:
             method = self.num_methods[self.default_num_method]
         else:
@@ -183,4 +193,5 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
 
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)
+
         return deltas
