@@ -2,8 +2,8 @@
 """
 generates a text file with the base64encoded contentes of the icons
 """
-
-import sys, base64, glob
+import base64
+import glob
 
 icon_files = glob.glob("*.png")
 
@@ -16,4 +16,3 @@ with open('icons.b64', 'w') as outfile:
         outfile.write(icon_name + ' = "')
         outfile.write(data)
         outfile.write('"\n')
-

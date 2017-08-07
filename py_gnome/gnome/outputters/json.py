@@ -3,24 +3,17 @@ JSON outputter
 Does not contain a schema for persistence yet
 '''
 import copy
-import os
-from glob import glob
-from collections import Iterable, defaultdict
+from collections import Iterable
 
 import numpy as np
-
-from geojson import (Feature, FeatureCollection, dump,
-                     Point, MultiPoint, MultiPolygon)
-
-from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.serializable import Serializable, Field
 
+from gnome.movers import PyMover
 from gnome.persist import class_from_objtype
 
 from .outputter import Outputter, BaseSchema
-from gnome.movers import PyMover
 
 
 class CurrentJsonSchema(BaseSchema):
@@ -87,29 +80,34 @@ class CurrentJsonOutput(Outputter, Serializable):
 
         for sc in self.cache.load_timestep(step_num).items():
             model_time = date_to_sec(sc.current_time_stamp)
-            #model_time = sc.current_time_stamp
-            iso_time = sc.current_time_stamp.isoformat()
 
         json_ = {}
+
         for cm in self.current_movers:
             is_pymover = isinstance(cm, PyMover)
+
             if is_pymover:
                 model_time = sc.current_time_stamp
+
             velocities = cm.get_scaled_velocities(model_time)
+
             if is_pymover:
                 velocities = velocities[:, 0:2].round(decimals=2)
             else:
                 velocities = self.get_rounded_velocities(velocities)
+
             x = velocities[:, 0]
             y = velocities[:, 1]
+
             direction = np.arctan2(y, x) - np.pi/2
             magnitude = np.sqrt(x**2 + y**2)
+
             direction = np.round(direction, 2)
             magnitude = np.round(magnitude, 2)
 
-            json_[cm.id]={'magnitude': magnitude.tolist(),
-                         'direction': direction.tolist()
-                         }
+            json_[cm.id] = {'magnitude': magnitude.tolist(),
+                            'direction': direction.tolist()}
+
         return json_
 
     def get_rounded_velocities(self, velocities):
@@ -179,8 +177,8 @@ class IceJsonOutput(Outputter):
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('ice_movers',
-                           save=True, update=True, iscollection=True))
+    _state.add_field(Field('ice_movers', save=True, update=True,
+                           iscollection=True))
 
     _schema = IceJsonSchema
 
@@ -215,20 +213,18 @@ class IceJsonOutput(Outputter):
         model_time = date_to_sec(sc.current_time_stamp)
 
         raw_json = {}
+
         for mover in self.ice_movers:
             ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
 
-            raw_json[mover.id] = {
-                    "thickness": [],
-                    "concentration": []
-                }
+            raw_json[mover.id] = {"thickness": [],
+                                  "concentration": []}
 
             raw_json[mover.id]["thickness"] = ice_thickness.tolist()
             raw_json[mover.id]["concentration"] = ice_coverage.tolist()
 
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'data': raw_json
-                       }
+                       'data': raw_json}
 
         return output_info
 
@@ -253,6 +249,7 @@ class IceJsonOutput(Outputter):
 
         if 'ice_movers' in json_:
             _to_dict['ice_movers'] = []
+
             for i, cm in enumerate(json_['ice_movers']):
                 cm_cls = class_from_objtype(cm['obj_type'])
                 cm_dict = cm_cls.deserialize(json_['ice_movers'][i])

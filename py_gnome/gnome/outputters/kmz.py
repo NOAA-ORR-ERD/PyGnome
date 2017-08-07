@@ -1,25 +1,19 @@
 """
 kmz  outputter
 """
-
 import copy
 import os
-from glob import glob
-
-import numpy as np
 from datetime import timedelta, datetime
 import zipfile
 import base64
 
-from colander import SchemaNode, String, drop, Int, Bool
+from colander import SchemaNode, String, drop
 
-from gnome.utilities.time_utils import date_to_sec
+from gnome.basic_types import oil_status
 from gnome.utilities.serializable import Serializable, Field
 
-from gnome.persist import class_from_objtype
-from gnome.basic_types import oil_status
-
 from .outputter import Outputter, BaseSchema
+
 from . import kmz_templates
 
 
@@ -43,24 +37,25 @@ class KMZOutput(Outputter, Serializable):
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
-    _state += [Field('filename', update=True, save=True),]
+    _state += [Field('filename', update=True, save=True)]
     _schema = KMZSchema
 
     time_formatter = '%m/%d/%Y %H:%M'
+
     def __init__(self, filename, **kwargs):
         '''
         :param str output_dir=None: output directory for kmz files.
 
         uses super to pass optional \*\*kwargs to base class __init__ method
         '''
-        ## a little check:
+        # a little check:
         self._check_filename(filename)
+
         # strip off the .kml or .kmz
         filename = filename.rstrip(".kml").rstrip(".kmz")
 
         self.filename = filename + ".kmz"
         self.kml_name = os.path.split(filename)[-1] + ".kml"
-
 
         super(KMZOutput, self).__init__(**kwargs)
 
@@ -107,17 +102,20 @@ class KMZOutput(Outputter, Serializable):
             return
 
         self.delete_output_files()
+
         # shouldn't be required if the above worked!
         self._file_exists_error(self.filename)
 
         # create a list to hold what will be the contents of the kml
-        self.kml = [kmz_templates.header_template.format(caveat=kmz_templates.caveat,
-                                                         kml_name = self.kml_name,
-                                                         valid_timestring = model_start_time.strftime(self.time_formatter),
-                                                         issued_timestring = datetime.now().strftime(self.time_formatter),
-                                                         )]
+        self.kml = [kmz_templates.header_template
+                    .format(caveat=kmz_templates.caveat,
+                            kml_name=self.kml_name,
+                            valid_timestring=model_start_time.strftime(self.time_formatter),
+                            issued_timestring=datetime.now().strftime(self.time_formatter),
+                            )
+                    ]
 
-        # # netcdf outputter has this --  not sure why
+        # netcdf outputter has this --  not sure why
         # self._middle_of_run = True
 
     def write_output(self, step_num, islast_step=False):
@@ -128,24 +126,24 @@ class KMZOutput(Outputter, Serializable):
         if not self.on or not self._write_step:
             return None
 
-
         # add to the kml list:
-        for sc in self.cache.load_timestep(step_num).items(): # loop through uncertain and certain LEs
-            ## extract the data
+        for sc in self.cache.load_timestep(step_num).items():
+            # loop through uncertain and certain LEs
+            # extract the data
             start_time = sc.current_time_stamp
+
             if self.output_timestep is None:
-                end_time = start_time + timedelta(seconds = self.model_timestep)
+                end_time = start_time + timedelta(seconds=self.model_timestep)
             else:
                 end_time = start_time + self.output_timestep
+
             start_time = start_time.isoformat()
             end_time = end_time.isoformat()
 
             positions = sc['positions']
-            water_positions = positions[sc['status_codes']   == oil_status.in_water]
+            water_positions = positions[sc['status_codes'] == oil_status.in_water]
             beached_positions = positions[sc['status_codes'] == oil_status.on_land]
 
-            data_dict = {'certain' : "Uncertainty"if sc.uncertain else "Best Guess",
-                        }
             self.kml.append(kmz_templates.build_one_timestep(water_positions,
                                                              beached_positions,
                                                              start_time,
@@ -153,22 +151,20 @@ class KMZOutput(Outputter, Serializable):
                                                              sc.uncertain
                                                              ))
 
-        if islast_step: # now we really write the file:
-           self.kml.append(kmz_templates.footer)
-           with zipfile.ZipFile(self.filename, 'w', compression=zipfile.ZIP_DEFLATED) as kmzfile:
+        if islast_step:  # now we really write the file:
+            self.kml.append(kmz_templates.footer)
+
+            with zipfile.ZipFile(self.filename, 'w',
+                                 compression=zipfile.ZIP_DEFLATED) as kmzfile:
                 kmzfile.writestr('dot.png', base64.b64decode(DOT))
                 kmzfile.writestr('x.png', base64.b64decode(X))
-                # write the kml file
-                kmzfile.writestr(self.kml_name, "".join(self.kml).encode('utf8'))
+                kmzfile.writestr(self.kml_name,
+                                 "".join(self.kml).encode('utf8'))
 
-
-
-        # output_filename = self.output_to_file(geojson, step_num)
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
                        'output_filename': self.filename}
 
         return output_info
-
 
     def rewind(self):
         '''
@@ -191,12 +187,12 @@ class KMZOutput(Outputter, Serializable):
         try:
             os.remove(self.filename)
         except OSError:
-            pass # it must not be there
+            pass  # it must not be there
 
-# These icons (these are base64 encoded 3-pixel sized dots in a 32x32 transparent PNG)
-#   these were encoded by the "build_icons" script
+
+# These icons were encoded by the "build_icons" script
+# (they are base64 encoded 3-pixel sized dots in a 32x32 transparent PNG)
+# Fixme: Static values built by a tool?  Maybe we should make the generation
+#        of these icons a dynamic process.
 DOT = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAJOgAACToB8GSSSgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAEASURBVFiF7ZY7DsIwEEQfET09Ej11lFtwK06Re3ANlCoFPQpnoGJoHClCXpOPg10wUhonnnlyvF5vJJFSRdL0P0AOANsZcwqgAkrg6MZuQANcgdckN0ljn52kWlInW537ZjfWd2z4SVIbCP5U6+ZEAThLek4I7/V0cxcBnGaGDyGCK/Htn09ZdkutAnsiBFBHCO9VWzkb+XtBAdyB/Ywy9ekBHPCUqHUQVRHDcV6V74UFUEYMD3paAEdjfIm8nsl7gQVwWyHL62kBNCsAeD2zLcMXcIkUjvPyt+nASZj8KE7ejLJox1lcSIZ7IvqVzCrDkKJeSucARFW2veAP8DO9AXV74Qmb/4vgAAAAAElFTkSuQmCC"
 X = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAHKSURBVFiFrdXLq01hGMfx12HMzMCUU4zFQEYiROYkEkkpHbeTXI5LSDqHtomBEJGY+RMMGBlKKWVmaiDXzvExsN7admuv9azLU89k7ef5fb/ruhMSVuIy3uEOVhXH++w1mMEbnMFSpITl+Ob/+oOpHuFHiszh+oIVCbPGVx8Sh0vguaYT3lcIdJU4VAGHtwm3agTaShysgcMgYUNAoKnEgQAcVueFqR4l9mMhkHVJ8RbkPt6DxL4g/EreGQ3oIrE3CL86vFd2FidaSOzBfGDn+ihv3KU82UBidxB+o4xV9TBFJSKX/eY4Tt0TfSooUVWzVYzIO326A3yuLj/6YWkjcTuSHRVImG4AH0RzJ1K8PqSUFoKzn8KpQdNd+N3wFoT+OyLwnfjVEB6WqIPv6AAPSVTBt+NnR3itxDj4tiD8Hs52kSiDb8WPQOB9LCp2WkuMwrcE4Q8xMbJ7ro3EcMBmfA8EPCqBt5bIi5uC8McV8Nznm0gkLMPXwMKTADz3haDExoRjgcGnWByEN5EYJLyuGXrWAp57pib7Y8K1ioHnHeC5L1bkP0iYHPPjCyzpCK+SmMdkHliLl8XBVzjaIzz3Ov++H59xF+uR/gJmOo2+fdNArAAAAABJRU5ErkJggg=="
-
-
-
