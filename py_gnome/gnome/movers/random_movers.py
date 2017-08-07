@@ -1,13 +1,12 @@
 '''
 Movers using diffusion as the forcing function
 '''
-
 import copy
 import numpy as np
 
 from colander import (SchemaNode, Float, drop)
 
-from gnome.basic_types import (oil_status)
+from gnome.basic_types import oil_status
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
 
@@ -149,6 +148,7 @@ class IceAwareRandomMover(RandomMover):
             interp *= 1.3333333333
 
             deltas[:, 0:2][ice_mask] = 0
+
             # scale winds from 100-0% depending on ice coverage
             deltas[:, 0:2][interp_mask] *= (1 - interp[interp_mask][:, np.newaxis])
             deltas[status] = (0, 0, 0)

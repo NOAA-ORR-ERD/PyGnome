@@ -2,11 +2,12 @@ import copy
 
 from colander import (SchemaNode, Float)
 
-from gnome.persist.base_schema import ObjType
-from gnome.utilities import serializable
-from gnome.movers import CyMover, ProcessSchema
-from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome.basic_types import world_point, world_point_type
+from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
+from gnome.utilities import serializable
+
+from gnome.movers import CyMover, ProcessSchema
+from gnome.persist.base_schema import ObjType
 
 
 class RiseVelocityMoverSchema(ObjType, ProcessSchema):
@@ -24,16 +25,10 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
     """
 
     _state = copy.deepcopy(CyMover._state)
-    # _state.add(update=['water_density'], save=['water_density'])
-    # _state.add(update=['water_viscosity'], save=['water_viscosity'])
     _schema = RiseVelocityMoverSchema
 
-    def __init__(
-        self,
-       # water_density=1020,
-       # water_viscosity=1.e-6,
-        **kwargs
-        ):
+    def __init__(self,
+                 **kwargs):
         """
         Uses super to invoke base class __init__ method.
 
@@ -45,43 +40,21 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
-
-       # self.mover = CyRiseVelocityMover(water_density, water_viscosity)
         self.mover = CyRiseVelocityMover()
-        super(RiseVelocityMover, self).__init__(**kwargs)
-        self.array_types.add('rise_vel')
 
-#     @property
-#     def water_density(self):
-#         return self.mover.water_density
-# 
-#     @property
-#     def water_viscosity(self):
-#         return self.mover.water_viscosity
-# 
-#     @water_density.setter
-#     def water_density(self, value):
-#         self.mover.water_density = value
-# 
-#     @water_viscosity.setter
-#     def water_viscosity(self, value):
-#         self.mover.water_viscosity = value
+        super(RiseVelocityMover, self).__init__(**kwargs)
+
+        self.array_types.add('rise_vel')
 
     def __repr__(self):
         """
         .. todo::
             We probably want to include more information.
         """
+        return ('RiseVelocityMover(active_start={0}, active_stop={1}, on={2})'
+                .format(self.active_start, self.active_stop, self.on))
 
-        return ('RiseVelocityMover(active_start={0}, active_stop={1},'
-                ' on={2})').format(self.active_start, self.active_stop, self.on)
-
-    def get_move(
-        self,
-        sc,
-        time_step,
-        model_time_datetime,
-        ):
+    def get_move(self, sc, time_step, model_time_datetime):
         """
         Override base class functionality because mover has a different
         get_move signature
@@ -91,24 +64,23 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
         :param model_time_datetime: current time of the model as a date time
             object
         """
-
         self.prepare_data_for_get_move(sc, model_time_datetime)
 
         if self.active and len(self.positions) > 0:
             self.mover.get_move(self.model_time,
-                time_step,
-                self.positions,
-                self.delta,
-                sc['rise_vel'],
-                self.status_codes,
-                self.spill_type,
-                )
+                                time_step,
+                                self.positions,
+                                self.delta,
+                                sc['rise_vel'],
+                                self.status_codes,
+                                self.spill_type)
 
-        return self.delta.view(dtype=world_point_type).reshape((-1,
-                len(world_point)))
+        return (self.delta.view(dtype=world_point_type)
+                .reshape((-1, len(world_point))))
 
 
 class TamocRiseVelocityMover(RiseVelocityMover):
     def __init__(self, *args, **kwargs):
         super(TamocRiseVelocityMover, self).__init__(*args, **kwargs)
+
         self.array_types.update(('density', 'droplet_diameter'))
