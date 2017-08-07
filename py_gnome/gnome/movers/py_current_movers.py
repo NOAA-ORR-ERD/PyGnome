@@ -1,25 +1,32 @@
 import movers
 import numpy as np
-import datetime
 import copy
-import pytest
+
+from colander import (SchemaNode,
+                      Bool, Float, String, Sequence, DateTime,
+                      drop)
+
 from gnome import basic_types
-from gnome.environment import GridCurrent
-from gnome.environment.gridded_objects_base import Grid_U
-from gnome.utilities import serializable
-from gnome.utilities.projections import FlatEarthProjection
 from gnome.basic_types import oil_status
 from gnome.basic_types import (world_point,
                                world_point_type,
                                spill_type,
                                status_code_type)
+from gnome.utilities import serializable
+from gnome.utilities.projections import FlatEarthProjection
+
+from gnome.environment import GridCurrent
+from gnome.environment.gridded_objects_base import Grid_U
+
 from gnome.persist import base_schema
-from colander import SchemaNode, Float, Boolean, Sequence, MappingSchema, drop, String, OneOf, SequenceSchema, TupleSchema, DateTime, Bool
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
+
 class PyCurrentMoverSchema(base_schema.ObjType):
-    filename = SchemaNode(typ=Sequence(accept_scalar=True), children=[SchemaNode(String())], missing=drop)
+    filename = SchemaNode(typ=Sequence(accept_scalar=True),
+                          children=[SchemaNode(String())],
+                          missing=drop)
     current_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
@@ -36,6 +43,7 @@ class PyCurrentMoverSchema(base_schema.ObjType):
     real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
                                 validator=convertible_to_seconds)
 
+
 class PyCurrentMover(movers.PyMover, serializable.Serializable):
 
     _state = copy.deepcopy(movers.PyMover._state)
@@ -43,7 +51,8 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
     _state.add_field([serializable.Field('filename',
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
-                      serializable.Field('current', read=True, save_reference=True),
+                      serializable.Field('current', read=True,
+                                         save_reference=True),
                       ])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
@@ -96,32 +105,40 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         """
         self.filename = filename
         self.current = current
+
         if self.current is None:
             if filename is None:
                 raise ValueError("must provide a filename or current object")
             else:
-                self.current = GridCurrent.from_netCDF(filename=self.filename, **kwargs)
+                self.current = GridCurrent.from_netCDF(filename=self.filename,
+                                                       **kwargs)
+
         if name is None:
             name = self.__class__.__name__ + str(self.__class__._def_count)
             self.__class__._def_count += 1
+
         self.extrapolate = extrapolate
         self.current_scale = current_scale
+
         self.uncertain_along = uncertain_along
         self.uncertain_across = uncertain_across
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
+
         self.model_time = 0
+
         self.positions = np.zeros((0, 3), dtype=world_point_type)
         self.delta = np.zeros((0, 3), dtype=world_point_type)
         self.status_codes = np.zeros((0, 1), dtype=status_code_type)
+
         if self.current.time is None or len(self.current.time.data) == 1:
             self.extrapolate = True
 
         # either a 1, or 2 depending on whether spill is certain or not
         self.spill_type = 0
 
-        super(PyCurrentMover, self).__init__(default_num_method=default_num_method,
-                                             **kwargs)
+        (super(PyCurrentMover, self)
+         .__init__(default_num_method=default_num_method, **kwargs))
 
     def _attach_default_refs(self, ref_dict):
         pass
@@ -144,9 +161,11 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         Function for specifically creating a PyCurrentMover from a file
         """
         current = GridCurrent.from_netCDF(filename, **kwargs)
+
         if name is None:
             name = cls.__name__ + str(cls._def_count)
             cls._def_count += 1
+
         return cls(name=name,
                    current=current,
                    filename=filename,
@@ -187,28 +206,34 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         else:
             lons = self.current.grid.node_lon
             lats = self.current.grid.node_lat
+
             return np.column_stack((lons.reshape(-1), lats.reshape(-1)))
 
     def get_center_points(self):
-        if hasattr(self.current.grid, 'center_lon') and self.current.grid.center_lon is not None:
+        if (hasattr(self.current.grid, 'center_lon') and
+                self.current.grid.center_lon is not None):
             lons = self.current.grid.center_lon
             lats = self.current.grid.center_lat
+
             return np.column_stack((lons.reshape(-1), lats.reshape(-1)))
         else:
             lons = self.current.grid.node_lon
             lats = self.current.grid.node_lat
-            if len(lons.shape) == 1: #ugrid
+
+            if len(lons.shape) == 1:
+                # we are ugrid
                 triangles = self.current.grid.nodes[self.current.grid.faces[:]]
                 centroids = np.zeros((self.current.grid.faces.shape[0], 2))
                 centroids[:, 0] = np.sum(triangles[:, :, 0], axis=1) / 3
                 centroids[:, 1] = np.sum(triangles[:, :, 1], axis=1) / 3
 
             else:
-                c_lons = (lons[0:-1, :] + lons[1:, :]) /2
-                c_lats = (lats[:, 0:-1] + lats[:, 1:]) /2
-                centroids = np.column_stack((c_lons.reshape(-1), c_lats.reshape(-1)))
-            return centroids
+                c_lons = (lons[0:-1, :] + lons[1:, :]) / 2
+                c_lats = (lats[:, 0:-1] + lats[:, 1:]) / 2
+                centroids = np.column_stack((c_lons.reshape(-1),
+                                             c_lats.reshape(-1)))
 
+            return centroids
 
     def get_scaled_velocities(self, time):
         """
@@ -218,8 +243,12 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         lons = current.grid.node_lon
         lats = current.grid.node_lat
 
-        #GridCurrent.at needs Nx3 points [lon, lat, z] and a time T
-        points = np.column_stack((lons.reshape(-1), lats.reshape(-1), np.zeros_like(current.grid.node_lon.reshape(-1))))
+        # GridCurrent.at needs Nx3 points [lon, lat, z] and a time T
+        points = np.column_stack((lons.reshape(-1),
+                                  lats.reshape(-1),
+                                  np.zeros_like(current.grid.node_lon
+                                                .reshape(-1))
+                                  ))
         vels = current.at(points, time)
 
         return vels
@@ -242,6 +271,7 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         All movers must implement get_move() since that's what the model calls
         """
         method = None
+
         if num_method is None:
             method = self.num_methods[self.default_num_method]
         else:
@@ -252,6 +282,7 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         pos = positions[:]
 
         res = method(sc, time_step, model_time_datetime, pos, self.current)
+
         if res.shape[1] == 2:
             deltas = np.zeros_like(positions)
             deltas[:, 0:2] = res
@@ -260,4 +291,5 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
 
         deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
         deltas[status] = (0, 0, 0)
+
         return deltas
