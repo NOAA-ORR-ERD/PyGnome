@@ -178,13 +178,9 @@ class Outputter(Serializable):
         self._model_start_time = model_start_time
         self.model_timestep = model_time_step
 
-        # don't set a time if output_start_time is None; output all the steps
-        #if self.output_start_time is None:
-            #self.output_start_time = model_start_time
-
         self.sc_pair = spills
-        cache = kwargs.pop('cache', None)
 
+        cache = kwargs.pop('cache', None)
         if cache is not None:
             self.cache = cache
 
@@ -341,6 +337,7 @@ class Outputter(Serializable):
         Follows the iteration in Model().step() for each step_num
         """
         self.prepare_for_model_run(model_start_time, **kwargs)
+
         model_time = model_start_time
         last_step = False
 
@@ -349,14 +346,17 @@ class Outputter(Serializable):
                 next_ts = (self.cache.load_timestep(step_num).items()[0].
                            current_time_stamp)
                 ts = next_ts - model_time
+
                 self.prepare_for_model_step(ts.seconds, model_time)
 
             if step_num == num_time_steps - 1:
                 last_step = True
 
             self.write_output(step_num, last_step)
-            model_time = (self.cache.load_timestep(step_num).items()[0].
-                          current_time_stamp)
+
+            model_time = (self.cache.load_timestep(step_num)
+                          .items()[0]
+                          .current_time_stamp)
 
     # Some utilities for checking valid filenames, etc...
     def _check_filename(self, filename):
@@ -364,8 +364,7 @@ class Outputter(Serializable):
         if os.path.isdir(filename):
             raise ValueError('filename must be a file not a directory.')
 
-        if not os.path.exists(os.path.realpath(os.path.dirname(filename)
-                                               )):
+        if not os.path.exists(os.path.realpath(os.path.dirname(filename))):
             raise ValueError('{0} does not appear to be a valid path'
                              .format(os.path.dirname(filename)))
 
@@ -383,5 +382,3 @@ class Outputter(Serializable):
             raise ValueError('{0} file exists. Enter a filename that '
                              'does not exist in which to save data.'
                              .format(file_))
-
-

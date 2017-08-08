@@ -1,7 +1,6 @@
 '''
 NetCDF outputter - write the nc_particles netcdf file format
 '''
-
 import copy
 import os
 from datetime import datetime
@@ -276,10 +275,9 @@ class NetCDFOutput(Outputter, Serializable):
         # It is set in prepare_for_model_run():
         # 'spill_names' is set based on the names of spill's as defined by user
         # time 'units' are seconds since model_start_time
-        self._var_attributes = {
-            'spill_num': {'spills_map': ''},
-            'time': {'units': ''}
-                                 }
+        self._var_attributes = {'spill_num': {'spills_map': ''},
+                                'time': {'units': ''}
+                                }
 
         super(NetCDFOutput, self).__init__(**kwargs)
 
@@ -316,6 +314,7 @@ class NetCDFOutput(Outputter, Serializable):
         'change output data but cannot change in middle of run.'
         if value == self._which_data:
             return
+
         if self.middle_of_run:
             raise AttributeError('This attribute cannot be changed in the '
                                  'middle of a run')
@@ -364,8 +363,10 @@ class NetCDFOutput(Outputter, Serializable):
         names = " ".join(["{0}: {1}, ".format(ix, spill.name)
                           for ix, spill in enumerate(spills)])
         self._var_attributes['spill_num']['spills_map'] = names
-        self._var_attributes['time']['units'] = \
-            ('seconds since {0}').format(self._model_start_time.isoformat())
+
+        self._var_attributes['time']['units'] = ('seconds since {0}'
+                                                 .format(self._model_start_time
+                                                         .isoformat()))
 
     def _initialize_rootgrp(self, rootgrp, sc):
         'create dimensions for root group and set cf_attributes'
@@ -477,9 +478,6 @@ class NetCDFOutput(Outputter, Serializable):
 
             # create the netcdf files and write the standard stuff:
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
-
-                print(rootgrp)
-
                 self._initialize_rootgrp(rootgrp, sc)
 
                 # create a dict with dims {2: 'two', 3: 'three' ...}
@@ -524,16 +522,17 @@ class NetCDFOutput(Outputter, Serializable):
                 # Add subgroup for mass_balance - could do it w/o subgroup
                 if sc.mass_balance:
                     grp = rootgrp.createGroup('mass_balance')
+
                     # give this grp a dimension for time
                     grp.createDimension('time', None)  # unlimited
+
                     for key in sc.mass_balance:
                         # mass_balance variables get a smaller chunksize
                         self._create_nc_var(grp,
                                             var_name=key,
                                             dtype='float',
                                             shape=('time',),
-                                            chunksz=(256,),
-                                            )
+                                            chunksz=(256,))
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
@@ -556,24 +555,25 @@ class NetCDFOutput(Outputter, Serializable):
                                          dtype,
                                          shape,
                                          zlib=self._compress,
-                                         chunksizes=chunksz,
-                                         )
+                                         chunksizes=chunksz)
             else:
                 var = grp.createVariable(var_name,
                                          dtype,
                                          shape,
-                                         zlib=self._compress,
-                                         )
+                                         zlib=self._compress)
         except RuntimeError as err:
-            msg = "\narguments are:"
-            msg += "var_name: %s\n" % var_name
-            msg += "dtype: %s\n" % dtype
-            msg += "shape: %s\n" % shape
-            msg += "dims: %s\n" % grp.dimensions
-            # msg += "shape_dim: %s\n" % grp.dimensions[shape[0]]
-            msg += "zlib: %s\n" % self._compress
-            msg += "chunksizes: %s\n" % chunksz
+            msg = ("\narguments are:\n"
+                   "\tvar_name: {}\n"
+                   "\tdtype: {}\n"
+                   "\tshape: {}\n"
+                   "\tdims: {}\n"
+                   "\tzlib: {}\n"
+                   "\tchunksizes: {}\n"
+                   .format(var_name, dtype, shape, grp.dimensions,
+                           self._compress, chunksz))
+
             err.args = (err.args[0] + msg,)
+
             raise err
 
         if var_name in var_attributes:
@@ -663,6 +663,7 @@ class NetCDFOutput(Outputter, Serializable):
             os.remove(self.netcdf_filename)
         except OSError:
             pass  # it must not be there
+
         try:
             os.remove(self._u_netcdf_filename)
         except OSError:
@@ -712,10 +713,12 @@ class NetCDFOutput(Outputter, Serializable):
         class attribute "standard_arrays", currently:
 
             'current_time_stamp': datetime object associated with this data
-            'positions'         : NX3 array. NetCDF variables: 'longitude', 'latitude', 'depth'
+            'positions'         : NX3 array. NetCDF variables:
+                                  'longitude', 'latitude', 'depth'
             'status_codes'      : NX1 array. NetCDF variable :'status_codes'
             'spill_num'         : NX1 array. NetCDF variable: 'spill_num'
-            'id'                : NX1 array of particle id. NetCDF variable 'id'
+            'id'                : NX1 array of particle id. NetCDF variable
+                                  'id'
             'mass'              : NX1 array showing 'mass' of each particle
 
         standard_arrays = ['latitude',
@@ -738,6 +741,7 @@ class NetCDFOutput(Outputter, Serializable):
 
             # first find the index of index in which we are interested
             time_ = data.variables['time']
+
             if time is None and index is None:
                 # there should only be 1 time in file. Read and
                 # return data associated with it
@@ -774,13 +778,16 @@ class NetCDFOutput(Outputter, Serializable):
             # figure out what arrays to read in:
             if which_data == 'standard':
                 data_arrays = set(klass.standard_arrays)
+
                 # swap out positions:
-                [data_arrays.discard(x)
-                 for x in ('latitude', 'longitude', 'depth')]
+                [data_arrays.discard(x) for x in ('latitude',
+                                                  'longitude',
+                                                  'depth')]
                 data_arrays.add('positions')
             elif which_data == 'all':
                 # pull them from the nc file
                 data_arrays = set(data.variables.keys())
+
                 # remove the irrelevant ones:
                 [data_arrays.discard(x) for x in ('time',
                                                   'particle_count',
@@ -796,6 +803,7 @@ class NetCDFOutput(Outputter, Serializable):
                 # special case time and positions:
                 if array_name == 'positions':
                     positions = np.zeros((elem, 3), dtype=world_point_type)
+
                     positions[:, 0] = \
                         data.variables['longitude'][_start_ix:_stop_ix]
                     positions[:, 1] = \
@@ -812,8 +820,9 @@ class NetCDFOutput(Outputter, Serializable):
             weathering_data = {}
             if 'mass_balance' in data.groups:
                 mb = data.groups['mass_balance']
+
                 for key, val in mb.variables.iteritems():
-                    'assume SI units'
+                    # assume SI units
                     weathering_data[key] = val[index]
 
         return (arrays_dict, weathering_data)
@@ -827,7 +836,9 @@ class NetCDFOutput(Outputter, Serializable):
         '''
         json_ = self.serialize('save')
         fname = os.path.split(json_['netcdf_filename'])[1]
+
         json_['netcdf_filename'] = os.path.join('./', fname)
+
         return self._json_to_saveloc(json_, saveloc, references, name)
 
     @classmethod
@@ -846,7 +857,7 @@ class NetCDFOutput(Outputter, Serializable):
         :param references: references object - if this is called by the Model,
             it will pass a references object. It is not required.
         '''
-        json_data['netcdf_filename'] = \
-            os.path.join(saveloc, json_data['netcdf_filename'])
+        new_filename = os.path.join(saveloc, json_data['netcdf_filename'])
+        json_data['netcdf_filename'] = new_filename
 
         return super(NetCDFOutput, cls).loads(json_data, saveloc, references)
