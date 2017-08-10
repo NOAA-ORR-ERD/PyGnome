@@ -58,9 +58,9 @@ class Adios2(object):
         """
         # U_h = 2.0286 * g * sqrt(H / g) # Bill's version
         U_h = np.sqrt(g * H / 0.243)
-        low = U_h < 4.433049525859078
-        U_h[U_h < 4.433049525859078] = (low / 0.71) ** 0.813008
-
+        U_h = np.where(U_h < 4.433049525859078,
+                       (U_h / 0.71) ** 0.813008,
+                       U_h)
         return U_h
 
     @staticmethod

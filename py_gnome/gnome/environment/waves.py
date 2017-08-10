@@ -140,15 +140,19 @@ class Waves(Environment, serializable.Serializable):
             return np.clip(U, self.pseudo_wind(wave_height))
 
     def compute_H(self, U):
+        U = np.array(U).reshape(-1)
         return Adios2.wave_height(U, self.water.fetch)
 
     def pseudo_wind(self, H):
+        H = np.array(H).reshape(-1)
         return Adios2.wind_speed_from_height(H)
 
     def whitecap_fraction(self, U):
+        U = np.array(U).reshape(-1)
         return LehrSimecek.whitecap_fraction(U, self.water.salinity)
 
     def mean_wave_period(self, U):
+        U = np.array(U).reshape(-1)
         return Adios2.mean_wave_period(U,
                                        self.water.wave_height,
                                        self.water.fetch)

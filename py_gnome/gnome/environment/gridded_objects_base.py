@@ -140,6 +140,11 @@ class Grid_U(gridded.grids.Grid_U, serializable.Serializable):
     def get_nodes(self):
         return self.nodes[:]
 
+    def get_centers(self):
+        if self.face_coordinates == None:
+            self.build_face_coordinates()
+        return self.face_coordinates
+
 
 class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
 
@@ -200,6 +205,14 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
         n = self._cell_trees['node'][1]
 
         return n
+
+    def get_centers(self):
+        if self.center_lon is None:
+            lons = (self.node_lon[0:-1, 0:-1] + self.node_lon[1:,1:]) /2
+            lats = (self.node_lat[0:-1, 0:-1] + self.node_lat[1:,1:]) /2
+            return np.stack((lons, lats), axis=-1).reshape(-1,2)
+        else:
+            return self.centers.reshape(-1,2)
 
 
 class PyGrid(gridded.grids.Grid):
@@ -310,3 +323,8 @@ class VectorVariable(gridded.VectorVariable, serializable.Serializable):
         r = np.stack((raw_u, raw_v))
 
         return np.ascontiguousarray(r, np.float32)
+
+    def get_metadata(self):
+        json_ = {}
+        json_['data_location'] = self.grid.infer_location(self.variables[0].data)
+        return json_
