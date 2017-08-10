@@ -1,4 +1,5 @@
 from monahan import Monahan
+import numpy as np
 
 
 class LehrSimecek(object):
@@ -22,20 +23,22 @@ class LehrSimecek(object):
         """
         Tm = Monahan.whitecap_decay_constant(salinity)
 
-        if U < 4.0:  # m/s
-            # linear fit from 0 to the 4m/s value from Ding and Farmer
-            # The Lehr and Simecek-Beatty paper had a different formulation:
-            #     fw = 0.025 * (U - 3.0) / Tm
-            # that one produces a kink at 4 m/s and negative for U < 1
-            fw = (0.0125 * U) / Tm
-        else:
-            # # Ding and Farmer (JPO 1994)
-            # fw = (0.01*U + 0.01) / Tm
+        fw = np.where(U < 4.0, (0.0125 * U) / Tm, (0.01 * U + 0.01) / Tm)
 
-            # Ding and Farmer (JPO 1994)
-            fw = (0.01 * U + 0.01) / Tm
+#         if U < 4.0:  # m/s
+#             # linear fit from 0 to the 4m/s value from Ding and Farmer
+#             # The Lehr and Simecek-Beatty paper had a different formulation:
+#             #     fw = 0.025 * (U - 3.0) / Tm
+#             # that one produces a kink at 4 m/s and negative for U < 1
+#             fw = (0.0125 * U) / Tm
+#         else:
+#             # # Ding and Farmer (JPO 1994)
+#             # fw = (0.01*U + 0.01) / Tm
+#
+#             # Ding and Farmer (JPO 1994)
+#             fw = (0.01 * U + 0.01) / Tm
 
         fw *= 0.5  # old ADIOS had a .5 factor - not sure why but we'll keep it
                    # for now
 
-        return min(fw, 1.0)  # only with U > 200m/s!
+        return np.clip(fw, None, 1.0)  # only with U > 200m/s!

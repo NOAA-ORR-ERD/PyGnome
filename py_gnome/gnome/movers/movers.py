@@ -241,6 +241,26 @@ class PyMover(Mover):
                             setattr(self, k, o)
         Mover.__init__(self, **kwargs)
 
+    @property
+    def real_data_start(self):
+        return self.data.time.min_time.replace(tzinfo=None)
+
+    @real_data_start.setter
+    def real_data_start(self, value):
+        self._r_d_s = value
+
+    @property
+    def real_data_stop(self):
+        return self.data.time.max_time.replace(tzinfo=None)
+
+    @real_data_stop.setter
+    def real_data_stop(self, value):
+        self._r_d_e = value
+
+    @property
+    def is_data_on_cells(self):
+        return self.data.grid.infer_location(self.data.u.data) != 'node'
+
     def get_delta_Euler(self, sc, time_step, model_time, pos, vel_field):
         vels = vel_field.at(pos, model_time,
                             extrapolate=self.extrapolate)

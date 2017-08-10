@@ -7,6 +7,7 @@ import os
 import copy
 import StringIO
 import zipfile
+import gridded
 
 import numpy as np
 
@@ -463,6 +464,49 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         data = self.get_wind_data(time, 'm/s', 'r-theta')
 
         return tuple(data[0]['value'])
+
+    def at(self, points, time, format='r-theta', extrapolate=True, _auto_align=True):
+        '''
+        Returns the value of the wind at the specified points at the specified
+        time. Valid format specifications include 'r-theta', 'r', 'theta',
+        'uv', 'u' or 'v'. This function is for API compatibility with the new
+        environment objects.
+
+        :param points: Nx2 or Nx3 array of positions (lon, lat, [z]).
+                       This may not be None. To get wind values
+                       position-independently, use get_value(time)
+        :param time: Datetime of the time to be queried
+        :param format: String describing the data and organization.
+        :param extrapolate: extrapolation on/off (ignored for now)
+        '''
+        if points is None:
+            points = np.array((0,0)).reshape(-1,2)
+        pts = gridded.utilities._reorganize_spatial_data(points)
+
+        ret_data = np.zeros_like(pts, dtype='float64')
+        if format in ('r-theta','uv'):
+            data = self.get_wind_data(time, 'm/s', format)[0]['value']
+            ret_data[:,0] = data[0]
+            ret_data[:,1] = data[1]
+        elif format in ('u','v','r','theta'):
+            f = None
+            if format in ('u','v'):
+                f = 'uv'
+            else:
+                f = 'r-theta'
+            data = self.get_wind_data(time, 'm/s', f)[0]['value']
+            if format in ('u','r'):
+                ret_data[:,0] = data[0]
+                ret_data = ret_data[:,0]
+            else:
+                ret_data[:,1] = data[1]
+                ret_data = ret_data[:,1]
+        else:
+            raise ValueError('invalid format {0}'.format(format))
+
+        if _auto_align:
+            ret_data = gridded.utilities._align_results_to_spatial_data(ret_data, points)
+        return ret_data
 
     def set_speed_uncertainty(self, up_or_down=None):
         '''

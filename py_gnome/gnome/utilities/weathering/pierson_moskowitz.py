@@ -1,4 +1,6 @@
 
+import numpy as np
+
 from gnome.constants import gravity as g
 
 
@@ -26,7 +28,7 @@ class PiersonMoskowitz(object):
     @classmethod
     def peak_wave_speed(cls, wind_speed):
         '''
-            peak wave speed 
+            peak wave speed
         '''
         return wind_speed * 1.17
 
@@ -35,7 +37,7 @@ class PiersonMoskowitz(object):
         '''
             peak angular frequency (1/s)
         '''
-        if wind_speed > 0:
-            return .86 * g / wind_speed
-        else:
-            return .86 * g	# set minimum wind U=1 ?
+        return np.where(wind_speed > 0,
+                        .86 * g / wind_speed,
+                        .86 * g) # set minimum wind U=1 ?
+

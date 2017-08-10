@@ -13,8 +13,8 @@ Uses the same approach as ADIOS 2
 from __future__ import division
 
 import copy
-
 import numpy as np
+import gridded
 
 from gnome import constants
 from gnome.utilities import serializable
@@ -81,7 +81,7 @@ class Waves(Environment, serializable.Serializable):
 
         super(Waves, self).__init__(**kwargs)
 
-    def get_value(self, time):
+    def get_value(self, points, time):
         """
         return the rms wave height, peak period and percent wave breaking
         at a given time. Does not currently support location-variable waves.
@@ -102,7 +102,7 @@ class Waves(Environment, serializable.Serializable):
         wave_height = self.water.wave_height
 
         if wave_height is None:
-            U = self.get_wind_value(self.wind, time)  # only need velocity
+            U = self.get_wind_speed(points, time, format='r')  # only need velocity
             H = self.compute_H(U)
         else:  # user specified a wave height
             H = wave_height
@@ -115,7 +115,8 @@ class Waves(Environment, serializable.Serializable):
 
         return H, T, Wf, De
 
-    def get_emulsification_wind(self, time):
+
+    def get_emulsification_wind(self, points, time):
         """
         Return the right wind for the wave climate
 
@@ -133,35 +134,42 @@ class Waves(Environment, serializable.Serializable):
                given by the user for dispersion, why not for emulsification?
         """
         wave_height = self.water.wave_height
-        U = self.get_wind_value(self.wind, time)  # only need velocity
+        U = self.get_wind_speed(points, time)  # only need velocity
 
         if wave_height is None:
             return U
         else:  # user specified a wave height
-            return max(U, self.pseudo_wind(wave_height))
+            U = np.where(U < self.pseudo_wind(wave_height),
+                         self.pseudo_wind(wave_height),
+                         U)
+            return U
 
     def compute_H(self, U):
+        U = np.array(U).reshape(-1)
         return Adios2.wave_height(U, self.water.fetch)
 
     def pseudo_wind(self, H):
+        H = np.array(H).reshape(-1)
         return Adios2.wind_speed_from_height(H)
 
     def whitecap_fraction(self, U):
+        U = np.array(U).reshape(-1)
         return LehrSimecek.whitecap_fraction(U, self.water.salinity)
 
     def mean_wave_period(self, U):
+        U = np.array(U).reshape(-1)
         return Adios2.mean_wave_period(U,
                                        self.water.wave_height,
                                        self.water.fetch)
 
-    def peak_wave_period(self, time):
+    def peak_wave_period(self, points, time):
         '''
         :param time: the time you want the wave data for
         :type time: datetime.datetime object
 
         :returns: peak wave period (s)
         '''
-        U = self.get_wind_value(self.wind, time)  # only need velocity
+        U = self.get_wind_speed(points, time)  # only need velocity
 
         return PiersonMoskowitz.peak_wave_period(U)
 

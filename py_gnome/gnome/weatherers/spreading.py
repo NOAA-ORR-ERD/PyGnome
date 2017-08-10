@@ -212,7 +212,7 @@ class FayGravityViscous(Weatherer, Serializable):
                                                    relative_buoyancy,
                                                    blob_init_volume[m_age][0],
                                                    age[m_age][0])
-                
+
                 if blob_area >= max_area:
                     area[m_age] = max_area / m_age.sum()
                 else:
@@ -317,13 +317,13 @@ class FayGravityViscous(Weatherer, Serializable):
                         constants.gravity *
                         relative_buoyancy /
                         np.sqrt(water_viscosity)) ** (1. / 3.))
-                    
+
                     #blob_area_fgv = .5 * C**2 / area[m_age].sum()	# make sure area > 0
                     #blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
                     #blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
                     blob_area_fgv = area[m_age].sum() + .5 * (C**2 / area[m_age].sum()) * time_step	# make sure area > 0
                     #blob_area_fgv = blob_area2 + .5 * (C**2 / blob_area2) * time_step	# make sure area > 0
-                
+
                     K = 4 * np.pi * 2 * .033
                     #blob_area_diffusion = (7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)
                     blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
@@ -333,7 +333,7 @@ class FayGravityViscous(Weatherer, Serializable):
                     #blob_area = blob_area_fgv
                     blob_area = blob_area_fgv + blob_area_diffusion
                     #blob_area = blob_area_diffusion
-                
+
                 if blob_area >= max_area:
                     area[m_age] = max_area / m_age.sum()
                 else:
@@ -484,28 +484,6 @@ class FayGravityViscous(Weatherer, Serializable):
 
         sc.update_from_fatedataview()
 
-    def serialize(self, json_="webapi"):
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-
-        if json_ == 'webapi':
-            if self.water is not None:
-                schema.add(WaterSchema(name="water"))
-
-        serial = schema.serialize(toserial)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-        schema = cls._schema(name=cls.__name__)
-        if 'water' in json_:
-            schema.add(WaterSchema(name="water"))
-
-        _to_dict = schema.deserialize(json_)
-
-        return _to_dict
-
 
 class ConstantArea(Weatherer, Serializable):
     '''
@@ -574,15 +552,12 @@ class Langmuir(Weatherer, Serializable):
         super(Langmuir, self).__init__(**kwargs)
         self.array_types.update(('area', 'fay_area', 'frac_coverage', 'spill_num', 'bulk_init_volume', 'density'))
 
-        if wind is None:
-            self.wind = constant_wind(0, 0)
-        else:
-            self.wind = wind
+        self.wind = wind
 
         # need water object to find relative buoyancy
         self.water = water
 
-    def _get_frac_coverage(self, model_time, rel_buoy, thickness):
+    def _get_frac_coverage(self, points, model_time, rel_buoy, thickness):
         '''
         return fractional coverage for a blob of oil with inputs;
         relative_buoyancy, and thickness
@@ -594,7 +569,7 @@ class Langmuir(Weatherer, Serializable):
         the bounds of (0.1, or 1.0), then limit it to:
             0.1 <= frac_cov <= 1.0
         '''
-        v_max = self.get_wind_value(self.wind, model_time)*.005
+        v_max = np.max(self.get_wind_speed(points, model_time)*.005)
         #v_max = self.wind.get_value(model_time)[0] * 0.005
         cr_k = (v_max ** 2 *
                 4 *
@@ -603,7 +578,7 @@ class Langmuir(Weatherer, Serializable):
         cr_k[np.isnan(cr_k)] = 10.	# if density becomes equal to water density
         cr_k[cr_k==0] = 1.	
         frac_cov = 1. / cr_k
-            
+
         frac_cov[frac_cov < 0.1] = 0.1
         frac_cov[frac_cov > 1.0] = 1.0
 
@@ -638,6 +613,8 @@ class Langmuir(Weatherer, Serializable):
             if len(data['fay_area']) == 0:
                 continue
 
+            points = data['positions']
+
             for s_num in np.unique(data['spill_num']):
                 s_mask = data['spill_num'] == s_num
                 # thickness for blob of oil released together - need per spill
@@ -654,43 +631,10 @@ class Langmuir(Weatherer, Serializable):
                 # already set and constant for all
                 rel_buoy = (rho_h2o - data['density'][s_mask]) / rho_h2o
                 data['frac_coverage'][s_mask] = \
-                    self._get_frac_coverage(model_time, rel_buoy, thickness)
+                    self._get_frac_coverage(points, model_time, rel_buoy, thickness)
 
             # update 'area'
             data['area'][:] = data['fay_area'] * data['frac_coverage']
 
         sc.update_from_fatedataview()
 
-    def serialize(self, json_='webapi'):
-        """
-        Since 'wind' property is saved as a reference when used in save file
-        and 'save' option, need to add appropriate node to WindMover schema
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema(name=self.__class__.__name__)
-        if json_ == 'webapi':
-            # add wind schema
-            schema.add(WindSchema(name='wind'))
-
-            if self.water is not None:
-                schema.add(WaterSchema(name='water'))
-
-        serial = schema.serialize(toserial)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for wind object
-        """
-        schema = cls._schema(name=cls.__name__)
-        if 'wind' in json_:
-            schema.add(WindSchema(name='wind'))
-
-        if 'water' in json_:
-            schema.add(WaterSchema(name='water'))
-
-        _to_dict = schema.deserialize(json_)
-
-        return _to_dict

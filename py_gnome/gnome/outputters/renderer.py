@@ -32,6 +32,7 @@ from gnome.persist import base_schema, class_from_objtype
 
 from . import Outputter, BaseSchema
 
+from gnome.environment.gridded_objects_base import Grid_S, Grid_U
 
 class RendererSchema(BaseSchema):
 
@@ -738,9 +739,7 @@ class GridVisLayer:
         self.width = width
 
     def _get_lines(self, grid):
-        from gnome.environment.grid import PyGrid_S, PyGrid_U
-
-        if isinstance(grid, PyGrid_S):
+        if isinstance(grid, Grid_S):
             name = 'node'
 
             lons = getattr(grid, name + '_lon')
@@ -751,7 +750,7 @@ class GridVisLayer:
             if grid.edges is None:
                 grid.build_edges()
 
-            return grid.nodes[self.edges]
+            return grid.nodes[grid.edges]
 
     def draw_to_image(self, img):
         '''
@@ -760,7 +759,6 @@ class GridVisLayer:
         if not self.on:
             return
 
-        pytest.set_trace()
 
         lines = self.projection.to_pixel_multipoint(self.lines, asint=True)
 
@@ -822,6 +820,12 @@ class GridPropVisLayer:
         except AttributeError:
             start = np.column_stack((self.prop.grid.node_lon,
                                      self.prop.grid.node_lat))
+
+        if self.prop.grid.infer_location(data_u) == 'faces':
+            if self.prop.grid.face_coordinates is None:
+                self.prop.grid.build_face_coordinates()
+            start = self.prop.grid.face_coordinates
+
 
         if hasattr(data_u, 'mask'):
             start[data_u.mask] = [0., 0.]

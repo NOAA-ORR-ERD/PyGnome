@@ -3,8 +3,9 @@ import copy
 
 import numpy as np
 
-from colander import SchemaNode
+from colander import SchemaNode, drop
 
+import gnome
 from gnome.persist.extend_colander import NumpyArray
 from gnome.persist.base_schema import ObjType
 
@@ -24,7 +25,7 @@ class WeathererSchema(ObjType, ProcessSchema):
     description = 'weatherer schema base class'
 
 
-class Weatherer(Process):
+class Weatherer(Process, Serializable):
     '''
     Base Weathering agent.  This is almost exactly like the base Mover
     in the way that it acts upon the model.  It contains the same API
@@ -105,12 +106,13 @@ class Weatherer(Process):
         mass_remain = M_0 * np.exp(lambda_ * time)
         return mass_remain
 
-    def get_wind_value(self, wind, model_time):
-        '''        
+    def get_wind_speed(self, points, model_time, format='r', fill_value=1.0):
+        '''
         Wrapper for the weatherers so they can extrapolate
         '''
-        new_model_time = self.check_time(wind, model_time)
-        return wind.get_value(new_model_time)[0]
+#         new_model_time = self.check_time(wind, model_time)
+        retval = self.wind.at(points, model_time, format=format)
+        return retval.filled(fill_value) if isinstance(retval, np.ma.MaskedArray) else retval
 
     def check_time(self, wind, model_time):
         """
@@ -133,12 +135,47 @@ class Weatherer(Process):
 
         return new_model_time
 
+    def serialize(self, json_='webapi'):
+        """
+        'water'/'waves' property is saved as references in save file
+        """
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        serial = schema.serialize(toserial)
+
+        if json_ == 'webapi':
+            if hasattr(self, 'wind') and self.wind:
+                serial['wind'] = self.wind.serialize(json_)
+            if hasattr(self, 'waves') and self.waves:
+                serial['waves'] = self.waves.serialize(json_)
+            if hasattr(self, 'water') and self.water:
+                serial['water'] = self.water.serialize(json_)
+
+        return serial
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        Append correct schema for water / waves
+        """
+        if not cls.is_sparse(json_):
+            schema = cls._schema()
+
+            for w in ['wind','water','waves']:
+                if w in json_:
+                    obj = json_[w]['obj_type']
+                    schema.add(eval(obj)._schema(name=w, missing=drop))
+            dict_ = schema.deserialize(json_)
+            return dict_
+        else:
+            return json_
+
 
 class HalfLifeWeathererSchema(WeathererSchema):
     half_lives = SchemaNode(NumpyArray())
 
 
-class HalfLifeWeatherer(Weatherer, Serializable):
+class HalfLifeWeatherer(Weatherer):
     '''
     Give half-life for all components and decay accordingly
     '''
