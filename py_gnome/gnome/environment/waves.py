@@ -14,6 +14,7 @@ from __future__ import division
 
 import copy
 import numpy as np
+import gridded
 
 from gnome import constants
 from gnome.utilities import serializable
@@ -114,6 +115,7 @@ class Waves(Environment, serializable.Serializable):
 
         return H, T, Wf, De
 
+
     def get_emulsification_wind(self, points, time):
         """
         Return the right wind for the wave climate
@@ -137,7 +139,10 @@ class Waves(Environment, serializable.Serializable):
         if wave_height is None:
             return U
         else:  # user specified a wave height
-            return np.clip(U, self.pseudo_wind(wave_height))
+            U = np.where(U < self.pseudo_wind(wave_height),
+                         self.pseudo_wind(wave_height),
+                         U)
+            return U
 
     def compute_H(self, U):
         U = np.array(U).reshape(-1)

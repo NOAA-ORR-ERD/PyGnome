@@ -218,7 +218,7 @@ def test_peak_wave_period(wind_speed, expected):
 
     print 'Wind speed:', w.wind.get_value(start_time)
 
-    T_w = w.peak_wave_period(start_time)
+    T_w = w.peak_wave_period(None, start_time)
 
     assert np.isclose(T_w, expected)
 
@@ -227,7 +227,7 @@ def test_call_no_fetch_or_height():
     "fully developed seas"
     w = Waves(test_wind_5, default_water)
 
-    H, T, Wf, De = w.get_value(start_time)
+    H, T, Wf, De = w.get_value(None, start_time)
 
     print H, T, Wf, De
 
@@ -240,7 +240,7 @@ def test_call_fetch():
     water.fetch = 1e4  # 10km
     w = Waves(test_wind_5, water)
 
-    H, T, Wf, De = w.get_value(start_time)
+    H, T, Wf, De = w.get_value(None, start_time)
 
     print H, T, Wf, De
 
@@ -254,7 +254,7 @@ def test_call_height():
     water.wave_height = 1.0
     w = Waves(test_wind_5, water)
 
-    H, T, Wf, De = w.get_value(start_time)
+    H, T, Wf, De = w.get_value(None, start_time)
 
     print H, T, Wf, De
 
@@ -291,8 +291,8 @@ def test_get_emulsification_wind():
     water = Water()
     w = Waves(wind, water)
 
-    print w.get_emulsification_wind(start_time)
-    assert w.get_emulsification_wind(start_time) == 3.0
+    print w.get_emulsification_wind(None, start_time)
+    assert w.get_emulsification_wind(None, start_time) == 3.0
 
 
 def test_get_emulsification_wind_with_wave_height():
@@ -301,11 +301,11 @@ def test_get_emulsification_wind_with_wave_height():
     water.wave_height = 2.0
     w = Waves(wind, water)
 
-    print w.get_value(start_time)
+    print w.get_value(None, start_time)
 
-    print w.get_emulsification_wind(start_time)
+    print w.get_emulsification_wind(None, start_time)
     # input wave height should hav overwhelmed
-    assert w.get_emulsification_wind(start_time) > 3.0
+    assert w.get_emulsification_wind(None, start_time) > 3.0
 
 
 def test_get_emulsification_wind_with_wave_height2():
@@ -314,8 +314,8 @@ def test_get_emulsification_wind_with_wave_height2():
     water.wave_height = 2.0
     w = Waves(wind, water)
 
-    print w.get_value(start_time)
+    print w.get_value(None, start_time)
 
-    print w.get_emulsification_wind(start_time)
+    print w.get_emulsification_wind(None, start_time)
     # input wave height should not have overwhelmed wind speed
-    assert w.get_emulsification_wind(start_time) == 10.0
+    assert w.get_emulsification_wind(None, start_time) == 10.0

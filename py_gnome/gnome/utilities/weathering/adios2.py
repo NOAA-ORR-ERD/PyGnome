@@ -44,7 +44,7 @@ class Adios2(object):
         # arbitrary limit at 30 m -- about the largest waves recorded
         # fixme -- this really depends on water depth -- should take that
         #          into account?
-        return np.clip(H, None, 30.0)
+        return np.clip(Hrms, None, 30.0)
 
     @staticmethod
     def wind_speed_from_height(H):

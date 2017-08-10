@@ -479,6 +479,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         :param format: String describing the data and organization.
         :param extrapolate: extrapolation on/off (ignored for now)
         '''
+        if points is None:
+            points = np.array((0,0)).reshape(-1,2)
         pts = gridded.utilities._reorganize_spatial_data(points)
 
         ret_data = np.zeros_like(pts, dtype='float64')
