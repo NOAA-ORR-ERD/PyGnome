@@ -19,18 +19,19 @@ class LocalDateTime(DateTime):
         super(LocalDateTime, self).__init__(*args, **kwargs)
 
     def strip_timezone(self, _datetime):
-        if (_datetime and
-                (isinstance(_datetime, datetime.datetime) or
-                 isinstance(_datetime, datetime.date))):
+        if (_datetime and isinstance(_datetime, (datetime.datetime,
+                                                 datetime.date))):
             _datetime = _datetime.replace(tzinfo=None)
+
         return _datetime
 
     def serialize(self, node, appstruct):
         if isinstance(appstruct, datetime.datetime):
             appstruct = self.strip_timezone(appstruct)
+
             return super(LocalDateTime, self).serialize(node, appstruct)
-        elif (isinstance(appstruct, inf_datetime.MinusInfTime) or
-              isinstance(appstruct, inf_datetime.InfTime)):
+        elif isinstance(appstruct, (inf_datetime.InfTime,
+                                    inf_datetime.MinusInfTime)):
             return appstruct.isoformat()
 
     def deserialize(self, node, cstruct):
@@ -38,6 +39,7 @@ class LocalDateTime(DateTime):
             return inf_datetime.InfDateTime(cstruct)
         else:
             dt = super(LocalDateTime, self).deserialize(node, cstruct)
+
             return self.strip_timezone(dt)
 
 
@@ -170,6 +172,7 @@ class TimeDelta(Float):
             return datetime.timedelta(seconds=sec)
         else:
             return sec
+
 
 """
 Following define new schemas for above custom types. This is so
