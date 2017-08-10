@@ -25,13 +25,13 @@ def test_warning_logged():
     warning is logged if we try to get a class from 'obj_type' that is not
     in the gnome namespace
     '''
-    with LogCapture() as l:
+    with LogCapture() as lc:
         with pytest.raises(AttributeError):
             class_from_objtype('os.path')
 
-        l.check(('gnome.persist.save_load',
-                 'WARNING',
-                 'os.path is not part of gnome namespace'))
+        lc.check(('gnome.persist.save_load',
+                  'WARNING',
+                  'os.path is not part of gnome namespace'))
 
 
 def test_class_from_objtype():
@@ -47,6 +47,7 @@ def test_exceptions():
     refs = References()
     refs.reference(a, 'a')
     refs.reference(a, 'a')  # should not do anything
+
     assert refs.retrieve('a') is a
 
     with pytest.raises(ValueError):
@@ -64,9 +65,11 @@ def test_reference_object():
     refs = References()
     r1 = refs.reference(a)
     obj = refs.retrieve(r1)
+
     assert obj is a
 
     r2 = refs.reference(a)
+
     assert r2 == r1
 
 
@@ -75,18 +78,18 @@ def test_gnome_obj_reference():
     create two equal but different objects and make sure a new reference is
     created for each
     '''
-    l_ = [constant_wind_mover(0, 0) for i in range(2)]
-    assert l_[0] == l_[1]
-    assert l_[0] is not l_[1]
+    objs = [constant_wind_mover(0, 0) for _i in range(2)]
+    assert objs[0] == objs[1]
+    assert objs[0] is not objs[1]
 
     refs = References()
-    r_l = [refs.reference(item) for item in l_]
-    assert len(r_l) == len(l_)
-    assert r_l[0] != r_l[1]
+    r_objs = [refs.reference(item) for item in objs]
+    assert len(r_objs) == len(objs)
+    assert r_objs[0] != r_objs[1]
 
-    for ix, ref in enumerate(r_l):
-        assert refs.retrieve(ref) is l_[ix]
-        assert l_[ix] in refs   # double check __contains__
+    for ix, ref in enumerate(r_objs):
+        assert refs.retrieve(ref) is objs[ix]
+        assert objs[ix] in refs   # double check __contains__
 
     unknown = constant_wind_mover(0, 0)
     assert unknown not in refs  # check __contains__
@@ -171,6 +174,7 @@ def test_save_load_wind_objs(saveloc_, obj):
     'test save/load functionality'
     refs = obj.save(saveloc_)
     obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
+
     assert obj == obj2
 
 
@@ -212,11 +216,11 @@ class TestSaveZipIsValid:
 
     def test_invalid_zip(self):
         ''' invalid zipfile '''
-        with LogCapture() as l:
+        with LogCapture() as lc:
             assert not is_savezip_valid('junk.zip')
-            l.check(('gnome.persist.save_load',
-                     'WARNING',
-                     'junk.zip is not a valid zipfile'))
+            lc.check(('gnome.persist.save_load',
+                      'WARNING',
+                      'junk.zip is not a valid zipfile'))
 
     # need a bad zip that fails CRC check
     # check max_json_filesize
@@ -233,15 +237,15 @@ class TestSaveZipIsValid:
         with ZipFile(badzip, 'w', compression=ZIP_DEFLATED) as z:
             z.write(testdata['boston_data']['cats_ossm'], filetoobig)
 
-        with LogCapture() as l:
+        with LogCapture() as lc:
             assert not is_savezip_valid(badzip)
-            l.check(('gnome.persist.save_load',
-                     'WARNING',
-                     "Filesize of {0} is {1}. It must be less than {2}. "
-                     "Rejecting zipfile.".
-                     format(filetoobig,
-                            z.NameToInfo[filetoobig].file_size,
-                            save_load._max_json_filesize)))
+            lc.check(('gnome.persist.save_load',
+                      'WARNING',
+                      'Filesize of {0} is {1}. It must be less than {2}. '
+                      'Rejecting zipfile.'
+                      .format(filetoobig,
+                              z.NameToInfo[filetoobig].file_size,
+                              save_load._max_json_filesize)))
 
         save_load._max_json_filesize = 1 * 1024
 
@@ -256,16 +260,16 @@ class TestSaveZipIsValid:
         with ZipFile(badzip, 'w', compression=ZIP_DEFLATED) as z:
             z.writestr(badfile, ''.join(['0'] * 1000))
 
-        with LogCapture() as l:
+        with LogCapture() as lc:
             assert not is_savezip_valid(badzip)
             zi = z.NameToInfo[badfile]
-            l.check(('gnome.persist.save_load',
-                     'WARNING',
-                     ('file compression ratio is {0}. '
-                      'maximum must be less than {1}. '
-                      'Rejecting zipfile'
-                      .format(zi.file_size / zi.compress_size,
-                              save_load._max_compress_ratio))))
+            lc.check(('gnome.persist.save_load',
+                      'WARNING',
+                      ('file compression ratio is {0}. '
+                       'maximum must be less than {1}. '
+                       'Rejecting zipfile'
+                       .format(zi.file_size / zi.compress_size,
+                               save_load._max_compress_ratio))))
 
     def test_filenames_dont_contain_dotdot(self):
         '''
@@ -276,8 +280,8 @@ class TestSaveZipIsValid:
         with ZipFile(badzip, 'w', compression=ZIP_DEFLATED) as z:
             z.writestr(badfile, 'bad file, contains path')
 
-        with LogCapture() as l:
+        with LogCapture() as lc:
             assert not is_savezip_valid(badzip)
-            l.check(('gnome.persist.save_load',
-                     'WARNING',
-                     "Found '..' in " + badfile + ". Rejecting zipfile"))
+            lc.check(('gnome.persist.save_load',
+                      'WARNING',
+                      'Found ".." in {}. Rejecting zipfile'.format(badfile)))

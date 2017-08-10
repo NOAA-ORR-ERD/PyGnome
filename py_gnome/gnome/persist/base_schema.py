@@ -51,6 +51,7 @@ class LongLatBounds(SequenceSchema):
     'Used to define bounds on a map'
     bounds = LongLat()
 
+
 Polygon = LongLatBounds
 
 
@@ -65,8 +66,8 @@ class WorldPoint(LongLat):
 
 class WorldPointNumpy(NumpyFixedLenSchema):
     '''
-    Define same schema as WorldPoint; however, the base class NumpyFixedLenSchema
-    serializes/deserializes it from/to a numpy array
+    Define same schema as WorldPoint; however, the base class
+    NumpyFixedLenSchema serializes/deserializes it from/to a numpy array
     '''
     long = SchemaNode(Float())
     lat = SchemaNode(Float())
