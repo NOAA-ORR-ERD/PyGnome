@@ -141,7 +141,7 @@ elif sys.platform == "win32":
 # setup our third party libraries environment - for Win32/Mac OSX
 # Linux does not use the libraries in third_party_lib. It links against
 # netcdf shared objects installed by apt-get
-
+'''
 import subprocess
 
 
@@ -165,10 +165,10 @@ def get_netcdf_libs():
         print libs
         print include_dir
     except OSError:
-        raise NotImplimentedError("this setup.py needs nc-config to find netcdf libs")
+        raise NotImplementedError("this setup.py needs nc-config to find netcdf libs")
 
 get_netcdf_libs()
-
+'''
 
 
 if sys.platform is "darwin" or "win32":
