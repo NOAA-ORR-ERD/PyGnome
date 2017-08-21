@@ -22,9 +22,9 @@ class ZhaoToba(object):
             return 0
             
         if wind_speed > 2.4:
-            C_D = .0008 + wind_speed * 10**(-5)
+            C_D = .0008 + .000065 * wind_speed
         else:
-            C_D = (.0008 + 2.4 * 10**(-5)) * wind_speed / 2.4
+            C_D = (.0008 + 2.4 * .000065) * wind_speed / 2.4
 
         visc_air = 1.5 * 10**(-5) # m2/s
         peak_ang_freq = PiersonMoskowitz.peak_angular_frequency(wind_speed)
