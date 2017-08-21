@@ -199,7 +199,7 @@ class Waves(Environment, serializable.Serializable):
         c_p = PiersonMoskowitz.peak_wave_speed(U)
         w_p = PiersonMoskowitz.peak_angular_frequency(U)
 
-        z_0 = 1200 * H * ((H / (2*np.pi*c_p) * w_p)**4.5
+        z_0 = 1200 * H * ((H / (2*np.pi*c_p)) * w_p)**4.5
         u_a = .4 * U / np.log(10 / z_0)
         u_c = .03 * u_a
         eps = c_ub * u_c**3 / H
