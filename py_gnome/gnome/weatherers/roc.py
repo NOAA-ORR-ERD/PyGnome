@@ -963,7 +963,7 @@ class Disperse(Response):
                         if passes_possible_after_holding > 0:
                             # no oil left, but can still do a pass after holding for one timestep
                             self.cur_state = 'holding'
-                            self._next_state_time = model_time + datetime.timedelta(seconds=time_step)
+                            self._next_state_time = model_time + time_step
                         else:
                             self.reset_for_return_to_base(model_time, 'No oil, no time for holding pattern, returning to base')
                     elif passes_possible == 0:
