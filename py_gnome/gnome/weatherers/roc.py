@@ -30,7 +30,6 @@ from gnome.array_types import (mass,
                                density,
                                fay_area,
                                frac_water)
-from __builtin__ import None
 
 # define valid units at module scope because the Schema and Object both use it
 _valid_dist_units = _valid_units('Length')
