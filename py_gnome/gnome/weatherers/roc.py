@@ -159,6 +159,7 @@ class Response(Weatherer, Serializable):
         data['mass_components'] = \
             (1 - rm_mass_frac) * data['mass_components']
         data['mass'] = data['mass_components'].sum(1)
+        return total_mass - data['mass'].sum()
 
     def _remove_mass_indices(self, data, amounts, indices):
         #removes mass from the mass components specified by an indices array
@@ -1389,9 +1390,17 @@ class Burn(Response):
 
             if self._ts_collected > 0:
                 collected = uc.convert('Volume', 'ft^3', 'm^3', self._ts_collected) * self._boomed_density
-                sc.mass_balance['boomed'] += collected
-                sc.mass_balance['systems'][self.id]['boomed'] += collected
-                self._remove_mass_simple(data, collected)
+                actual_collected = self._remove_mass_simple(data, collected)
+                sc.mass_balance['boomed'] += actual_collected
+                sc.mass_balance['systems'][self.id]['boomed'] += actual_collected
+
+                if actual_collected != collected:
+                    # ran out of oil while collecting har har...
+                    self._boom_capacity-= self._ts_collected
+                    self._is_boom_full = True
+                    self._offset_time_remaining = self._offset_time
+                    self._is_collecting = False
+                    self._is_transiting = True
 
                 self.logger.debug('{0} amount boomed for {1}: {2}'
                                   .format(self._pid, substance.name, collected))
@@ -1406,6 +1415,7 @@ class Burn(Response):
                 # make sure we didn't burn more than we boomed if so correct the amount
                 if sc.mass_balance['boomed'] < 0:
                     sc.mass_balance['burned'] += sc.mass_balance['boomed']
+                    sc.mass_balance['systems'][self.id]['burned'] += sc.mass_balance['boomed']
                     sc.mass_balance['boomed'] = 0
 
                 self.logger.debug('{0} amount burned for {1}: {2}'
