@@ -994,7 +994,11 @@ class Disperse(Response):
                 disp_possible = spray_time.total_seconds() * self.platform.eff_pump_rate(dosage)
                 disp_actual = min(self._remaining_dispersant, disp_possible)
                 treated_possible = disp_actual * self.disp_oil_ratio
-                mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
+                mass_treatable = None
+                if (np.isnan(sc['density'][self.dispersable_oil_idxs(sc)])):
+                    mass_treatable = 0
+                else:
+                    mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
                 oil_avail = self.dispersable_oil_amount(sc, 'kg')
                 self.report.append((model_time, 'Oil available: ' + str(oil_avail) + '  Treatable mass: ' + str(mass_treatable) + '  Dispersant Sprayed: ' + str(disp_actual)))
                 self.report.append((model_time, 'Sprayed ' + str(disp_actual) + 'm^3 dispersant in ' + str(spray_time) + ' seconds on ' + str(oil_avail) + ' kg of oil'))
