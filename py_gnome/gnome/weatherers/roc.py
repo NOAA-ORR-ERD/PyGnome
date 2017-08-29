@@ -159,6 +159,7 @@ class Response(Weatherer, Serializable):
         data['mass_components'] = \
             (1 - rm_mass_frac) * data['mass_components']
         data['mass'] = data['mass_components'].sum(1)
+        return total_mass - data['mass'].sum()
 
     def _remove_mass_indices(self, data, amounts, indices):
         #removes mass from the mass components specified by an indices array
@@ -993,7 +994,11 @@ class Disperse(Response):
                 disp_possible = spray_time.total_seconds() * self.platform.eff_pump_rate(dosage)
                 disp_actual = min(self._remaining_dispersant, disp_possible)
                 treated_possible = disp_actual * self.disp_oil_ratio
-                mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
+                mass_treatable = None
+                if (np.isnan(sc['density'][self.dispersable_oil_idxs(sc)])):
+                    mass_treatable = 0
+                else:
+                    mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
                 oil_avail = self.dispersable_oil_amount(sc, 'kg')
                 self.report.append((model_time, 'Oil available: ' + str(oil_avail) + '  Treatable mass: ' + str(mass_treatable) + '  Dispersant Sprayed: ' + str(disp_actual)))
                 self.report.append((model_time, 'Sprayed ' + str(disp_actual) + 'm^3 dispersant in ' + str(spray_time) + ' seconds on ' + str(oil_avail) + ' kg of oil'))
@@ -1189,6 +1194,7 @@ class Burn(Response):
         self._area = None
         self._boom_capacity_max = 0
         self._offset_time = None
+        self._state_list = []
 
         self._is_collecting = False
         self._is_burning = False
@@ -1250,6 +1256,7 @@ class Burn(Response):
         self._ts_burned = 0.
         self._ts_num_burns = 0
         self._ts_area_covered = 0.
+        self._state_list = []
 
         if self._is_active(model_time, time_step) or self._is_burning:
             self._active = True
@@ -1298,7 +1305,10 @@ class Burn(Response):
             self._boom_capacity -= self._ts_collected
             self._ts_area_covered = encounter_rate * (self._time_remaining / 60)
             self._time_collecting_in_sim += self._time_remaining
+            self._state_list.append(['collect', self._time_remaining])
             self._time_remaining = 0.0
+
+
         elif self._time_remaining > 0:
             # finishes filling the boom in this time step any time remaining
             # should be spend transiting to the burn position
@@ -1312,19 +1322,24 @@ class Burn(Response):
             self._is_collecting = False
             self._is_transiting = True
 
+            self._state_list.append(['collect', time_to_fill])
+
     def _transit(self, sc, time_step, model_time):
         # transiting to burn site
         # does it arrive and start burning?
         if self._time_remaining > self._offset_time_remaining:
             self._time_remaining -= self._offset_time_remaining
+            self._state_list.append(['transit', self._offset_time_remaining])
             self._offset_time_remaining = 0.
             self._is_transiting = False
             if self._is_boom_full:
                 self._is_burning = True
             else:
                 self._is_collecting = True
+
         elif self._time_remaining > 0:
             self._offset_time_remaining -= self._time_remaining
+            self._state_list.append(['transit', self._time_remaining])
             self._time_remaining = 0.
 
     def _burn(self, sc, time_step, model_time):
@@ -1342,12 +1357,15 @@ class Burn(Response):
         if self._time_remaining > self._burn_time_remaining:
             self._time_remaining -= self._burn_time_remaining
             self._time_burning += self._burn_time_remaining
+            self._state_list.append(['burn', self._burn_time_remaining])
             self._burn_time_remaining = 0.
             burned = self.get('_boom_capacity_max') - self._boom_capacity
             self._ts_burned = burned
             self._is_burning = False
             self._is_cleaning = True
             self._cleaning_time_remaining = 3600  # 1hr in seconds
+
+
         elif self._time_remaining > 0:
             frac_burned = self._time_remaining / self._burn_time
             burned = self.get('_boom_capacity_max') * frac_burned
@@ -1355,7 +1373,9 @@ class Burn(Response):
             self._ts_burned = burned
             self._time_burning += self._time_remaining
             self._burn_time_remaining -= self._time_remaining
+            self._state_list.append(['burn', self._time_remaining])
             self._time_remaining = 0.
+
 
     def _clean(self, sc, time_step, model_time):
         # cleaning
@@ -1363,12 +1383,14 @@ class Burn(Response):
         self._burn_rate = None
         if self._time_remaining > self._cleaning_time_remaining:
             self._time_remaining -= self._cleaning_time_remaining
+            self._state_list.append(['clean', self._cleaning_time_remaining])
             self._cleaning_time_remaining = 0.
             self._is_cleaning = False
             self._is_transiting = True
             self._offset_time_remaining = self._offset_time
         elif self._time_remaining > 0:
             self._cleaning_time_remaining -= self._time_remaining
+            self._state_list.append(['burn', self._time_remaining])
             self._time_remaining = 0.
 
     def weather_elements(self, sc, time_step, model_time):
@@ -1386,12 +1408,21 @@ class Burn(Response):
 
             sc.mass_balance['systems'][self.id]['area_covered'] += self._ts_area_covered
             sc.mass_balance['systems'][self.id]['num_burns'] += self._ts_num_burns
+            sc.mass_balance['systems'][self.id]['state'] = self._state_list
 
             if self._ts_collected > 0:
                 collected = uc.convert('Volume', 'ft^3', 'm^3', self._ts_collected) * self._boomed_density
-                sc.mass_balance['boomed'] += collected
-                sc.mass_balance['systems'][self.id]['boomed'] += collected
-                self._remove_mass_simple(data, collected)
+                actual_collected = self._remove_mass_simple(data, collected)
+                sc.mass_balance['boomed'] += actual_collected
+                sc.mass_balance['systems'][self.id]['boomed'] += actual_collected
+
+                if actual_collected != collected:
+                    # ran out of oil while collecting har har...
+                    self._boom_capacity-= self._ts_collected
+                    self._is_boom_full = True
+                    self._offset_time_remaining = self._offset_time
+                    self._is_collecting = False
+                    self._is_transiting = True
 
                 self.logger.debug('{0} amount boomed for {1}: {2}'
                                   .format(self._pid, substance.name, collected))
@@ -1406,6 +1437,7 @@ class Burn(Response):
                 # make sure we didn't burn more than we boomed if so correct the amount
                 if sc.mass_balance['boomed'] < 0:
                     sc.mass_balance['burned'] += sc.mass_balance['boomed']
+                    sc.mass_balance['systems'][self.id]['burned'] += sc.mass_balance['boomed']
                     sc.mass_balance['boomed'] = 0
 
                 self.logger.debug('{0} amount burned for {1}: {2}'
