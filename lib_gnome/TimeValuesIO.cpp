@@ -379,7 +379,7 @@ bool IsTimeFile(vector<string> &linesInFile)
 	return bIsValid;
 }
 
-
+#ifdef pyGNOME
 Boolean IsTimeFile(char *path)
 {
 	vector<string> linesInFile;
@@ -390,3 +390,38 @@ Boolean IsTimeFile(char *path)
 		return false;
 }
 
+#else
+/////////////////////////////////////////////////
+Boolean IsTimeFile(char* path)
+{
+	Boolean	bIsValid = false;
+	OSErr	err = noErr;
+	long	line;
+	char	strLine [512];
+	char	firstPartOfFile [512];
+	long lenToRead,fileLength;
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return false;
+	
+	lenToRead = _min(512,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
+	if (!err)
+	{
+		DateTimeRec time;
+		char value1S[256], value2S[256];
+		long numScanned;
+		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 512);
+		StringSubstitute(strLine, ',', ' ');
+		numScanned = sscanf(strLine, "%hd %hd %hd %hd %hd %s %s",
+					  &time.day, &time.month, &time.year,
+					  &time.hour, &time.minute, value1S, value2S);
+		if (numScanned == 7)	
+			bIsValid = true;
+	}
+	return bIsValid;
+}
+
+#endif
