@@ -162,7 +162,7 @@ OSErr CurrentMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)	/
 	
 	this->DisposeUncertainty(); // get rid of any old values
 	
-	//if (numLESets == 0) return -1;	// shouldn't happen - if we get here there should be an uncertainty set
+	//if (numLESets == 0) return -1;	// shouldn't happen - if we get here there should be an uncertainty set - unless there is no spill...
 	
 	if(!(fLESetSizesH = (LONGH)_NewHandle(sizeof(long)*numLESets)))goto errHandler;
 	

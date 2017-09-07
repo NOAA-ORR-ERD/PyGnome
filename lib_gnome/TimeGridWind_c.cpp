@@ -1463,7 +1463,7 @@ OSErr TimeGridWindCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* e
 	VelocityFH velH = 0;
 	long latlength = fNumRows;
 	long lonlength = fNumCols;
-	float scale_factor = 1.,angle = 0.,u_grid,v_grid;
+	double scale_factor = 1.,angle = 0.,u_grid,v_grid;
 	Boolean bRotated = true, bIsNWSSpeedDirData = false;
 	
 	errmsg[0]=0;
@@ -1583,6 +1583,8 @@ OSErr TimeGridWindCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* e
 		}
 	}
 	
+	status = nc_get_att_double(ncid, wind_ucmp_id, "scale_factor", &scale_factor);
+	//if (status != NC_NOERR) {err = -1; goto done;}	// don't require scale factor
 	
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
