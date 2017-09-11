@@ -1,6 +1,7 @@
 import copy
 from numbers import Number
 import collections
+import warnings
 
 import numpy as np
 
@@ -118,7 +119,8 @@ class TimeSeriesProp(EnvProp, serializable.Serializable):
     @time.setter
     def time(self, t):
         if self.data is not None and len(t) != len(self.data):
-            raise ValueError("Data/time interval mismatch")
+            warnings.warn("Data/time interval mismatch, doing nothing")
+            return
 
         if isinstance(t, Time):
             self._time = t
