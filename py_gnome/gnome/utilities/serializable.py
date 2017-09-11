@@ -583,6 +583,9 @@ class Serializable(GnomeId, Savable, SchemaType):
         data = {}
         for key in list_:
             value = self.attr_to_dict(key)
+#             if key == 'variables':
+#                 import pdb
+#                 pdb.set_trace()
             if hasattr(value, 'to_dict'):
                 value = value.to_dict()  # recursive call
             elif (key in [f.name for f in self._state.get_field_by_attribute('iscollection')]):

@@ -318,7 +318,7 @@ class Savable(object):
         json_ = self.serialize('save')
         c_fields = self._state.get_field_by_attribute('iscollection')
 
-        #JAH: 9/7/17 Added this from the model save function. If any bugs pop up
+        #JAH: Added this from the model save function. If any bugs pop up
         #in the references system this may be the cause
         references = (references, References())[references is None]
 
