@@ -9,6 +9,7 @@ from weathering_data import WeatheringData
 from spreading import Langmuir, FayGravityViscous, ConstantArea
 from roc import Burn as ROC_Burn
 from roc import Disperse as ROC_Disperse
+from roc import Skim as ROC_Skim
 
 '''
     Weatherers are to be ordered as follows:
