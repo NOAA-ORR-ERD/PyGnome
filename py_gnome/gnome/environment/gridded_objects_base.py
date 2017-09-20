@@ -33,7 +33,7 @@ class VariableSchemaBase(base_schema.ObjType):
 
 
 class VariableSchema(VariableSchemaBase):
-    varname = SchemaNode(String())
+    varname = SchemaNode(String(), missing=drop)
     grid = GridSchema(missing=drop)
     data_file = SchemaNode(typ=Sequence(accept_scalar=True),
                            children=[SchemaNode(String())])
@@ -42,7 +42,7 @@ class VariableSchema(VariableSchemaBase):
 
 
 class VectorVariableSchema(VariableSchemaBase):
-    varnames = SequenceSchema(SchemaNode(String()))
+    varnames = SequenceSchema(SchemaNode(String()), missing=drop)
     grid = GridSchema(missing=drop)
     data_file = SchemaNode(typ=Sequence(accept_scalar=True),
                            children=[SchemaNode(String())])
