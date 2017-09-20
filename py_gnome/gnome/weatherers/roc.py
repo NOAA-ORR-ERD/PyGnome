@@ -675,7 +675,8 @@ class Disperse(Response):
             'payloads_delivered': 0,
             'dispersant_applied': 0.0,
             'oil_treated': 0.0,
-            'area_covered': 0.0
+            'area_covered': 0.0,
+            'state': []
         }
 
 
@@ -1121,7 +1122,7 @@ class Disperse(Response):
     def weather_elements(self, sc, time_step, model_time):
 
         if not self.active or len(sc) == 0:
-            sc.mass_balance['systems'][self.id].pop('state', None)
+            sc.mass_balance['systems'][self.id]['state'] = []
             return
 
         sc.mass_balance['systems'][self.id]['state'] = self.state
@@ -1273,7 +1274,8 @@ class Burn(Response):
                                                    'burned': 0.0,
                                                    'time_burning': 0.0,
                                                    'num_burns': 0,
-                                                   'area_covered': 0.0}
+                                                   'area_covered': 0.0,
+                                                   'state': []}
             sc.mass_balance['boomed'] = 0.0
 
         self._is_collecting = True
@@ -1307,8 +1309,12 @@ class Burn(Response):
             return
 
         self._time_remaining = time_step
-
         while self._time_remaining > 0.:
+            if self._is_collecting == False and self._is_transiting == False \
+                and self._is_burning == False and self._is_cleaning == False \
+                and self._is_active(model_time, time_step):
+                self._is_collecting = True
+
             if self._is_collecting:
                 self._collect(sc, time_step, model_time)
 
@@ -1335,12 +1341,13 @@ class Burn(Response):
             # time_to_fill = (self._boom_capacity_remaining / emulsion_rr) * 60
             # new ebsp equation
             time_to_fill = uc.convert('Volume', 'ft^3', 'gal', self._boom_capacity) / emulsion_rr
-            #(self._boom_capacity * 0.17811) * 42 / emulsion_rr
-        else:
-            time_to_fill = 0.
+            time_to_collect_remaining_oil = uc.convert('Volume', 'm^3', 'gal', sc.mass_balance['floating']) / emulsion_rr
 
-        if time_to_fill > self._time_remaining:
-            # doesn't finish fill the boom in this time step
+        else:
+            time_to_fill = self._time_remaining
+
+        if time_to_fill >= self._time_remaining:
+            # doesn't finish filling the boom in this time step
             self._ts_collected = uc.convert('Volume', 'gal', 'ft^3', emulsion_rr * self._time_remaining)
             self._boom_capacity -= self._ts_collected
             self._ts_area_covered = encounter_rate * (self._time_remaining / 60)
@@ -1442,13 +1449,15 @@ class Burn(Response):
         just make sure it's from floating oil.
         '''
         if not self.active or len(sc) == 0:
-
-            sc.mass_balance['systems'][self.id].pop('state', None)
+            sc.mass_balance['systems'][self.id]['state'] = []
             return
 
         les = sc.itersubstancedata(self.array_types)
         for substance, data in les:
             if len(data['mass']) is 0:
+                sc.mass_balance['systems'][self.id]['state'] = self._state_list
+                sc.mass_balance['systems'][self.id]['area_covered'] += self._ts_area_covered
+
                 continue
 
             sc.mass_balance['systems'][self.id]['area_covered'] += self._ts_area_covered
@@ -1557,12 +1566,12 @@ class Skim(Response):
                  'swath_width': 'ft',
                  'discharge_pump': 'gpm'}
 
-    _units_types = {'storage': ('storage', _valid_vol_units),
-                    'decant_pump': ('decant_pump', _valid_dis_units),
-                    'nameplate_pump': ('nameplate_pump', _valid_dis_units),
-                    'speed': ('speed', _valid_vel_units),
-                    'swath_width': ('swath_width', _valid_dist_units),
-                    'discharge_pump': ('discharge_pump', _valid_dis_units)}
+    _units_type = {'storage': ('volume', _valid_vol_units),
+                    'decant_pump': ('discharge', _valid_dis_units),
+                    'nameplate_pump': ('discharge', _valid_dis_units),
+                    'speed': ('velocity', _valid_vel_units),
+                    'swath_width': ('length', _valid_dist_units),
+                    'discharge_pump': ('discharge', _valid_dis_units)}
 
     def __init__(self,
                  speed,
@@ -1627,7 +1636,8 @@ class Skim(Response):
                                         'water_retained': 0.0,
                                         'area_covered': 0.0,
                                         'num_fills': 0.,
-                                        'storage_remaining': 0.0}
+                                        'storage_remaining': 0.0,
+                                        'state': []}
 
         self._is_collecting = True
 
@@ -1642,6 +1652,14 @@ class Skim(Response):
 
         self._state_list = []
         self._ts_num_fills = 0.
+        self._ts_emulsion_collected = 0.
+        self._ts_oil_collected = 0.
+        self._ts_water_collected = 0.
+        self._ts_water_decanted = 0.
+        self._ts_water_retained = 0.
+        self._ts_area_covered = 0.
+        self._ts_time_collecting = 0.
+        self._ts_fluid_collected = 0.
 
         self._time_remaining = time_step
 
@@ -1665,31 +1683,31 @@ class Skim(Response):
     def _collect(self, sc, time_step, model_time):
         thickness = self._get_thickness(sc)
         if self.recovery_ef > 0 and self.throughput > 0 and thickness > 0:
-            self._maximum_effective_swath = self.nameplate_pump * self.recovery_ef / (63.13 * self.speed * thickness * self.throughput)
+            self._maximum_effective_swath = self.get('nameplate_pump') * self.get('recovery_ef') / (63.13 * self.get('speed', 'kts') * thickness * self.get('throughput'))
         else:
             self._maximum_effective_swath = 0
 
         if self.swath_width > self._maximum_effective_swath:
             swath = self._maximum_effective_swath;
         else:
-            swath = self.swath_width
+            swath = self.get('swath_width', 'ft')
 
         if swath > 1000:
             self.report.append('Swaths > 1000 feet may not be achievable in the field.')
 
-        encounter_rate = thickness * self.speed * swath * 63.13
-        rate_of_coverage = swath * self.speed * 0.00233
+        encounter_rate = thickness * self.get('speed', 'kts') * swath * 63.13
+        rate_of_coverage = swath * self.get('speed', 'kts') * 0.00233
         if encounter_rate > 0:
             recovery = self._getRecoveryEfficiency()
 
             if recovery > 0:
                 totalFluidRecoveryRate = encounter_rate * (self.throughput / recovery)
 
-                if totalFluidRecoveryRate > self.nameplate_pump:
+                if totalFluidRecoveryRate > self.get('nameplate_pump'):
                     # total fluid recovery rate is greater than nameplate
                     # pump, recalculate the throughput efficiency and
                     # total fluid recovery rate again with the new throughput
-                    throughput = self.nameplate_pump * recovery / encounter_rate
+                    throughput = self.get('nameplate_pump') * recovery / encounter_rate
                     totalFluidRecoveryRate = encounter_rate * (throughput / recovery)
                     msg = ('{0.name} - Total Fluid Recovery Rate is greater than Nameplate \
                             Pump Rate, recalculating Throughput Efficiency').format(self)
@@ -1711,14 +1729,15 @@ class Skim(Response):
                     recoveryRate = emulsionRecoveryRate + waterRecoveryRate
                     retainRate = emulsionRecoveryRate + waterRetainedRate + decantRateDifference
                     oilRecoveryRate = emulsionRecoveryRate * (1 - sc['frac_water'].mean())
+                    waterTakenOn = totalFluidRecoveryRate - emulsionRecoveryRate
 
                     freeWaterRecoveryRate = recoveryRate - emulsionRecoveryRate
                     freeWaterRetainedRate = retainRate - emulsionRecoveryRate
                     freeWaterDecantRate = freeWaterRecoveryRate - freeWaterRetainedRate
 
-                    timeToFill = .7 * self._storage_remaining / retainRate * 60
+                    timeToFill = .7 * self._storage_remaining / (emulsionRecoveryRate + (waterTakenOn - (waterTakenOn * self.get('decant_pump') / 100))) * 60
 
-                    if timeToFill * 60 > self._time_remaining:
+                    if (timeToFill) > self._time_remaining:
                         # going to take more than this timestep to fill the storage
                         time_collecting = self._time_remaining
                         self._time_remaining = 0.
@@ -1731,36 +1750,32 @@ class Skim(Response):
                         self._is_transiting = True
 
                     self._state_list.append(['skim', time_collecting])
-                    self._ts_time_collecting = time_collecting
-                    self._ts_fluid_collected = retainRate * time_collecting
-
+                    self._ts_time_collecting += time_collecting
+                    self._ts_fluid_collected += retainRate * time_collecting
                     if uc.convert('gal', 'bbl', self._ts_fluid_collected) > 0 and \
                         uc.convert('gal', 'bbl', self._ts_fluid_collected) <= self._storage_remaining:
-                        self._ts_num_fills += self.storage / uc.convert('gal', 'bbl', self._ts_fluid_collected)
+                        self._ts_num_fills +=  uc.convert('gal', 'bbl', self._ts_fluid_collected) / self.get('storage')
                     elif self._storage_remaining > 0:
-                        self._ts_num_fills += self.storage / self._storage_remaining
+                        self._ts_num_fills += self._storage_remaining / self.get('storage')
 
                     if uc.convert('gal', 'bbl', self._ts_fluid_collected) > self._storage_remaining:
                         self._storage_remaining = 0
                     else:
                         self._storage_remaining -= uc.convert('gal', 'bbl', self._ts_fluid_collected)
 
-                    
-
-                    self._ts_emulsion_collected = emulsionRecoveryRate * time_collecting
-                    self._ts_oil_collected = oilRecoveryRate * time_collecting
-                    self._ts_water_collected = freeWaterRecoveryRate * time_collecting
-                    self._ts_water_decanted = freeWaterDecantRate * time_collecting
-                    self._ts_water_retained = freeWaterRetainedRate * time_collecting
-                    self._ts_area_covered = rate_of_coverage * time_collecting
-
-                    
+                    self._ts_emulsion_collected += emulsionRecoveryRate * time_collecting
+                    self._ts_oil_collected += oilRecoveryRate * time_collecting
+                    self._ts_water_collected += freeWaterRecoveryRate * time_collecting
+                    self._ts_water_decanted += freeWaterDecantRate * time_collecting
+                    self._ts_water_retained += freeWaterRetainedRate * time_collecting
+                    self._ts_area_covered += rate_of_coverage * time_collecting
 
                 else:
                     self._no_op_step()
             else:
                 self._no_op_step()
         else:
+            self._state_list.append(['skim', self._time_remaining])
             self._no_op_step()
 
     def _transit(self, sc, time_step, model_time):
@@ -1801,29 +1816,30 @@ class Skim(Response):
         just make sure the mass is from floating oil.
         '''
         if not self.active or len(sc) == 0:
-            sc.mass_balance['systems'][self.id].pop('state', None)
+            sc.mass_balance['systems'][self.id]['state'] = []
             return
 
         les = sc.itersubstancedata(self.array_types)
         for substance, data in les:
             if len(data['mass']) is 0:
+                sc.mass_balance['systems'][self.id]['state'] = self._state_list
                 continue
 
             sc.mass_balance['systems'][self.id]['state'] = self._state_list
 
             if hasattr(self, '_ts_oil_collected') and self._ts_oil_collected is not None:
-                sc.mass_balance['skimmed'] += self._ts_oil_collected
-                self._remove_mass_simple(data, self._ts_oil_collected)
+                actual = self._remove_mass_simple(data, self._ts_oil_collected)
+                sc.mass_balance['skimmed'] += actual
 
                 self.logger.debug('{0} amount boomed for {1}: {2}'
                                   .format(self._pid, substance.name, self._ts_oil_collected))
 
                 platform_balance = sc.mass_balance['systems'][self.id]
-                platform_balance['skimmed'] += self._ts_oil_collected
+                platform_balance['skimmed'] += actual
                 platform_balance['time_collecting'] += self._ts_time_collecting
                 platform_balance['fluid_collected'] += self._ts_fluid_collected
                 platform_balance['emulsion_collected'] += self._ts_emulsion_collected
-                platform_balance['oil_collected'] += self._ts_oil_collected
+                platform_balance['oil_collected'] += actual
                 platform_balance['water_collected'] += self._ts_water_collected
                 platform_balance['water_retained'] += self._ts_water_retained
                 platform_balance['water_decanted'] += self._ts_water_decanted
