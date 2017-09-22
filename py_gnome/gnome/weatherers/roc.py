@@ -1616,9 +1616,9 @@ class Skim(Response):
 
     def prepare_for_model_run(self, sc):
         self._setup_report(sc)
-        self._storage_remaining = self.storage
-        self._coverage_rate = self.swath_width * self.speed * 0.00233
-        self.offload = (self.storage * 42 / self.discharge_pump) * 60
+        self._storage_remaining = self.get('storage', 'gal')
+        self._coverage_rate = self.get('swath_width') * self.get('speed') * 0.00233
+        self.offload = (self.get('storage', 'gal') / self.get('discharge_pump', 'gpm')) * 60
 
         if self.on:
             sc.mass_balance['skimmed'] = 0.0
@@ -1683,11 +1683,11 @@ class Skim(Response):
     def _collect(self, sc, time_step, model_time):
         thickness = self._get_thickness(sc)
         if self.recovery_ef > 0 and self.throughput > 0 and thickness > 0:
-            self._maximum_effective_swath = self.get('nameplate_pump') * self.get('recovery_ef') / (63.13 * self.get('speed', 'kts') * thickness * self.get('throughput'))
+            self._maximum_effective_swath = self.get('nameplate_pump') * self.get('recovery_ef') / (63.13 * self.get('speed', 'kts') * thickness * self.throughput)
         else:
             self._maximum_effective_swath = 0
 
-        if self.swath_width > self._maximum_effective_swath:
+        if self.get('swath_width', 'ft') > self._maximum_effective_swath:
             swath = self._maximum_effective_swath;
         else:
             swath = self.get('swath_width', 'ft')
@@ -1723,8 +1723,8 @@ class Skim(Response):
                     computedDecantRate = (totalFluidRecoveryRate - emulsionRecoveryRate) * self.decant
 
                     decantRateDifference = 0.
-                    if computedDecantRate > self.decant_pump:
-                        decantRateDifference = computedDecantRate - self.decant_pump
+                    if computedDecantRate > self.get('decant_pump'):
+                        decantRateDifference = computedDecantRate - self.get('decant_pump')
 
                     recoveryRate = emulsionRecoveryRate + waterRecoveryRate
                     retainRate = emulsionRecoveryRate + waterRetainedRate + decantRateDifference
@@ -1735,7 +1735,8 @@ class Skim(Response):
                     freeWaterRetainedRate = retainRate - emulsionRecoveryRate
                     freeWaterDecantRate = freeWaterRecoveryRate - freeWaterRetainedRate
 
-                    timeToFill = .7 * self._storage_remaining / (emulsionRecoveryRate + (waterTakenOn - (waterTakenOn * self.get('decant_pump') / 100))) * 60
+                    # timeToFill = .7 * self._storage_remaining / (emulsionRecoveryRate + (waterTakenOn - (waterTakenOn * self.get('decant_pump', 'gpm') / 100))) * 60
+                    timeToFill = .7 * self._storage_remaining / retainRate * 60
 
                     if (timeToFill) > self._time_remaining:
                         # going to take more than this timestep to fill the storage
