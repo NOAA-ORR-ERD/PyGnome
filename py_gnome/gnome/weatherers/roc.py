@@ -1642,7 +1642,7 @@ class Skim(Response):
         self._is_collecting = True
 
     def prepare_for_model_step(self, sc, time_step, model_time):
-        if self._is_active(model_time, time_step):
+        if self._is_active(model_time, time_step) or self._is_transiting or self._is_offloading:
             self._active = True
         else :
             self._active = False
@@ -1669,7 +1669,9 @@ class Skim(Response):
                 if self._is_collecting:
                     self._collect(sc, time_step, model_time)
         else:
-            while self._time_remaining > 0.:
+            while self._time_remaining > 0. and self._is_active(model_time, time_step) \
+                or self._time_remaining > 0. and self._is_transiting \
+                or self._time_remaining > 0. and self._is_offloading:
                 if self._is_collecting:
                     self._collect(sc, time_step, model_time)
 
@@ -1681,6 +1683,7 @@ class Skim(Response):
 
 
     def _collect(self, sc, time_step, model_time):
+        import pdb
         thickness = self._get_thickness(sc)
         if self.recovery_ef > 0 and self.throughput > 0 and thickness > 0:
             self._maximum_effective_swath = self.get('nameplate_pump') * self.get('recovery_ef') / (63.13 * self.get('speed', 'kts') * thickness * self.throughput)
@@ -1736,9 +1739,9 @@ class Skim(Response):
                     freeWaterDecantRate = freeWaterRecoveryRate - freeWaterRetainedRate
 
                     # timeToFill = .7 * self._storage_remaining / (emulsionRecoveryRate + (waterTakenOn - (waterTakenOn * self.get('decant_pump', 'gpm') / 100))) * 60
-                    timeToFill = .7 * self._storage_remaining / retainRate * 60
+                    timeToFill = (.7 * self._storage_remaining / retainRate * 60) * 60
 
-                    if (timeToFill) > self._time_remaining:
+                    if timeToFill > self._time_remaining:
                         # going to take more than this timestep to fill the storage
                         time_collecting = self._time_remaining
                         self._time_remaining = 0.
@@ -1751,25 +1754,27 @@ class Skim(Response):
                         self._is_transiting = True
 
                     self._state_list.append(['skim', time_collecting])
-                    self._ts_time_collecting += time_collecting
-                    self._ts_fluid_collected += retainRate * time_collecting
-                    if uc.convert('gal', 'bbl', self._ts_fluid_collected) > 0 and \
-                        uc.convert('gal', 'bbl', self._ts_fluid_collected) <= self._storage_remaining:
-                        self._ts_num_fills +=  uc.convert('gal', 'bbl', self._ts_fluid_collected) / self.get('storage')
+                    fluid_collected = retainRate * (time_collecting / 60)
+                    if fluid_collected > 0 and \
+                       fluid_collected <= self._storage_remaining:
+                        self._ts_num_fills +=  fluid_collected / self.get('storage', 'gal')
                     elif self._storage_remaining > 0:
-                        self._ts_num_fills += self._storage_remaining / self.get('storage')
+                        self._ts_num_fills += self._storage_remaining / self.get('storage', 'gal')
 
-                    if uc.convert('gal', 'bbl', self._ts_fluid_collected) > self._storage_remaining:
+                    pdb.set_trace()
+                    if fluid_collected > self._storage_remaining:
                         self._storage_remaining = 0
                     else:
-                        self._storage_remaining -= uc.convert('gal', 'bbl', self._ts_fluid_collected)
+                        self._storage_remaining -= fluid_collected
 
-                    self._ts_emulsion_collected += emulsionRecoveryRate * time_collecting
-                    self._ts_oil_collected += oilRecoveryRate * time_collecting
-                    self._ts_water_collected += freeWaterRecoveryRate * time_collecting
-                    self._ts_water_decanted += freeWaterDecantRate * time_collecting
-                    self._ts_water_retained += freeWaterRetainedRate * time_collecting
-                    self._ts_area_covered += rate_of_coverage * time_collecting
+                    self._ts_time_collecting += time_collecting
+                    self._ts_fluid_collected += fluid_collected
+                    self._ts_emulsion_collected += emulsionRecoveryRate * (time_collecting / 60)
+                    self._ts_oil_collected += oilRecoveryRate * (time_collecting / 60)
+                    self._ts_water_collected += freeWaterRecoveryRate * (time_collecting / 60)
+                    self._ts_water_decanted += freeWaterDecantRate * (time_collecting / 60)
+                    self._ts_water_retained += freeWaterRetainedRate * (time_collecting / 60)
+                    self._ts_area_covered += rate_of_coverage * (time_collecting / 60)
 
                 else:
                     self._no_op_step()
@@ -1787,6 +1792,8 @@ class Skim(Response):
             self._time_remaining -= self._transit_remaining
             self._transit_remaining = 0.
             self._is_transiting = False
+            import pdb
+            pdb.set_trace()
             if self._storage_remaining == 0.0:
                 self._is_offloading = True
                 self._offload_remaining = self.offload + (self.rig_time * 60)
@@ -1802,7 +1809,9 @@ class Skim(Response):
             self._state_list.append(['offload', self._offload_remaining])
             self._time_remaining -= self._offload_remaining
             self._offload_remaining = 0.
-            self._storage_remaining = self.storage
+            self._storage_remaining = self.get('storage', 'gal')
+            import pdb
+            pdb.set_trace()
             self._is_offloading = False
             self._is_transiting = True
             self._transit_remaining = (self.transit_time * 60)
