@@ -1683,7 +1683,6 @@ class Skim(Response):
 
 
     def _collect(self, sc, time_step, model_time):
-        import pdb
         thickness = self._get_thickness(sc)
         if self.recovery_ef > 0 and self.throughput > 0 and thickness > 0:
             self._maximum_effective_swath = self.get('nameplate_pump') * self.get('recovery_ef') / (63.13 * self.get('speed', 'kts') * thickness * self.throughput)
@@ -1761,7 +1760,6 @@ class Skim(Response):
                     elif self._storage_remaining > 0:
                         self._ts_num_fills += self._storage_remaining / self.get('storage', 'gal')
 
-                    pdb.set_trace()
                     if fluid_collected > self._storage_remaining:
                         self._storage_remaining = 0
                     else:
@@ -1792,8 +1790,6 @@ class Skim(Response):
             self._time_remaining -= self._transit_remaining
             self._transit_remaining = 0.
             self._is_transiting = False
-            import pdb
-            pdb.set_trace()
             if self._storage_remaining == 0.0:
                 self._is_offloading = True
                 self._offload_remaining = self.offload + (self.rig_time * 60)
@@ -1810,8 +1806,6 @@ class Skim(Response):
             self._time_remaining -= self._offload_remaining
             self._offload_remaining = 0.
             self._storage_remaining = self.get('storage', 'gal')
-            import pdb
-            pdb.set_trace()
             self._is_offloading = False
             self._is_transiting = True
             self._transit_remaining = (self.transit_time * 60)
