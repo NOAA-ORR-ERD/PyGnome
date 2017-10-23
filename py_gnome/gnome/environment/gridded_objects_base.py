@@ -214,8 +214,7 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
         else:
             return self.centers.reshape(-1,2)
 
-'''
-disabled until new version of gridded is released
+
 class Grid_R(gridded.grids.Grid_R, serializable.Serializable):
 
     _state = copy.deepcopy(serializable.Serializable._state)
@@ -240,8 +239,8 @@ class Grid_R(gridded.grids.Grid_R, serializable.Serializable):
 
     def get_centers(self):
         return self.centers.reshape(-1,2)
-'''
-       
+
+
 class PyGrid(gridded.grids.Grid):
 
     @staticmethod

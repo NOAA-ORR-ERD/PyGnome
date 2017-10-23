@@ -138,6 +138,8 @@ if __name__ == "__main__":
     for step in model:
         if step['step_num'] == 23:
             print 'running tamoc again'
+            import pdb
+            pdb.set_trace()
             sp = model.spills[0]
 #            sp.tamoc_parameters['release_phi'] = -np.pi / 4
 #            sp.tamoc_parameters['release_theta'] = -np.pi
