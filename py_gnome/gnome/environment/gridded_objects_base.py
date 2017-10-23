@@ -214,18 +214,45 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
         else:
             return self.centers.reshape(-1,2)
 
+'''
+disabled until new version of gridded is released
+class Grid_R(gridded.grids.Grid_R, serializable.Serializable):
 
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = GridSchema
+    _state.add_field([serializable.Field('filename', save=True, update=True,
+                                         isdatafile=True)])
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        dict_.pop('json_')
+        filename = dict_['filename']
+
+        rv = cls.from_netCDF(filename)
+        rv.__class__._restore_attr_from_save(rv, dict_)
+        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
+        rv.__class__._def_count -= 1
+
+        return rv
+
+    def get_nodes(self):
+        return self.nodes.reshape(-1,2)
+
+    def get_centers(self):
+        return self.centers.reshape(-1,2)
+'''
+       
 class PyGrid(gridded.grids.Grid):
 
     @staticmethod
     def from_netCDF(*args, **kwargs):
-        kwargs['_default_types'] = (('ugrid', Grid_U), ('sgrid', Grid_S))
+        kwargs['_default_types'] = (('ugrid', Grid_U), ('sgrid', Grid_S), ('rgrid', Grid_R))
 
         return gridded.grids.Grid.from_netCDF(*args, **kwargs)
 
     @staticmethod
     def _get_grid_type(*args, **kwargs):
-        kwargs['_default_types'] = (('ugrid', Grid_U), ('sgrid', Grid_S))
+        kwargs['_default_types'] = (('ugrid', Grid_U), ('sgrid', Grid_S), ('rgrid', Grid_R))
 
         return gridded.grids.Grid._get_grid_type(*args, **kwargs)
 

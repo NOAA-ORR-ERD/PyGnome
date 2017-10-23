@@ -68,11 +68,11 @@ class SpillJsonOutput(Outputter, Serializable):
 
         for sc in self.cache.load_timestep(step_num).items():
             position = sc['positions']
-            longitude = position[:,0].tolist()
-            latitude = position[:,1].tolist()
+            longitude = np.around(position[:,0], 4).tolist()
+            latitude = np.around(position[:,1], 4).tolist()
             l = len(longitude)
             status = sc['status_codes'].tolist()
-            mass = sc['mass'].tolist()
+            mass = np.around(sc['mass'], 4).tolist()
             spill_num = sc['spill_num'].tolist()
 
             # break elements into multipoint features based on their

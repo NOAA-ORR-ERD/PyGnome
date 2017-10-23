@@ -6,7 +6,8 @@ from weathering import WeatheringOutput
 from geo_json import (TrajectoryGeoJsonOutput,
                       IceGeoJsonOutput)
 from json import (IceJsonOutput,
-                  CurrentJsonOutput)
+                  CurrentJsonOutput,
+                  SpillJsonOutput)
 
 from kmz import KMZOutput
 from image import IceImageOutput
