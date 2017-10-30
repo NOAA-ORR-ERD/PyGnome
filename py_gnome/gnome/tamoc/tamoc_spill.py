@@ -291,7 +291,14 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             currents = ds['currents']
             u_data = currents.variables[0].data
             v_data = currents.variables[1].data
-            source_idx = currents.grid.locate_faces(np.array(self.start_position)[0:2], 'node')
+            source_idx=None
+            try:
+                source_idx = currents.grid.locate_faces(np.array(self.start_position)[0:2], 'node')
+            except TypeError:
+                source_idx = currents.grid.locate_faces(np.array(self.start_position)[0:2])
+            if currents.grid.node_lon.shape[0] == u_data.shape[-1]:
+                # lon/lat are inverted in data so idx must be reversed
+                source_idx = source_idx[::-1]
             print source_idx
             time_idx = currents.time.index_of(current_time, False)
             print time_idx
@@ -1056,31 +1063,31 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         return delta
 
     def load_delta(self,file_name, nc):
-         """
-         Loads the binary interaction parameters.
+        """
+        Loads the binary interaction parameters.
 
-         Parameters
-         ----------
-         file_name : string
-             file name
-         nc : int
-             number of components in the mixture
+        Parameters
+        ----------
+        file_name : string
+            file name
+        nc : int
+            number of components in the mixture
 
-         Returns
-         -------
-         delta : ndarray, size (nc,nc)
-            a matrix containing the loaded binary interaction parameters
-         """
-         delta = np.zeros([nc,nc])
-         k = 0
-         with open(file_name, 'r') as datfile:
-             for row in datfile:
-                 row = row.strip().split(",")
-                 for i in range(len(row)):
-                     delta[k, i] = float(row[i])
-                 k += 1
+        Returns
+        -------
+        delta : ndarray, size (nc,nc)
+           a matrix containing the loaded binary interaction parameters
+        """
+        delta = np.zeros([nc,nc])
+        k = 0
+        with open(file_name, 'r') as datfile:
+            for row in datfile:
+                row = row.strip().split(",")
+                for i in range(len(row)):
+                    delta[k, i] = float(row[i])
+                k += 1
 
-         return (delta)
+        return (delta)
 
     def translate_properties_gnome_to_tamoc(self, md_oil, composition, oil, P, Sa, T=288.15):
         '''

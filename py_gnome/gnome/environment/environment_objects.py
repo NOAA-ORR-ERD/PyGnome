@@ -733,14 +733,22 @@ class IceAwareCurrent(GridCurrent):
     @classmethod
     @GridCurrent._get_shared_vars()
     def from_netCDF(cls,
+                    ice_file=None,
                     ice_concentration=None,
                     ice_velocity=None,
                     **kwargs):
+        temp_fn = None
+        if ice_file is not None:
+            temp_fn = kwargs['filename']
+            kwargs['filename'] = ice_file
         if ice_concentration is None:
             ice_concentration = IceConcentration.from_netCDF(**kwargs)
 
         if ice_velocity is None:
             ice_velocity = IceVelocity.from_netCDF(**kwargs)
+
+        if temp_fn is not None:
+            kwargs['filename'] = temp_fn
 
         return (super(IceAwareCurrent, cls)
                 .from_netCDF(ice_concentration=ice_concentration,
