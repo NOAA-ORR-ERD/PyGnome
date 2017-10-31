@@ -129,8 +129,8 @@ class CleanUpBase(RemoveMass, Weatherer):
         if value is None:
             self._efficiency = value
         else:
-             valid = np.logical_and(value >= 0, value <= 1)
-             self._efficiency = np.where(valid, value, self._efficiency)
+            valid = np.logical_and(value >= 0, value <= 1)
+            self._efficiency = np.where(valid, value, self._efficiency).astype('float')
 
     def _get_substance(self, sc):
         '''
