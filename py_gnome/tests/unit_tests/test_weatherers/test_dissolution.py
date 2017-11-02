@@ -291,7 +291,7 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     #     assert False
 
 
-# @pytest.mark.xfail
+@pytest.mark.xfail
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
                          [('oil_ans_mp', 288.7, 55.34),
                           ('oil_bahia',  288.7, 158.77)])
