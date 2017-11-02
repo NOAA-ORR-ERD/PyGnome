@@ -8,7 +8,11 @@ These are properties that are spill specific like:
   'nonweathering' element_types would set use_droplet_size flag to False
   'weathering' element_types would use droplet_size, densities, mass?
 
+Note: An ElementType needs a bunch of initializers -- but that is an
+      implementation detail, so the ElementType API exposes access to the
+      initializers.
 '''
+
 import copy
 
 from gnome.utilities.serializable import Serializable, Field
@@ -16,16 +20,15 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromPlume)
-from oil_library import get_oil_props
 from gnome.persist import base_schema, class_from_objtype
 import unit_conversion as uc
 
 
 class ElementType(Serializable):
     _state = copy.deepcopy(Serializable._state)
-    _state.add(save=['initializers'],
-               update=['initializers'])
-    _state += Field('substance', save=True, update=True, test_for_eq=False)
+    _state += [Field('substance', save=True, update=True, test_for_eq=False),
+               Field('initializers', save=True, update=True),
+               Field('standard_density', update=True, read=True)]
     _schema = base_schema.ObjType
 
     def __init__(self, initializers=[], substance=None):
@@ -49,6 +52,9 @@ class ElementType(Serializable):
         :type substance: str or OilProps
 
         '''
+        from oil_library import get_oil_props
+        self.get_oil_props = get_oil_props
+
         self.initializers = []
         try:
             self.initializers.extend(initializers)
@@ -69,6 +75,73 @@ class ElementType(Serializable):
                 'initializers={0.initializers}, '
                 'substance={0.substance!r}'
                 ')'.format(self))
+
+    # properties for attributes the need to be pulled from initializers
+    @property
+    def windage_range(self):
+        for initr in self.initializers:
+            try:
+                return getattr(initr, 'windage_range')
+            except AttributeError:
+                pass
+        msg = 'windage_range attribute does not exist any initializers'
+
+        self.logger.warning(msg)
+        raise AttributeError(msg)
+
+    @windage_range.setter
+    def windage_range(self, wr):
+        print self.initializers
+        for initr in self.initializers:
+            print "initr:"
+            if hasattr(initr, "windage_range"):
+                print "setting windage_range"
+                initr.windage_range = wr
+                return None
+        msg = "can't set windage_range: no initializer has it"
+
+        self.logger.warning(msg)
+        raise AttributeError(msg)
+
+    @property
+    def windage_persist(self):
+        for initr in self.initializers:
+            try:
+                return getattr(initr, 'windage_persist')
+            except AttributeError:
+                pass
+        msg = 'windage_persist attribute does not exist any initializers'
+
+        self.logger.warning(msg)
+        raise AttributeError(msg)
+
+    @windage_persist.setter
+    def windage_persist(self, wp):
+        print self.initializers
+        for initr in self.initializers:
+            print "initr:"
+            if hasattr(initr, "windage_persist"):
+                print "setting windage_persist"
+                initr.windage_persist = wp
+                return None
+        msg = "can't set windage_persist: no initializer has it"
+
+        self.logger.warning(msg)
+        raise AttributeError(msg)
+
+    @property
+    def standard_density(self):
+        '''
+            Get the substance's standard density if it exists, otherwise
+            default to 1000.0 kg/m^3.
+            Any valid substance object needs to have a property named
+            standard_density.
+        '''
+        if (self.substance is not None and
+                hasattr(self.substance, 'standard_density')):
+            return self.substance.standard_density
+        else:
+            return 1000.0
 
     def contains_object(self, obj_id):
         for o in self.initializers:
@@ -130,7 +203,7 @@ class ElementType(Serializable):
         user has provided a valid OilProps object and use it as is
         '''
         try:
-            self._substance = get_oil_props(val)
+            self._substance = self.get_oil_props(val)
         except:
             if isinstance(val, basestring):
                 raise
@@ -207,6 +280,7 @@ class ElementType(Serializable):
         et_json_['initializers'] = s_init
         if 'substance' in dict_:
             et_json_['substance'] = dict_['substance']
+        et_json_['standard_density'] = self.standard_density
 
         return et_json_
 
@@ -320,6 +394,8 @@ def plume(distribution_type='droplet_size',
     .. note:: substance_name or density must be provided
 
     """
+    from oil_library import get_oil_props
+
     # Add docstring from called classes
     # Note: following gives sphinx warnings on build, ignore for now.
 
@@ -332,7 +408,7 @@ def plume(distribution_type='droplet_size',
                       )
 
     if density is not None:
-        # Assume density is at 15 K - convert density to api
+        # Assume density is at 15 C - convert density to api
         api = uc.convert('density', density_units, 'API', density)
         if substance_name is not None:
             substance = get_oil_props({'name': substance_name,

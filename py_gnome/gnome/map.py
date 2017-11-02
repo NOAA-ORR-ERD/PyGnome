@@ -21,8 +21,7 @@ import math
 from osgeo import ogr
 
 import py_gd
-from osgeo import ogr
-#import pyugrid
+# import pyugrid
 
 import numpy as np
 
@@ -84,7 +83,8 @@ class GnomeMap(Serializable):
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.
 
-    This also serves as a description of the interface
+    This also serves as a description of the interface and
+    base class for more complex maps
     """
     _update = ['map_bounds', 'spillable_area']
     _create = []
@@ -102,8 +102,9 @@ class GnomeMap(Serializable):
 
         Optional parameters (kwargs)
 
-        :param map_bounds: The polygon bounding the map -- could be larger
-                           or smaller than the land raster
+        :param map_bounds: The polygon bounding the map if any elements are
+                           outside the map bounds, they are removed from the
+                           simulation.
 
         :param spillable_area: The PolygonSet bounding the spillable_area.
         :type spillable_area: Either a PolygonSet object or a list of lists
@@ -116,7 +117,7 @@ class GnomeMap(Serializable):
             is a list of points defining a polygon.
 
         Note on 'map_bounds':
-            ( (x1,y1), (x2,y2),(x3,y3),..)
+            ( (x1,y1), (x2,y2), (x3,y3),..)
             An NX2 array of points that describe a polygon
             if no map bounds is provided -- the whole world is valid
         """
@@ -129,7 +130,7 @@ class GnomeMap(Serializable):
                                         (360, 90), (360, -90)),
                                        dtype=np.float64)
 
-        if spillable_area is None:
+        if spillable_area is None or len(spillable_area) == 0:
             self.spillable_area = PolygonSet()
             self.spillable_area.append(self.map_bounds)
         else:
@@ -278,6 +279,8 @@ class GnomeMap(Serializable):
         next_positions = spill['next_positions']
         status_codes = spill['status_codes']
         off_map = np.logical_not(self.on_map(next_positions))
+        if len(next_positions) != 0 and np.all(off_map):
+            self.logger.warn("All particles left the map this timestep.")
 
         # let model decide if we want to remove elements marked as off-map
         status_codes[off_map] = oil_status.off_maps
@@ -1033,14 +1036,14 @@ class MapFromBNA(RasterMap):
 
         :param filename: full path to the data file
 
-        :param refloat_halflife: the half-life (in hours) for the re-floating.
-
         :param raster_size: the total number of pixels (bytes) to make the
                             raster -- the actual size will match the
                             aspect ratio of the bounding box of the land
         :type raster_size: integer
 
         Optional arguments (kwargs):
+
+        :param refloat_halflife: the half-life (in hours) for the re-floating.
 
         :param map_bounds: The polygon bounding the map -- could be larger or
                            smaller than the land raster
@@ -1068,10 +1071,10 @@ class MapFromBNA(RasterMap):
         spillable_area = PolygonSet()
 
         for p in polygons:
-            if p.metadata[1].lower() == 'spillablearea':
+            if p.metadata[1].lower().replace(' ', '') == 'spillablearea':
                 spillable_area.append(p)
 
-            elif p.metadata[1].lower() == 'map bounds':
+            elif p.metadata[1].lower().replace(' ', '') == 'mapbounds':
                 map_bounds = p
             else:
                 land_polys.append(p)
@@ -1087,10 +1090,16 @@ class MapFromBNA(RasterMap):
         map_bounds = kwargs.pop('map_bounds', map_bounds)
 
         if map_bounds is None:
-            map_bounds = BB.AsPoly()
+            if spillable_area:  # add the spillable area to the bounds
+                saBB = spillable_area.bounding_box
+                saBB.Merge(BB)
+                map_bounds = saBB.AsPoly()
+            else:
+                map_bounds = BB.AsPoly()
 
-        if len(spillable_area) == 0:
+        elif spillable_area:
             spillable_area.append(map_bounds)
+
 
         # user defined spillable_area, map_bounds overrides data obtained
         # from polygons

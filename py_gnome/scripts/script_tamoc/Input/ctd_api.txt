@@ -1,0 +1,27 @@
+% Global horizontal mean hydrographic and oxygen 
+% data from the Levitus et al. (1998) data set.
+% Table on Page 226 of Sarmiento and Gruber, "Ocean 
+% Biogeochemical Dynamics." 
+%
+% Data description:
+%   Column 0: Depth (m)
+%   Column 1: Temp (deg C)
+%   Column 2: Salinity (psu)
+%   Column 3: O2 (mmol/m^3)
+%   Column 4: O2_sat (mmol/m^3)
+%
+0     17.26    34.89    239   243
+50    15.09    35.01    218   254
+100   13.3     35.03    197   263
+150   11.89    34.98    183   271
+250   9.98     34.86    167   282
+350   8.57     34.76    159   291
+450   7.39     34.68    154   299
+550   6.44     34.63    150   306
+750   5.13     34.59    141   316
+950   4.21     34.61    139   323
+1450  2.97     34.7     148   332
+1950  2.32     34.74    161   338
+2450  1.96     34.75    171   341
+2950  1.72     34.74    178   343
+3950  1.37     34.73    190   346

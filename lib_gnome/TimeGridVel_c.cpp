@@ -2473,7 +2473,8 @@ VelocityRec TimeGridVelCurv_c::GetInterpolatedValue(const Seconds& model_time, I
 	else
 		return scaledPatVelocity;
 	
-	if (fDepthDataInfo) amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
+	//if (fDepthDataInfo) amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
+	if (fDepthLevelsHdl) amtOfDepthData = _GetHandleSize((Handle)fDepthLevelsHdl)/sizeof(**fDepthLevelsHdl);
  	if (amtOfDepthData>0)
  	{
 		GetDepthIndices(ptIndex1,depth,totalDepth,&pt1depthIndex1,&pt1depthIndex2);	
@@ -2483,10 +2484,14 @@ VelocityRec TimeGridVelCurv_c::GetInterpolatedValue(const Seconds& model_time, I
 	}
  	else
  	{	// old version that didn't use fDepthDataInfo, must be 2D
- 		pt1depthIndex1 = ptIndex1;	pt1depthIndex2 = -1;
- 		pt2depthIndex1 = ptIndex2;	pt2depthIndex2 = -1;
- 		pt3depthIndex1 = ptIndex3;	pt3depthIndex2 = -1;
- 		pt4depthIndex1 = ptIndex4;	pt4depthIndex2 = -1;
+ 		//pt1depthIndex1 = ptIndex1;	pt1depthIndex2 = -1;
+ 		//pt2depthIndex1 = ptIndex2;	pt2depthIndex2 = -1;
+ 		//pt3depthIndex1 = ptIndex3;	pt3depthIndex2 = -1;
+ 		//pt4depthIndex1 = ptIndex4;	pt4depthIndex2 = -1;
+ 		pt1depthIndex1 = 0;	pt1depthIndex2 = -1;
+ 		pt2depthIndex1 = 0;	pt2depthIndex2 = -1;
+ 		pt3depthIndex1 = 0;	pt3depthIndex2 = -1;
+ 		pt4depthIndex1 = 0;	pt4depthIndex2 = -1;
  	}
 
  	// the contributions from each point will default to zero if the depth indicies
@@ -2502,15 +2507,15 @@ VelocityRec TimeGridVelCurv_c::GetInterpolatedValue(const Seconds& model_time, I
 				topDepth = INDEXH(fDepthsH,pt1depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt1depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex2).u));
-				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex2).v));
+				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).u));
+				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt1interp.u = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).u); 
-				pt1interp.v = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,pt1depthIndex1).v); 
+				pt1interp.u = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u); 
+				pt1interp.v = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 		
@@ -2521,15 +2526,15 @@ VelocityRec TimeGridVelCurv_c::GetInterpolatedValue(const Seconds& model_time, I
 				topDepth = INDEXH(fDepthsH,pt2depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt2depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex2).u));
-				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex2).v));
+				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).u));
+				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt2interp.u = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).u); 
-				pt2interp.v = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,pt2depthIndex1).v);
+				pt2interp.u = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u); 
+				pt2interp.v = interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v);
 			}
 		}
 		
@@ -2540,15 +2545,15 @@ VelocityRec TimeGridVelCurv_c::GetInterpolatedValue(const Seconds& model_time, I
 				topDepth = INDEXH(fDepthsH,pt3depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt3depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex2).u));
-				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex2).v));
+				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).u));
+				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt3interp.u = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).u); 
-				pt3interp.v = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,pt3depthIndex1).v); 
+				pt3interp.u = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u); 
+				pt3interp.v = interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 		if (pt4depthIndex1!=-1) 
@@ -2558,15 +2563,15 @@ VelocityRec TimeGridVelCurv_c::GetInterpolatedValue(const Seconds& model_time, I
 				topDepth = INDEXH(fDepthsH,pt4depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt4depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex2).u));
-				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex2).v));
+				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).u));
+				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt4interp.u = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).u); 
-				pt4interp.v = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,pt4depthIndex1).v); 
+				pt4interp.u = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u); 
+				pt4interp.v = interpolationVal.alpha4*(INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 	}
@@ -2601,15 +2606,15 @@ VelocityRec TimeGridVelCurv_c::GetInterpolatedValue(const Seconds& model_time, I
 				topDepth = INDEXH(fDepthsH,pt1depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt1depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex2).u));
-				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex2).v));
+				pt1interp.u = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).u));
+				pt1interp.v = depthAlpha*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt1interp.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).u); 
-				pt1interp.v = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,pt1depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt1depthIndex1).v); 
+				pt1interp.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).u); 
+				pt1interp.v = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1+pt1depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 		
@@ -2620,15 +2625,15 @@ VelocityRec TimeGridVelCurv_c::GetInterpolatedValue(const Seconds& model_time, I
 				topDepth = INDEXH(fDepthsH,pt2depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt2depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex2).u));
-				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex2).v));
+				pt2interp.u = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).u));
+				pt2interp.v = depthAlpha*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt2interp.u = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).u); 
-				pt2interp.v = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,pt2depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt2depthIndex1).v); 
+				pt2interp.u = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).u); 
+				pt2interp.v = interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2+pt2depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 		
@@ -2639,15 +2644,15 @@ VelocityRec TimeGridVelCurv_c::GetInterpolatedValue(const Seconds& model_time, I
 				topDepth = INDEXH(fDepthsH,pt3depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt3depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex2).u));
-				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex2).v));
+				pt3interp.u = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).u));
+				pt3interp.v = depthAlpha*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt3interp.u = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).u); 
-				pt3interp.v = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,pt3depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt3depthIndex1).v); 
+				pt3interp.u = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).u); 
+				pt3interp.v = interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3+pt3depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 		if (pt4depthIndex1!=-1) 
@@ -2657,15 +2662,15 @@ VelocityRec TimeGridVelCurv_c::GetInterpolatedValue(const Seconds& model_time, I
 				topDepth = INDEXH(fDepthsH,pt4depthIndex1);	
 				bottomDepth = INDEXH(fDepthsH,pt4depthIndex2);
 				depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
-				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).u))
-				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex2).u));
-				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).v))
-				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex2).v));
+				pt4interp.u = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).u));
+				pt4interp.v = depthAlpha*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v))
+				+ (1-depthAlpha)*(interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex2*fNumRows*fNumCols).v));
 			}
 			else
 			{
-				pt4interp.u = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).u); 
-				pt4interp.v = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,pt4depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,pt4depthIndex1).v); 
+				pt4interp.u = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).u); 
+				pt4interp.v = interpolationVal.alpha4*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex4+pt4depthIndex1*fNumRows*fNumCols).v); 
 			}
 		}
 	}
@@ -2727,7 +2732,11 @@ float TimeGridVelCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 	{
 		//if (triNum < 0) useTriNum = false;
 		if (bVelocitiesOnNodes)
-			err = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols);
+		{
+			totalDepth = GetInterpolatedTotalDepth(refPoint);
+			return totalDepth;
+		}
+			//err = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols);
 		else 
 			err = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		
@@ -3060,7 +3069,7 @@ OSErr TimeGridVelCurv_c::TextRead(const char *path, const char *topFilePath)
 	static size_t mask_index[] = {0, 0};
 	static size_t mask_count[2];
 	static size_t latIndex = 0, lonIndex = 0, timeIndex, ptIndex[2] = {0, 0}, sigmaIndex = 0;
-	static size_t pt_count[2], sigma_count;
+	static size_t pt_count[2], sigma_count, no_interp_str;
 
 	float startLat, startLon, endLat, endLon, hc_param = 0.;
 	char *timeUnits = 0;
@@ -3150,11 +3159,19 @@ OSErr TimeGridVelCurv_c::TextRead(const char *path, const char *topFilePath)
 		}
 	} 
 	
+	status = nc_inq_attlen(ncid,NC_GLOBAL,"no_interp",&no_interp_str);	// this marks files to be treated the old way
+	if (status == NC_NOERR) goto OLD;
+
 	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
 	if (status != NC_NOERR) 
 	{	// add new check if error for LON, LAT with extensions based on subset from LAS 1/29/09
 		//status = nc_inq_dimid(ncid, "y", &latIndexid);	if (status != NC_NOERR) {err = -1; goto OLD;}	
-		goto OLD;
+		//goto OLD;
+		status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto OLD;
+		}
 	}
 	bVelocitiesOnNodes = true;
 	status = nc_inq_varid(ncid, "latc", &latid); //Navy
@@ -3173,7 +3190,12 @@ OSErr TimeGridVelCurv_c::TextRead(const char *path, const char *topFilePath)
 	{
 		//status = nc_inq_dimid(ncid, "LON_UV", &lonIndexid);	
 		//if (status != NC_NOERR) {err = -1; goto done;}	
-		err = -1; goto done;
+		//err = -1; goto done;
+		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		if (status != NC_NOERR) 
+		{
+			err = -1; goto done;
+		}
 	}
 	status = nc_inq_varid(ncid, "lonc", &lonid);	//Navy
 	if (status != NC_NOERR) 
@@ -3412,8 +3434,9 @@ OLD:
 		goto depths;
 	}
 	
-		if (isLandMask && bVelocitiesOnNodes) err = ReorderPointsCOOPSMask(landmaskH,errmsg);
-		else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(landmaskH,errmsg);
+		if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(landmaskH,errmsg);
+		else if (isLandMask && bVelocitiesOnNodes) err = ReorderPointsCOOPSMask(landmaskH,errmsg);
+		//else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(landmaskH,errmsg);	// do this first
 		else if (bVelocitiesOnNodes) err = ReorderPointsCOOPSNoMask(errmsg);
 		else if (isLandMask) err = ReorderPoints(landmaskH,errmsg);	
 		else err = ReorderPointsNoMask(errmsg);
@@ -3525,7 +3548,7 @@ depths:
 			//INDEXH(totalDepthsH,i) = depth_vals[ptIndex];
 			INDEXH(totalDepthsH,i) = INDEXH(fDepthsH,ptIndex);
 		}
-		if (!bVelocitiesOnNodes)	// code goes here, figure out how to handle depths in this case
+		//if (!bVelocitiesOnNodes)	// code goes here, figure out how to handle depths in this case
 			(dynamic_cast<TTriGridVel*>(fGrid))->SetDepths(totalDepthsH);
 	}
 	
@@ -6795,7 +6818,8 @@ done:
 	return fGridCellInfoH;
 }
 
-TimeGridVelIce_c::TimeGridVelIce_c () : TimeGridVelCurv_c(), TimeGridVel_c()
+//TimeGridVelIce_c::TimeGridVelIce_c () : TimeGridVelCurv_c(), TimeGridVel_c()
+TimeGridVelIce_c::TimeGridVelIce_c () : TimeGridVelCurv_c()
 {
 	memset(&fStartDataIce,0,sizeof(fStartDataIce));
 	fStartDataIce.timeIndex = UNASSIGNEDINDEX; 
@@ -8278,7 +8302,8 @@ OSErr TimeGridVelIce_c::GetMovementVelocities(Seconds time, VelocityFRec *moveme
 	return err;
 }
 
-TimeGridVelTri_c::TimeGridVelTri_c () : TimeGridVelCurv_c(), TimeGridVel_c()
+//TimeGridVelTri_c::TimeGridVelTri_c () : TimeGridVelCurv_c(), TimeGridVel_c()
+TimeGridVelTri_c::TimeGridVelTri_c () : TimeGridVelCurv_c()
 {
 	fNumNodes = 0;
 	fNumEles = 0;
@@ -8536,10 +8561,6 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue(const Seconds& model_time, World
 		// Calculate the interpolated velocity at the point
 		if (interpolationVal.ptIndex1 >= 0) 
 		{
-//		    cerr << timeAlpha << endl;
-//		    cerr << INDEXH(fStartData.dataHdl,ptIndex1).u << " " << INDEXH(fEndData.dataHdl,ptIndex1).u  << endl;
-//		    cerr << INDEXH(fStartData.dataHdl,ptIndex2).u << " " << INDEXH(fEndData.dataHdl,ptIndex2).u << endl;
-//		    cerr << INDEXH(fStartData.dataHdl,ptIndex3).u << " " << INDEXH(fEndData.dataHdl,ptIndex3).u << endl;
 			scaledPatVelocity.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1).u)
 			+interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2).u)
 			+interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3).u);
@@ -8568,8 +8589,7 @@ scale:
 	//scaledPatVelocity.v *= fVar.curScale; 
 	scaledPatVelocity.u *= fVar.fileScaleFactor; // may want to allow some sort of scale factor, though should be in file
 	scaledPatVelocity.v *= fVar.fileScaleFactor; 
-
-//	cerr << scaledPatVelocity.u << " " << scaledPatVelocity.v << endl;
+	
 	return scaledPatVelocity;
 }
 

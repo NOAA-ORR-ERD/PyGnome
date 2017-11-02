@@ -29,10 +29,14 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
     def __init__(self,
                  vertical_diffusion_coef_above_ml=5,
                  vertical_diffusion_coef_below_ml=.11,
+                 horizontal_diffusion_coef_above_ml=100000,
+                 horizontal_diffusion_coef_below_ml=126,
                  mixed_layer_depth=10.):
         """
         Default vertical_diffusion_coef_above_ml = 5 [cm**2/sec]
         Default vertical_diffusion_coef_below_ml = .11 [cm**2/sec]
+        Default horizontal_diffusion_coef_above_ml = 100000 [cm**2/sec]
+        Default horizontal_diffusion_coef_below_ml = 126 [cm**2/sec]
         Default mixed_layer_depth = 10. [meters]
         """
         if vertical_diffusion_coef_above_ml < 0:
@@ -50,8 +54,20 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
                              'greater than or equal to 0 '
                              'for mixed_layer_depth')
 
+        if horizontal_diffusion_coef_above_ml < 0:
+            raise ValueError('CyRandomVerticalMover must have a value '
+                             'greater than or equal to 0 '
+                             'for horizontal_diffusion_coef_above_ml')
+
+        if horizontal_diffusion_coef_below_ml < 0:
+            raise ValueError('CyRandomVerticalMover must have a value '
+                             'greater than or equal to 0 '
+                             'for horizontal_diffusion_coef_below_ml')
+
         self.rand.fVerticalDiffusionCoefficient = vertical_diffusion_coef_above_ml
         self.rand.fVerticalBottomDiffusionCoefficient = vertical_diffusion_coef_below_ml
+        self.rand.fHorizontalDiffusionCoefficient = horizontal_diffusion_coef_above_ml
+        self.rand.fHorizontalDiffusionCoefficientBelowML = horizontal_diffusion_coef_below_ml
         self.rand.fMixedLayerDepth = mixed_layer_depth
 
     property vertical_diffusion_coef_above_ml:
@@ -89,6 +105,28 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
                                  'for mixed_layer_depth')
             self.rand.fMixedLayerDepth = value
 
+    property horizontal_diffusion_coef_above_ml:
+        def __get__(self):
+            return self.rand.fHorizontalDiffusionCoefficient
+
+        def __set__(self, value):
+            if value < 0:
+                raise ValueError('CyRandomVerticalMover must have a value '
+                                 'greater than or equal to 0 '
+                                 'for horizontal_diffusion_coef_above_ml')
+            self.rand.fHorizontalDiffusionCoefficient = value
+
+    property horizontal_diffusion_coef_below_ml:
+        def __get__(self):
+            return self.rand.fHorizontalDiffusionCoefficientBelowML
+
+        def __set__(self, value):
+            if value < 0:
+                raise ValueError('CyRandomVerticalMover must have a value '
+                                 'greater than or equal to 0 '
+                                 'for horizontal_diffusion_coef_below_ml')
+            self.rand.fHorizontalDiffusionCoefficientBelowML = value
+
     def __repr__(self):
         """
         unambiguous repr of object, reuse for str() method
@@ -96,9 +134,13 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
         return ('CyRandomVerticalMover('
                 'vertical_diffusion_coef_above_ml={0}, '
                 'vertical_diffusion_coef_below_ml={1}, '
-                'mixed_layer_depth={2})'
+                'horizontal_diffusion_coef_above_ml={2}, '
+                'horizontal_diffusion_coef_below_ml={3}, '
+                'mixed_layer_depth={4})'
                 .format(self.vertical_diffusion_coef_above_ml,
                         self.vertical_diffusion_coef_below_ml,
+                        self.horizontal_diffusion_coef_above_ml,
+                        self.horizontal_diffusion_coef_below_ml,
                         self.mixed_layer_depth))
 
     def get_move(self,

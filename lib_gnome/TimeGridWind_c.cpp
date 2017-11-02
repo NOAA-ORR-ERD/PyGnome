@@ -59,15 +59,61 @@ done:
 }*/
 
 TimeGridWindRect_c::TimeGridWindRect_c() : TimeGridVel_c()
-{
-	
+{	
+	fPtsH = 0;
+	fGridCellInfoH = 0;
+	fCenterPtsH = 0;
 }
 
 void TimeGridWindRect_c::Dispose()
 {
+	if(fPtsH) {DisposeHandle((Handle)fPtsH); fPtsH=0;}
+	if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
+	if(fCenterPtsH) {DisposeHandle((Handle)fCenterPtsH); fCenterPtsH=0;}
+
 	TimeGridVel_c::Dispose ();
 }
 
+
+LongPointHdl TimeGridWindRect_c::GetPointsHdl()
+{
+	long i, j, numPoints;
+	float fLat, fLong, dLong, dLat;
+	WorldRect gridBounds = fGridBounds; // loLong, loLat, hiLong, hiLat
+	LongPoint vertex;
+	OSErr err = 0;
+
+	if (fPtsH) return fPtsH;
+	
+	numPoints = fNumRows*fNumCols;
+	dLong = (gridBounds.hiLong - gridBounds.loLong) / (fNumCols-1);
+	dLat = (gridBounds.hiLat - gridBounds.loLat) / (fNumRows-1);
+	fPtsH = (LongPointHdl)_NewHandle(numPoints * sizeof(LongPoint));
+	if (!fPtsH) {
+		err = -1;
+		TechError("TriGridWindRect_c::GetPointsHdl()", "_NewHandle()", 0);
+		goto done;
+	}
+	
+	for (i=0; i<fNumRows; i++)
+	{
+		for (j=0; j<fNumCols; j++)
+		{
+			fLat = gridBounds.loLat + i*dLat;
+			fLong = gridBounds.loLong + j*dLong;
+
+			vertex.v = (long)(fLat);
+			vertex.h = (long)(fLong);
+			//vertex.v = (long)(fLat*1e6);
+			//vertex.h = (long)(fLong*1e6);
+		
+			INDEXH(fPtsH,i*fNumCols+j) = vertex;
+		}
+	}	
+	
+done:
+	return fPtsH;
+}
 
 VelocityRec TimeGridWindRect_c::GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint)
 {	// pull out the getpatval part
@@ -572,6 +618,195 @@ done:
 	return err;
 }
 
+OSErr TimeGridWindRect_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity)
+{	// use for curvilinear
+	double timeAlpha;
+	Seconds startTime,endTime;
+	OSErr err = 0;
+	char errmsg[256];
+	LongPoint longPt;
+	WorldPoint wp;
+	
+	long numPoints,i,index=-1;
+	LongPointHdl ptsHdl = 0;
+	long timeDataInterval;
+	Boolean loaded;
+	//TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	//TTriGridVel* triGrid = (dynamic_cast<TTriGridVel*>(fGrid));
+	VelocityFRec velocity;
+	
+	err = this -> SetInterval(errmsg, time);
+	if(err) return err;
+	
+	loaded = this -> CheckInterval(timeDataInterval, time);	 
+	
+	if(!loaded) return -1;
+	
+	ptsHdl = this->GetPointsHdl();
+	if(ptsHdl)
+		numPoints = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
+	else 
+		numPoints = 0;
+	
+	// Check for time varying current 
+	if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+
+		if (fEndData.timeIndex == UNASSIGNEDINDEX && (time > startTime || time < startTime) && fAllowExtrapolationInTime)
+		{
+			timeAlpha = 1;
+		}
+		else
+		{	
+			endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+			timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		}
+	}
+	// for now just get every other one since each pair of triangles corresponds to a cell
+	for (i = 0 ; i< numPoints; i+=1)
+	//for (i = 0 ; i< numTri; i++)
+	{
+
+		longPt = (*ptsHdl)[i];
+		wp.pLat = longPt.v;
+		wp.pLong = longPt.h;
+		index = GetVelocityIndex(wp);  // regular grid
+	
+		//if (index < 0) {scaled_velocity[i].u = 0;	scaled_velocity[i].v = 0;}// should this be an error?
+		//index = i;
+		// Should check vs fFillValue
+		// Check for constant current 
+		if(((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha == 1) && index!=-1)
+		{
+				velocity.u = GetStartUVelocity(index);
+				velocity.v = GetStartVVelocity(index);
+		}
+		else if (index!=-1)// time varying current
+		{
+			velocity.u = timeAlpha*GetStartUVelocity(index) + (1-timeAlpha)*GetEndUVelocity(index);
+			velocity.v = timeAlpha*GetStartVVelocity(index) + (1-timeAlpha)*GetEndVVelocity(index);
+		}
+		if (velocity.u == fFillValue) velocity.u = 0.;
+		if (velocity.v == fFillValue) velocity.v = 0.;
+		/*if ((velocity.u != 0 || velocity.v != 0) && (velocity.u != fFillValue && velocity.v != fFillValue)) // should already have handled fill value issue
+		{
+			// code goes here, fill up arrays with data
+			float inchesX = (velocity.u * refScale * fVar.fileScaleFactor) / arrowScale;
+			float inchesY = (velocity.v * refScale * fVar.fileScaleFactor) / arrowScale;
+		}*/
+		//u[i] = velocity.u * fVar.fileScaleFactor;
+		//v[i] = velocity.v * fVar.fileScaleFactor;
+		scaled_velocity[i].u = velocity.u * fVar.fileScaleFactor / 100.;
+		scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor / 100.;
+		//vel_index++;
+	}
+	return err;
+}
+
+WORLDPOINTH TimeGridWindRect_c::GetCellCenters()
+{
+	OSErr err = 0;
+	LongPointHdl ptsH = 0;
+	WORLDPOINTH wpH = 0;
+	//TopologyHdl topH ;
+	LongPoint wp1,wp2,wp3,wp4;
+	WorldPoint wp;
+	int32_t numPts = 0, numTri = 0, numCells;
+	int32_t i, index1, index2; 
+	//Topology tri1, tri2;
+	
+	if (fCenterPtsH) return fCenterPtsH;
+	
+	//topH = GetTopologyHdl();
+	ptsH = GetPointsHdl();
+	//numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
+	numPts = _GetHandleSize((Handle)ptsH)/sizeof(LongPoint);
+	numCells = (fNumCols-1)*(fNumRows-1);
+	// for now just return the points since velocities are on the points
+	//fCenterPtsH = (WORLDPOINTH)_NewHandle(numCells * sizeof(WorldPoint));
+	fCenterPtsH = (WORLDPOINTH)_NewHandle(numPts * sizeof(WorldPoint));
+	if (!fCenterPtsH) {
+		err = -1;
+		TechError("TriGridWindRect_c::GetCellCenters()", "_NewHandle()", 0);
+		goto done;
+	}
+	
+	//for (i=0; i<numCells; i++)
+	for (i=0; i<numPts; i++)
+	{
+		//index1 = i*2;
+		//index2 = i*2+1;
+		//tri1 = INDEXH(topH,index1);
+		//tri2 = INDEXH(topH,index2);
+
+		//wp1 = (*ptsH)[(*topH)[index1].vertex1];
+		//wp2 = (*ptsH)[(*topH)[index1].vertex2];
+		//wp3 = (*ptsH)[(*topH)[index1].vertex3];
+		//wp4 = (*ptsH)[(*topH)[index2].vertex2];
+
+#ifndef pyGNOME
+		wp.pLong = (*ptsH)[i].h;
+		wp.pLat = (*ptsH)[i].v;
+		//wp.pLong = (wp1.h+wp2.h+wp3.h + wp4.h)/4;
+		//wp.pLat = (wp1.v+wp2.v+wp3.v + wp4.v)/4;
+#else
+		wp.pLong = (double)((*ptsH)[i].h)/1.e6;
+		wp.pLat = (double)((*ptsH)[i].v)/1.e6;
+		//wp.pLong = (double)(wp1.h+wp2.h+wp3.h + wp4.h)/4.e6;
+		//wp.pLat = (double)(wp1.v+wp2.v+wp3.v + wp4.v)/4.e6;
+#endif
+		INDEXH(fCenterPtsH,i) = wp;
+
+	}
+		
+done:
+	return fCenterPtsH;
+}
+
+GridCellInfoHdl TimeGridWindRect_c::GetCellData()
+{	// use for regular
+	OSErr err = 0;
+
+	long i,j,numCells,index1,index2;
+	LongPointHdl ptsHdl = 0;
+
+	if (fGridCellInfoH) return fGridCellInfoH;
+	
+	numCells = (fNumCols-1)*(fNumRows-1);
+	GridCellInfoHdl fGridCellInfoH = (GridCellInfoHdl)_NewHandleClear(numCells * sizeof(**fGridCellInfoH));
+	if (!fGridCellInfoH) 
+	{
+		err = memFullErr; 
+		goto done;
+	}
+	
+	for (i=0; i<fNumRows-1; i++)
+	{
+		for (j=0; j<fNumCols-1; j++)
+		{
+			INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).cellNum = i*fNumCols+j;
+			INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).topLeft = i*fNumCols+j;
+			INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).topRight = i*fNumCols+j+1;
+			INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).bottomRight = (i+1)*fNumCols+j;
+			INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).bottomLeft = (i+1)*fNumCols+j+1;
+			//INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).bottomLeft = (i+1)*fNumCols+j;
+			//INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).bottomRight = (i+1)*fNumCols+j+1;
+		}
+	}
+	
+done:
+	if (err)
+	{
+		if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
+	}
+	return fGridCellInfoH;
+}
+
 TimeGridWindCurv_c::TimeGridWindCurv_c () : TimeGridWindRect_c()
 {
 	fVerdatToNetCDFH = 0;	
@@ -583,8 +818,22 @@ void TimeGridWindCurv_c::Dispose ()
 {
 	if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
 	if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
+	//if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
+	//if(fCenterPtsH) {DisposeHandle((Handle)fCenterPtsH); fCenterPtsH=0;}
 	
 	TimeGridWindRect_c::Dispose ();
+}
+
+LongPointHdl TimeGridWindCurv_c::GetPointsHdl()
+{
+	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
+	//return ((TTriGridVel*)fGrid) -> GetPointsHdl();
+}
+
+TopologyHdl TimeGridWindCurv_c::GetTopologyHdl()
+{
+	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetTopologyHdl();
+	//return ((TTriGridVel*)fGrid) -> GetPointsHdl();
 }
 
 long TimeGridWindCurv_c::GetVelocityIndex(WorldPoint wp)
@@ -956,14 +1205,14 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
 	if (status != NC_NOERR) 
 	{	
-		goto OLD;
+		//goto OLD;
 		// eventually try to support old format with new algorithm
 		// issues with mask
-		/*status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		status = nc_inq_dimid(ncid, "y", &latIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto OLD;
-		}*/
+		}
 	}
 	bVelocitiesOnNodes = true;
 	status = nc_inq_varid(ncid, "latc", &latid);
@@ -980,12 +1229,12 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 	status = nc_inq_dimid(ncid, "xc", &lonIndexid);	
 	if (status != NC_NOERR) 
 	{
-		err = -1; goto done;
-		/*status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		//err = -1; goto done;
+		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto done;
-		}*/
+		}
 	}
 	status = nc_inq_varid(ncid, "lonc", &lonid);	
 	if (status != NC_NOERR) 
@@ -2526,7 +2775,217 @@ OSErr TimeGridWindCurv_c::GetLatLonFromIndex(long iIndex, long jIndex, WorldPoin
 }
 
 
-TimeGridWindIce_c::TimeGridWindIce_c () : TimeGridWindCurv_c(), TimeGridVel_c()
+OSErr TimeGridWindCurv_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity)
+{	// use for curvilinear
+	double timeAlpha;
+	Seconds startTime,endTime;
+	OSErr err = 0;
+	char errmsg[256];
+	
+	long numVertices,i,numTri,index=-1,vel_index=0;
+	InterpolationVal interpolationVal;
+	LongPointHdl ptsHdl = 0;
+	TopologyHdl topH ;
+	long timeDataInterval;
+	Boolean loaded;
+	//TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	TTriGridVel* triGrid = (dynamic_cast<TTriGridVel*>(fGrid));
+	VelocityFRec velocity;
+	
+	err = this -> SetInterval(errmsg, time);
+	if(err) return err;
+	
+	loaded = this -> CheckInterval(timeDataInterval, time);	 
+	
+	if(!loaded) return -1;
+	
+	//topH = triGrid -> GetTopologyHdl();
+	topH = fGrid -> GetTopologyHdl();
+	if(topH)
+		numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	else 
+		numTri = 0;
+		
+	/*ptsHdl = triGrid -> GetPointsHdl();
+	if(ptsHdl)
+		numVertices = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
+	else 
+		numVertices = 0;*/
+	
+	// Check for time varying current 
+	if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+
+		if (fEndData.timeIndex == UNASSIGNEDINDEX && (time > startTime || time < startTime) && fAllowExtrapolationInTime)
+		{
+			timeAlpha = 1;
+		}
+		else
+		{	
+			endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+			timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		}
+	}
+	// for now just get every other one since each pair of triangles corresponds to a cell
+	for (i = 0 ; i< numTri; i+=2)
+	//for (i = 0 ; i< numTri; i++)
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			//interpolationVal = triGrid -> GetInterpolationValues(refPoint.p);
+			interpolationVal = triGrid -> GetInterpolationValuesFromIndex(i);
+			if (interpolationVal.ptIndex1<0) {scaled_velocity[i].u = 0;	scaled_velocity[i].v = 0;}// should this be an error?
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			//index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+			index = triGrid->GetRectIndexFromTriIndex2(i,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+
+		if (index < 0) {scaled_velocity[i].u = 0;	scaled_velocity[i].v = 0;}// should this be an error?
+		
+		// Should check vs fFillValue
+		// Check for constant current 
+		if(((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha == 1) && index!=-1)
+		{
+				velocity.u = GetStartUVelocity(index);
+				velocity.v = GetStartVVelocity(index);
+		}
+		else if (index!=-1)// time varying current
+		{
+			velocity.u = timeAlpha*GetStartUVelocity(index) + (1-timeAlpha)*GetEndUVelocity(index);
+			velocity.v = timeAlpha*GetStartVVelocity(index) + (1-timeAlpha)*GetEndVVelocity(index);
+		}
+		if (velocity.u == fFillValue) velocity.u = 0.;
+		if (velocity.v == fFillValue) velocity.v = 0.;
+		/*if ((velocity.u != 0 || velocity.v != 0) && (velocity.u != fFillValue && velocity.v != fFillValue)) // should already have handled fill value issue
+		{
+			// code goes here, fill up arrays with data
+			float inchesX = (velocity.u * refScale * fVar.fileScaleFactor) / arrowScale;
+			float inchesY = (velocity.v * refScale * fVar.fileScaleFactor) / arrowScale;
+		}*/
+		//u[i] = velocity.u * fVar.fileScaleFactor;
+		//v[i] = velocity.v * fVar.fileScaleFactor;
+		// will want to do the extra scaling in the client eventually
+		scaled_velocity[vel_index].u = velocity.u * fVar.fileScaleFactor / 100.;
+		scaled_velocity[vel_index].v = velocity.v * fVar.fileScaleFactor / 100.;
+		vel_index++;
+	}
+	return err;
+}
+
+WORLDPOINTH TimeGridWindCurv_c::GetCellCenters()
+{
+	OSErr err = 0;
+	LongPointHdl ptsH = 0;
+	WORLDPOINTH wpH = 0;
+	TopologyHdl topH ;
+	LongPoint wp1,wp2,wp3,wp4;
+	WorldPoint wp;
+	int32_t numPts = 0, numTri = 0, numCells;
+	int32_t i, index1, index2; 
+	Topology tri1, tri2;
+	
+	if (fCenterPtsH) return fCenterPtsH;
+	
+	topH = GetTopologyHdl();
+	ptsH = GetPointsHdl();
+	numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
+	numPts = _GetHandleSize((Handle)ptsH)/sizeof(LongPoint);
+	numCells = numTri / 2;
+	fCenterPtsH = (WORLDPOINTH)_NewHandle(numCells * sizeof(WorldPoint));
+	if (!fCenterPtsH) {
+		err = -1;
+		TechError("TriGridWind_c::GetCenterPointsHdl()", "_NewHandle()", 0);
+		goto done;
+	}
+	
+	for (i=0; i<numCells; i++)
+	{
+		index1 = i*2;
+		index2 = i*2+1;
+		tri1 = INDEXH(topH,index1);
+		tri2 = INDEXH(topH,index2);
+
+		wp1 = (*ptsH)[(*topH)[index1].vertex1];
+		wp2 = (*ptsH)[(*topH)[index1].vertex2];
+		wp3 = (*ptsH)[(*topH)[index1].vertex3];
+		wp4 = (*ptsH)[(*topH)[index2].vertex2];
+
+#ifndef pyGNOME
+		wp.pLong = (wp1.h+wp2.h+wp3.h + wp4.h)/4;
+		wp.pLat = (wp1.v+wp2.v+wp3.v + wp4.v)/4;
+#else
+		wp.pLong = (double)(wp1.h+wp2.h+wp3.h + wp4.h)/4.e6;
+		wp.pLat = (double)(wp1.v+wp2.v+wp3.v + wp4.v)/4.e6;
+#endif
+		INDEXH(fCenterPtsH,i) = wp;
+
+	}
+		
+done:
+	return fCenterPtsH;
+}
+
+GridCellInfoHdl TimeGridWindCurv_c::GetCellData()
+{	// use for curvilinear
+	OSErr err = 0;
+
+	long i,numTri,numCells,index1,index2;
+	LongPointHdl ptsHdl = 0;
+	TopologyHdl topH = 0;
+	Topology tri1, tri2;
+
+	if (fGridCellInfoH) return fGridCellInfoH;
+	
+	topH = fGrid -> GetTopologyHdl();
+	if(topH)
+		numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	else 
+		numTri = 0;
+	
+	numCells = numTri / 2;
+	GridCellInfoHdl fGridCellInfoH = (GridCellInfoHdl)_NewHandleClear(numCells * sizeof(**fGridCellInfoH));
+	if (!fGridCellInfoH) 
+	{
+		err = memFullErr; 
+		goto done;
+	}
+	
+	for (i=0; i<numCells; i++)
+	{
+		index1 = i*2;
+		index2 = i*2+1;
+		tri1 = INDEXH(topH,index1);
+		tri2 = INDEXH(topH,index2);
+		INDEXH(fGridCellInfoH,i).cellNum = i;
+		INDEXH(fGridCellInfoH,i).topLeft = tri1.vertex2;
+		INDEXH(fGridCellInfoH,i).topRight = tri1.vertex1;
+		//INDEXH(fGridCellInfoH,i).bottomLeft = tri1.vertex3;
+		//INDEXH(fGridCellInfoH,i).bottomRight = tri2.vertex2;
+		// for now switch these so we go around the cell
+		INDEXH(fGridCellInfoH,i).bottomLeft = tri2.vertex2;
+		INDEXH(fGridCellInfoH,i).bottomRight = tri1.vertex3;
+	}
+	
+done:
+	if (err)
+	{
+		if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
+	}
+	return fGridCellInfoH;
+}
+
+//TimeGridWindIce_c::TimeGridWindIce_c () : TimeGridWindCurv_c(), TimeGridVel_c()
+TimeGridWindIce_c::TimeGridWindIce_c () : TimeGridWindCurv_c()
 {
 	memset(&fStartDataIce,0,sizeof(fStartDataIce));
 	fStartDataIce.timeIndex = UNASSIGNEDINDEX; 

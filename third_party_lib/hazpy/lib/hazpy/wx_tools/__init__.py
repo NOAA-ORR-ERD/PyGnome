@@ -1,4 +1,0 @@
-"""
-assorted wxPython utilities
-"""
-pass

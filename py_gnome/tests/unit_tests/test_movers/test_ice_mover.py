@@ -2,11 +2,21 @@
 Test all operations for ice mover work
 '''
 
+# FIXME: this has been disabled becasuse we are getting seeming random segmentation faults on OS-X
+# And it's not clear this mover is getting used anyway.
+# But these should b re-enabled if we do need it.
+
+import sys
+import pytest
+pytestmark = pytest.mark.skipif(sys.platform=="darwin",
+                                reason="Disabled due to semi-random seg faults on OS-X"
+                                )
+
+
 import datetime
 import os
 
 import numpy as np
-import pytest
 
 from gnome.movers import IceMover, GridCurrentMover
 from gnome.utilities import time_utils

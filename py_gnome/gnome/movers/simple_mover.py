@@ -11,8 +11,8 @@ at all time.
 """
 import copy
 
-import numpy
-np = numpy
+import numpy as np
+
 from numpy import random
 
 from colander import (SchemaNode, Float)
@@ -55,15 +55,13 @@ class SimpleMover(Mover, serializable.Serializable):
 
     _state = copy.deepcopy(Mover._state)
     _state.add(update=['uncertainty_scale', 'velocity'],
-              save=['uncertainty_scale', 'velocity'])
+               save=['uncertainty_scale', 'velocity'])
     _schema = SimpleMoverSchema
 
-    def __init__(
-        self,
-        velocity,
-        uncertainty_scale=0.5,
-        **kwargs
-        ):
+    def __init__(self,
+                 velocity,
+                 uncertainty_scale=0.5,
+                 **kwargs):
         """
         simple_mover (velocity)
 
@@ -76,21 +74,16 @@ class SimpleMover(Mover, serializable.Serializable):
         """
 
         # use this, to be compatible with whatever we are using for location
-        self.velocity = np.asarray(velocity,
-                                   dtype=mover_type).reshape((3,
-                ))
+        self.velocity = np.asarray(velocity, dtype=mover_type).reshape((3,))
+
         self.uncertainty_scale = uncertainty_scale
         super(SimpleMover, self).__init__(**kwargs)
 
     def __repr__(self):
         return 'SimpleMover(<%s>)' % self.id
 
-    def get_move(
-        self,
-        spill,
-        time_step,
-        model_time,
-        ):
+    def get_move(self, spill,
+                 time_step, model_time):
         """
         moves the particles defined in the spill object
 
@@ -132,12 +125,12 @@ class SimpleMover(Mover, serializable.Serializable):
                 num = sum(in_water_mask)
                 scale = self.uncertainty_scale * self.velocity \
                     * time_step
-                delta[in_water_mask, 0] += random.uniform(-scale[0],
-                        scale[0], num)
-                delta[in_water_mask, 1] += random.uniform(-scale[1],
-                        scale[1], num)
-                delta[in_water_mask, 2] += random.uniform(-scale[2],
-                        scale[2], num)
+                delta[in_water_mask, 0] += random.uniform(-scale[0], scale[0],
+                                                          num)
+                delta[in_water_mask, 1] += random.uniform(-scale[1], scale[1],
+                                                          num)
+                delta[in_water_mask, 2] += random.uniform(-scale[2], scale[2],
+                                                          num)
 
             # scale for projection
 

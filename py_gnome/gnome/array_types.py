@@ -251,6 +251,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'bulk_init_volume': ((), np.float64, 'bulk_init_volume', 0,
                                         ArrayTypeDivideOnSplit),
                    'density': ((), np.float64, 'density', 0),
+                   'oil_density': ((), np.float64, 'oil_density', 0),
                    'evap_decay_constant': (None, np.float64,
                                            'evap_decay_constant', None),
 
@@ -268,6 +269,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'at_max_area': ((), np.uint8, 'at_max_area', False),
 
                    'viscosity': ((), np.float64, 'viscosity', 0),
+                   'oil_viscosity': ((), np.float64, 'oil_viscosity', 0),
                    # fractional water content in emulsion
                    'frac_water': ((), np.float64, 'frac_water', 0),
                    'interfacial_area': ((), np.float64, 'interfacial_area', 0),
@@ -287,8 +289,8 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'mass': ((), np.float64, 'mass', 0, ArrayTypeDivideOnSplit),
                    'mass_components': (None, np.float64, 'mass_components',
                                        None, ArrayTypeDivideOnSplit),
-                   # frac of mass lost due to evaporation + dissolution.
-                   # Used to update viscosity
+                   # The initial mass of the element
+                   # used to compute frac of mass lost
                    'init_mass': ((), np.float64, 'init_mass', 0,
                                  ArrayTypeDivideOnSplit),
                    'partition_coeff': ((), np.float64, 'partition_coeff', 0),
@@ -329,3 +331,15 @@ def reset_to_defaults(names=_default_values.keys()):
         except AttributeError:
             # name is not part of the defaults - ignore it
             pass
+
+# The array types that will always be used in the model.
+default_array_types = {'positions': positions,
+                       'next_positions': next_positions,
+                       'last_water_positions': last_water_positions,
+                       'status_codes': status_codes,
+                       'spill_num': spill_num,
+                       'id': id,
+                       'mass': mass,
+                       # 'init_mass': init_mass,
+                       'age': age}
+

@@ -1,6 +1,7 @@
 '''
 Test Langmuir() - very simple object with only one method
 '''
+
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -236,7 +237,7 @@ class TestLangmuir(ObjForTests):
 
         # create WeatheringData object, initialize instantaneously released
         # elements
-        model_time = self.sc.spills[0].get('release_time')
+        model_time = self.sc.spills[0].release_time
         time_step = 900.
         self.release_elements(time_step, model_time)
         self.step(l, time_step, model_time)

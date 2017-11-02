@@ -704,7 +704,9 @@ class Renderer(Outputter, MapCanvas):
         if zipfile.is_zipfile(saveloc):
             saveloc = os.path.split(saveloc)[0]
 
-        os.mkdir(os.path.join(saveloc, json_data['output_dir']))
+        path = os.path.join(saveloc, json_data['output_dir'])
+        if not os.path.exists(path):
+            os.mkdir(os.path.join(saveloc, json_data['output_dir']))
         json_data['output_dir'] = os.path.join(saveloc,
                                                json_data['output_dir'])
 
@@ -721,7 +723,7 @@ class GridVisLayer:
                  width=1
                  ):
         self.grid = grid
-        self.projection=projection
+        self.projection = projection
         self.lines = self.grid.get_lines()
         self.on = on
         self.color = color
@@ -740,8 +742,8 @@ class GridVisLayer:
                               line_color=self.color,
                               line_width=self.width)
         if len(lines[0]) > 2:
-            #curvilinear grid; ugrids never have line segments greater than 2 points
-            for l in lines.transpose((1,0,2)).copy():
+            # curvilinear grid; ugrids never have line segments greater than 2 points
+            for l in lines.transpose((1, 0, 2)).copy():
                 img.draw_polyline(l,
                                   line_color=self.color,
                                   line_width=self.width)
@@ -761,33 +763,33 @@ class GridPropVisLayer:
                  scale=1000
                  ):
         self.prop = prop
-        self.projection=projection
-        self.on=on
-        self.color=color
-        self.mask_color=mask_color
-        self.size=size
-        self.width=width
-        self.scale=scale
+        self.projection = projection
+        self.on = on
+        self.color = color
+        self.mask_color = mask_color
+        self.size = size
+        self.width = width
+        self.scale = scale
 
     def draw_to_image(self, img, time):
         if not self.on:
             return
         t0 = self.prop.time.index_of(time, extrapolate=True) - 1
         data_u = self.prop.variables[0].data[t0]
-        data_u2 = self.prop.variables[0].data[t0+1] if len(self.prop.time)> 1 else data_u
+        data_u2 = self.prop.variables[0].data[t0 + 1] if len(self.prop.time) > 1 else data_u
         data_v = self.prop.variables[1].data[t0]
-        data_v2 = self.prop.variables[1].data[t0+1] if len(self.prop.time)> 1 else data_v
+        data_v2 = self.prop.variables[1].data[t0 + 1] if len(self.prop.time) > 1 else data_v
         t_alphas = self.prop.time.interp_alpha(time, extrapolate=True)
         data_u = data_u + t_alphas * (data_u2 - data_u)
         data_v = data_v + t_alphas * (data_v2 - data_v)
         data_u = data_u.reshape(-1)
         data_v = data_v.reshape(-1)
-        start=end=None
+        start = end = None
 #         if self.prop.grid.infer_grid(data_u) == 'centers':
 #             start = self.prop.grid.centers
 #         else:
         try:
-            start = self.prop.grid.nodes.copy().reshape(-1,2)
+            start = self.prop.grid.nodes.copy().reshape(-1, 2)
 
         except AttributeError:
             start = np.column_stack((self.prop.grid.node_lon,
@@ -795,19 +797,19 @@ class GridPropVisLayer:
 
 #         deltas = FlatEarthProjection.meters_to_lonlat(data*self.scale, lines[:0])
         if hasattr(data_u, 'mask'):
-            start[data_u.mask] = [0.,0.]
+            start[data_u.mask] = [0., 0.]
         data_u *= self.scale * 8.9992801e-06
         data_v *= self.scale * 8.9992801e-06
-        data_u /= np.cos(np.deg2rad(start[:,1]))
+        data_u /= np.cos(np.deg2rad(start[:, 1]))
         end = start.copy()
-        end[:,0] += data_u
-        end[:,1] += data_v
+        end[:, 0] += data_u
+        end[:, 1] += data_v
         if hasattr(data_u, 'mask'):
-            end[data_u.mask] = [0.,0.]
+            end[data_u.mask] = [0., 0.]
         bounds = self.projection.image_box
-        pt1 = ((bounds[0][0] <= start[:, 0]) * (start[:, 0] <= bounds[1][0]) *
+        pt1 = ((bounds[0][0] <= start[:, 0]) * (start[:, 0] <= bounds[1][0]) * 
                (bounds[0][1] <= start[:, 1]) * (start[:, 1] <= bounds[1][1]))
-        pt2 = ((bounds[0][0] <= end[:, 0]) * (end[:, 0] <= bounds[1][0]) *
+        pt2 = ((bounds[0][0] <= end[:, 0]) * (end[:, 0] <= bounds[1][0]) * 
                (bounds[0][1] <= end[:, 1]) * (end[:, 1] <= bounds[1][1]))
         start = start[pt1 * pt2]
         end = end[pt1 * pt2]
@@ -815,10 +817,10 @@ class GridPropVisLayer:
         end = self.projection.to_pixel_multipoint(end, asint=True)
 
         img.draw_dots(start, diameter=self.size, color=self.color)
-        line = np.array([[0.,0.],[0.,0.]])
-        for i in xrange(0,len(start)):
+        line = np.array([[0., 0.], [0., 0.]])
+        for i in xrange(0, len(start)):
             line[0] = start[i]
             line[1] = end[i]
             img.draw_polyline(line,
-                              line_color = self.color,
-                              line_width = self.width)
+                              line_color=self.color,
+                              line_width=self.width)

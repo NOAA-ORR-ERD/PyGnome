@@ -1,10 +1,11 @@
-# PyGnome
 
+
+![Gnome Logo](graphics/new_gnome_icon/GNOME_logo_450px-wide.png)
+
+# PyGnome
 
 ## [Project Documentation](http://noaa-orr-erd.github.io/PyGnome/) ##
 ## [FAQ -- Troubleshoot](https://github.com/NOAA-ORR-ERD/GNOME2/wiki/FAQ---Troubleshoot) ##
-
-<img src="http://gnome.orr.noaa.gov/py_gnome_testdata/GnomeIcon128.png" alt="Gnome Logo" title="Gnome" align="right">
 
 **GNOME** (General NOAA Operational Modeling Environment) is a modeling tool
 developed by the National Oceanic and Atmospheric Administration (**NOAA**),

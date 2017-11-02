@@ -1,7 +1,7 @@
 
 class Stokes(object):
-    @classmethod
-    def water_phase_xfer_velocity(cls, oil_water_rho_delta, diameter):
+    @staticmethod
+    def water_phase_xfer_velocity(oil_water_rho_delta, diameter):
         '''
             water phase transfer velocity k_w (m/s)
 

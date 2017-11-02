@@ -474,25 +474,29 @@ setup(name='pyGnome',
       packages=find_packages(),
       package_dir={'gnome': 'gnome'},
       package_data={'gnome': ['data/yeardata/*',
-                              'outputters/sample.b64']},
-      requires=['numpy'],   # want other packages here?
+                              'outputters/sample.b64',
+                              'weatherers/platforms.json'
+                              ]},
+      # you are not going to be able to "pip install" this anyway -- no need for requirements
+      requires=[],   # want other packages here?
       cmdclass={'build_ext': build_ext,
                 'cleanall': cleanall},
 
       # scripts,
 
       # metadata for upload to PyPI
-      author="Gnome team at NOAA ORR",
+      author="Gnome team at NOAA ORR ERD",
       author_email="orr.gnome@noaa.gov",
       description=("GNOME (General NOAA Operational Modeling Environment) is "
                    "the modeling tool the Office of Response and "
                    "Restoration's (OR&R) Emergency Response Division uses to "
                    "predict the possible route, or trajectory, a pollutant "
                    "might follow in or on a body of water, such as in an "
-                   "oil spill."),
-      # license=
-      keywords="gnome oilspill modeling",
-      url="https://github.com/NOAA-ORR-ERD/GNOME2"
+                   "oil spill.\n\n"
+                   "It can also be used as a customizable general particle tracking code"),
+      license="Public Domain",
+      keywords="oilspill modeling particle_tracking",
+      url="https://github.com/NOAA-ORR-ERD/PyGnome"
       )
 
 # Change current working directory back to what user originally had

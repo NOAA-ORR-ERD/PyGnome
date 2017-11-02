@@ -931,3 +931,35 @@ OSErr ComponentMover_c::TextRead(char *cats_path1, char *cats_path2)
 }
 #endif
 
+VelocityFH ComponentMover_c::GetVelocityHdl(void)
+{
+	// need to turn this into a combo of pattern 1 and pattern 2
+	//return dynamic_cast<TriGridVel_c *>(fGrid)->GetVelocityHdl();
+	return pattern1->GetVelocityHdl();
+}
+
+LongPointHdl ComponentMover_c::GetPointsHdl(void)
+{
+	//return dynamic_cast<TriGridVel_c *>(fGrid)->GetPointsHdl();
+	return pattern1->GetPointsHdl();
+}
+
+WORLDPOINTH ComponentMover_c::GetWorldPointsHdl(void)
+{
+	return pattern1->GetWorldPointsHdl();
+	//return dynamic_cast<TriGridVel_c *>(fGrid)->GetWorldPointsHdl();
+}
+
+TopologyHdl ComponentMover_c::GetTopologyHdl(void)
+{
+	//return dynamic_cast<TriGridVel_c *>(fGrid)->GetTopologyHdl();
+	return pattern1->GetTopologyHdl();
+}
+
+WORLDPOINTH	ComponentMover_c::GetTriangleCenters()
+{
+	return pattern1->GetTriangleCenters();
+	//return dynamic_cast<TriGridVel_c *>(fGrid)->GetCenterPointsHdl();
+}
+
+

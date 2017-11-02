@@ -55,6 +55,7 @@ class WeatheringData(Weatherer, Serializable):
         self.water = water
         self.array_types = {'fate_status', 'positions', 'status_codes',
                             'density', 'viscosity', 'mass_components', 'mass',
+                            'oil_density', 'oil_viscosity',
                             'init_mass', 'frac_water', 'frac_lost', 'age'}
 
         # following used to update viscosity
@@ -152,10 +153,11 @@ class WeatheringData(Weatherer, Serializable):
                                  .format(self._pid))
 
             data['density'] = new_rho
+            data['oil_density'] = oil_rho
 
             # following implementation results in an extra array called
             # fw_d_fref but is easy to read
-            v0 = substance.get_viscosity(self.water.get('temperature', 'K'))
+            v0 = substance.kvis_at_temp(self.water.get('temperature', 'K'))
 
             if v0 is not None:
                 kv1 = self._get_kv1_weathering_visc_update(v0)
@@ -165,6 +167,8 @@ class WeatheringData(Weatherer, Serializable):
                                      np.exp(kv1 * data['frac_lost']) *
                                      (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49
                                      )
+                data['oil_viscosity'] = (v0 *
+                                     np.exp(kv1 * data['frac_lost']) )
 
         sc.update_from_fatedataview(fate='all')
 
@@ -250,7 +254,7 @@ class WeatheringData(Weatherer, Serializable):
         :param substance: OilProps object defining the substance spilled
         '''
         water_temp = self.water.get('temperature', 'K')
-        density = substance.get_density(water_temp)
+        density = substance.density_at_temp(water_temp)
 
         if density > self.water.get('density'):
             msg = ("{0} will sink at given water temperature: {1} {2}. "
@@ -262,8 +266,10 @@ class WeatheringData(Weatherer, Serializable):
             self.logger.error(msg)
 
             data['density'][mask] = self.water.get('density')
+            data['oil_density'][mask] = self.water.get('density')
         else:
             data['density'][mask] = density
+            data['oil_density'][mask] = density
 
         # initialize mass_components -
         # sub-select mass_components array by substance.num_components.
@@ -280,9 +286,11 @@ class WeatheringData(Weatherer, Serializable):
 
         data['init_mass'][mask] = data['mass'][mask]
 
-        if substance.get_viscosity(water_temp) is not None:
+        substance_kvis = substance.kvis_at_temp(water_temp)
+        if substance_kvis is not None:
             'make sure we do not add NaN values'
-            data['viscosity'][mask] = substance.get_viscosity(water_temp)
+            data['viscosity'][mask] = substance_kvis
+            data['oil_viscosity'][mask] = substance_kvis
 
         # initialize the fate_status array based on positions and status_codes
         self._init_fate_status(mask, data)
@@ -346,7 +354,7 @@ class WeatheringData(Weatherer, Serializable):
         '''
         # update density/viscosity/relative_buoyancy/area for previously
         # released elements
-        rho0 = substance.get_density(self.water.get('temperature', 'K'))
+        rho0 = substance.density_at_temp(self.water.get('temperature', 'K'))
 
         # dimensionless constant
         k_rho = (rho0 /

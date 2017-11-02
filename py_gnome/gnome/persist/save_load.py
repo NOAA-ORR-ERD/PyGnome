@@ -8,6 +8,7 @@ import zipfile
 import logging
 
 import gnome
+import colander
 
 # as long as loggers are configured before module is loaded, module scope
 # logger will work. If loggers are configured after this module is loaded and
@@ -333,24 +334,43 @@ class Savable(object):
         for field in fields:
             if field.name not in json_:
                 continue
-
-            # data filename
-            d_fname = os.path.split(json_[field.name])[1]
-
-            if zipfile.is_zipfile(saveloc):
-                # add datafile to zip archive
-                with zipfile.ZipFile(saveloc, 'a',
-                                     compression=zipfile.ZIP_DEFLATED,
-                                     allowZip64=self._allowzip64) as z:
-                    if d_fname not in z.namelist():
-                        z.write(json_[field.name], d_fname)
+            
+            raw_paths = json_[field.name]
+            if isinstance(raw_paths, list):
+                for i, p in enumerate(raw_paths):
+                    d_fname = os.path.split(p)[1]
+                    if zipfile.is_zipfile(saveloc):
+                        # add datafile to zip archive
+                        with zipfile.ZipFile(saveloc, 'a',
+                                             compression=zipfile.ZIP_DEFLATED,
+                                             allowZip64=self._allowzip64) as z:
+                            if d_fname not in z.namelist():
+                                z.write(p, d_fname)
+                    else:
+                        # move datafile to saveloc
+                        if p != os.path.join(saveloc, d_fname):
+                            shutil.copy(p, saveloc)
+    
+                    # always want to update the reference so it is relative to saveloc
+                    json_[field.name][i] = d_fname
             else:
-                # move datafile to saveloc
-                if json_[field.name] != os.path.join(saveloc, d_fname):
-                    shutil.copy(json_[field.name], saveloc)
-
-            # always want to update the reference so it is relative to saveloc
-            json_[field.name] = d_fname
+                # data filename
+                d_fname = os.path.split(json_[field.name])[1]
+    
+                if zipfile.is_zipfile(saveloc):
+                    # add datafile to zip archive
+                    with zipfile.ZipFile(saveloc, 'a',
+                                         compression=zipfile.ZIP_DEFLATED,
+                                         allowZip64=self._allowzip64) as z:
+                        if d_fname not in z.namelist():
+                            z.write(json_[field.name], d_fname)
+                else:
+                    # move datafile to saveloc
+                    if json_[field.name] != os.path.join(saveloc, d_fname):
+                        shutil.copy(json_[field.name], saveloc)
+    
+                # always want to update the reference so it is relative to saveloc
+                json_[field.name] = d_fname
 
         return json_
 
@@ -398,8 +418,13 @@ class Savable(object):
                 # For zip files coming from the web, is_savezip_valid() tests
                 # filenames in archive do not contain paths with '..'
                 # In here, we just extract datafile to saveloc/.
-                json_data[field.name] = os.path.join(saveloc,
-                                                     json_data[field.name])
+                raw_n = json_data[field.name]
+                if isinstance(raw_n, list):
+                    for i, n in enumerate(raw_n):
+                        json_data[field.name][i] = os.path.join(saveloc, n)
+                else:
+                    json_data[field.name] = os.path.join(saveloc,
+                                                         json_data[field.name])
 
     @classmethod
     def loads(cls, json_data, saveloc=None, references=None):
@@ -432,7 +457,11 @@ class Savable(object):
         cls._update_datafile_path(json_data, saveloc)
 
         # deserialize after removing references
-        _to_dict = cls.deserialize(json_data)
+        try:
+            _to_dict = cls.deserialize(json_data)
+        except colander.Invalid as e:
+            print('Class {0} failed to deserialize.'.format(cls.__name__))
+            raise e
 
         if ref_dict:
             _to_dict.update(ref_dict)

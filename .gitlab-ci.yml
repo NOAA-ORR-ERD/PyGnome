@@ -1,14 +1,25 @@
-before_script: 
-  - source ~/.virtualenv/gnome/bin/activate
-  - cd ./py_gnome
-  - pip install -r requirements.txt
-  - python ./setup.py cleandev
-  - python ./setup.py develop
+before_script:
+  - yum update -y
+  - yum install gcc gcc-c++ -y
+  - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
+  - yum install libXext libSM libXrender -y  # needed by matplotlib on CentOS
 
-master: 
+  # make sure the conda channels are set up right
+  # the last channel you add will be first on the list
+  - conda config --add channels defaults
+  - conda config --add channels NOAA-ORR-ERD
+  - conda config --add channels conda-forge
+
+  # install the requirements
+  - conda install --file conda_requirements.txt
+
+  - cd ./py_gnome
+  - python ./setup.py install
+
+master:
   script:
     - py.test -runslow
-  only: 
+  only:
     - master
 
 develop:

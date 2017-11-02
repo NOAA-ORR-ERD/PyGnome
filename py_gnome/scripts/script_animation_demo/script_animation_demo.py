@@ -54,7 +54,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     renderer.set_timestamp_attrib(format='%a %c')
     renderer.graticule.set_DMS(True)
 #     renderer.viewport = ((-124.25, 47.5), (-122.0, 48.70))
-    
+
 
     print 'adding outputters'
     model.outputters += renderer
@@ -69,23 +69,23 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                                      0.0,
                                                      0.0),
                                      release_time=start_time)
-    
+
     model.spills += spill1
 
     print 'adding a RandomMover:'
     model.movers += RandomMover(diffusion_coef=50000)
 
     print 'adding a wind mover:'
-   
+
     model.movers += constant_wind_mover(13, 270, units='m/s')
 
     print 'adding a current mover:'
 #     curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
-#   
+#
 #     # uncertain_time_delay in hours
 #     c_mover = GridCurrentMover(curr_file)
 #     c_mover.uncertain_cross = 0  # default is .25
-#   
+#
 #     model.movers += c_mover
 
     return model
@@ -107,4 +107,4 @@ if __name__ == "__main__":
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     print datetime.now() - startTime
-    pd.print_stats(5)
+#    pd.print_stats(5)
