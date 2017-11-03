@@ -273,12 +273,16 @@ class IceImageOutput(Outputter):
         # the wrapper is yet to be written)
         # So we will just write to a tempfile and then read it back.
         with NamedTemporaryFile() as fp:
+            fp.close()
             canvas.save_foreground(fp.name)
+            fp = open(fp.name, 'w+b')
             fp.seek(0)
             thickness_image = fp.read().encode('base64')
 
         with NamedTemporaryFile() as fp:
+            fp.close()
             canvas.save_background(fp.name)
+            fp = open(fp.name, 'w+b')
             fp.seek(0)
             coverage_image = fp.read().encode('base64')
 

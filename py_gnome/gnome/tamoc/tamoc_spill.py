@@ -291,7 +291,14 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             currents = ds['currents']
             u_data = currents.variables[0].data
             v_data = currents.variables[1].data
-            source_idx = currents.grid.locate_faces(np.array(self.start_position)[0:2], 'node')
+            source_idx=None
+            try:
+                source_idx = currents.grid.locate_faces(np.array(self.start_position)[0:2], 'node')
+            except TypeError:
+                source_idx = currents.grid.locate_faces(np.array(self.start_position)[0:2])
+            if currents.grid.node_lon.shape[0] == u_data.shape[-1]:
+                # lon/lat are inverted in data so idx must be reversed
+                source_idx = source_idx[::-1]
             print source_idx
             time_idx = currents.time.index_of(current_time, False)
             print time_idx
@@ -394,6 +401,13 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Read in the user-specified properties for the chemical data
         data, units = chem.load_data('./Input/API_ChemData.csv')
         oil = dbm.FluidMixture(composition, user_data=data)
+        #oil.delta = self.load_delta('./Input/API_Delta.csv',oil.nc)
+
+#        if np.sum(oil.delta==0.):
+#            print 'Binary interaction parameters are zero, estimating them.'
+#            # Estimate the values of the binary interaction parameters
+#            oil.delta = self.estimate_binary_interaction_parameters(oil)
+
 
         # Get the release rates of gas and liquid phase
         md_gas, md_oil = self.release_flux(oil, mass_frac, profile, T0, z0, Q)
@@ -457,6 +471,12 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         print 'total mass flux tracked at plume termination',m_tot_diss+m_tot_nondiss
         print 'total mass flux released at the orifice',np.sum(md_gas)+ np.sum(md_oil)
         print 'perccentsge_error', (np.sum(md_gas)+ np.sum(md_oil)-m_tot_diss-m_tot_nondiss)/(np.sum(md_gas)+ np.sum(md_oil))*100.
+
+        # Now, we will generate the GNOME properties for a weatherable particle
+        # For now, computed at the release location:
+        # The pressure at release:
+        P0 = profile.get_values(z0,['pressure'])
+        (K_ow, json_oil) = self.translate_properties_gnome_to_tamoc(md_oil, composition, oil, P0, S0, T=288.15)
 
         return gnome_particles, gnome_diss_components
     def __repr__(self):
@@ -577,7 +597,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         if current_time < self.release_time or current_time > self.end_release_time:
             return 0
 
-        self.droplets = self.run_tamoc(current_time, time_step)
+        self.droplets= self.run_tamoc(current_time, time_step)
 
         duration = (self.end_release_time - self.release_time).total_seconds()
         if duration is 0:
@@ -1006,3 +1026,305 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
 
         return (flag_phase)
+
+    def estimate_binary_interaction_parameters(self, oil):
+        '''
+        Estimates values of the binary interaction parameters.
+
+        Parameters
+        ----------
+        oil : dbm.FluidMixture
+            a TAMOC oil object
+
+        Returns
+        -------
+        delta : ndarray, size (nc,nc)
+            a matrix containing the estimated binary interaction parameters
+
+        Notes
+        -----
+        Valid for hydrocarbon-hydrocarbon interaction.
+
+        Uses the Pedersen method for the binary interaction parameters:
+        Pedersen et al. "On the danger of "tuning" equation of state
+        parameters", 1985. Eqs. 2 and 3.
+        (Note: Riazi's ASTM book cite the method but rounds the coefficient to
+        one significant digit without explanation. Here the original value
+        from Pedersen et al. is used (0.00145).)
+
+        '''
+        # Initialize the matrix
+        delta = np.zeros((len(oil.M),len(oil.M)))
+        # Populate the matrix with the estimates:
+        for yy in range(len(oil.M)):
+            for tt in range(len(oil.M)):
+                if not (tt==yy):
+                    delta[yy,tt] = 0.00145*np.max( (oil.M[tt]/oil.M[yy],oil.M[yy]/oil.M[tt]) )
+        return delta
+
+    def load_delta(self,file_name, nc):
+        """
+        Loads the binary interaction parameters.
+
+        Parameters
+        ----------
+        file_name : string
+            file name
+        nc : int
+            number of components in the mixture
+
+        Returns
+        -------
+        delta : ndarray, size (nc,nc)
+           a matrix containing the loaded binary interaction parameters
+        """
+        delta = np.zeros([nc,nc])
+        k = 0
+        with open(file_name, 'r') as datfile:
+            for row in datfile:
+                row = row.strip().split(",")
+                for i in range(len(row)):
+                    delta[k, i] = float(row[i])
+                k += 1
+
+        return (delta)
+
+    def translate_properties_gnome_to_tamoc(self, md_oil, composition, oil, P, Sa, T=288.15):
+        '''
+        Translates properties from TAMOC components to GNOME components.
+
+        Generates a GNOME weatherable substance, and computes the oil-water
+        partition coefficients.
+
+        Parameters
+        ----------
+        md_oil : ndarray, size (nc)
+            masses of each component in a mixture (kg)
+        composition : list of strings, size (nc)
+            names of the components in TAMOC
+        oil: a dbm.FluidMixture
+            the oil of interest
+        T : float
+            mixture temperature (K)
+        P : float
+            mixture pressure (Pa)
+        Sa : float
+            water salinity of the ambient seawater (psu)
+
+        Returns
+        -------
+        K_ow : ndarray, (size (nc)
+            the oil-water partition coefficients according to TAMOC
+        json_oil : GNOME oil substance
+            the GNOME substance generated using the estimates of properties
+            from tamoc.
+
+        Notes
+        -----
+        When exiting a TAMOC simulation, each droplet size has its own
+        composition, hence its own properties if computed at local conditions.
+        It is likely the best to provide the function with the composition
+        at the emission source, same for T and P.
+
+        BEWARE: we compute key properties (e.g. densities) at
+        288.15 K because this is the GNOME default. Except if the user inputs
+        a lower T.
+
+        '''
+
+        print '- - - - - - - - - -'
+
+        # Let's get the partial densities in liquid for each component:
+        # (Initialize the array:)
+        densities = np.zeros(len(composition))
+        # We will compute component densities at 288.15 K_T, except if the
+        # user has input a lower T. A higher T is not allowed.
+        # (In deep waters, droplets should cool very fast, it is not a
+        # reasonable assumption to compute at a high T.)
+        T_rho = np.min([288.15, T])
+        # Check that we have no gas phase at this conditions:
+        m_, xi, K = oil.equilibrium(md_oil, T_rho, P)
+        if np.sum(m_,1)[0]>0.:
+            # The mixture would separate in a gas and a liquid phase at
+            # equilibrium. Let's use the composition of the liquid phase:
+            md_oil = m_[1]
+        # density of the bulk oil at release conditions:
+        rho_0 = oil.density(md_oil, T_rho, P)[1]
+        # Now, we will remove/add a little mass of a component, and get its
+        # partial density as the ratio of the change of mass divided by
+        # change of oil volume.
+        for ii in range(len(densities)): # (We do a loop over each component)
+            # We will either remove 1% or add 1% mass (and we choose the one
+            # that keeps the mixture as a liquid):
+            add_or_remove = np.array([.99,1.01])
+            for tt in range(len(add_or_remove)):
+                # Factor used to remove/add mass of just component i:
+                m_multiplication_factors = np.ones(len(densities))
+                # We remove or add 1% of the mass of component i:
+                m_multiplication_factors[ii] = add_or_remove[tt]
+                m_i = md_oil * m_multiplication_factors
+                # Make an equilibrium calculation to check that we did not generate a gas phase:
+                m_ii, xi, K = oil.equilibrium(m_i, T_rho, P)
+                print T_rho, P
+                # If we did not generate a gas phase, stop here. Else we will
+                # do the for loop a second time using the second value in
+                # 'add_or_remove'
+                if np.sum(m_ii,1)[0]==0.:
+
+                    break
+            # We compute the density of the new mixture:
+            rho_i = oil.density(m_i, T_rho, P)[1]
+
+            # we get the partial density of each component as:
+            # (DELTA(Mass) / DELTA(Volume)):
+            densities[ii] = (np.sum(md_oil) - np.sum(m_i)) / (np.sum(md_oil)/rho_0 - np.sum(m_i)/rho_i)
+
+        print 'TAMOC density: ',rho_0,'  and estimated from component densities: ',(np.sum(md_oil)/np.sum(md_oil/densities))
+        # Note: the (np.sum(md_oil)/np.sum(md_oil/densities)) makes sense
+        # physically: density = SUM(MASSES) / SUM(VOLUMES) (Assuming volume
+        # of mixing is zero, which is a very good assumption for petroleum
+        # liquids)
+        print 'However GNOME would somehow estimate the density as m_i * rho_i: ',np.sum(md_oil*densities/np.sum(md_oil)) # This is the GNOME-way, though less physically-grounded.
+        print 'densities: ',densities
+        # Normalize densities so that the GNOME-way to compute density gives
+        # the TAMOC density for the whole oil:
+        densities = densities * rho_0 / (np.sum(md_oil*densities/np.sum(md_oil)))
+        print 'GNOME value after normalizing densities: ',np.sum(md_oil*densities/np.sum(md_oil))
+
+        print composition
+        print 'densities: ',densities
+        print 'MW: ',oil.M
+        print 'Tb: ',oil.Tb
+        print 'delta: ',oil.delta
+
+        # Now oil properties:
+        oil_viscosity = oil.viscosity(md_oil, T_rho, P)[1]
+        oil_density = oil.density(md_oil, T_rho, P)[1]
+        oil_interface_tension = oil.interface_tension(md_oil, T_rho, Sa, P)[1]
+
+        # Compute the oil-water partition coefficients, K_ow:
+        C_oil = md_oil / (np.sum(md_oil) / oil.density(md_oil, T_rho, P)[1])
+        C_water = oil.solubility(md_oil, T, P, Sa)[1]
+        K_ow = C_oil / C_water
+        print 'K_ow :'
+        print K_ow
+        # Below, we will assume that any component having a K_ow that is not
+        # inf is a 'Aromatics' (it may not be a component corresponding to
+        # aromatics compounds. But it contains soluble compounds. Labeling it
+        # as 'Aromatics' should enable GNOME to deal with it.)
+
+        # Now, create a GNOME substance with these data:
+        json_object = dict()
+        # We need to create a list of dictionaries containing the molecular
+        # weights:
+        molecular_weights_dict_list = []
+        for i in range(len(oil.M)):
+            # This is the dictionary for the current component:
+            current_dict = dict()
+            # Populate the keys of the dictionary with corresponding values:
+            if not np.isinf(K_ow[i]):
+                current_dict['sara_type'] = 'Aromatics'
+            else:
+                 current_dict['sara_type'] = 'Saturatess'
+            current_dict['g_mol'] = oil.M[i] * 1000. # BEWARE: GNOME wants g/mol and TAMOC has kg/mol.
+            current_dict['ref_temp_k'] = oil.Tb[i]
+            # append each dictionary to the list of dictionarries:
+            molecular_weights_dict_list.append(current_dict)
+        json_object['molecular_weights'] = molecular_weights_dict_list
+        # Now do the same for the cuts:
+        cuts_dict_list = []
+        for i in range(len(oil.M)):
+            # This is the dictionary for the current component:
+            current_dict = dict()
+            # Populate the keys of the dictionary with corresponding values:
+            current_dict['vapor_temp_k'] = oil.Tb[i]
+            current_dict['fraction'] = md_oil[i]
+            # append each dictionary to the list of dictionarries:
+            cuts_dict_list.append(current_dict)
+        json_object['cuts'] = cuts_dict_list
+        json_object['oil_seawater_interfacial_tension_ref_temp_k'] = T_rho
+        json_object['oil_seawater_interfacial_tension_n_m'] = oil_interface_tension[0]
+        # Now do the same for the densities:
+        densities_dict_list = []
+        for i in range(len(oil.M)):
+            # This is the dictionary for the current component:
+            current_dict = dict()
+            # Populate the keys of the dictionary with corresponding values:
+            current_dict['density'] = densities[i]
+            if not np.isinf(K_ow[i]):
+                current_dict['sara_type'] = 'Aromatics'
+            else:
+                 current_dict['sara_type'] = 'Saturatess'
+            current_dict['ref_temp_k'] = oil.Tb[i]
+            # append each dictionary to the list of dictionarries:
+            densities_dict_list.append(current_dict)
+        json_object['sara_densities'] = densities_dict_list
+        # This one is for the density of the oil as a whole:
+        oil_density_dict = dict()
+        oil_density_dict['ref_temp_k'] = T_rho # a priori 288.15
+        oil_density_dict['kg_m_3'] = oil_density[0]
+        oil_density_dict['weathering'] = 0.
+        json_object['densities'] = [oil_density_dict]
+
+        # This one is for the viscosity of the oil as a whole:
+        oil_viscosity_dict = dict() # Note: 'dvis' in GNOME is the dynamic viscosity called 'viscosity' in TAMOC
+        oil_viscosity_dict['ref_temp_k'] = T_rho # a priori 288.15
+        oil_viscosity_dict['kg_ms'] = oil_viscosity[0]
+        oil_viscosity_dict['weathering'] = 0.
+        json_object['dvis'] = [oil_viscosity_dict]
+        json_object['name'] = 'test TAMOC oil'
+        # Now do the same for the sara dractions:
+        SARA_dict_list = []
+        for i in range(len(oil.M)):
+            # This is the dictionary for the current component:
+            current_dict = dict()
+            # Populate the keys of the dictionary with corresponding values:
+            if not np.isinf(K_ow[i]):
+                current_dict['sara_type'] = 'Aromatics'
+            else:
+                 current_dict['sara_type'] = 'Saturatess'
+            current_dict['ref_temp_k'] = oil.Tb[i]
+            current_dict['fraction'] = md_oil[i]
+            # append each dictionary to the list of dictionarries:
+            SARA_dict_list.append(current_dict)
+        json_object['sara_fractions'] = SARA_dict_list
+        from oil_library.models import Oil
+        #print json_object
+        json_oil = Oil.from_json(json_object)
+        print json_oil.densities
+        #print json_oil.dvis # Hum. Oil has no attribute 'dvis', but 'kvis' is empty. Is that a bug?
+        print 'interfacial tension: ', json_oil.oil_seawater_interfacial_tension_n_m, oil_interface_tension
+        print json_oil.molecular_weights
+        print json_oil.sara_fractions
+        print json_oil.cuts
+        print json_oil.densities
+        # # # TO ELUCIDATE: IS IT NORMAL THAT THE FIELDS OF json_oil ARE NOT
+        # # # THE SAME AS WHEN AN OIL IS IMPORTED FROM THE OIL DATABASE USING get_oil??
+
+        # # I CANNOT DO THIS BELOW, THIS IS ONLY FOR OILS IN THE DATABASE:
+        #from oil_library import get_oil, get_oil_props
+        #uuu = get_oil_props(json_oil.name)
+        #print 'oil density from our new created substance: ',np.sum(uuu.mass_fraction * uuu.component_density), ' or same: ',uuu.density_at_temp()
+        #print 'component densities: ',uuu.component_density
+        #print 'component mass fractions: ',uuu.mass_fraction
+        #print 'component molecular weights: ',uuu.molecular_weight
+        #print 'component boiling points: ',uuu.boiling_point
+        #print 'API: ',uuu.api
+        #print 'KINEMATIC viscosity: ',uuu.kvis_at_temp()
+
+
+
+#        oil = dbm.FluidMixture(['benzene','toluene','ethylbenzene']) # tested the K_ow with benzene and toluene and ethylbenzene
+#        md_oil = np.array([1.,1.,1.])
+#        C_oil = md_oil / (np.sum(md_oil) / oil.density(md_oil, T_rho, P)[1])
+#        C_water = oil.solubility(md_oil, T_rho, P, Sa)[1]
+#        K_ow = C_oil / C_water
+#        from gnome.utilities.weathering import BanerjeeHuibers
+#        K_ow2 = BanerjeeHuibers.partition_coeff(oil.M*1000., oil.density(md_oil, T_rho, P)[1])
+#        print 'K_ow :'
+#        print K_ow
+#        print K_ow2
+
+
+        return (K_ow, json_oil)
+

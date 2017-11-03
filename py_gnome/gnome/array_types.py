@@ -340,6 +340,6 @@ default_array_types = {'positions': positions,
                        'spill_num': spill_num,
                        'id': id,
                        'mass': mass,
-                       # 'init_mass': init_mass,
+                       'init_mass': init_mass,
                        'age': age}
 

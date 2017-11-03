@@ -21,7 +21,6 @@ from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
 from gnome.persist.extend_colander import LocalDateTime, DefaultTupleSchema, NumpyArray, TimeDelta
 from gnome.persist import validators, base_schema
-
 from gnome.weatherers.core import WeathererSchema
 from gnome import _valid_units
 from gnome.basic_types import oil_status, fate as bt_fate
@@ -1529,8 +1528,8 @@ class SkimSchema(ResponseSchema):
     skim_efficiency_type = SchemaNode(String())
     decant = SchemaNode(Float())
     decant_pump = SchemaNode(Float())
-    rig_time = SchemaNode(Float())
-    transit_time = SchemaNode(Float())
+    rig_time = SchemaNode(TimeDelta())
+    transit_time = SchemaNode(TimeDelta())
     offload_to = SchemaNode(String(), missing=drop)
     discharge_pump = SchemaNode(Float())
     recovery = SchemaNode(String())

@@ -911,7 +911,8 @@ def test_contains_object(sample_model_fcn):
     water, wind = Water(), constant_wind(1., 0)
     model.environment += [water, wind]
 
-    et = floating(substance=model.spills[0].substance.name)
+    #et = floating(substance=model.spills[0].substance.name)
+    et = model.spills[0].element_type
     sp = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
                                   element_type=et,
@@ -1011,7 +1012,8 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.cache = True
     model.outputters += gnome.outputters.WeatheringOutput()
 
-    et = floating(substance=model.spills[0].substance.name)
+    #et = floating(substance=model.spills[0].substance.name)
+    et = model.spills[0].element_type
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + delay,
                                   end_release_time=(rel_time + delay +
