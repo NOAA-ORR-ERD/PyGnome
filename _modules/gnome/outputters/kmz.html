@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.outputters.kmz &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.outputters.kmz &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -166,25 +167,19 @@
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">kmz  outputter</span>
 <span class="sd">&quot;&quot;&quot;</span>
-
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">glob</span> <span class="k">import</span> <span class="n">glob</span>
-
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">datetime</span>
 <span class="kn">import</span> <span class="nn">zipfile</span>
 <span class="kn">import</span> <span class="nn">base64</span>
 
-<span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Bool</span>
+<span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">drop</span>
 
-<span class="kn">from</span> <span class="nn">gnome.utilities.time_utils</span> <span class="k">import</span> <span class="n">date_to_sec</span>
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="k">import</span> <span class="n">oil_status</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="k">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
 
-<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="k">import</span> <span class="n">class_from_objtype</span>
-<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="k">import</span> <span class="n">oil_status</span>
-
 <span class="kn">from</span> <span class="nn">.outputter</span> <span class="k">import</span> <span class="n">Outputter</span><span class="p">,</span> <span class="n">BaseSchema</span>
+
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">kmz_templates</span>
 
 
@@ -208,24 +203,25 @@
 
     <span class="c1"># need a schema and also need to override save so output_dir</span>
     <span class="c1"># is saved correctly - maybe point it to saveloc</span>
-    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">),]</span>
+    <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">KMZSchema</span>
 
     <span class="n">time_formatter</span> <span class="o">=</span> <span class="s1">&#39;%m/</span><span class="si">%d</span><span class="s1">/%Y %H:%M&#39;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param str output_dir=None: output directory for kmz files.</span>
 
 <span class="sd">        uses super to pass optional \*\*kwargs to base class __init__ method</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="c1">## a little check:</span>
+        <span class="c1"># a little check:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
         <span class="c1"># strip off the .kml or .kmz</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.kml&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.kmz&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span> <span class="o">+</span> <span class="s2">&quot;.kmz&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kml_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">filename</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;.kml&quot;</span>
-
 
         <span class="nb">super</span><span class="p">(</span><span class="n">KMZOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
@@ -272,17 +268,20 @@
             <span class="k">return</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">delete_output_files</span><span class="p">()</span>
+
         <span class="c1"># shouldn&#39;t be required if the above worked!</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_file_exists_error</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
 
         <span class="c1"># create a list to hold what will be the contents of the kml</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">kml</span> <span class="o">=</span> <span class="p">[</span><span class="n">kmz_templates</span><span class="o">.</span><span class="n">header_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">caveat</span><span class="o">=</span><span class="n">kmz_templates</span><span class="o">.</span><span class="n">caveat</span><span class="p">,</span>
-                                                         <span class="n">kml_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kml_name</span><span class="p">,</span>
-                                                         <span class="n">valid_timestring</span> <span class="o">=</span> <span class="n">model_start_time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_formatter</span><span class="p">),</span>
-                                                         <span class="n">issued_timestring</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_formatter</span><span class="p">),</span>
-                                                         <span class="p">)]</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kml</span> <span class="o">=</span> <span class="p">[</span><span class="n">kmz_templates</span><span class="o">.</span><span class="n">header_template</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">caveat</span><span class="o">=</span><span class="n">kmz_templates</span><span class="o">.</span><span class="n">caveat</span><span class="p">,</span>
+                            <span class="n">kml_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kml_name</span><span class="p">,</span>
+                            <span class="n">valid_timestring</span><span class="o">=</span><span class="n">model_start_time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_formatter</span><span class="p">),</span>
+                            <span class="n">issued_timestring</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_formatter</span><span class="p">),</span>
+                            <span class="p">)</span>
+                    <span class="p">]</span></div>
 
-        <span class="c1"># # netcdf outputter has this --  not sure why</span>
+        <span class="c1"># netcdf outputter has this --  not sure why</span>
         <span class="c1"># self._middle_of_run = True</span>
 
 <div class="viewcode-block" id="KMZOutput.write_output"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.KMZOutput.write_output">[docs]</a>    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -293,24 +292,24 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
 
-
         <span class="c1"># add to the kml list:</span>
-        <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span> <span class="c1"># loop through uncertain and certain LEs</span>
-            <span class="c1">## extract the data</span>
+        <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># loop through uncertain and certain LEs</span>
+            <span class="c1"># extract the data</span>
             <span class="n">start_time</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span>
+
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_timestep</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">end_time</span> <span class="o">=</span> <span class="n">start_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_timestep</span><span class="p">)</span>
+                <span class="n">end_time</span> <span class="o">=</span> <span class="n">start_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_timestep</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">end_time</span> <span class="o">=</span> <span class="n">start_time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_timestep</span>
+
             <span class="n">start_time</span> <span class="o">=</span> <span class="n">start_time</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
             <span class="n">end_time</span> <span class="o">=</span> <span class="n">end_time</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
 
             <span class="n">positions</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s1">&#39;positions&#39;</span><span class="p">]</span>
-            <span class="n">water_positions</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">sc</span><span class="p">[</span><span class="s1">&#39;status_codes&#39;</span><span class="p">]</span>   <span class="o">==</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">in_water</span><span class="p">]</span>
+            <span class="n">water_positions</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">sc</span><span class="p">[</span><span class="s1">&#39;status_codes&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">in_water</span><span class="p">]</span>
             <span class="n">beached_positions</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">sc</span><span class="p">[</span><span class="s1">&#39;status_codes&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">on_land</span><span class="p">]</span>
 
-            <span class="n">data_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;certain&#39;</span> <span class="p">:</span> <span class="s2">&quot;Uncertainty&quot;</span><span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span> <span class="k">else</span> <span class="s2">&quot;Best Guess&quot;</span><span class="p">,</span>
-                        <span class="p">}</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">kml</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kmz_templates</span><span class="o">.</span><span class="n">build_one_timestep</span><span class="p">(</span><span class="n">water_positions</span><span class="p">,</span>
                                                              <span class="n">beached_positions</span><span class="p">,</span>
                                                              <span class="n">start_time</span><span class="p">,</span>
@@ -318,22 +317,20 @@
                                                              <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span>
                                                              <span class="p">))</span>
 
-        <span class="k">if</span> <span class="n">islast_step</span><span class="p">:</span> <span class="c1"># now we really write the file:</span>
-           <span class="bp">self</span><span class="o">.</span><span class="n">kml</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kmz_templates</span><span class="o">.</span><span class="n">footer</span><span class="p">)</span>
-           <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">)</span> <span class="k">as</span> <span class="n">kmzfile</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">islast_step</span><span class="p">:</span>  <span class="c1"># now we really write the file:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kml</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kmz_templates</span><span class="o">.</span><span class="n">footer</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span>
+                                 <span class="n">compression</span><span class="o">=</span><span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">)</span> <span class="k">as</span> <span class="n">kmzfile</span><span class="p">:</span>
                 <span class="n">kmzfile</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="s1">&#39;dot.png&#39;</span><span class="p">,</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">DOT</span><span class="p">))</span>
                 <span class="n">kmzfile</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="s1">&#39;x.png&#39;</span><span class="p">,</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
-                <span class="c1"># write the kml file</span>
-                <span class="n">kmzfile</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kml_name</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kml</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf8&#39;</span><span class="p">))</span>
+                <span class="n">kmzfile</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kml_name</span><span class="p">,</span>
+                                 <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kml</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf8&#39;</span><span class="p">))</span>
 
-
-
-        <span class="c1"># output_filename = self.output_to_file(geojson, step_num)</span>
         <span class="n">output_info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;time_stamp&#39;</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
                        <span class="s1">&#39;output_filename&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">}</span>
 
         <span class="k">return</span> <span class="n">output_info</span></div>
-
 
 <div class="viewcode-block" id="KMZOutput.rewind"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.KMZOutput.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -356,15 +353,15 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
-            <span class="k">pass</span> <span class="c1"># it must not be there</span></div></div>
+            <span class="k">pass</span>  <span class="c1"># it must not be there</span></div></div>
 
-<span class="c1"># These icons (these are base64 encoded 3-pixel sized dots in a 32x32 transparent PNG)</span>
-<span class="c1">#   these were encoded by the &quot;build_icons&quot; script</span>
+
+<span class="c1"># These icons were encoded by the &quot;build_icons&quot; script</span>
+<span class="c1"># (they are base64 encoded 3-pixel sized dots in a 32x32 transparent PNG)</span>
+<span class="c1"># Fixme: Static values built by a tool?  Maybe we should make the generation</span>
+<span class="c1">#        of these icons a dynamic process.</span>
 <span class="n">DOT</span> <span class="o">=</span> <span class="s2">&quot;iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAJOgAACToB8GSSSgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAEASURBVFiF7ZY7DsIwEEQfET09Ej11lFtwK06Re3ANlCoFPQpnoGJoHClCXpOPg10wUhonnnlyvF5vJJFSRdL0P0AOANsZcwqgAkrg6MZuQANcgdckN0ljn52kWlInW537ZjfWd2z4SVIbCP5U6+ZEAThLek4I7/V0cxcBnGaGDyGCK/Htn09ZdkutAnsiBFBHCO9VWzkb+XtBAdyB/Ywy9ekBHPCUqHUQVRHDcV6V74UFUEYMD3paAEdjfIm8nsl7gQVwWyHL62kBNCsAeD2zLcMXcIkUjvPyt+nASZj8KE7ejLJox1lcSIZ7IvqVzCrDkKJeSucARFW2veAP8DO9AXV74Qmb/4vgAAAAAElFTkSuQmCC&quot;</span>
 <span class="n">X</span> <span class="o">=</span> <span class="s2">&quot;iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAHKSURBVFiFrdXLq01hGMfx12HMzMCUU4zFQEYiROYkEkkpHbeTXI5LSDqHtomBEJGY+RMMGBlKKWVmaiDXzvExsN7admuv9azLU89k7ef5fb/ruhMSVuIy3uEOVhXH++w1mMEbnMFSpITl+Ob/+oOpHuFHiszh+oIVCbPGVx8Sh0vguaYT3lcIdJU4VAGHtwm3agTaShysgcMgYUNAoKnEgQAcVueFqR4l9mMhkHVJ8RbkPt6DxL4g/EreGQ3oIrE3CL86vFd2FidaSOzBfGDn+ihv3KU82UBidxB+o4xV9TBFJSKX/eY4Tt0TfSooUVWzVYzIO326A3yuLj/6YWkjcTuSHRVImG4AH0RzJ1K8PqSUFoKzn8KpQdNd+N3wFoT+OyLwnfjVEB6WqIPv6AAPSVTBt+NnR3itxDj4tiD8Hs52kSiDb8WPQOB9LCp2WkuMwrcE4Q8xMbJ7ro3EcMBmfA8EPCqBt5bIi5uC8McV8Nznm0gkLMPXwMKTADz3haDExoRjgcGnWByEN5EYJLyuGXrWAp57pib7Y8K1ioHnHeC5L1bkP0iYHPPjCyzpCK+SmMdkHliLl8XBVzjaIzz3Ov++H59xF+uR/gJmOo2+fdNArAAAAABJRU5ErkJggg==&quot;</span>
-
-
-
 </pre></div>
 
            </div>
@@ -401,7 +398,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -411,7 +408,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

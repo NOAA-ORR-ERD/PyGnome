@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.outputters.netcdf &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.outputters.netcdf &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -166,7 +167,6 @@
 <span></span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">NetCDF outputter - write the nc_particles netcdf file format</span>
 <span class="sd">&#39;&#39;&#39;</span>
-
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
@@ -441,10 +441,9 @@
         <span class="c1"># It is set in prepare_for_model_run():</span>
         <span class="c1"># &#39;spill_names&#39; is set based on the names of spill&#39;s as defined by user</span>
         <span class="c1"># time &#39;units&#39; are seconds since model_start_time</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_var_attributes</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;spill_num&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;spills_map&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">},</span>
-            <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">}</span>
-                                 <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_var_attributes</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;spill_num&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;spills_map&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">},</span>
+                                <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">}</span>
+                                <span class="p">}</span>
 
         <span class="nb">super</span><span class="p">(</span><span class="n">NetCDFOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
@@ -481,6 +480,7 @@
         <span class="s1">&#39;change output data but cannot change in middle of run.&#39;</span>
         <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_which_data</span><span class="p">:</span>
             <span class="k">return</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">middle_of_run</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;This attribute cannot be changed in the &#39;</span>
                                  <span class="s1">&#39;middle of a run&#39;</span><span class="p">)</span>
@@ -529,8 +529,10 @@
         <span class="n">names</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">, &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ix</span><span class="p">,</span> <span class="n">spill</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
                           <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">spill</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">spills</span><span class="p">)])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_var_attributes</span><span class="p">[</span><span class="s1">&#39;spill_num&#39;</span><span class="p">][</span><span class="s1">&#39;spills_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">names</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_var_attributes</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> \
-            <span class="p">(</span><span class="s1">&#39;seconds since </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_start_time</span><span class="o">.</span><span class="n">isoformat</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_var_attributes</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;seconds since </span><span class="si">{0}</span><span class="s1">&#39;</span>
+                                                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_start_time</span>
+                                                         <span class="o">.</span><span class="n">isoformat</span><span class="p">()))</span>
 
     <span class="k">def</span> <span class="nf">_initialize_rootgrp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rootgrp</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
         <span class="s1">&#39;create dimensions for root group and set cf_attributes&#39;</span>
@@ -642,9 +644,6 @@
 
             <span class="c1"># create the netcdf files and write the standard stuff:</span>
             <span class="k">with</span> <span class="n">nc</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">file_</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_format</span><span class="p">)</span> <span class="k">as</span> <span class="n">rootgrp</span><span class="p">:</span>
-
-                <span class="nb">print</span><span class="p">(</span><span class="n">rootgrp</span><span class="p">)</span>
-
                 <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_rootgrp</span><span class="p">(</span><span class="n">rootgrp</span><span class="p">,</span> <span class="n">sc</span><span class="p">)</span>
 
                 <span class="c1"># create a dict with dims {2: &#39;two&#39;, 3: &#39;three&#39; ...}</span>
@@ -689,16 +688,17 @@
                 <span class="c1"># Add subgroup for mass_balance - could do it w/o subgroup</span>
                 <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">:</span>
                     <span class="n">grp</span> <span class="o">=</span> <span class="n">rootgrp</span><span class="o">.</span><span class="n">createGroup</span><span class="p">(</span><span class="s1">&#39;mass_balance&#39;</span><span class="p">)</span>
+
                     <span class="c1"># give this grp a dimension for time</span>
                     <span class="n">grp</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># unlimited</span>
+
                     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">mass_balance</span><span class="p">:</span>
                         <span class="c1"># mass_balance variables get a smaller chunksize</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">_create_nc_var</span><span class="p">(</span><span class="n">grp</span><span class="p">,</span>
                                             <span class="n">var_name</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
                                             <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">,</span>
                                             <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,),</span>
-                                            <span class="n">chunksz</span><span class="o">=</span><span class="p">(</span><span class="mi">256</span><span class="p">,),</span>
-                                            <span class="p">)</span>
+                                            <span class="n">chunksz</span><span class="o">=</span><span class="p">(</span><span class="mi">256</span><span class="p">,))</span>
 
         <span class="c1"># need to keep track of starting index for writing data since variable</span>
         <span class="c1"># number of particles are released</span>
@@ -721,24 +721,25 @@
                                          <span class="n">dtype</span><span class="p">,</span>
                                          <span class="n">shape</span><span class="p">,</span>
                                          <span class="n">zlib</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compress</span><span class="p">,</span>
-                                         <span class="n">chunksizes</span><span class="o">=</span><span class="n">chunksz</span><span class="p">,</span>
-                                         <span class="p">)</span>
+                                         <span class="n">chunksizes</span><span class="o">=</span><span class="n">chunksz</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">var</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span>
                                          <span class="n">dtype</span><span class="p">,</span>
                                          <span class="n">shape</span><span class="p">,</span>
-                                         <span class="n">zlib</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compress</span><span class="p">,</span>
-                                         <span class="p">)</span>
+                                         <span class="n">zlib</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compress</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">arguments are:&quot;</span>
-            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;var_name: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">var_name</span>
-            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;dtype: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">dtype</span>
-            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;shape: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">shape</span>
-            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;dims: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">grp</span><span class="o">.</span><span class="n">dimensions</span>
-            <span class="c1"># msg += &quot;shape_dim: %s\n&quot; % grp.dimensions[shape[0]]</span>
-            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;zlib: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compress</span>
-            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;chunksizes: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">chunksz</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">arguments are:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                   <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">var_name: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                   <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">dtype: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                   <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">shape: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                   <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">dims: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                   <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">zlib: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                   <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">chunksizes: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                   <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">grp</span><span class="o">.</span><span class="n">dimensions</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">_compress</span><span class="p">,</span> <span class="n">chunksz</span><span class="p">))</span>
+
             <span class="n">err</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">msg</span><span class="p">,)</span>
+
             <span class="k">raise</span> <span class="n">err</span>
 
         <span class="k">if</span> <span class="n">var_name</span> <span class="ow">in</span> <span class="n">var_attributes</span><span class="p">:</span>
@@ -828,6 +829,7 @@
             <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">netcdf_filename</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
             <span class="k">pass</span>  <span class="c1"># it must not be there</span>
+
         <span class="k">try</span><span class="p">:</span>
             <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_u_netcdf_filename</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
@@ -843,8 +845,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_middle_of_run</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span> <span class="o">=</span> <span class="mi">0</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="NetCDFOutput.read_data"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.NetCDFOutput.read_data">[docs]</a>    <span class="k">def</span> <span class="nf">read_data</span><span class="p">(</span><span class="n">klass</span><span class="p">,</span>
+<div class="viewcode-block" id="NetCDFOutput.read_data"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.NetCDFOutput.read_data">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">read_data</span><span class="p">(</span><span class="n">klass</span><span class="p">,</span>
                   <span class="n">netcdf_file</span><span class="p">,</span>
                   <span class="n">time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -877,10 +879,12 @@
 <span class="sd">        class attribute &quot;standard_arrays&quot;, currently:</span>
 
 <span class="sd">            &#39;current_time_stamp&#39;: datetime object associated with this data</span>
-<span class="sd">            &#39;positions&#39;         : NX3 array. NetCDF variables: &#39;longitude&#39;, &#39;latitude&#39;, &#39;depth&#39;</span>
+<span class="sd">            &#39;positions&#39;         : NX3 array. NetCDF variables:</span>
+<span class="sd">                                  &#39;longitude&#39;, &#39;latitude&#39;, &#39;depth&#39;</span>
 <span class="sd">            &#39;status_codes&#39;      : NX1 array. NetCDF variable :&#39;status_codes&#39;</span>
 <span class="sd">            &#39;spill_num&#39;         : NX1 array. NetCDF variable: &#39;spill_num&#39;</span>
-<span class="sd">            &#39;id&#39;                : NX1 array of particle id. NetCDF variable &#39;id&#39;</span>
+<span class="sd">            &#39;id&#39;                : NX1 array of particle id. NetCDF variable</span>
+<span class="sd">                                  &#39;id&#39;</span>
 <span class="sd">            &#39;mass&#39;              : NX1 array showing &#39;mass&#39; of each particle</span>
 
 <span class="sd">        standard_arrays = [&#39;latitude&#39;,</span>
@@ -903,6 +907,7 @@
 
             <span class="c1"># first find the index of index in which we are interested</span>
             <span class="n">time_</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+
             <span class="k">if</span> <span class="n">time</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># there should only be 1 time in file. Read and</span>
                 <span class="c1"># return data associated with it</span>
@@ -939,13 +944,16 @@
             <span class="c1"># figure out what arrays to read in:</span>
             <span class="k">if</span> <span class="n">which_data</span> <span class="o">==</span> <span class="s1">&#39;standard&#39;</span><span class="p">:</span>
                 <span class="n">data_arrays</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">klass</span><span class="o">.</span><span class="n">standard_arrays</span><span class="p">)</span>
+
                 <span class="c1"># swap out positions:</span>
-                <span class="p">[</span><span class="n">data_arrays</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-                 <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;longitude&#39;</span><span class="p">,</span> <span class="s1">&#39;depth&#39;</span><span class="p">)]</span>
+                <span class="p">[</span><span class="n">data_arrays</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;latitude&#39;</span><span class="p">,</span>
+                                                  <span class="s1">&#39;longitude&#39;</span><span class="p">,</span>
+                                                  <span class="s1">&#39;depth&#39;</span><span class="p">)]</span>
                 <span class="n">data_arrays</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;positions&#39;</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">which_data</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
                 <span class="c1"># pull them from the nc file</span>
                 <span class="n">data_arrays</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
                 <span class="c1"># remove the irrelevant ones:</span>
                 <span class="p">[</span><span class="n">data_arrays</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span>
                                                   <span class="s1">&#39;particle_count&#39;</span><span class="p">,</span>
@@ -961,6 +969,7 @@
                 <span class="c1"># special case time and positions:</span>
                 <span class="k">if</span> <span class="n">array_name</span> <span class="o">==</span> <span class="s1">&#39;positions&#39;</span><span class="p">:</span>
                     <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">elem</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span>
+
                     <span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> \
                         <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;longitude&#39;</span><span class="p">][</span><span class="n">_start_ix</span><span class="p">:</span><span class="n">_stop_ix</span><span class="p">]</span>
                     <span class="n">positions</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> \
@@ -977,8 +986,9 @@
             <span class="n">weathering_data</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">if</span> <span class="s1">&#39;mass_balance&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
                 <span class="n">mb</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s1">&#39;mass_balance&#39;</span><span class="p">]</span>
+
                 <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">mb</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
-                    <span class="s1">&#39;assume SI units&#39;</span>
+                    <span class="c1"># assume SI units</span>
                     <span class="n">weathering_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="p">(</span><span class="n">arrays_dict</span><span class="p">,</span> <span class="n">weathering_data</span><span class="p">)</span></div>
@@ -992,11 +1002,13 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">json_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="s1">&#39;save&#39;</span><span class="p">)</span>
         <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;netcdf_filename&#39;</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
+
         <span class="n">json_</span><span class="p">[</span><span class="s1">&#39;netcdf_filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;./&#39;</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_json_to_saveloc</span><span class="p">(</span><span class="n">json_</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="NetCDFOutput.loads"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.NetCDFOutput.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="NetCDFOutput.loads"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.NetCDFOutput.loads">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        loads object from json_data</span>
 
@@ -1011,8 +1023,8 @@
 <span class="sd">        :param references: references object - if this is called by the Model,</span>
 <span class="sd">            it will pass a references object. It is not required.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">json_data</span><span class="p">[</span><span class="s1">&#39;netcdf_filename&#39;</span><span class="p">]</span> <span class="o">=</span> \
-            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">json_data</span><span class="p">[</span><span class="s1">&#39;netcdf_filename&#39;</span><span class="p">])</span>
+        <span class="n">new_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">json_data</span><span class="p">[</span><span class="s1">&#39;netcdf_filename&#39;</span><span class="p">])</span>
+        <span class="n">json_data</span><span class="p">[</span><span class="s1">&#39;netcdf_filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_filename</span>
 
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">NetCDFOutput</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span></div></div>
 </pre></div>
@@ -1051,7 +1063,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -1061,7 +1073,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

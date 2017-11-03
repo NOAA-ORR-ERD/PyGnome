@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Overview &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Overview &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../index.html"/>
         <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
         <link rel="next" title="Scripting utilities" href="utilities.html"/>
         <link rel="prev" title="Scripting pygnome" href="../scripting.html"/> 
@@ -67,7 +67,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -115,6 +115,7 @@
 <li class="toctree-l2"><a class="reference internal" href="scripting_examples.html">Examples</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -225,7 +226,7 @@
 This model object will have attributes like the model start time and the run duration.</p>
 <p>Movers, spills, and outputters are then added to the model. Then we can run the model and view the results.</p>
 <p>For a first introduction to scripting pyGNOME, we will set up and run the very simplest model possible. We
-will not load any external data, but create a simple map and movers manually. The &#8220;spill&#8221; will be a conservative
+will not load any external data, but create a simple map and movers manually. The “spill” will be a conservative
 substance, i.e. it will not represent oil which has changing properties over time due to weathering processes.</p>
 <div class="section" id="initialize-the-model">
 <h2>Initialize the Model<a class="headerlink" href="#initialize-the-model" title="Permalink to this headline">¶</a></h2>
@@ -270,7 +271,7 @@ also the RandomMover class to simulate spreading due to turbulent motions:</p>
 (e.g. where, when, how many elements). They also contain an element_type object which
 provides information on the type of substance spilled. For a conservative substance (i.e. one with
 no change in properties over time) we can use the default None value for element_type.</p>
-<p>We&#8217;ll use a simple release class which can be used for an instantaneous or continuous release which can
+<p>We’ll use a simple release class which can be used for an instantaneous or continuous release which can
 occur at a single point, or over a line.
 (Here we set a instantaneous spill at a point in the middle of the map):</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.spill</span> <span class="k">import</span> <span class="n">PointLineRelease</span><span class="p">,</span> <span class="n">Spill</span>
@@ -353,7 +354,7 @@ of particles moving east and spreading.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -363,7 +364,7 @@ of particles moving east and spreading.</p>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

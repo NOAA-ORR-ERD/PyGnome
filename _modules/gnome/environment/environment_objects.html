@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.environment.environment_objects &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.environment.environment_objects &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -163,46 +164,29 @@
            <div itemprop="articleBody">
             
   <h1>Source code for gnome.environment.environment_objects</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">warnings</span>
-<span class="kn">import</span> <span class="nn">copy</span>
+<span></span><span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
 
 <span class="kn">import</span> <span class="nn">netCDF4</span> <span class="k">as</span> <span class="nn">nc4</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">numbers</span> <span class="k">import</span> <span class="n">Number</span>
+<span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="n">drop</span>
 
-<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
-<span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Boolean</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">MappingSchema</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">OneOf</span><span class="p">,</span> <span class="n">SequenceSchema</span><span class="p">,</span> <span class="n">TupleSchema</span><span class="p">,</span> <span class="n">DateTime</span>
-<span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="k">import</span> <span class="n">ObjType</span>
+<span class="kn">import</span> <span class="nn">gridded</span>
+
 <span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="k">import</span> <span class="n">serializable</span>
-<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="k">import</span> <span class="n">base_schema</span>
-
-<span class="kn">import</span> <span class="nn">pyugrid</span>
-<span class="kn">import</span> <span class="nn">pysgrid</span>
-<span class="kn">import</span> <span class="nn">unit_conversion</span>
-<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">_valid_units</span>
 <span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="k">import</span> <span class="n">Environment</span>
-<span class="kn">from</span> <span class="nn">gnome.environment.grid</span> <span class="k">import</span> <span class="n">PyGrid</span>
-<span class="kn">from</span> <span class="nn">gnome.environment.property</span> <span class="k">import</span> <span class="n">Time</span><span class="p">,</span> <span class="n">PropertySchema</span><span class="p">,</span> <span class="n">VectorProp</span><span class="p">,</span> <span class="n">EnvProp</span>
-<span class="kn">from</span> <span class="nn">gnome.environment.ts_property</span> <span class="k">import</span> <span class="n">TSVectorProp</span><span class="p">,</span> <span class="n">TimeSeriesProp</span><span class="p">,</span> <span class="n">TimeSeriesPropSchema</span>
-<span class="kn">from</span> <span class="nn">gnome.environment.grid_property</span> <span class="k">import</span> <span class="n">GridVectorProp</span><span class="p">,</span> <span class="n">GriddedProp</span><span class="p">,</span> <span class="n">GridPropSchema</span><span class="p">,</span> <span class="n">GridVectorPropSchema</span>
-<span class="kn">from</span> <span class="nn">gnome.utilities.file_tools.data_helpers</span> <span class="k">import</span> <span class="n">_get_dataset</span>
+<span class="kn">from</span> <span class="nn">gnome.environment.ts_property</span> <span class="k">import</span> <span class="n">TSVectorProp</span><span class="p">,</span> <span class="n">TimeSeriesProp</span>
 
-
-<span class="k">class</span> <span class="nc">Depth</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">surface_index</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">surface_index</span> <span class="o">=</span> <span class="n">surface_index</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">bottom_index</span> <span class="o">=</span> <span class="n">surface_index</span>
-
-    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_netCDF</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
-                    <span class="n">surface_index</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">surface_index</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">interpolation_alphas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">data_shape</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+<span class="kn">from</span> <span class="nn">gnome.environment.gridded_objects_base</span> <span class="k">import</span> <span class="p">(</span><span class="n">Time</span><span class="p">,</span>
+                                                    <span class="n">Depth</span><span class="p">,</span>
+                                                    <span class="n">Grid_U</span><span class="p">,</span>
+                                                    <span class="n">Grid_S</span><span class="p">,</span>
+                                                    <span class="n">Variable</span><span class="p">,</span>
+                                                    <span class="n">VectorVariable</span><span class="p">,</span>
+                                                    <span class="n">VariableSchema</span><span class="p">,</span>
+                                                    <span class="n">VectorVariableSchema</span><span class="p">,</span>
+                                                    <span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">S_Depth_T1</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -220,25 +204,30 @@
             <span class="k">if</span> <span class="n">data_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">data_file</span> <span class="o">=</span> <span class="n">bathymetry</span><span class="o">.</span><span class="n">data_file</span>
                 <span class="k">if</span> <span class="n">data_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Need data_file or dataset containing sigma equation terms&quot;</span><span class="p">)</span>
-            <span class="n">ds</span> <span class="o">=</span> <span class="n">_get_dataset</span><span class="p">(</span><span class="n">data_file</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Need data_file or dataset &#39;</span>
+                                     <span class="s1">&#39;containing sigma equation terms&#39;</span><span class="p">)</span>
+
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">gridded</span><span class="o">.</span><span class="n">utilities</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">data_file</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">bathymetry</span> <span class="o">=</span> <span class="n">bathymetry</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">terms</span> <span class="o">=</span> <span class="n">terms</span>
+
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">terms</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">S_Depth_T1</span><span class="o">.</span><span class="n">default_terms</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">terms</span><span class="p">[</span><span class="n">term</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">term</span><span class="p">][:]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_netCDF</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">kwargs</span>
-                    <span class="p">):</span>
+    <span class="k">def</span> <span class="nf">from_netCDF</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="n">bathymetry</span> <span class="o">=</span> <span class="n">Bathymetry</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">data_file</span> <span class="o">=</span> <span class="n">bathymetry</span><span class="o">.</span><span class="n">data_file</span><span class="p">,</span>
+
         <span class="k">if</span> <span class="s1">&#39;dataset&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="n">dataset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span>
+
         <span class="k">if</span> <span class="s1">&#39;data_file&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="n">data_file</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;data_file&#39;</span><span class="p">]</span>
+
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">bathymetry</span><span class="p">,</span>
                    <span class="n">data_file</span><span class="o">=</span><span class="n">data_file</span><span class="p">,</span>
                    <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">)</span>
@@ -263,27 +252,38 @@
         <span class="n">s_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">terms</span><span class="p">[</span><span class="s1">&#39;s_w&#39;</span><span class="p">][</span><span class="n">lvl</span><span class="p">]</span>
         <span class="n">Cs_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">terms</span><span class="p">[</span><span class="s1">&#39;Cs_w&#39;</span><span class="p">][</span><span class="n">lvl</span><span class="p">]</span>
         <span class="n">hc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">terms</span><span class="p">[</span><span class="s1">&#39;hc&#39;</span><span class="p">]</span>
+
         <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="n">hc</span> <span class="o">*</span> <span class="p">(</span><span class="n">s_w</span> <span class="o">-</span> <span class="n">Cs_w</span><span class="p">)</span> <span class="o">+</span> <span class="n">Cs_w</span> <span class="o">*</span> <span class="n">depths</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_r_level_depth_given_bathymetry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">depths</span><span class="p">,</span> <span class="n">lvl</span><span class="p">):</span>
         <span class="n">s_rho</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">terms</span><span class="p">[</span><span class="s1">&#39;s_rho&#39;</span><span class="p">][</span><span class="n">lvl</span><span class="p">]</span>
         <span class="n">Cs_r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">terms</span><span class="p">[</span><span class="s1">&#39;Cs_r&#39;</span><span class="p">][</span><span class="n">lvl</span><span class="p">]</span>
         <span class="n">hc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">terms</span><span class="p">[</span><span class="s1">&#39;hc&#39;</span><span class="p">]</span>
+
         <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="n">hc</span> <span class="o">*</span> <span class="p">(</span><span class="n">s_rho</span> <span class="o">-</span> <span class="n">Cs_r</span><span class="p">)</span> <span class="o">+</span> <span class="n">Cs_r</span> <span class="o">*</span> <span class="n">depths</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">interpolation_alphas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">data_shape</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Returns a pair of values. The 1st value is an array of the depth indices of all the particles.</span>
-<span class="sd">        The 2nd value is an array of the interpolation alphas for the particles between their depth</span>
-<span class="sd">        index and depth_index+1. If both values are None, then all particles are on the surface layer.</span>
+<span class="sd">            Returns a pair of values.</span>
+<span class="sd">            - The 1st value is an array of the depth indices of all the</span>
+<span class="sd">              particles.</span>
+<span class="sd">            - The 2nd value is an array of the interpolation alphas for the</span>
+<span class="sd">              particles between their depth index and depth_index + 1.</span>
+<span class="sd">            - If both values are None, then all particles are on the</span>
+<span class="sd">              surface layer.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">underwater</span> <span class="o">=</span> <span class="n">points</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.0</span>
+
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">underwater</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
         <span class="n">indices</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
         <span class="n">alphas</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-        <span class="n">depths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bathymetry</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)[</span><span class="n">underwater</span><span class="p">]</span>
+        <span class="n">depths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bathymetry</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span>
+                                    <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+                                    <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)[</span><span class="n">underwater</span><span class="p">]</span>
         <span class="n">pts</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">underwater</span><span class="p">]</span>
+
         <span class="n">und_ind</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">underwater</span><span class="p">)[</span><span class="mi">0</span><span class="p">])))</span>
         <span class="n">und_alph</span> <span class="o">=</span> <span class="n">und_ind</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
@@ -294,14 +294,22 @@
             <span class="n">num_levels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_r_levels</span>
             <span class="n">ldgb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_r_level_depth_given_bathymetry</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot get depth interpolation alphas for data shape specified; does not fit r or w depth axis&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot get depth interpolation alphas &#39;</span>
+                             <span class="s1">&#39;for data shape specified; &#39;</span>
+                             <span class="s1">&#39;does not fit r or w depth axis&#39;</span><span class="p">)</span>
+
         <span class="n">blev_depths</span> <span class="o">=</span> <span class="n">ulev_depths</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="k">for</span> <span class="n">ulev</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_levels</span><span class="p">):</span>
             <span class="n">ulev_depths</span> <span class="o">=</span> <span class="n">ldgb</span><span class="p">(</span><span class="n">depths</span><span class="p">,</span> <span class="n">ulev</span><span class="p">)</span>
-<span class="c1">#             print ulev_depths[0]</span>
-            <span class="n">within_layer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">ulev_depths</span> <span class="o">&lt;</span> <span class="n">pts</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">und_ind</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
-<span class="c1">#             print within_layer</span>
+            <span class="c1"># print ulev_depths[0]</span>
+
+            <span class="n">within_layer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">ulev_depths</span> <span class="o">&lt;</span> <span class="n">pts</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+                                                   <span class="n">und_ind</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># print within_layer</span>
+
             <span class="n">und_ind</span><span class="p">[</span><span class="n">within_layer</span><span class="p">]</span> <span class="o">=</span> <span class="n">ulev</span>
+
             <span class="k">if</span> <span class="n">ulev</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">und_alph</span><span class="p">[</span><span class="n">within_layer</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span>
             <span class="k">else</span><span class="p">:</span>
@@ -312,6 +320,7 @@
 
         <span class="n">indices</span><span class="p">[</span><span class="n">underwater</span><span class="p">]</span> <span class="o">=</span> <span class="n">und_ind</span>
         <span class="n">alphas</span><span class="p">[</span><span class="n">underwater</span><span class="p">]</span> <span class="o">=</span> <span class="n">und_alph</span>
+
         <span class="k">return</span> <span class="n">indices</span><span class="p">,</span> <span class="n">alphas</span>
 
 
@@ -323,27 +332,27 @@
                  <span class="n">time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Only 2 dimensional velocities are supported&#39;</span><span class="p">)</span>
-        <span class="n">TSVectorProp</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">)</span>
+
+        <span class="n">TSVectorProp</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span>
+                              <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">o</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
+
         <span class="n">t1</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">o</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span>
               <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">==</span> <span class="n">o</span><span class="o">.</span><span class="n">units</span> <span class="ow">and</span>
               <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">==</span> <span class="n">o</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
         <span class="n">t2</span> <span class="o">=</span> <span class="kc">True</span>
+
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_variables</span><span class="p">)):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variables</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">o</span><span class="o">.</span><span class="n">_variables</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
                 <span class="n">t2</span> <span class="o">=</span> <span class="kc">False</span>
                 <span class="k">break</span>
 
         <span class="k">return</span> <span class="n">t1</span> <span class="ow">and</span> <span class="n">t2</span>
-
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="o">=</span><span class="s1">&#39;save&#39;</span><span class="p">)</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">constant</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
@@ -360,15 +369,18 @@
 <span class="sd">        :param units=&#39;m/s&#39;: units for speed, as a string, i.e. &quot;knots&quot;, &quot;m/s&quot;,</span>
 <span class="sd">                           &quot;cm/s&quot;, etc.</span>
 
-<span class="sd">        .. note:: </span>
+<span class="sd">        .. note::</span>
 <span class="sd">            The time for a constant wind timeseries is irrelevant. This</span>
 <span class="sd">            function simply sets it to datetime.now() accurate to hours.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">direction</span> <span class="o">=</span> <span class="n">direction</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">90</span>
+
         <span class="n">u</span> <span class="o">=</span> <span class="n">speed</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">direction</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span>
         <span class="n">v</span> <span class="o">=</span> <span class="n">speed</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">direction</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span>
+
         <span class="n">u</span> <span class="o">=</span> <span class="n">TimeSeriesProp</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
         <span class="n">v</span> <span class="o">=</span> <span class="n">TimeSeriesProp</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="s1">&#39;v&#39;</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">VelocityTS</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">[</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">])</span>
 
     <span class="nd">@property</span>
@@ -377,97 +389,63 @@
         <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
-<span class="c1">#     def serialize(self, json_=&#39;webapi&#39;):</span>
-<span class="c1">#         dict_ = serializable.Serializable.serialize(self, json_=json_)</span>
-<span class="c1">#         # The following code is to cover the needs of webapi</span>
-<span class="c1">#         if json_ == &#39;webapi&#39;:</span>
-<span class="c1">#             dict_.pop(&#39;timeseries&#39;)</span>
-<span class="c1">#             dict_.pop(&#39;units&#39;)</span>
-<span class="c1">#             x = np.asanyarray(self.variables[0].data)</span>
-<span class="c1">#             y = np.asanyarray(self.variables[1].data)</span>
-<span class="c1">#             direction = -(np.arctan2(y, x) * 180 / np.pi + 90)</span>
-<span class="c1">#             magnitude = np.sqrt(x ** 2 + y ** 2)</span>
-<span class="c1">#             ts = (unicode(tx.isoformat()) for tx in self._time)</span>
-<span class="c1">#             dict_[&#39;timeseries&#39;] = map(lambda t, x, y: (t, (x, y)), ts, magnitude, direction)</span>
-<span class="c1">#             dict_[&#39;units&#39;] = (unicode(self.variables[0].units), u&#39;degrees&#39;)</span>
-<span class="c1">#             dict_[&#39;varnames&#39;] = [u&#39;magnitude&#39;, u&#39;direction&#39;, dict_[&#39;varnames&#39;][0], dict_[&#39;varnames&#39;][1]]</span>
-<span class="c1">#         return dict_</span>
 
-<span class="c1">#     @classmethod</span>
-<span class="c1">#     def deserialize(cls, json_):</span>
-<span class="c1">#         if json_ == &#39;webapi&#39;:</span>
-<span class="c1">#             dict_ = super(VelocityTS, cls).deserialize(json_)</span>
-<span class="c1">#</span>
-<span class="c1">#             ts, data = zip(*dict_.pop(&#39;timeseries&#39;))</span>
-<span class="c1">#             ts = np.array(ts)</span>
-<span class="c1">#             data = np.array(data).T</span>
-<span class="c1">#             units = dict_[&#39;units&#39;]</span>
-<span class="c1">#             if len(units) &gt; 1 and units[1] == &#39;degrees&#39;:</span>
-<span class="c1">#                 u_data, v_data = data</span>
-<span class="c1">#                 v_data = ((-v_data - 90) * np.pi / 180)</span>
-<span class="c1">#                 u_t = u_data * np.cos(v_data)</span>
-<span class="c1">#                 v_data = u_data * np.sin(v_data)</span>
-<span class="c1">#                 u_data = u_t</span>
-<span class="c1">#                 data = np.array((u_data, v_data))</span>
-<span class="c1">#                 dict_[&#39;varnames&#39;] = dict_[&#39;varnames&#39;][2:]</span>
-<span class="c1">#</span>
-<span class="c1">#             units = units[0]</span>
-<span class="c1">#             dict_[&#39;units&#39;] = units</span>
-<span class="c1">#             dict_[&#39;time&#39;] = ts</span>
-<span class="c1">#             dict_[&#39;data&#39;] = data</span>
-<span class="c1">#             return dict_</span>
-<span class="c1">#         else:</span>
-<span class="c1">#             return super(VelocityTS, cls).deserialize(json_)</span>
-<span class="c1">#</span>
-<span class="c1">#     @classmethod</span>
-<span class="c1">#     def new_from_dict(cls, dict_):</span>
-<span class="c1">#         varnames = dict_[&#39;varnames&#39;]</span>
-<span class="c1">#         vs = []</span>
-<span class="c1">#         for i, varname in enumerate(varnames):</span>
-<span class="c1">#             vs.append(TimeSeriesProp(name=varname,</span>
-<span class="c1">#                                      units=dict_[&#39;units&#39;],</span>
-<span class="c1">#                                      time=dict_[&#39;time&#39;],</span>
-<span class="c1">#                                      data=dict_[&#39;data&#39;][i]))</span>
-<span class="c1">#         dict_.pop(&#39;data&#39;)</span>
-<span class="c1">#         dict_[&#39;variables&#39;] = vs</span>
-<span class="c1">#         return super(VelocityTS, cls).new_from_dict(dict_)</span>
+<span class="k">class</span> <span class="nc">VelocityGrid</span><span class="p">(</span><span class="n">VectorVariable</span><span class="p">):</span>
 
+    <span class="n">comp_order</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;v&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">]</span>
 
-<span class="k">class</span> <span class="nc">VelocityGrid</span><span class="p">(</span><span class="n">GridVectorProp</span><span class="p">):</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            :param angle: scalar field of cell rotation angles</span>
+<span class="sd">                          (for rotated/distorted grids)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="s1">&#39;variables&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="n">variables</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;variables&#39;</span><span class="p">]</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-                <span class="n">variables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TimeSeriesProp</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;constant w&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">time</span><span class="o">=</span><span class="n">Time</span><span class="o">.</span><span class="n">constant_time</span><span class="p">(),</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;m/s&#39;</span><span class="p">))</span>
+                <span class="n">variables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TimeSeriesProp</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;constant w&#39;</span><span class="p">,</span>
+                                                <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">],</span>
+                                                <span class="n">time</span><span class="o">=</span><span class="n">Time</span><span class="o">.</span><span class="n">constant_time</span><span class="p">(),</span>
+                                                <span class="n">units</span><span class="o">=</span><span class="s1">&#39;m/s&#39;</span><span class="p">))</span>
+
             <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;variables&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">variables</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dataset&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;grid_file&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="n">_get_dataset</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;grid_file&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">df</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s1">&#39;angle&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="c1"># Unrotated ROMS Grid!</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="n">GriddedProp</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;angle&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;radians&#39;</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;grid&#39;</span><span class="p">],</span> <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">angle</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dataset&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;grid_file&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">gridded</span><span class="o">.</span><span class="n">utilities</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;grid_file&#39;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">df</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s1">&#39;angle&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="c1"># Unrotated ROMS Grid!</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;angle&#39;</span><span class="p">,</span>
+                                      <span class="n">units</span><span class="o">=</span><span class="s1">&#39;radians&#39;</span><span class="p">,</span>
+                                      <span class="n">time</span><span class="o">=</span><span class="n">Time</span><span class="o">.</span><span class="n">constant_time</span><span class="p">(),</span>
+                                      <span class="n">grid</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;grid&#39;</span><span class="p">],</span>
+                                      <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;angle&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span>
+
         <span class="nb">super</span><span class="p">(</span><span class="n">VelocityGrid</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">o</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
+
         <span class="n">t1</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">o</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span>
               <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">==</span> <span class="n">o</span><span class="o">.</span><span class="n">units</span> <span class="ow">and</span>
               <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">==</span> <span class="n">o</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
         <span class="n">t2</span> <span class="o">=</span> <span class="kc">True</span>
+
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_variables</span><span class="p">)):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variables</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">o</span><span class="o">.</span><span class="n">_variables</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
                 <span class="n">t2</span> <span class="o">=</span> <span class="kc">False</span>
                 <span class="k">break</span>
 
         <span class="k">return</span> <span class="n">t1</span> <span class="ow">and</span> <span class="n">t2</span>
-
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="o">=</span><span class="s1">&#39;save&#39;</span><span class="p">)</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
 
 
 <span class="k">class</span> <span class="nc">WindTS</span><span class="p">(</span><span class="n">VelocityTS</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
@@ -485,11 +463,15 @@
 
             <span class="n">time</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ts</span><span class="p">)</span>
             <span class="n">mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">ts</span><span class="p">))</span>
+
             <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">ts</span><span class="p">))</span>
             <span class="n">d</span> <span class="o">=</span> <span class="n">d</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">90</span>
+
             <span class="n">u</span> <span class="o">=</span> <span class="n">mag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">d</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span>
             <span class="n">v</span> <span class="o">=</span> <span class="n">mag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">d</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span>
+
             <span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">]</span>
+
         <span class="n">VelocityTS</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
@@ -505,7 +487,8 @@
 <span class="sd">        :param unit=&#39;m/s&#39;: units for speed, as a string, i.e. &quot;knots&quot;, &quot;m/s&quot;,</span>
 <span class="sd">                           &quot;cm/s&quot;, etc.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">WindTS</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="n">speed</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">direction</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">WindTS</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="n">speed</span><span class="p">,</span>
+                                            <span class="n">direction</span><span class="o">=</span><span class="n">direction</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">CurrentTS</span><span class="p">(</span><span class="n">VelocityTS</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
@@ -520,11 +503,15 @@
             <span class="n">ts</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;timeseries&#39;</span><span class="p">]</span>
             <span class="n">time</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ts</span><span class="p">)</span>
             <span class="n">mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">ts</span><span class="p">))</span>
+
             <span class="n">direction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">ts</span><span class="p">))</span>
             <span class="n">direction</span> <span class="o">=</span> <span class="n">direction</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">90</span>
+
             <span class="n">u</span> <span class="o">=</span> <span class="n">mag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">direction</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span>
             <span class="n">v</span> <span class="o">=</span> <span class="n">mag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">direction</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span>
+
             <span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">]</span>
+
         <span class="n">VelocityTS</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
@@ -541,7 +528,8 @@
 <span class="sd">                           &quot;cm/s&quot;, etc.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="n">speed</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">direction</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="n">speed</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">direction</span><span class="p">,</span>
+                            <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="TemperatureTS"><a class="viewcode-back" href="../../../reference.html#gnome.environment.TemperatureTS">[docs]</a><span class="k">class</span> <span class="nc">TemperatureTS</span><span class="p">(</span><span class="n">TimeSeriesProp</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
@@ -557,6 +545,7 @@
 
             <span class="n">time</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ts</span><span class="p">)</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ts</span><span class="p">))</span>
+
         <span class="n">TimeSeriesProp</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
@@ -567,8 +556,10 @@
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="GridTemperature"><a class="viewcode-back" href="../../../reference.html#gnome.environment.GridTemperature">[docs]</a><span class="k">class</span> <span class="nc">GridTemperature</span><span class="p">(</span><span class="n">GriddedProp</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
-    <span class="n">default_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;water_t&#39;</span><span class="p">,</span> <span class="s1">&#39;temp&#39;</span><span class="p">]</span></div>
+<div class="viewcode-block" id="GridTemperature"><a class="viewcode-back" href="../../../reference.html#gnome.environment.GridTemperature">[docs]</a><span class="k">class</span> <span class="nc">GridTemperature</span><span class="p">(</span><span class="n">Variable</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
+    <span class="n">default_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;water_t&#39;</span><span class="p">,</span> <span class="s1">&#39;temp&#39;</span><span class="p">]</span>
+
+    <span class="n">cf_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;sea_water_temperature&#39;</span><span class="p">,</span> <span class="s1">&#39;sea_surface_temperature&#39;</span><span class="p">]</span></div>
 
 
 <span class="k">class</span> <span class="nc">SalinityTS</span><span class="p">(</span><span class="n">TimeSeriesProp</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
@@ -581,8 +572,10 @@
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">salinity</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">GridSalinity</span><span class="p">(</span><span class="n">GriddedProp</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">GridSalinity</span><span class="p">(</span><span class="n">Variable</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
     <span class="n">default_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;salt&#39;</span><span class="p">]</span>
+
+    <span class="n">cf_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;sea_water_salinity&#39;</span><span class="p">,</span> <span class="s1">&#39;sea_surface_salinity&#39;</span><span class="p">]</span>
 
 
 <span class="k">class</span> <span class="nc">WaterDensityTS</span><span class="p">(</span><span class="n">TimeSeriesProp</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
@@ -592,26 +585,43 @@
                  <span class="n">units</span><span class="o">=</span><span class="s1">&#39;kg/m^3&#39;</span><span class="p">,</span>
                  <span class="n">temperature</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">salinity</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">temperature</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">salinity</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">temperature</span><span class="p">,</span> <span class="n">TemperatureTS</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">salinity</span><span class="p">,</span> <span class="n">SalinityTS</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide temperature and salinity time series Environment objects&#39;</span><span class="p">)</span>
-        <span class="n">density_times</span> <span class="o">=</span> <span class="n">temperature</span><span class="o">.</span><span class="n">time</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">temperature</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">salinity</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="k">else</span> <span class="n">salinity</span><span class="o">.</span><span class="n">time</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">temperature</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span>
+                <span class="n">salinity</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span>
+                <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">temperature</span><span class="p">,</span> <span class="n">TemperatureTS</span><span class="p">)</span> <span class="ow">or</span>
+                <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">salinity</span><span class="p">,</span> <span class="n">SalinityTS</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide temperature and salinity &#39;</span>
+                             <span class="s1">&#39;time series Environment objects&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">temperature</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">salinity</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">):</span>
+            <span class="n">density_times</span> <span class="o">=</span> <span class="n">temperature</span><span class="o">.</span><span class="n">time</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density_times</span> <span class="o">=</span> <span class="n">salinity</span><span class="o">.</span><span class="n">time</span>
+
         <span class="n">dummy_pt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">])</span>
+
         <span class="kn">import</span> <span class="nn">gsw</span>
         <span class="kn">from</span> <span class="nn">gnome</span> <span class="k">import</span> <span class="n">constants</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">gsw</span><span class="o">.</span><span class="n">rho</span><span class="p">(</span><span class="n">salinity</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">dummy_pt</span><span class="p">,</span> <span class="n">t</span><span class="p">),</span> <span class="n">temperature</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">dummy_pt</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span> <span class="n">constants</span><span class="o">.</span><span class="n">atmos_pressure</span> <span class="o">*</span> <span class="mf">0.0001</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">density_times</span><span class="o">.</span><span class="n">time</span><span class="p">]</span>
-        <span class="n">TimeSeriesProp</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">density_times</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">gsw</span><span class="o">.</span><span class="n">rho</span><span class="p">(</span><span class="n">salinity</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">dummy_pt</span><span class="p">,</span> <span class="n">t</span><span class="p">),</span>
+                        <span class="n">temperature</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">dummy_pt</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span>
+                        <span class="n">constants</span><span class="o">.</span><span class="n">atmos_pressure</span> <span class="o">*</span> <span class="mf">0.0001</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">density_times</span><span class="o">.</span><span class="n">time</span><span class="p">]</span>
+
+        <span class="n">TimeSeriesProp</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">density_times</span><span class="p">,</span>
+                                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">GridSediment</span><span class="p">(</span><span class="n">GriddedProp</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">GridSediment</span><span class="p">(</span><span class="n">Variable</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
     <span class="n">default_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;sand_06&#39;</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="IceConcentration"><a class="viewcode-back" href="../../../reference.html#gnome.environment.IceConcentration">[docs]</a><span class="k">class</span> <span class="nc">IceConcentration</span><span class="p">(</span><span class="n">GriddedProp</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
+<div class="viewcode-block" id="IceConcentration"><a class="viewcode-back" href="../../../reference.html#gnome.environment.IceConcentration">[docs]</a><span class="k">class</span> <span class="nc">IceConcentration</span><span class="p">(</span><span class="n">Variable</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
     <span class="n">_ref_as</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ice_concentration&#39;</span><span class="p">,</span> <span class="s1">&#39;ice_aware&#39;</span><span class="p">]</span>
     <span class="n">default_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ice_fraction&#39;</span><span class="p">,</span> <span class="p">]</span>
+    <span class="n">cf_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;sea_ice_area_fraction&#39;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">IceConcentration</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">IceConcentration</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <span class="c1">#     def __eq__(self, o):</span>
 <span class="c1">#         t1 = (self.name == o.name and</span>
@@ -621,23 +631,21 @@
 <span class="c1">#         t2 = self.data == o.data</span>
 <span class="c1">#         return t1 and t2</span>
 
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="o">=</span><span class="s1">&#39;save&#39;</span><span class="p">)</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span></div>
 
-
-<span class="k">class</span> <span class="nc">Bathymetry</span><span class="p">(</span><span class="n">GriddedProp</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Bathymetry</span><span class="p">(</span><span class="n">Variable</span><span class="p">):</span>
     <span class="n">default_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;h&#39;</span><span class="p">]</span>
+    <span class="n">cf_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;depth&#39;</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="GridCurrent"><a class="viewcode-back" href="../../../reference.html#gnome.environment.GridCurrent">[docs]</a><span class="k">class</span> <span class="nc">GridCurrent</span><span class="p">(</span><span class="n">VelocityGrid</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
     <span class="n">_ref_as</span> <span class="o">=</span> <span class="s1">&#39;current&#39;</span>
 
-    <span class="n">default_names</span> <span class="o">=</span> <span class="p">[[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;v&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">],</span>
-                     <span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="s1">&#39;W&#39;</span><span class="p">],</span>
-                     <span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;v&#39;</span><span class="p">],</span>
-                     <span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">],</span>
-                     <span class="p">[</span><span class="s1">&#39;water_u&#39;</span><span class="p">,</span> <span class="s1">&#39;water_v&#39;</span><span class="p">],</span>
-                     <span class="p">[</span><span class="s1">&#39;curr_ucmp&#39;</span><span class="p">,</span> <span class="s1">&#39;curr_vcmp&#39;</span><span class="p">]]</span>
+    <span class="n">default_names</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;u&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;U&#39;</span><span class="p">,</span> <span class="s1">&#39;water_u&#39;</span><span class="p">,</span> <span class="s1">&#39;curr_ucmp&#39;</span><span class="p">],</span>
+                     <span class="s1">&#39;v&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="s1">&#39;water_v&#39;</span><span class="p">,</span> <span class="s1">&#39;curr_vcmp&#39;</span><span class="p">],</span>
+                     <span class="s1">&#39;w&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="s1">&#39;W&#39;</span><span class="p">]}</span>
+    <span class="n">cf_names</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;u&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;eastward_sea_water_velocity&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;v&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;northward_sea_water_velocity&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;w&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;upward_sea_water_velocity&#39;</span><span class="p">]}</span>
 
 <div class="viewcode-block" id="GridCurrent.at"><a class="viewcode-back" href="../../../reference.html#gnome.environment.GridCurrent.at">[docs]</a>    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -658,43 +666,68 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">mem</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;memoize&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;memoize&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="kc">True</span>
         <span class="n">_hash</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;_hash&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;_hash&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="kc">None</span>
+
         <span class="k">if</span> <span class="n">_hash</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">_hash</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_hash</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
             <span class="k">if</span> <span class="s1">&#39;_hash&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
                 <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;_hash&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_hash</span>
 
         <span class="k">if</span> <span class="n">mem</span><span class="p">:</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_memoed</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_memoed</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">res</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">res</span>
 
-        <span class="n">value</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">GridCurrent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">GridCurrent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span>
+                                            <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span>
+                                            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">angs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">angs</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span>
+                                  <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="s1">&#39;degree&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="o">.</span><span class="n">units</span><span class="p">:</span>
+                <span class="n">angs</span> <span class="o">=</span> <span class="n">angs</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.</span>
+
             <span class="n">x</span> <span class="o">=</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span> <span class="o">-</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span>
             <span class="n">y</span> <span class="o">=</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span> <span class="o">+</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span>
+
             <span class="n">value</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
             <span class="n">value</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+
         <span class="n">value</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">][</span><span class="n">points</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
         <span class="k">if</span> <span class="n">mem</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_memoize_result</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_memoize_result</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">value</span></div></div>
 
 
 <div class="viewcode-block" id="GridWind"><a class="viewcode-back" href="../../../reference.html#gnome.environment.GridWind">[docs]</a><span class="k">class</span> <span class="nc">GridWind</span><span class="p">(</span><span class="n">VelocityGrid</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
 
     <span class="n">_ref_as</span> <span class="o">=</span> <span class="s1">&#39;wind&#39;</span>
-    <span class="n">default_names</span> <span class="o">=</span> <span class="p">[[</span><span class="s1">&#39;air_u&#39;</span><span class="p">,</span> <span class="s1">&#39;air_v&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;Air_U&#39;</span><span class="p">,</span> <span class="s1">&#39;Air_V&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;air_ucmp&#39;</span><span class="p">,</span> <span class="s1">&#39;air_vcmp&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;wind_u&#39;</span><span class="p">,</span> <span class="s1">&#39;wind_v&#39;</span><span class="p">]]</span>
+
+    <span class="n">default_names</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;u&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;air_u&#39;</span><span class="p">,</span> <span class="s1">&#39;Air_U&#39;</span><span class="p">,</span> <span class="s1">&#39;air_ucmp&#39;</span><span class="p">,</span> <span class="s1">&#39;wind_u&#39;</span><span class="p">],</span>
+                     <span class="s1">&#39;v&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;air_v&#39;</span><span class="p">,</span> <span class="s1">&#39;Air_V&#39;</span><span class="p">,</span> <span class="s1">&#39;air_vcmp&#39;</span><span class="p">,</span> <span class="s1">&#39;wind_v&#39;</span><span class="p">]}</span>
+
+    <span class="n">cf_names</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;u&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;eastward_wind&#39;</span><span class="p">,</span> <span class="s1">&#39;eastward wind&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;v&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;northward_wind&#39;</span><span class="p">,</span> <span class="s1">&#39;northward wind&#39;</span><span class="p">]}</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wet_dry_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">GridWind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">wet_dry_mask</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">wet_dry_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">infer_location</span><span class="p">(</span><span class="n">wet_dry_mask</span><span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;center&#39;</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wet/Dry mask does not correspond to grid cell centers&#39;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wet/Dry mask does not correspond to &#39;</span>
+                                 <span class="s1">&#39;grid cell centers&#39;</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">wet_dry_mask</span> <span class="o">=</span> <span class="n">wet_dry_mask</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">=</span><span class="s1">&#39;m/s&#39;</span>
 
-
-<div class="viewcode-block" id="GridWind.at"><a class="viewcode-back" href="../../../reference.html#gnome.environment.GridWind.at">[docs]</a>    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="GridWind.at"><a class="viewcode-back" href="../../../reference.html#gnome.environment.GridWind.at">[docs]</a>    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;uv&#39;</span><span class="p">,</span> <span class="n">_auto_align</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Find the value of the property at positions P at time T</span>
 
@@ -703,100 +736,155 @@
 <span class="sd">        :param depth: Specifies the depth level of the variable</span>
 <span class="sd">        :param units: units the values will be returned in (or converted to)</span>
 <span class="sd">        :param extrapolate: if True, extrapolation will be supported</span>
+<span class="sd">        :param format: String describing the data and organization.</span>
 <span class="sd">        :type points: Nx2 array of double</span>
 <span class="sd">        :type time: datetime.datetime object</span>
 <span class="sd">        :type depth: integer</span>
 <span class="sd">        :type units: string such as (&#39;m/s&#39;, &#39;knots&#39;, etc)</span>
 <span class="sd">        :type extrapolate: boolean (True or False)</span>
+<span class="sd">        :type format: string, one of (&#39;uv&#39;,&#39;u&#39;,&#39;v&#39;,&#39;r-theta&#39;,&#39;r&#39;,&#39;theta&#39;)</span>
 <span class="sd">        :return: returns a Nx2 array of interpolated values</span>
 <span class="sd">        :rtype: double</span>
 <span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">pts</span> <span class="o">=</span> <span class="n">gridded</span><span class="o">.</span><span class="n">utilities</span><span class="o">.</span><span class="n">_reorganize_spatial_data</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">has_depth</span> <span class="o">=</span> <span class="n">pts</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">2</span>
+
         <span class="n">mem</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;memoize&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;memoize&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="kc">True</span>
         <span class="n">_hash</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;_hash&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;_hash&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="kc">None</span>
+
         <span class="k">if</span> <span class="n">_hash</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">_hash</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_hash</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+            <span class="n">_hash</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_hash</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
             <span class="k">if</span> <span class="s1">&#39;_hash&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
                 <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;_hash&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_hash</span>
 
         <span class="k">if</span> <span class="n">mem</span><span class="p">:</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_memoed</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_memoed</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">res</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">res</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">res</span>
+                <span class="k">if</span> <span class="n">_auto_align</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">gridded</span><span class="o">.</span><span class="n">utilities</span><span class="o">.</span><span class="n">_align_results_to_spatial_data</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">value</span>
 
-        <span class="n">value</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">GridWind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">value</span><span class="p">[</span><span class="n">points</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># no wind underwater!</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">angs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="n">x</span> <span class="o">=</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span> <span class="o">-</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span>
-            <span class="n">y</span> <span class="o">=</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span> <span class="o">+</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span>
-            <span class="n">value</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
-            <span class="n">value</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">GridWind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span> <span class="n">_auto_align</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">has_depth</span><span class="p">:</span>
+                <span class="n">value</span><span class="p">[</span><span class="n">pts</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># no wind underwater!</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">angs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span> <span class="n">_auto_align</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span> <span class="o">-</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span> <span class="o">+</span> <span class="n">value</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angs</span><span class="p">)</span>
+                <span class="n">value</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+                <span class="n">value</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wet_dry_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">locate_faces</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s1">&#39;u&#39;</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s1">&#39;v&#39;</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;r-theta&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="s1">&#39;theta&#39;</span><span class="p">):</span>
+            <span class="n">_mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">value</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">value</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">_dir</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">value</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">value</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mf">180.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s1">&#39;r&#39;</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">_mag</span>
+            <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s1">&#39;theta&#39;</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">_dir</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">_mag</span><span class="p">,</span> <span class="n">_dir</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">_auto_align</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">gridded</span><span class="o">.</span><span class="n">utilities</span><span class="o">.</span><span class="n">_align_results_to_spatial_data</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">mem</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_memoize_result</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">value</span></div></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_memoize_result</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="GridWind.get_start_time"><a class="viewcode-back" href="../../../reference.html#gnome.environment.GridWind.get_start_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">min_time</span></div>
+<div class="viewcode-block" id="GridWind.get_end_time"><a class="viewcode-back" href="../../../reference.html#gnome.environment.GridWind.get_end_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_end_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">max_time</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">LandMask</span><span class="p">(</span><span class="n">GriddedProp</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">LandMask</span><span class="p">(</span><span class="n">Variable</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">,</span> <span class="n">nc4</span><span class="o">.</span><span class="n">Variable</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide a netCDF4 Variable, masked numpy array, or an explicit mask on nodes or faces&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">,</span>
+                                                 <span class="n">nc4</span><span class="o">.</span><span class="n">Variable</span><span class="p">,</span>
+                                                 <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide a &#39;</span>
+                             <span class="s1">&#39;netCDF4 Variable, &#39;</span>
+                             <span class="s1">&#39;masked numpy array, or &#39;</span>
+                             <span class="s1">&#39;an explicit mask on nodes or faces&#39;</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">):</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">mask</span>
+
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
 
-    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">_mem</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+           <span class="n">_hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">_mem</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
         <span class="k">if</span> <span class="n">_hash</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">_hash</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_hash</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">_mem</span><span class="p">:</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_memoed</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_memoed</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">res</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">res</span>
-        <span class="n">idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">locate_faces</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
-        <span class="n">time_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">index_of</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+        <span class="c1"># TODO: Why are these here?  idxs and time_idx not used.</span>
+        <span class="n">_idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">locate_faces</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">_time_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">index_of</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
         <span class="n">order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimension_ordering</span>
+
         <span class="k">if</span> <span class="n">order</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span>
-            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_interp</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span> <span class="n">_mem</span><span class="o">=</span><span class="n">_mem</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_interp</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span>
+                                      <span class="n">_mem</span><span class="o">=</span><span class="n">_mem</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">order</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;depth&#39;</span><span class="p">:</span>
-            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_depth_interp</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span> <span class="n">_mem</span><span class="o">=</span><span class="n">_mem</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_depth_interp</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span>
+                                       <span class="n">_mem</span><span class="o">=</span><span class="n">_mem</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xy_interp</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span> <span class="n">_mem</span><span class="o">=</span><span class="n">_mem</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xy_interp</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span>
+                                    <span class="n">_mem</span><span class="o">=</span><span class="n">_mem</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">_mem</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_memoize_result</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">value</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_memoize_result</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">_result_memo</span><span class="p">,</span> <span class="n">_hash</span><span class="o">=</span><span class="n">_hash</span><span class="p">)</span>
 
+        <span class="k">return</span> <span class="n">value</span>
 
 
 <span class="k">class</span> <span class="nc">IceVelocity</span><span class="p">(</span><span class="n">VelocityGrid</span><span class="p">,</span> <span class="n">Environment</span><span class="p">):</span>
     <span class="n">_ref_as</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ice_velocity&#39;</span><span class="p">,</span> <span class="s1">&#39;ice_aware&#39;</span><span class="p">]</span>
-    <span class="n">default_names</span> <span class="o">=</span> <span class="p">[[</span><span class="s1">&#39;ice_u&#39;</span><span class="p">,</span> <span class="s1">&#39;ice_v&#39;</span><span class="p">,</span> <span class="p">],</span> <span class="p">]</span>
+    <span class="n">default_names</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;u&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;ice_u&#39;</span><span class="p">],</span>
+                     <span class="s1">&#39;v&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;ice_v&#39;</span><span class="p">]}</span>
+
+    <span class="n">cf_names</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;u&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;eastward_sea_ice_velocity&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;v&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;northward_sea_ice_velocity&#39;</span><span class="p">]}</span>
 
 
-<span class="k">class</span> <span class="nc">IceAwarePropSchema</span><span class="p">(</span><span class="n">GridVectorPropSchema</span><span class="p">):</span>
-    <span class="n">ice_concentration</span> <span class="o">=</span> <span class="n">GridPropSchema</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">IceAwarePropSchema</span><span class="p">(</span><span class="n">VectorVariableSchema</span><span class="p">):</span>
+    <span class="n">ice_concentration</span> <span class="o">=</span> <span class="n">VariableSchema</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">IceAwareCurrentSchema</span><span class="p">(</span><span class="n">IceAwarePropSchema</span><span class="p">):</span>
-    <span class="n">ice_velocity</span> <span class="o">=</span> <span class="n">GridVectorPropSchema</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">ice_velocity</span> <span class="o">=</span> <span class="n">VectorVariableSchema</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="IceAwareCurrent"><a class="viewcode-back" href="../../../reference.html#gnome.environment.IceAwareCurrent">[docs]</a><span class="k">class</span> <span class="nc">IceAwareCurrent</span><span class="p">(</span><span class="n">GridCurrent</span><span class="p">):</span>
 
     <span class="n">_ref_as</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;current&#39;</span><span class="p">,</span> <span class="s1">&#39;ice_aware&#39;</span><span class="p">]</span>
-    <span class="n">_req_refs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ice_concentration&#39;</span><span class="p">:</span> <span class="n">IceConcentration</span><span class="p">,</span> <span class="s1">&#39;ice_velocity&#39;</span><span class="p">:</span> <span class="n">IceVelocity</span><span class="p">}</span>
+    <span class="n">_req_refs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ice_concentration&#39;</span><span class="p">:</span> <span class="n">IceConcentration</span><span class="p">,</span>
+                 <span class="s1">&#39;ice_velocity&#39;</span><span class="p">:</span> <span class="n">IceVelocity</span><span class="p">}</span>
 
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">IceAwareCurrentSchema</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">GridCurrent</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
 
-    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;ice_velocity&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;ice_concentration&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;ice_velocity&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                         <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;ice_concentration&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                         <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">ice_velocity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -805,41 +893,67 @@
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ice_velocity</span> <span class="o">=</span> <span class="n">ice_velocity</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ice_concentration</span> <span class="o">=</span> <span class="n">ice_concentration</span>
+
         <span class="nb">super</span><span class="p">(</span><span class="n">IceAwareCurrent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="IceAwareCurrent.from_netCDF"><a class="viewcode-back" href="../../../reference.html#gnome.environment.IceAwareCurrent.from_netCDF">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="nd">@GridCurrent</span><span class="o">.</span><span class="n">_get_shared_vars</span><span class="p">()</span>
     <span class="k">def</span> <span class="nf">from_netCDF</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
+                    <span class="n">ice_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                     <span class="n">ice_concentration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                     <span class="n">ice_velocity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">temp_fn</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">ice_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">temp_fn</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ice_file</span>
         <span class="k">if</span> <span class="n">ice_concentration</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ice_concentration</span> <span class="o">=</span> <span class="n">IceConcentration</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">ice_velocity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ice_velocity</span> <span class="o">=</span> <span class="n">IceVelocity</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">IceAwareCurrent</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">ice_concentration</span><span class="o">=</span><span class="n">ice_concentration</span><span class="p">,</span>
-                                                       <span class="n">ice_velocity</span><span class="o">=</span><span class="n">ice_velocity</span><span class="p">,</span>
-                                                       <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">interp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ice_concentration</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">temp_fn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_fn</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">IceAwareCurrent</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">ice_concentration</span><span class="o">=</span><span class="n">ice_concentration</span><span class="p">,</span>
+                             <span class="n">ice_velocity</span><span class="o">=</span><span class="n">ice_velocity</span><span class="p">,</span>
+                             <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="IceAwareCurrent.at"><a class="viewcode-back" href="../../../reference.html#gnome.environment.IceAwareCurrent.at">[docs]</a>    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">interp</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ice_concentration</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span>
+                                            <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                  <span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
         <span class="n">interp_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">interp</span> <span class="o">&gt;=</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">interp</span> <span class="o">&lt;</span> <span class="mf">0.8</span><span class="p">)</span>
         <span class="n">interp_mask</span> <span class="o">=</span> <span class="n">interp_mask</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">interp</span> <span class="o">&gt;</span> <span class="mf">0.2</span><span class="p">):</span>
             <span class="n">ice_mask</span> <span class="o">=</span> <span class="n">interp</span> <span class="o">&gt;=</span> <span class="mf">0.8</span>
 
-            <span class="n">water_v</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">IceAwareCurrent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="n">ice_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ice_velocity</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">water_v</span> <span class="o">=</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">IceAwareCurrent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+                       <span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
+            <span class="n">ice_v</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ice_velocity</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span>
+                                          <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                     <span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
             <span class="n">interp</span> <span class="o">=</span> <span class="p">(</span><span class="n">interp</span> <span class="o">-</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">/</span> <span class="mf">6.</span>
 
             <span class="n">vels</span> <span class="o">=</span> <span class="n">water_v</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="n">vels</span><span class="p">[</span><span class="n">ice_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">ice_v</span><span class="p">[</span><span class="n">ice_mask</span><span class="p">]</span>
+
             <span class="n">diff_v</span> <span class="o">=</span> <span class="n">ice_v</span>
             <span class="n">diff_v</span> <span class="o">-=</span> <span class="n">water_v</span>
-            <span class="n">vels</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">diff_v</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">]</span> <span class="o">*</span> <span class="n">interp</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">][:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">])</span>
+
+            <span class="n">vels</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">diff_v</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">]</span> <span class="o">*</span>
+                                  <span class="n">interp</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">][:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">])</span>
+
             <span class="k">return</span> <span class="n">vels</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">IceAwareCurrent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">IceAwareCurrent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span>
+                                                   <span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="IceAwareWind"><a class="viewcode-back" href="../../../reference.html#gnome.environment.IceAwareWind">[docs]</a><span class="k">class</span> <span class="nc">IceAwareWind</span><span class="p">(</span><span class="n">GridWind</span><span class="p">):</span>
@@ -850,16 +964,18 @@
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">IceAwarePropSchema</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">GridWind</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
 
-    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;ice_concentration&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;ice_concentration&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                         <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">ice_concentration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="o">*</span><span class="n">args</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ice_concentration</span> <span class="o">=</span> <span class="n">ice_concentration</span>
+
         <span class="nb">super</span><span class="p">(</span><span class="n">IceAwareWind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="IceAwareWind.from_netCDF"><a class="viewcode-back" href="../../../reference.html#gnome.environment.IceAwareWind.from_netCDF">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="nd">@GridCurrent</span><span class="o">.</span><span class="n">_get_shared_vars</span><span class="p">()</span>
     <span class="k">def</span> <span class="nf">from_netCDF</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
                     <span class="n">ice_concentration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -867,40 +983,41 @@
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">ice_concentration</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ice_concentration</span> <span class="o">=</span> <span class="n">IceConcentration</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">ice_velocity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ice_velocity</span> <span class="o">=</span> <span class="n">IceVelocity</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">IceAwareWind</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">ice_concentration</span><span class="o">=</span><span class="n">ice_concentration</span><span class="p">,</span>
-                                                    <span class="n">ice_velocity</span><span class="o">=</span><span class="n">ice_velocity</span><span class="p">,</span>
-                                                    <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">interp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ice_concentration</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">IceAwareWind</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">ice_concentration</span><span class="o">=</span><span class="n">ice_concentration</span><span class="p">,</span>
+                             <span class="n">ice_velocity</span><span class="o">=</span><span class="n">ice_velocity</span><span class="p">,</span>
+                             <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="IceAwareWind.at"><a class="viewcode-back" href="../../../reference.html#gnome.environment.IceAwareWind.at">[docs]</a>    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">interp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ice_concentration</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span>
+                                           <span class="n">extrapolate</span><span class="o">=</span><span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
         <span class="n">interp_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">interp</span> <span class="o">&gt;=</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">interp</span> <span class="o">&lt;</span> <span class="mf">0.8</span><span class="p">)</span>
         <span class="n">interp_mask</span> <span class="o">=</span> <span class="n">interp_mask</span>
+
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">interp</span> <span class="o">&gt;=</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">ice_mask</span> <span class="o">=</span> <span class="n">interp</span> <span class="o">&gt;=</span> <span class="mf">0.8</span>
 
-            <span class="n">wind_v</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">IceAwareWind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">wind_v</span> <span class="o">=</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">IceAwareWind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+                      <span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
             <span class="n">interp</span> <span class="o">=</span> <span class="p">(</span><span class="n">interp</span> <span class="o">-</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">/</span> <span class="mf">6.</span>
 
             <span class="n">vels</span> <span class="o">=</span> <span class="n">wind_v</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="n">vels</span><span class="p">[</span><span class="n">ice_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">vels</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">vels</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">interp</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">])[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>  <span class="c1"># scale winds from 100-0% depending on ice coverage</span>
+
+            <span class="c1"># scale winds from 100-0% depending on ice coverage</span>
+            <span class="n">vels</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">vels</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">]</span> <span class="o">*</span>
+                                 <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">interp</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">])[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">])</span>
+
             <span class="k">return</span> <span class="n">vels</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">IceAwareWind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-<span class="k">def</span> <span class="nf">load_all_from_netCDF</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                         <span class="n">grid_topology</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                         <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                         <span class="n">time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                         <span class="n">grid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                         <span class="n">depth</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                         <span class="n">dataset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                         <span class="n">data_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                         <span class="n">grid_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                         <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">pass</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">IceAwareWind</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div></div>
 </pre></div>
 
            </div>
@@ -937,7 +1054,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -947,7 +1064,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

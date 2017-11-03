@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>The logging system &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>The logging system &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="index.html"/>
         <link rel="next" title="Notes on serialization / deserialization:" href="serialization.html"/>
         <link rel="prev" title="Customizing pygnome" href="customizing.html"/> 
 
@@ -66,7 +66,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -95,6 +95,7 @@
 <li class="toctree-l1"><a class="reference internal" href="installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">The logging system</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#configuring-the-logger">Configuring the logger</a><ul>
@@ -210,20 +211,20 @@
 <h1>The logging system<a class="headerlink" href="#the-logging-system" title="Permalink to this headline">¶</a></h1>
 <p><code class="docutils literal"><span class="pre">pygnome</span></code> comes with the python logging system pre-configured for use.</p>
 <p>It is used in the code to capture model state and warnings. When used as the back-end behind WebGNOME, the logging messages are passed to the client for display to the user, and parsed for capturing warnings etc.</p>
-<p>But you may also want to use the logging system in scripting mode, to capture what&#8217;s going on with the model.</p>
+<p>But you may also want to use the logging system in scripting mode, to capture what’s going on with the model.</p>
 <div class="section" id="configuring-the-logger">
 <h2>Configuring the logger<a class="headerlink" href="#configuring-the-logger" title="Permalink to this headline">¶</a></h2>
 <p>The logger can be initialized and configured in the usual way with the python <code class="docutils literal"><span class="pre">logging</span></code> module. However, pygnome comes with a couple utilities to make it easy to do standard configuration:</p>
 <div class="section" id="gnome-initialize-console-log-level-debug">
 <h3><code class="docutils literal"><span class="pre">gnome.initialize_console_log(level='debug')</span></code><a class="headerlink" href="#gnome-initialize-console-log-level-debug" title="Permalink to this headline">¶</a></h3>
 <p>Initializes the logger to simply log everything to the console (stdout). Likely what you want for scripting use.</p>
-<p>you can set the logging level to the level you want your log to show. options are, in order of importance: &#8220;debug&#8221;, &#8220;info&#8221;, &#8220;warning&#8221;, &#8220;error&#8221;, &#8220;critical&#8221;</p>
+<p>you can set the logging level to the level you want your log to show. options are, in order of importance: “debug”, “info”, “warning”, “error”, “critical”</p>
 <p>You will only get the logging messages at or above the level you set.</p>
 <p>(see <code class="docutils literal"><span class="pre">script_columbia_river</span></code> for an example)</p>
 </div>
 <div class="section" id="gnome-initialize-log-config-logfile-none">
 <h3><code class="docutils literal"><span class="pre">gnome.initialize_log(config,</span> <span class="pre">logfile=None)</span></code><a class="headerlink" href="#gnome-initialize-log-config-logfile-none" title="Permalink to this headline">¶</a></h3>
-<p>Helper function to initialize a log - this should be called by the application using PyGnome. This is used to set up the log for the WEbGNOME API, for instance. <code class="docutils literal"><span class="pre">config</span></code> can be a file containing json or it can be a Python dict &#8211; in the dict config format used by <code class="docutils literal"><span class="pre">logging.dictConfig</span></code>:</p>
+<p>Helper function to initialize a log - this should be called by the application using PyGnome. This is used to set up the log for the WEbGNOME API, for instance. <code class="docutils literal"><span class="pre">config</span></code> can be a file containing json or it can be a Python dict – in the dict config format used by <code class="docutils literal"><span class="pre">logging.dictConfig</span></code>:</p>
 <p><a class="reference external" href="https://docs.python.org/2/library/logging.config.html#logging-config-dictschema">https://docs.python.org/2/library/logging.config.html#logging-config-dictschema</a></p>
 <p>logfile is the optional file name to log to.</p>
 <p>(this requires a bit of knowledge of the logging system)</p>
@@ -241,7 +242,7 @@
 <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;whoops! a critical error -- you really don&#39;t want to miss this!&quot;</span> <span class="p">)</span>
 </pre></div>
 </div>
-<p>These are in order of importance &#8211; debug is not important, critical is critically important.</p>
+<p>These are in order of importance – debug is not important, critical is critically important.</p>
 </div>
 <div class="section" id="logging-levels-in-webgnome">
 <h2>Logging levels in WebGNOME<a class="headerlink" href="#logging-levels-in-webgnome" title="Permalink to this headline">¶</a></h2>
@@ -298,7 +299,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -308,7 +309,7 @@
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

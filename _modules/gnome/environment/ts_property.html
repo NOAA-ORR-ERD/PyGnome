@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.environment.ts_property &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.environment.ts_property &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -163,32 +164,33 @@
            <div itemprop="articleBody">
             
   <h1>Source code for gnome.environment.ts_property</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">warnings</span>
-<span class="kn">import</span> <span class="nn">copy</span>
+<span></span><span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">numbers</span> <span class="k">import</span> <span class="n">Number</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 
-<span class="kn">import</span> <span class="nn">netCDF4</span> <span class="k">as</span> <span class="nn">nc4</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">gnome.environment.property</span> <span class="k">import</span> <span class="n">EnvProp</span><span class="p">,</span> <span class="n">VectorProp</span><span class="p">,</span> <span class="n">Time</span><span class="p">,</span> <span class="n">PropertySchema</span><span class="p">,</span> <span class="n">TimeSchema</span><span class="p">,</span> \
-    <span class="n">VectorPropSchema</span>
-<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
-<span class="kn">from</span> <span class="nn">dateutil</span> <span class="k">import</span> <span class="n">parser</span>
-<span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Boolean</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">MappingSchema</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">OneOf</span><span class="p">,</span> <span class="n">SequenceSchema</span><span class="p">,</span> <span class="n">TupleSchema</span><span class="p">,</span> <span class="n">DateTime</span>
-<span class="kn">from</span> <span class="nn">numbers</span> <span class="k">import</span> <span class="n">Number</span>
-<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="k">import</span> <span class="n">serializable</span>
+<span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">SequenceSchema</span><span class="p">,</span> <span class="n">TupleSchema</span><span class="p">,</span>
+                      <span class="n">Float</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">,</span>
+                      <span class="n">drop</span><span class="p">)</span>
 
 <span class="kn">import</span> <span class="nn">unit_conversion</span>
-<span class="kn">import</span> <span class="nn">collections</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="k">import</span> <span class="n">serializable</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities.orderedcollection</span> <span class="k">import</span> <span class="n">OrderedCollection</span>
+<span class="kn">from</span> <span class="nn">gnome.environment.property</span> <span class="k">import</span> <span class="p">(</span><span class="n">EnvProp</span><span class="p">,</span> <span class="n">VectorProp</span><span class="p">,</span>
+                                        <span class="n">PropertySchema</span><span class="p">,</span> <span class="n">VectorPropSchema</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gnome.environment.gridded_objects_base</span> <span class="k">import</span> <span class="n">Time</span><span class="p">,</span> <span class="n">TimeSchema</span>
 
 
 <span class="k">class</span> <span class="nc">TimeSeriesPropSchema</span><span class="p">(</span><span class="n">PropertySchema</span><span class="p">):</span>
     <span class="n">time</span> <span class="o">=</span> <span class="n">TimeSchema</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">SequenceSchema</span><span class="p">(</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">()),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
-    <span class="n">timeseries</span> <span class="o">=</span> <span class="n">SequenceSchema</span><span class="p">(</span>
-                                <span class="n">TupleSchema</span><span class="p">(</span>
-                                            <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">DateTime</span><span class="p">(</span><span class="n">default_tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">),</span>
-                                                      <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">timeseries</span> <span class="o">=</span> <span class="n">SequenceSchema</span><span class="p">(</span><span class="n">TupleSchema</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">DateTime</span><span class="p">(</span><span class="n">default_tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">),</span>
+                                                                 <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">),</span>
+                                                      <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span>
+                                                                 <span class="n">missing</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
                                                       <span class="p">],</span>
                                             <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">),</span>
                                 <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
@@ -198,10 +200,11 @@
 
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">EnvProp</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">TimeSeriesPropSchema</span>
-    
-    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;timeseries&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">False</span><span class="p">)])</span>
-    
+
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;timeseries&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+
 <span class="c1">#     _state.update(&#39;time&#39;, update=False)</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -211,22 +214,32 @@
                  <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        A class that represents a scalar natural phenomenon using a time series</span>
+<span class="sd">            A class that represents a scalar natural phenomenon using a</span>
+<span class="sd">            time series</span>
 
-<span class="sd">        :param name: Name</span>
-<span class="sd">        :param units: Units</span>
-<span class="sd">        :param time: Time axis of the data</span>
-<span class="sd">        :param data: Underlying data source</span>
-<span class="sd">        :type name: string</span>
-<span class="sd">        :type units: string</span>
-<span class="sd">        :type time: [] of datetime.datetime, netCDF4.Variable, or Time object</span>
-<span class="sd">        :type data: numpy.array, list, or other iterable</span>
+<span class="sd">            :param name: Name</span>
+<span class="sd">            :type name: string</span>
+
+<span class="sd">            :param units: Units</span>
+<span class="sd">            :type units: string</span>
+
+<span class="sd">            :param time: Time axis of the data</span>
+<span class="sd">            :type time: [] of datetime.datetime, netCDF4.Variable,</span>
+<span class="sd">                        or Time object</span>
+
+<span class="sd">            :param data: Underlying data source</span>
+<span class="sd">            :type data: numpy.array, list, or other iterable</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Time and data sequences are of different length.</span><span class="se">\n\</span>
-<span class="s2">            len(time) == </span><span class="si">{0}</span><span class="s2">, len(data) == </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Time and data sequences are of &#39;</span>
+                             <span class="s1">&#39;different length.</span><span class="se">\n</span><span class="s1">&#39;</span>
+                             <span class="s1">&#39;len(time) == </span><span class="si">{0}</span><span class="s1">, len(data) == </span><span class="si">{1}</span><span class="s1">&#39;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span>
+
         <span class="nb">super</span><span class="p">(</span><span class="n">TimeSeriesProp</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">time</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
@@ -240,8 +253,11 @@
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">Number</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> data must be a number&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
         <span class="n">t</span> <span class="o">=</span> <span class="n">Time</span><span class="o">.</span><span class="n">constant_time</span><span class="p">()</span>
+
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="n">data</span><span class="p">])</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -249,7 +265,7 @@
 
 <span class="sd">        :rtype: list of (datetime, double) tuples</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">return</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -269,13 +285,16 @@
     <span class="nd">@time</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Data/time interval mismatch&quot;</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Data/time interval mismatch, doing nothing&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">Time</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_time</span> <span class="o">=</span> <span class="n">t</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_time</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Object being assigned must be an iterable or a Time object&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Object being assigned must be an iterable &#39;</span>
+                             <span class="s1">&#39;or a Time object&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">set_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -284,9 +303,11 @@
                  <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span> <span class="k">if</span> <span class="n">units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span>
+
         <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Data/time interval mismatch&quot;</span><span class="p">)</span>
+
             <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">time</span>
         <span class="k">else</span><span class="p">:</span>
@@ -295,33 +316,47 @@
 
 <div class="viewcode-block" id="TimeSeriesProp.at"><a class="viewcode-back" href="../../../reference.html#gnome.environment.ts_property.TimeSeriesProp.at">[docs]</a>    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Interpolates this property to the given points at the given time with the units specified</span>
-<span class="sd">        :param points: A Nx2 array of lon,lat points</span>
-<span class="sd">        :param time: A datetime object. May be None; if this is so, the variable is assumed to be gridded</span>
-<span class="sd">        but time-invariant</span>
-<span class="sd">        :param units: The units that the result would be converted to</span>
+<span class="sd">            Interpolates this property to the given points at the given time</span>
+<span class="sd">            with the units specified.</span>
+
+<span class="sd">            :param points: A Nx2 array of lon,lat points</span>
+
+<span class="sd">            :param time: A datetime object. May be None; if this is so,</span>
+<span class="sd">                         the variable is assumed to be gridded but</span>
+<span class="sd">                         time-invariant</span>
+
+<span class="sd">            :param units: The units that the result would be converted to</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="c1"># single time time series (constant)</span>
             <span class="n">value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="n">units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">units</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">:</span>
                 <span class="n">value</span> <span class="o">=</span> <span class="n">unit_conversion</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
             <span class="k">return</span> <span class="n">value</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">extrapolate</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">valid_time</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
         <span class="n">t_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">index_of</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">time</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">max_time</span><span class="p">:</span>
             <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
         <span class="k">if</span> <span class="n">time</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">min_time</span><span class="p">:</span>
             <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
         <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">t_alphas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">interp_alpha</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="p">)</span>
 
             <span class="n">d0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
             <span class="n">d1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t_index</span><span class="p">]</span>
+
             <span class="n">value</span> <span class="o">=</span> <span class="n">d0</span> <span class="o">+</span> <span class="p">(</span><span class="n">d1</span> <span class="o">-</span> <span class="n">d0</span><span class="p">)</span> <span class="o">*</span> <span class="n">t_alphas</span>
+
         <span class="k">if</span> <span class="n">units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">units</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">:</span>
             <span class="n">value</span> <span class="o">=</span> <span class="n">unit_conversion</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
@@ -335,6 +370,7 @@
               <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">==</span> <span class="n">o</span><span class="o">.</span><span class="n">units</span> <span class="ow">and</span>
               <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">==</span> <span class="n">o</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
         <span class="n">t2</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">o</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+
         <span class="k">return</span> <span class="n">t1</span> <span class="ow">and</span> <span class="n">t2</span>
 
     <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
@@ -342,18 +378,15 @@
 
 
 <span class="k">class</span> <span class="nc">TSVectorPropSchema</span><span class="p">(</span><span class="n">VectorPropSchema</span><span class="p">):</span>
-    <span class="n">timeseries</span> <span class="o">=</span> <span class="n">SequenceSchema</span><span class="p">(</span>
-                                <span class="n">TupleSchema</span><span class="p">(</span>
-                                            <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">DateTime</span><span class="p">(</span><span class="n">default_tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">),</span>
-                                                      <span class="n">TupleSchema</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="p">[</span>
-                                                                            <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">timeseries</span> <span class="o">=</span> <span class="n">SequenceSchema</span><span class="p">(</span><span class="n">TupleSchema</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">DateTime</span><span class="p">(</span><span class="n">default_tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">),</span>
+                                                                 <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">),</span>
+                                                      <span class="n">TupleSchema</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
                                                                             <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
                                                                             <span class="p">]</span>
-                                                                 <span class="p">)</span>
+                                                                  <span class="p">)</span>
                                                       <span class="p">],</span>
                                             <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">),</span>
                                 <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
-<span class="c1">#     variables = SequenceSchema(TupleSchema(SchemaNode(Float())))</span>
     <span class="n">varnames</span> <span class="o">=</span> <span class="n">SequenceSchema</span><span class="p">(</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 
@@ -362,9 +395,12 @@
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">TSVectorPropSchema</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">VectorProp</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
 
-    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;timeseries&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;variables&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">iscollection</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;varnames&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">False</span><span class="p">)])</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;timeseries&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                         <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;variables&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                         <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">iscollection</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                      <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;varnames&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                         <span class="n">update</span><span class="o">=</span><span class="kc">False</span><span class="p">)])</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -376,12 +412,16 @@
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        This class represents a vector phenomenon using a time series</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-
-        <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">units</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span> <span class="n">time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">])</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">TimeSeriesProp</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">]):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All attributes except name, varnames MUST be defined if variables is not a list of TimeSeriesProp objects&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">any</span><span class="p">([</span><span class="n">units</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span> <span class="n">time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">])</span> <span class="ow">and</span>
+                <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">TimeSeriesProp</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">])):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;All attributes except name, varnames &#39;</span>
+                             <span class="s1">&#39;MUST be defined if variables is not a &#39;</span>
+                             <span class="s1">&#39;list of TimeSeriesProp objects&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">variables</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Variables must be an array-like of 2 or more TimeSeriesProp or array-like&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Variables must be an array-like of 2 or more &#39;</span>
+                            <span class="s1">&#39;TimeSeriesProp or array-like&#39;</span><span class="p">)</span>
+
         <span class="n">VectorProp</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
@@ -394,8 +434,11 @@
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> variables must be an iterable&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
         <span class="n">t</span> <span class="o">=</span> <span class="n">Time</span><span class="o">.</span><span class="n">constant_time</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">t</span><span class="p">,</span>
+                   <span class="n">variables</span><span class="o">=</span><span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -404,7 +447,10 @@
 
 <span class="sd">        :rtype: list of (datetime, (double, double)) tuples</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">return</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)),</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">,</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -415,12 +461,14 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
                 <span class="n">v</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">t</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">Time</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_time</span> <span class="o">=</span> <span class="n">t</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_time</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Object being assigned must be an iterable or a Time object&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Object being assigned must be an iterable &#39;</span>
+                             <span class="s1">&#39;or a Time object&#39;</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -430,6 +478,7 @@
     <span class="k">def</span> <span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_variables</span> <span class="o">=</span> <span class="n">v</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_variables</span> <span class="o">=</span> <span class="n">OrderedCollection</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
 
@@ -442,9 +491,12 @@
 <span class="sd">        WARNING: This will copy the data of the original property!</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">cpy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cpy</span><span class="o">.</span><span class="n">_variables</span><span class="p">):</span>
             <span class="n">cpy</span><span class="o">.</span><span class="n">_variables</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">var</span><span class="o">.</span><span class="n">in_units</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+
         <span class="n">cpy</span><span class="o">.</span><span class="n">_units</span> <span class="o">=</span> <span class="n">units</span>
+
         <span class="k">return</span> <span class="n">cpy</span></div></div>
 </pre></div>
 
@@ -482,7 +534,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -492,7 +544,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

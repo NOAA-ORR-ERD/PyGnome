@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Spills &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Spills &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../index.html"/>
         <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
         <link rel="next" title="Movers" href="movers.html"/>
         <link rel="prev" title="Maps" href="maps.html"/> 
@@ -67,7 +67,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -114,6 +114,7 @@
 <li class="toctree-l2"><a class="reference internal" href="scripting_examples.html">Examples</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -227,7 +228,7 @@ details on setting up the Spill object can be found below, but for a lot of typi
 the scripting package can be utilized. Examples include:</p>
 <div class="section" id="surface-spill">
 <h3>Surface spill<a class="headerlink" href="#surface-spill" title="Permalink to this headline">¶</a></h3>
-<p>We use the <code class="xref py py-func docutils literal"><span class="pre">gnome.scripting.surface_point_line_spill()</span></code> helper function to inialize a release along a line
+<p>We use the <a class="reference internal" href="utilities.html#gnome.scripting.surface_point_line_spill" title="gnome.scripting.surface_point_line_spill"><code class="xref py py-func docutils literal"><span class="pre">gnome.scripting.surface_point_line_spill()</span></code></a> helper function to inialize a release along a line
 that occurs over one day. The oil type is specified as an Alaskan Crude from the ADIOS database with a spill volume
 of 5000 barrels. Here we change the default windage range to be 1-2% with an infinite persistence (particles keep
 the same windage value for all time).</p>
@@ -262,7 +263,7 @@ the same windage value for all time).</p>
 <span id="id1"></span><h3>Subsurface plume<a class="headerlink" href="#subsurface-plume" title="Permalink to this headline">¶</a></h3>
 <p>For initialization of a subsurface plume, we can use the subsurface_plume_spill helper function.
 Required parameters in this case also include a specification of the droplet size distribution
-or of the rise velocities. The <code class="xref py py-mod docutils literal"><span class="pre">gnome.utilities.distributions</span></code> module includes methods for
+or of the rise velocities. The <a class="reference internal" href="../reference.html#module-gnome.utilities.distributions" title="gnome.utilities.distributions"><code class="xref py py-mod docutils literal"><span class="pre">gnome.utilities.distributions</span></code></a> module includes methods for
 specifying different types of distributions. In this case we specify a uniform distribution of
 droplets ranging from 10-300 microns:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.scripting</span> <span class="k">import</span> <span class="n">subsurface_plume_spill</span>
@@ -366,7 +367,7 @@ the PointLineRelease class:</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -376,7 +377,7 @@ the PointLineRelease class:</p>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Introduction &mdash; pyGNOME 0.6.0 documentation</title>
+  <title>Using your data &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -36,8 +36,8 @@
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="pyGNOME 0.6.0 documentation" href="index.html"/>
-        <link rel="next" title="Installing" href="installing.html"/>
-        <link rel="prev" title="Welcome to pyGNOME’s documentation!" href="index.html"/> 
+        <link rel="next" title="Glossary" href="env_obj/glossary.html"/>
+        <link rel="prev" title="A subsurface (mixed layer) release" href="scripting/mixedlayer_release.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -91,14 +91,19 @@
             
             
               <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#history">History</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scripting.html">Scripting pygnome</a></li>
-<li class="toctree-l1"><a class="reference internal" href="env_obj.html">Using your data</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using your data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="env_obj/glossary.html">Glossary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env_obj/environment_objects.html">Environment Objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env_obj/examples.html">Customizing environment objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env_obj/examples.html#Demonstration-of-component-sharing">Demonstration of component sharing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#age-old-problem">Age old problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="serialization.html">Notes on serialization / deserialization:</a></li>
@@ -148,13 +153,13 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Introduction</li>
+      <li>Using your data</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/introduction.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/env_obj.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -201,22 +206,40 @@
     margin-right: 4px;  /* make room for the exclamation icon */
 }
 </style>
-<div class="section" id="introduction">
-<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
-<p>pyGNOME is a set of python bindings (and utilities) to the General NOAA
-Operational Modeling Environment (GNOME). It is used by NOAA to build the
-webGNOME interface to the model, and to do an assortment of batch processing
-and testing. It can be used to write your own customized models using the GNOME
-code base.</p>
-<div class="section" id="history">
-<h2>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h2>
-<p>GNOME began development in the late 1990s, as the successor to NOAA’s original
-oil spill model, the On Scene Spill Model (OSSM). It was built using an object
-oriented approach, written in C++ , with a dual platform GUI, originally for
-Windows32 and MacOS. The GUI has been ported to Mac OS-X, and a new web
-interface is underway. The Python bindings are a combination of wrappers around
-the same computational code used in the desktop GUI version, and new code
-written in a combination of Python, Cython and C++.</p>
+<div class="section" id="using-your-data">
+<h1>Using your data<a class="headerlink" href="#using-your-data" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="env_obj/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_obj/environment_objects.html">Environment Objects</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="env_obj/environment_objects.html#background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env_obj/environment_objects.html#scalar-or-vector">Scalar or Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env_obj/environment_objects.html#shared-components-and-memoization">Shared Components and Memoization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="env_obj/examples.html">Customizing environment objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_obj/examples.html#Demonstration-of-component-sharing">Demonstration of component sharing</a></li>
+</ul>
+</div>
+<div class="section" id="age-old-problem">
+<h2>Age old problem<a class="headerlink" href="#age-old-problem" title="Permalink to this headline">¶</a></h2>
+<p>The data format of ocean model results vary widely, and can appear on many different types of grid. In the past, GNOME
+accepted only specific formatting for gridded data in netCDF files, and this data was generally unavailable to other
+parts of the model. Adding a new data format or grid type was a difficult affair that required diving deep into the legacy C components.</p>
+<p>Environment objects were conceptualized as a flexible and easy-to-develop representation for gridded data that would
+dramatically reduce the difficulty of handling the many different formats and be usable and sharable throughout the model.</p>
+</div>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>An important perspective to take is an abstracted view of what gridded data represents. You can imagine any gridded data as a scalar
+field, where each point in space and time is associated with a value. Because the data is discrete on specific points in
+space, the value of a point between these data points must be determined by some sort of interpolation.</p>
+<p>An environment object implements an association between a data variable (such as a netCDF Variable, or numpy array) and a
+Grid, Time, and Depth (representing the data dimensions in space and time) and does interpolation across them. By combining and/or imposing conditions on these environment objects, many natural processes can be represented. In addition, if possible, the Grid, Time, and Depth may be shared among environment objects, which provides a number of performance and programmatic benefits.
+The core functionality of an environment object is it’s ‘EnvObject.at(points, time)’ function. The intent of this
+function is to provide the interpolated value of the data at each point at the specified time. By extending and
+overriding this function, more advanced behavior can be implemented. An example of this is the IceAwareCurrent,
+described later in this paper.</p>
 </div>
 </div>
 
@@ -230,10 +253,10 @@ written in a combination of Python, Cython and C++.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="installing.html" class="btn btn-neutral float-right" title="Installing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="env_obj/glossary.html" class="btn btn-neutral float-right" title="Glossary" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral" title="Welcome to pyGNOME’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="scripting/mixedlayer_release.html" class="btn btn-neutral" title="A subsurface (mixed layer) release" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

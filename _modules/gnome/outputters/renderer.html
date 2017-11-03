@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.outputters.renderer &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.outputters.renderer &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -177,22 +178,27 @@
 <span class="kn">import</span> <span class="nn">glob</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">zipfile</span>
+
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">py_gd</span>
+<span class="kn">import</span> <span class="nn">pytest</span>
 
 <span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">drop</span>
+
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="k">import</span> <span class="n">oil_status</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.file_tools</span> <span class="k">import</span> <span class="n">haz_files</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.map_canvas</span> <span class="k">import</span> <span class="n">MapCanvas</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="k">import</span> <span class="n">Field</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="k">import</span> <span class="n">projections</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.projections</span> <span class="k">import</span> <span class="n">FlatEarthProjection</span>
 
 <span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="k">import</span> <span class="n">base_schema</span><span class="p">,</span> <span class="n">class_from_objtype</span>
 
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">Outputter</span><span class="p">,</span> <span class="n">BaseSchema</span>
-<span class="kn">from</span> <span class="nn">gnome.utilities.map_canvas</span> <span class="k">import</span> <span class="n">MapCanvas</span>
-<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="k">import</span> <span class="n">Field</span>
-<span class="kn">from</span> <span class="nn">gnome.utilities.file_tools</span> <span class="k">import</span> <span class="n">haz_files</span>
-<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="k">import</span> <span class="n">projections</span>
 
-<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="k">import</span> <span class="n">oil_status</span>
-
-<span class="kn">from</span> <span class="nn">gnome.utilities.projections</span> <span class="k">import</span> <span class="n">FlatEarthProjection</span>
+<span class="kn">from</span> <span class="nn">gnome.environment.gridded_objects_base</span> <span class="k">import</span> <span class="n">Grid_S</span><span class="p">,</span> <span class="n">Grid_U</span>
 
 <span class="k">class</span> <span class="nc">RendererSchema</span><span class="p">(</span><span class="n">BaseSchema</span><span class="p">):</span>
 
@@ -251,8 +257,8 @@
                            <span class="n">test_for_eq</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">RendererSchema</span>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Renderer.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.Renderer.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+<div class="viewcode-block" id="Renderer.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.Renderer.new_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        change projection_type from string to correct type for loading from</span>
 <span class="sd">        save file</span>
@@ -268,6 +274,7 @@
             <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="n">proj_inst</span><span class="p">,</span> <span class="o">**</span><span class="n">dict_</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">obj</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Renderer</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">obj</span></div>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -303,8 +310,8 @@
 
 <span class="sd">        :param 2-tuple image_size=(800, 600): size of images to output</span>
 
-<span class="sd">        :param projection=None: projection instance to use:</span>
-<span class="sd">                                if None, set to projections.FlatEarthProjection()</span>
+<span class="sd">        :param projection=None: projection instance to use: If None,</span>
+<span class="sd">                                set to projections.FlatEarthProjection()</span>
 <span class="sd">        :type projection: a gnome.utilities.projection.Projection instance</span>
 
 <span class="sd">        :param viewport: viewport of map -- what gets drawn and on what scale.</span>
@@ -354,6 +361,7 @@
         <span class="n">projection</span> <span class="o">=</span> <span class="p">(</span><span class="n">projections</span><span class="o">.</span><span class="n">FlatEarthProjection</span><span class="p">()</span>
                       <span class="k">if</span> <span class="n">projection</span> <span class="ow">is</span> <span class="kc">None</span>
                       <span class="k">else</span> <span class="n">projection</span><span class="p">)</span>
+
         <span class="c1"># set up the canvas</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">map_filename</span> <span class="o">=</span> <span class="n">map_filename</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">=</span> <span class="n">output_dir</span>
@@ -369,32 +377,28 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">draw_ontop</span> <span class="o">=</span> <span class="n">draw_ontop</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">draw_back_to_fore</span> <span class="o">=</span> <span class="n">draw_back_to_fore</span>
 
-        <span class="n">Outputter</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                           <span class="n">cache</span><span class="p">,</span>
-                           <span class="n">on</span><span class="p">,</span>
+        <span class="n">Outputter</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">on</span><span class="p">,</span>
                            <span class="n">output_timestep</span><span class="p">,</span>
                            <span class="n">output_zero_step</span><span class="p">,</span>
                            <span class="n">output_last_step</span><span class="p">,</span>
                            <span class="n">output_start_time</span><span class="p">,</span>
-                           <span class="n">name</span><span class="p">,</span>
-                           <span class="n">output_dir</span>
-                           <span class="p">)</span>
+                           <span class="n">name</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">map_BB</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">land_polygons</span><span class="p">:</span>
                 <span class="n">map_BB</span> <span class="o">=</span> <span class="p">((</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="mi">180</span><span class="p">,</span> <span class="mi">90</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">map_BB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">land_polygons</span><span class="o">.</span><span class="n">bounding_box</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">map_BB</span> <span class="o">=</span> <span class="n">map_BB</span>
 
-        <span class="n">MapCanvas</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                           <span class="n">image_size</span><span class="p">,</span>
-                           <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">,</span>
+        <span class="n">MapCanvas</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_size</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">,</span>
                            <span class="n">viewport</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">map_BB</span><span class="p">)</span>
 
         <span class="c1"># assorted rendering flags:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">draw_map_bounds</span> <span class="o">=</span> <span class="n">draw_map_bounds</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">draw_spillable_area</span> <span class="o">=</span> <span class="n">draw_spillable_area</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">raster_map</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">raster_map_fill</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">raster_map_outline</span> <span class="o">=</span> <span class="kc">False</span>
@@ -408,6 +412,7 @@
             <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">file_prefix</span> <span class="o">=</span> <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
         <span class="n">fn</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}{}</span><span class="s1">anim.gif&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file_prefix</span><span class="p">,</span> <span class="n">sep</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">anim_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span>
 
@@ -415,7 +420,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">delay</span> <span class="o">=</span> <span class="mi">50</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">repeat</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timestamp_attribs</span> <span class="o">=</span> <span class="p">{}</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">set_timestamp_attrib</span><span class="p">(</span><span class="o">**</span><span class="n">timestamp_attrib</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">grids</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">props</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -452,6 +459,7 @@
         <span class="k">if</span> <span class="n">val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;forecast&#39;</span><span class="p">,</span> <span class="s1">&#39;uncertain&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;draw_ontop&#39; must be either &#39;forecast&#39; or&quot;</span>
                              <span class="s2">&quot;&#39;uncertain&#39;. </span><span class="si">{0}</span><span class="s2"> is invalid.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_draw_ontop</span> <span class="o">=</span> <span class="n">val</span>
 
     <span class="k">def</span> <span class="nf">output_dir_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -459,9 +467,10 @@
 
     <span class="k">def</span> <span class="nf">start_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">animation</span> <span class="o">=</span> <span class="n">py_gd</span><span class="o">.</span><span class="n">Animation</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delay</span><span class="p">)</span>
-        <span class="n">l</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">repeat</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">looping</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">repeat</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
+
         <span class="nb">print</span> <span class="s1">&#39;Starting animation&#39;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">animation</span><span class="o">.</span><span class="n">begin_anim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">back_image</span><span class="p">,</span> <span class="n">l</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">animation</span><span class="o">.</span><span class="n">begin_anim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">back_image</span><span class="p">,</span> <span class="n">looping</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Renderer.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.Renderer.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -480,8 +489,8 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">Renderer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">clean_output_files</span><span class="p">()</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">draw_background</span><span class="p">()</span>
+
         <span class="k">for</span> <span class="n">ftype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">formats</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">ftype</span> <span class="o">==</span> <span class="s1">&#39;gif&#39;</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">start_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim_filename</span><span class="p">)</span>
@@ -513,7 +522,8 @@
 
 <span class="sd">        :type color: str</span>
 
-<span class="sd">        :param size: Size of the font, one of &#39;tiny&#39;, &#39;small&#39;, &#39;medium&#39;, &#39;large&#39;, &#39;giant&#39;</span>
+<span class="sd">        :param size: Size of the font, one of {&#39;tiny&#39;, &#39;small&#39;, &#39;medium&#39;,</span>
+<span class="sd">                                               &#39;large&#39;, &#39;giant&#39;}</span>
 
 <span class="sd">        :type size: str</span>
 
@@ -522,13 +532,14 @@
 <span class="sd">        :type position :tuple</span>
 
 <span class="sd">        :param align: The reference point of the text bounding box.</span>
-<span class="sd">                      One of: &#39;lt&#39;(left top), &#39;ct&#39;, &#39;rt&#39;,&#39;l&#39;, &#39;r&#39;,&#39;rb&#39;, &#39;cb&#39;, &#39;lb&#39;</span>
+<span class="sd">                      One of: {&#39;lt&#39;(left top), &#39;ct&#39;, &#39;rt&#39;,</span>
+<span class="sd">                               &#39;l&#39;, &#39;r&#39;,</span>
+<span class="sd">                               &#39;lb&#39;, &#39;cb&#39;, &#39;rb&#39;}</span>
 
 <span class="sd">        :type align: str</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timestamp_attribs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span></div>
-
 
 <div class="viewcode-block" id="Renderer.draw_timestamp"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.Renderer.draw_timestamp">[docs]</a>    <span class="k">def</span> <span class="nf">draw_timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -540,18 +551,25 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp_attribs</span>
         <span class="n">on</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;on&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;on&#39;</span> <span class="ow">in</span> <span class="n">d</span> <span class="k">else</span> <span class="kc">True</span>
+
         <span class="k">if</span> <span class="ow">not</span> <span class="n">on</span><span class="p">:</span>
             <span class="k">return</span>
+
         <span class="n">dt_format</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;format&#39;</span> <span class="ow">in</span> <span class="n">d</span> <span class="k">else</span> <span class="s1">&#39;</span><span class="si">%c</span><span class="s1">&#39;</span>
+
         <span class="n">background</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;background&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;background&#39;</span> <span class="ow">in</span> <span class="n">d</span> <span class="k">else</span> <span class="s1">&#39;white&#39;</span>
+
         <span class="n">color</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;color&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;color&#39;</span> <span class="ow">in</span> <span class="n">d</span> <span class="k">else</span> <span class="s1">&#39;black&#39;</span>
+
         <span class="n">size</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;size&#39;</span> <span class="ow">in</span> <span class="n">d</span> <span class="k">else</span> <span class="s1">&#39;small&#39;</span>
-        <span class="n">position</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;position&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;position&#39;</span> <span class="ow">in</span> <span class="n">d</span> <span class="k">else</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="o">.</span><span class="n">width</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="o">.</span><span class="n">height</span><span class="p">)</span>
+
+        <span class="n">default_position</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="o">.</span><span class="n">width</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="o">.</span><span class="n">height</span><span class="p">)</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;position&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;position&#39;</span> <span class="ow">in</span> <span class="n">d</span> <span class="k">else</span> <span class="n">default_position</span>
+
         <span class="n">align</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;alignment&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;alignment&#39;</span> <span class="ow">in</span> <span class="n">d</span> <span class="k">else</span> <span class="s1">&#39;cb&#39;</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="o">.</span><span class="n">draw_text</span><span class="p">(</span>
-            <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">dt_format</span><span class="p">),</span> <span class="n">position</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">align</span><span class="p">,</span> <span class="n">background</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="o">.</span><span class="n">draw_text</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">dt_format</span><span class="p">),</span>
+                                  <span class="n">position</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">align</span><span class="p">,</span> <span class="n">background</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">clean_output_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -582,32 +600,28 @@
         <span class="c1"># create a new background image</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">clear_background</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">draw_land</span><span class="p">()</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">raster_map</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">draw_raster_map</span><span class="p">()</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">draw_graticule</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">draw_tags</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">draw_grids</span><span class="p">()</span></div>
 
-    <span class="k">def</span> <span class="nf">add_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span>
-                 <span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                 <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grid_1&#39;</span><span class="p">,</span>
-                 <span class="n">width</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">add_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grid_1&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
         <span class="n">layer</span> <span class="o">=</span> <span class="n">GridVisLayer</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="p">,</span> <span class="n">on</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">width</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">grids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">draw_grids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">grid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grids</span><span class="p">:</span>
             <span class="n">grid</span><span class="o">.</span><span class="n">draw_to_image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">back_image</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_vec_prop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                     <span class="n">prop</span><span class="p">,</span>
-                     <span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                     <span class="n">color</span><span class="o">=</span><span class="s1">&#39;LE&#39;</span><span class="p">,</span>
-                     <span class="n">mask_color</span><span class="o">=</span><span class="s1">&#39;uncert_LE&#39;</span><span class="p">,</span>
-                     <span class="n">size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-                     <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                     <span class="n">scale</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
-        <span class="n">layer</span> <span class="o">=</span> <span class="n">GridPropVisLayer</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="p">,</span> <span class="n">on</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">mask_color</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">add_vec_prop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                     <span class="n">color</span><span class="o">=</span><span class="s1">&#39;LE&#39;</span><span class="p">,</span> <span class="n">mask_color</span><span class="o">=</span><span class="s1">&#39;uncert_LE&#39;</span><span class="p">,</span>
+                     <span class="n">size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+        <span class="n">layer</span> <span class="o">=</span> <span class="n">GridPropVisLayer</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="p">,</span> <span class="n">on</span><span class="p">,</span>
+                                 <span class="n">color</span><span class="p">,</span> <span class="n">mask_color</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">props</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">draw_props</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
@@ -619,19 +633,16 @@
             <span class="n">var</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">appearance</span><span class="p">[</span><span class="s1">&#39;mask&#39;</span><span class="p">]</span>
             <span class="n">masked_nodes</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">masked_nodes</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
             <span class="n">dia</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">appearance</span><span class="p">[</span><span class="s1">&#39;n_size&#39;</span><span class="p">]</span>
-            <span class="n">unmasked_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span>
-                <span class="n">masked_nodes</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+            <span class="n">unmasked_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">masked_nodes</span>
+                                                  <span class="o">.</span><span class="n">compressed</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
             <span class="bp">self</span><span class="o">.</span><span class="n">draw_points</span><span class="p">(</span><span class="n">unmasked_nodes</span><span class="p">,</span> <span class="n">dia</span><span class="p">,</span> <span class="s1">&#39;black&#39;</span><span class="p">)</span>
-            <span class="n">masked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span>
-                <span class="n">masked_nodes</span><span class="p">[</span><span class="n">masked_nodes</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+            <span class="n">masked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">masked_nodes</span><span class="p">[</span><span class="n">masked_nodes</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
+                                          <span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
             <span class="bp">self</span><span class="o">.</span><span class="n">draw_points</span><span class="p">(</span><span class="n">masked</span><span class="p">,</span> <span class="n">dia</span><span class="p">,</span> <span class="s1">&#39;uncert_LE&#39;</span><span class="p">)</span>
-<span class="c1">#             for i in range(0, grid.nodes.shape[0]):</span>
-<span class="c1">#                 if masked_nodes.mask[i, 0] and masked_nodes.mask[i, 1]:</span>
-<span class="c1">#                     self.draw_points(</span>
-<span class="c1">#                         grid.nodes[i], diameter=dia, color=&#39;uncert_LE&#39;)</span>
-<span class="c1">#                 else:</span>
-<span class="c1">#                     self.draw_points(</span>
-<span class="c1">#                         grid.nodes[i], diameter=dia, color=&#39;black&#39;)</span>
 
 <div class="viewcode-block" id="Renderer.draw_land"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.Renderer.draw_land">[docs]</a>    <span class="k">def</span> <span class="nf">draw_land</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -658,8 +669,7 @@
                 <span class="c1"># this is a lake</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">draw_polygon</span><span class="p">(</span><span class="n">poly</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="s1">&#39;lake&#39;</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">draw_polygon</span><span class="p">(</span><span class="n">poly</span><span class="p">,</span>
-                                  <span class="n">fill_color</span><span class="o">=</span><span class="s1">&#39;land&#39;</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">draw_polygon</span><span class="p">(</span><span class="n">poly</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="s1">&#39;land&#39;</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="kc">None</span></div>
 
@@ -760,7 +770,6 @@
 <span class="sd">        prepare_for_model_step determines whether to write the output for</span>
 <span class="sd">        this step based on output_timestep</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="nb">super</span><span class="p">(</span><span class="n">Renderer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span><span class="p">:</span>
@@ -771,6 +780,7 @@
                                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">step_num</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">clear_foreground</span><span class="p">()</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">draw_back_to_fore</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">copy_back_to_fore</span><span class="p">()</span>
 
@@ -787,6 +797,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">draw_elements</span><span class="p">(</span><span class="n">scp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 
         <span class="n">time_stamp</span> <span class="o">=</span> <span class="n">scp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">current_time_stamp</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">draw_timestamp</span><span class="p">(</span><span class="n">time_stamp</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">draw_props</span><span class="p">(</span><span class="n">time_stamp</span><span class="p">)</span>
 
@@ -795,6 +806,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">animation</span><span class="o">.</span><span class="n">add_frame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fore_image</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delay</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">save_foreground</span><span class="p">(</span><span class="n">image_filename</span><span class="p">,</span> <span class="n">file_type</span><span class="o">=</span><span class="n">ftype</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">last_filename</span> <span class="o">=</span> <span class="n">image_filename</span>
 
         <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;image_filename&#39;</span><span class="p">:</span> <span class="n">image_filename</span><span class="p">,</span>
@@ -853,13 +865,14 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">json_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="s1">&#39;save&#39;</span><span class="p">)</span>
         <span class="n">out_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;output_dir&#39;</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
+
         <span class="c1"># store output_dir relative to saveloc</span>
         <span class="n">json_</span><span class="p">[</span><span class="s1">&#39;output_dir&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;./&#39;</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_json_to_saveloc</span><span class="p">(</span><span class="n">json_</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Renderer.loads"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.Renderer.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Renderer.loads"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.Renderer.loads">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        loads object from json_data</span>
 
@@ -870,8 +883,10 @@
             <span class="n">saveloc</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">saveloc</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">json_data</span><span class="p">[</span><span class="s1">&#39;output_dir&#39;</span><span class="p">])</span>
+
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
             <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">json_data</span><span class="p">[</span><span class="s1">&#39;output_dir&#39;</span><span class="p">]))</span>
+
         <span class="n">json_data</span><span class="p">[</span><span class="s1">&#39;output_dir&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
                                                <span class="n">json_data</span><span class="p">[</span><span class="s1">&#39;output_dir&#39;</span><span class="p">])</span>
 
@@ -879,20 +894,29 @@
 
 
 <span class="k">class</span> <span class="nc">GridVisLayer</span><span class="p">:</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">grid</span><span class="p">,</span>
-                 <span class="n">projection</span><span class="p">,</span>
-                 <span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                 <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grid_1&#39;</span><span class="p">,</span>
-                 <span class="n">width</span><span class="o">=</span><span class="mi">1</span>
-                 <span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">projection</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grid_1&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">grid</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">projection</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_lines</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="n">on</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lines</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">color</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span>
+
+    <span class="k">def</span> <span class="nf">_get_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">Grid_S</span><span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;node&#39;</span>
+
+            <span class="n">lons</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_lon&#39;</span><span class="p">)</span>
+            <span class="n">lats</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_lat&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">dstack</span><span class="p">((</span><span class="n">lons</span><span class="p">[:],</span> <span class="n">lats</span><span class="p">[:]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">grid</span><span class="o">.</span><span class="n">edges</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">grid</span><span class="o">.</span><span class="n">build_edges</span><span class="p">()</span>
+
+            <span class="k">return</span> <span class="n">grid</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">grid</span><span class="o">.</span><span class="n">edges</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">draw_to_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">img</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -901,37 +925,32 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="n">lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel_multipoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lines</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
-            <span class="n">img</span><span class="o">.</span><span class="n">draw_polyline</span><span class="p">(</span><span class="n">l</span><span class="p">,</span>
-                              <span class="n">line_color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">,</span>
-                              <span class="n">line_width</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="c1"># curvilinear grid; ugrids never have line segments greater than 2 points</span>
-            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span><span class="o">.</span><span class="n">transpose</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
-                <span class="n">img</span><span class="o">.</span><span class="n">draw_polyline</span><span class="p">(</span><span class="n">l</span><span class="p">,</span>
-                                  <span class="n">line_color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">,</span>
-                                  <span class="n">line_width</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">)</span>
 
+        <span class="n">lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel_multipoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lines</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="n">img</span><span class="o">.</span><span class="n">draw_polyline</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">,</span> <span class="n">line_width</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># curvilinear grid; ugrids never have line segments greater than</span>
+            <span class="c1"># 2 points</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span><span class="o">.</span><span class="n">transpose</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
+                <span class="n">img</span><span class="o">.</span><span class="n">draw_polyline</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">,</span>
+                                  <span class="n">line_width</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">GridPropVisLayer</span><span class="p">:</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">prop</span><span class="p">,</span>
-                 <span class="n">projection</span><span class="p">,</span>
-                 <span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                 <span class="n">color</span><span class="o">=</span><span class="s1">&#39;LE&#39;</span><span class="p">,</span>
-                 <span class="n">mask_color</span><span class="o">=</span><span class="s1">&#39;uncert_LE&#39;</span><span class="p">,</span>
-                 <span class="n">size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-                 <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                 <span class="n">scale</span><span class="o">=</span><span class="mi">1000</span>
-                 <span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="n">projection</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">color</span><span class="o">=</span><span class="s1">&#39;LE&#39;</span><span class="p">,</span> <span class="n">mask_color</span><span class="o">=</span><span class="s1">&#39;uncert_LE&#39;</span><span class="p">,</span>
+                 <span class="n">size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prop</span> <span class="o">=</span> <span class="n">prop</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">projection</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="n">on</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">color</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mask_color</span> <span class="o">=</span> <span class="n">mask_color</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span>
@@ -939,50 +958,73 @@
     <span class="k">def</span> <span class="nf">draw_to_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">img</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
             <span class="k">return</span>
+
         <span class="n">t0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">index_of</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
         <span class="n">data_u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t0</span><span class="p">]</span>
-        <span class="n">data_u2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t0</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">data_u</span>
         <span class="n">data_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t0</span><span class="p">]</span>
-        <span class="n">data_v2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t0</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">data_v</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">data_u2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t0</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">data_v2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t0</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data_u2</span> <span class="o">=</span> <span class="n">data_u</span>
+            <span class="n">data_v2</span> <span class="o">=</span> <span class="n">data_v</span>
+
         <span class="n">t_alphas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">interp_alpha</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
         <span class="n">data_u</span> <span class="o">=</span> <span class="n">data_u</span> <span class="o">+</span> <span class="n">t_alphas</span> <span class="o">*</span> <span class="p">(</span><span class="n">data_u2</span> <span class="o">-</span> <span class="n">data_u</span><span class="p">)</span>
         <span class="n">data_v</span> <span class="o">=</span> <span class="n">data_v</span> <span class="o">+</span> <span class="n">t_alphas</span> <span class="o">*</span> <span class="p">(</span><span class="n">data_v2</span> <span class="o">-</span> <span class="n">data_v</span><span class="p">)</span>
+
         <span class="n">data_u</span> <span class="o">=</span> <span class="n">data_u</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">data_v</span> <span class="o">=</span> <span class="n">data_v</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="c1">#         if self.prop.grid.infer_grid(data_u) == &#39;centers&#39;:</span>
-<span class="c1">#             start = self.prop.grid.centers</span>
-<span class="c1">#         else:</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="k">try</span><span class="p">:</span>
             <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
         <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
             <span class="n">start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">node_lon</span><span class="p">,</span>
                                      <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">node_lat</span><span class="p">))</span>
 
-<span class="c1">#         deltas = FlatEarthProjection.meters_to_lonlat(data*self.scale, lines[:0])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">infer_location</span><span class="p">(</span><span class="n">data_u</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;faces&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">face_coordinates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">build_face_coordinates</span><span class="p">()</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">face_coordinates</span>
+
+
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data_u</span><span class="p">,</span> <span class="s1">&#39;mask&#39;</span><span class="p">):</span>
             <span class="n">start</span><span class="p">[</span><span class="n">data_u</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]</span>
+
         <span class="n">data_u</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">*</span> <span class="mf">8.9992801e-06</span>
         <span class="n">data_v</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">*</span> <span class="mf">8.9992801e-06</span>
         <span class="n">data_u</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">start</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]))</span>
+
         <span class="n">end</span> <span class="o">=</span> <span class="n">start</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">end</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">data_u</span>
         <span class="n">end</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">data_v</span>
+
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data_u</span><span class="p">,</span> <span class="s1">&#39;mask&#39;</span><span class="p">):</span>
             <span class="n">end</span><span class="p">[</span><span class="n">data_u</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]</span>
+
         <span class="n">bounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">image_box</span>
-        <span class="n">pt1</span> <span class="o">=</span> <span class="p">((</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">start</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">start</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> 
+
+        <span class="n">pt1</span> <span class="o">=</span> <span class="p">((</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">start</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">start</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span>
                <span class="p">(</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">start</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">start</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]))</span>
-        <span class="n">pt2</span> <span class="o">=</span> <span class="p">((</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">end</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">end</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> 
+
+        <span class="n">pt2</span> <span class="o">=</span> <span class="p">((</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">end</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">end</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span>
                <span class="p">(</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">end</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">end</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]))</span>
+
         <span class="n">start</span> <span class="o">=</span> <span class="n">start</span><span class="p">[</span><span class="n">pt1</span> <span class="o">*</span> <span class="n">pt2</span><span class="p">]</span>
         <span class="n">end</span> <span class="o">=</span> <span class="n">end</span><span class="p">[</span><span class="n">pt1</span> <span class="o">*</span> <span class="n">pt2</span><span class="p">]</span>
+
         <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel_multipoint</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel_multipoint</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="n">img</span><span class="o">.</span><span class="n">draw_dots</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">diameter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">color</span><span class="p">)</span>
+
         <span class="n">line</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]])</span>
+
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">start</span><span class="p">)):</span>
             <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">start</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
             <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">end</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
@@ -1025,7 +1067,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -1035,7 +1077,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

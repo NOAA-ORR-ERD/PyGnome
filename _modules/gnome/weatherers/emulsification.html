@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.weatherers.emulsification &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.weatherers.emulsification &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -216,8 +217,8 @@
 
         <span class="nb">super</span><span class="p">(</span><span class="n">Emulsification</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;age&#39;</span><span class="p">,</span> <span class="s1">&#39;bulltime&#39;</span><span class="p">,</span> <span class="s1">&#39;frac_water&#39;</span><span class="p">,</span>
-                                 <span class="s1">&#39;density&#39;</span><span class="p">,</span> <span class="s1">&#39;viscosity&#39;</span><span class="p">,</span> 
-                                 <span class="s1">&#39;oil_density&#39;</span><span class="p">,</span> <span class="s1">&#39;oil_viscosity&#39;</span><span class="p">,</span> 
+                                 <span class="s1">&#39;density&#39;</span><span class="p">,</span> <span class="s1">&#39;viscosity&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;oil_density&#39;</span><span class="p">,</span> <span class="s1">&#39;oil_viscosity&#39;</span><span class="p">,</span>
                                  <span class="s1">&#39;mass&#39;</span><span class="p">,</span> <span class="s1">&#39;interfacial_area&#39;</span><span class="p">,</span> <span class="s1">&#39;frac_lost&#39;</span><span class="p">})</span>
 
 <div class="viewcode-block" id="Emulsification.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
@@ -262,13 +263,13 @@
             <span class="c1">#if len(data[&#39;frac_water&#39;]) == 0:</span>
                 <span class="c1"># substance does not contain any surface_weathering LEs</span>
                 <span class="k">continue</span>
-                
+
             <span class="n">product_type</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;product_type&#39;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">product_type</span> <span class="o">==</span> <span class="s1">&#39;Refined&#39;</span><span class="p">:</span>
                 <span class="n">data</span><span class="p">[</span><span class="s1">&#39;frac_water&#39;</span><span class="p">][:]</span> <span class="o">=</span> <span class="mf">0.0</span>	<span class="c1"># since there can only be one product type this could be return...</span>
                 <span class="k">continue</span>	<span class="c1"># since there can only be one product type this could be return...</span>
 
-			<span class="c1"># compute energy dissipation rate (m^2/s^3) based on wave height</span>
+            <span class="c1"># compute energy dissipation rate (m^2/s^3) based on wave height</span>
             <span class="n">wave_height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">wave_height</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">eps</span> <span class="o">=</span> <span class="p">(</span><span class="o">.</span><span class="mi">0355</span> <span class="o">*</span> <span class="n">wave_height</span> <span class="o">**</span> <span class="o">.</span><span class="mi">215</span><span class="p">)</span> <span class="o">/</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">6.31</span> <span class="o">/</span> <span class="n">wave_height</span> <span class="o">**</span> <span class="mf">1.45</span><span class="p">))</span> <span class="o">**</span> <span class="mi">3</span><span class="p">)</span>
@@ -290,9 +291,9 @@
                 <span class="n">delta_T_emul</span> <span class="o">=</span> <span class="mi">1630</span> <span class="o">+</span> <span class="mi">450</span> <span class="o">/</span> <span class="n">wave_height</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.5</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">continue</span>
-			
+
             <span class="n">visc_min</span> <span class="o">=</span> <span class="o">.</span><span class="mi">00001</span> <span class="c1"># 10 cSt</span>
-            <span class="n">visc_max</span> <span class="o">=</span> <span class="o">.</span><span class="mi">01</span> <span class="c1"># 10000 cSt </span>
+            <span class="n">visc_max</span> <span class="o">=</span> <span class="o">.</span><span class="mi">01</span> <span class="c1"># 10000 cSt</span>
             <span class="n">sigma_min</span> <span class="o">=</span> <span class="o">.</span><span class="mi">01</span> <span class="c1"># 10 dyne/com</span>
             <span class="c1"># new suggestion .03 &lt;= f_asph &lt;= .2</span>
             <span class="c1"># latest update, min only .03 &lt;= f_asph</span>
@@ -302,7 +303,7 @@
             <span class="n">r_max</span> <span class="o">=</span> <span class="mf">1.4</span>
             <span class="n">rho_min</span> <span class="o">=</span> <span class="mi">600</span>	<span class="c1">#kg/m^3</span>
             <span class="n">drop_min</span> <span class="o">=</span> <span class="o">.</span><span class="mi">000008</span>	<span class="c1"># 8 microns</span>
-            
+
             <span class="c1">#k_emul2 = 2.3 / delta_T_emul</span>
             <span class="n">k_emul2</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">delta_T_emul</span>
             <span class="n">k_emul</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_water_uptake_coeff</span><span class="p">(</span><span class="n">model_time</span><span class="p">,</span> <span class="n">substance</span><span class="p">)</span>
@@ -331,23 +332,23 @@
             <span class="n">f_res3</span> <span class="o">=</span> <span class="p">(</span><span class="n">resin_mask</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;mass_components&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
             <span class="n">f_asph3</span> <span class="o">=</span> <span class="p">(</span><span class="n">asphaltene_mask</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;mass_components&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 
-            <span class="k">if</span> <span class="n">f_res</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>	
-                <span class="n">r_oil</span> <span class="o">=</span> <span class="n">f_asph</span> <span class="o">/</span> <span class="n">f_res</span>	
-            <span class="k">else</span><span class="p">:</span>	
+            <span class="k">if</span> <span class="n">f_res</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">r_oil</span> <span class="o">=</span> <span class="n">f_asph</span> <span class="o">/</span> <span class="n">f_res</span>
+            <span class="k">else</span><span class="p">:</span>
                 <span class="c1">#r_oil = 0</span>
                 <span class="k">continue</span>
-            <span class="k">if</span> <span class="n">f_asph</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>	
-                <span class="k">continue</span>	
+            <span class="k">if</span> <span class="n">f_asph</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
             <span class="n">r_oil3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">f_res3</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">f_asph3</span> <span class="o">/</span> <span class="n">f_res3</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>	<span class="c1"># check if limits are just for S_b calculation</span>
 
             <span class="n">Y_max</span> <span class="o">=</span> <span class="o">.</span><span class="mi">61</span> <span class="o">+</span> <span class="o">.</span><span class="mi">5</span> <span class="o">*</span> <span class="n">r_oil</span> <span class="o">-</span> <span class="o">.</span><span class="mi">28</span> <span class="o">*</span> <span class="n">r_oil</span> <span class="o">**</span><span class="mi">2</span>
             <span class="c1"># limit on r_oil3 values or just final Y_max or set Y_max = 0 if out of bounds?</span>
             <span class="k">if</span> <span class="n">Y_max</span> <span class="o">&gt;</span> <span class="o">.</span><span class="mi">9</span><span class="p">:</span>
                 <span class="n">Y_max</span> <span class="o">=</span> <span class="o">.</span><span class="mi">9</span>
-                
+
             <span class="n">m</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span> <span class="o">*</span> <span class="p">(</span><span class="n">visc_max</span> <span class="o">+</span> <span class="n">visc_min</span><span class="p">)</span>
             <span class="n">x_visc</span> <span class="o">=</span> <span class="p">(</span><span class="n">visc_oil</span> <span class="o">-</span> <span class="n">m</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">visc_max</span> <span class="o">-</span> <span class="n">visc_min</span><span class="p">)</span>
-            
+
             <span class="n">x_sig_min</span> <span class="o">=</span> <span class="p">(</span><span class="n">sigma_ow</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">sigma_min</span><span class="p">)</span> <span class="o">/</span> <span class="n">sigma_ow</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
             <span class="c1">#m = .5 * (f_max + f_min)</span>
@@ -359,21 +360,21 @@
             <span class="n">x_r</span> <span class="o">=</span> <span class="p">(</span><span class="n">r_oil</span> <span class="o">-</span> <span class="n">m</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">r_max</span> <span class="o">-</span> <span class="n">r_min</span><span class="p">)</span>
 
             <span class="n">x_s</span> <span class="o">=</span> <span class="mi">0</span> 		<span class="c1"># placeholder since this isn&#39;t used</span>
-		
+
             <span class="c1"># decide which factors use initial value and which use current value</span>
             <span class="c1"># once Bw is set it stays on</span>
             <span class="n">Bw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_Bw</span><span class="p">(</span><span class="n">x_visc</span><span class="p">,</span><span class="n">x_sig_min</span><span class="p">,</span><span class="n">x_fasph</span><span class="p">,</span><span class="n">x_r</span><span class="p">,</span><span class="n">x_s</span><span class="p">)</span>
 
             <span class="n">T_week</span> <span class="o">=</span> <span class="mi">604800</span>
 
-			<span class="c1"># Bill&#39;s calculation uses sigma_ow[0] in dynes/cm, visc in cSt and a fudge factor of .478834</span>
-			<span class="c1"># so we need to convert and scale</span>
-            <span class="nb">print</span> <span class="s2">&quot;dens_oil&quot;</span> 
-            <span class="nb">print</span> <span class="n">dens_oil</span> 
-            <span class="nb">print</span> <span class="s2">&quot;visc_oil&quot;</span> 
-            <span class="nb">print</span> <span class="n">visc_oil</span> 
-            <span class="nb">print</span> <span class="s2">&quot;r_oil&quot;</span> 
-            <span class="nb">print</span> <span class="n">r_oil</span> 
+            <span class="c1"># Bill&#39;s calculation uses sigma_ow[0] in dynes/cm, visc in cSt and a fudge factor of .478834</span>
+            <span class="c1"># so we need to convert and scale</span>
+            <span class="nb">print</span> <span class="s2">&quot;dens_oil&quot;</span>
+            <span class="nb">print</span> <span class="n">dens_oil</span>
+            <span class="nb">print</span> <span class="s2">&quot;visc_oil&quot;</span>
+            <span class="nb">print</span> <span class="n">visc_oil</span>
+            <span class="nb">print</span> <span class="s2">&quot;r_oil&quot;</span>
+            <span class="nb">print</span> <span class="n">r_oil</span>
             <span class="n">S_b</span> <span class="o">=</span> <span class="o">.</span><span class="mi">478834</span> <span class="o">*</span> <span class="p">((</span><span class="n">dens_oil</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1000000</span><span class="o">*</span><span class="n">visc_oil</span><span class="p">)</span><span class="o">**.</span><span class="mi">25</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1000</span><span class="o">*</span><span class="n">sigma_ow</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">*</span> <span class="n">r_oil</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">r_oil</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">6</span><span class="p">)</span>
             <span class="n">S_b</span><span class="p">[</span><span class="n">S_b</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span>
             <span class="n">S_b</span><span class="p">[</span><span class="n">S_b</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
@@ -381,9 +382,9 @@
             <span class="nb">print</span> <span class="n">S_b</span>
             <span class="n">T_week</span> <span class="o">=</span> <span class="mi">604800</span>
 
-            
+
             <span class="n">k_lw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;frac_water&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">S_b</span><span class="p">)</span> <span class="o">/</span> <span class="n">T_week</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
-            
+
             <span class="c1">#data[&#39;frac_water&#39;] += (Bw * (k_emul2 * (Y_max - data[&#39;frac_water&#39;])) - k_lw * data[&#39;frac_water&#39;]) * time_step</span>
             <span class="n">Y_prime</span> <span class="o">=</span> <span class="mf">1.582</span> <span class="o">*</span> <span class="n">Y_max</span>  <span class="c1"># Y_max / (1 - 1/e)</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;frac_water&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">Bw</span> <span class="o">*</span> <span class="p">(</span><span class="n">k_emul2</span> <span class="o">*</span> <span class="p">(</span><span class="n">Y_prime</span> <span class="o">-</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;frac_water&#39;</span><span class="p">]))</span> <span class="o">-</span> <span class="n">k_lw</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;frac_water&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">time_step</span>
@@ -434,7 +435,8 @@
                 <span class="c1"># substance does not contain any surface_weathering LEs</span>
                 <span class="k">continue</span>
 
-            <span class="n">k_emul</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_water_uptake_coeff</span><span class="p">(</span><span class="n">model_time</span><span class="p">,</span> <span class="n">substance</span><span class="p">)</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;positions&#39;</span><span class="p">]</span>
+            <span class="n">k_emul</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_water_uptake_coeff</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="n">substance</span><span class="p">)</span>
 
             <span class="c1"># bulltime is not in database, but could be set by user</span>
             <span class="c1">#emul_time = substance.get_bulltime()</span>
@@ -480,50 +482,12 @@
 
         <span class="n">sc</span><span class="o">.</span><span class="n">update_from_fatedataview</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Emulsification.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s1">&#39;webapi&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Since &#39;wind&#39;/&#39;waves&#39; property is saved as references in save file</span>
-<span class="sd">        need to add appropriate node to WindMover schema for &#39;webapi&#39;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
-        <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">serial</span><span class="p">[</span><span class="s1">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-<span class="c1">#             if self.wind is not None:</span>
-<span class="c1">#                 serial[&#39;wind&#39;] = self.wind.serialize(json_)</span>
-
-        <span class="k">return</span> <span class="n">serial</span></div>
-
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Emulsification.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Emulsification.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        append correct schema for waves object</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
-            <span class="n">schema</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
-
-            <span class="n">dict_</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-            <span class="k">if</span> <span class="s1">&#39;waves&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
-                <span class="n">obj</span> <span class="o">=</span> <span class="n">json_</span><span class="p">[</span><span class="s1">&#39;waves&#39;</span><span class="p">][</span><span class="s1">&#39;obj_type&#39;</span><span class="p">]</span>
-                <span class="n">dict_</span><span class="p">[</span><span class="s1">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;waves&#39;</span><span class="p">]))</span>
-<span class="c1">#             if &#39;waves&#39; in json_:</span>
-<span class="c1">#                 waves = class_from_objtype(json_[&#39;waves&#39;].pop(&#39;obj_type&#39;))</span>
-<span class="c1">#                 dict_[&#39;waves&#39;] = waves.deserialize(json_[&#39;waves&#39;])</span>
-            <span class="k">return</span> <span class="n">dict_</span>
-
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">json_</span></div>
-
-
     <span class="k">def</span> <span class="nf">_H_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        logistic function for turning on emulsification</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">H_log</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">k</span><span class="o">*</span><span class="n">x</span><span class="p">))</span>
-        
+
         <span class="k">return</span> <span class="n">H_log</span>
 
     <span class="k">def</span> <span class="nf">_H_4</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
@@ -531,7 +495,7 @@
 <span class="sd">        symmetric function for turning on emulsification</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">H_4</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">k</span><span class="p">))</span>
-        
+
         <span class="k">return</span> <span class="n">H_4</span>
 
     <span class="k">def</span> <span class="nf">_Bw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_visc</span><span class="p">,</span> <span class="n">x_sig_min</span><span class="p">,</span> <span class="n">x_fasph</span><span class="p">,</span> <span class="n">x_r</span><span class="p">,</span> <span class="n">x_s</span><span class="p">):</span>
@@ -542,7 +506,7 @@
         <span class="n">k_fasph</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="n">k_r</span> <span class="o">=</span> <span class="mi">2</span>
         <span class="n">k_s</span> <span class="o">=</span> <span class="mf">1.5</span>
-        
+
         <span class="c1"># for now, I think P_min will be determined elsewhere</span>
         <span class="n">U</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">P_min</span> <span class="o">=</span> <span class="o">.</span><span class="mi">03</span>
@@ -554,32 +518,32 @@
 
         <span class="n">k</span> <span class="o">=</span> <span class="mi">4</span>
         <span class="n">P_2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_H_4</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">x_visc</span><span class="p">)</span>
-        
+
         <span class="n">k</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="n">P_3</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_H_4</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">x_fasph</span><span class="p">)</span>
-        
+
         <span class="n">k</span> <span class="o">=</span> <span class="mi">2</span>
         <span class="n">P_4</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_H_4</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">x_r</span><span class="p">)</span>
-        
+
         <span class="n">k</span> <span class="o">=</span> <span class="mf">1.5</span>
         <span class="c1">#P_5 = self._H_log(k,x_s)</span>
         <span class="n">P_5</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># placeholder until Bill comes up with a good option</span>
         <span class="c1"># in his AMOP paper he is using slick thickness...</span>
-        
+
         <span class="n">P_all</span> <span class="o">=</span> <span class="n">P_1</span> <span class="o">*</span> <span class="n">P_2</span> <span class="o">*</span> <span class="n">P_3</span> <span class="o">*</span> <span class="n">P_4</span> <span class="o">*</span> <span class="n">P_5</span>
         <span class="c1">#P_all = self._H_log(k_v,x_v_min) * self._H_log(k_v,x_v_max) * self._H_log(k_sig,x_sig_min) * self._H_log(k_fasph,x_fasph) * self._H_log(k_r,x_r_min) * self._H_log(k_r,x_r_max) * self._H_log(k_s,x_s_min)</span>
 
         <span class="c1">#if (P_all.any() &lt; P_min):</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">P_all</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">P_min</span><span class="p">):</span>
-            <span class="n">Bw</span> <span class="o">=</span> <span class="mi">0</span> 
+            <span class="n">Bw</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">Bw</span> <span class="o">=</span> <span class="mi">1</span>
-             
+
         <span class="n">Bw</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">P_all</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">03</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-        
+
         <span class="k">return</span> <span class="n">Bw</span>
 
-    <span class="k">def</span> <span class="nf">_water_uptake_coeff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="n">substance</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_water_uptake_coeff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="n">substance</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Use higher of wind or pseudo wind corresponding to wave height</span>
 
@@ -591,7 +555,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="c1">## higher of real or psuedo wind</span>
-        <span class="n">wind_speed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_emulsification_wind</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+        <span class="n">wind_speed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_emulsification_wind</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
 
         <span class="c1"># water uptake rate constant - get this from database</span>
         <span class="n">K0Y</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;k0y&#39;</span><span class="p">)</span>
@@ -635,7 +599,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -645,7 +609,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Weatherers &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Weatherers &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../index.html"/>
         <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
         <link rel="next" title="Outputters" href="outputters.html"/>
         <link rel="prev" title="Movers" href="movers.html"/> 
@@ -67,7 +67,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -111,6 +111,7 @@
 <li class="toctree-l2"><a class="reference internal" href="scripting_examples.html">Examples</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -217,15 +218,15 @@
 </style>
 <div class="section" id="weatherers">
 <h1>Weatherers<a class="headerlink" href="#weatherers" title="Permalink to this headline">¶</a></h1>
-<p>Processes that change the properties of the LEs are termed &#8220;weatherers&#8221; in GNOME.
+<p>Processes that change the properties of the LEs are termed “weatherers” in GNOME.
 For example, evaporation reduces the mass of LEs that remain floating on the water surface,
 while increasing their density and viscosity.</p>
 <p>Weathering processes modeled in GNOME include: evaporation, dispersion, dissolution,
 sedimentation, emulsification, and biodegredation. (Note: as of October 2015 many
-of these algorithms are still being implemented and refined &#8211; please contact GNOME developers for
+of these algorithms are still being implemented and refined – please contact GNOME developers for
 current status).</p>
-<p>Some examples and common use cases are shown here. For complete documentation see <code class="xref py py-mod docutils literal"><span class="pre">gnome.weatherers</span></code> and
-<code class="xref py py-mod docutils literal"><span class="pre">gnome.environment</span></code></p>
+<p>Some examples and common use cases are shown here. For complete documentation see <a class="reference internal" href="../reference.html#module-gnome.weatherers" title="gnome.weatherers"><code class="xref py py-mod docutils literal"><span class="pre">gnome.weatherers</span></code></a> and
+<a class="reference internal" href="../reference.html#module-gnome.environment" title="gnome.environment"><code class="xref py py-mod docutils literal"><span class="pre">gnome.environment</span></code></a></p>
 <div class="section" id="the-environment-class">
 <h2>The Environment Class<a class="headerlink" href="#the-environment-class" title="Permalink to this headline">¶</a></h2>
 <p>As weathering processes depend on a variety of environmental conditions (e.g. wind, waves, and water properties),
@@ -259,8 +260,8 @@ for weathering processes unless explicitly specified.</p>
 </div>
 <div class="section" id="evaporation">
 <h2>Evaporation<a class="headerlink" href="#evaporation" title="Permalink to this headline">¶</a></h2>
-<p>Evaporation requires both Wind and Water Objects be initialized. Here&#8217;s an example, this time reading the wind time
-series from a file called &#8220;mywind.txt&#8221; (this file format is described in the <a class="reference internal" href="movers.html"><span class="doc">Movers</span></a> section):</p>
+<p>Evaporation requires both Wind and Water Objects be initialized. Here’s an example, this time reading the wind time
+series from a file called “mywind.txt” (this file format is described in the <a class="reference internal" href="movers.html"><span class="doc">Movers</span></a> section):</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="k">import</span> <span class="n">Model</span>
 <span class="kn">from</span> <span class="nn">gnome.weatherers</span> <span class="k">import</span> <span class="n">Evaporation</span>
 <span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="k">import</span> <span class="n">Water</span><span class="p">,</span> <span class="n">Wind</span>
@@ -333,7 +334,7 @@ explicitly required but is needed by the Waves object. Adding on to our example 
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -343,7 +344,7 @@ explicitly required but is needed by the Waves object. Adding on to our example 
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Customizing environment objects &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Customizing environment objects &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,10 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/> 
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../index.html"/>
+        <link rel="up" title="Using your data" href="../env_obj.html"/>
+        <link rel="next" title="Customizing pygnome" href="../customizing.html"/>
+        <link rel="prev" title="Environment Objects" href="environment_objects.html"/> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -64,7 +67,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -88,11 +91,20 @@
               
             
             
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../env_obj.html">Using your data</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="environment_objects.html">Environment Objects</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Customizing environment objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Demonstration-of-component-sharing">Demonstration of component sharing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../env_obj.html#age-old-problem">Age old problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../env_obj.html#overview">Overview</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -141,6 +153,8 @@
   <ul class="wy-breadcrumbs">
     
       <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../env_obj.html">Using your data</a> &raquo;</li>
         
       <li>Customizing environment objects</li>
     
@@ -408,7 +422,7 @@ user can maximize their effectiveness with the system.</p>
 <p>This is the simplest way to create an environment object, but also
 requires the most standardized data. The grid, variables, time, and
 depth must all be able to be created using their respective
-&#8216;from_netCDF&#8217; functions using the default grid variable names, default
+‘from_netCDF’ functions using the default grid variable names, default
 variable names, etc. Generally, for environment objects the data
 defaults are located on the object itself:</p>
 <div class="nbinput docutils container">
@@ -440,14 +454,14 @@ v
 True
 </pre></div></div>
 </div>
-<p>As we can see, the variables &#8216;u&#8217; and &#8216;v&#8217; were located and used to
-construct the object. &#8216;w&#8217; was not found, however, and was replaced with
+<p>As we can see, the variables ‘u’ and ‘v’ were located and used to
+construct the object. ‘w’ was not found, however, and was replaced with
 a constant 0 instead.</p>
 <p>There are three current velocities in this file, all on different grids.
-there is the [&#8216;u&#8217;, &#8216;v&#8217;] pair, which are on separate staggered grids, the
-[&#8216;u_psi&#8217;, &#8216;v_psi&#8217;] pair on the nodes grid, and [&#8216;u_rho&#8217;, &#8216;v_rho&#8217;]
-pair on the center grid. In order to specify one of the other pairs, we
-do the following:</p>
+there is the [‘u’, ‘v’] pair, which are on separate staggered grids, the
+[‘u_psi’, ‘v_psi’] pair on the nodes grid, and [‘u_rho’, ‘v_rho’] pair
+on the center grid. In order to specify one of the other pairs, we do
+the following:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [4]:
@@ -467,12 +481,12 @@ do the following:</p>
 [&#39;u_psi&#39;, &#39;v_psi&#39;, &#39;constant w&#39;]
 </pre></div></div>
 </div>
-<p>Using the &#8216;varnames&#8217; keyword, we can specify the variables to be
+<p>Using the ‘varnames’ keyword, we can specify the variables to be
 searched for. For all other components of this GridCurrent, it will
 still use the default construction. This is a general trend throughout
 the whole system, where there is some reasonable default behavior, and
 optional complexity accessed by keyword arguments.</p>
-<p>One very important keyword argument is the &#8216;grid_topology&#8217; keyword. The
+<p>One very important keyword argument is the ‘grid_topology’ keyword. The
 grid topology describes a relationship between the variables in the
 netCDF file and parts of the grid. Unless specified, this grid topology
 is generated based on default names and what is located in the file, or
@@ -566,7 +580,7 @@ scalar environment objects</p>
  &lt;class &#39;gnome.environment.ts_property.TimeSeriesProp&#39;&gt;]
 </pre></div></div>
 </div>
-<p>The &#8216;TimeSeriesProp&#8217; object is an environment object that represents the
+<p>The ‘TimeSeriesProp’ object is an environment object that represents the
 vertical velocity component. However, since it is a constant 0 in this
 simple case, it can be represented with a simpler object.</p>
 <p>Lets re-focus on the two GriddedProp objects.</p>
@@ -750,16 +764,6 @@ rv2 = gc2.at(test_pts, test_time2)
 100 loops, best of 3: 4.38 ms per loop
 </pre></div></div>
 </div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython2"><div class="highlight"><pre>
-<span></span>
-</pre></div>
-</div>
-</div>
 </div>
 
 
@@ -769,6 +773,15 @@ rv2 = gc2.at(test_pts, test_time2)
            </div>
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../customizing.html" class="btn btn-neutral float-right" title="Customizing pygnome" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="environment_objects.html" class="btn btn-neutral" title="Environment Objects" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -797,7 +810,7 @@ rv2 = gc2.at(test_pts, test_time2)
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -807,7 +820,7 @@ rv2 = gc2.at(test_pts, test_time2)
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

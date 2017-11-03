@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Units used in GNOME / PyGNOME &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Units used in GNOME / PyGNOME &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="index.html"/>
         <link rel="next" title="PyGnome Class Reference" href="reference.html"/>
         <link rel="prev" title="Notes on serialization / deserialization:" href="serialization.html"/> 
 
@@ -66,7 +66,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -95,6 +95,7 @@
 <li class="toctree-l1"><a class="reference internal" href="installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="serialization.html">Notes on serialization / deserialization:</a></li>
@@ -204,8 +205,8 @@
 <p>Conversion is done on I/O or occasionally within a class (i.e the class may store data in the units the user gave, but return values in the standard unit to other parts of the code) So unless otherwise noted, pass data into methods in the following standard units:</p>
 <dl class="docutils">
 <dt>Time</dt>
-<dd><p class="first">Time is expressed in integer seconds &#8211; stored in a C <code class="docutils literal"><span class="pre">unsigned</span> <span class="pre">long</span></code></p>
-<p>Date-times are in seconds since 1904 (1904-01-01T00:00) &#8211; stored in a C <code class="docutils literal"><span class="pre">unsigned</span> <span class="pre">long</span></code></p>
+<dd><p class="first">Time is expressed in integer seconds – stored in a C <code class="docutils literal"><span class="pre">unsigned</span> <span class="pre">long</span></code></p>
+<p>Date-times are in seconds since 1904 (1904-01-01T00:00) – stored in a C <code class="docutils literal"><span class="pre">unsigned</span> <span class="pre">long</span></code></p>
 <p class="last">(NOTE: much of the Python code uses <code class="docutils literal"><span class="pre">datetime.datetime</span></code> objects and/or numpy <code class="docutils literal"><span class="pre">datetime64</span></code> objects, but the internal C++ code uses integer seconds)</p>
 </dd>
 <dt>Length</dt>
@@ -219,7 +220,7 @@
 <dt>Velocity</dt>
 <dd>Velocities are in meters per second</dd>
 <dt>Latitude-Longitude</dt>
-<dd>Lat-long is in floating point degrees  &#8211; range generally -360 to 360, so we can do stuff across the date line.</dd>
+<dd>Lat-long is in floating point degrees  – range generally -360 to 360, so we can do stuff across the date line.</dd>
 <dt>Diffusion Coefficients</dt>
 <dd>Diffusion coefficients (for both vertical and horizontal random diffusion) are given in units of square centimeters per second cm^2/s</dd>
 <dt>Droplet Diameter</dt>
@@ -227,7 +228,7 @@
 <dt>Viscosity</dt>
 <dd>Viscosity is usually kinematic viscosity, and is in units of m^2/s</dd>
 <dt>Salinity</dt>
-<dd>Salinity is used in various calculations for sedimentiaon, wave formation, etc. Standard units is Practical Salinity Units (PSU) &#8211; more or less parts per thousand &#8211; i.e. fresh is 0, typical seawater is 35.</dd>
+<dd>Salinity is used in various calculations for sedimentiaon, wave formation, etc. Standard units is Practical Salinity Units (PSU) – more or less parts per thousand – i.e. fresh is 0, typical seawater is 35.</dd>
 </dl>
 </div>
 
@@ -275,7 +276,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -285,7 +286,7 @@
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

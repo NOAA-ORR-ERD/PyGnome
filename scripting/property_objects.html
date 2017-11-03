@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Property Objects &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Property Objects &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/> 
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../index.html"/> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -93,6 +93,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -206,7 +207,7 @@ For documentation of implemented Properties, see <code class="xref py py-mod doc
 <div class="section" id="background">
 <h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
 <p>The environmental models in GNOME are often driven with data created by other models, such as ROMS, HYCOM, etc. In the past, the output from
-these models were processed by renaming and regridding to conform to GNOME&#8217;s expectations before use.</p>
+these models were processed by renaming and regridding to conform to GNOME’s expectations before use.</p>
 </div>
 <div class="section" id="examples">
 <h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
@@ -244,7 +245,7 @@ wind and current variables that are associated with the grid.</p>
 </div>
 <p>In the above example, the current and wind now both share the same grid object, which has numerous performance benefits. This is
 one of the most common cases of sharing between Property objects.</p>
-<p>You can create a Property out of an already open dataset as well. This may help alleviate &#8216;too many files&#8217; problems when working
+<p>You can create a Property out of an already open dataset as well. This may help alleviate ‘too many files’ problems when working
 with large numbers of files:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">netCDF4</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
 <span class="n">current</span> <span class="o">=</span> <span class="n">GridCurrent</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
@@ -284,14 +285,14 @@ a GridCurrent representing circular currents around the origin.:</p>
 <ol class="arabic simple">
 <li>It is scalar, so it would inherit from a scalar-type Property</li>
 <li>In this example, it is gridded. So our base class is a GriddedProp.</li>
-<li>We have a number of data files where the default names could be &#8216;water_t&#8217; or &#8216;temp&#8217;, and we want to write them in to be auto-detected.</li>
+<li>We have a number of data files where the default names could be ‘water_t’ or ‘temp’, and we want to write them in to be auto-detected.</li>
 </ol>
 <p>Here is the class definition:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">WaterTemperature</span><span class="p">(</span><span class="n">GriddedProp</span><span class="p">):</span>
     <span class="n">default_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;water_t&#39;</span><span class="p">,</span> <span class="s1">&#39;temp&#39;</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>That&#8217;s it! Now, you can do the following in your scripts:</p>
+<p>That’s it! Now, you can do the following in your scripts:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.environment.property_classes</span> <span class="k">import</span> <span class="n">WaterTemperature</span>
 
 <span class="n">point</span> <span class="o">=</span> <span class="p">[</span><span class="mf">50.3</span><span class="p">,</span> <span class="mf">40.2</span><span class="p">]</span>
@@ -350,7 +351,7 @@ is not very useful except as a demonstration.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -360,7 +361,7 @@ is not very useful except as a demonstration.</p>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

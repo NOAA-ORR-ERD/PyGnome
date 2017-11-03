@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Scripting utilities &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Scripting utilities &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../index.html"/>
         <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
         <link rel="next" title="Maps" href="maps.html"/>
         <link rel="prev" title="Overview" href="scripting_intro.html"/> 
@@ -67,7 +67,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -98,7 +98,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../scripting.html">Scripting pygnome</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="scripting_intro.html">Overview</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Scripting utilities</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#gnome-scripting"><code class="docutils literal"><span class="pre">gnome.scripting</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gnome.scripting"><code class="docutils literal"><span class="pre">gnome.scripting</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="maps.html">Maps</a></li>
@@ -109,6 +109,7 @@
 <li class="toctree-l2"><a class="reference internal" href="scripting_examples.html">Examples</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -220,8 +221,174 @@ common tasks. These include helper functions for easier creation of certain type
 To use these functions import gnome.scripting</p>
 <p>NOTE: the scripting utilities are under active development as we determine which helper functions will
 be useful to make setting up and running pyGNOME easier.</p>
-<div class="section" id="gnome-scripting">
-<h2><code class="xref py py-mod docutils literal"><span class="pre">gnome.scripting</span></code><a class="headerlink" href="#gnome-scripting" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-gnome.scripting">
+<span id="gnome-scripting"></span><h2><a class="reference internal" href="#module-gnome.scripting" title="gnome.scripting"><code class="xref py py-mod docutils literal"><span class="pre">gnome.scripting</span></code></a><a class="headerlink" href="#module-gnome.scripting" title="Permalink to this headline">¶</a></h2>
+<p>Scripting package for GNOME with assorted utilities that make it easier to
+write scripts.</p>
+<p>Helper functions are imported from various py_gnome modules
+(spill, environment, movers etc).</p>
+<dl class="function">
+<dt id="gnome.scripting.constant_wind">
+<code class="descclassname">gnome.scripting.</code><code class="descname">constant_wind</code><span class="sig-paren">(</span><em>speed</em>, <em>direction</em>, <em>units='m/s'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/environment/wind.html#constant_wind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.constant_wind" title="Permalink to this definition">¶</a></dt>
+<dd><p>utility to create a constant wind “timeseries”</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>speed</strong> – speed of wind</li>
+<li><strong>direction</strong> – direction – degrees True, direction wind is from
+(degrees True)</li>
+<li><strong>unit='m/s'</strong> – units for speed, as a string, i.e. “knots”, “m/s”,
+“cm/s”, etc.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The time for a constant wind timeseries is irrelevant. This
+function simply sets it to datetime.now() accurate to hours.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gnome.scripting.constant_wind_mover">
+<code class="descclassname">gnome.scripting.</code><code class="descname">constant_wind_mover</code><span class="sig-paren">(</span><em>speed</em>, <em>direction</em>, <em>units='m/s'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/movers/wind_movers.html#constant_wind_mover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.constant_wind_mover" title="Permalink to this definition">¶</a></dt>
+<dd><p>utility function to create a mover with a constant wind</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>speed</strong> – wind speed</li>
+<li><strong>direction</strong> – wind direction in degrees true
+(direction from, following the meteorological convention)</li>
+<li><strong>units='m/s'</strong> – the units that the input wind speed is in.
+options: ‘m/s’, ‘knot’, ‘mph’, others…</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">returns a gnome.movers.WindMover object all set up.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The time for a constant wind timeseries is irrelevant.
+This function simply sets it to datetime.now() accurate to hours.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gnome.scripting.wind_mover_from_file">
+<code class="descclassname">gnome.scripting.</code><code class="descname">wind_mover_from_file</code><span class="sig-paren">(</span><em>filename</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/movers/wind_movers.html#wind_mover_from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.wind_mover_from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a wind mover from a wind time-series file (OSM long wind format)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filename</strong> – The full path to the data file</li>
+<li><strong>kwargs</strong> – All keyword arguments are passed on to the WindMover
+constructor</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns mover:</th><td class="field-body"><p class="first last">returns a wind mover, built from the file</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gnome.scripting.make_images_dir">
+<code class="descclassname">gnome.scripting.</code><code class="descname">make_images_dir</code><span class="sig-paren">(</span><em>images_dir=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/scripting/utilities.html#make_images_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.make_images_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create output directory for rendered images.
+If it already exists, delete all old output files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gnome.scripting.surface_point_line_spill">
+<code class="descclassname">gnome.scripting.</code><code class="descname">surface_point_line_spill</code><span class="sig-paren">(</span><em>num_elements</em>, <em>start_position</em>, <em>release_time</em>, <em>end_position=None</em>, <em>end_release_time=None</em>, <em>substance=None</em>, <em>amount=None</em>, <em>units=None</em>, <em>windage_range=(0.01</em>, <em>0.04)</em>, <em>windage_persist=900</em>, <em>name='Surface Point/Line Release'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/spill/spill.html#surface_point_line_spill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.surface_point_line_spill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function returns a Spill object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>num_elements</strong> (<em>integer</em>) – total number of elements to be released</li>
+<li><strong>start_position</strong> (<em>3-tuple of floats</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>z</em><em>)</em>) – initial location the elements are released</li>
+<li><strong>release_time</strong> (<em>datetime.datetime</em>) – time the LEs are released (datetime object)</li>
+<li><strong>end_position=None</strong> – Optional. For moving source, the end position
+If None, then release is from a point source</li>
+<li><strong>end_release_time=None</strong> – optional – for a time varying release,
+the end release time. If None, then release is instantaneous</li>
+<li><strong>substance=None</strong> – Type of oil spilled.</li>
+<li><strong>amount=None</strong> (<em>float</em>) – mass or volume of oil spilled</li>
+<li><strong>units=None</strong> (<em>str</em>) – units for amount spilled</li>
+<li><strong>windage_range=</strong><strong>(</strong><strong>01</strong><strong>, </strong><strong>04</strong><strong>)</strong> (<em>tuple</em>) – Percentage range for windage.
+Active only for surface particles
+when a mind mover is added</li>
+<li><strong>windage_persist=900</strong> (<em>int</em>) – Persistence for windage values in seconds.
+Use -1 for inifinite, otherwise it is
+randomly reset on this time scale</li>
+<li><strong>name='Surface Point/Line Release'</strong> (<em>str</em>) – a name for the spill</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gnome.scripting.subsurface_plume_spill">
+<code class="descclassname">gnome.scripting.</code><code class="descname">subsurface_plume_spill</code><span class="sig-paren">(</span><em>num_elements</em>, <em>start_position</em>, <em>release_time</em>, <em>distribution</em>, <em>distribution_type='droplet_size'</em>, <em>end_release_time=None</em>, <em>substance=None</em>, <em>density=None</em>, <em>density_units='kg/m^3'</em>, <em>amount=None</em>, <em>units=None</em>, <em>windage_range=(0.01</em>, <em>0.04)</em>, <em>windage_persist=900</em>, <em>name='Subsurface plume'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gnome/spill/spill.html#subsurface_plume_spill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.scripting.subsurface_plume_spill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function returns a Spill object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>num_elements</strong> (<em>integer</em>) – total number of elements to be released</li>
+<li><strong>start_position</strong> (<em>3-tuple of floats</em><em> (</em><em>long</em><em>, </em><em>lat</em><em>, </em><em>z</em><em>)</em>) – initial location the elements are released</li>
+<li><strong>release_time</strong> (<em>datetime.datetime</em>) – time the LEs are released (datetime object)</li>
+<li><strong>distribution=None</strong> – An object capable of generating a probability
+distribution.  Right now, we have:
+* UniformDistribution
+* NormalDistribution
+* LogNormalDistribution
+* WeibullDistribution</li>
+<li><strong>distribution_type=droplet_size</strong> (<em>str</em>) – What is being sampled from the
+distribution.  Options are:
+* droplet_size - Rise velocity is then calculated
+* rise_velocity - No droplet size is computed</li>
+<li><strong>end_release_time=None</strong> – End release time for a time varying release.
+If None, then release is instantaneous</li>
+<li><strong>substance='None'</strong> – Required unless density specified.
+Type of oil spilled.</li>
+<li><strong>density=None</strong> (<em>float</em>) – Required unless substance specified.
+Density of spilled material.</li>
+<li><strong>density_units='kg/m^3'</strong> (<em>str</em>) – </li>
+<li><strong>amount=None</strong> (<em>float</em>) – mass or volume of oil spilled.</li>
+<li><strong>units=None</strong> (<em>str</em>) – must provide units for amount spilled.</li>
+<li><strong>windage_range=</strong><strong>(</strong><strong>01</strong><strong>, </strong><strong>04</strong><strong>)</strong> (<em>tuple</em>) – Percentage range for windage.
+Active only for surface particles
+when a mind mover is added</li>
+<li><strong>windage_persist=900</strong> – Persistence for windage values in seconds.
+Use -1 for inifinite, otherwise it is
+randomly reset on this time scale.</li>
+<li><strong>name='Surface Point/Line Release'</strong> (<em>str</em>) – a name for the spill.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 </div>
 
@@ -269,7 +436,7 @@ be useful to make setting up and running pyGNOME easier.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -279,7 +446,7 @@ be useful to make setting up and running pyGNOME easier.</p>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

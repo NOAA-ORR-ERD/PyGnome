@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.weatherers.cleanup &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.weatherers.cleanup &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -293,11 +294,9 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="n">value</span>
-        <span class="k">elif</span> <span class="n">value</span> <span class="o">&gt;=</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="n">value</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Efficiency must be either None or a number &#39;</span>
-                                <span class="s1">&#39;between 0 and 1.0&#39;</span><span class="p">)</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">valid</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_substance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -834,7 +833,7 @@
         <span class="n">avg_frac_oil</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_avg_frac_oil</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_rate_duration</span><span class="p">(</span><span class="n">avg_frac_oil</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_set_efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_set_efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        return burn efficiency either from efficiency attribute or computed</span>
 <span class="sd">        from wind</span>
@@ -848,14 +847,9 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># get it from wind</span>
-            <span class="n">ws</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">ws</span> <span class="o">&gt;</span> <span class="mf">1.</span> <span class="o">/</span> <span class="mf">0.07</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;wind speed is greater than </span><span class="si">{0}</span><span class="s1">. &#39;</span>
-                                    <span class="s1">&#39;Set efficiency to 0&#39;</span>
-                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="mf">0.07</span><span class="p">))</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">0.07</span> <span class="o">*</span> <span class="n">ws</span>
+            <span class="n">ws</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ws</span> <span class="o">&gt;</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="mf">0.07</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">0.07</span> <span class="o">*</span> <span class="n">ws</span><span class="p">)</span>
+            <span class="nb">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span>
 
 <div class="viewcode-block" id="Burn.weather_elements"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Burn.weather_elements">[docs]</a>    <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -868,12 +862,12 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="p">,</span>
-                                                    <span class="n">fate</span><span class="o">=</span><span class="s1">&#39;burn&#39;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="p">,</span> <span class="n">fate</span><span class="o">=</span><span class="s1">&#39;burn&#39;</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">])</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">continue</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">_set_efficiency</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s1">&#39;positions&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_efficiency</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
 
             <span class="c1"># scale rate by efficiency</span>
             <span class="c1"># this is volume of oil burned - need to get mass from this</span>
@@ -915,8 +909,8 @@
                 <span class="n">serial</span><span class="p">[</span><span class="s1">&#39;wind&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">serial</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Burn.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Burn.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Burn.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Burn.deserialize">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        append correct schema for wind object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1039,23 +1033,17 @@
                 <span class="p">(</span><span class="n">rm_total_mass_si</span> <span class="o">/</span>
                  <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_start</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="nf">_set_efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_set_efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># if wave height &gt; 6.4 m, we get negative results - log and</span>
             <span class="c1"># reset to 0 if this occurs</span>
             <span class="c1"># can efficiency go to 0? Is there a minimum threshold?</span>
-            <span class="n">w</span> <span class="o">=</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">efficiency</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.241</span> <span class="o">+</span> <span class="mf">0.587</span><span class="o">*</span><span class="n">w</span> <span class="o">-</span> <span class="mf">0.191</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span>
                           <span class="mf">0.02616</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="mf">0.0016</span> <span class="o">*</span> <span class="n">w</span><span class="o">**</span><span class="mi">4</span> <span class="o">-</span>
                           <span class="mf">0.000037</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">efficiency</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">((</span><span class="s2">&quot;wave height </span><span class="si">{0}</span><span class="s2"> &quot;</span>
-                                     <span class="s2">&quot;- results in negative efficiency. &quot;</span>
-                                     <span class="s2">&quot;Reset to 0&quot;</span>
-                                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">w</span><span class="p">)))</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="n">efficiency</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">efficiency</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="n">efficiency</span>
 
     <span class="k">def</span> <span class="nf">weather_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
         <span class="s1">&#39;for now just take away 0.1% at every step&#39;</span>
@@ -1065,7 +1053,8 @@
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">])</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="k">continue</span>
 
-                <span class="bp">self</span><span class="o">.</span><span class="n">_set_efficiency</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+                <span class="n">points</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s1">&#39;positions&#39;</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_set_efficiency</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
 
                 <span class="c1"># rm_mass = self._rate * self._timestep * self.efficiency</span>
                 <span class="n">rm_mass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestep</span>  <span class="c1"># rate includes efficiency</span>
@@ -1150,7 +1139,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -1160,7 +1149,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Notes on serialization / deserialization: &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Notes on serialization / deserialization: &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="index.html"/>
         <link rel="next" title="Units used in GNOME / PyGNOME" href="units.html"/>
         <link rel="prev" title="The logging system" href="logging.html"/> 
 
@@ -66,7 +66,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -95,6 +95,7 @@
 <li class="toctree-l1"><a class="reference internal" href="installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="logging.html">The logging system</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Notes on serialization / deserialization:</a><ul>
@@ -222,12 +223,12 @@
 </ul>
 </dd>
 </dl>
-<p>This is a &#8220;cycle&#8221;, so could be in a different order depending on where you start!</p>
-<p>Also &#8211; &#8220;deserializing&#8221; can be createing a new object from json, or updating teh object from json.</p>
+<p>This is a “cycle”, so could be in a different order depending on where you start!</p>
+<p>Also – “deserializing” can be createing a new object from json, or updating teh object from json.</p>
 </div>
 <div class="section" id="methods">
 <h2>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal"><span class="pre">Object.serialize()</span></code> returns a &#8220;json-compatible&#8221; dict.</p>
+<p><code class="docutils literal"><span class="pre">Object.serialize()</span></code> returns a “json-compatible” dict.</p>
 </div>
 <div class="section" id="making-a-new-object-serializable">
 <h2>Making a new object serializable<a class="headerlink" href="#making-a-new-object-serializable" title="Permalink to this headline">¶</a></h2>
@@ -278,7 +279,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -288,7 +289,7 @@
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

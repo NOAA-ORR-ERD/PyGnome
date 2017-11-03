@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Maps &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Maps &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../index.html"/>
         <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
         <link rel="next" title="Spills" href="spills.html"/>
         <link rel="prev" title="Scripting utilities" href="utilities.html"/> 
@@ -67,7 +67,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -112,6 +112,7 @@
 <li class="toctree-l2"><a class="reference internal" href="scripting_examples.html">Examples</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -225,10 +226,10 @@ Support for shapefiles is currently being implemented.</p>
 added to the model, it may be desirable to have the shoreline generated from the currents grid so that it matches
 (both in exact position and in resolution). See the section below on Generating Map from Currents Grid.</p>
 <p>Some of the more common use cases and map options are shown below.
-For complete documentation see <code class="xref py py-mod docutils literal"><span class="pre">gnome.map</span></code></p>
+For complete documentation see <a class="reference internal" href="../reference.html#module-gnome.map" title="gnome.map"><code class="xref py py-mod docutils literal"><span class="pre">gnome.map</span></code></a></p>
 <div class="section" id="manual-creation">
 <h2>Manual Creation<a class="headerlink" href="#manual-creation" title="Permalink to this headline">¶</a></h2>
-<p>Create an all water map &#8211; if map_bounds is not specified, a spill can be added anywhere in the &#8220;water world&#8221;:</p>
+<p>Create an all water map – if map_bounds is not specified, a spill can be added anywhere in the “water world”:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="k">import</span> <span class="n">Model</span>
 <span class="kn">from</span> <span class="nn">gnome.map</span> <span class="k">import</span> <span class="n">GnomeMap</span>
 <span class="n">mymap</span> <span class="o">=</span> <span class="n">GnomeMap</span><span class="p">()</span>
@@ -318,7 +319,7 @@ If no refloating is desired set this value to -1.</dd>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -328,7 +329,7 @@ If no refloating is desired set this value to -1.</dd>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

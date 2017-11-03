@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.weatherers.core &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.weatherers.core &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -168,13 +169,15 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="n">SchemaNode</span>
+<span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">drop</span>
 
+<span class="kn">import</span> <span class="nn">gnome</span>
 <span class="kn">from</span> <span class="nn">gnome.persist.extend_colander</span> <span class="k">import</span> <span class="n">NumpyArray</span>
 <span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="k">import</span> <span class="n">ObjType</span>
 
 <span class="kn">from</span> <span class="nn">gnome.array_types</span> <span class="k">import</span> <span class="n">mass_components</span>
 <span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="k">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.time_utils</span> <span class="k">import</span> <span class="n">date_to_sec</span><span class="p">,</span> <span class="n">sec_to_datetime</span>
 <span class="kn">from</span> <span class="nn">gnome.exceptions</span> <span class="k">import</span> <span class="n">ReferencedObjectNotSet</span>
 <span class="kn">from</span> <span class="nn">gnome.movers.movers</span> <span class="k">import</span> <span class="n">Process</span><span class="p">,</span> <span class="n">ProcessSchema</span>
 
@@ -188,7 +191,7 @@
     <span class="n">description</span> <span class="o">=</span> <span class="s1">&#39;weatherer schema base class&#39;</span>
 
 
-<div class="viewcode-block" id="Weatherer"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer">[docs]</a><span class="k">class</span> <span class="nc">Weatherer</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+<div class="viewcode-block" id="Weatherer"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer">[docs]</a><span class="k">class</span> <span class="nc">Weatherer</span><span class="p">(</span><span class="n">Process</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Base Weathering agent.  This is almost exactly like the base Mover</span>
 <span class="sd">    in the way that it acts upon the model.  It contains the same API</span>
@@ -267,14 +270,78 @@
 <span class="sd">        The lambda_ should be &#39;negative&#39; in order for function to decay</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">mass_remain</span> <span class="o">=</span> <span class="n">M_0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">lambda_</span> <span class="o">*</span> <span class="n">time</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">mass_remain</span></div>
+        <span class="k">return</span> <span class="n">mass_remain</span>
+
+<div class="viewcode-block" id="Weatherer.get_wind_speed"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer.get_wind_speed">[docs]</a>    <span class="k">def</span> <span class="nf">get_wind_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Wrapper for the weatherers so they can extrapolate</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+<span class="c1">#         new_model_time = self.check_time(wind, model_time)</span>
+        <span class="n">retval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">retval</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">fill_value</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">retval</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> <span class="k">else</span> <span class="n">retval</span></div>
+
+<div class="viewcode-block" id="Weatherer.check_time"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer.check_time">[docs]</a>    <span class="k">def</span> <span class="nf">check_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wind</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Should have an option to extrapolate but for now we do by default</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_model_time</span> <span class="o">=</span> <span class="n">model_time</span>
+        <span class="k">if</span> <span class="n">wind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">model_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">timeval</span> <span class="o">=</span> <span class="n">date_to_sec</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+                <span class="n">start_time</span> <span class="o">=</span> <span class="n">wind</span><span class="o">.</span><span class="n">get_start_time</span><span class="p">()</span>
+                <span class="n">end_time</span> <span class="o">=</span> <span class="n">wind</span><span class="o">.</span><span class="n">get_end_time</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">end_time</span> <span class="o">==</span> <span class="n">start_time</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">model_time</span>
+                <span class="k">if</span> <span class="n">timeval</span> <span class="o">&lt;</span> <span class="n">start_time</span><span class="p">:</span>
+                    <span class="n">new_model_time</span> <span class="o">=</span> <span class="n">sec_to_datetime</span><span class="p">(</span><span class="n">start_time</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">timeval</span> <span class="o">&gt;</span> <span class="n">end_time</span><span class="p">:</span>
+                    <span class="n">new_model_time</span> <span class="o">=</span> <span class="n">sec_to_datetime</span><span class="p">(</span><span class="n">end_time</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">model_time</span>
+
+        <span class="k">return</span> <span class="n">new_model_time</span></div>
+
+<div class="viewcode-block" id="Weatherer.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s1">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &#39;water&#39;/&#39;waves&#39; property is saved as references in save file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;wind&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="p">:</span>
+                <span class="n">serial</span><span class="p">[</span><span class="s1">&#39;wind&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wind</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;waves&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="p">:</span>
+                <span class="n">serial</span><span class="p">[</span><span class="s1">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;water&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span><span class="p">:</span>
+                <span class="n">serial</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">serial</span></div>
+
+<div class="viewcode-block" id="Weatherer.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.Weatherer.deserialize">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Append correct schema for water / waves</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;wind&#39;</span><span class="p">,</span><span class="s1">&#39;water&#39;</span><span class="p">,</span><span class="s1">&#39;waves&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
+                    <span class="n">obj</span> <span class="o">=</span> <span class="n">json_</span><span class="p">[</span><span class="n">w</span><span class="p">][</span><span class="s1">&#39;obj_type&#39;</span><span class="p">]</span>
+                    <span class="n">schema</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">w</span><span class="p">,</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">))</span>
+            <span class="n">dict_</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">dict_</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json_</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">HalfLifeWeathererSchema</span><span class="p">(</span><span class="n">WeathererSchema</span><span class="p">):</span>
     <span class="n">half_lives</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">NumpyArray</span><span class="p">())</span>
 
 
-<span class="k">class</span> <span class="nc">HalfLifeWeatherer</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">HalfLifeWeatherer</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Give half-life for all components and decay accordingly</span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -362,7 +429,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -372,7 +439,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

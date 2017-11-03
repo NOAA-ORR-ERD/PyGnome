@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.weatherers.natural_dispersion &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.weatherers.natural_dispersion &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -179,7 +180,7 @@
 <span class="kn">from</span> <span class="nn">gnome.array_types</span> <span class="k">import</span> <span class="p">(</span><span class="n">viscosity</span><span class="p">,</span>
                                <span class="n">mass</span><span class="p">,</span>
                                <span class="n">density</span><span class="p">,</span>
-                               <span class="n">fay_area</span><span class="p">,</span>
+                               <span class="n">area</span><span class="p">,</span>
                                <span class="n">frac_water</span><span class="p">,</span>
                                <span class="n">droplet_avg_size</span><span class="p">)</span>
 
@@ -191,7 +192,7 @@
 <span class="n">g</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">gravity</span>  <span class="c1"># the gravitational constant.</span>
 
 
-<div class="viewcode-block" id="NaturalDispersion"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.NaturalDispersion">[docs]</a><span class="k">class</span> <span class="nc">NaturalDispersion</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+<div class="viewcode-block" id="NaturalDispersion"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.NaturalDispersion">[docs]</a><span class="k">class</span> <span class="nc">NaturalDispersion</span><span class="p">(</span><span class="n">Weatherer</span><span class="p">):</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Weatherer</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
     <span class="n">_state</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;water&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
                <span class="n">Field</span><span class="p">(</span><span class="s1">&#39;waves&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_reference</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
@@ -213,7 +214,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;viscosity&#39;</span><span class="p">:</span> <span class="n">viscosity</span><span class="p">,</span>
                                  <span class="s1">&#39;mass&#39;</span><span class="p">:</span>  <span class="n">mass</span><span class="p">,</span>
                                  <span class="s1">&#39;density&#39;</span><span class="p">:</span> <span class="n">density</span><span class="p">,</span>
-                                 <span class="s1">&#39;fay_area&#39;</span><span class="p">:</span> <span class="n">fay_area</span><span class="p">,</span>
+                                 <span class="s1">&#39;area&#39;</span><span class="p">:</span> <span class="n">area</span><span class="p">,</span>
                                  <span class="s1">&#39;frac_water&#39;</span><span class="p">:</span> <span class="n">frac_water</span><span class="p">,</span>
                                  <span class="s1">&#39;droplet_avg_size&#39;</span><span class="p">:</span> <span class="n">droplet_avg_size</span><span class="p">,</span>
                                  <span class="p">})</span>
@@ -254,22 +255,23 @@
         <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">num_released</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="c1"># from the waves module</span>
-        <span class="n">wave_height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">frac_breaking_waves</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
-        <span class="n">disp_wave_energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)[</span><span class="mi">3</span><span class="p">]</span>
-
-        <span class="n">visc_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">kinematic_viscosity</span>
-        <span class="n">rho_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">density</span>
-
-        <span class="c1"># web has different units</span>
-        <span class="n">sediment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;sediment&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;kg/m^3&#39;</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">substance</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sc</span><span class="o">.</span><span class="n">itersubstancedata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">array_types</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="c1"># substance does not contain any surface_weathering LEs</span>
                 <span class="k">continue</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;positions&#39;</span><span class="p">]</span>
+            <span class="c1"># from the waves module</span>
+            <span class="n">waves_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
+            <span class="n">wave_height</span> <span class="o">=</span> <span class="n">waves_values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">frac_breaking_waves</span> <span class="o">=</span> <span class="n">waves_values</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">disp_wave_energy</span> <span class="o">=</span> <span class="n">waves_values</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
 
+            <span class="n">visc_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">kinematic_viscosity</span>
+            <span class="n">rho_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">density</span>
+
+            <span class="c1"># web has different units</span>
+            <span class="n">sediment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;sediment&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;kg/m^3&#39;</span><span class="p">)</span>
             <span class="n">V_entrain</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">volume_entrained</span>
             <span class="n">ka</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">ka</span>  <span class="c1"># oil sticking term</span>
 
@@ -284,7 +286,7 @@
                          <span class="n">data</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">],</span>
                          <span class="n">data</span><span class="p">[</span><span class="s1">&#39;viscosity&#39;</span><span class="p">],</span>
                          <span class="n">data</span><span class="p">[</span><span class="s1">&#39;density&#39;</span><span class="p">],</span>
-                         <span class="n">data</span><span class="p">[</span><span class="s1">&#39;fay_area&#39;</span><span class="p">],</span>
+                         <span class="n">data</span><span class="p">[</span><span class="s1">&#39;area&#39;</span><span class="p">],</span>
                          <span class="n">disp</span><span class="p">,</span>
                          <span class="n">sed</span><span class="p">,</span>
                          <span class="n">droplet_avg_size</span><span class="p">,</span>
@@ -336,7 +338,7 @@
                      <span class="n">mass</span><span class="p">,</span>
                      <span class="n">viscosity</span><span class="p">,</span>
                      <span class="n">density</span><span class="p">,</span>
-                     <span class="n">fay_area</span><span class="p">,</span>
+                     <span class="n">area</span><span class="p">,</span>
                      <span class="n">disp_out</span><span class="p">,</span>
                      <span class="n">sed_out</span><span class="p">,</span>
                      <span class="n">frac_breaking_waves</span><span class="p">,</span>
@@ -363,45 +365,8 @@
 
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">rho</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">visc</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span>
                                                         <span class="n">viscosity</span><span class="p">,</span> <span class="n">frac_water</span><span class="p">,</span>
-                                                        <span class="n">fay_area</span><span class="p">)):</span>
-            <span class="k">pass</span></div>
-
-<div class="viewcode-block" id="NaturalDispersion.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.NaturalDispersion.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s1">&#39;webapi&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        &#39;water&#39;/&#39;waves&#39; property is saved as references in save file</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
-        <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="p">:</span>
-                <span class="n">serial</span><span class="p">[</span><span class="s1">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waves</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span><span class="p">:</span>
-                <span class="n">serial</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">serial</span></div>
-
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="NaturalDispersion.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.weatherers.NaturalDispersion.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Append correct schema for water / waves</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
-            <span class="n">schema</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
-            <span class="n">dict_</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
-
-            <span class="k">if</span> <span class="s1">&#39;water&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
-                <span class="n">obj</span> <span class="o">=</span> <span class="n">json_</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">][</span><span class="s1">&#39;obj_type&#39;</span><span class="p">]</span>
-                <span class="n">dict_</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">]))</span>
-
-            <span class="k">if</span> <span class="s1">&#39;waves&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
-                <span class="n">obj</span> <span class="o">=</span> <span class="n">json_</span><span class="p">[</span><span class="s1">&#39;waves&#39;</span><span class="p">][</span><span class="s1">&#39;obj_type&#39;</span><span class="p">]</span>
-                <span class="n">dict_</span><span class="p">[</span><span class="s1">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;waves&#39;</span><span class="p">]))</span>
-
-            <span class="k">return</span> <span class="n">dict_</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">json_</span></div></div>
+                                                        <span class="n">area</span><span class="p">)):</span>
+            <span class="k">pass</span></div></div>
 </pre></div>
 
            </div>
@@ -438,7 +403,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -448,7 +413,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

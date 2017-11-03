@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.persist.save_load &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.persist.save_load &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -211,6 +212,7 @@
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="n">obj</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">key</span>
+
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">_add_reference_with_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
@@ -219,13 +221,13 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">obj</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;a different object is referenced by &#39;</span>
-                                 <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;a different object is referenced by </span><span class="si">{}</span><span class="s1">&#39;</span>
+                                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># make sure object doesn&#39;t already exist</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;this object is already referenced by &#39;</span>
-                                 <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)))</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;this object is already referenced by </span><span class="si">{}</span><span class="s1">&#39;</span>
+                                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
 
@@ -247,8 +249,8 @@
             <span class="k">return</span> <span class="n">key</span>
 
         <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">.json&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">))</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">_refs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
+
         <span class="k">return</span> <span class="n">key</span>
 
     <span class="k">def</span> <span class="nf">retrieve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">):</span>
@@ -271,8 +273,7 @@
 
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># call getattr recursively</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="nb">getattr</span><span class="p">,</span> <span class="n">obj_type</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">gnome</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">obj</span>
+        <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="nb">getattr</span><span class="p">,</span> <span class="n">obj_type</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">gnome</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
         <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> is not part of gnome namespace&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj_type</span><span class="p">))</span>
         <span class="k">raise</span>
@@ -342,6 +343,7 @@
     <span class="c1"># after loading, add the object to references</span>
     <span class="k">if</span> <span class="n">references</span><span class="p">:</span>
         <span class="n">references</span><span class="o">.</span><span class="n">reference</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
+
     <span class="k">return</span> <span class="n">obj</span>
 
 
@@ -387,15 +389,13 @@
                 <span class="n">obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
                 <span class="n">ref</span> <span class="o">=</span> <span class="n">references</span><span class="o">.</span><span class="n">reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
                 <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref</span>
+
                 <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ref_in_saveloc</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">ref</span><span class="p">):</span>
                     <span class="n">obj</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">ref</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">json_</span>
 
-    <span class="k">def</span> <span class="nf">_json_to_saveloc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                         <span class="n">json_</span><span class="p">,</span>
-                         <span class="n">saveloc</span><span class="p">,</span>
-                         <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                         <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_json_to_saveloc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        save json_ to saveloc</span>
 
@@ -417,11 +417,15 @@
 <span class="sd">            directory. Default is self.__class__.__name__. If references object</span>
 <span class="sd">            contains self.__class__.__name__, then let</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">references</span> <span class="o">=</span> <span class="p">(</span><span class="n">references</span><span class="p">,</span> <span class="n">References</span><span class="p">())[</span><span class="n">references</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">references</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">references</span> <span class="o">=</span> <span class="n">References</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">.json&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
         <span class="n">json_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_and_save_refs</span><span class="p">(</span><span class="n">json_</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
 
-        <span class="n">f_name</span> <span class="o">=</span> \
-            <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">.json&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))[</span><span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">f_name</span> <span class="o">=</span> <span class="n">name</span>
 
         <span class="c1"># add yourself to references</span>
         <span class="k">try</span><span class="p">:</span>
@@ -433,6 +437,7 @@
 
         <span class="c1"># move datafiles to saveloc</span>
         <span class="n">json_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_move_data_file</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">json_</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_write_to_zip</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">json_</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
@@ -443,6 +448,7 @@
 
     <span class="k">def</span> <span class="nf">_write_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">f_name</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="n">full_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">f_name</span><span class="p">)</span>
+
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">full_name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
             <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">json_</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -475,9 +481,13 @@
 <span class="sd">            a filename. It is upto the creator of the reference list to decide</span>
 <span class="sd">            how to reference a nested object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">json_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="s1">&#39;save&#39;</span><span class="p">)</span>
         <span class="n">c_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;iscollection&#39;</span><span class="p">)</span>
+
+        <span class="c1">#JAH: Added this from the model save function. If any bugs pop up</span>
+        <span class="c1">#in the references system this may be the cause</span>
+        <span class="n">references</span> <span class="o">=</span> <span class="p">(</span><span class="n">references</span><span class="p">,</span> <span class="n">References</span><span class="p">())[</span><span class="n">references</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
+
         <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_save_collection</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span>
                                   <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
@@ -489,21 +499,26 @@
 
     <span class="k">def</span> <span class="nf">_move_data_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Look at _state attribute of object. Find all fields with &#39;isdatafile&#39;</span>
-<span class="sd">        attribute as True. If there is a key in json_ corresponding with</span>
-<span class="sd">        &#39;name&#39; of the fields with True &#39;isdatafile&#39; attribute then move that</span>
-<span class="sd">        datafile and update the key in the json_ to point to new location</span>
+<span class="sd">        - Look at _state attribute of object.</span>
+<span class="sd">        - Find all fields with &#39;isdatafile&#39; attribute as True.</span>
+<span class="sd">        - If there is a key in json_ corresponding with</span>
+<span class="sd">          &#39;name&#39; of the fields with True &#39;isdatafile&#39; attribute</span>
+<span class="sd">        - then</span>
+<span class="sd">          - move that datafile and</span>
+<span class="sd">          - update the key in the json_ to point to new location</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;isdatafile&#39;</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
                 <span class="k">continue</span>
-            
+
             <span class="n">raw_paths</span> <span class="o">=</span> <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_paths</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">raw_paths</span><span class="p">):</span>
                     <span class="n">d_fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">p</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
                     <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
                         <span class="c1"># add datafile to zip archive</span>
                         <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span>
@@ -515,13 +530,14 @@
                         <span class="c1"># move datafile to saveloc</span>
                         <span class="k">if</span> <span class="n">p</span> <span class="o">!=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">d_fname</span><span class="p">):</span>
                             <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">)</span>
-    
-                    <span class="c1"># always want to update the reference so it is relative to saveloc</span>
+
+                    <span class="c1"># always want to update the reference so it is relative</span>
+                    <span class="c1"># to saveloc</span>
                     <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">d_fname</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># data filename</span>
                 <span class="n">d_fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
-    
+
                 <span class="k">if</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">is_zipfile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">):</span>
                     <span class="c1"># add datafile to zip archive</span>
                     <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span>
@@ -533,8 +549,9 @@
                     <span class="c1"># move datafile to saveloc</span>
                     <span class="k">if</span> <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">!=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">d_fname</span><span class="p">):</span>
                         <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">saveloc</span><span class="p">)</span>
-    
-                <span class="c1"># always want to update the reference so it is relative to saveloc</span>
+
+                <span class="c1"># always want to update the reference so it is relative</span>
+                <span class="c1"># to saveloc</span>
                 <span class="n">json_</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">d_fname</span>
 
         <span class="k">return</span> <span class="n">json_</span>
@@ -550,11 +567,13 @@
 
         <span class="c1"># pop references from json_data, create objects for them</span>
         <span class="n">ref_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
         <span class="k">if</span> <span class="n">ref_fields</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">ref_fields</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">json_data</span><span class="p">:</span>
                     <span class="n">i_ref</span> <span class="o">=</span> <span class="n">json_data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
                     <span class="n">ref_obj</span> <span class="o">=</span> <span class="n">references</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">i_ref</span><span class="p">)</span>
+
                     <span class="k">if</span> <span class="ow">not</span> <span class="n">ref_obj</span><span class="p">:</span>
                         <span class="n">ref_obj</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">i_ref</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
 
@@ -584,6 +603,7 @@
                 <span class="c1"># filenames in archive do not contain paths with &#39;..&#39;</span>
                 <span class="c1"># In here, we just extract datafile to saveloc/.</span>
                 <span class="n">raw_n</span> <span class="o">=</span> <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_n</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
                     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">raw_n</span><span class="p">):</span>
                         <span class="n">json_data</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
@@ -641,11 +661,7 @@
 
         <span class="k">return</span> <span class="n">obj</span>
 
-    <span class="k">def</span> <span class="nf">_save_collection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                         <span class="n">saveloc</span><span class="p">,</span>
-                         <span class="n">coll_</span><span class="p">,</span>
-                         <span class="n">refs</span><span class="p">,</span>
-                         <span class="n">coll_json</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_save_collection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">coll_</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">coll_json</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Reference objects inside OrderedCollections or list. Since the OC</span>
 <span class="sd">        itself isn&#39;t a reference but the objects in the list are a reference,</span>
@@ -655,11 +671,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">count</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coll_</span><span class="p">):</span>
             <span class="n">obj_ref</span> <span class="o">=</span> <span class="n">refs</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="n">obj_ref</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># try following name - if &#39;fname&#39; already exists in references,</span>
                 <span class="c1"># then obj.save() assigns a different name to file</span>
                 <span class="n">fname</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0.__class__.__name__}</span><span class="s1">_</span><span class="si">{1}</span><span class="s1">.json&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+
                 <span class="n">obj</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
+
                 <span class="n">coll_json</span><span class="p">[</span><span class="n">count</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">refs</span><span class="o">.</span><span class="n">reference</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">coll_json</span><span class="p">[</span><span class="n">count</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj_ref</span>
@@ -671,14 +690,18 @@
 <span class="sd">        Model at present</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">l_coll</span> <span class="o">=</span> <span class="p">[]</span>
+
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">l_coll_dict</span><span class="p">:</span>
             <span class="n">i_ref</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+
             <span class="k">if</span> <span class="n">refs</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">i_ref</span><span class="p">):</span>
                 <span class="n">l_coll</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">refs</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">i_ref</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">obj</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="n">saveloc</span><span class="p">,</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">refs</span><span class="p">)</span>
+
                 <span class="n">l_coll</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">l_coll</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">l_coll</span>
 
 
 <span class="c1"># max json filesize is 1MegaByte</span>
@@ -712,9 +735,9 @@
         <span class="c1"># 1) Failed to open zipfile</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">badfile</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">testzip</span><span class="p">()</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Failed to open or run testzip() on </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">savezip</span><span class="p">)</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Failed to open or run testzip() on </span><span class="si">{0}</span><span class="s2">&quot;</span>
+                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">savezip</span><span class="p">))</span>
             <span class="k">return</span> <span class="kc">False</span>
 
         <span class="c1"># 2) CRC failed for a file in the archive - rejecting zip</span>
@@ -727,10 +750,10 @@
             <span class="k">if</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;.json&#39;</span> <span class="ow">and</span>
                     <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span> <span class="o">&gt;</span> <span class="n">_max_json_filesize</span><span class="p">):</span>
                 <span class="c1"># 3) Found a *.json with size &gt; _max_json_filesize. Rejecting.</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Filesize of </span><span class="si">{0}</span><span class="s2"> is </span><span class="si">{1}</span><span class="s2">. It must be less than </span><span class="si">{2}</span><span class="s2">. &quot;</span>
-                       <span class="s2">&quot;Rejecting zipfile.&quot;</span>
-                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span><span class="p">,</span> <span class="n">_max_json_filesize</span><span class="p">))</span>
-                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Filesize of </span><span class="si">{0}</span><span class="s1"> is </span><span class="si">{1}</span><span class="s1">. It must be less than </span><span class="si">{2}</span><span class="s1">.&#39;</span>
+                            <span class="s1">&#39; Rejecting zipfile.&#39;</span>
+                            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">zi</span><span class="o">.</span><span class="n">file_size</span><span class="p">,</span>
+                                    <span class="n">_max_json_filesize</span><span class="p">))</span>
                 <span class="k">return</span> <span class="kc">False</span>
 
             <span class="c1"># integer division - it will floor</span>
@@ -739,12 +762,11 @@
                 <span class="c1"># 4) Found a file with</span>
                 <span class="c1">#    uncompressed_size/compressed_size &gt; _max_compress_ratio.</span>
                 <span class="c1">#    Rejecting.</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;file compression ratio is </span><span class="si">{0}</span><span class="s2">. &quot;</span>
-                       <span class="s2">&quot;maximum must be less than </span><span class="si">{1}</span><span class="s2">. &quot;</span>
-                       <span class="s2">&quot;Rejecting zipfile&quot;</span>
-                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">file_size</span> <span class="o">/</span> <span class="n">zi</span><span class="o">.</span><span class="n">compress_size</span><span class="p">,</span>
-                               <span class="n">_max_compress_ratio</span><span class="p">))</span>
-                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;file compression ratio is </span><span class="si">{0}</span><span class="s1">. &#39;</span>
+                            <span class="s1">&#39;maximum must be less than </span><span class="si">{1}</span><span class="s1">. &#39;</span>
+                            <span class="s1">&#39;Rejecting zipfile&#39;</span>
+                            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">file_size</span> <span class="o">/</span> <span class="n">zi</span><span class="o">.</span><span class="n">compress_size</span><span class="p">,</span>
+                                    <span class="n">_max_compress_ratio</span><span class="p">))</span>
                 <span class="k">return</span> <span class="kc">False</span>
 
             <span class="k">if</span> <span class="s1">&#39;..&#39;</span> <span class="ow">in</span> <span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">:</span>
@@ -752,9 +774,8 @@
                 <span class="c1">#    currently, all datafiles stored at same level in saveloc,</span>
                 <span class="c1">#    no subdirectories. Even if we start using subdirectories,</span>
                 <span class="c1">#    there should never be a need to do &#39;..&#39;</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Found &#39;..&#39; in </span><span class="si">{0}</span><span class="s2">. Rejecting zipfile&quot;</span>
-                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">))</span>
-                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Found &quot;..&quot; in </span><span class="si">{0}</span><span class="s1">. Rejecting zipfile&#39;</span>
+                            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zi</span><span class="o">.</span><span class="n">filename</span><span class="p">))</span>
                 <span class="k">return</span> <span class="kc">False</span>
 
     <span class="c1"># all checks pass - so we can load zipfile</span>
@@ -816,7 +837,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -826,7 +847,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

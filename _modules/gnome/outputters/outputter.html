@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.outputters.outputter &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.outputters.outputter &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -191,8 +192,8 @@
     <span class="n">output_last_step</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Bool</span><span class="p">())</span>
     <span class="n">output_timestep</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">extend_colander</span><span class="o">.</span><span class="n">TimeDelta</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
     <span class="n">output_start_time</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">extend_colander</span><span class="o">.</span><span class="n">LocalDateTime</span><span class="p">(),</span>
-                            <span class="n">validator</span><span class="o">=</span><span class="n">validators</span><span class="o">.</span><span class="n">convertible_to_seconds</span><span class="p">,</span>
-                            <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+                                   <span class="n">validator</span><span class="o">=</span><span class="n">validators</span><span class="o">.</span><span class="n">convertible_to_seconds</span><span class="p">,</span>
+                                   <span class="n">missing</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Outputter"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.Outputter">[docs]</a><span class="k">class</span> <span class="nc">Outputter</span><span class="p">(</span><span class="n">Serializable</span><span class="p">):</span>
@@ -252,10 +253,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="n">on</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_zero_step</span> <span class="o">=</span> <span class="n">output_zero_step</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_last_step</span> <span class="o">=</span> <span class="n">output_last_step</span>
+
         <span class="k">if</span> <span class="n">output_timestep</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_output_timestep</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">output_timestep</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_output_timestep</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="k">if</span> <span class="n">output_start_time</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span> <span class="o">=</span> <span class="n">output_start_time</span>
         <span class="k">else</span><span class="p">:</span>
@@ -337,16 +340,12 @@
         <span class="c1"># this breaks tests -- probably should fix the tests...</span>
         <span class="k">if</span> <span class="n">model_start_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;model_start_time is a required parameter&quot;</span><span class="p">)</span>
-        <span class="c1"># if spills is None:</span>
-        <span class="c1">#    raise TypeError(&quot;spills is a required parameter&quot;)</span>
-        <span class="c1"># if model_time_step is None:</span>
-        <span class="c1">#     raise TypeError(&quot;model_time_step is a required parameter&quot;)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_model_start_time</span> <span class="o">=</span> <span class="n">model_start_time</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model_timestep</span> <span class="o">=</span> <span class="n">model_time_step</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span> <span class="o">=</span> <span class="n">model_start_time</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">sc_pair</span> <span class="o">=</span> <span class="n">spills</span>
+
         <span class="n">cache</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;cache&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">cache</span>
@@ -378,23 +377,28 @@
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">d</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_start_time</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">model_time</span> <span class="o">+</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="kc">False</span>
-                <span class="k">return</span>
-            <span class="k">if</span> <span class="n">model_time</span> <span class="o">+</span> <span class="n">d</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_is_first_output</span> <span class="o">=</span> <span class="kc">False</span>
-                <span class="k">return</span>
-            <span class="k">if</span> <span class="n">model_time</span> <span class="o">+</span> <span class="n">d</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span><span class="p">:</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_first_output</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_start_time</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">model_time</span> <span class="o">+</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">return</span>
+
+                <span class="k">if</span> <span class="n">model_time</span> <span class="o">+</span> <span class="n">d</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_is_first_output</span> <span class="o">=</span> <span class="kc">False</span>
                     <span class="k">return</span>
 
+                <span class="k">if</span> <span class="n">model_time</span> <span class="o">+</span> <span class="n">d</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_start_time</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_first_output</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_is_first_output</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="k">return</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_timestep</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_dt_since_lastoutput</span> <span class="o">+=</span> <span class="n">time_step</span>
+
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dt_since_lastoutput</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_timestep</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_dt_since_lastoutput</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dt_since_lastoutput</span> <span class="o">%</span>
@@ -424,7 +428,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">step_num</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_zero_step</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="kc">True</span>	<span class="c1"># this is the default</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># this is the default</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="kc">False</span>
 
@@ -499,6 +503,7 @@
 <span class="sd">        Follows the iteration in Model().step() for each step_num</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">model_start_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
         <span class="n">model_time</span> <span class="o">=</span> <span class="n">model_start_time</span>
         <span class="n">last_step</span> <span class="o">=</span> <span class="kc">False</span>
 
@@ -507,14 +512,17 @@
                 <span class="n">next_ts</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span>
                            <span class="n">current_time_stamp</span><span class="p">)</span>
                 <span class="n">ts</span> <span class="o">=</span> <span class="n">next_ts</span> <span class="o">-</span> <span class="n">model_time</span>
+
                 <span class="bp">self</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">seconds</span><span class="p">,</span> <span class="n">model_time</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">step_num</span> <span class="o">==</span> <span class="n">num_time_steps</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">last_step</span> <span class="o">=</span> <span class="kc">True</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="n">last_step</span><span class="p">)</span>
-            <span class="n">model_time</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span>
-                          <span class="n">current_time_stamp</span><span class="p">)</span></div>
+
+            <span class="n">model_time</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span>
+                          <span class="o">.</span><span class="n">items</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+                          <span class="o">.</span><span class="n">current_time_stamp</span><span class="p">)</span></div>
 
     <span class="c1"># Some utilities for checking valid filenames, etc...</span>
     <span class="k">def</span> <span class="nf">_check_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
@@ -522,8 +530,7 @@
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;filename must be a file not a directory.&#39;</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-                                               <span class="p">)):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filename</span><span class="p">))):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> does not appear to be a valid path&#39;</span>
                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filename</span><span class="p">)))</span>
 
@@ -541,8 +548,6 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> file exists. Enter a filename that &#39;</span>
                              <span class="s1">&#39;does not exist in which to save data.&#39;</span>
                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file_</span><span class="p">))</span></div>
-
-
 </pre></div>
 
            </div>
@@ -579,7 +584,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -589,7 +594,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

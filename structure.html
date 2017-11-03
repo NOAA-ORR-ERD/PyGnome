@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>GNOME Structure &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>GNOME Structure &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="index.html"/>
         <link rel="next" title="Scripting pygnome" href="scripting.html"/>
         <link rel="prev" title="Installing" href="installing.html"/> 
 
@@ -66,7 +66,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -102,6 +102,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="serialization.html">Notes on serialization / deserialization:</a></li>
@@ -207,10 +208,10 @@
 <div class="section" id="gnome-structure">
 <h1>GNOME Structure<a class="headerlink" href="#gnome-structure" title="Permalink to this headline">¶</a></h1>
 <p>A setup of the GNOME model consists of fairly simple structure: It is
-fundamentally a Lagrangian element (particle tracking) model &#8211; the oil or
+fundamentally a Lagrangian element (particle tracking) model – the oil or
 other substance is represented as Lagrangian elements (LEs), or particles, in
 the model, with their movement and properties tracked over time. The elements
-are acted on by a number of &#8220;movers&#8221;, each representing a different physical
+are acted on by a number of “movers”, each representing a different physical
 process. For the most part, each mover moves the particles one way or another,
 but a mover can also act to change the nature of a particle, rather than moving
 it.</p>
@@ -231,48 +232,48 @@ shoreline. For 3-d modeling, it can also define the bathymetry.</p>
 </div>
 <div class="section" id="spills">
 <h2>Spills<a class="headerlink" href="#spills" title="Permalink to this headline">¶</a></h2>
-<p>Spills in GNOME are a source of elements &#8211; they define where and when the
+<p>Spills in GNOME are a source of elements – they define where and when the
 elements are released into the model.</p>
 <p>Each spill is a composition of the type of substance spilled (ElementType) and
 how elements are released (instantaneous, continuous, etc). Each spill is
-initialized with an element type &#8211; the element types define what properties
+initialized with an element type – the element types define what properties
 the elements have. The elements may represent something spilled such as an oil
 spill, or could be any other object, objects or substances that you want to
-track &#8211; chemicals, floating debris, fish larvae, etc.</p>
-<p>The ElementType itself contains &#8216;substance&#8217; which defines the properties of
+track – chemicals, floating debris, fish larvae, etc.</p>
+<p>The ElementType itself contains ‘substance’ which defines the properties of
 the substance spilled and a list of initializers. These are used to define
 data arrays associated with the type of spill, ie floating, floating with
 mass, floating weathering particles etc. There are helper functions
 to define the element_type without delving into initializers; however,
 user can optionally manipulate list of initializers. The helper functions are:</p>
 <ol class="arabic simple">
-<li><code class="xref py py-func docutils literal"><span class="pre">floating()</span></code> -
+<li><a class="reference internal" href="reference.html#gnome.spill.elements.element_type.floating" title="gnome.spill.elements.element_type.floating"><code class="xref py py-func docutils literal"><span class="pre">floating()</span></code></a> -
 to model floating elements with windages</li>
 <li><code class="xref py py-func docutils literal"><span class="pre">floating_mass()</span></code> -
 to model floating elements with windages. This assumes the Spill contains a
-valid values for &#8216;amount&#8217; and &#8216;units&#8217; and it evenly distributes the total
+valid values for ‘amount’ and ‘units’ and it evenly distributes the total
 mass of oil spilled to each element.</li>
 <li><code class="xref py py-func docutils literal"><span class="pre">floating_weathering()</span></code> -
 a helper function for defining floating weathering elements. This
-initializes an array of &#8216;mass_components&#8217; for each element. The
-&#8216;mass_components&#8217; array represents the fraction of mass contained in each
+initializes an array of ‘mass_components’ for each element. The
+‘mass_components’ array represents the fraction of mass contained in each
 psuedocomponent used to model the oil/substance, since it is a mixture of
 multiple compounds. This is used for modeling weathering processes.</li>
 </ol>
 <p>Currently, if weatherers are added to the model, then user <strong>needs</strong> to define
 element_type as floating_weathering().</p>
 <p>This maybe simplified so floating_weathering() helper is not needed -
-basically, if there are any weatherers defined, then a &#8216;mass_components&#8217; data
+basically, if there are any weatherers defined, then a ‘mass_components’ data
 array will automatically be added. If you are not doing any
 weathering, the Spill object uses a default helper function based on
 whether a spill amount is defined or not. This should suffice for most cases.</p>
-<p>Multiple spills can share the same substance; which can be accessed by Spill&#8217;s
-<code class="xref py py-meth docutils literal"><span class="pre">get()</span></code> method. Multiple spill&#8217;s can also share the
-same <code class="xref py py-class docutils literal"><span class="pre">ElementType</span></code> with the
+<p>Multiple spills can share the same substance; which can be accessed by Spill’s
+<code class="xref py py-meth docutils literal"><span class="pre">get()</span></code> method. Multiple spill’s can also share the
+same <a class="reference internal" href="reference.html#gnome.spill.elements.element_type.ElementType" title="gnome.spill.elements.element_type.ElementType"><code class="xref py py-class docutils literal"><span class="pre">ElementType</span></code></a> with the
 caveat that they share the same list of initializers. For example, if
-two spills have different &#8216;windages&#8217; then the two spills cannot share the
-ElementType; however, they can still share the &#8216;substance&#8217;. Currently, the
-code doesn&#8217;t account for spills with different substances in the same model so
+two spills have different ‘windages’ then the two spills cannot share the
+ElementType; however, they can still share the ‘substance’. Currently, the
+code doesn’t account for spills with different substances in the same model so
 it is preferred to either share the same substance or the two substances are
 equal.</p>
 </div>
@@ -282,14 +283,14 @@ equal.</p>
 be ocean currents, winds, and/or turbulent diffusion. Each mover is
 initialized with the the data it needs to compute the movement or
 with links to appropriate files in the case of gridded model output.</p>
-<p>The Mover API is defined so that you can write your own movers &#8211; for instance
+<p>The Mover API is defined so that you can write your own movers – for instance
 to model fish swimming behavior, etc. See the reference docs for the the API.</p>
 </div>
 <div class="section" id="weatherers">
 <h2>Weatherers<a class="headerlink" href="#weatherers" title="Permalink to this headline">¶</a></h2>
 <p>Weatherers are processes that change the mass of the floating oil or of oil droplets
 within the water column. These include processes that are traditionally described as
-&#8220;weathering&#8221; (e.g. evaporation, dispersion) and response options (e.g. skimming,
+“weathering” (e.g. evaporation, dispersion) and response options (e.g. skimming,
 burning oil).</p>
 </div>
 <div class="section" id="outputters">
@@ -348,7 +349,7 @@ format.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -358,7 +359,7 @@ format.</p>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

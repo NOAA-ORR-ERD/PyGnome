@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.model &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.model &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../genindex.html"/>
         <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../index.html"/>
         <link rel="up" title="Module code" href="../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -174,7 +175,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span>
-                      <span class="n">String</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span>
+                      <span class="n">String</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span>
                       <span class="n">drop</span><span class="p">,</span> <span class="n">OneOf</span><span class="p">)</span>
 
 <span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="k">import</span> <span class="n">Environment</span>
@@ -191,7 +192,8 @@
 <span class="kn">from</span> <span class="nn">gnome.weatherers</span> <span class="k">import</span> <span class="p">(</span><span class="n">weatherer_sort</span><span class="p">,</span>
                               <span class="n">Weatherer</span><span class="p">,</span>
                               <span class="n">WeatheringData</span><span class="p">,</span>
-                              <span class="n">FayGravityViscous</span><span class="p">)</span>
+                              <span class="n">FayGravityViscous</span><span class="p">,</span>
+                              <span class="n">Langmuir</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">gnome.outputters</span> <span class="k">import</span> <span class="n">Outputter</span><span class="p">,</span> <span class="n">NetCDFOutput</span><span class="p">,</span> <span class="n">WeatheringOutput</span>
 <span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="k">import</span> <span class="p">(</span><span class="n">extend_colander</span><span class="p">,</span>
                            <span class="n">validators</span><span class="p">,</span>
@@ -217,6 +219,7 @@
     <span class="n">mode</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span>
                       <span class="n">validator</span><span class="o">=</span><span class="n">OneOf</span><span class="p">([</span><span class="s1">&#39;gnome&#39;</span><span class="p">,</span> <span class="s1">&#39;adios&#39;</span><span class="p">,</span> <span class="s1">&#39;roc&#39;</span><span class="p">]),</span>
                       <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">location</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">List</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s1">&#39;webapi&#39;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -256,7 +259,8 @@
                <span class="s1">&#39;movers&#39;</span><span class="p">,</span>
                <span class="s1">&#39;weatherers&#39;</span><span class="p">,</span>
                <span class="s1">&#39;environment&#39;</span><span class="p">,</span>
-               <span class="s1">&#39;outputters&#39;</span><span class="p">]</span>
+               <span class="s1">&#39;outputters&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;location&#39;</span><span class="p">]</span>
 
     <span class="n">_create</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
@@ -279,8 +283,8 @@
 
     <span class="n">modes</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;gnome&#39;</span><span class="p">,</span> <span class="s1">&#39;adios&#39;</span><span class="p">,</span> <span class="s1">&#39;roc&#39;</span><span class="p">}</span>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Model.new_from_dict"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.new_from_dict"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.new_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
         <span class="s1">&#39;Restore model from previously persisted _state&#39;</span>
         <span class="n">json_</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;json_&#39;</span><span class="p">)</span>
         <span class="n">l_env</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;environment&#39;</span><span class="p">,</span> <span class="p">[])</span>
@@ -331,8 +335,8 @@
         <span class="n">model</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">model</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Model.load_savefile"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.load_savefile">[docs]</a>    <span class="k">def</span> <span class="nf">load_savefile</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.load_savefile"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.load_savefile">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">load_savefile</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        load a model instance from a save file</span>
 
@@ -366,7 +370,8 @@
                  <span class="n">uncertain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">cache_enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">mode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                 <span class="n">mode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">location</span><span class="o">=</span><span class="p">[]):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Initializes a model.</span>
 <span class="sd">        All arguments have a default.</span>
@@ -396,7 +401,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__restore__</span><span class="p">(</span><span class="n">time_step</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span>
                          <span class="n">weathering_substeps</span><span class="p">,</span>
-                         <span class="n">uncertain</span><span class="p">,</span> <span class="n">cache_enabled</span><span class="p">,</span> <span class="nb">map</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+                         <span class="n">uncertain</span><span class="p">,</span> <span class="n">cache_enabled</span><span class="p">,</span> <span class="nb">map</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">location</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_register_callbacks</span><span class="p">()</span>
 
@@ -419,7 +424,7 @@
 
     <span class="k">def</span> <span class="nf">__restore__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span>
                     <span class="n">weathering_substeps</span><span class="p">,</span> <span class="n">uncertain</span><span class="p">,</span> <span class="n">cache_enabled</span><span class="p">,</span> <span class="nb">map</span><span class="p">,</span>
-                    <span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+                    <span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">location</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Take out initialization that does not register the callback here.</span>
 <span class="sd">        This is because new_from_dict will use this to restore the model _state</span>
@@ -475,6 +480,8 @@
         <span class="c1"># model creates references to weatherers/environment if</span>
         <span class="c1"># make_default_refs is True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">make_default_refs</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">location</span> <span class="o">=</span> <span class="n">location</span>
 
 <div class="viewcode-block" id="Model.reset"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -740,10 +747,12 @@
         <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;wind&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s1">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="s1">&#39;wind&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
         <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s1">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="s1">&#39;water&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
         <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;waves&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s1">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="s1">&#39;waves&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
+        <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;current&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_by_attr</span><span class="p">(</span><span class="s1">&#39;_ref_as&#39;</span><span class="p">,</span> <span class="s1">&#39;current&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">)</span>
 
         <span class="n">weather_data</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="n">wd</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">spread</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">langmuir</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">for</span> <span class="n">coll</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;environment&#39;</span><span class="p">,</span> <span class="s1">&#39;weatherers&#39;</span><span class="p">,</span> <span class="s1">&#39;movers&#39;</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coll</span><span class="p">):</span>
                 <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;_req_refs&#39;</span><span class="p">):</span>
@@ -767,6 +776,14 @@
                             <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">_ref_as</span> <span class="o">==</span> <span class="s1">&#39;spreading&#39;</span><span class="p">:</span>
                                 <span class="n">item</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="kc">False</span>
                                 <span class="n">spread</span> <span class="o">=</span> <span class="n">item</span>
+
+                        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                            <span class="k">pass</span>
+
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">_ref_as</span> <span class="o">==</span> <span class="s1">&#39;langmuir&#39;</span><span class="p">:</span>
+                                <span class="n">item</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="kc">False</span>
+                                <span class="n">langmuir</span> <span class="o">=</span> <span class="n">item</span>
 
                         <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
                             <span class="k">pass</span>
@@ -819,6 +836,17 @@
                     <span class="k">for</span> <span class="n">at</span> <span class="ow">in</span> <span class="n">attr</span><span class="p">:</span>
                         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">spread</span><span class="p">,</span> <span class="n">at</span><span class="p">):</span>
                             <span class="n">spread</span><span class="o">.</span><span class="n">water</span> <span class="o">=</span> <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">langmuir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">weatherers</span> <span class="o">+=</span> <span class="n">Langmuir</span><span class="p">(</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">],</span> <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;wind&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># turn spreading on and make references</span>
+                <span class="n">langmuir</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="n">langmuir</span><span class="o">.</span><span class="n">make_default_refs</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">at</span> <span class="ow">in</span> <span class="n">attr</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">langmuir</span><span class="p">,</span> <span class="n">at</span><span class="p">):</span>
+                            <span class="n">langmuir</span><span class="o">.</span><span class="n">water</span> <span class="o">=</span> <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">]</span>
+                            <span class="n">langmuir</span><span class="o">.</span><span class="n">wind</span> <span class="o">=</span> <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;wind&#39;</span><span class="p">]</span>
 
 <div class="viewcode-block" id="Model.setup_model_run"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.setup_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">setup_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -1127,8 +1155,11 @@
         <span class="c1"># till we go through the prepare_for_model_step</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">save_timestep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">)</span>
         <span class="n">output_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="n">isvalid</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0._pid}</span><span class="s2"> Completed step: </span><span class="si">{0.current_time_step}</span><span class="s2"> &quot;</span>
-                          <span class="s2">&quot;for </span><span class="si">{0.name}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0._pid}</span><span class="s1"> &#39;</span>
+                          <span class="s1">&#39;Completed step: </span><span class="si">{0.current_time_step}</span><span class="s1"> for </span><span class="si">{0.name}</span><span class="s1">&#39;</span>
+                          <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
         <span class="k">return</span> <span class="n">output_info</span></div>
 
     <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1193,6 +1224,9 @@
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj_added</span><span class="p">,</span> <span class="s1">&#39;water&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">obj_added</span><span class="o">.</span><span class="n">water</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">obj_added</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">environment</span> <span class="o">+=</span> <span class="n">obj_added</span><span class="o">.</span><span class="n">water</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj_added</span><span class="p">,</span> <span class="s1">&#39;current&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">obj_added</span><span class="o">.</span><span class="n">current</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">obj_added</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">environment</span> <span class="o">+=</span> <span class="n">obj_added</span><span class="o">.</span><span class="n">current</span>
 
     <span class="k">def</span> <span class="nf">_callback_add_mover</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_added</span><span class="p">):</span>
         <span class="s1">&#39;Callback after mover has been added&#39;</span>
@@ -1478,8 +1512,8 @@
 
         <span class="k">return</span> <span class="n">o_json_</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Model.deserialize"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.deserialize"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.deserialize">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        treat special-case attributes of Model.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -1505,8 +1539,8 @@
 
         <span class="k">return</span> <span class="n">deserial</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Model.loads"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.loads"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.loads">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_data</span><span class="p">,</span> <span class="n">saveloc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        loads a model from json_data</span>
 
@@ -1598,51 +1632,68 @@
 
         <span class="n">someSpillIntersectsModel</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">num_spills</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_spills</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> contains no spills&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_warn_pre</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">num_spills_on</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">spill</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">release_time</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span>
-                <span class="n">someSpillIntersectsModel</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">release_time</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> has release time after model start time&#39;</span><span class="o">.</span>
-                       <span class="nb">format</span><span class="p">(</span><span class="n">spill</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_warn_pre</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+                <span class="n">num_spills_on</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">release_time</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span>
+                    <span class="n">someSpillIntersectsModel</span> <span class="o">=</span> <span class="kc">True</span>
 
-            <span class="k">elif</span> <span class="n">spill</span><span class="o">.</span><span class="n">release_time</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> has release time before model start time&#39;</span>
-                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spill</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;error: &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
-                <span class="n">isvalid</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">release_time</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> has release time after model start time&#39;</span><span class="o">.</span>
+                           <span class="nb">format</span><span class="p">(</span><span class="n">spill</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">substance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="c1"># min_k1 = spill.substance.get(&#39;pour_point_min_k&#39;)</span>
-                <span class="n">pour_point</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">substance</span><span class="o">.</span><span class="n">pour_point</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">water</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">water_temp</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;temperature&#39;</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">water_temp</span> <span class="o">&lt;</span> <span class="n">pour_point</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-                        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;The water temperature, </span><span class="si">{0}</span><span class="s1"> K, is less than &#39;</span>
-                               <span class="s1">&#39;the minimum pour point of the selected oil, &#39;</span>
-                               <span class="s1">&#39;</span><span class="si">{1}</span><span class="s1"> K.  The results may be unreliable.&#39;</span>
-                               <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">water_temp</span><span class="p">,</span> <span class="n">pour_point</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-                        
-                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                        <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_warn_pre</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+                    <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_warn_pre</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
 
-                    <span class="n">rho_h2o</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;density&#39;</span><span class="p">)</span>
-                    <span class="n">rho_oil</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">substance</span><span class="o">.</span><span class="n">density_at_temp</span><span class="p">(</span><span class="n">water_temp</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">rho_h2o</span> <span class="o">&lt;</span> <span class="n">rho_oil</span><span class="p">):</span>
-                        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Found particles with relative_buoyancy &lt; 0. &quot;</span>
-                               <span class="s2">&quot;Oil is a sinker&quot;</span><span class="p">)</span>
-                        <span class="k">raise</span> <span class="n">GnomeRuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">spill</span><span class="o">.</span><span class="n">release_time</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> has release time before model start time&#39;</span>
+                           <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spill</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">num_spills</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">someSpillIntersectsModel</span><span class="p">:</span>
+                    <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;error: </span><span class="si">{}</span><span class="s1">: </span><span class="si">{}</span><span class="s1">&#39;</span>
+                                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">msg</span><span class="p">))</span>
+                    <span class="n">isvalid</span> <span class="o">=</span> <span class="kc">False</span>
+
+                <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">substance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># min_k1 = spill.substance.get(&#39;pour_point_min_k&#39;)</span>
+                    <span class="n">pour_point</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">substance</span><span class="o">.</span><span class="n">pour_point</span><span class="p">()</span>
+
+                    <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">water</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">water_temp</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;temperature&#39;</span><span class="p">)</span>
+
+                        <span class="k">if</span> <span class="n">water_temp</span> <span class="o">&lt;</span> <span class="n">pour_point</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;The water temperature, </span><span class="si">{0}</span><span class="s1"> K, &#39;</span>
+                                   <span class="s1">&#39;is less than the minimum pour point &#39;</span>
+                                   <span class="s1">&#39;of the selected oil, </span><span class="si">{1}</span><span class="s1"> K.  &#39;</span>
+                                   <span class="s1">&#39;The results may be unreliable.&#39;</span>
+                                   <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">water_temp</span><span class="p">,</span> <span class="n">pour_point</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                            <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_warn_pre</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+
+                        <span class="n">rho_h2o</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;density&#39;</span><span class="p">)</span>
+                        <span class="n">rho_oil</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">substance</span><span class="o">.</span><span class="n">density_at_temp</span><span class="p">(</span><span class="n">water_temp</span><span class="p">)</span>
+
+                        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">rho_h2o</span> <span class="o">&lt;</span> <span class="n">rho_oil</span><span class="p">):</span>
+                            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Found particles with &#39;</span>
+                                   <span class="s1">&#39;relative_buoyancy &lt; 0. Oil is a sinker&#39;</span><span class="p">)</span>
+                            <span class="k">raise</span> <span class="n">GnomeRuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">num_spills_on</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">someSpillIntersectsModel</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">num_spills</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;All of the spills are released after the &#39;</span>
                        <span class="s1">&#39;time interval being modeled.&#39;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;The spill is released after the time interval &#39;</span>
                        <span class="s1">&#39;being modeled.&#39;</span><span class="p">)</span>
+
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>  <span class="c1"># for now make this a warning</span>
             <span class="c1"># self.logger.error(msg)</span>
             <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;warning: &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
@@ -1690,31 +1741,6 @@
                 <span class="n">isvalid</span> <span class="o">=</span> <span class="n">ref_isvalid</span>
             <span class="n">msgs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ref_msgs</span><span class="p">)</span>
 
-        <span class="c1"># Spill warnings</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> contains no spills&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_warn_pre</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">spill</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">release_time</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> has release time after model start time&#39;</span><span class="o">.</span>
-                       <span class="nb">format</span><span class="p">(</span><span class="n">spill</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_warn_pre</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
-
-            <span class="k">elif</span> <span class="n">spill</span><span class="o">.</span><span class="n">release_time</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> has release time before model start time&#39;</span>
-                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spill</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;error: &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
-                <span class="n">isvalid</span> <span class="o">=</span> <span class="kc">False</span>
-
-<span class="c1">#             if msg is not None:</span>
-<span class="c1">#                 self.logger.warning(msg)</span>
-<span class="c1">#                 msgs.append(self._warn_pre + msg)</span>
-<span class="c1">#</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">msgs</span><span class="p">,</span> <span class="n">isvalid</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_validate_env_coll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">raise_exc</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -1964,7 +1990,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -1974,7 +2000,7 @@
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

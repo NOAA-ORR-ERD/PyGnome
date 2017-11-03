@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.outputters.geo_json &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.outputters.geo_json &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -170,12 +171,12 @@
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">glob</span> <span class="k">import</span> <span class="n">glob</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">Iterable</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">geojson</span> <span class="k">import</span> <span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">FeatureCollection</span><span class="p">,</span> <span class="n">dump</span><span class="p">,</span>
-                     <span class="n">Point</span><span class="p">,</span> <span class="n">MultiPoint</span><span class="p">,</span> <span class="n">MultiPolygon</span><span class="p">)</span>
+                     <span class="n">Point</span><span class="p">,</span> <span class="n">MultiPolygon</span><span class="p">)</span>
 
 <span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Bool</span>
 
@@ -276,7 +277,6 @@
 
 <span class="sd">        If you want to keep them, a new output_dir should be set</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="nb">super</span><span class="p">(</span><span class="n">TrajectoryGeoJsonOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span>
                                                                    <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">clean_output_files</span><span class="p">()</span></div>
@@ -294,10 +294,12 @@
         <span class="c1"># feature per step rather than (n) features per step.features = []</span>
         <span class="n">c_features</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">uc_features</span> <span class="o">=</span> <span class="p">[]</span>
+
         <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataarray_p_types</span><span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s1">&#39;positions&#39;</span><span class="p">])</span>
             <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataarray_p_types</span><span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s1">&#39;status_codes&#39;</span><span class="p">])</span>
             <span class="n">mass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataarray_p_types</span><span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">])</span>
+
             <span class="n">sc_type</span> <span class="o">=</span> <span class="s1">&#39;uncertain&#39;</span> <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span> <span class="k">else</span> <span class="s1">&#39;forecast&#39;</span>
             <span class="n">spill_num</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataarray_p_types</span><span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s1">&#39;spill_num&#39;</span><span class="p">])</span>
 
@@ -323,15 +325,16 @@
 
         <span class="n">c_geojson</span> <span class="o">=</span> <span class="n">FeatureCollection</span><span class="p">(</span><span class="n">c_features</span><span class="p">)</span>
         <span class="n">uc_geojson</span> <span class="o">=</span> <span class="n">FeatureCollection</span><span class="p">(</span><span class="n">uc_features</span><span class="p">)</span>
+
         <span class="c1"># default geojson should not output data to file</span>
         <span class="c1"># read data from file and send it to web client</span>
         <span class="n">output_info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;time_stamp&#39;</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
                        <span class="s1">&#39;certain&#39;</span><span class="p">:</span> <span class="n">c_geojson</span><span class="p">,</span>
-                       <span class="s1">&#39;uncertain&#39;</span><span class="p">:</span> <span class="n">uc_geojson</span>
-                       <span class="p">}</span>
+                       <span class="s1">&#39;uncertain&#39;</span><span class="p">:</span> <span class="n">uc_geojson</span><span class="p">}</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">:</span>
-            <span class="n">output_info</span><span class="p">[</span><span class="s1">&#39;output_filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_to_file</span><span class="p">(</span><span class="n">c_geojson</span><span class="p">,</span> <span class="n">step_num</span><span class="p">)</span>
+            <span class="n">output_info</span><span class="p">[</span><span class="s1">&#39;output_filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_to_file</span><span class="p">(</span><span class="n">c_geojson</span><span class="p">,</span>
+                                                                 <span class="n">step_num</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">output_to_file</span><span class="p">(</span><span class="n">uc_geojson</span><span class="p">,</span> <span class="n">step_num</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">output_info</span></div>
@@ -362,6 +365,7 @@
             <span class="n">data</span> <span class="o">=</span> <span class="n">data_array</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">round_to</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">p_type</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">data_array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">p_type</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
         <span class="k">return</span> <span class="n">data</span>
 
     <span class="c1"># def rewind(self):</span>
@@ -373,8 +377,10 @@
         <span class="nb">print</span> <span class="s2">&quot;in clean_output_files&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">:</span>
             <span class="n">files</span> <span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="s1">&#39;geojson_*.geojson&#39;</span><span class="p">))</span>
+
             <span class="nb">print</span> <span class="s2">&quot;files are:&quot;</span>
             <span class="nb">print</span> <span class="n">files</span>
+
             <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></div>
 
@@ -419,8 +425,8 @@
 
     <span class="c1"># need a schema and also need to override save so output_dir</span>
     <span class="c1"># is saved correctly - maybe point it to saveloc</span>
-    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;ice_movers&#39;</span><span class="p">,</span>
-                           <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">iscollection</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">Field</span><span class="p">(</span><span class="s1">&#39;ice_movers&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                           <span class="n">iscollection</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
     <span class="n">_schema</span> <span class="o">=</span> <span class="n">IceGeoJsonSchema</span>
 
@@ -455,6 +461,7 @@
         <span class="n">model_time</span> <span class="o">=</span> <span class="n">date_to_sec</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="p">)</span>
 
         <span class="n">geojson</span> <span class="o">=</span> <span class="p">{}</span>
+
         <span class="k">for</span> <span class="n">mover</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ice_movers</span><span class="p">:</span>
             <span class="n">grid_data</span> <span class="o">=</span> <span class="n">mover</span><span class="o">.</span><span class="n">get_grid_data</span><span class="p">()</span>
             <span class="n">ice_coverage</span><span class="p">,</span> <span class="n">ice_thickness</span> <span class="o">=</span> <span class="n">mover</span><span class="o">.</span><span class="n">get_ice_fields</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
@@ -467,8 +474,7 @@
 
         <span class="c1"># default geojson should not output data to file</span>
         <span class="n">output_info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;time_stamp&#39;</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
-                       <span class="s1">&#39;feature_collections&#39;</span><span class="p">:</span> <span class="n">geojson</span>
-                       <span class="p">}</span>
+                       <span class="s1">&#39;feature_collections&#39;</span><span class="p">:</span> <span class="n">geojson</span><span class="p">}</span>
 
         <span class="k">return</span> <span class="n">output_info</span></div>
 
@@ -541,8 +547,8 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collection_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ice_movers</span><span class="p">)</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="IceGeoJsonOutput.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.IceGeoJsonOutput.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="IceGeoJsonOutput.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.IceGeoJsonOutput.deserialize">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        append correct schema for current mover</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -551,6 +557,7 @@
 
         <span class="k">if</span> <span class="s1">&#39;ice_movers&#39;</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
             <span class="n">_to_dict</span><span class="p">[</span><span class="s1">&#39;ice_movers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cm</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;ice_movers&#39;</span><span class="p">]):</span>
                 <span class="n">cm_cls</span> <span class="o">=</span> <span class="n">class_from_objtype</span><span class="p">(</span><span class="n">cm</span><span class="p">[</span><span class="s1">&#39;obj_type&#39;</span><span class="p">])</span>
                 <span class="n">cm_dict</span> <span class="o">=</span> <span class="n">cm_cls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s1">&#39;ice_movers&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
@@ -594,7 +601,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -604,7 +611,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.movers.random_movers &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.movers.random_movers &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -166,21 +167,20 @@
 <span></span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">Movers using diffusion as the forcing function</span>
 <span class="sd">&#39;&#39;&#39;</span>
-
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">drop</span><span class="p">)</span>
 
-<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="k">import</span> <span class="p">(</span><span class="n">oil_status</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="k">import</span> <span class="n">oil_status</span>
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_random_mover</span> <span class="k">import</span> <span class="n">CyRandomMover</span>
 <span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_random_vertical_mover</span> <span class="k">import</span> <span class="n">CyRandomVerticalMover</span>
 
 <span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="k">import</span> <span class="n">Serializable</span><span class="p">,</span> <span class="n">Field</span>
 
 <span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="k">import</span> <span class="n">IceConcentration</span>
-<span class="kn">from</span> <span class="nn">gnome.environment.grid</span> <span class="k">import</span> <span class="n">PyGrid</span>
-<span class="kn">from</span> <span class="nn">gnome.environment.grid_property</span> <span class="k">import</span> <span class="n">GridPropSchema</span>
+<span class="kn">from</span> <span class="nn">gnome.environment.gridded_objects_base</span> <span class="k">import</span> <span class="n">PyGrid</span>
+<span class="kn">from</span> <span class="nn">gnome.environment.gridded_objects_base</span> <span class="k">import</span> <span class="n">VariableSchema</span>
 
 <span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="k">import</span> <span class="n">CyMover</span><span class="p">,</span> <span class="n">ProcessSchema</span>
 <span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="k">import</span> <span class="n">ObjType</span>
@@ -248,7 +248,7 @@
 
 
 <span class="k">class</span> <span class="nc">IceAwareRandomMoverSchema</span><span class="p">(</span><span class="n">RandomMoverSchema</span><span class="p">):</span>
-    <span class="n">ice_concentration</span> <span class="o">=</span> <span class="n">GridPropSchema</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">ice_concentration</span> <span class="o">=</span> <span class="n">VariableSchema</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">IceAwareRandomMover</span><span class="p">(</span><span class="n">RandomMover</span><span class="p">):</span>
@@ -280,8 +280,8 @@
             <span class="n">grid_file</span> <span class="o">=</span> <span class="n">filename</span>
 
         <span class="k">if</span> <span class="n">grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">grid</span> <span class="o">=</span> <span class="n">PyGrid</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">grid_file</span><span class="p">,</span>
-                                      <span class="n">grid_topology</span><span class="o">=</span><span class="n">grid_topology</span><span class="p">)</span>
+            <span class="n">grid</span> <span class="o">=</span> <span class="n">Grid</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">grid_file</span><span class="p">,</span>
+                                    <span class="n">grid_topology</span><span class="o">=</span><span class="n">grid_topology</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">ice_concentration</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ice_concentration</span> <span class="o">=</span> <span class="p">(</span><span class="n">IceConcentration</span>
@@ -314,6 +314,7 @@
             <span class="n">interp</span> <span class="o">*=</span> <span class="mf">1.3333333333</span>
 
             <span class="n">deltas</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">][</span><span class="n">ice_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
             <span class="c1"># scale winds from 100-0% depending on ice coverage</span>
             <span class="n">deltas</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">][</span><span class="n">interp_mask</span><span class="p">]</span> <span class="o">*=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">interp</span><span class="p">[</span><span class="n">interp_mask</span><span class="p">][:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">])</span>
             <span class="n">deltas</span><span class="p">[</span><span class="n">status</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
@@ -436,20 +437,6 @@
                         <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_diffusion_coef_above_ml</span><span class="p">,</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_diffusion_coef_below_ml</span><span class="p">,</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">active_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_stop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">))</span>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 </pre></div>
 
            </div>
@@ -486,7 +473,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -496,7 +483,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

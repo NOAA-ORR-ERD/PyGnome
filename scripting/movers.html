@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Movers &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Movers &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../index.html"/>
         <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
         <link rel="next" title="Weatherers" href="weatherers.html"/>
         <link rel="prev" title="Spills" href="spills.html"/> 
@@ -67,7 +67,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -114,6 +114,7 @@
 <li class="toctree-l2"><a class="reference internal" href="scripting_examples.html">Examples</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -220,10 +221,10 @@
 </style>
 <div class="section" id="movers">
 <h1>Movers<a class="headerlink" href="#movers" title="Permalink to this headline">¶</a></h1>
-<p>Processes that change the position of the LEs are termed &#8220;movers&#8221; in GNOME. These can include advection of the LEs due to winds and currents,
+<p>Processes that change the position of the LEs are termed “movers” in GNOME. These can include advection of the LEs due to winds and currents,
 diffusive movement of LEs due to unresolved turbulent flow fields, and prescribed behavior of the LEs (e.g. rise velocity of oil droplets
 or larval swimming.)</p>
-<p>Some examples and common use cases are shown here. For complete documentation see <code class="xref py py-mod docutils literal"><span class="pre">gnome.movers</span></code></p>
+<p>Some examples and common use cases are shown here. For complete documentation see <a class="reference internal" href="../reference.html#module-gnome.movers" title="gnome.movers"><code class="xref py py-mod docutils literal"><span class="pre">gnome.movers</span></code></a></p>
 <div class="section" id="wind-movers">
 <h2>Wind movers<a class="headerlink" href="#wind-movers" title="Permalink to this headline">¶</a></h2>
 <p>Wind movers are tied to a wind object in the Environment class which is described
@@ -246,7 +247,7 @@ For example to create a wind mover based on manually entered time series:</p>
 <span class="n">model</span><span class="o">.</span><span class="n">movers</span> <span class="o">+=</span> <span class="n">w_mover</span>
 </pre></div>
 </div>
-<p>Some helper functions are available in <code class="xref py py-mod docutils literal"><span class="pre">gnome.scripting</span></code> for creating wind movers. For example, to
+<p>Some helper functions are available in <a class="reference internal" href="utilities.html#module-gnome.scripting" title="gnome.scripting"><code class="xref py py-mod docutils literal"><span class="pre">gnome.scripting</span></code></a> for creating wind movers. For example, to
 create a wind mover from a single point time series in a text file:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.scripting</span> <span class="k">import</span> <span class="n">wind_mover_from_file</span>
 <span class="n">w_mover</span> <span class="o">=</span> <span class="n">wind_mover_from_file</span><span class="p">(</span><span class="s1">&#39;mywind.txt&#39;</span><span class="p">)</span>
@@ -327,7 +328,7 @@ velocity mover as follows:</p>
 </div>
 <p>As noted in the <a class="reference internal" href="spills.html#subsurface-plume"><span class="std std-ref">Subsurface plume</span></a> example, a distribution of rise velocities can also be explicitly specified
 when initializing the subsurface release. To make all particles have the same rise velocity, specify a uniform distribution
-with the same value for high and low parameters. Here&#8217;s a complete example where all particles will have a 1 m/s rise velocity:</p>
+with the same value for high and low parameters. Here’s a complete example where all particles will have a 1 m/s rise velocity:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gnome.model</span> <span class="k">import</span> <span class="n">Model</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
 <span class="kn">from</span> <span class="nn">gnome.scripting</span> <span class="k">import</span> <span class="n">subsurface_plume_spill</span>
@@ -376,11 +377,11 @@ accurately reflect the current state of development.</p>
 </div>
 <p>There are three types of numerical methods currently supported.</p>
 <ol class="arabic simple">
-<li>Euler method (&#8216;Euler&#8217;)</li>
-<li>Trapezoidal/Heun&#8217;s 2nd order method (&#8216;Trapezoid&#8217;)</li>
-<li>Runge-Kutta 4th order method (&#8216;RK4&#8217;)</li>
+<li>Euler method (‘Euler’)</li>
+<li>Trapezoidal/Heun’s 2nd order method (‘Trapezoid’)</li>
+<li>Runge-Kutta 4th order method (‘RK4’)</li>
 </ol>
-<p>To use them, set the &#8216;default_num_method&#8217; argument when constructing a mover. Alternatively, you may alter the mover as follows:</p>
+<p>To use them, set the ‘default_num_method’ argument when constructing a mover. Alternatively, you may alter the mover as follows:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">fn</span> <span class="o">=</span> <span class="s1">&#39;my_data.nc&#39;</span>
 <span class="n">current</span> <span class="o">=</span> <span class="n">GridCurrent</span><span class="o">.</span><span class="n">from_netCDF</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fn</span><span class="p">)</span>
 <span class="n">curr_mover</span> <span class="o">=</span> <span class="n">PyGridCurrentMover</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">default_num_method</span> <span class="o">=</span> <span class="s1">&#39;RK4&#39;</span><span class="p">)</span>
@@ -441,7 +442,7 @@ of the default.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -451,7 +452,7 @@ of the default.</p>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

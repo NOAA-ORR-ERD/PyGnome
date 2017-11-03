@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to pyGNOME’s documentation! &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Welcome to pyGNOME’s documentation! &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="#"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="#"/>
         <link rel="next" title="Introduction" href="introduction.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="serialization.html">Notes on serialization / deserialization:</a></li>
@@ -143,7 +144,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>Welcome to pyGNOME&#8217;s documentation!</li>
+      <li>Welcome to pyGNOME’s documentation!</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -197,7 +198,7 @@
 }
 </style>
 <div class="section" id="welcome-to-pygnome-s-documentation">
-<h1>Welcome to pyGNOME&#8217;s documentation!<a class="headerlink" href="#welcome-to-pygnome-s-documentation" title="Permalink to this headline">¶</a></h1>
+<h1>Welcome to pyGNOME’s documentation!<a class="headerlink" href="#welcome-to-pygnome-s-documentation" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="contents">
 <h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
@@ -232,6 +233,15 @@
 <li class="toctree-l2"><a class="reference internal" href="scripting/scripting_examples.html">Examples</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="env_obj.html">Using your data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="env_obj/glossary.html">Glossary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env_obj/environment_objects.html">Environment Objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env_obj/examples.html">Customizing environment objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env_obj/examples.html#Demonstration-of-component-sharing">Demonstration of component sharing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env_obj.html#age-old-problem">Age old problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env_obj.html#overview">Overview</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="customizing.html">Customizing pygnome</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="customizing.html#writing-a-custom-mover">Writing a custom mover</a></li>
 <li class="toctree-l2"><a class="reference internal" href="customizing.html#writing-a-custom-weatherer">Writing a custom weatherer</a></li>
@@ -252,18 +262,18 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="units.html">Units used in GNOME / PyGNOME</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">PyGnome Class Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-model-the-pygnome-model-class"><code class="docutils literal"><span class="pre">gnome.model</span></code> &#8211; the PyGnome model class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-map-the-pygnome-map-class"><code class="docutils literal"><span class="pre">gnome.map</span></code> &#8211; the PyGnome map class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-spill-classes-in-the-spill-module"><code class="docutils literal"><span class="pre">gnome.spill</span></code> &#8211; classes in the spill module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-spill-elements-classes-in-the-elements-module"><code class="docutils literal"><span class="pre">gnome.spill.elements</span></code> &#8211; classes in the elements module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-movers-pygnome-mover-classes"><code class="docutils literal"><span class="pre">gnome.movers</span></code> &#8211; PyGnome mover classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-weatherers-pygnome-adios-weathering-mass-removal-classes"><code class="docutils literal"><span class="pre">gnome.weatherers</span></code> &#8211; PyGnome/Adios weathering/mass removal classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-environment-pygnome-environment-classes"><code class="docutils literal"><span class="pre">gnome.environment</span></code> &#8211; PyGnome environment classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-environment-environment-objects-pygnome-implemented-environment-objects"><code class="docutils literal"><span class="pre">gnome.environment.environment_objects</span></code> &#8211; PyGnome implemented environment objects</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-environment-grid-property-pygnome-base-environment-objects"><code class="docutils literal"><span class="pre">gnome.environment.grid_property</span></code> &#8211; PyGnome base environment objects</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-outputter-pygnome-outputters-module"><code class="docutils literal"><span class="pre">gnome.outputter</span></code> &#8211; PyGnome outputters module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-utilities-pygnome-utilities-module"><code class="docutils literal"><span class="pre">gnome.utilities</span></code> &#8211; PyGnome utilities module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-persist-pygnome-persistance-classes"><code class="docutils literal"><span class="pre">gnome.persist</span></code> &#8211; PyGnome persistance classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-model-the-pygnome-model-class"><code class="docutils literal"><span class="pre">gnome.model</span></code> – the PyGnome model class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#module-gnome.map"><code class="docutils literal"><span class="pre">gnome.map</span></code> – the PyGnome map class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#module-gnome.spill"><code class="docutils literal"><span class="pre">gnome.spill</span></code> – classes in the spill module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#module-gnome.spill.elements.element_type"><code class="docutils literal"><span class="pre">gnome.spill.elements</span></code> – classes in the elements module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#module-gnome.movers"><code class="docutils literal"><span class="pre">gnome.movers</span></code> – PyGnome mover classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#module-gnome.weatherers"><code class="docutils literal"><span class="pre">gnome.weatherers</span></code> – PyGnome/Adios weathering/mass removal classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#module-gnome.environment"><code class="docutils literal"><span class="pre">gnome.environment</span></code> – PyGnome environment classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-environment-environment-objects-pygnome-implemented-environment-objects"><code class="docutils literal"><span class="pre">gnome.environment.environment_objects</span></code> – PyGnome implemented environment objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#gnome-environment-grid-property-pygnome-base-environment-objects"><code class="docutils literal"><span class="pre">gnome.environment.grid_property</span></code> – PyGnome base environment objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#module-gnome.outputters"><code class="docutils literal"><span class="pre">gnome.outputter</span></code> – PyGnome outputters module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#module-gnome.utilities.distributions"><code class="docutils literal"><span class="pre">gnome.utilities</span></code> – PyGnome utilities module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#module-gnome.persist.base_schema"><code class="docutils literal"><span class="pre">gnome.persist</span></code> – PyGnome persistance classes</a></li>
 </ul>
 </li>
 </ul>
@@ -321,7 +331,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -331,7 +341,7 @@
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

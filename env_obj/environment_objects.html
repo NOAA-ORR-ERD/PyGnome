@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Environment Objects &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Environment Objects &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,10 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/> 
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../index.html"/>
+        <link rel="up" title="Using your data" href="../env_obj.html"/>
+        <link rel="next" title="Customizing environment objects" href="examples.html"/>
+        <link rel="prev" title="Glossary" href="glossary.html"/> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -64,7 +67,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -88,11 +91,25 @@
               
             
             
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../env_obj.html">Using your data</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Environment Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#background">Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scalar-or-vector">Scalar or Vector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#shared-components-and-memoization">Shared Components and Memoization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html">Customizing environment objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#Demonstration-of-component-sharing">Demonstration of component sharing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../env_obj.html#age-old-problem">Age old problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../env_obj.html#overview">Overview</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -141,6 +158,8 @@
   <ul class="wy-breadcrumbs">
     
       <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../env_obj.html">Using your data</a> &raquo;</li>
         
       <li>Environment Objects</li>
     
@@ -221,7 +240,7 @@ They are the core means for representing natural phenomena in the latest version
 <div class="section" id="background">
 <h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
 <p>The environmental models in GNOME are often driven with data created by other models, such as ROMS, HYCOM, etc. In the past, the output from
-these models were processed by renaming and regridding to conform to GNOME&#8217;s expectations before use. Regridding every new dataset is inconvenient,
+these models were processed by renaming and regridding to conform to GNOME’s expectations before use. Regridding every new dataset is inconvenient,
 and also immediately introduces inaccuracies into the representation of reality.</p>
 </div>
 <div class="section" id="scalar-or-vector">
@@ -253,7 +272,7 @@ which in turn is represented by a <em>u-component</em> and <em>v-component</em><
 <li>Note that all of the above operations are vectorized over the 100,000 points.</li>
 </ul>
 <p>However, this only gets you the <em>u-component</em> of the result. The above computations must be repeated for the
-<em>v-component</em>. Parts 1 and 2 are the responsibility of the grid component of each object. The grid object&#8217;s
+<em>v-component</em>. Parts 1 and 2 are the responsibility of the grid component of each object. The grid object’s
 interpolation alpha and point location functions both implement result memoization based on a hash of the
 array of points provided. If the <em>u-component</em> and <em>v-component</em> share a grid object, it will be able to
 recognize when it receives the same set of points again, and therefore return the same answer for parts 1 and 2,
@@ -282,6 +301,15 @@ a dramatic performance gain for even N=2</p>
           </div>
           <footer>
   
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="examples.html" class="btn btn-neutral float-right" title="Customizing environment objects" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="glossary.html" class="btn btn-neutral" title="Glossary" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
 
   <hr/>
 
@@ -309,7 +337,7 @@ a dramatic performance gain for even N=2</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -319,7 +347,7 @@ a dramatic performance gain for even N=2</p>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

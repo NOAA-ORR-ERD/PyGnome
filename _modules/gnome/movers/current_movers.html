@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.movers.current_movers &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.movers.current_movers &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -364,6 +365,7 @@
         <span class="c1"># check if this is stored with cy_cats_mover?</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span> <span class="o">=</span> <span class="n">CyCatsMover</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">text_read</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">filename</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_tide</span> <span class="o">=</span> <span class="kc">None</span>
@@ -503,7 +505,7 @@
         <span class="n">ref_scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref_scale</span>  <span class="c1"># this needs to be computed, needs a time</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tide</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">time_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tide</span><span class="o">.</span><span class="n">cy_obj</span><span class="o">.</span><span class="n">get_time_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
+            <span class="n">time_value</span><span class="p">,</span> <span class="n">_err</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tide</span><span class="o">.</span><span class="n">cy_obj</span><span class="o">.</span><span class="n">get_time_value</span><span class="p">(</span><span class="n">model_time</span><span class="p">)</span>
             <span class="n">tide</span> <span class="o">=</span> <span class="n">time_value</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">tide</span> <span class="o">=</span> <span class="mi">1</span>
@@ -642,8 +644,6 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">num_method</span> <span class="o">=</span> <span class="n">num_method</span>
 
-        <span class="c1"># super(GridCurrentMover, self).__init__(**kwargs)</span>
-
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">topology_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">topology_file</span> <span class="o">=</span> <span class="n">filename</span> <span class="o">+</span> <span class="s1">&#39;.dat&#39;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">export_topology</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">topology_file</span><span class="p">)</span>
@@ -733,6 +733,7 @@
 <span class="sd">        :param model_time=0:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">num_tri</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_num_triangles</span><span class="p">()</span>
+
         <span class="c1"># will need to update this for regular grids</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_is_triangle_grid</span><span class="p">():</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_is_data_on_cells</span><span class="p">():</span>
@@ -740,6 +741,8 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">num_vertices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_num_points</span><span class="p">()</span>
                 <span class="n">num_cells</span> <span class="o">=</span> <span class="n">num_vertices</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">_is_regular_grid</span><span class="p">():</span>
+            <span class="n">num_cells</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mover</span><span class="o">.</span><span class="n">get_num_points</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">num_cells</span> <span class="o">=</span> <span class="n">num_tri</span> <span class="o">/</span> <span class="mi">2</span>
 
@@ -1213,16 +1216,10 @@
     <span class="sd">&#39;&#39;&#39;static schema for ComponentMover&#39;&#39;&#39;</span>
     <span class="n">filename1</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
     <span class="n">filename2</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
-    <span class="c1"># scale = SchemaNode(Bool())</span>
-    <span class="c1"># ref_point = WorldPoint(missing=drop)</span>
     <span class="n">scale_refpoint</span> <span class="o">=</span> <span class="n">WorldPoint</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
-    <span class="c1"># scale_value = SchemaNode(Float())</span>
 
 
-<span class="c1"># class ComponentMover(CyMover, serializable.Serializable):</span>
 <span class="k">class</span> <span class="nc">ComponentMover</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
-
-    <span class="c1"># _state = copy.deepcopy(CyMover._state)</span>
     <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">CurrentMoversBase</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
 
     <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;scale_refpoint&#39;</span><span class="p">,</span>
@@ -1478,7 +1475,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -1488,7 +1485,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.utilities.serializable &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.utilities.serializable &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -168,8 +169,11 @@
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">collections</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="k">import</span> <span class="n">SchemaType</span>
 
 <span class="kn">from</span> <span class="nn">gnome</span> <span class="k">import</span> <span class="n">GnomeId</span>
 <span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="k">import</span> <span class="n">Savable</span>
@@ -612,7 +616,7 @@
         <span class="k">return</span> <span class="n">names</span>
 
 
-<div class="viewcode-block" id="Serializable"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable">[docs]</a><span class="k">class</span> <span class="nc">Serializable</span><span class="p">(</span><span class="n">GnomeId</span><span class="p">,</span> <span class="n">Savable</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable">[docs]</a><span class="k">class</span> <span class="nc">Serializable</span><span class="p">(</span><span class="n">GnomeId</span><span class="p">,</span> <span class="n">Savable</span><span class="p">,</span> <span class="n">SchemaType</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    contains the to_dict and update_from_dict method to output properties of</span>
@@ -669,8 +673,8 @@
                 <span class="nb">print</span> <span class="s1">&#39;failed to set attribute </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
                 <span class="k">raise</span>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Serializable.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.new_from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        creates a new object from dictionary</span>
 
@@ -747,6 +751,24 @@
             <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_to_dict</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;to_dict&#39;</span><span class="p">):</span>
                 <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>  <span class="c1"># recursive call</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s1">&#39;iscollection&#39;</span><span class="p">)]):</span>
+                <span class="c1">#if self.key is a list, this needs special attention. It does</span>
+                <span class="c1">#not have a to_dict like OrderedCollection does!</span>
+                <span class="n">vals</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">obj_type</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0.__module__}</span><span class="s1">.</span><span class="si">{0.__class__.__name__}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                        <span class="n">obj_type</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0.__class__.__name__}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                    <span class="n">_id</span><span class="o">=</span><span class="kc">None</span>
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">):</span>
+                        <span class="n">_id</span><span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">_id</span><span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;obj_type&#39;</span><span class="p">:</span> <span class="n">obj_type</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">_id</span><span class="p">}</span>
+                    <span class="n">vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+                <span class="n">value</span> <span class="o">=</span> <span class="n">vals</span>
 
             <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># some issue in colander monkey patch and the Wind schema</span>
@@ -1050,8 +1072,8 @@
 
         <span class="k">return</span> <span class="n">serial</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Serializable.is_sparse"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.is_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">is_sparse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.is_sparse"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.is_sparse">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">is_sparse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">            Sparse means that we have a previously created object,</span>
 <span class="sd">            and we are receiving a reference to the object using just</span>
@@ -1074,8 +1096,8 @@
             <span class="n">json_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">json_out</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Serializable.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            classmethod takes json structure as input, deserializes it using a</span>
 <span class="sd">            colander schema then invokes the new_from_dict method to create an</span>
@@ -1091,6 +1113,7 @@
 
             <span class="k">if</span> <span class="n">json_</span><span class="p">[</span><span class="s1">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;webapi&#39;</span><span class="p">:</span>
                 <span class="n">_to_dict</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
                 <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">c_fields</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">:</span>
                         <span class="n">_to_dict</span><span class="p">[</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> \
@@ -1107,8 +1130,8 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">json_</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Serializable.deserialize_oc"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize_oc">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize_oc</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Serializable.deserialize_oc"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Serializable.deserialize_oc">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deserialize_oc</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        check contents of orderered collections to figure out what schema to</span>
 <span class="sd">        use.</span>
@@ -1189,7 +1212,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -1199,7 +1222,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

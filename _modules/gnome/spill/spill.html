@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gnome.spill.spill &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>gnome.spill.spill &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -94,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../structure.html">GNOME Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../scripting.html">Scripting pygnome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -166,8 +167,11 @@
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">spill.py - An implementation of the spill class(s)</span>
 
-<span class="sd">A &quot;spill&quot; is essentially a source of elements. These classes provide</span>
-<span class="sd">the logic about where an when the elements are released</span>
+<span class="sd">A &quot;spill&quot; is essentially a source of elements. These classes combine</span>
+
+<span class="sd">Releases: where and when elements are released</span>
+<span class="sd">and</span>
+<span class="sd">Element_types -- what the types of the elements are.</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -842,19 +846,15 @@
             <span class="n">mass</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">&#39;Mass&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="s1">&#39;kg&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_vol_units</span><span class="p">:</span>
             <span class="c1"># need to convert to mass</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">substance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="c1"># unspecified substance gets a density 1000 kg/m^3</span>
-                <span class="n">rho</span> <span class="o">=</span> <span class="mf">1000.0</span>
-            <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># DO NOT change this back!</span>
                 <span class="c1"># for the UI to be consistent, the conversion needs to use standard</span>
                 <span class="c1">#  density -- not the current water temp.</span>
                 <span class="c1"># water_temp = self.water.get(&#39;temperature&#39;)</span>
                 <span class="c1"># ideally substance would have a &quot;standard_density&quot; attribute for this.</span>
-                <span class="n">rho</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">substance</span><span class="o">.</span><span class="n">density_at_temp</span><span class="p">(</span><span class="mf">288.15</span><span class="p">)</span>
+            <span class="n">std_rho</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="o">.</span><span class="n">standard_density</span>
 
             <span class="n">vol</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">&#39;Volume&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="s1">&#39;m^3&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="p">)</span>
-            <span class="n">mass</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">vol</span>
+            <span class="n">mass</span> <span class="o">=</span> <span class="n">std_rho</span> <span class="o">*</span> <span class="n">vol</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> is not a valid mass or Volume unit&quot;</span>
                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">))</span>
@@ -995,8 +995,8 @@
 
         <span class="k">return</span> <span class="n">o_json_</span></div>
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Spill.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Spill.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+<div class="viewcode-block" id="Spill.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.Spill.deserialize">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Instead of creating schema dynamically for Spill() before</span>
 <span class="sd">        deserialization, call nested object&#39;s serialize/deserialize methods</span>
@@ -1248,6 +1248,35 @@
                   <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span>
                   <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">spill</span>
+
+
+<span class="k">def</span> <span class="nf">spatial_release_spill</span><span class="p">(</span><span class="n">start_positions</span><span class="p">,</span>
+                          <span class="n">release_time</span><span class="p">,</span>
+                          <span class="n">element_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">substance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">water</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">amount</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">&#39;spatial_release&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Helper function returns a Spill object containing a spatial release</span>
+
+<span class="sd">    A spatial release is a spill that releases elements at known locations.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">release</span> <span class="o">=</span> <span class="n">SpatialRelease</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span>
+                             <span class="n">start_position</span><span class="o">=</span><span class="n">start_positions</span><span class="p">,</span>
+                             <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">spill</span> <span class="o">=</span> <span class="n">Spill</span><span class="p">(</span><span class="n">release</span><span class="p">,</span>
+                  <span class="n">water</span><span class="o">=</span><span class="n">water</span><span class="p">,</span>
+                  <span class="n">element_type</span><span class="o">=</span><span class="n">element_type</span><span class="p">,</span>
+                  <span class="n">substance</span><span class="o">=</span><span class="n">substance</span><span class="p">,</span>
+                  <span class="n">on</span><span class="o">=</span><span class="n">on</span><span class="p">,</span>
+                  <span class="n">amount</span><span class="o">=</span><span class="n">amount</span><span class="p">,</span>
+                  <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span>
+                  <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">spill</span>
+
 </pre></div>
 
            </div>
@@ -1284,7 +1313,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -1294,7 +1323,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

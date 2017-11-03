@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Outputters &mdash; pyGNOME 0.5.0 documentation</title>
+  <title>Outputters &mdash; pyGNOME 0.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="pyGNOME 0.5.0 documentation" href="../index.html"/>
+    <link rel="top" title="pyGNOME 0.6.0 documentation" href="../index.html"/>
         <link rel="up" title="Scripting pygnome" href="../scripting.html"/>
         <link rel="next" title="Examples" href="scripting_examples.html"/>
         <link rel="prev" title="Weatherers" href="weatherers.html"/> 
@@ -67,7 +67,7 @@
             
             
               <div class="version">
-                0.5
+                0.6
               </div>
             
           
@@ -112,6 +112,7 @@
 <li class="toctree-l2"><a class="reference internal" href="scripting_examples.html">Examples</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../env_obj.html">Using your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../customizing.html">Customizing pygnome</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../logging.html">The logging system</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../serialization.html">Notes on serialization / deserialization:</a></li>
@@ -230,11 +231,11 @@
           <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </pre></div>
 </div>
-<p>The <code class="docutils literal"><span class="pre">cache</span></code> object is where the ouputtter will pull its data from &#8211; if not set, it automatically grabs the cache from the model when added to a model.</p>
-<p><code class="docutils literal"><span class="pre">output_timestep</span></code> specifies when you want the output written &#8211; it defaults to every model timestep, but you may only want output every hour, or every 6 hours, or...</p>
+<p>The <code class="docutils literal"><span class="pre">cache</span></code> object is where the ouputtter will pull its data from – if not set, it automatically grabs the cache from the model when added to a model.</p>
+<p><code class="docutils literal"><span class="pre">output_timestep</span></code> specifies when you want the output written – it defaults to every model timestep, but you may only want output every hour, or every 6 hours, or…</p>
 <p><code class="docutils literal"><span class="pre">output_zero_timestep</span></code> specified whether you want the zeroth timestep (before any elements have been moved or altered) output</p>
 <p><code class="docutils literal"><span class="pre">output_last_timestep</span></code> specifies whether you want the final timestep output, regardless of whether it lands on a the specified output_timestep.</p>
-<p>See <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.Outputter</span></code> for the full API.</p>
+<p>See <a class="reference internal" href="../reference.html#gnome.outputters.Outputter" title="gnome.outputters.Outputter"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.Outputter</span></code></a> for the full API.</p>
 </div>
 <div class="section" id="renderer">
 <h2>Renderer<a class="headerlink" href="#renderer" title="Permalink to this headline">¶</a></h2>
@@ -251,7 +252,7 @@
 <span class="n">model</span><span class="o">.</span><span class="n">outputters</span> <span class="o">+=</span> <span class="n">renderer</span>
 </pre></div>
 </div>
-<p>See <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.Renderer</span></code> for some additional parameters that can be passed to the renderer.</p>
+<p>See <a class="reference internal" href="../reference.html#gnome.outputters.Renderer" title="gnome.outputters.Renderer"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.Renderer</span></code></a> for some additional parameters that can be passed to the renderer.</p>
 </div>
 <div class="section" id="netcdf-output">
 <h2>NetCDF Output<a class="headerlink" href="#netcdf-output" title="Permalink to this headline">¶</a></h2>
@@ -271,17 +272,17 @@
 <span class="n">model</span><span class="o">.</span><span class="n">outputters</span> <span class="o">+=</span> <span class="n">nc_outputter</span>
 </pre></div>
 </div>
-<p><code class="docutils literal"><span class="pre">which_data</span></code> specifies what data associated with the elements you want written out to the file. the options are: &#8216;standard&#8217;, &#8216;most&#8217; or &#8216;all&#8217;.</p>
-<p>&#8216;standard&#8217; : the basic stuff most people would want</p>
+<p><code class="docutils literal"><span class="pre">which_data</span></code> specifies what data associated with the elements you want written out to the file. the options are: ‘standard’, ‘most’ or ‘all’.</p>
+<p>‘standard’ : the basic stuff most people would want</p>
 <dl class="docutils">
-<dt>&#8216;most&#8217;: everything the model is tracking except the internal-use-only</dt>
+<dt>‘most’: everything the model is tracking except the internal-use-only</dt>
 <dd>arrays</dd>
 </dl>
-<p>&#8216;all&#8217;: everything tracked by the model (mostly used for diagnostics)</p>
+<p>‘all’: everything tracked by the model (mostly used for diagnostics)</p>
 <p>in addition, you can specifically set exactly which data are output by altering the <code class="docutils literal"><span class="pre">.arrays_to_output</span></code> attribute of the outputter. It is a python set, and data array names can be added or removed before the model is run.</p>
-<p>The resulting netcdf files are in the &#8220;nc_particles&#8221; format. This format allows storage of arbitrary data associated with the elements, and different numbers of elements at each timestep. Code to read this format can be found here in the GnomeTools repository on gitHub:</p>
+<p>The resulting netcdf files are in the “nc_particles” format. This format allows storage of arbitrary data associated with the elements, and different numbers of elements at each timestep. Code to read this format can be found here in the GnomeTools repository on gitHub:</p>
 <p><a class="reference external" href="https://github.com/NOAA-ORR-ERD/GnomeTools/blob/master/post_gnome/post_gnome/nc_particles.py">https://github.com/NOAA-ORR-ERD/GnomeTools/blob/master/post_gnome/post_gnome/nc_particles.py</a></p>
-<p>See <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.NetCDFOutput</span></code> for some additional parameters that can be passed to the constructor to customize the output.</p>
+<p>See <a class="reference internal" href="../reference.html#gnome.outputters.NetCDFOutput" title="gnome.outputters.NetCDFOutput"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.NetCDFOutput</span></code></a> for some additional parameters that can be passed to the constructor to customize the output.</p>
 </div>
 <div class="section" id="kmz-output">
 <h2>KMZ Output<a class="headerlink" href="#kmz-output" title="Permalink to this headline">¶</a></h2>
@@ -291,7 +292,7 @@
 </pre></div>
 </div>
 <p>The KMZ contains a kml file with layers for each output timestep, unceratain and certain elements, ans beached and floating elements, along with icons to render the elements.</p>
-<p>See <code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.KMZOutput</span></code> for the full documentation</p>
+<p>See <a class="reference internal" href="../reference.html#gnome.outputters.KMZOutput" title="gnome.outputters.KMZOutput"><code class="xref py py-class docutils literal"><span class="pre">gnome.outputters.KMZOutput</span></code></a> for the full documentation</p>
 </div>
 </div>
 
@@ -339,7 +340,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.5.0',
+            VERSION:'0.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -349,7 +350,7 @@
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
