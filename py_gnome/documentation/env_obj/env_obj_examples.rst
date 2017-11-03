@@ -49,12 +49,9 @@ a GridCurrent representing circular currents around the origin.::
     x, y = np.mgrid[-30:30:61j, -30:30:61j]
     y = np.ascontiguousarray(y.T)
     x = np.ascontiguousarray(x.T)
-    g = SGrid(node_lon=x,
+    g = Grid_S(node_lon=x,
               node_lat=y)
     g.build_celltree()
-
-    #using a single time implies extrapolation
-    t = datetime(2000,1,1,0,0)
 
     #create the data associated with each grid vertex
     angs = -np.arctan2(y,x)
@@ -65,8 +62,8 @@ a GridCurrent representing circular currents around the origin.::
     vy = vy[np.newaxis,:] * 20
 
     #Create environment objects for the components separately, then combine into a GridCurrent
-    vels_x = GriddedProp(name='v_x',units='m/s',time=[t], grid=g, data=vx)
-    vels_y = GriddedProp(name='v_y',units='m/s',time=[t], grid=g, data=vy)
+    vels_x = Variable(name='v_x',units='m/s',time=Time.constant_time(), grid=g, data=vx)
+    vels_y = Variable(name='v_y',units='m/s',time=Time.constant_time(), grid=g, data=vy)
     vg = GridCurrent(variables = [vels_y, vels_x], time=[t], grid=g, units='m/s')
 
 Defining a new environment object
