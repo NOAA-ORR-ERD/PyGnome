@@ -25,8 +25,8 @@ from datetime import datetime, timedelta
 from gnome import scripting
 from gnome.spill.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
-from gnome.environment.grid_property import GriddedProp
-from gnome.environment import GridCurrent
+from gnome.environment.gridded_objects_base import Variable, Grid_S
+from gnome.environment import IceAwareCurrent, IceConcentration, IceVelocity
 
 from gnome.model import Model
 from gnome.map import GnomeMap
@@ -44,30 +44,10 @@ from gnome.movers import (RandomMover,
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
 from gnome.tamoc import tamoc_spill
+from gnome.environment.environment_objects import IceAwareCurrent
 
 # define base directory
 base_dir = os.path.dirname(__file__)
-
-x, y = np.mgrid[-30:30:61j, -30:30:61j]
-y = np.ascontiguousarray(y.T)
-x = np.ascontiguousarray(x.T)
-# y += np.sin(x) / 1
-# x += np.sin(x) / 5
-g = SGrid(node_lon=x,
-          node_lat=y)
-g.build_celltree()
-t = datetime(2000, 1, 1, 0, 0)
-angs = -np.arctan2(y, x)
-mag = np.sqrt(x ** 2 + y ** 2)
-vx = np.cos(angs) * mag
-vy = np.sin(angs) * mag
-vx = vx[np.newaxis, :] * 5
-vy = vy[np.newaxis, :] * 5
-
-vels_x = GriddedProp(name='v_x', units='m/s', time=[t], grid=g, data=vx)
-vels_y = GriddedProp(name='v_y', units='m/s', time=[t], grid=g, data=vy)
-vg = GridCurrent(variables=[vels_y, vels_x], time=[t], grid=g, units='m/s')
-
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
@@ -117,18 +97,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a circular current and eastward current'
     fn = 'hycom_glb_regp17_2016092300_subset.nc'
     fn_ice = 'hycom-cice_ARCu0.08_046_2016092300_subset.nc'
-    import pysgrid
-    import netCDF4 as nc
-    df = nc.Dataset(fn)
-    lon = df['lon'][:]
-    lat = df['lat'][:]
-    grd = pysgrid.SGrid(node_lon=np.repeat(lon.reshape(1,-1), len(lat), axis=0), node_lat=np.repeat(lat.reshape(-1,1), len(lon), axis=1))
-    print(grd.node_lon.shape)
-    print(grd.node_lat.shape)
-    gc = GridCurrent.from_netCDF(fn, units='m/s', grid=grd)
+    iconc = IceConcentration.from_netCDF(filename=fn_ice)
+    ivel = IceVelocity.from_netCDF(filename=fn_ice, grid = iconc.grid)
+    ic = IceAwareCurrent.from_netCDF(ice_concentration = iconc, ice_velocity= ivel, filename=fn)
 
-    model.movers += IceMover(fn_ice)
-    model.movers += GridCurrentMover(fn)
+    model.movers += PyCurrentMover(current = ic)
     model.movers += SimpleMover(velocity=(0., 0., 0.))
     model.movers += constant_wind_mover(20, 315, units='knots')
 
@@ -143,7 +116,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                         TAMOC_interval=None,  # how often to re-run TAMOC
                                         )
 
-    model.spills[0].data_sources['currents'] = gc
+    model.spills[0].data_sources['currents'] = ic
 
     return model
 

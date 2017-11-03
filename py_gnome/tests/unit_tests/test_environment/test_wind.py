@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 from datetime import datetime, timedelta
 import shutil
 
@@ -15,6 +16,7 @@ from gnome.basic_types import datetime_value_2d
 from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
 from gnome.utilities.timeseries import TimeseriesError
+from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Wind, constant_wind, wind_from_values
 
 # from colander import Invalid
@@ -22,6 +24,9 @@ from gnome.environment import Wind, constant_wind, wind_from_values
 from ..conftest import testdata
 
 wind_file = testdata['timeseries']['wind_ts']
+
+from gnome.environment.environment_objects import GridWind
+from gnome.environment.gridded_objects_base import Grid_S, Variable
 
 
 def test_exceptions():
@@ -136,6 +141,29 @@ def test_get_value(wind_circ):
         time = rec['time']
         val = wind.get_value(time)
         assert all(np.isclose(rec['value'], val))
+
+
+@pytest.mark.parametrize("_format", ['r-theta','uv', 'r','theta','u','v'])
+def test_at(_format, wind_circ):
+    'test at(...) function'
+    wind = wind_circ['wind']
+    tp1 = np.array([[0,0],])
+    tp2 = np.array([[0,0],[1,1]])
+    d_name = 'rq' if _format in ('r-theta','r','theta') else 'uv'
+    for rec in wind_circ[d_name]:
+        time = rec['time']
+        d_val0 = rec['value'][0]
+        d_val1 = rec['value'][1]
+        val1 = wind.at(tp1, time, format=_format)
+        print val1
+        if _format in ('r-theta', 'uv'):
+            assert np.isclose(val1[0][0], d_val0)
+            assert np.isclose(val1[0][1], d_val1)
+        else:
+            if _format in ('theta', 'v'):
+                assert np.isclose(val1[0], d_val1)
+            else:
+                assert np.isclose(val1[0], d_val0)
 
 
 @pytest.fixture(scope='module')
@@ -364,6 +392,16 @@ class TestWind:
         # =====================================================================
 
 
+def test_data_start(wind_circ):
+    w = wind_circ['wind']
+    assert w.data_start == datetime(2012, 11, 6, 20, 10)
+
+
+def test_data_stop(wind_circ):
+    w = wind_circ['wind']
+    assert w.data_stop == datetime(2012, 11, 6, 20, 15)
+
+
 def test_constant_wind():
     """
     tests the utility function for creating a constant wind
@@ -381,6 +419,17 @@ def test_constant_wind():
     dt = datetime(2013, 1, 10, 12, 0)
     assert np.allclose(wind.get_wind_data(datetime=dt, units='knots')[0][1],
                        (10, 45))
+
+
+def test_constant_wind_bounds():
+    """
+    tests that a constan_wind returns the limit bounds
+    """
+    wind = constant_wind(10, 45, 'knots')
+
+    assert wind.data_start == InfDateTime("-inf")
+
+    assert wind.data_stop == InfDateTime("inf")
 
 
 def test_eq():
@@ -607,3 +656,129 @@ def test_wind_from_values_knots():
         vals = wind.get_value(dt)
         assert np.allclose(vals[0], unit_conversion.convert('velocity', 'knot', 'm/s', r))
         assert np.allclose(vals[1], theta)
+
+
+node_lon = np.array(([1, 3, 5], [1, 3, 5], [1, 3, 5]))
+node_lat = np.array(([1, 1, 1], [3, 3, 3], [5, 5, 5]))
+edge2_lon = np.array(([0, 2, 4, 6], [0, 2, 4, 6], [0, 2, 4, 6]))
+edge2_lat = np.array(([1, 1, 1, 1], [3, 3, 3, 3], [5, 5, 5, 5]))
+edge1_lon = np.array(([1, 3, 5], [1, 3, 5], [1, 3, 5], [1, 3, 5]))
+edge1_lat = np.array(([0, 0, 0], [2, 2, 2], [4, 4, 4], [6, 6, 6]))
+center_lon = np.array(([0, 2, 4, 6], [0, 2, 4, 6], [0, 2, 4, 6], [0, 2, 4, 6]))
+center_lat = np.array(([0, 0, 0, 0], [2, 2, 2, 2], [4, 4, 4, 4], [6, 6, 6, 6]))
+g = Grid_S(node_lon=node_lon,
+          node_lat=node_lat,
+          edge1_lon=edge1_lon,
+          edge1_lat=edge1_lat,
+          edge2_lon=edge2_lon,
+          edge2_lat=edge2_lat,
+          center_lon=center_lon,
+          center_lat=center_lat)
+
+c_var = np.array(([0, 0, 0, 0], [0, 1, 2, 0], [0, 2, 1, 0], [0, 0, 0, 0]))
+e2_var = np.array(([1, 0, 0, 1], [0, 1, 2, 0], [0, 0, 0, 0]))
+e1_var = np.array(([1, 1, 0], [0, 1, 0], [0, 2, 0], [1, 1, 0]))
+n_var = np.array(([0, 1, 0], [1, 0, 1], [0, 1, 0]))
+c_var.setflags(write=False)
+e2_var.setflags(write=False)
+e1_var.setflags(write=False)
+n_var.setflags(write=False)
+import pdb
+
+class TestGridWind(object):
+    def test_init(self):
+        u = Variable(grid=g, data=e1_var)
+        v = Variable(grid=g, data=e2_var)
+        gw = GridWind(name='test', grid=g, variables=[u,v])
+        assert gw is not None
+        assert gw.u is u
+        assert gw.variables[0] is u
+        assert gw.variables[1] is v
+        assert np.all(gw.grid.node_lon == node_lon)
+        pass
+
+    def test_netCDF(self):
+        pass
+
+    def test_at(self):
+        u = Variable(grid=g, data=e1_var)
+        v = Variable(grid=g, data=e2_var)
+        gw = GridWind(name='test', grid=g, variables=[u,v])
+        pts_arr = ([1,1], #1
+                   [1,1,3], #2
+                   [[2,2],[4,4]], #3
+                   [[2,4],[2,4]], #4
+                   [[1.5,1.5],[2,2],[3,3],[3.5,3.5]], #5
+                   [[1.5, 2, 3, 3.5], #6
+                    [1.5, 2, 3, 3.5]],
+                   ((1.5,2,3,3.5), #7
+                    (1.5,2,3,3.5),
+                    (1, 0, 0, 2)))
+
+        ans_arr = (np.array([[0.5, 0.5, 0]]),
+                   np.array([[0, 0, 0]]),
+                   np.array([[0.5, 0.5, 0],[1, 1, 0]]),
+                   np.array([[1,0.5, 0],[1,0.5, 0]]),
+                   np.array([[0.4375, 0.375, 0],
+                             [0.5,0.5,0],
+                             [1.5,1.5,0],
+                             [1.3125,1.3125,0]]),
+                   np.array([[0.4375,0.5,1.5,1.3125],
+                             [0.375,0.5,1.5,1.3125],
+                             [0, 0, 0, 0]]),
+                   np.array([[0,0.5,1.5,0],
+                             [0,0.5,1.5,0],
+                             [0,0,0,0]]))
+        for pts, ans in zip(pts_arr, ans_arr):
+            result = gw.at(pts, datetime.now())
+            assert np.allclose(result, ans)
+
+    @pytest.mark.parametrize("_format", ['r-theta', 'r','theta','u','v'])
+    def test_at_format(self, _format):
+        u = Variable(grid=g, data=e1_var)
+        v = Variable(grid=g, data=e2_var)
+        gw = GridWind(name='test', grid=g, variables=[u,v])
+        pts_arr = ([1,1], #1
+                   [1,1,3], #2
+                   [[2,2],[4,4]], #3
+                   [[2,4],[2,4]], #4
+                   [[1.5,1.5],[2,2],[3,3],[3.5,3.5]], #5
+                   [[1.5, 2, 3, 3.5], #6
+                    [1.5, 2, 3, 3.5]],
+                   ((1.5,2,3,3.5), #7
+                    (1.5,2,3,3.5),
+                    (1, 0, 0, 2)))
+
+        ans_arr = (np.array([[0.5, 0.5, 0],]),
+                   np.array([[0, 0, 0],]),
+                   np.array([[0.5, 0.5, 0],[1, 1, 0]]),
+                   np.array([[1,0.5, 0],[1,0.5, 0]]),
+                   np.array([[0.4375, 0.375, 0],
+                             [0.5,0.5,0],
+                             [1.5,1.5,0],
+                             [1.3125,1.3125,0]]),
+                   np.array([[0.4375,0.5,1.5,1.3125],
+                             [0.375,0.5,1.5,1.3125],
+                             [0, 0, 0, 0]]).T,
+                   np.array([[0,0.5,1.5,0],
+                             [0,0.5,1.5,0],
+                             [0,0,0,0]]).T)
+        for pts, ans in zip(pts_arr, ans_arr):
+            raw_result = gw.at(pts, datetime.now(), format=_format, _auto_align=False)
+            ans_mag = np.sqrt(ans[:,0]**2 + ans[:,1]**2)
+            print 'ans_mag',ans_mag
+            print
+            ans_dir = np.arctan2(ans[:,1], ans[:,0]) * 180./np.pi
+            if _format in ('r-theta', 'r', 'theta'):
+                if _format == 'r':
+                    assert np.allclose(raw_result, ans_mag)
+                elif _format == 'theta':
+                    assert np.allclose(raw_result, ans_dir)
+                else:
+                    assert np.allclose(raw_result, np.column_stack((ans_mag, ans_dir)))
+            else:
+                if _format == 'u':
+                    assert np.allclose(raw_result, ans[:,0])
+                else:
+                    assert np.allclose(raw_result, ans[:,1])
+

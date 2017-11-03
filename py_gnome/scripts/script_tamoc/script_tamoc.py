@@ -19,13 +19,12 @@ But it's enough to see if the coupling with TAMOC works.
 
 import os
 import numpy as np
-from pysgrid import SGrid
 from datetime import datetime, timedelta
 
 from gnome import scripting
 from gnome.spill.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
-from gnome.environment.grid_property import GriddedProp
+from gnome.environment.gridded_objects_base import Variable, Time, Grid_S
 from gnome.environment import GridCurrent
 
 from gnome.model import Model
@@ -33,7 +32,7 @@ from gnome.map import GnomeMap
 from gnome.spill import point_line_release_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
-                          RiseVelocityMover,
+                          TamocRiseVelocityMover,
                           RandomVerticalMover,
                           SimpleMover,
                           PyCurrentMover)
@@ -50,10 +49,10 @@ y = np.ascontiguousarray(y.T)
 x = np.ascontiguousarray(x.T)
 # y += np.sin(x) / 1
 # x += np.sin(x) / 5
-g = SGrid(node_lon=x,
+g = Grid_S(node_lon=x,
           node_lat=y)
 g.build_celltree()
-t = datetime(2000, 1, 1, 0, 0)
+t = Time.constant_time()
 angs = -np.arctan2(y, x)
 mag = np.sqrt(x ** 2 + y ** 2)
 vx = np.cos(angs) * mag
@@ -61,9 +60,9 @@ vy = np.sin(angs) * mag
 vx = vx[np.newaxis, :] * 5
 vy = vy[np.newaxis, :] * 5
 
-vels_x = GriddedProp(name='v_x', units='m/s', time=[t], grid=g, data=vx)
-vels_y = GriddedProp(name='v_y', units='m/s', time=[t], grid=g, data=vy)
-vg = GridCurrent(variables=[vels_y, vels_x], time=[t], grid=g, units='m/s')
+vels_x = Variable(name='v_x', units='m/s', time=t, grid=g, data=vx)
+vels_y = Variable(name='v_y', units='m/s', time=t, grid=g, data=vy)
+vg = GridCurrent(variables=[vels_y, vels_x], time=t, grid=g, units='m/s')
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
@@ -109,12 +108,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding Rise Velocity'
     # droplets rise as a function of their density and radius
-    model.movers += RiseVelocityMover()
+    model.movers += TamocRiseVelocityMover()
 
     print 'adding a circular current and eastward current'
     # This is .3 m/s south
     model.movers += PyCurrentMover(current=vg,
-                                       default_num_method='Trapezoid',
+                                       default_num_method='RK2',
                                        extrapolate=True)
     model.movers += SimpleMover(velocity=(0., -0.1, 0.))
 
@@ -139,6 +138,8 @@ if __name__ == "__main__":
     for step in model:
         if step['step_num'] == 23:
             print 'running tamoc again'
+            import pdb
+            pdb.set_trace()
             sp = model.spills[0]
 #            sp.tamoc_parameters['release_phi'] = -np.pi / 4
 #            sp.tamoc_parameters['release_theta'] = -np.pi
@@ -146,10 +147,10 @@ if __name__ == "__main__":
 #            sp.tamoc_parameters['va'] = np.array([-1, -0.5, 0])
 #            sp.tamoc_parameters['wa'] = np.array([0.01, 0.01, 0.01])
 #            sp.tamoc_parameters['depths'] = np.array([0., 1000., 2000])
-            sp.droplets = sp._run_tamoc()
+            sp.droplets, sp.diss_components = sp._run_tamoc()
         if step['step_num'] == 25:
             sp = model.spills[0]
             sp.tamoc_parameters['ua'] = np.array([0.05, 0.05])
-            sp.droplets = sp._run_tamoc()
+            sp.droplets, sp.diss_components = sp._run_tamoc()
         print step
         # model.

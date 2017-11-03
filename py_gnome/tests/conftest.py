@@ -14,7 +14,6 @@ import pytest
 
 from gnome.utilities import rand
 
-
 def pytest_addoption(parser):
     '''
     Skip slow tests

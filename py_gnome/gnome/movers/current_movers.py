@@ -199,6 +199,7 @@ class CatsMover(CurrentMoversBase, Serializable):
         # check if this is stored with cy_cats_mover?
         self.mover = CyCatsMover()
         self.mover.text_read(filename)
+
         self.name = os.path.split(filename)[1]
 
         self._tide = None
@@ -338,7 +339,7 @@ class CatsMover(CurrentMoversBase, Serializable):
         ref_scale = self.ref_scale  # this needs to be computed, needs a time
 
         if self._tide is not None:
-            time_value = self._tide.cy_obj.get_time_value(model_time)
+            time_value, _err = self._tide.cy_obj.get_time_value(model_time)
             tide = time_value[0][0]
         else:
             tide = 1
@@ -477,8 +478,6 @@ class GridCurrentMover(CurrentMoversBase, Serializable):
 
         self.num_method = num_method
 
-        # super(GridCurrentMover, self).__init__(**kwargs)
-
         if self.topology_file is None:
             self.topology_file = filename + '.dat'
             self.export_topology(self.topology_file)
@@ -568,6 +567,7 @@ class GridCurrentMover(CurrentMoversBase, Serializable):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
+
         # will need to update this for regular grids
         if self.mover._is_triangle_grid():
             if self.mover._is_data_on_cells():
@@ -575,6 +575,8 @@ class GridCurrentMover(CurrentMoversBase, Serializable):
             else:
                 num_vertices = self.mover.get_num_points()
                 num_cells = num_vertices
+        elif self.mover._is_regular_grid():
+            num_cells = self.mover.get_num_points()
         else:
             num_cells = num_tri / 2
 
@@ -1048,16 +1050,10 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     '''static schema for ComponentMover'''
     filename1 = SchemaNode(String(), missing=drop)
     filename2 = SchemaNode(String(), missing=drop)
-    # scale = SchemaNode(Bool())
-    # ref_point = WorldPoint(missing=drop)
     scale_refpoint = WorldPoint(missing=drop)
-    # scale_value = SchemaNode(Float())
 
 
-# class ComponentMover(CyMover, serializable.Serializable):
 class ComponentMover(CurrentMoversBase, Serializable):
-
-    # _state = copy.deepcopy(CyMover._state)
     _state = copy.deepcopy(CurrentMoversBase._state)
 
     _update = ['scale_refpoint',

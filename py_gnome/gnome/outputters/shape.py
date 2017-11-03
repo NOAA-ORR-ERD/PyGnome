@@ -1,7 +1,6 @@
 """
 shapefile  outputter
 """
-
 import copy
 import os
 import zipfile
@@ -12,6 +11,7 @@ import shapefile as shp
 from gnome.utilities.serializable import Serializable, Field
 
 from .outputter import Outputter, BaseSchema
+
 
 class ShapeSchema(BaseSchema):
     '''
@@ -34,7 +34,7 @@ class ShapeOutput(Outputter, Serializable):
     _schema = ShapeSchema
 
     time_formatter = '%m/%d/%Y %H:%M'
-    
+
     def __init__(self, filename, **kwargs):
         '''
         :param str output_dir=None: output directory for shape files
@@ -47,7 +47,7 @@ class ShapeOutput(Outputter, Serializable):
 
         self.filename = filename
         self.filedir = os.path.dirname(filename)
-        
+
         super(ShapeOutput, self).__init__(**kwargs)
 
     def prepare_for_model_run(self,
@@ -86,24 +86,24 @@ class ShapeOutput(Outputter, Serializable):
             future outputters require different arguments.
         """
         super(ShapeOutput, self).prepare_for_model_run(model_start_time,
-                                                     spills,
-                                                     **kwargs)
+                                                       spills,
+                                                       **kwargs)
 
         if not self.on:
             return
 
         self.delete_output_files()
+
         # shouldn't be required if the above worked!
         self._file_exists_error(self.filename + '.zip')
 
         # info for prj file
-        epsg = 'GEOGCS["WGS 84",'
-        epsg += 'DATUM["WGS_1984",'
-        epsg += 'SPHEROID["WGS 84",6378137,298.257223563]]'
-        epsg += ',PRIMEM["Greenwich",0],'
-        epsg += 'UNIT["degree",0.0174532925199433]]'
-        self.epsg = epsg
-        
+        self.epsg = ('GEOGCS["WGS 84",'
+                     'DATUM["WGS_1984",'
+                     'SPHEROID["WGS 84",6378137,298.257223563]]'
+                     ',PRIMEM["Greenwich",0],'
+                     'UNIT["degree",0.0174532925199433]]')
+
         for sc in self.sc_pair.items():
             w = shp.Writer(shp.POINT)
             w.autobalance = 1
@@ -117,12 +117,12 @@ class ShapeOutput(Outputter, Serializable):
             w.field('Mass', 'N')
             w.field('Age', 'N')
             w.field('Status_Code', 'N')
-            
+
             if sc.uncertain:
                 self.w_u = w
             else:
                 self.w = w
-        
+
     def write_output(self, step_num, islast_step=False):
         """dump a timestep's data into the kmz file"""
 
@@ -132,68 +132,68 @@ class ShapeOutput(Outputter, Serializable):
             return None
 
         uncertain = False
-        
+
         for sc in self.cache.load_timestep(step_num).items():
-            
             curr_time = sc.current_time_stamp
-            
-            if sc.uncertain: 
+
+            if sc.uncertain:
                 uncertain = True
+
                 for k, p in enumerate(sc['positions']):
                     self.w_u.point(p[0], p[1])
                     self.w_u.record(curr_time.year,
-                        curr_time.month,
-                        curr_time.day,
-                        curr_time.hour,
-                        sc['id'][k],
-                        p[2],
-                        sc['mass'][k],
-                        sc['age'][k],
-                        sc['status_codes'][k])
+                                    curr_time.month,
+                                    curr_time.day,
+                                    curr_time.hour,
+                                    sc['id'][k],
+                                    p[2],
+                                    sc['mass'][k],
+                                    sc['age'][k],
+                                    sc['status_codes'][k])
             else:
                 for k, p in enumerate(sc['positions']):
                     self.w.point(p[0], p[1])
                     self.w.record(curr_time.year,
-                        curr_time.month,
-                        curr_time.day,
-                        curr_time.hour,
-                        sc['id'][k],
-                        p[2],
-                        sc['mass'][k],
-                        sc['age'][k],
-                        sc['status_codes'][k])
-       
+                                  curr_time.month,
+                                  curr_time.day,
+                                  curr_time.hour,
+                                  sc['id'][k],
+                                  p[2],
+                                  sc['mass'][k],
+                                  sc['age'][k],
+                                  sc['status_codes'][k])
+
         if islast_step:  # now we really write the files:
-            
             if uncertain:
                 shapefilenames = [self.filename, self.filename + '_uncert']
             else:
                 shapefilenames = [self.filename]
-            
-            for fn in shapefilenames:
 
+            for fn in shapefilenames:
                 if uncertain:
                     self.w_u.save(fn)
                 else:
                     self.w.save(fn)
+
                 zfilename = fn + '.zip'
 
                 prj_file = open("%s.prj" % fn, "w")
                 prj_file.write(self.epsg)
                 prj_file.close()
-                
+
                 zipf = zipfile.ZipFile(zfilename, 'w')
+
                 for suf in ['shp', 'prj', 'dbf', 'shx']:
                     f = os.path.split(fn)[-1] + '.' + suf
                     zipf.write(os.path.join(self.filedir, f), arcname=f)
                     os.remove(fn + '.' + suf)
+
                 zipf.close()
-                
+
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
                        'output_filename': self.filename + '.zip'}
 
         return output_info
-
 
     def rewind(self):
         '''
@@ -218,8 +218,3 @@ class ShapeOutput(Outputter, Serializable):
             os.remove(self.filename + '_uncert.zip')
         except OSError:
             pass  # it must not be there
-
-
-
-
-

@@ -438,8 +438,8 @@ class TestBurn(ObjForTests):
         self._weather_elements_helper(burn, avg_frac_water)
 
         # following should finally hold true for entire run
-        assert np.allclose(amount, self.sc.mass_balance['burned'] +
-                           self.sc['mass'].sum(), atol=1e-6)
+        v = self.sc.mass_balance['burned'] + self.sc['mass'].sum()
+        assert np.allclose(amount, v, atol=1e-6)
 
         # want mass of oil thickness * area gives volume of oil-water so we
         # need to scale this by (1 - avg_frac_water)
@@ -629,13 +629,14 @@ class TestChemicalDispersion(ObjForTests):
                                     active_start,
                                     active_stop,
                                     waves=waves)
-        c_disp._set_efficiency(self.spill.release_time)
+        pts = np.array([[0,0],[0,0]])
+        c_disp._set_efficiency(pts, self.spill.release_time)
         assert c_disp.efficiency == 1.0
 
-        c_disp.efficiency = None
+        c_disp.efficiency = 0
         waves.wind.timeseries = (waves.wind.timeseries[0]['time'], (100, 0))
-        c_disp._set_efficiency(self.spill.release_time)
-        assert c_disp.efficiency == 0
+        c_disp._set_efficiency(pts, self.spill.release_time)
+        assert np.all(c_disp.efficiency == 0)
 
     @mark.parametrize("efficiency", (0.5, 1.0))
     def test_prepare_for_model_step(self, efficiency):

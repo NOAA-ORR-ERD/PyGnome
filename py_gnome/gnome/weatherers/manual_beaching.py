@@ -69,7 +69,7 @@ class BeachingSchema(WeathererSchema):
     timeseries = BeachingTimeSeriesSchema(missing=drop)
 
 
-class Beaching(RemoveMass, Weatherer, Serializable):
+class Beaching(RemoveMass, Weatherer):
     '''
     It isn't really a reponse/cleanup option; however, it works in the same
     manner in that Beaching removes mass at a user specified rate. Mixin the

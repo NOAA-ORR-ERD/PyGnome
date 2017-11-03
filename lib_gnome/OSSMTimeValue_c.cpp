@@ -735,7 +735,7 @@ OSErr OSSMTimeValue_c::ReadNDBCWind(vector<string> &linesInFile, long numHeaderL
 		if (lineStream.fail()) {
 			// scan will allow comment at end of line, for now just ignore
 			err = -1;
-			TechError("OSSMTimeValue_c::ReadTimeValues()", "scan data values", 0);
+			TechError("OSSMTimeValue_c::ReadNDBCWind()", "scan data values", 0);
 			goto done;
 		}
 
@@ -847,13 +847,28 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 	//strcpy(this->fileName, path); // for now use full path
 //#endif
 
+#ifndef pyGNOME
+	// location files need special case code that is in ReadFileContents
+	CHARH f = 0;
+	if ((err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) != 0) {
+		TechError("TOSSMTimeValue::ReadTimeValues()", "ReadFileContents()", 0);
+		return -1;
+	}
+	vector<string> linesInFile;
+	if (ReadLinesInBuffer(f, linesInFile)) {
+		linesInFile = rtrim_empty_lines(linesInFile);
+	}
+	else
+		return -1; // we failed to read in the file.
+
+#else	
 	vector<string> linesInFile;
 	if (ReadLinesInFile(path, linesInFile)) {
 		linesInFile = rtrim_empty_lines(linesInFile);
 	}
 	else
 		return -1; // we failed to read in the file.
-
+#endif
 	numLines = linesInFile.size();
 
 	if (IsNDBCWindFile(linesInFile, &numHeaderLines)) {

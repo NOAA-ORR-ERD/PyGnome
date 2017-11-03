@@ -22,7 +22,7 @@ cdef extern from "StringFunctions.h":
     void SecondsToDate(Seconds, DateTimeRec *)
 
 """
-Declare methods for interpolation of timeseries from 
+Declare methods for interpolation of timeseries from
 lib_gnome/OSSMTimeValue_c class and ShioTimeValue
 """
 cdef extern from "OSSMTimeValue_c.h":
@@ -46,6 +46,7 @@ cdef extern from "OSSMTimeValue_c.h":
         short   GetUserUnits()
         void    SetUserUnits(short)
         OSErr   CheckStartTime(Seconds)
+        long    GetNumValues()
         void    Dispose()
         WorldPoint3D    GetStationLocation()
         OSErr           GetDataStartTime(Seconds *startTime)
@@ -94,7 +95,7 @@ cdef extern from "Weatherers_c.h":
                    double *frac_evap,
                    int32_t *age,
                    double *bulltime,
-                   double k_emul,
+                   double *k_emul,
                    double emul_time,
                    double emul_C,
                    double S_max,
@@ -110,9 +111,9 @@ cdef extern from "Weatherers_c.h":
                           double *d_disp,
                           double *d_sed,
                           double *droplet_avg_size,
-                          double frac_breaking_waves,
-                          double disp_wave_energy,
-                          double wave_height,
+                          double *frac_breaking_waves,
+                          double *disp_wave_energy,
+                          double *wave_height,
                           double visc_w,
                           double rho_w,
                           double C_sed,

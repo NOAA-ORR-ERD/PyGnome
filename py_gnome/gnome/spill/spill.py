@@ -1083,15 +1083,16 @@ def point_line_release_spill(num_elements,
                   name=name)
     return spill
 
-def spatial_release_spill(   start_positions,
-                             release_time,
-                             element_type=None,
-                             substance=None,
-                             water=None,
-                             on=True,
-                             amount=None,
-                             units=None,
-                             name='spatial_release'):
+
+def spatial_release_spill(start_positions,
+                          release_time,
+                          element_type=None,
+                          substance=None,
+                          water=None,
+                          on=True,
+                          amount=None,
+                          units=None,
+                          name='spatial_release'):
     '''
     Helper function returns a Spill object containing a spatial release
 

@@ -171,6 +171,11 @@ public:
 
 	FLOATH fDepthsH;	// check what this is, maybe rename
 	DepthDataInfoH fDepthDataInfo;
+
+	//WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
+	WORLDPOINTH fCenterPtsH;		// for curvilinear, all vertex points from file
+	GridCellInfoHdl fGridCellInfoH;
+	LongPointHdl fPtsH;
 	//double fFileScaleFactor;
 
 	//Boolean fAllowVerticalExtrapolationOfCurrents;
@@ -202,6 +207,11 @@ public:
 	
 	virtual OSErr		TextRead(const char *path, const char *topFilePath);
 
+	virtual LongPointHdl		GetPointsHdl();
+	virtual WORLDPOINTH 	GetCellCenters();
+	virtual GridCellInfoHdl 	GetCellData();
+	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
+
 	virtual	bool 		IsRegularGrid(){return true;}
 };
 
@@ -213,8 +223,8 @@ public:
 	
 	LONGH fVerdatToNetCDFH;	// for curvilinear
 	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
-	WORLDPOINTH fCenterPtsH;		// for curvilinear, all vertex points from file
-	GridCellInfoHdl fGridCellInfoH;
+	//WORLDPOINTH fCenterPtsH;		// for curvilinear, all vertex points from file
+	//GridCellInfoHdl fGridCellInfoH;
 	Boolean bVelocitiesOnNodes;		// default is velocities on cells
 
 	TimeGridVelCurv_c ();
@@ -245,6 +255,7 @@ public:
 
 	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
 	VelocityRec 	GetInterpolatedValue(const Seconds& model_time, InterpolationValBilinear interpolationVal,float depth,float totalDepth);
+	virtual	bool 		IsRegularGrid(){return false;}
 	virtual	bool 		IsDataOnCells(){return !bVelocitiesOnNodes;}
 	virtual GridCellInfoHdl 	GetCellData();
 	virtual WORLDPOINTH 	GetCellCenters();
@@ -291,6 +302,7 @@ public:
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
 
 	virtual	bool 		IsTriangleGrid(){return true;}
+	virtual	bool 		IsRegularGrid(){return false;}
 	virtual	bool 		IsDataOnCells(){return bVelocitiesOnTriangles;}
 	virtual OSErr 		GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity);
 };
@@ -422,6 +434,8 @@ public:
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
 
 	virtual	bool 		IsTriangleGrid(){return true;}
+	virtual	bool 		IsDataOnCells(){return false;}	// data is on the points
+	virtual OSErr 		GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity);
 };
 
 

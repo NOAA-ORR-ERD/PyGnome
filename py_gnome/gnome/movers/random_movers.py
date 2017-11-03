@@ -1,21 +1,20 @@
 '''
 Movers using diffusion as the forcing function
 '''
-
 import copy
 import numpy as np
 
 from colander import (SchemaNode, Float, drop)
 
-from gnome.basic_types import (oil_status)
+from gnome.basic_types import oil_status
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
 
 from gnome.utilities.serializable import Serializable, Field
 
 from gnome.environment import IceConcentration
-from gnome.environment.grid import PyGrid
-from gnome.environment.grid_property import GridPropSchema
+from gnome.environment.gridded_objects_base import PyGrid
+from gnome.environment.gridded_objects_base import VariableSchema
 
 from gnome.movers import CyMover, ProcessSchema
 from gnome.persist.base_schema import ObjType
@@ -83,7 +82,7 @@ class RandomMover(CyMover, Serializable):
 
 
 class IceAwareRandomMoverSchema(RandomMoverSchema):
-    ice_concentration = GridPropSchema(missing=drop)
+    ice_concentration = VariableSchema(missing=drop)
 
 
 class IceAwareRandomMover(RandomMover):
@@ -115,8 +114,8 @@ class IceAwareRandomMover(RandomMover):
             grid_file = filename
 
         if grid is None:
-            grid = PyGrid.from_netCDF(grid_file,
-                                      grid_topology=grid_topology)
+            grid = Grid.from_netCDF(grid_file,
+                                    grid_topology=grid_topology)
 
         if ice_concentration is None:
             ice_concentration = (IceConcentration
@@ -149,6 +148,7 @@ class IceAwareRandomMover(RandomMover):
             interp *= 1.3333333333
 
             deltas[:, 0:2][ice_mask] = 0
+
             # scale winds from 100-0% depending on ice coverage
             deltas[:, 0:2][interp_mask] *= (1 - interp[interp_mask][:, np.newaxis])
             deltas[status] = (0, 0, 0)
@@ -271,17 +271,3 @@ class RandomVerticalMover(CyMover, Serializable):
                         self.horizontal_diffusion_coef_above_ml,
                         self.horizontal_diffusion_coef_below_ml,
                         self.active_start, self.active_stop, self.on))
-
-
-
-
-
-
-
-
-
-
-
-
-
-

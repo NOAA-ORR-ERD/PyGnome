@@ -46,6 +46,7 @@ class References(object):
         for key, item in self._refs.iteritems():
             if item is obj:
                 return key
+
         return None
 
     def _add_reference_with_name(self, obj, name):
@@ -54,13 +55,13 @@ class References(object):
         '''
         if self.retrieve(name):
             if self.retrieve(name) is not obj:
-                raise ValueError('a different object is referenced by '
-                                 '{0}'.format(name))
+                raise ValueError('a different object is referenced by {}'
+                                 .format(name))
         else:
             # make sure object doesn't already exist
             if self.get_reference(obj):
-                raise ValueError('this object is already referenced by '
-                                 '{0}'.format(self.get_reference(obj)))
+                raise ValueError('this object is already referenced by {}'
+                                 .format(self.get_reference(obj)))
             else:
                 self._refs[name] = obj
 
@@ -82,8 +83,8 @@ class References(object):
             return key
 
         key = "{0}_{1}.json".format(obj.__class__.__name__, len(self._refs))
-
         self._refs[key] = obj
+
         return key
 
     def retrieve(self, ref):
@@ -106,8 +107,7 @@ def class_from_objtype(obj_type):
 
     try:
         # call getattr recursively
-        obj = reduce(getattr, obj_type.split('.')[1:], gnome)
-        return obj
+        return reduce(getattr, obj_type.split('.')[1:], gnome)
     except AttributeError:
         log.warning("{0} is not part of gnome namespace".format(obj_type))
         raise
@@ -177,6 +177,7 @@ def load(saveloc, fname='Model.json', references=None):
     # after loading, add the object to references
     if references:
         references.reference(obj, fname)
+
     return obj
 
 
@@ -222,15 +223,13 @@ class Savable(object):
                 obj = getattr(self, field.name)
                 ref = references.reference(obj)
                 json_[field.name] = ref
+
                 if not self._ref_in_saveloc(saveloc, ref):
                     obj.save(saveloc, references, name=ref)
+
         return json_
 
-    def _json_to_saveloc(self,
-                         json_,
-                         saveloc,
-                         references=None,
-                         name=None):
+    def _json_to_saveloc(self, json_, saveloc, references=None, name=None):
         '''
         save json_ to saveloc
 
@@ -252,11 +251,15 @@ class Savable(object):
             directory. Default is self.__class__.__name__. If references object
             contains self.__class__.__name__, then let
         '''
-        references = (references, References())[references is None]
+        if references is None:
+            references = References()
+
+        if name is None:
+            name = '{0}.json'.format(self.__class__.__name__)
+
         json_ = self._update_and_save_refs(json_, saveloc, references)
 
-        f_name = \
-            (name, '{0}.json'.format(self.__class__.__name__))[name is None]
+        f_name = name
 
         # add yourself to references
         try:
@@ -268,6 +271,7 @@ class Savable(object):
 
         # move datafiles to saveloc
         json_ = self._move_data_file(saveloc, json_)
+
         if zipfile.is_zipfile(saveloc):
             self._write_to_zip(saveloc, f_name, json.dumps(json_, indent=True))
         else:
@@ -278,6 +282,7 @@ class Savable(object):
 
     def _write_to_file(self, saveloc, f_name, json_):
         full_name = os.path.join(saveloc, f_name)
+
         with open(full_name, 'w') as outfile:
             json.dump(json_, outfile, indent=True)
 
@@ -310,9 +315,13 @@ class Savable(object):
             a filename. It is upto the creator of the reference list to decide
             how to reference a nested object.
         """
-
         json_ = self.serialize('save')
         c_fields = self._state.get_field_by_attribute('iscollection')
+
+        #JAH: Added this from the model save function. If any bugs pop up
+        #in the references system this may be the cause
+        references = (references, References())[references is None]
+
         for field in c_fields:
             self._save_collection(saveloc,
                                   getattr(self, field.name),
@@ -324,21 +333,26 @@ class Savable(object):
 
     def _move_data_file(self, saveloc, json_):
         """
-        Look at _state attribute of object. Find all fields with 'isdatafile'
-        attribute as True. If there is a key in json_ corresponding with
-        'name' of the fields with True 'isdatafile' attribute then move that
-        datafile and update the key in the json_ to point to new location
+        - Look at _state attribute of object.
+        - Find all fields with 'isdatafile' attribute as True.
+        - If there is a key in json_ corresponding with
+          'name' of the fields with True 'isdatafile' attribute
+        - then
+          - move that datafile and
+          - update the key in the json_ to point to new location
         """
         fields = self._state.get_field_by_attribute('isdatafile')
 
         for field in fields:
             if field.name not in json_:
                 continue
-            
+
             raw_paths = json_[field.name]
+
             if isinstance(raw_paths, list):
                 for i, p in enumerate(raw_paths):
                     d_fname = os.path.split(p)[1]
+
                     if zipfile.is_zipfile(saveloc):
                         # add datafile to zip archive
                         with zipfile.ZipFile(saveloc, 'a',
@@ -350,13 +364,14 @@ class Savable(object):
                         # move datafile to saveloc
                         if p != os.path.join(saveloc, d_fname):
                             shutil.copy(p, saveloc)
-    
-                    # always want to update the reference so it is relative to saveloc
+
+                    # always want to update the reference so it is relative
+                    # to saveloc
                     json_[field.name][i] = d_fname
             else:
                 # data filename
                 d_fname = os.path.split(json_[field.name])[1]
-    
+
                 if zipfile.is_zipfile(saveloc):
                     # add datafile to zip archive
                     with zipfile.ZipFile(saveloc, 'a',
@@ -368,8 +383,9 @@ class Savable(object):
                     # move datafile to saveloc
                     if json_[field.name] != os.path.join(saveloc, d_fname):
                         shutil.copy(json_[field.name], saveloc)
-    
-                # always want to update the reference so it is relative to saveloc
+
+                # always want to update the reference so it is relative
+                # to saveloc
                 json_[field.name] = d_fname
 
         return json_
@@ -385,11 +401,13 @@ class Savable(object):
 
         # pop references from json_data, create objects for them
         ref_dict = {}
+
         if ref_fields:
             for field in ref_fields:
                 if field.name in json_data:
                     i_ref = json_data.pop(field.name)
                     ref_obj = references.retrieve(i_ref)
+
                     if not ref_obj:
                         ref_obj = load(saveloc, i_ref, references)
 
@@ -419,6 +437,7 @@ class Savable(object):
                 # filenames in archive do not contain paths with '..'
                 # In here, we just extract datafile to saveloc/.
                 raw_n = json_data[field.name]
+
                 if isinstance(raw_n, list):
                     for i, n in enumerate(raw_n):
                         json_data[field.name][i] = os.path.join(saveloc, n)
@@ -476,11 +495,7 @@ class Savable(object):
 
         return obj
 
-    def _save_collection(self,
-                         saveloc,
-                         coll_,
-                         refs,
-                         coll_json):
+    def _save_collection(self, saveloc, coll_, refs, coll_json):
         """
         Reference objects inside OrderedCollections or list. Since the OC
         itself isn't a reference but the objects in the list are a reference,
@@ -490,11 +505,14 @@ class Savable(object):
         """
         for count, obj in enumerate(coll_):
             obj_ref = refs.get_reference(obj)
+
             if obj_ref is None:
                 # try following name - if 'fname' already exists in references,
                 # then obj.save() assigns a different name to file
                 fname = '{0.__class__.__name__}_{1}.json'.format(obj, count)
+
                 obj.save(saveloc, refs, fname)
+
                 coll_json[count]['id'] = refs.reference(obj)
             else:
                 coll_json[count]['id'] = obj_ref
@@ -506,14 +524,18 @@ class Savable(object):
         Model at present
         '''
         l_coll = []
+
         for item in l_coll_dict:
             i_ref = item['id']
+
             if refs.retrieve(i_ref):
                 l_coll.append(refs.retrieve(i_ref))
             else:
                 obj = load(saveloc, item['id'], refs)
+
                 l_coll.append(obj)
-        return (l_coll)
+
+        return l_coll
 
 
 # max json filesize is 1MegaByte
@@ -547,9 +569,9 @@ def is_savezip_valid(savezip):
         # 1) Failed to open zipfile
         try:
             badfile = z.testzip()
-        except:
-            msg = "Failed to open or run testzip() on {0}".format(savezip)
-            log.warning(msg)
+        except Exception:
+            log.warning("Failed to open or run testzip() on {0}"
+                        .format(savezip))
             return False
 
         # 2) CRC failed for a file in the archive - rejecting zip
@@ -562,10 +584,10 @@ def is_savezip_valid(savezip):
             if (os.path.splitext(zi.filename)[1] == '.json' and
                     zi.file_size > _max_json_filesize):
                 # 3) Found a *.json with size > _max_json_filesize. Rejecting.
-                msg = ("Filesize of {0} is {1}. It must be less than {2}. "
-                       "Rejecting zipfile."
-                       .format(zi.filename, zi.file_size, _max_json_filesize))
-                log.warning(msg)
+                log.warning('Filesize of {0} is {1}. It must be less than {2}.'
+                            ' Rejecting zipfile.'
+                            .format(zi.filename, zi.file_size,
+                                    _max_json_filesize))
                 return False
 
             # integer division - it will floor
@@ -574,12 +596,11 @@ def is_savezip_valid(savezip):
                 # 4) Found a file with
                 #    uncompressed_size/compressed_size > _max_compress_ratio.
                 #    Rejecting.
-                msg = ("file compression ratio is {0}. "
-                       "maximum must be less than {1}. "
-                       "Rejecting zipfile"
-                       .format(zi.file_size / zi.compress_size,
-                               _max_compress_ratio))
-                log.warning(msg)
+                log.warning('file compression ratio is {0}. '
+                            'maximum must be less than {1}. '
+                            'Rejecting zipfile'
+                            .format(zi.file_size / zi.compress_size,
+                                    _max_compress_ratio))
                 return False
 
             if '..' in zi.filename:
@@ -587,9 +608,8 @@ def is_savezip_valid(savezip):
                 #    currently, all datafiles stored at same level in saveloc,
                 #    no subdirectories. Even if we start using subdirectories,
                 #    there should never be a need to do '..'
-                msg = ("Found '..' in {0}. Rejecting zipfile"
-                       .format(zi.filename))
-                log.warning(msg)
+                log.warning('Found ".." in {0}. Rejecting zipfile'
+                            .format(zi.filename))
                 return False
 
     # all checks pass - so we can load zipfile

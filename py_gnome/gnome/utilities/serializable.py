@@ -3,8 +3,11 @@ Created on Feb 15, 2013
 '''
 import copy
 import inspect
+import collections
 
 import numpy as np
+
+from colander import SchemaType
 
 from gnome import GnomeId
 from gnome.persist import Savable
@@ -447,7 +450,7 @@ class State(object):
         return names
 
 
-class Serializable(GnomeId, Savable):
+class Serializable(GnomeId, Savable, SchemaType):
 
     """
     contains the to_dict and update_from_dict method to output properties of
@@ -582,6 +585,24 @@ class Serializable(GnomeId, Savable):
             value = self.attr_to_dict(key)
             if hasattr(value, 'to_dict'):
                 value = value.to_dict()  # recursive call
+            elif (key in [f.name for f in self._state.get_field_by_attribute('iscollection')]):
+                #if self.key is a list, this needs special attention. It does
+                #not have a to_dict like OrderedCollection does!
+                vals = []
+                for obj in value:
+                    try:
+                        obj_type = '{0.__module__}.{0.__class__.__name__}'.format(obj)
+                    except AttributeError:
+                        obj_type = '{0.__class__.__name__}'.format(obj)
+                    _id=None
+                    if hasattr(obj, 'id'):
+                        _id= str(obj.id)
+                    else:
+                        _id= str(id(obj))
+                    val = {'obj_type': obj_type, 'id': _id}
+                    vals.append(val)
+
+                value = vals
 
             if value is not None:
                 # some issue in colander monkey patch and the Wind schema
@@ -926,6 +947,7 @@ class Serializable(GnomeId, Savable):
 
             if json_['json_'] == 'webapi':
                 _to_dict = schema.deserialize(json_)
+
                 for field in c_fields:
                     if field.name in json_:
                         _to_dict[field.name] = \

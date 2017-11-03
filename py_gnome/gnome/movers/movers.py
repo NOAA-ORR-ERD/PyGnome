@@ -136,6 +136,22 @@ class Process(AddLogger):
         self._check_active_startstop(self._active_start, value)
         self._active_stop = value
 
+    @property
+    def real_data_start(self):
+        return self._r_d_s
+
+    @real_data_start.setter
+    def real_data_start(self, value):
+        self._r_d_s = value
+
+    @property
+    def real_data_stop(self):
+        return self._r_d_e
+
+    @real_data_stop.setter
+    def real_data_stop(self, value):
+        self._r_d_e = value
+
     def datetime_to_seconds(self, model_time):
         """
         Put the time conversion call here - in case we decide to change it, it
@@ -210,11 +226,11 @@ class Mover(Process):
 
 class PyMover(Mover):
     def __init__(self,
-                 default_num_method='Trapezoid',
+                 default_num_method='RK2',
                  **kwargs):
         self.num_methods = {'RK4': self.get_delta_RK4,
                             'Euler': self.get_delta_Euler,
-                            'Trapezoid': self.get_delta_Trapezoid}
+                            'RK2': self.get_delta_RK2}
         self.default_num_method = default_num_method
 
         if 'env' in kwargs:
@@ -225,13 +241,33 @@ class PyMover(Mover):
                             setattr(self, k, o)
         Mover.__init__(self, **kwargs)
 
+    @property
+    def real_data_start(self):
+        return self.data.time.min_time.replace(tzinfo=None)
+
+    @real_data_start.setter
+    def real_data_start(self, value):
+        self._r_d_s = value
+
+    @property
+    def real_data_stop(self):
+        return self.data.time.max_time.replace(tzinfo=None)
+
+    @real_data_stop.setter
+    def real_data_stop(self, value):
+        self._r_d_e = value
+
+    @property
+    def is_data_on_cells(self):
+        return self.data.grid.infer_location(self.data.u.data) != 'node'
+
     def get_delta_Euler(self, sc, time_step, model_time, pos, vel_field):
         vels = vel_field.at(pos, model_time,
                             extrapolate=self.extrapolate)
 
         return vels * time_step
 
-    def get_delta_Trapezoid(self, sc, time_step, model_time, pos, vel_field):
+    def get_delta_RK2(self, sc, time_step, model_time, pos, vel_field):
         dt = timedelta(seconds=time_step)
         dt_s = dt.seconds
         t = model_time

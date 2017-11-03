@@ -38,8 +38,8 @@ class IceImageOutput(Outputter):
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('ice_movers',
-                           save=True, update=True, iscollection=True))
+    _state.add_field(Field('ice_movers', save=True, update=True,
+                           iscollection=True))
 
     _schema = IceImageSchema
 
@@ -194,9 +194,10 @@ class IceImageOutput(Outputter):
 
         thick_image, conc_image, bb = self.render_images(model_time)
 
-        # info to return to the caller
-        web_mercator = 'EPSG:3857'
+        # web_mercator = 'EPSG:3857'
         equirectangular = 'EPSG:32662'
+
+        # info to return to the caller
         output_dict = {'step_num': step_num,
                        'time_stamp': iso_time,
                        'thickness_image': thick_image,
@@ -234,6 +235,7 @@ class IceImageOutput(Outputter):
         # grabbing our grid data twice.
         mover_grid_bb = None
         mover_grids = []
+
         for mover in self.ice_movers:
             mover_grids.append(mover.get_grid_data())
             mover_grid_bb = mover.get_grid_bounding_box(mover_grids[-1],
@@ -266,24 +268,21 @@ class IceImageOutput(Outputter):
                 canvas.draw_polygon(poly, fill_color=tc)
                 canvas.draw_polygon(poly, fill_color=cc, background=True)
 
-        # diagnostic so we can see what we have rendered.
-        # print '\ndrawing reference objects...'
-        # canvas.draw_graticule(False)
-        # canvas.draw_tags(False)
-        # canvas.save_background('background.png')
-        # canvas.save_foreground('foreground.png')
-
         # py_gd does not currently have the capability to generate a .png
         # formatted buffer in memory. (libgd can be made to do this, but
         # the wrapper is yet to be written)
         # So we will just write to a tempfile and then read it back.
         with NamedTemporaryFile() as fp:
+            fp.close()
             canvas.save_foreground(fp.name)
+            fp = open(fp.name, 'w+b')
             fp.seek(0)
             thickness_image = fp.read().encode('base64')
 
         with NamedTemporaryFile() as fp:
+            fp.close()
             canvas.save_background(fp.name)
+            fp = open(fp.name, 'w+b')
             fp.seek(0)
             coverage_image = fp.read().encode('base64')
 
@@ -312,6 +311,7 @@ class IceImageOutput(Outputter):
 
         if 'ice_movers' in json_:
             _to_dict['ice_movers'] = []
+
             for i, cm in enumerate(json_['ice_movers']):
                 cm_cls = class_from_objtype(cm['obj_type'])
                 cm_dict = cm_cls.deserialize(json_['ice_movers'][i])

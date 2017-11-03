@@ -5,12 +5,12 @@ Does not contain a schema for persistence yet
 import copy
 import os
 from glob import glob
-from collections import Iterable, defaultdict
+from collections import Iterable
 
 import numpy as np
 
 from geojson import (Feature, FeatureCollection, dump,
-                     Point, MultiPoint, MultiPolygon)
+                     Point, MultiPolygon)
 
 from colander import SchemaNode, String, drop, Int, Bool
 
@@ -111,7 +111,6 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
 
         If you want to keep them, a new output_dir should be set
         """
-
         super(TrajectoryGeoJsonOutput, self).prepare_for_model_run(*args,
                                                                    **kwargs)
         self.clean_output_files()
@@ -129,10 +128,12 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         # feature per step rather than (n) features per step.features = []
         c_features = []
         uc_features = []
+
         for sc in self.cache.load_timestep(step_num).items():
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
             mass = self._dataarray_p_types(sc['mass'])
+
             sc_type = 'uncertain' if sc.uncertain else 'forecast'
             spill_num = self._dataarray_p_types(sc['spill_num'])
 
@@ -158,15 +159,16 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
 
         c_geojson = FeatureCollection(c_features)
         uc_geojson = FeatureCollection(uc_features)
+
         # default geojson should not output data to file
         # read data from file and send it to web client
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
                        'certain': c_geojson,
-                       'uncertain': uc_geojson
-                       }
+                       'uncertain': uc_geojson}
 
         if self.output_dir:
-            output_info['output_filename'] = self.output_to_file(c_geojson, step_num)
+            output_info['output_filename'] = self.output_to_file(c_geojson,
+                                                                 step_num)
             self.output_to_file(uc_geojson, step_num)
 
         return output_info
@@ -197,6 +199,7 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
             data = data_array.round(self.round_to).astype(p_type).tolist()
         else:
             data = data_array.astype(p_type).tolist()
+
         return data
 
     # def rewind(self):
@@ -208,8 +211,10 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         print "in clean_output_files"
         if self.output_dir:
             files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
+
             print "files are:"
             print files
+
             for f in files:
                 os.remove(f)
 
@@ -254,8 +259,8 @@ class IceGeoJsonOutput(Outputter):
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('ice_movers',
-                           save=True, update=True, iscollection=True))
+    _state.add_field(Field('ice_movers', save=True, update=True,
+                           iscollection=True))
 
     _schema = IceGeoJsonSchema
 
@@ -290,6 +295,7 @@ class IceGeoJsonOutput(Outputter):
         model_time = date_to_sec(sc.current_time_stamp)
 
         geojson = {}
+
         for mover in self.ice_movers:
             grid_data = mover.get_grid_data()
             ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
@@ -302,8 +308,7 @@ class IceGeoJsonOutput(Outputter):
 
         # default geojson should not output data to file
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'feature_collections': geojson
-                       }
+                       'feature_collections': geojson}
 
         return output_info
 
@@ -386,6 +391,7 @@ class IceGeoJsonOutput(Outputter):
 
         if 'ice_movers' in json_:
             _to_dict['ice_movers'] = []
+
             for i, cm in enumerate(json_['ice_movers']):
                 cm_cls = class_from_objtype(cm['obj_type'])
                 cm_dict = cm_cls.deserialize(json_['ice_movers'][i])

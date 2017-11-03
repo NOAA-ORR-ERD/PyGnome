@@ -101,11 +101,14 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 		// check if this is a valid data line, then it is probably a valid tide file
 		// tide files with header have same first 3 lines as long wind files, followed by data
 		
-		// Not sure what is going on here - this is not an optional line
-		//std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
+		std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
 
-		//if (!ParseLine(currentLine, time, val1Str, val2Str))
-			//return false;
+		if (!ParseLine(currentLine, time, val1Str, val2Str))
+		{
+			// not a data line so keep checking
+		}
+		else 
+			return false; // not a long wind file since it has a 3 line header 
 
 	}
 
@@ -376,7 +379,7 @@ bool IsTimeFile(vector<string> &linesInFile)
 	return bIsValid;
 }
 
-
+#ifdef pyGNOME
 Boolean IsTimeFile(char *path)
 {
 	vector<string> linesInFile;
@@ -387,3 +390,38 @@ Boolean IsTimeFile(char *path)
 		return false;
 }
 
+#else
+/////////////////////////////////////////////////
+Boolean IsTimeFile(char* path)
+{
+	Boolean	bIsValid = false;
+	OSErr	err = noErr;
+	long	line;
+	char	strLine [512];
+	char	firstPartOfFile [512];
+	long lenToRead,fileLength;
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return false;
+	
+	lenToRead = _min(512,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
+	if (!err)
+	{
+		DateTimeRec time;
+		char value1S[256], value2S[256];
+		long numScanned;
+		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 512);
+		StringSubstitute(strLine, ',', ' ');
+		numScanned = sscanf(strLine, "%hd %hd %hd %hd %hd %s %s",
+					  &time.day, &time.month, &time.year,
+					  &time.hour, &time.minute, value1S, value2S);
+		if (numScanned == 7)	
+			bIsValid = true;
+	}
+	return bIsValid;
+}
+
+#endif

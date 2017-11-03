@@ -8,7 +8,9 @@
 # the "InstallingWithAnaconda.rst" file for details
 
 pytest
+pytest-timeout
 testfixtures
+
 psutil
 sphinx
 progressbar
@@ -18,9 +20,8 @@ geojson
 repoze.lru
 colander
 gsw             # Thermodynamic Equations Of Seawater - density computation
-pyugrid
-pysgrid
 pyshp
+gridded
 
 
 # Binary dependencies that can probably be pip installed
@@ -33,8 +34,8 @@ Cython
 
 
 ## dependencies that aren't on PyPi
-git+https://github.com/NOAA-ORR-ERD/PyNUCOS.git@v2.5.4#egg=unit_conversion
-git+https://github.com/NOAA-ORR-ERD/OilLibrary.git@v0.0.6#egg=oil_library
+git+https://github.com/NOAA-ORR-ERD/PyNUCOS.git@v2.5.5#egg=unit_conversion
+git+https://github.com/NOAA-ORR-ERD/OilLibrary.git@v1.0.0#egg=oil_library
 
 
 

@@ -1158,7 +1158,8 @@ class MapFromBNA(RasterMap):
         return None
 
     def to_geojson(self):
-        map_file = ogr_open_file(self.filename)
+
+        map_file = ogr_open_file('BNA:' + self.filename)
         polys = []
         line_strings = []
 

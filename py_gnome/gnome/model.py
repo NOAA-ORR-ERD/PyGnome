@@ -26,7 +26,8 @@ from gnome.movers import Mover
 from gnome.weatherers import (weatherer_sort,
                               Weatherer,
                               WeatheringData,
-                              FayGravityViscous)
+                              FayGravityViscous,
+                              Langmuir)
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.persist import (extend_colander,
                            validators,
@@ -580,10 +581,12 @@ class Model(Serializable):
         attr['wind'] = self.find_by_attr('_ref_as', 'wind', self.environment)
         attr['water'] = self.find_by_attr('_ref_as', 'water', self.environment)
         attr['waves'] = self.find_by_attr('_ref_as', 'waves', self.environment)
+        attr['current'] = self.find_by_attr('_ref_as', 'current', self.environment)
 
         weather_data = set()
         wd = None
         spread = None
+        langmuir = None
         for coll in ('environment', 'weatherers', 'movers'):
             for item in getattr(self, coll):
                 if hasattr(item, '_req_refs'):
@@ -607,6 +610,14 @@ class Model(Serializable):
                             if item._ref_as == 'spreading':
                                 item.on = False
                                 spread = item
+
+                        except AttributeError:
+                            pass
+
+                        try:
+                            if item._ref_as == 'langmuir':
+                                item.on = False
+                                langmuir = item
 
                         except AttributeError:
                             pass
@@ -659,6 +670,17 @@ class Model(Serializable):
                     for at in attr:
                         if hasattr(spread, at):
                             spread.water = attr['water']
+
+            if langmuir is None:
+                self.weatherers += Langmuir(attr['water'], attr['wind'])
+            else:
+                # turn spreading on and make references
+                langmuir.on = True
+                if langmuir.make_default_refs:
+                    for at in attr:
+                        if hasattr(langmuir, at):
+                            langmuir.water = attr['water']
+                            langmuir.wind = attr['wind']
 
     def setup_model_run(self):
         '''
@@ -967,8 +989,11 @@ class Model(Serializable):
         # till we go through the prepare_for_model_step
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output(isvalid)
-        self.logger.debug("{0._pid} Completed step: {0.current_time_step} "
-                          "for {0.name}".format(self))
+
+        self.logger.debug('{0._pid} '
+                          'Completed step: {0.current_time_step} for {0.name}'
+                          .format(self))
+
         return output_info
 
     def __iter__(self):
@@ -1033,6 +1058,9 @@ class Model(Serializable):
         if hasattr(obj_added, 'water') and obj_added.water is not None:
             if obj_added.water.id not in self.environment:
                 self.environment += obj_added.water
+        if hasattr(obj_added, 'current') and obj_added.current is not None:
+            if obj_added.current.id not in self.environment:
+                self.environment += obj_added.current
 
     def _callback_add_mover(self, obj_added):
         'Callback after mover has been added'
@@ -1438,51 +1466,68 @@ class Model(Serializable):
 
         someSpillIntersectsModel = False
         num_spills = len(self.spills)
+        if num_spills == 0:
+            msg = '{0} contains no spills'.format(self.name)
+            self.logger.warning(msg)
+            msgs.append(self._warn_pre + msg)
+
+        num_spills_on = 0
         for spill in self.spills:
             msg = None
-            if spill.release_time < self.start_time + self.duration:
-                someSpillIntersectsModel = True
-            if spill.release_time > self.start_time:
-                msg = ('{0} has release time after model start time'.
-                       format(spill.name))
-                self.logger.warning(msg)
-                msgs.append(self._warn_pre + msg)
+            if spill.on:
+                num_spills_on += 1
+                if spill.release_time < self.start_time + self.duration:
+                    someSpillIntersectsModel = True
 
-            elif spill.release_time < self.start_time:
-                msg = ('{0} has release time before model start time'
-                       .format(spill.name))
-                self.logger.error(msg)
-                msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
-                isvalid = False
+                if spill.release_time > self.start_time:
+                    msg = ('{0} has release time after model start time'.
+                           format(spill.name))
+                    self.logger.warning(msg)
 
-            if spill.substance is not None:
-                # min_k1 = spill.substance.get('pour_point_min_k')
-                pour_point = spill.substance.pour_point()
-                if spill.water is not None:
-                    water_temp = spill.water.get('temperature')
-                    if water_temp < pour_point[0]:
-                        msg = ('The water temperature, {0} K, is less than '
-                               'the minimum pour point of the selected oil, '
-                               '{1} K.  The results may be unreliable.'
-                               .format(water_temp, pour_point[0]))
-                        
-                        self.logger.warning(msg)
-                        msgs.append(self._warn_pre + msg)
+                    msgs.append(self._warn_pre + msg)
 
-                    rho_h2o = spill.water.get('density')
-                    rho_oil = spill.substance.density_at_temp(water_temp)
-                    if np.any(rho_h2o < rho_oil):
-                        msg = ("Found particles with relative_buoyancy < 0. "
-                               "Oil is a sinker")
-                        raise GnomeRuntimeError(msg)
+                elif spill.release_time < self.start_time:
+                    msg = ('{0} has release time before model start time'
+                           .format(spill.name))
+                    self.logger.error(msg)
 
-        if num_spills > 0 and not someSpillIntersectsModel:
+                    msgs.append('error: {}: {}'
+                                .format(self.__class__.__name__, msg))
+                    isvalid = False
+
+                if spill.substance is not None:
+                    # min_k1 = spill.substance.get('pour_point_min_k')
+                    pour_point = spill.substance.pour_point()
+
+                    if spill.water is not None:
+                        water_temp = spill.water.get('temperature')
+
+                        if water_temp < pour_point[0]:
+                            msg = ('The water temperature, {0} K, '
+                                   'is less than the minimum pour point '
+                                   'of the selected oil, {1} K.  '
+                                   'The results may be unreliable.'
+                                   .format(water_temp, pour_point[0]))
+
+                            self.logger.warning(msg)
+                            msgs.append(self._warn_pre + msg)
+
+                        rho_h2o = spill.water.get('density')
+                        rho_oil = spill.substance.density_at_temp(water_temp)
+
+                        if np.any(rho_h2o < rho_oil):
+                            msg = ('Found particles with '
+                                   'relative_buoyancy < 0. Oil is a sinker')
+                            raise GnomeRuntimeError(msg)
+
+        if num_spills_on > 0 and not someSpillIntersectsModel:
             if num_spills > 1:
                 msg = ('All of the spills are released after the '
                        'time interval being modeled.')
             else:
                 msg = ('The spill is released after the time interval '
                        'being modeled.')
+
             self.logger.warning(msg)  # for now make this a warning
             # self.logger.error(msg)
             msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
@@ -1530,31 +1575,6 @@ class Model(Serializable):
                 isvalid = ref_isvalid
             msgs.extend(ref_msgs)
 
-        # Spill warnings
-        if len(self.spills) == 0:
-            msg = '{0} contains no spills'.format(self.name)
-            self.logger.warning(msg)
-            msgs.append(self._warn_pre + msg)
-
-        for spill in self.spills:
-            msg = None
-            if spill.release_time > self.start_time:
-                msg = ('{0} has release time after model start time'.
-                       format(spill.name))
-                self.logger.warning(msg)
-                msgs.append(self._warn_pre + msg)
-
-            elif spill.release_time < self.start_time:
-                msg = ('{0} has release time before model start time'
-                       .format(spill.name))
-                self.logger.error(msg)
-                msgs.append('error: ' + self.__class__.__name__ + ': ' + msg)
-                isvalid = False
-
-#             if msg is not None:
-#                 self.logger.warning(msg)
-#                 msgs.append(self._warn_pre + msg)
-#
         return (msgs, isvalid)
 
     def _validate_env_coll(self, refs, raise_exc=False):

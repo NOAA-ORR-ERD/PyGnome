@@ -48,8 +48,6 @@ class ModelConsumer(mp.Process):
         self.ipc_folder = ipc_folder
 
     def run(self):
-        print '{0}: starting...'.format(self.name)
-
         # remove any root handlers else we get IOErrors for shared file
         # handlers
         # todo: find a better way to capture log messages for child processes
@@ -77,13 +75,12 @@ class ModelConsumer(mp.Process):
 
         sock.close()
         context.destroy(linger=0)
-        print '{0}: exiting...'.format(self.name)
 
     def cleanup_inherited_files(self):
         proc = psutil.Process(os.getpid())
         try:
             [os.close(c.fd) for c in proc.connections()]
-        except:
+        except Exception:
             # deprecated psutil API
             [os.close(c.fd) for c in proc.get_connections()]
 
@@ -102,12 +99,14 @@ class ModelConsumer(mp.Process):
                 res = getattr(self, '_' + cmd)(**args)
 
                 self.stream.send_unicode(dumps(res))
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                fmt = traceback.format_exception(exc_type, exc_value,
-                                                 exc_traceback)
+            except Exception:
+                self.stream.send_unicode(dumps(sys.exc_info()))
 
-                self.stream.send_unicode(dumps(fmt))
+    def _sleep(self, secs):
+        '''
+            Diagnostic only to simulate a long running command
+        '''
+        return time.sleep(secs)
 
     def _rewind(self):
         return self.model.rewind()
@@ -225,6 +224,102 @@ class ModelBroadcaster(GnomeId):
     def __del__(self):
         self.stop()
 
+    def cmd(self, command, args,
+            uncertainty_values=None, idx=None,
+            in_parallel=True, timeout=None):
+        '''
+            Broadcast a command to the subprocesses, or target a specific
+            subprocess.
+
+            :param str command: Name of a registered runnable subprocess
+                                command
+
+            :param str args: Arguments to be passed with the command
+
+            :param uncertainty_values: A set of values describing the
+                                       uncertainty configuration of a
+                                       particular subprocess
+            :type uncertainty_values: A tuple of enumerated values that are
+                                      defined at time of construction.
+                                      (Note: Right now the values supported are
+                                             {'down', 'normal', 'up'}.
+                                             These are the only values that the
+                                             weatherers understand)
+                                      (Note: right now the tuple size is 2,
+                                             but could be expanded as more
+                                             uncertainty dimensions are added)
+
+            :param int idx: The numeric index of a particular subprocess
+                            If an index is passed in, the uncertainty values
+                            will be ignored.
+        '''
+        if len(self.tasks) == 0:
+            msg = ('Broadcaster is stopped.  Cannot execute command: {}({})'
+                   .format(command,
+                           ', '.join(['{}={}'.format(*i)
+                                      for i in args.iteritems()])))
+            self.logger.warning(msg)
+
+            return None
+
+        request = dumps((command, args))
+
+        if idx is not None:
+            self.tasks[idx].send(request)
+            return loads(self.tasks[idx].recv())
+        elif uncertainty_values is not None:
+            idx = self.lookup[uncertainty_values]
+            self.tasks[idx].send(request)
+            return loads(self.tasks[idx].recv())
+        else:
+            out = []
+
+            if timeout is not None:
+                old_timeouts = [t.getsockopt(zmq.RCVTIMEO) for t in self.tasks]
+                [t.setsockopt(zmq.RCVTIMEO, timeout * 1000)
+                 for t in self.tasks]
+
+            if in_parallel:
+                [t.send(request) for t in self.tasks]
+
+                try:
+                    out = [loads(t.recv()) for t in self.tasks]
+                except zmq.Again:
+                    self.logger.warning('Broadcaster command has timed out!')
+                    self.stop()
+                    out = None
+            else:
+                for t in self.tasks:
+                    t.send(request)
+                    out.append(loads(t.recv()))
+
+            if timeout is not None:
+                [t.setsockopt(zmq.RCVTIMEO, time)
+                 for t, time in zip(self.tasks, old_timeouts)]
+
+            return out
+
+    def stop(self):
+        if len(self.tasks) > 0:
+            try:
+                [t.send(dumps(None)) for t in self.tasks]
+            except zmq.ZMQError as e:
+                self.logger.warning('exception sending shutdown command: '
+                                    '{}'.format(e))
+            finally:
+                [t.close() for t in self.tasks]
+
+            for c in self.consumers:
+                c.terminate()
+                c.join()
+            self.logger.info('joined all consumers!')
+
+            self.context.destroy()
+
+            self.consumers = []
+            self.tasks = []
+            self.lookup = {}
+
     def _get_available_ports(self,
                              wind_speed_uncertainties,
                              spill_amount_uncertainties):
@@ -250,42 +345,9 @@ class ModelBroadcaster(GnomeId):
             task = self.context.socket(zmq.REQ)
             task.connect('ipc://{0}/Task-{1}'.format(self.ipc_folder, p))
 
+            task.setsockopt(zmq.RCVTIMEO, 10 * 1000)
+
             self.tasks.append(task)
-
-    def cmd(self, command, args, key=None, idx=None, in_parallel=True):
-        request = dumps((command, args))
-
-        if idx is not None:
-            self.tasks[idx].send(request)
-            return loads(self.tasks[idx].recv())
-        elif key is not None:
-            idx = self.lookup[key]
-            self.tasks[idx].send(request)
-            return loads(self.tasks[idx].recv())
-        else:
-            if in_parallel:
-                [t.send(request) for t in self.tasks]
-                return [loads(t.recv()) for t in self.tasks]
-            else:
-                out = []
-                for t in self.tasks:
-                    t.send(request)
-                    out.append(loads(t.recv()))
-                return out
-
-    def stop(self):
-        [t.send(dumps(None)) for t in self.tasks]
-        [t.close() for t in self.tasks]
-
-        for c in self.consumers:
-            c.join()
-        print 'joined all consumers!!!'
-
-        self.context.destroy()
-
-        self.consumers = []
-        self.tasks = []
-        self.lookup = {}
 
     def _set_uncertainty(self,
                          wind_speed_uncertainty,

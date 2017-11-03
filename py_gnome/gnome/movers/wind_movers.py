@@ -10,10 +10,12 @@ import numpy as np
 
 from colander import (SchemaNode, Bool, String, Float, drop)
 
+from gnome import basic_types
 from gnome.basic_types import (world_point,
                                world_point_type,
                                velocity_rec,
                                datetime_value_2d)
+from gnome.exceptions import ReferencedObjectNotSet
 
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
@@ -24,12 +26,11 @@ from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.rand import random_with_persistance
 
 
-from gnome import environment
-from gnome import basic_types
+from gnome.environment import Wind, WindSchema
+from gnome.environment.wind import constant_wind
 from gnome.movers import CyMover, ProcessSchema
 
 from gnome.persist.base_schema import ObjType
-from gnome.exceptions import ReferencedObjectNotSet
 
 
 class WindMoversBaseSchema(ObjType, ProcessSchema):
@@ -145,11 +146,12 @@ class WindMoversBase(CyMover):
         if sc.num_released is None or sc.num_released == 0:
             return
 
-        random_with_persistance(sc['windage_range'][:, 0],
-                                sc['windage_range'][:, 1],
-                                sc['windages'],
-                                sc['windage_persist'],
-                                time_step)
+        if self.active:
+            random_with_persistance(sc['windage_range'][:, 0],
+                                    sc['windage_range'][:, 1],
+                                    sc['windages'],
+                                    sc['windage_persist'],
+                                    time_step)
 
     def get_move(self, sc, time_step, model_time_datetime):
         """
@@ -198,8 +200,8 @@ class WindMover(WindMoversBase, Serializable):
     _state = copy.deepcopy(WindMoversBase._state)
     _state.add(update=['extrapolate'],
                save=['extrapolate'])
-    _state.add_field(Field('wind',
-                           save=True, update=True, save_reference=True))
+    _state.add_field(Field('wind', save=True, update=True,
+                           save_reference=True))
 
     _schema = WindMoverSchema
 
@@ -222,6 +224,7 @@ class WindMover(WindMoversBase, Serializable):
         self._wind = None
         if wind is not None:
             self.wind = wind
+            self.name = wind.name
             kwargs['make_default_refs'] = kwargs.pop('make_default_refs',
                                                      False)
             kwargs['name'] = kwargs.pop('name', wind.name)
@@ -229,13 +232,6 @@ class WindMover(WindMoversBase, Serializable):
         self.extrapolate = extrapolate
         # set optional attributes
         super(WindMover, self).__init__(**kwargs)
-
-        # this will have to be updated when wind is set or changed
-        if self.wind is not None:
-            self.real_data_start = sec_to_datetime(self.wind.ossm
-                                                   .get_start_time())
-            self.real_data_stop = sec_to_datetime(self.wind.ossm
-                                                  .get_end_time())
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}(\n{1})'
@@ -256,12 +252,34 @@ class WindMover(WindMoversBase, Serializable):
 
     @wind.setter
     def wind(self, value):
-        if not isinstance(value, environment.Wind):
+        if not isinstance(value, Wind):
             raise TypeError('wind must be of type environment.Wind')
         else:
             # update reference to underlying cython object
             self._wind = value
-            self.mover.set_ossm(self.wind.ossm)
+            self.mover.set_ossm(self._wind.ossm)
+
+    @property
+    def real_data_start(self):
+        if self.wind is not None:
+            return self.wind.data_start
+        else:
+            return self._r_d_s
+
+    @real_data_start.setter
+    def real_data_start(self, value):
+        self._r_d_s = value
+
+    @property
+    def real_data_stop(self):
+        if self.wind is not None:
+            return self.wind.data_stop
+        else:
+            return self._r_d_e
+
+    @real_data_stop.setter
+    def real_data_stop(self, value):
+        self._r_d_e = value
 
     def prepare_for_model_run(self):
         '''
@@ -283,7 +301,7 @@ class WindMover(WindMoversBase, Serializable):
 
         if json_ == 'webapi':
             # add wind schema
-            schema.add(environment.WindSchema(name='wind'))
+            schema.add(WindSchema(name='wind'))
 
         return schema.serialize(toserial)
 
@@ -295,7 +313,7 @@ class WindMover(WindMoversBase, Serializable):
         schema = cls._schema()
 
         if 'wind' in json_:
-            schema.add(environment.WindSchema())
+            schema.add(WindSchema())
 
         return schema.deserialize(json_)
 
@@ -310,9 +328,9 @@ def wind_mover_from_file(filename, **kwargs):
 
     :returns mover: returns a wind mover, built from the file
     """
-    w = environment.Wind(filename=filename, format='r-theta')
+    w = Wind(filename=filename, format='r-theta')
 
-    return WindMover(w, **kwargs)
+    return WindMover(w, name=w.name, **kwargs)
 
 
 def constant_wind_mover(speed, direction, units='m/s'):
@@ -331,14 +349,8 @@ def constant_wind_mover(speed, direction, units='m/s'):
         The time for a constant wind timeseries is irrelevant.
         This function simply sets it to datetime.now() accurate to hours.
     """
-    series = np.zeros((1, ), dtype=datetime_value_2d)
-
-    # note: if there is ony one entry, the time is arbitrary
-    dt = datetime.now().replace(microsecond=0, second=0, minute=0)
-    series[0] = (dt, (speed, direction))
-    wind = environment.Wind(timeseries=series, units=units)
-
-    return WindMover(wind)
+    return WindMover(constant_wind(speed, direction, units=units),
+                     extrapolate=True)
 
 
 class GridWindMoverSchema(WindMoversBaseSchema):
@@ -379,7 +391,6 @@ class GridWindMover(WindMoversBase, Serializable):
         Pass optional arguments to base class
         uses super: super(GridWindMover,self).__init__(\*\*kwargs)
         """
-
         if not os.path.exists(filename):
             raise ValueError('Path for wind file does not exist: {0}'
                              .format(filename))
@@ -390,14 +401,14 @@ class GridWindMover(WindMoversBase, Serializable):
                                  .format(topology_file))
 
         # is wind_file and topology_file is stored with cy_gridwind_mover?
+        self.name = os.path.split(filename)[1]
         self.filename = filename
         self.topology_file = topology_file
+
         self.mover = CyGridWindMover(wind_scale=kwargs.pop('wind_scale', 1))
-        self.name = os.path.split(filename)[1]
+        self.mover.text_read(filename, topology_file)
 
         super(GridWindMover, self).__init__(**kwargs)
-
-        self.mover.text_read(filename, topology_file)
 
         self.real_data_start = sec_to_datetime(self.mover.get_start_time())
         self.real_data_stop = sec_to_datetime(self.mover.get_end_time())
@@ -578,11 +589,11 @@ class IceWindMover(WindMoversBase, Serializable):
                                  .format(topology_file))
 
         # check if this is stored with cy_ice_wind_mover?
-        self.filename = filename
         self.name = os.path.split(filename)[1]
+        self.filename = filename
+        self.topology_file = topology_file
 
         # check if this is stored with cy_ice_wind_mover?
-        self.topology_file = topology_file
 
         self.extrapolate = extrapolate
 

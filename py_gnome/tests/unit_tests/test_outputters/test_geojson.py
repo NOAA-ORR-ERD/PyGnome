@@ -31,7 +31,7 @@ def model(sample_model, output_dir):
     model.environment += [water, wind]
     model.weatherers += Evaporation(water, wind)
 
-    et = floating(substance=model.spills[0].substance.name)
+    et = model.spills[0].element_type
 
     N = 10  # a line of ten points
     line_pos = np.zeros((N, 3), dtype=np.float64)

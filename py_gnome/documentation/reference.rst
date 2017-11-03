@@ -1,5 +1,6 @@
 PyGnome Class Reference
 =======================
+
 There are a handful of core base classes in PyGnome.
 
 ``gnome.model`` -- the PyGnome model class
@@ -52,12 +53,14 @@ model run and in subsequent steps the model moves and weathers elements.
     :show-inheritance:
 
 ``gnome.map`` -- the PyGnome map class
----------------------------------------------------
+--------------------------------------
+
 .. automodule:: gnome.map
     :members:
 
 ``gnome.spill`` -- classes in the spill module
----------------------------------------------------
+-----------------------------------------------
+
 .. automodule:: gnome.spill
 .. autoclass:: Spill
     :members:
@@ -76,7 +79,8 @@ model run and in subsequent steps the model moves and weathers elements.
     :inherited-members:
 
 ``gnome.spill.elements`` -- classes in the elements module
---------------------------------------------------------------
+-----------------------------------------------------------
+
 .. automodule:: gnome.spill.elements.element_type
 .. autoclass:: ElementType
     :members:
@@ -86,6 +90,7 @@ model run and in subsequent steps the model moves and weathers elements.
 
 ``gnome.movers`` -- PyGnome mover classes
 ---------------------------------------------------
+
 .. automodule:: gnome.movers
 .. autoclass:: Process
     :members:
@@ -107,7 +112,8 @@ model run and in subsequent steps the model moves and weathers elements.
     :inherited-members:
 
 ``gnome.weatherers`` -- PyGnome/Adios weathering/mass removal classes
--------------------------------------------------------------------------
+----------------------------------------------------------------------
+
 .. automodule:: gnome.weatherers
 .. autoclass:: Weatherer
    :members:
@@ -128,7 +134,7 @@ model run and in subsequent steps the model moves and weathers elements.
 
 
 ``gnome.environment`` -- PyGnome environment classes
--------------------------------------------------------
+----------------------------------------------------
 .. automodule:: gnome.environment
 .. autoclass:: Tide
     :members:
@@ -138,7 +144,7 @@ model run and in subsequent steps the model moves and weathers elements.
     :inherited-members:
 
 ``gnome.environment.environment_objects`` -- PyGnome implemented environment objects
---------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
 
 .. .. automodule:: gnome.environment.environment_objects
 
@@ -180,7 +186,8 @@ model run and in subsequent steps the model moves and weathers elements.
 
 
 ``gnome.environment.grid_property`` -- PyGnome base environment objects
----------------------------------------------------------------------
+-----------------------------------------------------------------------
+
 .. autoclass:: Time
     :members:
 .. automodule:: gnome.environment.grid_property
@@ -201,7 +208,8 @@ model run and in subsequent steps the model moves and weathers elements.
     :inherited-members:
 
 ``gnome.outputter`` -- PyGnome outputters module
----------------------------------------------------
+------------------------------------------------
+
 .. automodule:: gnome.outputters
 .. autoclass:: Outputter
     :members:

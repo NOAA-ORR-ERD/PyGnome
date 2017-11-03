@@ -19,13 +19,12 @@ But it's enough to see if the coupling with TAMOC works.
 
 import os
 import numpy as np
-from pysgrid import SGrid
 from datetime import datetime, timedelta
 
 from gnome import scripting
 from gnome.spill.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
-from gnome.environment.grid_property import GriddedProp
+from gnome.environment.gridded_objects_base import Variable, Time, Grid_S
 from gnome.environment import GridCurrent
 from gnome.environment import Wind
 
@@ -54,10 +53,10 @@ y = np.ascontiguousarray(y.T)
 x = np.ascontiguousarray(x.T)
 # y += np.sin(x) / 1
 # x += np.sin(x) / 5
-g = SGrid(node_lon=x,
+g = Grid_S(node_lon=x,
           node_lat=y)
 g.build_celltree()
-t = datetime(2000, 1, 1, 0, 0)
+t = Time.constant_time()
 angs = -np.arctan2(y, x)
 mag = np.sqrt(x ** 2 + y ** 2)
 vx = np.cos(angs) * mag
@@ -65,9 +64,9 @@ vy = np.sin(angs) * mag
 vx = vx[np.newaxis, :] * 5
 vy = vy[np.newaxis, :] * 5
 
-vels_x = GriddedProp(name='v_x', units='m/s', time=[t], grid=g, data=vx)
-vels_y = GriddedProp(name='v_y', units='m/s', time=[t], grid=g, data=vy)
-vg = GridCurrent(variables=[vels_y, vels_x], time=[t], grid=g, units='m/s')
+vels_x = Variable(name='v_x', units='m/s', time=t, grid=g, data=vx)
+vels_y = Variable(name='v_y', units='m/s', time=t, grid=g, data=vy)
+vg = GridCurrent(variables=[vels_y, vels_x], time=t, grid=g, units='m/s')
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
@@ -88,7 +87,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         size=(1024, 768),
                         output_timestep=timedelta(hours=1),
                         )
-    renderer.viewport = ((-87.095, 27.595), (-87.905, 28.405))
+    renderer.viewport = ((-87.295, 27.795), (-87.705, 28.205))
 
     print 'adding outputters'
     model.outputters += renderer
@@ -105,7 +104,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print "adding Horizontal and Vertical diffusion"
 
     # Horizontal Diffusion
-    model.movers += RandomMover(diffusion_coef=100000)
+    #model.movers += RandomMover(diffusion_coef=100000)
     # vertical diffusion (different above and below the mixed layer)
     model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=50,
                                         vertical_diffusion_coef_below_ml=10,
@@ -120,21 +119,21 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding the 3D current mover'
     gc = GridCurrent.from_netCDF('HYCOM_3d.nc')
 
-    model.movers += GridCurrentMover('HYCOM_3d.nc')
+    model.movers += PyCurrentMover('HYCOM_3d.nc')
 #    model.movers += SimpleMover(velocity=(0., 0, 0.))
-#    model.movers += constant_wind_mover(5, 315, units='knots')
+    model.movers += constant_wind_mover(10, 315, units='knots')
 
     # Wind from a buoy
-    w = Wind(filename='KIKT.osm')
-    model.movers += WindMover(w)
+    #w = Wind(filename='KIKT.osm')
+    #model.movers += WindMover(w)
 
 
     # Now to add in the TAMOC "spill"
     print "Adding TAMOC spill"
 
     model.spills += tamoc_spill.TamocSpill(release_time=start_time,
-                                        start_position=(-87.5, 28.0, 2000),
-                                        num_elements=30000,
+                                        start_position=(-87.5, 28.0, 1000),
+                                        num_elements=1000,
                                         end_release_time=start_time + timedelta(days=2),
                                         name='TAMOC plume',
                                         TAMOC_interval=None,  # how often to re-run TAMOC

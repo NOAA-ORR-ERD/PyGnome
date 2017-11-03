@@ -21,7 +21,6 @@ from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
 from gnome.persist.extend_colander import LocalDateTime, DefaultTupleSchema, NumpyArray, TimeDelta
 from gnome.persist import validators, base_schema
-
 from gnome.weatherers.core import WeathererSchema
 from gnome import _valid_units
 from gnome.basic_types import oil_status, fate as bt_fate
@@ -159,6 +158,7 @@ class Response(Weatherer, Serializable):
         data['mass_components'] = \
             (1 - rm_mass_frac) * data['mass_components']
         data['mass'] = data['mass_components'].sum(1)
+        return total_mass - data['mass'].sum()
 
     def _remove_mass_indices(self, data, amounts, indices):
         #removes mass from the mass components specified by an indices array
@@ -316,6 +316,8 @@ class Platform(Serializable):
         else:
             self.is_boat = False
 
+        self._ts_spray_time = 0.
+
         super(Platform, self).__init__()
 
     def get(self, attr, unit=None):
@@ -460,8 +462,10 @@ class Platform(Serializable):
         app_speed = self.get('application_speed', 'm/s')
         spray_time = pass_len / app_speed
         if pass_type == 'bidirectional':
+            self._ts_spray_time += spray_time * 2
             return (appr_time, spray_time, u_turn, spray_time, dep_time)
         else:
+            self._ts_spray_time += spray_time
             return (appr_time, spray_time, u_turn, dep_time)
 
     def sortie_possible(self, time_avail, transit, pass_len):
@@ -670,10 +674,10 @@ class Disperse(Response):
             'payloads_delivered': 0,
             'dispersant_applied': 0.0,
             'oil_treated': 0.0,
-            'area_covered': 0.0
+            'area_covered': 0.0,
+            'state': []
         }
 
-        self._payloads_delivered = 0
 
     def dosage_from_thickness(self, sc):
         thickness = self._get_thickness(sc) # inches
@@ -708,9 +712,24 @@ class Disperse(Response):
         '''
         '''
 
+        self.state = []
+
+        if self._is_active(model_time, time_step):
+            self._active = True
+        else:
+            self._active = False
+
+        if not self.active:
+            return
+
+
         if self._disp_eff_type != 'fixed':
             self.disp_eff = self.get_disp_eff_avg(sc, model_time)
         slick_area = 'WHAT??'
+
+        self.platform._ts_spray_time = 0
+        self._ts_payloads_delivered = 0
+
 
         if not isinstance(time_step, datetime.timedelta):
             time_step = datetime.timedelta(seconds=time_step)
@@ -772,6 +791,7 @@ class Disperse(Response):
 
             elif self.cur_state == 'en_route':
                 time_left = self._next_state_time - model_time
+                self.state.append(['transit', min(self._time_remaining, time_left).total_seconds()])
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
@@ -801,9 +821,12 @@ class Disperse(Response):
                     self.report.append((model_time, 'Oil available: ' + str(oil_avail) + '  Treatable mass: ' + str(mass_treatable) + '  Dispersant Sprayed: ' + str(disp_actual)))
                     self.report.append((model_time, 'Sprayed ' + str(disp_actual) + 'm^3 dispersant in ' + str(spray_time) + ' on ' + str(oil_avail) + ' kg of oil'))
                     print self.report[-1]
+                    self.state.append(['onsite', spray_time.total_seconds()])
                     self._time_remaining -= spray_time
                     self._disp_sprayed_this_timestep += disp_actual
                     self._remaining_dispersant -= disp_actual
+                    self._ts_payloads_delivered += (disp_actual / self.platform.get('payload', 'm^3'))
+
                     self.oil_treated_this_timestep += min(mass_treatable, oil_avail)
                     model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                     if self._time_remaining > zero: #end of interval, end of operation, or out of dispersant/fuel
@@ -833,6 +856,7 @@ class Disperse(Response):
 
             elif self.cur_state == 'rtb':
                 time_left = self._next_state_time - model_time
+                self.state.append(['transit', min(self._time_remaining, time_left).total_seconds()])
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
@@ -844,6 +868,7 @@ class Disperse(Response):
 
             elif self.cur_state == 'refuel_reload':
                 time_left = self._next_state_time - model_time
+                self.state.append(['reload', min(self._time_remaining, time_left).total_seconds()])
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
@@ -910,6 +935,7 @@ class Disperse(Response):
 
             elif self.cur_state == 'en_route':
                 time_left = self._next_state_time - model_time
+                self.state.append(['transit', min(self._time_remaining, time_left).total_seconds()])
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
@@ -926,6 +952,7 @@ class Disperse(Response):
 
             elif self.cur_state == 'approach':
                 time_left = self._next_state_time - model_time
+                self.state.append(['onsite', min(self._time_remaining, time_left).total_seconds()])
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
@@ -938,6 +965,7 @@ class Disperse(Response):
                 if self.pass_type != 'bidirectional':
                     raise ValueError('u-turns should not happen in uni-directional passes')
                 time_left = self._next_state_time - model_time
+                self.state.append(['onsite', min(self._time_remaining, time_left).total_seconds()])
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
@@ -948,6 +976,7 @@ class Disperse(Response):
 
             elif self.cur_state == 'departure':
                 time_left = self._next_state_time - model_time
+                self.state.append(['onsite', min(self._time_remaining, time_left).total_seconds()])
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
@@ -963,7 +992,7 @@ class Disperse(Response):
                         if passes_possible_after_holding > 0:
                             # no oil left, but can still do a pass after holding for one timestep
                             self.cur_state = 'holding'
-                            self._next_state_time = model_time + datetime.timedelta(seconds=time_step)
+                            self._next_state_time = model_time + time_step
                         else:
                             self.reset_for_return_to_base(model_time, 'No oil, no time for holding pattern, returning to base')
                     elif passes_possible == 0:
@@ -978,6 +1007,7 @@ class Disperse(Response):
 
             elif self.cur_state == 'holding':
                 time_left = self._next_state_time - model_time
+                self.state.append(['onsite', min(self._time_remaining, time_left).total_seconds()])
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 self.cur_state = 'approach'
@@ -993,13 +1023,19 @@ class Disperse(Response):
                 disp_possible = spray_time.total_seconds() * self.platform.eff_pump_rate(dosage)
                 disp_actual = min(self._remaining_dispersant, disp_possible)
                 treated_possible = disp_actual * self.disp_oil_ratio
-                mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
+                mass_treatable = None
+                if (np.isnan(np.mean(sc['density'][self.dispersable_oil_idxs(sc)]))):
+                    mass_treatable = 0
+                else:
+                    mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
                 oil_avail = self.dispersable_oil_amount(sc, 'kg')
                 self.report.append((model_time, 'Oil available: ' + str(oil_avail) + '  Treatable mass: ' + str(mass_treatable) + '  Dispersant Sprayed: ' + str(disp_actual)))
                 self.report.append((model_time, 'Sprayed ' + str(disp_actual) + 'm^3 dispersant in ' + str(spray_time) + ' seconds on ' + str(oil_avail) + ' kg of oil'))
+                self.state.append(['onsite', spray_time.total_seconds()])
                 self._time_remaining -= spray_time
                 self._disp_sprayed_this_timestep += disp_actual
                 self._remaining_dispersant -= disp_actual
+                self._ts_payloads_delivered += (disp_actual / self.platform.get('payload', 'm^3'))
                 self.oil_treated_this_timestep += min(mass_treatable, oil_avail)
 
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
@@ -1016,6 +1052,7 @@ class Disperse(Response):
 
             elif self.cur_state == 'rtb':
                 time_left = self._next_state_time - model_time
+                self.state.append(['transit', min(self._time_remaining, time_left).total_seconds()])
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
@@ -1026,6 +1063,7 @@ class Disperse(Response):
 
             elif self.cur_state == 'refuel_reload':
                 time_left = self._next_state_time - model_time
+                self.state.append(['reload', min(self._time_remaining, time_left).total_seconds()])
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
                 if self._time_remaining > zero:
@@ -1054,9 +1092,7 @@ class Disperse(Response):
         self._next_state_time = model_time + o_w_t_t
         self._op_start = self._op_end = None
         self._cur_pass_num = 1
-        self._disp_sprayed_this_timestep = 0
         self.cur_state = 'rtb'
-        self._payloads_delivered += 1
 
     def update_time(self, time_remaining, model_time, time_step):
         if time_remaining > datetime.timedelta(seconds=0):
@@ -1084,6 +1120,12 @@ class Disperse(Response):
 
     def weather_elements(self, sc, time_step, model_time):
 
+        if not self.active or len(sc) == 0:
+            sc.mass_balance['systems'][self.id]['state'] = []
+            return
+
+        sc.mass_balance['systems'][self.id]['state'] = self.state
+
         idxs = self.dispersable_oil_idxs(sc)
         if self.oil_treated_this_timestep != 0:
             visc_eff_table = Disperse.visc_eff_table
@@ -1097,11 +1139,14 @@ class Disperse(Response):
             print 'index, original mass, removed mass, final mass'
             masstab = np.column_stack((idxs, org_mass, mass_to_remove, sc['mass'][idxs]))
             sc.mass_balance['chem_dispersed'] += sum(removed)
+            self.logger.warning('spray time: ' + str(type(self.platform._ts_spray_time)))
+            self.logger.warning('spray time out: ' + str(type(sc.mass_balance['systems'][self.id]['time_spraying'])))
+            sc.mass_balance['systems'][self.id]['time_spraying'] += self.platform._ts_spray_time
             sc.mass_balance['systems'][self.id]['dispersed'] += sum(removed)
             sc.mass_balance['systems'][self.id]['area_covered'] += self._area_sprayed_this_ts
             sc.mass_balance['systems'][self.id]['dispersant_applied'] += self._disp_sprayed_this_timestep
             sc.mass_balance['systems'][self.id]['oil_treated'] += self.oil_treated_this_timestep
-            sc.mass_balance['systems'][self.id]['payloads_delivered']
+            sc.mass_balance['systems'][self.id]['payloads_delivered'] += self._ts_payloads_delivered
             sc.mass_balance['floating'] -= sum(removed)
             zero_or_disp = np.isclose(sc['mass'][idxs], 0)
             new_status = sc['fate_status'][idxs]
@@ -1189,6 +1234,7 @@ class Burn(Response):
         self._area = None
         self._boom_capacity_max = 0
         self._offset_time = None
+        self._state_list = []
 
         self._is_collecting = False
         self._is_burning = False
@@ -1227,7 +1273,8 @@ class Burn(Response):
                                                    'burned': 0.0,
                                                    'time_burning': 0.0,
                                                    'num_burns': 0,
-                                                   'area_covered': 0.0}
+                                                   'area_covered': 0.0,
+                                                   'state': []}
             sc.mass_balance['boomed'] = 0.0
 
         self._is_collecting = True
@@ -1250,8 +1297,9 @@ class Burn(Response):
         self._ts_burned = 0.
         self._ts_num_burns = 0
         self._ts_area_covered = 0.
+        self._state_list = []
 
-        if self._is_active(model_time, time_step) or self._is_burning:
+        if self._is_active(model_time, time_step) or self._is_burning or self._is_cleaning:
             self._active = True
         else:
             self._active = False
@@ -1260,8 +1308,12 @@ class Burn(Response):
             return
 
         self._time_remaining = time_step
-
         while self._time_remaining > 0.:
+            if self._is_collecting == False and self._is_transiting == False \
+                and self._is_burning == False and self._is_cleaning == False \
+                and self._is_active(model_time, time_step):
+                self._is_collecting = True
+
             if self._is_collecting:
                 self._collect(sc, time_step, model_time)
 
@@ -1288,23 +1340,27 @@ class Burn(Response):
             # time_to_fill = (self._boom_capacity_remaining / emulsion_rr) * 60
             # new ebsp equation
             time_to_fill = uc.convert('Volume', 'ft^3', 'gal', self._boom_capacity) / emulsion_rr
-            #(self._boom_capacity * 0.17811) * 42 / emulsion_rr
-        else:
-            time_to_fill = 0.
+            time_to_collect_remaining_oil = uc.convert('Volume', 'm^3', 'gal', sc.mass_balance['floating']) / emulsion_rr
 
-        if time_to_fill > self._time_remaining:
-            # doesn't finish fill the boom in this time step
+        else:
+            time_to_fill = self._time_remaining
+
+        if time_to_fill >= self._time_remaining:
+            # doesn't finish filling the boom in this time step
             self._ts_collected = uc.convert('Volume', 'gal', 'ft^3', emulsion_rr * self._time_remaining)
             self._boom_capacity -= self._ts_collected
             self._ts_area_covered = encounter_rate * (self._time_remaining / 60)
             self._time_collecting_in_sim += self._time_remaining
+            self._state_list.append(['collect', self._time_remaining])
             self._time_remaining = 0.0
+
+
         elif self._time_remaining > 0:
             # finishes filling the boom in this time step any time remaining
             # should be spend transiting to the burn position
             self._ts_collected = uc.convert('Volume', 'gal', 'ft^3', emulsion_rr * time_to_fill)
             self._ts_area_covered = encounter_rate * (time_to_fill / 60)
-            self._boom_capacity-= self._ts_collected
+            self._boom_capacity -= self._ts_collected
             self._is_boom_full = True
             self._time_remaining -= time_to_fill
             self._time_collecting_in_sim += time_to_fill
@@ -1312,20 +1368,25 @@ class Burn(Response):
             self._is_collecting = False
             self._is_transiting = True
 
+            self._state_list.append(['collect', time_to_fill])
+
     def _transit(self, sc, time_step, model_time):
         # transiting to burn site
         # does it arrive and start burning?
-        if self._time_remaining > self._offset_time_remaining:
+        if self._offset_time_remaining > self._time_remaining:
+            self._offset_time_remaining -= self._time_remaining
+            self._state_list.append(['transit', self._time_remaining])
+            self._time_remaining = 0.
+
+        elif self._time_remaining > 0:
             self._time_remaining -= self._offset_time_remaining
-            self._offset_time_remaining = 0.
+            self._state_list.append(['transit', self._offset_time_remaining])
+            self._offset_time_remaining = 0
             self._is_transiting = False
             if self._is_boom_full:
                 self._is_burning = True
             else:
                 self._is_collecting = True
-        elif self._time_remaining > 0:
-            self._offset_time_remaining -= self._time_remaining
-            self._time_remaining = 0.
 
     def _burn(self, sc, time_step, model_time):
         # burning
@@ -1339,37 +1400,47 @@ class Burn(Response):
                 self._burn_time_remaining = self._burn_time * ((1 - self._boom_capacity) / self.get('_boom_capacity_max'))
 
         self._is_boom_full = False
-        if self._time_remaining > self._burn_time_remaining:
-            self._time_remaining -= self._burn_time_remaining
+        if self._burn_time_remaining > self._time_remaining:
+            frac_burned = self._time_remaining / self._burn_time
+            burned = self.get('_boom_capacity_max') * frac_burned
+            self._burn_time_remaining -= self._time_remaining
             self._time_burning += self._burn_time_remaining
-            self._burn_time_remaining = 0.
+            self._state_list.append(['burn', self._time_remaining])
+            self._time_remaining = 0.
+
+        elif self._time_remaining > 0:
             burned = self.get('_boom_capacity_max') - self._boom_capacity
+            self._boom_capacity += burned
+            self._ts_burned = burned
+            self._time_burning += self._burn_time_remaining
+            self._time_remaining -= self._burn_time_remaining
+            self._state_list.append(['burn', self._burn_time_remaining])
+            self._burn_time_remaining = 0.
             self._ts_burned = burned
             self._is_burning = False
             self._is_cleaning = True
             self._cleaning_time_remaining = 3600  # 1hr in seconds
-        elif self._time_remaining > 0:
-            frac_burned = self._time_remaining / self._burn_time
-            burned = self.get('_boom_capacity_max') * frac_burned
-            self._boom_capacity += burned
-            self._ts_burned = burned
-            self._time_burning += self._time_remaining
-            self._burn_time_remaining -= self._time_remaining
-            self._time_remaining = 0.
 
     def _clean(self, sc, time_step, model_time):
         # cleaning
         self._burn_time = None
         self._burn_rate = None
-        if self._time_remaining > self._cleaning_time_remaining:
+        if self._cleaning_time_remaining > self._time_remaining:
+            self._cleaning_time_remaining -= self._time_remaining
+            self._state_list.append(['clean', self._time_remaining])
+            self._time_remaining = 0.
+
+        elif self._time_remaining > 0:
             self._time_remaining -= self._cleaning_time_remaining
+            self._state_list.append(['clean', self._cleaning_time_remaining])
             self._cleaning_time_remaining = 0.
             self._is_cleaning = False
-            self._is_transiting = True
-            self._offset_time_remaining = self._offset_time
-        elif self._time_remaining > 0:
-            self._cleaning_time_remaining -= self._time_remaining
-            self._time_remaining = 0.
+            if(self._is_active(model_time, time_step)):
+                self._is_transiting = True
+                self._offset_time_remaining = self._offset_time
+            else:
+                self._time_remaining = 0.
+
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -1377,21 +1448,30 @@ class Burn(Response):
         just make sure it's from floating oil.
         '''
         if not self.active or len(sc) == 0:
+            sc.mass_balance['systems'][self.id]['state'] = []
             return
 
         les = sc.itersubstancedata(self.array_types)
         for substance, data in les:
             if len(data['mass']) is 0:
+                sc.mass_balance['systems'][self.id]['state'] = self._state_list
+                sc.mass_balance['systems'][self.id]['area_covered'] += self._ts_area_covered
+
                 continue
 
             sc.mass_balance['systems'][self.id]['area_covered'] += self._ts_area_covered
             sc.mass_balance['systems'][self.id]['num_burns'] += self._ts_num_burns
+            sc.mass_balance['systems'][self.id]['state'] = self._state_list
 
             if self._ts_collected > 0:
                 collected = uc.convert('Volume', 'ft^3', 'm^3', self._ts_collected) * self._boomed_density
-                sc.mass_balance['boomed'] += collected
-                sc.mass_balance['systems'][self.id]['boomed'] += collected
-                self._remove_mass_simple(data, collected)
+                actual_collected = self._remove_mass_simple(data, collected)
+                sc.mass_balance['boomed'] += actual_collected
+                sc.mass_balance['systems'][self.id]['boomed'] += actual_collected
+
+                if actual_collected != collected:
+                    # ran out of oil while collecting har har...
+                    self._boom_capacity += collected - actual_collected
 
                 self.logger.debug('{0} amount boomed for {1}: {2}'
                                   .format(self._pid, substance.name, collected))
@@ -1406,6 +1486,7 @@ class Burn(Response):
                 # make sure we didn't burn more than we boomed if so correct the amount
                 if sc.mass_balance['boomed'] < 0:
                     sc.mass_balance['burned'] += sc.mass_balance['boomed']
+                    sc.mass_balance['systems'][self.id]['burned'] += sc.mass_balance['boomed']
                     sc.mass_balance['boomed'] = 0
 
                 self.logger.debug('{0} amount burned for {1}: {2}'
@@ -1484,12 +1565,12 @@ class Skim(Response):
                  'swath_width': 'ft',
                  'discharge_pump': 'gpm'}
 
-    _units_types = {'storage': ('storage', _valid_vol_units),
-                    'decant_pump': ('decant_pump', _valid_dis_units),
-                    'nameplate_pump': ('nameplate_pump', _valid_dis_units),
-                    'speed': ('speed', _valid_vel_units),
-                    'swath_width': ('swath_width', _valid_dist_units),
-                    'discharge_pump': ('discharge_pump', _valid_dis_units)}
+    _units_type = {'storage': ('volume', _valid_vol_units),
+                    'decant_pump': ('discharge', _valid_dis_units),
+                    'nameplate_pump': ('discharge', _valid_dis_units),
+                    'speed': ('velocity', _valid_vel_units),
+                    'swath_width': ('length', _valid_dist_units),
+                    'discharge_pump': ('discharge', _valid_dis_units)}
 
     def __init__(self,
                  speed,
@@ -1534,25 +1615,33 @@ class Skim(Response):
 
     def prepare_for_model_run(self, sc):
         self._setup_report(sc)
-        self._storage_remaining = self.storage
-        self._coverage_rate = self.swath_width * self.speed * 0.00233
-        self.offload = (self.storage * 42 / self.discharge_pump) * 60
+        self._storage_remaining = self.get('storage', 'gal')
+        self._coverage_rate = self.get('swath_width') * self.get('speed') * 0.00233
+        self.offload = (self.get('storage', 'gal') / self.get('discharge_pump', 'gpm')) * 60
 
         if self.on:
             sc.mass_balance['skimmed'] = 0.0
-            sc.mass_balance[self.id] = {'fluid_collected': 0.0,
+            if 'systems' not in sc.mass_balance:
+                sc.mass_balance['systems'] = {}
+
+            sc.mass_balance['systems'][self.id] = {
+                                        'skimmed': 0.0,
+                                        'fluid_collected': 0.0,
+                                        'time_collecting': 0.0,
                                         'emulsion_collected': 0.0,
                                         'oil_collected': 0.0,
                                         'water_collected': 0.0,
                                         'water_decanted': 0.0,
                                         'water_retained': 0.0,
                                         'area_covered': 0.0,
-                                        'storage_remaining': 0.0}
+                                        'num_fills': 0.,
+                                        'storage_remaining': 0.0,
+                                        'state': []}
 
         self._is_collecting = True
 
     def prepare_for_model_step(self, sc, time_step, model_time):
-        if self._is_active(model_time, time_step):
+        if self._is_active(model_time, time_step) or self._is_transiting or self._is_offloading:
             self._active = True
         else :
             self._active = False
@@ -1560,15 +1649,28 @@ class Skim(Response):
         if not self.active:
             return
 
+        self._state_list = []
+        self._ts_num_fills = 0.
+        self._ts_emulsion_collected = 0.
+        self._ts_oil_collected = 0.
+        self._ts_water_collected = 0.
+        self._ts_water_decanted = 0.
+        self._ts_water_retained = 0.
+        self._ts_area_covered = 0.
+        self._ts_time_collecting = 0.
+        self._ts_fluid_collected = 0.
+
         self._time_remaining = time_step
 
-        if hasattr(self, 'barge_arrival'): #type(self.barge_arrival) is datetime.date:
+        if hasattr(self, 'barge_arrival') and self.barge_arrival is not None: #type(self.barge_arrival) is datetime.date:
             # if there's a barge so a modified cycle
             while self._time_remaining > 0.:
                 if self._is_collecting:
                     self._collect(sc, time_step, model_time)
         else:
-            while self._time_remaining > 0.:
+            while self._time_remaining > 0. and self._is_active(model_time, time_step) \
+                or self._time_remaining > 0. and self._is_transiting \
+                or self._time_remaining > 0. and self._is_offloading:
                 if self._is_collecting:
                     self._collect(sc, time_step, model_time)
 
@@ -1582,31 +1684,31 @@ class Skim(Response):
     def _collect(self, sc, time_step, model_time):
         thickness = self._get_thickness(sc)
         if self.recovery_ef > 0 and self.throughput > 0 and thickness > 0:
-            self._maximum_effective_swath = self.nameplate_pump * self.recovery_ef / (63.13 * self.speed * thickness * self.throughput)
+            self._maximum_effective_swath = self.get('nameplate_pump') * self.get('recovery_ef') / (63.13 * self.get('speed', 'kts') * thickness * self.throughput)
         else:
             self._maximum_effective_swath = 0
 
-        if self.swath_width > self._maximum_effective_swath:
+        if self.get('swath_width', 'ft') > self._maximum_effective_swath:
             swath = self._maximum_effective_swath;
         else:
-            swath = self.swath_width
+            swath = self.get('swath_width', 'ft')
 
         if swath > 1000:
             self.report.append('Swaths > 1000 feet may not be achievable in the field.')
 
-        encounter_rate = thickness * self.speed * swath * 63.13
-        rate_of_coverage = swath * self.speed * 0.00233
+        encounter_rate = thickness * self.get('speed', 'kts') * swath * 63.13
+        rate_of_coverage = swath * self.get('speed', 'kts') * 0.00233
         if encounter_rate > 0:
             recovery = self._getRecoveryEfficiency()
 
             if recovery > 0:
                 totalFluidRecoveryRate = encounter_rate * (self.throughput / recovery)
 
-                if totalFluidRecoveryRate > self.nameplate_pump:
+                if totalFluidRecoveryRate > self.get('nameplate_pump'):
                     # total fluid recovery rate is greater than nameplate
                     # pump, recalculate the throughput efficiency and
                     # total fluid recovery rate again with the new throughput
-                    throughput = self.nameplate_pump * recovery / encounter_rate
+                    throughput = self.get('nameplate_pump') * recovery / encounter_rate
                     totalFluidRecoveryRate = encounter_rate * (throughput / recovery)
                     msg = ('{0.name} - Total Fluid Recovery Rate is greater than Nameplate \
                             Pump Rate, recalculating Throughput Efficiency').format(self)
@@ -1622,20 +1724,22 @@ class Skim(Response):
                     computedDecantRate = (totalFluidRecoveryRate - emulsionRecoveryRate) * self.decant
 
                     decantRateDifference = 0.
-                    if computedDecantRate > self.decant_pump:
-                        decantRateDifference = computedDecantRate - self.decant_pump
+                    if computedDecantRate > self.get('decant_pump'):
+                        decantRateDifference = computedDecantRate - self.get('decant_pump')
 
                     recoveryRate = emulsionRecoveryRate + waterRecoveryRate
                     retainRate = emulsionRecoveryRate + waterRetainedRate + decantRateDifference
                     oilRecoveryRate = emulsionRecoveryRate * (1 - sc['frac_water'].mean())
+                    waterTakenOn = totalFluidRecoveryRate - emulsionRecoveryRate
 
                     freeWaterRecoveryRate = recoveryRate - emulsionRecoveryRate
                     freeWaterRetainedRate = retainRate - emulsionRecoveryRate
                     freeWaterDecantRate = freeWaterRecoveryRate - freeWaterRetainedRate
 
-                    timeToFill = .7 * self._storage_remaining / retainRate * 60
+                    # timeToFill = .7 * self._storage_remaining / (emulsionRecoveryRate + (waterTakenOn - (waterTakenOn * self.get('decant_pump', 'gpm') / 100))) * 60
+                    timeToFill = (.7 * self._storage_remaining / retainRate * 60) * 60
 
-                    if timeToFill * 60 > self._time_remaining:
+                    if timeToFill > self._time_remaining:
                         # going to take more than this timestep to fill the storage
                         time_collecting = self._time_remaining
                         self._time_remaining = 0.
@@ -1643,51 +1747,69 @@ class Skim(Response):
                         # storage is filled during this timestep
                         time_collecting = timeToFill
                         self._time_remaining -= timeToFill
-                        self._transit_remaining = self.transit_time
-                        self._collecting = False
-                        self._transiting = True
+                        self._transit_remaining = (self.transit_time * 60)
+                        self._is_collecting = False
+                        self._is_transiting = True
 
-                    self._ts_fluid_collected = retainRate * time_collecting
-                    self._ts_emulsion_collected = emulsionRecoveryRate * time_collecting
-                    self._ts_oil_collected = oilRecoveryRate * time_collecting
-                    self._ts_water_collected = freeWaterRecoveryRate * time_collecting
-                    self._ts_water_decanted = freeWaterDecantRate * time_collecting
-                    self._ts_water_retained = freeWaterRetainedRate * time_collecting
-                    self._ts_area_covered = rate_of_coverage * time_collecting
+                    self._state_list.append(['skim', time_collecting])
+                    fluid_collected = retainRate * (time_collecting / 60)
+                    if fluid_collected > 0 and \
+                       fluid_collected <= self._storage_remaining:
+                        self._ts_num_fills +=  fluid_collected / self.get('storage', 'gal')
+                    elif self._storage_remaining > 0:
+                        self._ts_num_fills += self._storage_remaining / self.get('storage', 'gal')
 
-                    self._storage_remaining -= uc.convert('gal', 'bbl', self._ts_fluid_collected)
+                    if fluid_collected > self._storage_remaining:
+                        self._storage_remaining = 0
+                    else:
+                        self._storage_remaining -= fluid_collected
+
+                    self._ts_time_collecting += time_collecting
+                    self._ts_fluid_collected += fluid_collected
+                    self._ts_emulsion_collected += emulsionRecoveryRate * (time_collecting / 60)
+                    self._ts_oil_collected += oilRecoveryRate * (time_collecting / 60)
+                    self._ts_water_collected += freeWaterRecoveryRate * (time_collecting / 60)
+                    self._ts_water_decanted += freeWaterDecantRate * (time_collecting / 60)
+                    self._ts_water_retained += freeWaterRetainedRate * (time_collecting / 60)
+                    self._ts_area_covered += rate_of_coverage * (time_collecting / 60)
 
                 else:
                     self._no_op_step()
             else:
                 self._no_op_step()
         else:
+            self._state_list.append(['skim', self._time_remaining])
             self._no_op_step()
-
 
     def _transit(self, sc, time_step, model_time):
         # transiting back to shore to offload
-        if self._time_remaining > self._transit_remaining:
+        if self._time_remaining >= self._transit_remaining:
+
+            self._state_list.append(['transit', self._transit_remaining])
             self._time_remaining -= self._transit_remaining
             self._transit_remaining = 0.
             self._is_transiting = False
             if self._storage_remaining == 0.0:
                 self._is_offloading = True
+                self._offload_remaining = self.offload + (self.rig_time * 60)
             else:
                 self._is_collecting = True
-            self._offload_remaining = self.offload + self.rig_time
         else:
+            self._state_list.append(['transit', self._time_remaining])
             self._transit_remaining -= self._time_remaining
             self._time_remaining = 0.
 
     def _offload(self, sc, time_step, model_time):
-        if self._time_remaining > self._offload_remaining:
+        if self._time_remaining >= self._offload_remaining:
+            self._state_list.append(['offload', self._offload_remaining])
             self._time_remaining -= self._offload_remaining
             self._offload_remaining = 0.
-            self._storage_remaining = self.storage
-            self._offloading = False
-            self._transiting = True
+            self._storage_remaining = self.get('storage', 'gal')
+            self._is_offloading = False
+            self._is_transiting = True
+            self._transit_remaining = (self.transit_time * 60)
         else:
+            self._state_list.append(['offload', self._time_remaining])
             self._offload_remaining -= self._time_remaining
             self._time_remaining = 0.
 
@@ -1697,29 +1819,37 @@ class Skim(Response):
         just make sure the mass is from floating oil.
         '''
         if not self.active or len(sc) == 0:
+            sc.mass_balance['systems'][self.id]['state'] = []
             return
 
         les = sc.itersubstancedata(self.array_types)
         for substance, data in les:
             if len(data['mass']) is 0:
+                sc.mass_balance['systems'][self.id]['state'] = self._state_list
                 continue
 
+            sc.mass_balance['systems'][self.id]['state'] = self._state_list
+
             if hasattr(self, '_ts_oil_collected') and self._ts_oil_collected is not None:
-                sc.mass_balance['skimmed'] += self._ts_oil_collected
-                self._remove_mass_simple(data, self._ts_oil_collected)
+                actual = self._remove_mass_simple(data, self._ts_oil_collected)
+                sc.mass_balance['skimmed'] += actual
 
                 self.logger.debug('{0} amount boomed for {1}: {2}'
                                   .format(self._pid, substance.name, self._ts_oil_collected))
 
-                platform_balance = sc.mass_balance[self.id]
+                platform_balance = sc.mass_balance['systems'][self.id]
+                platform_balance['skimmed'] += actual
+                platform_balance['time_collecting'] += self._ts_time_collecting
                 platform_balance['fluid_collected'] += self._ts_fluid_collected
                 platform_balance['emulsion_collected'] += self._ts_emulsion_collected
-                platform_balance['oil_collected'] += self._ts_oil_collected
+                platform_balance['oil_collected'] += actual
                 platform_balance['water_collected'] += self._ts_water_collected
                 platform_balance['water_retained'] += self._ts_water_retained
                 platform_balance['water_decanted'] += self._ts_water_decanted
                 platform_balance['area_covered'] += self._ts_area_covered
                 platform_balance['storage_remaining'] += self._storage_remaining
+
+                platform_balance['num_fills'] += self._ts_num_fills
 
 
     def _getRecoveryEfficiency(self):

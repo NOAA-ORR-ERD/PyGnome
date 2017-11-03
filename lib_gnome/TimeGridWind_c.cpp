@@ -627,7 +627,7 @@ OSErr TimeGridWindRect_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled
 	LongPoint longPt;
 	WorldPoint wp;
 	
-	long numPoints,i,index=-1;
+	long numPoints,i,j,index=-1;
 	LongPointHdl ptsHdl = 0;
 	long timeDataInterval;
 	Boolean loaded;
@@ -668,14 +668,18 @@ OSErr TimeGridWindRect_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled
 		}
 	}
 	// for now just get every other one since each pair of triangles corresponds to a cell
-	for (i = 0 ; i< numPoints; i+=1)
+	//for (i = 0 ; i< numPoints; i+=1)
+	for (i = 0 ; i< fNumRows; i++)
 	//for (i = 0 ; i< numTri; i++)
 	{
-
-		longPt = (*ptsHdl)[i];
+		for (j = 0 ; j< fNumCols; j++)
+		{
+		//longPt = (*ptsHdl)[i];
+		longPt = (*ptsHdl)[i*fNumCols+j];
 		wp.pLat = longPt.v;
 		wp.pLong = longPt.h;
-		index = GetVelocityIndex(wp);  // regular grid
+		//index = GetVelocityIndex(wp);  // regular grid
+		index = i*fNumCols + j;
 	
 		//if (index < 0) {scaled_velocity[i].u = 0;	scaled_velocity[i].v = 0;}// should this be an error?
 		//index = i;
@@ -701,9 +705,14 @@ OSErr TimeGridWindRect_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled
 		}*/
 		//u[i] = velocity.u * fVar.fileScaleFactor;
 		//v[i] = velocity.v * fVar.fileScaleFactor;
-		scaled_velocity[i].u = velocity.u * fVar.fileScaleFactor / 100.;
-		scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor / 100.;
+		//scaled_velocity[i].u = velocity.u * fVar.fileScaleFactor / 100.;
+		//scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor / 100.;
+		//scaled_velocity[i].u = velocity.u * fVar.fileScaleFactor;
+		//scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor;
+		scaled_velocity[(fNumRows-i-1)*fNumCols+j].u = velocity.u * fVar.fileScaleFactor / 10.;
+		scaled_velocity[(fNumRows-i-1)*fNumCols+j].v = velocity.v * fVar.fileScaleFactor / 10.;
 		//vel_index++;
+		}
 	}
 	return err;
 }
@@ -1454,7 +1463,7 @@ OSErr TimeGridWindCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* e
 	VelocityFH velH = 0;
 	long latlength = fNumRows;
 	long lonlength = fNumCols;
-	float scale_factor = 1.,angle = 0.,u_grid,v_grid;
+	double scale_factor = 1.,angle = 0.,u_grid,v_grid;
 	Boolean bRotated = true, bIsNWSSpeedDirData = false;
 	
 	errmsg[0]=0;
@@ -1574,6 +1583,8 @@ OSErr TimeGridWindCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* e
 		}
 	}
 	
+	status = nc_get_att_double(ncid, wind_ucmp_id, "scale_factor", &scale_factor);
+	//if (status != NC_NOERR) {err = -1; goto done;}	// don't require scale factor
 	
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}

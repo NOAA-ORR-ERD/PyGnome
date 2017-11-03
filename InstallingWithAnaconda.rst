@@ -115,7 +115,7 @@ Add the NOAA-ORR-ERD channel::
 
 Add the conda-forge channel::
 
-    > conda config --add channels conda forge
+    > conda config --add channels conda-forge
 
 When you add a channel to conda, it puts it at the top of the list. So now when you
 install a package, conda will first look in conda-forge, then NOAA-ORR-ERD, and

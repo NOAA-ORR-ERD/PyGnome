@@ -14,7 +14,7 @@ from gnome.cy_gnome.cy_weatherers import disperse_oil
 from gnome.array_types import (viscosity,
                                mass,
                                density,
-                               fay_area,
+                               area,
                                frac_water,
                                droplet_avg_size)
 
@@ -26,7 +26,7 @@ from gnome.weatherers import Weatherer
 g = constants.gravity  # the gravitational constant.
 
 
-class NaturalDispersion(Weatherer, Serializable):
+class NaturalDispersion(Weatherer):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('water', save=True, update=True, save_reference=True),
                Field('waves', save=True, update=True, save_reference=True)]
@@ -48,7 +48,7 @@ class NaturalDispersion(Weatherer, Serializable):
         self.array_types.update({'viscosity': viscosity,
                                  'mass':  mass,
                                  'density': density,
-                                 'fay_area': fay_area,
+                                 'area': area,
                                  'frac_water': frac_water,
                                  'droplet_avg_size': droplet_avg_size,
                                  })
@@ -89,22 +89,23 @@ class NaturalDispersion(Weatherer, Serializable):
         if sc.num_released == 0:
             return
 
-        # from the waves module
-        wave_height = self.waves.get_value(model_time)[0]
-        frac_breaking_waves = self.waves.get_value(model_time)[2]
-        disp_wave_energy = self.waves.get_value(model_time)[3]
-
-        visc_w = self.waves.water.kinematic_viscosity
-        rho_w = self.waves.water.density
-
-        # web has different units
-        sediment = self.waves.water.get('sediment', unit='kg/m^3')
 
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['mass']) == 0:
                 # substance does not contain any surface_weathering LEs
                 continue
+            points = data['positions']
+            # from the waves module
+            waves_values = self.waves.get_value(points, model_time)
+            wave_height = waves_values[0]
+            frac_breaking_waves = waves_values[2]
+            disp_wave_energy = waves_values[3]
 
+            visc_w = self.waves.water.kinematic_viscosity
+            rho_w = self.waves.water.density
+
+            # web has different units
+            sediment = self.waves.water.get('sediment', unit='kg/m^3')
             V_entrain = constants.volume_entrained
             ka = constants.ka  # oil sticking term
 
@@ -119,7 +120,7 @@ class NaturalDispersion(Weatherer, Serializable):
                          data['mass'],
                          data['viscosity'],
                          data['density'],
-                         data['fay_area'],
+                         data['area'],
                          disp,
                          sed,
                          droplet_avg_size,
@@ -171,7 +172,7 @@ class NaturalDispersion(Weatherer, Serializable):
                      mass,
                      viscosity,
                      density,
-                     fay_area,
+                     area,
                      disp_out,
                      sed_out,
                      frac_breaking_waves,
@@ -198,42 +199,5 @@ class NaturalDispersion(Weatherer, Serializable):
 
         for i, (rho, mass, visc, Y, A) in enumerate(zip(density, mass,
                                                         viscosity, frac_water,
-                                                        fay_area)):
+                                                        area)):
             pass
-
-    def serialize(self, json_='webapi'):
-        """
-        'water'/'waves' property is saved as references in save file
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        serial = schema.serialize(toserial)
-
-        if json_ == 'webapi':
-            if self.waves:
-                serial['waves'] = self.waves.serialize(json_)
-            if self.water:
-                serial['water'] = self.water.serialize(json_)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        Append correct schema for water / waves
-        """
-        if not cls.is_sparse(json_):
-            schema = cls._schema()
-            dict_ = schema.deserialize(json_)
-
-            if 'water' in json_:
-                obj = json_['water']['obj_type']
-                dict_['water'] = (eval(obj).deserialize(json_['water']))
-
-            if 'waves' in json_:
-                obj = json_['waves']['obj_type']
-                dict_['waves'] = (eval(obj).deserialize(json_['waves']))
-
-            return dict_
-        else:
-            return json_

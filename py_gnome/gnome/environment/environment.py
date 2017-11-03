@@ -4,22 +4,25 @@ the Wind object defines the Wind conditions for the spill
 """
 import copy
 
-from colander import SchemaNode, Float, MappingSchema, drop, String, OneOf
-import unit_conversion as uc
-import gsw
 from repoze.lru import lru_cache
+from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
 
-from gnome.utilities import serializable
-from gnome.persist import base_schema
+import gsw
+
+import numpy as np
+
+import unit_conversion as uc
+
 from gnome import constants
+from gnome.utilities import serializable
+from gnome.utilities.time_utils import date_to_sec, sec_to_datetime
+from gnome.persist import base_schema
 
 from .. import _valid_units
 
 
 class EnvironmentMeta(type):
     def __init__(cls, name, bases, dct):
-#         if hasattr(cls, '_state'):
-#             cls._state = copy.deepcopy(bases[0]._state)
         cls._subclasses = []
         for c in cls.__mro__:
             if hasattr(c, '_subclasses') and c is not cls:
@@ -71,6 +74,40 @@ class Environment(object):
         """
         pass
 
+    def get_wind_speed(self, points, model_time, format='r', fill_value=1.0):
+        '''
+        Wrapper for the weatherers so they can extrapolate
+        '''
+#         new_model_time = self.check_time(wind, model_time)
+        retval = self.wind.at(points, model_time, format=format)
+        return retval.filled(fill_value) if isinstance(retval, np.ma.MaskedArray) else retval
+
+    def check_time(self, wind, model_time):
+        """
+        Should have an option to extrapolate but for now we do by default
+        """
+        new_model_time = model_time
+
+        if wind is not None:
+            if model_time is not None:
+                timeval = date_to_sec(model_time)
+                start_time = wind.get_start_time()
+                end_time = wind.get_end_time()
+
+                if end_time == start_time:
+                    return model_time
+
+                if timeval < start_time:
+                    new_model_time = sec_to_datetime(start_time)
+
+                if timeval > end_time:
+                    new_model_time = sec_to_datetime(end_time)
+            else:
+                return model_time
+
+        return new_model_time
+
+
 # define valid units at module scope because the Schema and Object both use it
 _valid_temp_units = _valid_units('Temperature')
 _valid_dist_units = _valid_units('Length')
@@ -103,9 +140,11 @@ class UnitsSchema(MappingSchema):
     fetch = SchemaNode(String(),
                        description='SI units for distance',
                        validator=OneOf(_valid_dist_units))
+
     kinematic_viscosity = SchemaNode(String(),
                                      description='SI units for viscosity',
                                      validator=OneOf(_valid_kvis_units))
+
     density = SchemaNode(String(),
                          description='SI units for density',
                          validator=OneOf(_valid_density_units))
@@ -218,6 +257,7 @@ class Water(Environment, serializable.Serializable):
         carries the value in as given in these user_units.
         '''
         val = getattr(self, attr)
+
         if unit is None:
             # Note: salinity only have one units since we don't
             # have any conversions for them in unit_conversion yet - revisit
@@ -258,9 +298,8 @@ class Water(Environment, serializable.Serializable):
                             temp)
         # sea level pressure in decibar - don't expect atmos_pressure to change
         # also expect constants to have SI units
-        rho = gsw.rho(salinity,
-                      temp_c,
-                      constants.atmos_pressure * 0.0001)
+        rho = gsw.rho(salinity, temp_c, constants.atmos_pressure * 0.0001)
+
         return rho
 
     @property
@@ -295,8 +334,8 @@ class Water(Environment, serializable.Serializable):
         for prop, unit in u_dict.iteritems():
             if prop in self._units_type:
                 if unit not in self._units_type[prop][1]:
-                    msg = ("{0} are invalid units for {1}."
-                           "Ignore it".format(unit, prop))
+                    msg = ("{0} are invalid units for {1}.  Ignore it."
+                           .format(unit, prop))
                     self.logger.error(msg)
                     # should we raise error?
                     raise uc.InvalidUnitError(msg)
@@ -315,22 +354,26 @@ class Water(Environment, serializable.Serializable):
         if from_ == 'mg/l':
             # convert to kg/m^3
             return self.sediment / 1000.0
-
         else:
             return self.sediment * 1000.0
 
 
-def env_from_netCDF(filename=None, dataset=None, grid_file=None, data_file=None, _cls_list=None, **kwargs):
+def env_from_netCDF(filename=None, dataset=None,
+                    grid_file=None, data_file=None, _cls_list=None,
+                    **kwargs):
     '''
-    Returns a list of instances of environment objects that can be produced from a file or dataset.
-    These instances will be created with a common underlying grid, and will interconnect when possible
-    For example, if an IceAwareWind can find an existing IceConcentration, it will use it instead of
-    instantiating another. This function tries ALL gridded types by default. This means if a particular
-    subclass of object is possible to be built, it is likely that all it's parents will be built and included
-    as well.
+        Returns a list of instances of environment objects that can be produced
+        from a file or dataset.  These instances will be created with a common
+        underlying grid, and will interconnect when possible.
+        For example, if an IceAwareWind can find an existing IceConcentration,
+        it will use it instead of instantiating another. This function tries
+        ALL gridded types by default. This means if a particular subclass
+        of object is possible to be built, it is likely that all it's parents
+        will be built and included as well.
 
-    If you wish to limit the types of environment objects that will be used, pass a list of the types
-    using "_cls_list" kwarg'''
+        If you wish to limit the types of environment objects that will
+        be used, pass a list of the types using "_cls_list" kwarg
+    '''
     def attempt_from_netCDF(cls, **klskwargs):
         obj = None
         try:
@@ -341,10 +384,9 @@ def env_from_netCDF(filename=None, dataset=None, grid_file=None, data_file=None,
                                     Exception: {1}'''.format(c.__name__, e))
         return obj
 
-    from gnome.utilities.file_tools.data_helpers import _get_dataset
-    from gnome.environment.environment_objects import GriddedProp, GridVectorProp
+    from gnome.environment.gridded_objects_base import Variable, VectorVariable
+    from gridded.utilities import get_dataset
     from gnome.environment import PyGrid, Environment
-    import copy
 
     new_env = []
 
@@ -356,13 +398,13 @@ def env_from_netCDF(filename=None, dataset=None, grid_file=None, data_file=None,
     dg = None
     if dataset is None:
         if grid_file == data_file:
-            ds = dg = _get_dataset(grid_file)
+            ds = dg = get_dataset(grid_file)
         else:
-            ds = _get_dataset(data_file)
-            dg = _get_dataset(grid_file)
+            ds = get_dataset(data_file)
+            dg = get_dataset(grid_file)
     else:
         if grid_file is not None:
-            dg = _get_dataset(grid_file)
+            dg = get_dataset(grid_file)
         else:
             dg = dataset
         ds = dataset
@@ -372,11 +414,15 @@ def env_from_netCDF(filename=None, dataset=None, grid_file=None, data_file=None,
     if grid is None:
         grid = PyGrid.from_netCDF(filename=filename, dataset=dg, **kwargs)
         kwargs['grid'] = grid
+
     scs = copy.copy(Environment._subclasses) if _cls_list is None else _cls_list
+
     for c in scs:
-        if issubclass(c, (GriddedProp, GridVectorProp)) and not any([isinstance(o, c) for o in new_env]):
+        if (issubclass(c, (Variable, VectorVariable)) and
+                not any([isinstance(o, c) for o in new_env])):
             clskwargs = copy.copy(kwargs)
             obj = None
+
             try:
                 req_refs = c._req_refs
             except AttributeError:
@@ -387,55 +433,73 @@ def env_from_netCDF(filename=None, dataset=None, grid_file=None, data_file=None,
                     for o in new_env:
                         if isinstance(o, klass):
                             clskwargs[ref] = o
+
                     if ref in clskwargs.keys():
                         continue
                     else:
-                        obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
+                        obj = attempt_from_netCDF(c,
+                                                  filename=filename,
+                                                  dataset=dataset,
+                                                  grid_file=grid_file,
+                                                  data_file=data_file,
+                                                  **clskwargs)
                         clskwargs[ref] = obj
+
                         if obj is not None:
                             new_env.append(obj)
 
-            obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
+            obj = attempt_from_netCDF(c,
+                                      filename=filename,
+                                      dataset=dataset,
+                                      grid_file=grid_file,
+                                      data_file=data_file,
+                                      **clskwargs)
+
             if obj is not None:
                 new_env.append(obj)
+
     return new_env
 
 
 def ice_env_from_netCDF(filename=None, **kwargs):
     '''
-    A short function to generate a list of all the 'ice_aware' classes for use in env_from_netCDF
-    (this excludes GridCurrent, GridWind, GridTemperature etc)
+        A short function to generate a list of all the 'ice_aware' classes
+        for use in env_from_netCDF (this excludes GridCurrent, GridWind,
+        GridTemperature, etc.)
     '''
     from gnome.environment import Environment
     cls_list = Environment._subclasses
-    ice_cls_list = [c for c in cls_list if (hasattr(c, '_ref_as') and 'ice_aware' in c._ref_as)]
-#         for c in cls_list:
-#             if hasattr(c, '_ref_as'):
-#                 if ((not isinstance(c._ref_as, basestring) and
-#                         any(['ice_aware' in r for r in c._ref_as])) or
-#                         'ice_aware' in c._ref_as):
-#                     ice_cls_list.append(c)
+    ice_cls_list = [c for c in cls_list
+                    if (hasattr(c, '_ref_as') and 'ice_aware' in c._ref_as)]
+
     return env_from_netCDF(filename=filename, _cls_list=ice_cls_list, **kwargs)
 
 
 def get_file_analysis(filename):
-    from gnome.utilities.file_tools.data_helpers import _get_dataset
-
-    def grid_detection_report(filename):
-        from gnome.environment.grid import PyGrid
-        topo = PyGrid._find_topology_var(filename)
-        report = ['Grid report:']
-        if topo is None:
-            report.append('    A standard grid topology was not found in the file')
-            report.append('    topology breakdown future feature')
-        else:
-            report.append('    A grid topology was found in the file: {0}'.format(topo))
-        return report
-
     env = env_from_netCDF(filename=filename)
     classes = copy.copy(Environment._subclasses)
+
     if len(env) > 0:
-        report = ['Can create {0} types of environment objects'.format(len([env.__class__ for e in env]))]
+        report = ['Can create {0} types of environment objects'
+                  .format(len([env.__class__ for e in env]))]
         report.append('Types are: {0}'.format(str([e.__class__ for e in env])))
+
     report = report + grid_detection_report(filename)
+
+    return report
+
+
+def grid_detection_report(filename):
+    from gnome.environment.gridded_objects_base import PyGrid
+
+    topo = PyGrid._find_topology_var(filename)
+    report = ['Grid report:']
+
+    if topo is None:
+        report.append('    A standard grid topology was not found in the file')
+        report.append('    topology breakdown future feature')
+    else:
+        report.append('    A grid topology was found in the file: {0}'
+                      .format(topo))
+
     return report

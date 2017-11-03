@@ -141,6 +141,36 @@ elif sys.platform == "win32":
 # setup our third party libraries environment - for Win32/Mac OSX
 # Linux does not use the libraries in third_party_lib. It links against
 # netcdf shared objects installed by apt-get
+'''
+import subprocess
+
+
+def get_netcdf_libs():
+    """
+    Find the netcdf4 libaries:
+
+    1) if present rely on nc-config
+    2) search for a user env var
+    3) try to look directly for conda libs
+    4) fall back to the versions distributed with the py_gnome code
+    """
+    # check for nc-config
+    try:
+        result = subprocess.check_output(["nc-config", "--libs"]).split()
+        lib_dir = result[0]
+        libs = result[1:]
+        include_dir = subprocess.check_output(["nc-config", "--includedir"])
+
+        print lib_dir
+        print libs
+        print include_dir
+    except OSError:
+        raise NotImplementedError("this setup.py needs nc-config to find netcdf libs")
+
+get_netcdf_libs()
+'''
+
+
 if sys.platform is "darwin" or "win32":
     third_party_dir = os.path.join('..', 'third_party_lib')
 
@@ -193,6 +223,14 @@ if sys.platform is "darwin" or "win32":
 
     netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
                         for l in netcdf_names]
+
+
+# print netcdf_base
+# print netcdf_libs
+# print netcdf_inc
+# print netcdf_lib_files
+
+# raise Exception("stopping here")
 
 
 # the cython extensions to build -- each should correspond to a *.pyx file

@@ -5,8 +5,12 @@ __init__.py for the gnome package
 from itertools import chain
 
 import sys
+import os
 import logging
 import json
+import warnings
+import pkg_resources
+import importlib
 
 import unit_conversion as uc
 
@@ -14,10 +18,50 @@ from gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
 # using a PEP 404 compliant version name
-__version__ = '0.5.1'
+__version__ = '0.6.0'
 
 
 # a few imports so that the basic stuff is there
+
+
+def check_dependency_versions():
+    '''
+    Checks the versions of the following libraries:
+        gridded
+        oillibrary
+        unit_conversion
+    If the version is not at least as current as what's in the conda_requirements file,
+    a warning is displayed
+    '''
+    def get_version(package):
+        package = package.lower()
+        return next((p.version for p in pkg_resources.working_set if p.project_name.lower() == package), "No match")
+    libs = [('gridded', '>=', '0.0.9'),
+            ('oil-library', '>=', '1.0.0'),
+            ('unit-conversion', '>=', '2.5.5')]
+#     condafiledir = os.path.relpath(__file__).split(__file__.split('\\')[-3])[0]
+#     condafile = os.path.join(condafiledir, 'conda_requirements.txt')
+#     with open(condafile, 'r') as conda_reqs:
+#         for line in conda_reqs.readlines():
+    for req in libs:
+        criteria = None
+        req_name, cmp_str, reqd_ver = req
+        if '>' in cmp_str:
+            criteria = (lambda a, b: a >= b) if '=' in cmp_str else (lambda a, b: a > b)
+        elif '<' in cmp_str:
+            criteria = (lambda a, b: a <= b) if '=' in cmp_str else (lambda a, b: a < b)
+        else:
+            criteria = (lambda a, b: a == b)
+        inst_ver = get_version(req_name)
+        module_ver = importlib.import_module(req_name.replace('-','_')).__version__
+        if not criteria(inst_ver, reqd_ver):
+            if criteria(module_ver, reqd_ver):
+                w = 'Version {0} of {1} package is reported, but actual version in module is {2}'.format(inst_ver, req_name, module_ver)
+                warnings.warn(w)
+            else:
+                w = 'Version {0} of {1} package is installed in environment, {2}{3} required'.format(inst_ver, req_name, cmp_str, reqd_ver)
+                warnings.warn(w)
+
 
 def initialize_log(config, logfile=None):
     '''
@@ -77,11 +121,13 @@ def _valid_units(unit_name):
 
 # we have a sort of chicken-egg situation here.  The above functions need
 # to be defined before we can import these modules.
+check_dependency_versions()
 from . import (map,
-               environment,
-               model,
-               multi_model_broadcast,
-               spill_container,
-               spill,
-               movers,
-               outputters)
+                environment,
+                model,
+#                 multi_model_broadcast,
+                spill_container,
+                spill,
+                movers,
+                outputters
+)

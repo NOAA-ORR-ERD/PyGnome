@@ -13,6 +13,8 @@ Uses the same approach as ADIOS 2
 from __future__ import division
 
 import copy
+import numpy as np
+import gridded
 
 from gnome import constants
 from gnome.utilities import serializable
@@ -79,20 +81,7 @@ class Waves(Environment, serializable.Serializable):
 
         super(Waves, self).__init__(**kwargs)
 
-    # def update_water(self):
-    #     """
-    #     updates values from water object
-
-    #     this should be called when you want to make sure new data is Used
-
-    #     note: yes, this is kludgy, but it avoids calling self.water.fetch
-    #           all over the place
-    #     """
-    #     self.wave_height = self.water.wave_height
-    #     self.fetch = self.water.fetch
-    #     self.density = self.water.density
-
-    def get_value(self, time):
+    def get_value(self, points, time):
         """
         return the rms wave height, peak period and percent wave breaking
         at a given time. Does not currently support location-variable waves.
@@ -113,11 +102,12 @@ class Waves(Environment, serializable.Serializable):
         wave_height = self.water.wave_height
 
         if wave_height is None:
-            U = self.wind.get_value(time)[0]  # only need velocity
+            U = self.get_wind_speed(points, time, format='r')  # only need velocity
             H = self.compute_H(U)
         else:  # user specified a wave height
             H = wave_height
             U = self.pseudo_wind(H)
+
         Wf = self.whitecap_fraction(U)
         T = self.mean_wave_period(U)
 
@@ -125,7 +115,8 @@ class Waves(Environment, serializable.Serializable):
 
         return H, T, Wf, De
 
-    def get_emulsification_wind(self, time):
+
+    def get_emulsification_wind(self, points, time):
         """
         Return the right wind for the wave climate
 
@@ -143,38 +134,77 @@ class Waves(Environment, serializable.Serializable):
                given by the user for dispersion, why not for emulsification?
         """
         wave_height = self.water.wave_height
-        U = self.wind.get_value(time)[0]  # only need velocity
+        U = self.get_wind_speed(points, time)  # only need velocity
+
         if wave_height is None:
             return U
         else:  # user specified a wave height
-            return max(U, self.pseudo_wind(wave_height))
+            U = np.where(U < self.pseudo_wind(wave_height),
+                         self.pseudo_wind(wave_height),
+                         U)
+            return U
 
     def compute_H(self, U):
+        U = np.array(U).reshape(-1)
         return Adios2.wave_height(U, self.water.fetch)
 
     def pseudo_wind(self, H):
+        H = np.array(H).reshape(-1)
         return Adios2.wind_speed_from_height(H)
 
     def whitecap_fraction(self, U):
+        U = np.array(U).reshape(-1)
         return LehrSimecek.whitecap_fraction(U, self.water.salinity)
 
     def mean_wave_period(self, U):
+        U = np.array(U).reshape(-1)
         return Adios2.mean_wave_period(U,
                                        self.water.wave_height,
                                        self.water.fetch)
 
-    def peak_wave_period(self, time):
+    def peak_wave_period(self, points, time):
         '''
         :param time: the time you want the wave data for
         :type time: datetime.datetime object
 
         :returns: peak wave period (s)
         '''
-        U = self.wind.get_value(time)[0]
+        U = self.get_wind_speed(points, time)  # only need velocity
+
         return PiersonMoskowitz.peak_wave_period(U)
 
     def dissipative_wave_energy(self, H):
         return Adios2.dissipative_wave_energy(self.water.density, H)
+
+    def energy_dissipation_rate(self, H, U):
+        '''
+        c_ub = 100 = dimensionless empirical coefficient to correct
+        for non-Law-of-the-Wall results (Umlauf and Burchard, 2003)
+
+        u_c = water friction velocity (m/s)
+               sqrt(rho_air / rho_w) * u_a ~ .03 * u_a
+        u_a = air friction velocity (m/s)
+        z_0 = surface roughness (m) (Taylor and Yelland)
+        c_p = peak wave speed for Pierson-Moskowitz spectrum
+        w_p = peak angular frequency for Pierson-Moskowitz spectrum (1/s)
+
+        TODO: This implementation should be in a utility function.
+              It should not be part of the Waves management object itself.
+        '''
+        if H is 0 or U is 0:
+            return 0
+
+        c_ub = 100
+
+        c_p = PiersonMoskowitz.peak_wave_speed(U)
+        w_p = PiersonMoskowitz.peak_angular_frequency(U)
+
+        z_0 = 1200 * H * ((H / (2*np.pi*c_p)) * w_p)**4.5
+        u_a = .4 * U / np.log(10 / z_0)
+        u_c = .03 * u_a
+        eps = c_ub * u_c**3 / H
+
+        return eps
 
     def serialize(self, json_='webapi'):
         """
@@ -209,9 +239,9 @@ class Waves(Environment, serializable.Serializable):
 
     def prepare_for_model_run(self, model_time):
         if self.wind is None:
-            msg = "wind object not defined for " + self.__class__.__name__
-            raise ReferencedObjectNotSet(msg)
+            raise ReferencedObjectNotSet("wind object not defined for {}"
+                                         .format(self.__class__.__name__))
 
         if self.water is None:
-            msg = "water object not defined for " + self.__class__.__name__
-            raise ReferencedObjectNotSet(msg)
+            raise ReferencedObjectNotSet("water object not defined for {}"
+                                         .format(self.__class__.__name__))

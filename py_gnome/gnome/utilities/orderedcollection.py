@@ -266,6 +266,7 @@ class OrderedCollection(object):
     def __ne__(self, other):
         return not self == other
 
+    #JAH: This is why OCs can be serialized and lists cannot!
     def to_dict(self):
         '''
         Method takes the instance of ordered collection and outputs a list of

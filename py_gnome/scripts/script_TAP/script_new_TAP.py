@@ -85,7 +85,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     fn='arctic_avg2_0001_gnome.nc'
 
     wind_method = 'Euler'
-    method = 'Trapezoid'
+    method = 'RK2'
     print 'adding outputters'
 
     # draw_ontop can be 'uncertain' or 'forecast'
@@ -163,7 +163,7 @@ if __name__ == "__main__":
 #     rend = model.outputters[0]
 #     rend.graticule.set_DMS(True)
     startTime = datetime.now()
-    pd.profiler.enable()
+#     pd.profiler.enable()
     for step in model:
 #         if step['step_num'] == 0:
 #             rend.set_viewport(((-165, 69.25), (-162.5, 70)))
@@ -172,5 +172,5 @@ if __name__ == "__main__":
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use())
     print datetime.now() - startTime
-    pd.profiler.disable()
-    pd.print_stats(0.1)
+#     pd.profiler.disable()
+#     pd.print_stats(0.1)

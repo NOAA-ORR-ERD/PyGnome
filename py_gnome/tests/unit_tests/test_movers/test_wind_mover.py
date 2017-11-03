@@ -15,6 +15,7 @@ from gnome.basic_types import (datetime_value_2d,
 
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.utilities.time_utils import date_to_sec, sec_to_date
+from gnome.utilities.inf_datetime import InfDateTime
 from gnome.utilities.transforms import r_theta_to_uv_wind
 from gnome.utilities import convert
 
@@ -130,6 +131,17 @@ def test_properties(wind_circ):
     assert wm.uncertain_time_delay == 2
     assert wm.uncertain_speed_scale == 3
     assert wm.uncertain_angle_scale == 4
+    assert wm.real_data_start == datetime(2012, 11, 6, 20, 10)
+    assert wm.real_data_stop == datetime(2012, 11, 6, 20, 15)
+
+
+def test_real_data(wind_circ):
+    """
+    test real_data_start / stop properties
+    """
+    wm = WindMover(wind_circ['wind'])
+    assert wm.real_data_start == datetime(2012, 11, 6, 20, 10)
+    assert wm.real_data_stop == datetime(2012, 11, 6, 20, 15)
 
 
 def test_update_wind(wind_circ):
@@ -297,7 +309,7 @@ def test_windage_index():
     sc.prepare_for_model_run(array_types=windage)
     sc.release_elements(timestep, rel_time)
 
-    wm = WindMover(constant_wind(5, 0))
+    wm = constant_wind_mover(5, 0)
     wm.prepare_for_model_step(sc, timestep, rel_time)
     wm.model_step_is_done()  # need this to toggle _windage_is_set_flag
 
@@ -339,8 +351,10 @@ def test_timespan():
     time_val['time'] = rel_time
     time_val['value'] = (2., 25.)
 
-    wm = WindMover(Wind(timeseries=time_val, units='meter per second'),
-                   active_start=model_time + timedelta(seconds=time_step))
+    wm = WindMover(Wind(timeseries=time_val,
+                        units='meter per second'),
+                   active_start=model_time + timedelta(seconds=time_step)
+                   )
 
     wm.prepare_for_model_run()
     wm.prepare_for_model_step(sc, time_step, model_time)
@@ -348,7 +362,7 @@ def test_timespan():
     delta = wm.get_move(sc, time_step, model_time)
     wm.model_step_is_done()
 
-    assert wm.active == False
+    assert wm.active is False
     assert np.all(delta == 0)  # model_time + time_step = active_start
 
     wm.active_start = model_time - timedelta(seconds=time_step / 2)
@@ -357,7 +371,7 @@ def test_timespan():
     delta = wm.get_move(sc, time_step, model_time)
     wm.model_step_is_done()
 
-    assert wm.active == True
+    assert wm.active is True
     print '''\ntest_timespan delta \n{0}'''.format(delta)
     assert np.all(delta[:, :2] != 0)  # model_time + time_step > active_start
 
@@ -387,7 +401,7 @@ def test_active():
     delta = wm.get_move(sc, time_step, rel_time)
     wm.model_step_is_done()
 
-    assert wm.active == False
+    assert wm.active is False
     assert np.all(delta == 0)  # model_time + time_step = active_start
 
 
@@ -416,6 +430,14 @@ def test_constant_wind_mover():
 
     # 45 degree wind at the equator -- u,v should be the same
     assert delta[0][0] == delta[0][1]
+
+def test_constant_wind_mover_bounds():
+    wm = constant_wind_mover(10, 45, units='knots')
+
+    assert wm.real_data_start == InfDateTime("-inf")
+
+    assert wm.real_data_stop == InfDateTime("inf")
+
 
 
 def test_wind_mover_from_file():

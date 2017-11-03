@@ -1,8 +1,8 @@
 '''
 Weathering Outputter
 '''
-import copy
 import os
+import copy
 from glob import glob
 
 from geojson import dump
@@ -11,8 +11,6 @@ from colander import SchemaNode, String, drop
 from gnome.utilities.serializable import Serializable, Field
 
 from .outputter import Outputter, BaseSchema
-
-from gnome.basic_types import oil_status
 
 
 class WeatheringOutputSchema(BaseSchema):
@@ -64,6 +62,7 @@ class WeatheringOutput(Outputter, Serializable):
         self.units = {'default': 'kg',
                       'avg_density': 'kg/m^3',
                       'avg_viscosity': 'm^2/s'}
+
         super(WeatheringOutput, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
@@ -89,8 +88,8 @@ class WeatheringOutput(Outputter, Serializable):
         output_info = {'time_stamp': sc.current_time_stamp.isoformat()}
         output_info.update(sc.mass_balance)
 
-        # output_info.update({'area': hull_area(sc['positions'][sc['status_codes'] == oil_status.in_water])})
         self.logger.debug(self._pid + 'step_num: {0}'.format(step_num))
+
         for name, val in dict_.iteritems():
             msg = ('\t{0}: {1}'.format(name, val))
             self.logger.debug(msg)
@@ -121,6 +120,7 @@ class WeatheringOutput(Outputter, Serializable):
     def rewind(self):
         'remove previously written files'
         super(WeatheringOutput, self).rewind()
+
         self.clean_output_files()
 
     def __getstate__(self):
@@ -139,6 +139,7 @@ class WeatheringOutput(Outputter, Serializable):
                    Model.setup_model_run() function.)
         '''
         odict = self.__dict__.copy()  # copy the dict since we change it
-        del odict['cache']               # remove cache entry
+
+        del odict['cache']  # remove cache entry
 
         return odict

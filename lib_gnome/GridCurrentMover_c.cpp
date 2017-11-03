@@ -541,7 +541,14 @@ OSErr GridCurrentMover_c::GetScaledVelocities(Seconds model_time, VelocityFRec *
 
 LongPointHdl GridCurrentMover_c::GetPointsHdl(void)
 {
-	return timeGrid->fGrid->GetPointsHdl();
+	if (timeGrid->IsRegularGrid())
+	{
+		return timeGrid->GetPointsHdl();
+	}
+	else
+	{
+		return timeGrid->fGrid->GetPointsHdl();
+	}
 }
 
 TopologyHdl GridCurrentMover_c::GetTopologyHdl(void)
@@ -557,7 +564,12 @@ GridCellInfoHdl GridCurrentMover_c::GetCellDataHdl(void)
 WORLDPOINTH	GridCurrentMover_c::GetTriangleCenters(void)
 {	// should rename this function...
 	if (IsTriangleGrid())
-		return timeGrid->fGrid->GetCenterPointsHdl();
+	{
+		if (IsDataOnCells())
+			return timeGrid->fGrid->GetCenterPointsHdl();
+		else
+			return timeGrid->fGrid->GetWorldPointsHdl();
+	}
 	else
 		return timeGrid->GetCellCenters();
 }

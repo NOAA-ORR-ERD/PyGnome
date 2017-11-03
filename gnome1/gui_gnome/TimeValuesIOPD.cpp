@@ -73,8 +73,15 @@ TOSSMTimeValue* CreateTOSSMTimeValue(TMover *theOwner,char* path, char* shortFil
 	else 
 	{
 #if TARGET_API_MAC_CARBON
-		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-		if (!err) strcpy(path,outPath);
+		if(model && model->fWizard && model->fWizard->PathIsWizardResource(path))
+		{
+			// don't mess up the resource path
+		}
+		else 
+		{
+			err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+			if (!err) strcpy(path,outPath);
+		}
 #endif
 		
 		if (IsTimeFile(path) || IsHydrologyFile(path) || IsOSSMTimeFile(path, &unitsIfKnownInAdvance))

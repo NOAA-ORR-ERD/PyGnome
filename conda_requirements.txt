@@ -28,9 +28,8 @@ netCDF4=1.2.7
 awesome-slugify>=1.6
 regex>=2014.12
 unidecode>=0.04.19
-pyshp>=1.2
-pyugrid=0.2.3
-pysgrid=0.3.5
+pyshp=1.2.10
+gridded==0.0.9
 
 # NOAA maintained packages
 unit_conversion=2.5.5
@@ -42,7 +41,10 @@ cython=0.24.1
 
 # nice to have for development, not required to run
 pytest
+pytest-cov
+pytest-timeout
 testfixtures
+
 matplotlib
 sphinx
 sphinx_rtd_theme

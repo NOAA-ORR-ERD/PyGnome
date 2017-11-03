@@ -125,11 +125,17 @@ class Timeseries(GnomeId):
 
         return True
 
+    def __len__(self):
+        """
+        length is the number of data points in the timeseries
+        """
+        return self.ossm.get_num_values()
+
     def get_start_time(self):
         """
         :this will be the real_data_start time (seconds).
         """
-        return (self.ossm.get_start_time())
+        return self.ossm.get_start_time()
 
     def get_end_time(self):
         """
@@ -236,7 +242,22 @@ class Timeseries(GnomeId):
             timeval = np.zeros((len(datetime), ),
                                dtype=basic_types.time_value_pair)
             timeval['time'] = date_to_sec(datetime)
-            timeval['value'] = self.ossm.get_time_value(timeval['time'])
+            (timeval['value'], err) = self.ossm.get_time_value(timeval['time'])
+            if err != 0:
+                msg = ('No available data in the time interval '
+                       'that is being modeled\n'
+                       '\tModel time: {}\n'
+                       '\tMover: {} of type {}\n'
+                       #'\tData available from {} to {}'
+                       #.format(model_time_datetime,
+                               #self.name, self.__class__,
+                               #self.real_data_start, self.real_data_stop))
+                       .format(datetime,
+                               self.name, self.__class__))
+                               #self.real_data_start, self.real_data_stop))
+
+                self.logger.error(msg)
+                raise RuntimeError(msg)
             datetimeval = to_datetime_value_2d(timeval, format)
 
         return datetimeval
