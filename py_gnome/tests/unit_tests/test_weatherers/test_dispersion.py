@@ -25,9 +25,12 @@ waves = Waves(wind, water)
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [('ABU SAFAH', 311.15, 3, True),
-                          ('BAHIA', 311.15, 3, True),
-                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
+                         [('oil_bahia', 311.15, 3, True),
+                          #('BAHIA', 311.15, 3, True),
+                          #('ABU SAFAH', 311.15, 3, True),
+                          ('oil_ans_mp', 311.15, 3, True),
+                          #('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
+                          ('oil_ans_mp', 311.15, 3,
                            False)])
 def test_dispersion(oil, temp, num_elems, on):
     '''
