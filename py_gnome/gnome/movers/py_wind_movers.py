@@ -137,6 +137,26 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                    uncertain_cross=uncertain_cross,
                    default_num_method=default_num_method)
 
+    @property
+    def real_data_start(self):
+        return self.wind.time.min_time.replace(tzinfo=None)
+
+    @real_data_start.setter
+    def real_data_start(self, value):
+        self._r_d_s = value
+
+    @property
+    def real_data_stop(self):
+        return self.wind.time.max_time.replace(tzinfo=None)
+
+    @real_data_stop.setter
+    def real_data_stop(self, value):
+        self._r_d_e = value
+
+    @property
+    def is_data_on_cells(self):
+        return self.wind.grid.infer_location(self.current.u.data) != 'node'
+
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
         Call base class method using super
