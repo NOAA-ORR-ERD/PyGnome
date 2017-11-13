@@ -185,16 +185,16 @@ model run and in subsequent steps the model moves and weathers elements.
 
 
 
-``gnome.environment.grid_property`` -- PyGnome base environment objects
------------------------------------------------------------------------
+``gnome.environment.gridded_objects_base`` -- PyGnome wrappers for gridded objects
+----------------------------------------------------------------------------------
 
 .. autoclass:: Time
     :members:
-.. automodule:: gnome.environment.grid_property
-.. autoclass:: GriddedProp
+.. automodule:: gnome.environment.gridded_objects_base
+.. autoclass:: Variable
     :members: at, from_netCDF
     :show-inheritance:
-.. autoclass:: GridVectorProp
+.. autoclass:: VectorVariable
     :members: at, from_netCDF
     :show-inheritance:
 .. automodule:: gnome.environment.ts_property
