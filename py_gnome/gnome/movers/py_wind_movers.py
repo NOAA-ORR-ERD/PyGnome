@@ -2,7 +2,7 @@ import movers
 import copy
 
 from colander import (SchemaNode,
-                      Bool, Float, String, Sequence,
+                      Bool, Float, String, Sequence, DateTime,
                       drop)
 
 from gnome.basic_types import (oil_status,
@@ -13,6 +13,8 @@ from gnome.utilities.projections import FlatEarthProjection
 
 from gnome.environment import GridWind
 from gnome.persist import base_schema
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 
 class PyWindMoverSchema(base_schema.ObjType):
@@ -23,6 +25,17 @@ class PyWindMoverSchema(base_schema.ObjType):
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
     wind = GridWind._schema(missing=drop)
+    real_data_start = SchemaNode(DateTime(), missing=drop)
+    real_data_stop = SchemaNode(DateTime(), missing=drop)
+    on = SchemaNode(Bool(), missing=drop)
+    active_start = SchemaNode(LocalDateTime(), missing=drop,
+                              validator=convertible_to_seconds)
+    active_stop = SchemaNode(LocalDateTime(), missing=drop,
+                             validator=convertible_to_seconds)
+    real_data_start = SchemaNode(LocalDateTime(), missing=drop,
+                                 validator=convertible_to_seconds)
+    real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
+                                validator=convertible_to_seconds)
 
 
 class PyWindMover(movers.PyMover, serializable.Serializable):
@@ -33,7 +46,8 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
                       serializable.Field('wind', save=True, read=True,
-                                         save_reference=True)])
+                                         save_reference=True),
+                      serializable.Field('extrapolate', read=True, save=True)])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
     _schema = PyWindMoverSchema

@@ -53,6 +53,7 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                                          test_for_eq=False),
                       serializable.Field('current', read=True,
                                          save_reference=True),
+                      serializable.Field('extrapolate', read=True, save=True)
                       ])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
