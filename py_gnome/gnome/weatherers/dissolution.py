@@ -21,8 +21,6 @@ from gnome.array_types import (area,
                                partition_coeff,
                                droplet_avg_size)
 
-from gnome.scripting import constant_wind
-
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 
@@ -51,9 +49,6 @@ class Dissolution(Weatherer, Serializable):
         '''
         self.waves = waves
         self.wind = wind
-
-        if self.wind is None:
-            self.wind = constant_wind(0,0)
 
         super(Dissolution, self).__init__(**kwargs)
 
