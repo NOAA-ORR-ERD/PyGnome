@@ -21,7 +21,7 @@ from gnome.persist import class_from_objtype
 from gnome.persist.base_schema import ObjType
 
 from . import elements
-from .release import PointLineRelease, ContinuousRelease
+from .release import PointLineRelease, ContinuousRelease, GridRelease
 from .. import _valid_units
 
 
@@ -927,6 +927,66 @@ def surface_point_line_spill(num_elements,
                  amount=amount,
                  units=units,
                  name=name)
+
+def grid_spill(bounds,
+               resolution,
+               release_time,
+               substance=None,
+               amount=None,
+               units=None,
+               windage_range=(.01, .04),
+               windage_persist=900,
+               name='Surface Grid Spill'):
+    '''
+    Helper function returns a Grid Spill object
+
+    :param bounds: bounding box of region you want the elements in:
+                   ((min_lon, min_lat),
+                    (max_lon, max_lat))
+    :type bounds: 2x2 numpy array or equivalent
+
+    :param resolution: resolution of grid -- it will be a resoluiton X resolution grid
+    :type resolution: integer
+
+    :param release_time: time the LEs are released (datetime object)
+    :type release_time: datetime.datetime
+
+    :param end_position=None: Optional. For moving source, the end position
+                              If None, then release is from a point source
+    :type end_position: 3-tuple of floats (long, lat, z)
+
+    :param end_release_time=None: optional -- for a time varying release,
+        the end release time. If None, then release is instantaneous
+    :type end_release_time: datetime.datetime
+
+    :param substance=None: Type of oil spilled.
+    :type substance: str or OilProps
+
+    :param float amount=None: mass or volume of oil spilled
+
+    :param str units=None: units for amount spilled
+
+    :param tuple windage_range=(.01, .04): Percentage range for windage.
+                                           Active only for surface particles
+                                           when a mind mover is added
+
+    :param int windage_persist=900: Persistence for windage values in seconds.
+                                    Use -1 for inifinite, otherwise it is
+                                    randomly reset on this time scale
+    :param str name='Surface Point/Line Release': a name for the spill
+    '''
+    release = GridRelease(release_time, bounds, resolution)
+
+    element_type = elements.floating(windage_range=windage_range,
+                                     windage_persist=windage_persist,
+                                     substance=substance)
+
+    return Spill(release,
+                 element_type=element_type,
+                 amount=amount,
+                 units=units,
+                 name=name)
+
 
 
 def subsurface_plume_spill(num_elements,

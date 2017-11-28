@@ -23,44 +23,81 @@ __version__ = '0.6.0'
 
 # a few imports so that the basic stuff is there
 
-
 def check_dependency_versions():
-    '''
+    """
+    much simpler method :-)
+
     Checks the versions of the following libraries:
         gridded
         oillibrary
         unit_conversion
-    If the version is not at least as current as what's in the conda_requirements file,
+    If the version is not at least as current as what's defined here
     a warning is displayed
-    '''
-    def get_version(package):
-        package = package.lower()
-        return next((p.version for p in pkg_resources.working_set if p.project_name.lower() == package), "No match")
-    libs = [('gridded', '>=', '0.0.9'),
-            ('oil-library', '>=', '1.0.0'),
-            ('unit-conversion', '>=', '2.5.5')]
-#     condafiledir = os.path.relpath(__file__).split(__file__.split('\\')[-3])[0]
-#     condafile = os.path.join(condafiledir, 'conda_requirements.txt')
-#     with open(condafile, 'r') as conda_reqs:
-#         for line in conda_reqs.readlines():
-    for req in libs:
-        criteria = None
-        req_name, cmp_str, reqd_ver = req
-        if '>' in cmp_str:
-            criteria = (lambda a, b: a >= b) if '=' in cmp_str else (lambda a, b: a > b)
-        elif '<' in cmp_str:
-            criteria = (lambda a, b: a <= b) if '=' in cmp_str else (lambda a, b: a < b)
-        else:
-            criteria = (lambda a, b: a == b)
-        inst_ver = get_version(req_name)
-        module_ver = importlib.import_module(req_name.replace('-','_')).__version__
-        if not criteria(inst_ver, reqd_ver):
-            if criteria(module_ver, reqd_ver):
-                w = 'Version {0} of {1} package is reported, but actual version in module is {2}'.format(inst_ver, req_name, module_ver)
-                warnings.warn(w)
-            else:
-                w = 'Version {0} of {1} package is installed in environment, {2}{3} required'.format(inst_ver, req_name, cmp_str, reqd_ver)
-                warnings.warn(w)
+    """
+    libs = [('gridded', '0.0.9'),
+            ('oil_library', '1.0.6'),
+            ('unit_conversion', '2.5.5')]
+
+    for name, version in libs:
+        # import the lib:
+        try:
+            module = importlib.import_module(name)
+        except ImportError:
+            print ("ERROR: The {} package, version >= {} needs to be installed".
+                   format(name, version))
+            sys.exit(1)
+        if module.__version__ < version:
+            w = ('Version {0} of {1} package is reported, but actual version in module is {2}'.
+                 format(version, name, module.__version__))
+            warnings.warn(w)
+
+
+# ## maybe too complex that required...
+# def check_dependency_versions():
+#     '''
+#     Checks the versions of the following libraries:
+#         gridded
+#         oillibrary
+#         unit_conversion
+#     If the version is not at least as current as what's in the conda_requirements file,
+#     a warning is displayed
+#     '''
+#     def get_version(package):
+#         package = package.lower()
+#         return next((p.version for p in pkg_resources.working_set
+#                      if p.project_name.lower() == package), "No match")
+
+#     libs = [('gridded', '>=', '0.0.9'),
+#             ('oil-library', '>=', '1.0.6'),
+#             ('unit-conversion', '>=', '2.5.5')]
+# #     condafiledir = os.path.relpath(__file__).split(__file__.split('\\')[-3])[0]
+# #     condafile = os.path.join(condafiledir, 'conda_requirements.txt')
+# #     with open(condafile, 'r') as conda_reqs:
+# #         for line in conda_reqs.readlines():
+#     for req in libs:
+#         criteria = None
+#         req_name, cmp_str, reqd_ver = req
+#         if '>' in cmp_str:
+#             criteria = (lambda a, b: a >= b) if '=' in cmp_str else (lambda a, b: a > b)
+#         elif '<' in cmp_str:
+#             criteria = (lambda a, b: a <= b) if '=' in cmp_str else (lambda a, b: a < b)
+#         else:
+#             criteria = (lambda a, b: a == b)
+#         inst_ver = get_version(req_name)
+
+#         try:
+#             module_ver = importlib.import_module(req_name.replace('-', '_')).__version__
+#         except ImportError:
+#             print "ERROR: The {} package, version {} {} needs to be installed".format(*req)
+#             sys.exit(1)
+
+#         if not criteria(inst_ver, reqd_ver):
+#             if criteria(module_ver, reqd_ver):
+#                 w = 'Version {0} of {1} package is reported, but actual version in module is {2}'.format(inst_ver, req_name, module_ver)
+#                 warnings.warn(w)
+#             else:
+#                 w = 'Version {0} of {1} package is installed in environment, {2}{3} required'.format(inst_ver, req_name, cmp_str, reqd_ver)
+#                 warnings.warn(w)
 
 
 def initialize_log(config, logfile=None):

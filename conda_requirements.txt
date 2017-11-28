@@ -10,7 +10,7 @@
 
 python=2.7.*
 setuptools>=23.0
-numpy=1.11.*
+numpy=1.13.*
 scipy>=0.18.*
 gsw=3.0.3
 psutil>=4.3
@@ -23,31 +23,35 @@ colander>=1.2
 sqlalchemy>=0.7.6
 zope.interface>=4.1
 zope.sqlalchemy>=0.7.6
-gdal>=2.1.1
-netCDF4=1.2.7
+gdal=2.1.4
+netCDF4=1.3.1
 awesome-slugify>=1.6
 regex>=2014.12
 unidecode>=0.04.19
 pyshp=1.2.10
-gridded==0.0.9
+gridded=0.0.9
 
 # NOAA maintained packages
-unit_conversion=2.5.5
-cell_tree2d>=0.3.0
-py_gd>=0.1.5 # libgd should get brought in automatically
+unit_conversion=2.5.*
+cell_tree2d>=0.3.*
+py_gd=0.1.* # libgd should get brought in automatically
 
 # required for building
-cython=0.24.1
+cython>=0.24.*
 
-# nice to have for development, not required to run
+# needed to run tests
 pytest
 pytest-cov
 pytest-timeout
 testfixtures
 
+# nice to have for development, not required to run
 matplotlib
+ipython
+
+# required to build docs
 sphinx
 sphinx_rtd_theme
 nbsphinx
-ipython
+
 
