@@ -37,7 +37,7 @@ cell_tree2d>=0.3.*
 py_gd=0.1.* # libgd should get brought in automatically
 
 # required for building
-cython>=0.24.*
+cython=0.24.*
 
 # needed to run tests
 pytest
