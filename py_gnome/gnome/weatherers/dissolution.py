@@ -39,6 +39,7 @@ def printoptions(*args, **kwargs):
 class Dissolution(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('waves', save=True, update=True, save_reference=True)]
+    _state += [Field('wind', save=True, update=True, save_reference=True)]
 
     _schema = WeathererSchema
 
@@ -50,7 +51,12 @@ class Dissolution(Weatherer, Serializable):
         self.waves = waves
         self.wind = wind
 
-        super(Dissolution, self).__init__(**kwargs)
+        if waves is not None and wind is not None:
+            make_default_refs = False
+        else:
+            make_default_refs = True
+
+        super(Dissolution, self).__init__(make_default_refs=make_default_refs, **kwargs)
 
         self.array_types.update({'area': area,
                                  'mass':  mass,
