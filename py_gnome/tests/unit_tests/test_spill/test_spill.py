@@ -1228,7 +1228,7 @@ def test_grid_spill():
     assert spill.num_elements == resolution * resolution
     print vars(spill)
 
-    assert False
+    # assert False
 
 
 
