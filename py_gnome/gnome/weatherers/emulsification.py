@@ -14,6 +14,7 @@ from gnome.array_types import (frac_lost,  # due to evaporation and dissolution
                                mass,
                                oil_density,
                                density,
+                               positions,
                                bulltime,
                                interfacial_area,
                                oil_viscosity,
@@ -51,7 +52,7 @@ class Emulsification(Weatherer, Serializable):
 
         super(Emulsification, self).__init__(**kwargs)
         self.array_types.update({'age', 'bulltime', 'frac_water',
-                                 'density', 'viscosity',
+                                 'density', 'viscosity', 'positions',
                                  'oil_density', 'oil_viscosity',
                                  'mass', 'interfacial_area', 'frac_lost'})
 

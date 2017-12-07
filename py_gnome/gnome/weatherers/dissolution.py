@@ -16,6 +16,7 @@ from gnome.utilities.weathering import (BanerjeeHuibers, Stokes,
 
 from gnome.array_types import (area,
                                mass,
+                               positions,
                                density,
                                viscosity,
                                partition_coeff,
@@ -61,6 +62,7 @@ class Dissolution(Weatherer, Serializable):
         self.array_types.update({'area': area,
                                  'mass':  mass,
                                  'density': density,
+                                 'positions': positions,
                                  'viscosity': viscosity,
                                  'partition_coeff': partition_coeff,
                                  'droplet_avg_size': droplet_avg_size
