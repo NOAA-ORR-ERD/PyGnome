@@ -90,7 +90,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                      release_time=start_time,
                                      end_release_time=end_time,
                                      amount=1000,
-                                     substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
+                                     substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)',
                                      units='bbl')
 
     # set bullwinkle to .303 to cause mass goes to zero bug at 24 hours (when continuous release ends)
