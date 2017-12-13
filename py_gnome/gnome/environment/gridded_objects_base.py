@@ -142,6 +142,21 @@ class Grid_U(gridded.grids.Grid_U, serializable.Serializable):
     def get_cells(self):
         return self.nodes[self.faces]
 
+    def get_lines(self):
+        '''
+        Returns a pair of 1D arrays. The first is an array of lengths, the
+        second is a 1D array of lines. The first array sequentially indexes the
+        second array. When the second array is split up using the first array
+        and the resulting lines are drawn, you should end up with a picture of
+        the grid.
+        '''
+        open_cells = self.nodes[self.faces]
+        closed_cells = np.concatenate((open_cells, open_cells[:,None,0]), axis=1)
+        closed_cells = closed_cells.astype(np.float32, copy=False)
+        lengths = closed_cells.shape[1] * np.ones(closed_cells.shape[0], dtype=np.int32)
+
+        return (lengths, closed_cells)
+
     def get_nodes(self):
         return self.nodes[:]
 
@@ -149,6 +164,13 @@ class Grid_U(gridded.grids.Grid_U, serializable.Serializable):
         if self.face_coordinates == None:
             self.build_face_coordinates()
         return self.face_coordinates
+
+    def get_metadata(self):
+        json_ = {}
+        json_['nodes_shape'] = self.nodes.shape
+        json_['num_nodes'] = self.nodes.shape[0]
+        json_['num_cells'] = self.faces.shape[0]
+        return json_
 
 
 class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
@@ -219,6 +241,13 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
         else:
             return self.centers.reshape(-1,2)
 
+    def get_metadata(self):
+        json_ = {}
+        json_['nodes_shape'] = self.nodes.shape
+        json_['num_nodes'] = self.nodes.shape[0] * self.nodes.shape[1]
+        json_['num_cells'] = self._cell_trees['node'][2].shape[0]
+        return json_
+
 
 class Grid_R(gridded.grids.Grid_R, serializable.Serializable):
 
@@ -245,6 +274,8 @@ class Grid_R(gridded.grids.Grid_R, serializable.Serializable):
     def get_centers(self):
         return self.centers.reshape(-1,2)
 
+    def get_cells(self):
+        return np.concatenate(self.node_lon, self.node_lat)
 
 class PyGrid(gridded.grids.Grid):
 
