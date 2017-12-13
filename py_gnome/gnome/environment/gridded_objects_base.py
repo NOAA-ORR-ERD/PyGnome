@@ -144,9 +144,9 @@ class Grid_U(gridded.grids.Grid_U, serializable.Serializable):
 
     def get_lines(self):
         '''
-        Returns a pair of 1D arrays. The first is an array of lengths, the
-        second is a 1D array of lines. The first array sequentially indexes the
-        second array. When the second array is split up using the first array
+        Returns an array of lengths, and a list of line arrays.
+        The first array sequentially indexes the second array.
+        When the second array is split up using the first array
         and the resulting lines are drawn, you should end up with a picture of
         the grid.
         '''
@@ -155,7 +155,7 @@ class Grid_U(gridded.grids.Grid_U, serializable.Serializable):
         closed_cells = closed_cells.astype(np.float32, copy=False)
         lengths = closed_cells.shape[1] * np.ones(closed_cells.shape[0], dtype=np.int32)
 
-        return (lengths, closed_cells)
+        return (lengths, [closed_cells])
 
     def get_nodes(self):
         return self.nodes[:]
@@ -248,6 +248,21 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
         json_['num_cells'] = self._cell_trees['node'][2].shape[0]
         return json_
 
+    def get_lines(self):
+        '''
+        Returns an array of lengths, and a list of line arrays.
+        The first array sequentially indexes the second array.
+        When the second array is split up using the first array
+        and the resulting lines are drawn, you should end up with a picture of
+        the grid.
+        '''
+        hor_lines = np.dstack((self.node_lon[:], self.node_lat[:])).astype(np.float32, copy=False)
+        ver_lines = hor_lines.transpose((1, 0, 2)).astype(np.float32, copy=True)
+        hor_lens = hor_lines.shape[1] * np.ones(hor_lines.shape[0], dtype=np.int32)
+        ver_lens = ver_lines.shape[1] * np.ones(ver_lines.shape[0], dtype=np.int32)
+        lens = np.concatenate((hor_lens, ver_lens))
+        return (lens, [hor_lines, ver_lines])
+
 
 class Grid_R(gridded.grids.Grid_R, serializable.Serializable):
 
@@ -276,6 +291,15 @@ class Grid_R(gridded.grids.Grid_R, serializable.Serializable):
 
     def get_cells(self):
         return np.concatenate(self.node_lon, self.node_lat)
+
+    def get_lines(self):
+
+        lon_lines = np.array([[(lon, self.node_lat[0]), (lon, self.node_lat[len(self.node_lat)/2]), (lon, self.node_lat[-1])] for lon in self.node_lon], dtype=np.float32)
+        lat_lines = np.array([[(self.node_lon[0], lat), (self.node_lon[len(self.node_lon)/2], lat), (self.node_lon[-1], lat)] for lat in self.node_lat], dtype=np.float32)
+        lon_lens = lon_lines.shape[1] * np.ones(lon_lines.shape[0], dtype=np.int32)
+        lat_lens = lat_lines.shape[1] * np.ones(lat_lines.shape[0], dtype=np.int32)
+        lens = np.concatenate((lon_lens, lat_lens))
+        return (lens, [lon_lines, lat_lines])
 
 class PyGrid(gridded.grids.Grid):
 
