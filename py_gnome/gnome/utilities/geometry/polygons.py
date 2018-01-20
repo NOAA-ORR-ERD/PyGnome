@@ -75,9 +75,11 @@ class Polygon(np.ndarray):
 
     def __getitem__(self, index):
         """
-        Override __getitem__ to return a simple (2, ) ndarray, rather than a
+        Override __getitem__ to return a ndarray, rather than a
         Polygon object
         """
+        if type(index) is slice:
+            return Polygon(np.ndarray.__getitem__(self, index), self.metadata)
         return np.asarray(np.ndarray.__getitem__(self, index))
 
     def __eq__(self, other):
