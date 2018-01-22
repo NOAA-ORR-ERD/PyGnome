@@ -16,12 +16,11 @@ from gnome.utilities.weathering import (BanerjeeHuibers, Stokes,
 
 from gnome.array_types import (area,
                                mass,
+                               positions,
                                density,
                                viscosity,
                                partition_coeff,
                                droplet_avg_size)
-
-from gnome.scripting import constant_wind
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
@@ -41,6 +40,7 @@ def printoptions(*args, **kwargs):
 class Dissolution(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('waves', save=True, update=True, save_reference=True)]
+    _state += [Field('wind', save=True, update=True, save_reference=True)]
 
     _schema = WeathererSchema
 
@@ -52,14 +52,17 @@ class Dissolution(Weatherer, Serializable):
         self.waves = waves
         self.wind = wind
 
-        if self.wind is None:
-            self.wind = constant_wind(0,0)
+        if waves is not None and wind is not None:
+            make_default_refs = False
+        else:
+            make_default_refs = True
 
-        super(Dissolution, self).__init__(**kwargs)
+        super(Dissolution, self).__init__(make_default_refs=make_default_refs, **kwargs)
 
         self.array_types.update({'area': area,
                                  'mass':  mass,
                                  'density': density,
+                                 'positions': positions,
                                  'viscosity': viscosity,
                                  'partition_coeff': partition_coeff,
                                  'droplet_avg_size': droplet_avg_size

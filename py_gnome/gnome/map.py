@@ -1097,7 +1097,8 @@ class MapFromBNA(RasterMap):
             else:
                 map_bounds = BB.AsPoly()
 
-        elif spillable_area:
+        if spillable_area is None:
+            spillable_area = PolygonSet()
             spillable_area.append(map_bounds)
 
 

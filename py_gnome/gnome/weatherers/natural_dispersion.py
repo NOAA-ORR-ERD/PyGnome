@@ -14,6 +14,7 @@ from gnome.cy_gnome.cy_weatherers import disperse_oil
 from gnome.array_types import (viscosity,
                                mass,
                                density,
+                               positions,
                                area,
                                frac_water,
                                droplet_avg_size)
@@ -48,6 +49,7 @@ class NaturalDispersion(Weatherer):
         self.array_types.update({'viscosity': viscosity,
                                  'mass':  mass,
                                  'density': density,
+                                 'positions': positions,
                                  'area': area,
                                  'frac_water': frac_water,
                                  'droplet_avg_size': droplet_avg_size,

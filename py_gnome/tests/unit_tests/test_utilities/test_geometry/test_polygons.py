@@ -60,6 +60,7 @@ class Test_Polygon:
     def test_slice(self):
         P = Polygon([(1, 2), (3, 4), (5, 6)])
         print P[:2]
+        print Polygon([(1, 2), (3, 4)])[:]
         assert P[:2] == Polygon([(1, 2), (3, 4)])
 
     def test_metadata(self):

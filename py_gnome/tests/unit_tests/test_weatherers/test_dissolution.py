@@ -46,7 +46,7 @@ def test_sort_order():
     wind = constant_wind(15., 0)
     waves = Waves(wind, Water())
 
-    diss = Dissolution(waves)
+    diss = Dissolution(waves, wind)
     disp = NaturalDispersion(waves=waves, water=waves.water)
     weathering_data = WeatheringData(water=waves.water)
 
@@ -64,7 +64,7 @@ def test__deseriailize():
     water = Water()
     waves = Waves(wind, water)
 
-    diss = Dissolution(waves)
+    diss = Dissolution(waves, wind)
     json_ = diss.serialize()
     pp.pprint(json_)
 
@@ -83,7 +83,7 @@ def test__deseriailize():
 def test_prepare_for_model_run():
     'test sort order for Dissolution weatherer'
     et = floating(substance='oil_bahia')
-    diss = Dissolution(waves)
+    diss = Dissolution(waves, wind)
 
     # we don't want to query the oil database, but get the sample oil
     assert et.substance.record.id is None
@@ -110,7 +110,7 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
         coefficient (K_ow) is getting calculated with reasonable values
     '''
     et = floating(substance=oil)
-    diss = Dissolution(waves)
+    diss = Dissolution(waves, wind)
     (sc, time_step) = weathering_data_arrays(diss.array_types,
                                              water,
                                              element_type=et,
@@ -152,7 +152,7 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
     et = floating(substance=oil)
 
     disp = NaturalDispersion(waves, water)
-    diss = Dissolution(waves)
+    diss = Dissolution(waves, wind)
 
     (sc, time_step) = weathering_data_arrays(diss.array_types,
                                              water,
@@ -223,10 +223,11 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     et = floating(substance=oil)
 
     waves = build_waves_obj(wind_speed, 'knots', 270, temp)
+    wind = waves.wind
     water = waves.water
 
     disp = NaturalDispersion(waves, water)
-    diss = Dissolution(waves)
+    diss = Dissolution(waves, wind)
 
     all_array_types = diss.array_types.union(disp.array_types)
 
@@ -304,7 +305,7 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     model.environment += [Water(temp), wind,  waves]
     model.weatherers += Evaporation()
     model.weatherers += NaturalDispersion()
-    model.weatherers += Dissolution(waves)
+    model.weatherers += Dissolution(waves, wind)
 
     for sc in model.spills.items():
         print sc.__dict__.keys()
@@ -365,7 +366,7 @@ def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
     model.environment += [Water(temp), low_wind, low_waves]
     # model.weatherers += Evaporation(Water(temp), low_wind)
     model.weatherers += NaturalDispersion(low_waves, Water(temp))
-    model.weatherers += Dissolution(low_waves)
+    model.weatherers += Dissolution(low_waves, low_wind)
 
     print ('Model start time: {}, Duration: {}, Time step: {}'
            .format(model.start_time, model.duration, model.time_step))
@@ -417,7 +418,7 @@ def test_full_run_dissolution_not_active(sample_model_fcn):
     model.environment += [Water(288.7), wind,  waves]
     model.weatherers += Evaporation()
     model.weatherers += NaturalDispersion()
-    model.weatherers += Dissolution(waves=waves, on=False)
+    model.weatherers += Dissolution(waves=waves, wind=wind, on=False)
 
     model.outputters += WeatheringOutput()
     for step in model:

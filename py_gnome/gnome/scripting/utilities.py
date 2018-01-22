@@ -3,11 +3,17 @@ utilities for scripting  gnome
 
 assorted utilities that make it easier to write scripts to automate gnome
 
-designed to be imported into the pacakge __init__.py
+designed to be imported into the package __init__.py
+
+remember to add anyting new you want imported to "__all__"
 
 """
 import os
 import shutil
+
+__all__ = ["make_images_dir",
+           "remove_netcdf",
+           ]
 
 
 def make_images_dir(images_dir=None):

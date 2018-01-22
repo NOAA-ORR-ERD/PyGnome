@@ -115,7 +115,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                                      7.2),
                                      release_time=start_time,
                                      element_type=plume(distribution=wd,
-                                                        substance_name='ALASKA NORTH SLOPE (MIDDLE PIPELINE)')
+                                                        substance_name='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)')
                                      )
     model.spills += spill
 

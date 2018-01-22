@@ -550,7 +550,7 @@ class Langmuir(Weatherer, Serializable):
         initialize wind to (0, 0) if it is None
         '''
         super(Langmuir, self).__init__(**kwargs)
-        self.array_types.update(('area', 'fay_area', 'frac_coverage', 'spill_num', 'bulk_init_volume', 'density'))
+        self.array_types.update(('area', 'fay_area', 'frac_coverage', 'spill_num', 'bulk_init_volume', 'density', 'positions'))
 
         self.wind = wind
 

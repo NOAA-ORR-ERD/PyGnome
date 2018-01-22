@@ -27,9 +27,12 @@ from gnome.spill import (Spill,
                          Release,
                          point_line_release_spill,
                          SpatialRelease,
-                         InitElemsFromFile)
+                         InitElemsFromFile,
+                         grid_spill,
+                         )
 from gnome.spill.elements import (floating,
                                   ElementType)
+
 from gnome.spill_container import SpillContainer
 
 from ..conftest import mock_sc_array_types, mock_append_data_arrays, test_oil, testdata
@@ -1200,6 +1203,35 @@ class TestInitElementsFromFile():
                         assert np.all(sc[key] == s.release._init_data[key])
                     else:
                         assert np.any(sc[key] != s.release._init_data[key])
+
+def test_grid_spill():
+
+    # fixme -- needs a real test!
+
+    bounds = ((0.0, 0.0),
+              (10.0, 10.0))
+    resolution = 20
+    release_time = datetime(2017, 10, 20, 12)
+    spill = grid_spill(bounds,
+                       resolution,
+                       release_time
+                       )
+                       # substance=None,
+                       # amount=None,
+                       # units=None,
+                       # windage_range=(.01, .04),
+                       # windage_persist=900,
+                       # name='Surface Grid Spill'
+                       # )
+    print spill
+
+    assert spill.num_elements == resolution * resolution
+    print vars(spill)
+
+    # assert False
+
+
+
 
 if __name__ == '__main__':
 
