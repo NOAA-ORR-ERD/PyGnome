@@ -21,7 +21,7 @@ class PyWindMoverSchema(base_schema.ObjType):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())],
                           missing=drop)
-    current_scale = SchemaNode(Float(), missing=drop)
+    wind_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
     wind = GridWind._schema(missing=drop)
@@ -45,7 +45,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
     _state.add_field([serializable.Field('filename',
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
-                      serializable.Field('wind', save=True, read=True,
+                      serializable.Field('wind', read=True,
                                          save_reference=True),
                       serializable.Field('extrapolate', read=True, save=True)])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
@@ -80,13 +80,13 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                         will attempt to be instantiated from the file
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
-        :param current_scale: Value to scale current data
+        :param wind_scale: Value to scale wind data
         :param uncertain_duration: how often does a given uncertain element
                                    get reset
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
-        :param extrapolate: Allow current data to be extrapolated
+        :param extrapolate: Allow wind data to be extrapolated
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
         :param num_method: Numerical method for calculating movement delta.
@@ -130,7 +130,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                     filename=None,
                     extrapolate=False,
                     time_offset=0,
-                    current_scale=1,
+                    wind_scale=1,
                     uncertain_duration=24 * 3600,
                     uncertain_time_delay=0,
                     uncertain_along=.5,
@@ -145,7 +145,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                    filename=filename,
                    extrapolate=extrapolate,
                    time_offset=time_offset,
-                   current_scale=current_scale,
+                   wind_scale=wind_scale,
                    uncertain_along=uncertain_along,
                    uncertain_across=uncertain_across,
                    uncertain_cross=uncertain_cross,
@@ -169,7 +169,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
 
     @property
     def is_data_on_cells(self):
-        return self.wind.grid.infer_location(self.current.u.data) != 'node'
+        return self.wind.grid.infer_location(self.wind.u.data) != 'node'
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
