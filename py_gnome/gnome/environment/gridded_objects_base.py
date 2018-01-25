@@ -180,6 +180,11 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
     _state.add_field([serializable.Field('filename', save=True, update=True,
                                          isdatafile=True)])
 
+    '''hack to avoid problems when registering object in webgnome'''
+    @property
+    def non_grid_variables(self):
+        return None
+
     def draw_to_plot(self, ax, features=None, style=None):
         def_style = {'node': {'color': 'green',
                               'linestyle': 'dashed',
