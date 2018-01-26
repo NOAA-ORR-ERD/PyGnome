@@ -1,6 +1,8 @@
 import movers
 import copy
 
+import numpy as np
+
 from colander import (SchemaNode,
                       Bool, Float, String, Sequence, DateTime,
                       drop)
@@ -188,11 +190,12 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
         if sc.num_released is None or sc.num_released == 0:
             return
 
-        rand.random_with_persistance(sc['windage_range'][:, 0],
-                                     sc['windage_range'][:, 1],
-                                     sc['windages'],
-                                     sc['windage_persist'],
-                                     time_step)
+        if self.active:
+            rand.random_with_persistance(sc['windage_range'][:, 0],
+                                         sc['windage_range'][:, 1],
+                                         sc['windages'],
+                                         sc['windage_persist'],
+                                         time_step)
 
     def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
@@ -212,21 +215,26 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
         All movers must implement get_move() since that's what the model calls
         """
         method = None
-
-        if num_method is None:
-            method = self.num_methods[self.default_num_method]
-        else:
-            method = self.num_method[num_method]
-
-        status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
-        pos = positions[:]
 
-        deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
-        deltas[:, 0] *= sc['windages']
-        deltas[:, 1] *= sc['windages']
+        if self.active and len(positions) > 0:
+            if num_method is None:
+                method = self.num_methods[self.default_num_method]
+            else:
+                method = self.num_method[num_method]
 
-        deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
-        deltas[status] = (0, 0, 0)
+            status = sc['status_codes'] != oil_status.in_water
+            #positions = sc['positions']
+            pos = positions[:]
+
+            deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
+            deltas[:, 0] *= sc['windages']
+            deltas[:, 1] *= sc['windages']
+
+            deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
+            deltas[status] = (0, 0, 0)
+
+        else:
+           deltas = np.zeros_like(positions)
 
         return deltas
