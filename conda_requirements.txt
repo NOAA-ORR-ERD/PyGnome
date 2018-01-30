@@ -2,7 +2,10 @@
 #  this covers py_gnome and the oil_library
 #  This should be the minimal conda install
 #  install with:
-#  conda install --file conda_requirements.txt
+#    conda install --file conda_requirements.txt
+#
+#  or create an environmemnt:
+#    conda create -n gnome --file conda_requirements.txt
 # These packages would all be in one of the following channels:
 # defaults
 # conda-forge
