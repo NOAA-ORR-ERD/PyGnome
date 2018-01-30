@@ -35,8 +35,8 @@ def check_dependency_versions():
     a warning is displayed
     """
     libs = [('gridded', '0.0.9'),
-            ('oil_library', '1.0.6'),
-            ('unit_conversion', '2.5.5')]
+            ('oil_library', '1.0.7'),
+            ('unit_conversion', '2.6.0')]
 
     for name, version in libs:
         # import the lib:

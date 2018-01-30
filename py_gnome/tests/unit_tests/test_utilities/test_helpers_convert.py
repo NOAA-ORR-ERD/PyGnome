@@ -35,23 +35,24 @@ def wind_ts(rq_wind):
               .view(dtype=np.recarray))
 
     date_times = ([zero_time()] * len(rq_wind['uv']))
-    tv = (np.array(zip(date_times, rq_wind['uv']), dtype=time_value_pair)
-          .view(dtype=np.recarray))
 
-    print 'Test Case - actual values:'
-    print 'datetime_value_2d: datetime, (r, theta):'
-    print dtv_rq.time
-    print dtv_rq.value
+    values = zip(date_times, (tuple(w) for w in rq_wind['uv']))
+    tv = (np.array(values, dtype=time_value_pair).view(dtype=np.recarray))
 
-    print '----------'
-    print 'datetime_value_2d: datetime, (u, v):'
-    print dtv_uv.time
-    print dtv_uv.value
+    # print 'Test Case - actual values:'
+    # print 'datetime_value_2d: datetime, (r, theta):'
+    # print dtv_rq.time
+    # print dtv_rq.value
 
-    print '----------'
-    print 'time_value_pair: time, (u, v):'
-    print tv.time
-    print tv.value.reshape(len(tv.value), -1)
+    # print '----------'
+    # print 'datetime_value_2d: datetime, (u, v):'
+    # print dtv_uv.time
+    # print dtv_uv.value
+
+    # print '----------'
+    # print 'time_value_pair: time, (u, v):'
+    # print tv.time
+    # print tv.value.reshape(len(tv.value), -1)
 
     return {'dtv_rq': dtv_rq, 'dtv_uv': dtv_uv, 'tv': tv}
 
@@ -149,3 +150,5 @@ def test_to_datetime_value_2d_uv(wind_ts, out_ts_format):
                  .view(dtype=np.recarray))
 
     assert np.allclose(out_dtval.value, wind_ts['dtv_uv'].value, atol, rtol)
+
+
