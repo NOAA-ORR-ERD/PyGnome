@@ -108,10 +108,7 @@ class ShapeOutput(Outputter, Serializable):
             w = shp.Writer(shp.POINT)
             w.autobalance = 1
 
-            w.field('Year', 'C')
-            w.field('Month', 'C')
-            w.field('Day', 'C')
-            w.field('Hour', 'C')
+            w.field('Time', 'C')
             w.field('LE id', 'N')
             w.field('Depth', 'N')
             w.field('Mass', 'N')
@@ -141,10 +138,7 @@ class ShapeOutput(Outputter, Serializable):
 
                 for k, p in enumerate(sc['positions']):
                     self.w_u.point(p[0], p[1])
-                    self.w_u.record(curr_time.year,
-                                    curr_time.month,
-                                    curr_time.day,
-                                    curr_time.hour,
+                    self.w_u.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
                                     sc['id'][k],
                                     p[2],
                                     sc['mass'][k],
@@ -153,10 +147,7 @@ class ShapeOutput(Outputter, Serializable):
             else:
                 for k, p in enumerate(sc['positions']):
                     self.w.point(p[0], p[1])
-                    self.w.record(curr_time.year,
-                                  curr_time.month,
-                                  curr_time.day,
-                                  curr_time.hour,
+                    self.w.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
                                   sc['id'][k],
                                   p[2],
                                   sc['mass'][k],
