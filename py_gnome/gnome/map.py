@@ -340,6 +340,9 @@ class GnomeMap(Serializable):
         np.maximum(next_positions[:, 2], 0.0, out=next_positions[:, 2])
         return None
 
+    def to_geojson(self):
+        return FeatureCollection([])
+
 
 class ParamMap(GnomeMap):
     _state = copy.deepcopy(GnomeMap._state)
