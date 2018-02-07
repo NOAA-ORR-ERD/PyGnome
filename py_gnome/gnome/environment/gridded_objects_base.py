@@ -320,54 +320,6 @@ class PyGrid(gridded.grids.Grid):
 
         return gridded.grids.Grid._get_grid_type(*args, **kwargs)
 
-class DepthBase(gridded.depth.DepthBase):
-    _state = copy.deepcopy(serializable.Serializable._state)
-    _schema = DepthSchema
-    _state.add_field([serializable.Field('filename', save=True, update=True,
-                                         isdatafile=True)])
-    @classmethod
-    def new_from_dict(cls, dict_):
-        dict_.pop('json_')
-        filename = dict_['filename']
-
-        rv = cls.from_netCDF(filename)
-        rv.__class__._restore_attr_from_save(rv, dict_)
-        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
-        rv.__class__._def_count -= 1
-        return rv
-
-class L_Depth(gridded.depth.L_Depth):
-    _state = copy.deepcopy(serializable.Serializable._state)
-    _schema = DepthSchema
-    _state.add_field([serializable.Field('filename', save=True, update=True,
-                                         isdatafile=True)])
-    @classmethod
-    def new_from_dict(cls, dict_):
-        dict_.pop('json_')
-        filename = dict_['filename']
-
-        rv = cls.from_netCDF(filename)
-        rv.__class__._restore_attr_from_save(rv, dict_)
-        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
-        rv.__class__._def_count -= 1
-        return rv
-
-class S_Depth(gridded.depth.S_Depth):
-    _state = copy.deepcopy(serializable.Serializable._state)
-    _schema = DepthSchema
-    _state.add_field([serializable.Field('filename', save=True, update=True,
-                                         isdatafile=True)])
-    @classmethod
-    def new_from_dict(cls, dict_):
-        dict_.pop('json_')
-        filename = dict_['filename']
-
-        rv = cls.from_netCDF(filename)
-        rv.__class__._restore_attr_from_save(rv, dict_)
-        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
-        rv.__class__._def_count -= 1
-        return rv
-
 class Depth(gridded.depth.Depth):
     @staticmethod
     def from_netCDF(*args, **kwargs):
@@ -388,7 +340,7 @@ class Variable(gridded.Variable, serializable.Serializable):
     _state.add_field([serializable.Field('units', save=True, update=True),
                       serializable.Field('time', save=True, update=True,
                                          save_reference=True),
-                      serializable.Field('grid', save=True, update=True,
+                      serializable.Field('grid', update=True, read=True,
                                          save_reference=True),
                       serializable.Field('varname', save=True, update=True),
                       serializable.Field('data_file', save=True, update=True,
@@ -413,6 +365,72 @@ class Variable(gridded.Variable, serializable.Serializable):
         return super(Variable, cls).new_from_dict(dict_)
 
 
+class DepthBase(gridded.depth.DepthBase):
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = DepthSchema
+    _state.add_field([serializable.Field('filename', save=True, update=True,
+                                         isdatafile=True)])
+    _default_component_types = copy.deepcopy(gridded.depth.DepthBase
+                                             ._default_component_types)
+    _default_component_types.update({'time': Time,
+                                     'grid': PyGrid,
+                                     'variable': Variable})
+    @classmethod
+    def new_from_dict(cls, dict_):
+        dict_.pop('json_')
+        filename = dict_['filename']
+
+        rv = cls.from_netCDF(filename)
+        rv.__class__._restore_attr_from_save(rv, dict_)
+        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
+        rv.__class__._def_count -= 1
+        return rv
+
+
+class L_Depth(gridded.depth.L_Depth):
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = DepthSchema
+    _state.add_field([serializable.Field('filename', save=True, update=True,
+                                         isdatafile=True)])
+    _default_component_types = copy.deepcopy(gridded.depth.L_Depth
+                                             ._default_component_types)
+    _default_component_types.update({'time': Time,
+                                     'grid': PyGrid,
+                                     'variable': Variable})
+    @classmethod
+    def new_from_dict(cls, dict_):
+        dict_.pop('json_')
+        filename = dict_['filename']
+
+        rv = cls.from_netCDF(filename)
+        rv.__class__._restore_attr_from_save(rv, dict_)
+        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
+        rv.__class__._def_count -= 1
+        return rv
+
+
+class S_Depth(gridded.depth.S_Depth):
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _schema = DepthSchema
+    _state.add_field([serializable.Field('filename', save=True, update=True,
+                                         isdatafile=True)])
+    _default_component_types = copy.deepcopy(gridded.depth.S_Depth
+                                             ._default_component_types)
+    _default_component_types.update({'time': Time,
+                                     'grid': PyGrid,
+                                     'variable': Variable})
+    @classmethod
+    def new_from_dict(cls, dict_):
+        dict_.pop('json_')
+        filename = dict_['filename']
+
+        rv = cls.from_netCDF(filename)
+        rv.__class__._restore_attr_from_save(rv, dict_)
+        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
+        rv.__class__._def_count -= 1
+        return rv
+
+
 class VectorVariable(gridded.VectorVariable, serializable.Serializable):
 
     _state = copy.deepcopy(serializable.Serializable._state)
@@ -420,7 +438,7 @@ class VectorVariable(gridded.VectorVariable, serializable.Serializable):
     _state.add_field([serializable.Field('units', save=True, update=True),
                       serializable.Field('time', save=True, update=True,
                                          save_reference=True),
-                      serializable.Field('grid', save=True, update=True,
+                      serializable.Field('grid', update=True, read=True,
                                          save_reference=True),
                       serializable.Field('variables', save=True, update=True,
                                          read=True, iscollection=True),
