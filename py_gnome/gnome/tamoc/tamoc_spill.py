@@ -27,127 +27,81 @@ from tamoc import chemical_properties as chem
 
 __all__ = []
 
-# def tamoc_spill(release_time,
-#                 start_position,
-#                 num_elements=None,
-#                 end_release_time=None,
-#                 name='TAMOC plume'):
-#     '''
-#     Helper function returns a Spill object for a spill from the TAMOC model
-
-#     This version is essentially a template -- it needs to be filled in with
-#     access to the parameters from the "real" TAMOC model.
-
-#     Also, this version is for inert particles only a size and density.
-#     They will not change once released into gnome.
-
-#     Future work: create a "proper" weatherable oil object.
-
-#     :param release_time: start of plume release
-#     :type release_time: datetime.datetime
-
-#     :param start_position: location of initial release
-#     :type start_position: 3-tuple of floats (long, lat, depth)
-
-#     :param num_elements: total number of elements to be released
-#     :type num_elements: integer
-
-#     :param end_release_time=None: End release time for a time varying release.
-#                                   If None, then release runs for tehmodel duration
-#     :type end_release_time: datetime.datetime
-
-#     :param float flow_rate=None: rate of release mass or volume per time.
-#     :param str units=None: must provide units for amount spilled.
-#     :param tuple windage_range=(.01, .04): Percentage range for windage.
-#                                            Active only for surface particles
-#                                            when a mind mover is added
-#     :param windage_persist=900: Persistence for windage values in seconds.
-#                                 Use -1 for inifinite, otherwise it is
-#                                 randomly reset on this time scale.
-#     :param str name='TAMOC spill': a name for the spill.
-#     '''
-
-#     release = PointLineRelease(release_time=release_time,
-#                                start_position=start_position,
-#                                num_elements=num_elements,
-#                                end_release_time=end_release_time)
-
-#     # This helper function is just passing parameters thru to the plume
-#     # helper function which will do the work.
-#     # But this way user can just specify all parameters for release and
-#     # element_type in one go...
-#     element_type = elements.plume(distribution_type=distribution_type,
-#                                   distribution=distribution,
-#                                   substance_name=substance,
-#                                   windage_range=windage_range,
-#                                   windage_persist=windage_persist,
-#                                   density=density,
-#                                   density_units=density_units)
-
-#     return Spill(release,
-#                  element_type=element_type,
-#                  amount=amount,
-#                  units=units,
-#                  name=name)
-
 
 class TamocDroplet():
     """
     Dummy class to show what we need from the TAMOC output
+
+    :param mass_flux=1.0: Measured in kg/s
+    :param radius=1e-6:   Measured in meters
+    :param density=900.0: Measured in kg/m^3 at 15degC
+    :param position=(10, 20, 100): (x, y, z) in meters
+    :param flag_phase_insitu='Mixture': Flag for the phase of the particle
+                                        at plumetermination
+    :param flag_phase_surface='Mixture': Flag for the phase of the particle
+                                         at 1 atm and 15 degC
     """
     def __init__(self,
-                 mass_flux=1.0,  # kg/s
-                 radius=1e-6,  # meters
-                 density=900.0,  # kg/m^3 at 15degC
-                 position=(10, 20, 100),  # (x, y, z) in meters
-                 flag_phase_insitu = 'Mixture', # flag for the phase of the particle at  plumetermination
-                 flag_phase_surface = 'Mixture' # flag for the phase of the particle at  1 atm and 15 degC
-                 ):
+                 mass_flux=1.0,
+                 radius=1e-6,
+                 density=900.0,
+                 position=(10, 20, 100),
+                 flag_phase_insitu='Mixture',
+                 flag_phase_surface='Mixture'):
 
         self.mass_flux = mass_flux
         self.radius = radius
         self.density = density
         self.position = np.asanyarray(position)
+        self.flag_phase_insitu = flag_phase_insitu
+        self.flag_phase_surface = flag_phase_surface
 
     def __repr__(self):
-        return '[flux = {0}, radius = {1}, density = {2}, position = {3}]'.format(self.mass_flux, self.radius, self.density, self.position)
+        return ('[flux = {0}, radius = {1}, density = {2}, position = {3}]'
+                .format(self.mass_flux,
+                        self.radius,
+                        self.density,
+                        self.position))
 
 
 class TamocDissMasses():
     """
         Dummy class to show what we need from the TAMOC output
-        """
+
+        :param mass_flux=1.0: Measured in kg/s
+        :param position=(10, 20, 100): (x, y, z) in meters
+        :param chem_name='x': The name of the chemical
+    """
     def __init__(self,
-                 mass_flux=1.0,  # kg/s
-                 position=(10, 20, 100),  # (x, y, z) in meters
-                 chem_name='x'
-                 ):
+                 mass_flux=1.0,
+                 position=(10, 20, 100),
+                 chem_name='x'):
         self.mass_flux = mass_flux
         self.position = np.asanyarray(position)
         self.chem_name = chem_name
 
     def __repr__(self):
-        return '[flux = {0}, position = {1}, chem_name = {2}]'.format(self.mass_flux, self.position, self.chem_name)
+        return ('[flux = {0}, position = {1}, chem_name = {2}]'
+                .format(self.mass_flux, self.position, self.chem_name))
 
 
 def log_normal_pdf(x, mean, std):
     """
-    Utility  to compute the log normal CDF
-
-    used to get "realistic" distributin of droplet sizes
-
+        Utility  to compute the log normal CDF
+        - used to get a "realistic" distribution of droplet sizes
     """
-
     sigma = np.sqrt(np.log(1 + std ** 2 / mean ** 2))
     mu = np.log(mean) + sigma ** 2 / 2
-    return ((1 / (x * sigma * np.sqrt(2 * np.pi))) * np.exp(-((np.log(x) - mu) ** 2 / (2 * sigma ** 2))))
+
+    return ((1 / (x * sigma * np.sqrt(2 * np.pi))) *
+            np.exp(-((np.log(x) - mu) ** 2 / (2 * sigma ** 2))))
 
 
 def fake_tamoc_results(num_droplets=10):
     """
-    utility for providing a tamoc result set
+        utility for providing a tamoc result set
 
-    a simple list of TamocDroplet objects
+        Returns a simple list of TamocDroplet objects
     """
 
     # sizes from 10 to 1000 microns
@@ -177,60 +131,10 @@ def fake_tamoc_results(num_droplets=10):
 class TamocSpill(gnome.spill.spill.BaseSpill):
     """
     Models a spill
+
+    TODO: we should not be using complex multidemensional values as
+          parameter defaults such as the one used for 'tamoc_parameters'
     """
-    # _update = ['on', 'release',
-    #            'amount', 'units', 'amount_uncertainty_scale']
-
-    # _create = ['frac_coverage']
-    # _create.extend(_update)
-
-    # _state = copy.deepcopy(serializable.Serializable._state)
-    # _state.add(save=_create, update=_update)
-    # _state += serializable.Field('element_type',
-    #                              save=True,
-    #                              save_reference=True,
-    #                              update=True)
-    # _schema = SpillSchema
-
-    # valid_vol_units = _valid_units('Volume')
-    # valid_mass_units = _valid_units('Mass')
-#         # Release depth (m)
-#         z0 = 2000
-#         # Release diameter (m)
-#         D = 0.30
-#         # Release temperature (K)
-#         T0 = 273.15 + 150.
-#         # Release angles of the plume (radians)
-#         phi_0 = -np.pi / 2.
-#         theta_0 = 0.
-#         # Salinity of the continuous phase fluid in the discharge (psu)
-#         S0 = 0.
-#         # Concentration of passive tracers in the discharge (user-defined)
-#         c0 = 1.
-#         # List of passive tracers in the discharge
-#         chem_name = 'tracer'
-#         # Presence or abscence of hydrates in the particles
-#         hydrate = True
-#         # Prescence or abscence of dispersant
-#         dispersant = True
-#         # Reduction in interfacial tension due to dispersant
-#         sigma_fac = np.array([[1.], [1. / 200.]])  # sigma_fac[0] - for gas; sigma_fac[1] - for liquid
-#         # Define liquid phase as inert
-#         inert_drop = 'False'
-#         # d_50 of gas particles (m)
-#         d50_gas = 0.008
-#         # d_50 of oil particles (m)
-#         d50_oil = 0.0038
-#         # number of bins in the particle size distribution
-#         nbins = 10
-#         # Create the ambient profile needed for TAMOC
-#         # name of the nc file
-#         nc_file = './Input/case_01'
-#         # Define and input the ambient ctd profiles
-#         fname_ctd = './Input/ctd_api.txt'
-#         # Define and input the ambient velocity profile
-#         ua = 0.05
-
     def __init__(self,
                  release_time,
                  start_position,
@@ -264,9 +168,6 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                                'salinity': None,
                                'temperature': None}
                  ):
-        """
-
-        """
         super(TamocSpill, self).__init__(release_time=release_time,
                                          name=name)
 
@@ -277,7 +178,11 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         self.num_released = 0
         self.amount_released = 0.0
 
-        self.tamoc_interval = timedelta(hours=TAMOC_interval) if TAMOC_interval is not None else None
+        if TAMOC_interval is not None:
+            self.tamoc_interval = timedelta(hours=TAMOC_interval)
+        else:
+            self.tamoc_interval = None
+
         self.last_tamoc_time = release_time
         self.droplets = None
         self.on = on  # spill is active or not
@@ -291,35 +196,38 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             currents = ds['currents']
             u_data = currents.variables[0].data
             v_data = currents.variables[1].data
-            source_idx=None
+            source_idx = None
+
             try:
                 source_idx = currents.grid.locate_faces(np.array(self.start_position)[0:2], 'node')
             except TypeError:
                 source_idx = currents.grid.locate_faces(np.array(self.start_position)[0:2])
+
             if currents.grid.node_lon.shape[0] == u_data.shape[-1]:
                 # lon/lat are inverted in data so idx must be reversed
                 source_idx = source_idx[::-1]
+
             print source_idx
             time_idx = currents.time.index_of(current_time, False)
             print time_idx
             u_conditions = u_data[time_idx, :, source_idx[0], source_idx[1]]
             max_depth_ind = np.where(u_conditions.mask)[0].min()
             u_conditions = u_conditions[0:max_depth_ind]
-            v_conditions = v_data[time_idx, 0:max_depth_ind, source_idx[0], source_idx[1]]
-#            for d in range(0, max_depth_ind):
-#                uv[d] = currents.at(np.array(self.start_position)[0:2], current_time, depth=d, memoize=False)
-#                print d
-#                print uv[d]
+            v_conditions = v_data[time_idx, 0:max_depth_ind,
+                                  source_idx[0], source_idx[1]]
+
             self.tamoc_parameters['ua'] = u_conditions
             self.tamoc_parameters['va'] = v_conditions
             print 'getdepths'
-#            depth_var = u_data._grp[currents.variables[0].data.dimensions[1]]
+
             try:
                 self.tamoc_parameters['depths'] = u_data._grp['depth_levels'][0:max_depth_ind]
             except IndexError:
                 self.tamoc_parameters['depths'] = u_data._grp['depth'][0:max_depth_ind]
+
         if ds['salinity'] is not None:
             pass
+
         if ds['temperature'] is not None:
             pass
 
@@ -335,10 +243,13 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                     self.droplets, self.diss_components = self._run_tamoc()
                 return self.droplets
 
-            if (current_time >= self.release_time and (self.last_tamoc_time is None or self.droplets is None) or
-                    current_time >= self.last_tamoc_time + self.tamoc_interval and current_time < self.end_release_time):
+            if (current_time >= self.release_time and
+                    (self.last_tamoc_time is None or self.droplets is None) or
+                    current_time >= self.last_tamoc_time + self.tamoc_interval and
+                    current_time < self.end_release_time):
                 self.last_tamoc_time = current_time
                 self.droplets, self.diss_components = self._run_tamoc()
+
         return self.droplets
 
     def _run_tamoc(self):
@@ -350,6 +261,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Release conditions
 
         tp = self.tamoc_parameters
+
         # Release depth (m)
         z0 = tp['depth']
         # Release diameter (m)
@@ -365,14 +277,17 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         S0 = tp['discharge_salinity']
         # Concentration of passive tracers in the discharge (user-defined)
         c0 = tp['tracer_concentration']
+
         # List of passive tracers in the discharge
         chem_name = 'tracer'
         # Presence or abscence of hydrates in the particles
+
         hydrate = tp['hydrate']
-        # Prescence or abscence of dispersant
+        # Presence or absence of dispersant
         dispersant = tp['dispersant']
         # Reduction in interfacial tension due to dispersant
-        sigma_fac = tp['sigma_fac']  # sigma_fac[0] - for gas; sigma_fac[1] - for liquid
+        # sigma_fac[0] - for gas; sigma_fac[1] - for liquid
+        sigma_fac = tp['sigma_fac']
         # Define liquid phase as inert
         inert_drop = tp['inert_drop']
         # d_50 of gas particles (m)
@@ -381,11 +296,14 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         d50_oil = tp['d50_oil']
         # number of bins in the particle size distribution
         nbins = tp['nbins']
+
         # Create the ambient profile needed for TAMOC
         # name of the nc file
         nc_file = tp['nc_file']
+
         # Define and input the ambient ctd profiles
         fname_ctd = tp['fname_ctd']
+
         # Define and input the ambient velocity profile
         ua = tp['ua']
         va = tp['va']
@@ -401,31 +319,37 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Read in the user-specified properties for the chemical data
         data, units = chem.load_data('./Input/API_ChemData.csv')
         oil = dbm.FluidMixture(composition, user_data=data)
-        #oil.delta = self.load_delta('./Input/API_Delta.csv',oil.nc)
+
+        # oil.delta = self.load_delta('./Input/API_Delta.csv',oil.nc)
 
 #        if np.sum(oil.delta==0.):
 #            print 'Binary interaction parameters are zero, estimating them.'
 #            # Estimate the values of the binary interaction parameters
 #            oil.delta = self.estimate_binary_interaction_parameters(oil)
 
-
         # Get the release rates of gas and liquid phase
         md_gas, md_oil = self.release_flux(oil, mass_frac, profile, T0, z0, Q)
         print 'md_gas, md_oil', np.sum(md_gas), np.sum(md_oil)
         # Get the particle list for this composition
-        particles = self.get_particles(composition, data, md_gas, md_oil, profile, d50_gas, d50_oil,
-                                  nbins, T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop)
+        particles = self.get_particles(composition, data,
+                                       md_gas, md_oil, profile,
+                                       d50_gas, d50_oil,
+                                       nbins, T0, z0,
+                                       dispersant, sigma_fac, oil, mass_frac,
+                                       hydrate, inert_drop)
         print len(particles)
         print particles
 
         # Run the simulation
         jlm = bpm.Model(profile)
-        jlm.simulate(np.array([0., 0., z0]), D, None, phi_0, theta_0,
-                     S0, T0, c0, chem_name, particles, track=False, dt_max=60.,
-                     sd_max=6000.)
+        jlm.simulate(np.array([0., 0., z0]),
+                     D, None, phi_0, theta_0, S0, T0, c0,
+                     chem_name, particles,
+                     track=False, dt_max=60., sd_max=6000.)
 
         # Update the plume object with the nearfiled terminal level answer
-        jlm.q_local.update(jlm.t[-1], jlm.q[-1], jlm.profile, jlm.p, jlm.particles)
+        jlm.q_local.update(jlm.t[-1], jlm.q[-1],
+                           jlm.profile, jlm.p, jlm.particles)
 
         Mp = np.zeros((len(jlm.particles), len(jlm.q_local.M_p[0])))
         gnome_particles = []
@@ -435,52 +359,90 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         for i in range(len(jlm.particles)):
             nb0 = jlm.particles[i].nb0
             Tp = jlm.particles[i].T
-            Mp[i, 0:len(jlm.q_local.M_p[i])] = jlm.q_local.M_p[i][:] / jlm.particles[i].nbe
+            Mp[i, 0:len(jlm.q_local.M_p[i])] = (jlm.q_local.M_p[i][:] /
+                                                jlm.particles[i].nbe)
+
             mass_flux = np.sum(Mp[i, :] * jlm.particles[i].nb0)
             density = jlm.particles[i].rho_p
+
             radius = (jlm.particles[i].diameter(Mp[i, 0:len(jlm.particles[i].m)], Tp,
-                                                jlm.q_local.Pa, jlm.q_local.S, jlm.q_local.T)) / 2.
-            position = np.array([jlm.particles[i].x, jlm.particles[i].y, jlm.particles[i].z])
+                                                jlm.q_local.Pa,
+                                                jlm.q_local.S,
+                                                jlm.q_local.T)) / 2.
+
+            position = np.array([jlm.particles[i].x,
+                                 jlm.particles[i].y,
+                                 jlm.particles[i].z])
+
             # Calculate the equlibrium and get the particle phase
             Eq_parti = dbm.FluidMixture(composition=jlm.particles[i].composition[:],
                                         user_data=data)
+
             # Get the particle equilibrium at the plume termination conditions
             print 'Insitu'
-            flag_phase_insitu = self.get_phase(jlm.profile, Eq_parti, Mp[i, :]/np.sum(Mp[i, :]), Tp, jlm.particles[i].z)
+            flag_phase_insitu = self.get_phase(jlm.profile,
+                                               Eq_parti,
+                                               Mp[i, :] / np.sum(Mp[i, :]),
+                                               Tp,
+                                               jlm.particles[i].z)
+
             # Get the particle equilibrium at the 15 C and 1 atm
             print 'Surface'
-            flag_phase_surface = self.get_phase(jlm.profile, Eq_parti, Mp[i, :]/np.sum(Mp[i, :]), 273.15 + 15. , 0.)
-            gnome_particles.append(TamocDroplet(mass_flux, radius, density, position))
+            flag_phase_surface = self.get_phase(jlm.profile,
+                                                Eq_parti,
+                                                Mp[i, :] / np.sum(Mp[i, :]),
+                                                273.15 + 15.,
+                                                0.)
+            gnome_particles.append(TamocDroplet(mass_flux, radius, density,
+                                                position))
 
         for p in gnome_particles:
             print p
+
         m_tot_diss = 0.
+
         # Calculate the dissolved particle flux
         for j in range(len(jlm.chem_names)):
-            diss_mass_flux = jlm.q_local.c_chems[j] * np.pi * jlm.q_local.b**2 * jlm.q_local.V
+            diss_mass_flux = (jlm.q_local.c_chems[j] *
+                              np.pi *
+                              jlm.q_local.b ** 2 *
+                              jlm.q_local.V)
             m_tot_diss += diss_mass_flux
-#            print diss_mass_flux
-            position = np.array([jlm.q_local.x, jlm.q_local.y, jlm.q_local.z])
-#            print position
-            chem_name = jlm.q_local.chem_names[j]
-#            print chem_name
-            gnome_diss_components.append(TamocDissMasses(diss_mass_flux, position,chem_name))
 
-        print 'total dissolved mass flux at plume termination' ,m_tot_diss
-        print 'total non ddissolved mass flux at plume termination', m_tot_nondiss
-        print 'total mass flux tracked at plume termination',m_tot_diss+m_tot_nondiss
-        print 'total mass flux released at the orifice',np.sum(md_gas)+ np.sum(md_oil)
-        print 'perccentsge_error', (np.sum(md_gas)+ np.sum(md_oil)-m_tot_diss-m_tot_nondiss)/(np.sum(md_gas)+ np.sum(md_oil))*100.
+            position = np.array([jlm.q_local.x, jlm.q_local.y, jlm.q_local.z])
+            chem_name = jlm.q_local.chem_names[j]
+            gnome_diss_components.append(TamocDissMasses(diss_mass_flux,
+                                                         position,
+                                                         chem_name))
+
+        print ('total dissolved mass flux at plume termination {}\n'
+               'total non-dissolved mass flux at plume termination {}\n'
+               'total mass flux tracked at plume termination {}\n'
+               'total mass flux released at the orifice {}\n'
+               'percentage_error {}'
+               .format(m_tot_diss,
+                       m_tot_nondiss,
+                       m_tot_diss + m_tot_nondiss,
+                       np.sum(md_gas) + np.sum(md_oil),
+                       ((np.sum(md_gas) + np.sum(md_oil) -
+                         m_tot_diss - m_tot_nondiss) /
+                        (np.sum(md_gas) + np.sum(md_oil)) * 100.)))
 
         # Now, we will generate the GNOME properties for a weatherable particle
         # For now, computed at the release location:
         # The pressure at release:
-        P0 = profile.get_values(z0,['pressure'])
-        (K_ow, json_oil) = self.translate_properties_gnome_to_tamoc(md_oil, composition, oil, P0, S0, T=288.15)
+        P0 = profile.get_values(z0, ['pressure'])
+        K_ow, json_oil = self.translate_properties_gnome_to_tamoc(md_oil,
+                                                                  composition,
+                                                                  oil,
+                                                                  P0, S0,
+                                                                  T=288.15)
 
         return gnome_particles, gnome_diss_components
+
     def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}()'.format(self))
+        return ('{0.__class__.__module__}.{0.__class__.__name__}()'
+                .format(self))
 
     def _get_mass_distribution(self, mass_fluxes, time_step):
         ts = time_step
@@ -519,10 +481,11 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             return True
         else:
             msg = ('Units for amount spilled must be in volume or mass units. '
-                   'Valid units for volume: {0}, for mass: {1} ').format(
-                       self.valid_vol_units, self.valid_mass_units)
+                   'Valid units for volume: {0}, for mass: {1}'
+                   .format(self.valid_vol_units, self.valid_mass_units))
             ex = uc.InvalidUnitError(msg)
             self.logger.exception(ex, exc_info=True)
+
             raise ex  # this should be raised since run will fail otherwise
 
     # what is this for??
@@ -572,7 +535,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         """
         self.num_released = 0
         self.amount_released = 0
-        # don't want to run tamoc on every rewind! self.droplets = self.run_tamoc()
+
+        # don't want to run tamoc on every rewind!
         self.last_tamoc_time = None
 
     def num_elements_to_release(self, current_time, time_step):
@@ -594,10 +558,11 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         if not self.on:
             return 0
 
-        if current_time < self.release_time or current_time > self.end_release_time:
+        if (current_time < self.release_time or
+                current_time > self.end_release_time):
             return 0
 
-        self.droplets= self.run_tamoc(current_time, time_step)
+        self.droplets = self.run_tamoc(current_time, time_step)
 
         duration = (self.end_release_time - self.release_time).total_seconds()
         if duration is 0:
@@ -640,27 +605,36 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         mass_fluxes = [tam_drop.mass_flux for tam_drop in self.droplets]
         delta_masses, proportions, total_mass = self._get_mass_distribution(mass_fluxes, time_step)
 
-        # set up LE distribution, the number of particles in each 'release point'
+        # set up LE distribution,
+        # the number of particles in each 'release point'
         LE_distribution = [int(num_new_particles * p) for p in proportions]
         diff = num_new_particles - sum(LE_distribution)
         for i in range(0, diff):
             LE_distribution[i % len(LE_distribution)] += 1
 
         # compute release point location for each droplet
-        positions = [self.start_position + FlatEarthProjection.meters_to_lonlat(d.position, self.start_position) for d in self.droplets]
+        positions = [self.start_position +
+                     FlatEarthProjection.meters_to_lonlat(d.position,
+                                                          self.start_position)
+                     for d in self.droplets]
+
         for p in positions:
             p[0][2] -= self.start_position[2]
 
-        # for each release location, set the position and mass of the elements released at that location
+        # for each release location, set the position and mass
+        # of the elements released at that location
         total_rel = 0
-        for mass_dist, n_LEs, pos, droplet in zip(delta_masses, LE_distribution, positions, self.droplets):
+        for mass_dist, n_LEs, pos, droplet in zip(delta_masses,
+                                                  LE_distribution,
+                                                  positions, self.droplets):
             start_idx = -num_new_particles + total_rel
+
             if start_idx == 0:
                 break
             end_idx = start_idx + n_LEs
             if end_idx == 0:
                 end_idx = None
-#             print '{0} to {1}'.format(start_idx, end_idx)
+
             if start_idx == end_idx:
                 continue
 
@@ -668,7 +642,11 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             data_arrays['mass'][start_idx:end_idx] = mass_dist / n_LEs
             data_arrays['init_mass'][start_idx:end_idx] = mass_dist / n_LEs
             data_arrays['density'][start_idx:end_idx] = droplet.density
-            data_arrays['droplet_diameter'][start_idx:end_idx] = np.random.normal(droplet.radius * 2, droplet.radius * 0.15, (n_LEs))
+            data_arrays['droplet_diameter'][start_idx:end_idx] = \
+                np.random.normal(droplet.radius * 2,
+                                 droplet.radius * 0.15,
+                                 (n_LEs))
+
             v = data_arrays['rise_vel'][start_idx:end_idx]
             rise_velocity_from_drop_size(v,
                                          data_arrays['density'][start_idx:end_idx],
@@ -679,28 +657,6 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         self.num_released += num_new_particles
         self.amount_released += total_mass
-
-    # def get(self, prop=None):
-    #     print "in get:", prop
-    #     try:
-    #         return getattr(self, prop)
-    #     except AttributeError:
-    #         super(TamocSpill, self).get(prop)
-
-        # if self.element_type is not None:
-        #     self.element_type.set_newparticle_values(num_new_particles, self,
-        #                                              data_arrays)
-
-        # self.release.set_newparticle_positions(num_new_particles, current_time,
-        #                                        time_step, data_arrays)
-
-        # data_arrays['mass'][-num_new_particles:] = \
-        #     self._elem_mass(num_new_particles, current_time, time_step)
-
-        # # set arrays that are spill specific - 'frac_coverage'
-        # if 'frac_coverage' in data_arrays:
-        #     data_arrays['frac_coverage'][-num_new_particles:] = \
-        #         self.frac_coverage
 
     def get_profile(self, nc_name, fname, u_a, v_a, w_a, depths):
         """
@@ -741,8 +697,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         p_lat = 0.
         p_lon = 0.
         p_time = date2num(datetime(1998, 1, 1, 1, 0, 0),
-                      units='seconds since 1970-01-01 00:00:00 0:00',
-                      calendar='julian')
+                          units='seconds since 1970-01-01 00:00:00 0:00',
+                          calendar='julian')
         nc = ambient.create_nc_db(nc_name, summary, source, sea_name, p_lat,
                                   p_lon, p_time)
 
@@ -753,14 +709,16 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Compute the pressure and insert into the netCDF dataset
         P = ambient.compute_pressure(data[:, 0], data[:, 1], data[:, 2], 0)
         P_data = np.vstack((data[:, 0], P)).transpose()
-        nc = ambient.fill_nc_db(nc, P_data, ['z', 'pressure'], ['m', 'Pa'],
-                                              ['average', 'computed'], 0)
+        nc = ambient.fill_nc_db(nc, P_data,
+                                ['z', 'pressure'],
+                                ['m', 'Pa'],
+                                ['average', 'computed'], 0)
 
         # Create an ambient.Profile object from this dataset
         profile = ambient.Profile(nc, chem_names='all')
 
         # Force the max depth to model
-#        depths[-1] = profile.z_max
+        # depths[-1] = profile.z_max
 
         # Add the crossflow velocity
 
@@ -770,10 +728,12 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         u_crossflow = np.zeros((len(depths), 2))
         u_crossflow[:, 0] = depths
+
         if u_a.shape != depths.shape:
             u_crossflow[:, 1] = np.linspace(u_a[0], u_a[-1], len(depths))
         else:
             u_crossflow[:, 1] = u_a
+
         symbols = ['z', 'ua']
         units = ['m', 'm/s']
         comments = ['provided', 'provided']
@@ -781,10 +741,12 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         v_crossflow = np.zeros((len(depths), 2))
         v_crossflow[:, 0] = depths
+
         if v_a.shape != depths.shape:
             v_crossflow[:, 1] = np.linspace(v_a[0], v_a[-1], len(depths))
         else:
             v_crossflow[:, 1] = v_a
+
         symbols = ['z', 'va']
         units = ['m', 'm/s']
         comments = ['provided', 'provided']
@@ -792,10 +754,12 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         w_crossflow = np.zeros((len(depths), 2))
         w_crossflow[:, 0] = depths
+
         if w_a.shape != depths.shape:
             w_crossflow[:, 1] = np.linspace(w_a[0], w_a[-1], len(depths))
         else:
             w_crossflow[:, 1] = w_a
+
         symbols = ['z', 'wa']
         units = ['m', 'm/s']
         comments = ['provided', 'provided']
@@ -814,7 +778,6 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         with open(fname) as datfile:
             for line in datfile:
-
                 # Get a line of data
                 entries = line.strip().split(',')
                 print entries
@@ -868,9 +831,11 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Return the total mass flux of gas and oil at the release
         return (md_gas, md_oil)
 
-
-    def get_particles(self, composition, data, md_gas0, md_oil0, profile, d50_gas, d50_oil, nbins,
-                  T0, z0, dispersant, sigma_fac, oil, mass_frac, hydrate, inert_drop):
+    def get_particles(self, composition, data,
+                      md_gas0, md_oil0, profile,
+                      d50_gas, d50_oil, nbins,
+                      T0, z0, dispersant, sigma_fac,
+                      oil, mass_frac, hydrate, inert_drop):
         """
         docstring for get_particles
 
@@ -883,11 +848,14 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             sigma = np.array([[1.], [1.]])
 
         # Create DBM objects for the bubbles and droplets
-        bubl = dbm.FluidParticle(composition, fp_type=0, sigma_correction=sigma[0], user_data=data)
-        drop = dbm.FluidParticle(composition, fp_type=1, sigma_correction=sigma[1], user_data=data)
+        bubl = dbm.FluidParticle(composition, fp_type=0,
+                                 sigma_correction=sigma[0], user_data=data)
+        drop = dbm.FluidParticle(composition, fp_type=1,
+                                 sigma_correction=sigma[1], user_data=data)
 
         # Get the local ocean conditions
-        T, S, P = profile.get_values(z0, ['temperature', 'salinity', 'pressure'])
+        T, S, P = profile.get_values(z0,
+                                     ['temperature', 'salinity', 'pressure'])
         rho = seawater.density(T, S, P)
 
         # Get the mole fractions of the released fluids
@@ -898,12 +866,20 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         # Use the Rosin-Rammler distribution to get the mass flux in each
         # size class
-#        de_gas, md_gas = sintef.rosin_rammler(nbins, d50_gas, np.sum(md_gas0),
-#                                              bubl.interface_tension(md_gas0, T0, S, P),
-#                                              bubl.density(md_gas0, T0, P), rho)
-#        de_oil, md_oil = sintef.rosin_rammler(nbins, d50_oil, np.sum(md_oil0),
-#                                              drop.interface_tension(md_oil0, T0, S, P),
-#                                              drop.density(md_oil0, T0, P), rho)
+        # de_gas, md_gas = sintef.rosin_rammler(nbins, d50_gas,
+        #                                       np.sum(md_gas0),
+        #                                       bubl.interface_tension(md_gas0,
+        #                                                              T0,
+        #                                                              S, P),
+        #                                       bubl.density(md_gas0, T0, P),
+        #                                       rho)
+        # de_oil, md_oil = sintef.rosin_rammler(nbins, d50_oil,
+        #                                       np.sum(md_oil0),
+        #                                       drop.interface_tension(md_oil0,
+        #                                                              T0,
+        #                                                              S, P),
+        #                                       drop.density(md_oil0, T0, P),
+        #                                       rho)
 
         # Get the user defined particle size distibution
         de_oil, vf_oil, de_gas, vf_gas = self.userdefined_de()
@@ -916,8 +892,9 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         isfluid = True
         iscompressible = True
         rho_o = drop.density(md_oil0, T0, P)
-        inert = dbm.InsolubleParticle(isfluid, iscompressible, rho_p=rho_o, gamma=40.,
-                                      beta=0.0007, co=2.90075e-9)
+        inert = dbm.InsolubleParticle(isfluid, iscompressible,
+                                      rho_p=rho_o, gamma=40., beta=0.0007,
+                                      co=2.90075e-9)
 
         # Create the particle objects
         particles = []
@@ -926,42 +903,58 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Bubbles
         for i in range(nbins):
             if md_gas[i] > 0.:
-                (m0, T0, nb0, P, Sa, Ta) = dispersed_phases.initial_conditions(
-                            profile, z0, bubl, molf_gas, md_gas[i], 2, de_gas[i], T0)
+                m0, T0, nb0, P, Sa, Ta = dispersed_phases.initial_conditions(
+                    profile, z0, bubl, molf_gas, md_gas[i], 2, de_gas[i], T0)
                 # Get the hydrate formation time for bubbles
                 if hydrate is True and dispersant is False:
-                    t_hyd = dispersed_phases.hydrate_formation_time(bubl, z0, m0, T0, profile)
+                    t_hyd = dispersed_phases.hydrate_formation_time(bubl,
+                                                                    z0, m0, T0,
+                                                                    profile)
                     if np.isinf(t_hyd):
                         t_hyd = 0.
                 else:
                     t_hyd = 0.
-                particles.append(bpm.Particle(0., 0., z0, bubl, m0, T0, nb0,
-                                              1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=t_hyd))
+
+                particles.append(bpm.Particle(0., 0., z0, bubl,
+                                              m0, T0, nb0,
+                                              1.0, P, Sa, Ta,
+                                              K=1., K_T=1., fdis=1.e-6,
+                                              t_hyd=t_hyd))
 
         # Droplets
         for i in range(len(de_oil)):
             # Add the live droplets to the particle list
             if md_oil[i] > 0. and not inert_drop:
-                (m0, T0, nb0, P, Sa, Ta) = dispersed_phases.initial_conditions(
-                        profile, z0, drop, molf_oil, md_oil[i], 2, de_oil[i], T0)
+                m0, T0, nb0, P, Sa, Ta = dispersed_phases.initial_conditions(
+                    profile, z0, drop, molf_oil, md_oil[i], 2, de_oil[i], T0)
                 # Get the hydrate formation time for bubbles
                 if hydrate is True and dispersant is False:
-                    t_hyd = dispersed_phases.hydrate_formation_time(drop, z0, m0, T0, profile)
+                    t_hyd = dispersed_phases.hydrate_formation_time(drop,
+                                                                    z0, m0, T0,
+                                                                    profile)
                     if np.isinf(t_hyd):
                             t_hyd = 0.
                 else:
                     t_hyd = 0.
-                particles.append(bpm.Particle(0., 0., z0, drop, m0, T0, nb0,
-                                                1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=t_hyd))
+
+                particles.append(bpm.Particle(0., 0., z0, drop,
+                                              m0, T0, nb0, 1.0, P, Sa, Ta,
+                                              K=1., K_T=1., fdis=1.e-6,
+                                              t_hyd=t_hyd))
+
             # Add the inert droplets to the particle list
             if md_oil[i] > 0. and inert_drop is True:
-                (m0, T0, nb0, P, Sa, Ta) = dispersed_phases.initial_conditions(
-                        profile, z0, inert, molf_oil, md_oil[i], 2, de_oil[i], T0)
-                particles.append(bpm.Particle(0., 0., z0, inert, m0, T0, nb0,
-                        1.0, P, Sa, Ta, K=1., K_T=1., fdis=1.e-6, t_hyd=0.))
+                m0, T0, nb0, P, Sa, Ta = dispersed_phases.initial_conditions(
+                    profile, z0, inert, molf_oil, md_oil[i], 2, de_oil[i], T0)
+
+                particles.append(bpm.Particle(0., 0., z0, inert,
+                                              m0, T0, nb0, 1.0, P, Sa, Ta,
+                                              K=1., K_T=1., fdis=1.e-6,
+                                              t_hyd=0.))
 
         # Define the lambda for particles
         model = params.Scales(profile, particles)
+
         for j in range(len(particles)):
             particles[j].lambda_1 = model.lambda_1(z0, j)
 
@@ -990,13 +983,15 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         vf_oil = np.zeros([100, 1])
         vf_gas = np.zeros([100, 1])
 
-
         de_oil = de_details[:, 0] / 1000.
         de_gas = de_details[:, 2] / 1000.
         vf_oil = de_details[:, 1]
         vf_gas = de_details[:, 3]
 
-        return (de_oil[de_oil > 0.], vf_oil[vf_oil > 0.], de_gas[de_gas > 0.], vf_gas[vf_gas > 0.])
+        return (de_oil[de_oil > 0.],
+                vf_oil[vf_oil > 0.],
+                de_gas[de_gas > 0.],
+                vf_gas[vf_gas > 0.])
 
     def get_phase(self, profile, particle, Mp, T, z):
         """
@@ -1011,19 +1006,18 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Get the equilibrium composition
         m0, xi, K = particle.equilibrium(Mp, T, P)
 
-        print 'liquid fraction' , np.sum(m0[1,:])
-        print 'gas fraction', np.sum(m0[0,:])
+        print 'liquid fraction', np.sum(m0[1, :])
+        print 'gas fraction', np.sum(m0[0, :])
 
-        if np.sum(m0[1,:]) == 1.0:
+        if np.sum(m0[1, :]) == 1.0:
             print ' Particle is complete liquid'
             flag_phase = 'Liquid'
-        elif np.sum(m0[0,:]) == 1.0:
+        elif np.sum(m0[0, :]) == 1.0:
             print 'particle is complete gas'
             flag_phase = 'Gas'
         else:
             print 'particle is a mixture of gas and liquid'
             flag_phase = 'Mixture'
-
 
         return (flag_phase)
 
@@ -1054,15 +1048,17 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         '''
         # Initialize the matrix
-        delta = np.zeros((len(oil.M),len(oil.M)))
+        delta = np.zeros((len(oil.M), len(oil.M)))
         # Populate the matrix with the estimates:
         for yy in range(len(oil.M)):
             for tt in range(len(oil.M)):
-                if not (tt==yy):
-                    delta[yy,tt] = 0.00145*np.max( (oil.M[tt]/oil.M[yy],oil.M[yy]/oil.M[tt]) )
+                if not (tt == yy):
+                    delta[yy, tt] = 0.00145 * np.max((oil.M[tt]/oil.M[yy],
+                                                      oil.M[yy]/oil.M[tt]))
+
         return delta
 
-    def load_delta(self,file_name, nc):
+    def load_delta(self, file_name, nc):
         """
         Loads the binary interaction parameters.
 
@@ -1078,7 +1074,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         delta : ndarray, size (nc,nc)
            a matrix containing the loaded binary interaction parameters
         """
-        delta = np.zeros([nc,nc])
+        delta = np.zeros([nc, nc])
         k = 0
         with open(file_name, 'r') as datfile:
             for row in datfile:
@@ -1089,7 +1085,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
 
         return (delta)
 
-    def translate_properties_gnome_to_tamoc(self, md_oil, composition, oil, P, Sa, T=288.15):
+    def translate_properties_gnome_to_tamoc(self, md_oil, composition, oil,
+                                            P, Sa, T=288.15):
         '''
         Translates properties from TAMOC components to GNOME components.
 
@@ -1137,65 +1134,86 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Let's get the partial densities in liquid for each component:
         # (Initialize the array:)
         densities = np.zeros(len(composition))
+
         # We will compute component densities at 288.15 K_T, except if the
         # user has input a lower T. A higher T is not allowed.
         # (In deep waters, droplets should cool very fast, it is not a
         # reasonable assumption to compute at a high T.)
         T_rho = np.min([288.15, T])
+
         # Check that we have no gas phase at this conditions:
         m_, xi, K = oil.equilibrium(md_oil, T_rho, P)
-        if np.sum(m_,1)[0]>0.:
+
+        if np.sum(m_, 1)[0] > 0.:
             # The mixture would separate in a gas and a liquid phase at
             # equilibrium. Let's use the composition of the liquid phase:
             md_oil = m_[1]
+
         # density of the bulk oil at release conditions:
         rho_0 = oil.density(md_oil, T_rho, P)[1]
+
         # Now, we will remove/add a little mass of a component, and get its
         # partial density as the ratio of the change of mass divided by
         # change of oil volume.
-        for ii in range(len(densities)): # (We do a loop over each component)
+        for ii in range(len(densities)):  # (We do a loop over each component)
             # We will either remove 1% or add 1% mass (and we choose the one
             # that keeps the mixture as a liquid):
-            add_or_remove = np.array([.99,1.01])
+            add_or_remove = np.array([.99, 1.01])
             for tt in range(len(add_or_remove)):
                 # Factor used to remove/add mass of just component i:
                 m_multiplication_factors = np.ones(len(densities))
+
                 # We remove or add 1% of the mass of component i:
                 m_multiplication_factors[ii] = add_or_remove[tt]
                 m_i = md_oil * m_multiplication_factors
-                # Make an equilibrium calculation to check that we did not generate a gas phase:
+
+                # Make an equilibrium calculation to check that we did not
+                # generate a gas phase:
                 m_ii, xi, K = oil.equilibrium(m_i, T_rho, P)
                 print T_rho, P
+
                 # If we did not generate a gas phase, stop here. Else we will
                 # do the for loop a second time using the second value in
                 # 'add_or_remove'
-                if np.sum(m_ii,1)[0]==0.:
-
+                if np.sum(m_ii, 1)[0] == 0.:
                     break
+
             # We compute the density of the new mixture:
             rho_i = oil.density(m_i, T_rho, P)[1]
 
             # we get the partial density of each component as:
             # (DELTA(Mass) / DELTA(Volume)):
-            densities[ii] = (np.sum(md_oil) - np.sum(m_i)) / (np.sum(md_oil)/rho_0 - np.sum(m_i)/rho_i)
+            densities[ii] = ((np.sum(md_oil) - np.sum(m_i)) /
+                             (np.sum(md_oil) / rho_0 - np.sum(m_i) / rho_i))
 
-        print 'TAMOC density: ',rho_0,'  and estimated from component densities: ',(np.sum(md_oil)/np.sum(md_oil/densities))
+        print ('TAMOC density: {} '
+               'and estimated from component densities: {}'
+               .format(rho_0,
+                       (np.sum(md_oil) / np.sum(md_oil / densities))))
+
         # Note: the (np.sum(md_oil)/np.sum(md_oil/densities)) makes sense
         # physically: density = SUM(MASSES) / SUM(VOLUMES) (Assuming volume
         # of mixing is zero, which is a very good assumption for petroleum
         # liquids)
-        print 'However GNOME would somehow estimate the density as m_i * rho_i: ',np.sum(md_oil*densities/np.sum(md_oil)) # This is the GNOME-way, though less physically-grounded.
-        print 'densities: ',densities
+        # This is the GNOME-way, though less physically-grounded.
+        print ('However GNOME would somehow estimate the density as '
+               'm_i * rho_i: {}'
+               .format(np.sum(md_oil * densities / np.sum(md_oil))))
+        print 'densities: ', densities
+
         # Normalize densities so that the GNOME-way to compute density gives
         # the TAMOC density for the whole oil:
-        densities = densities * rho_0 / (np.sum(md_oil*densities/np.sum(md_oil)))
-        print 'GNOME value after normalizing densities: ',np.sum(md_oil*densities/np.sum(md_oil))
+        densities = (densities *
+                     rho_0 /
+                     np.sum(md_oil * densities / np.sum(md_oil)))
+        print ('GNOME value after normalizing densities: {}'
+               .format(np.sum(md_oil * densities / np.sum(md_oil))))
 
         print composition
-        print 'densities: ',densities
-        print 'MW: ',oil.M
-        print 'Tb: ',oil.Tb
-        print 'delta: ',oil.delta
+        print 'densities: ', densities
+        print 'MW: ', oil.M
+        print 'Tb: ', oil.Tb
+        print 'delta: ', oil.delta
 
         # Now oil properties:
         oil_viscosity = oil.viscosity(md_oil, T_rho, P)[1]
@@ -1205,9 +1223,10 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # Compute the oil-water partition coefficients, K_ow:
         C_oil = md_oil / (np.sum(md_oil) / oil.density(md_oil, T_rho, P)[1])
         C_water = oil.solubility(md_oil, T, P, Sa)[1]
+
         K_ow = C_oil / C_water
-        print 'K_ow :'
-        print K_ow
+        print 'K_ow : {}'.format(K_ow)
+
         # Below, we will assume that any component having a K_ow that is not
         # inf is a 'Aromatics' (it may not be a component corresponding to
         # aromatics compounds. But it contains soluble compounds. Labeling it
@@ -1218,34 +1237,47 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
         # We need to create a list of dictionaries containing the molecular
         # weights:
         molecular_weights_dict_list = []
+
         for i in range(len(oil.M)):
             # This is the dictionary for the current component:
             current_dict = dict()
+
             # Populate the keys of the dictionary with corresponding values:
             if not np.isinf(K_ow[i]):
                 current_dict['sara_type'] = 'Aromatics'
             else:
-                 current_dict['sara_type'] = 'Saturatess'
-            current_dict['g_mol'] = oil.M[i] * 1000. # BEWARE: GNOME wants g/mol and TAMOC has kg/mol.
+                current_dict['sara_type'] = 'Saturatess'
+
+            # BEWARE: GNOME wants g/mol and TAMOC has kg/mol.
+            current_dict['g_mol'] = oil.M[i] * 1000.
             current_dict['ref_temp_k'] = oil.Tb[i]
+
             # append each dictionary to the list of dictionarries:
             molecular_weights_dict_list.append(current_dict)
+
         json_object['molecular_weights'] = molecular_weights_dict_list
+
         # Now do the same for the cuts:
         cuts_dict_list = []
+
         for i in range(len(oil.M)):
             # This is the dictionary for the current component:
             current_dict = dict()
+
             # Populate the keys of the dictionary with corresponding values:
             current_dict['vapor_temp_k'] = oil.Tb[i]
             current_dict['fraction'] = md_oil[i]
+
             # append each dictionary to the list of dictionarries:
             cuts_dict_list.append(current_dict)
+
         json_object['cuts'] = cuts_dict_list
         json_object['oil_seawater_interfacial_tension_ref_temp_k'] = T_rho
         json_object['oil_seawater_interfacial_tension_n_m'] = oil_interface_tension[0]
+
         # Now do the same for the densities:
         densities_dict_list = []
+
         for i in range(len(oil.M)):
             # This is the dictionary for the current component:
             current_dict = dict()
@@ -1254,77 +1286,98 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
             if not np.isinf(K_ow[i]):
                 current_dict['sara_type'] = 'Aromatics'
             else:
-                 current_dict['sara_type'] = 'Saturatess'
+                current_dict['sara_type'] = 'Saturatess'
+
             current_dict['ref_temp_k'] = oil.Tb[i]
             # append each dictionary to the list of dictionarries:
             densities_dict_list.append(current_dict)
+
         json_object['sara_densities'] = densities_dict_list
+
         # This one is for the density of the oil as a whole:
         oil_density_dict = dict()
-        oil_density_dict['ref_temp_k'] = T_rho # a priori 288.15
+        oil_density_dict['ref_temp_k'] = T_rho  # a priori 288.15
         oil_density_dict['kg_m_3'] = oil_density[0]
         oil_density_dict['weathering'] = 0.
         json_object['densities'] = [oil_density_dict]
 
         # This one is for the viscosity of the oil as a whole:
-        oil_viscosity_dict = dict() # Note: 'dvis' in GNOME is the dynamic viscosity called 'viscosity' in TAMOC
-        oil_viscosity_dict['ref_temp_k'] = T_rho # a priori 288.15
+        # Note: 'dvis' in GNOME is the dynamic viscosity
+        #       called 'viscosity' in TAMOC
+        oil_viscosity_dict = dict()
+        oil_viscosity_dict['ref_temp_k'] = T_rho  # a priori 288.15
         oil_viscosity_dict['kg_ms'] = oil_viscosity[0]
         oil_viscosity_dict['weathering'] = 0.
+
         json_object['dvis'] = [oil_viscosity_dict]
         json_object['name'] = 'test TAMOC oil'
+
         # Now do the same for the sara dractions:
         SARA_dict_list = []
+
         for i in range(len(oil.M)):
             # This is the dictionary for the current component:
             current_dict = dict()
+
             # Populate the keys of the dictionary with corresponding values:
             if not np.isinf(K_ow[i]):
                 current_dict['sara_type'] = 'Aromatics'
             else:
-                 current_dict['sara_type'] = 'Saturatess'
+                current_dict['sara_type'] = 'Saturatess'
+
             current_dict['ref_temp_k'] = oil.Tb[i]
             current_dict['fraction'] = md_oil[i]
+
             # append each dictionary to the list of dictionarries:
             SARA_dict_list.append(current_dict)
+
         json_object['sara_fractions'] = SARA_dict_list
+        # print json_object
+
         from oil_library.models import Oil
-        #print json_object
         json_oil = Oil.from_json(json_object)
+
         print json_oil.densities
-        #print json_oil.dvis # Hum. Oil has no attribute 'dvis', but 'kvis' is empty. Is that a bug?
-        print 'interfacial tension: ', json_oil.oil_seawater_interfacial_tension_n_m, oil_interface_tension
+
+        # print json_oil.dvis
+        # Hum. Oil has no attribute 'dvis', but 'kvis' is empty. Is that a bug?
+        print ('interfacial tension: ({}, {})'
+               .format(json_oil.oil_seawater_interfacial_tension_n_m,
+                       oil_interface_tension))
         print json_oil.molecular_weights
         print json_oil.sara_fractions
         print json_oil.cuts
         print json_oil.densities
-        # # # TO ELUCIDATE: IS IT NORMAL THAT THE FIELDS OF json_oil ARE NOT
-        # # # THE SAME AS WHEN AN OIL IS IMPORTED FROM THE OIL DATABASE USING get_oil??
 
-        # # I CANNOT DO THIS BELOW, THIS IS ONLY FOR OILS IN THE DATABASE:
-        #from oil_library import get_oil, get_oil_props
-        #uuu = get_oil_props(json_oil.name)
-        #print 'oil density from our new created substance: ',np.sum(uuu.mass_fraction * uuu.component_density), ' or same: ',uuu.density_at_temp()
-        #print 'component densities: ',uuu.component_density
-        #print 'component mass fractions: ',uuu.mass_fraction
-        #print 'component molecular weights: ',uuu.molecular_weight
-        #print 'component boiling points: ',uuu.boiling_point
-        #print 'API: ',uuu.api
-        #print 'KINEMATIC viscosity: ',uuu.kvis_at_temp()
+        # TO ELUCIDATE: IS IT NORMAL THAT THE FIELDS OF json_oil ARE NOT
+        #               THE SAME AS WHEN AN OIL IS IMPORTED FROM THE
+        #               OIL DATABASE USING get_oil??
 
+        # NOTE: I CANNOT DO THIS BELOW, THIS IS ONLY FOR OILS IN THE DATABASE.
+        # from oil_library import get_oil, get_oil_props
+        # uuu = get_oil_props(json_oil.name)
+        # print ('oil density from our new created substance: {} or same: {}'
+        #        .format(np.sum(uuu.mass_fraction * uuu.component_density),
+        #                uuu.density_at_temp()))
+        # print 'component densities: ',uuu.component_density
+        # print 'component mass fractions: ',uuu.mass_fraction
+        # print 'component molecular weights: ',uuu.molecular_weight
+        # print 'component boiling points: ',uuu.boiling_point
+        # print 'API: ',uuu.api
+        # print 'KINEMATIC viscosity: ',uuu.kvis_at_temp()
 
-
-#        oil = dbm.FluidMixture(['benzene','toluene','ethylbenzene']) # tested the K_ow with benzene and toluene and ethylbenzene
-#        md_oil = np.array([1.,1.,1.])
-#        C_oil = md_oil / (np.sum(md_oil) / oil.density(md_oil, T_rho, P)[1])
-#        C_water = oil.solubility(md_oil, T_rho, P, Sa)[1]
-#        K_ow = C_oil / C_water
-#        from gnome.utilities.weathering import BanerjeeHuibers
-#        K_ow2 = BanerjeeHuibers.partition_coeff(oil.M*1000., oil.density(md_oil, T_rho, P)[1])
-#        print 'K_ow :'
-#        print K_ow
-#        print K_ow2
-
+        # tested the K_ow with benzene and toluene and ethylbenzene
+        # oil = dbm.FluidMixture(['benzene','toluene','ethylbenzene'])
+        # md_oil = np.array([1.,1.,1.])
+        # C_oil = md_oil / (np.sum(md_oil) / oil.density(md_oil, T_rho, P)[1])
+        # C_water = oil.solubility(md_oil, T_rho, P, Sa)[1]
+        # K_ow = C_oil / C_water
+        # from gnome.utilities.weathering import BanerjeeHuibers
+        # K_ow2 = BanerjeeHuibers.partition_coeff(oil.M * 1000.,
+        #                                         oil.density(md_oil,
+        #                                                     T_rho, P)[1])
+        # print 'K_ow :'
+        # print K_ow
+        # print K_ow2
 
         return (K_ow, json_oil)
-
