@@ -310,7 +310,7 @@ class GeoProjection(object):
         """
         coords = np.asarray(coords)
 
-        if np.issubdtype(coords.dtype, int):
+        if np.issubdtype(coords.dtype, np.integer):
             # convert to float64:
             coords = coords.astype(np.float64)
 

@@ -59,7 +59,7 @@ var_attributes = {
         'flag_meanings': " ".join(["%i: %s," % pair for pair in
                                    sorted(zip(oil_status._int,
                                               oil_status._attr))])
-                      },
+                     },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',
            },
@@ -157,7 +157,18 @@ class NetCDFOutput(Outputter, Serializable):
                        'id',
                        'mass',
                        'age',
+                       # if they are not there, they will be ignored
+                       # if they are there, the user probably wants them
+                       'density',
+                       'viscosity',
+                       'frac_water',
                        ]
+
+    # these are being handled specially -- i.e. pulled from the positions array
+    special_arrays = set(('latitude',
+                          'longitude',
+                          'depth',
+                          ))
 
     # the list of arrays that we usually don't want -- i.e. for internal use
     # these will get skipped if "most" is asked for
@@ -169,6 +180,17 @@ class NetCDFOutput(Outputter, Serializable):
                               'windage_persist',
                               'mass_components',
                               'half_lives',
+                              'init_mass',
+                              'interfacial_area',
+                              'fay_area',
+                              'bulk_init_volume',
+                              'oil_viscosity',
+                              'frac_coverage',
+                              'bulltime',
+                              'partition_coeff',
+                              'evap_decay_constant',
+                              'frac_lost',
+                              'oil_density',
                               ]
 
     # define _state for serialization
@@ -412,6 +434,13 @@ class NetCDFOutput(Outputter, Serializable):
                 # remove the ones we don't want
                 for var_name in self.usually_skipped_arrays:
                     self.arrays_to_output.discard(var_name)
+        # make sure they are all there
+        to_remove = set()
+        for var_name in self.arrays_to_output:
+            # fixme: -- is there a way to get the keys as a set so we don't have to loop?
+            if var_name not in sc and var_name not in self.special_arrays:
+                to_remove.add(var_name)
+        self.arrays_to_output -= to_remove
 
     def prepare_for_model_run(self,
                               model_start_time,
@@ -507,15 +536,18 @@ class NetCDFOutput(Outputter, Serializable):
                         # the arrays to get shape and dtype instead of the
                         # array_types since array_type could contain None for
                         # shape
-                        dt = sc[var_name].dtype
-
-                        if len(sc[var_name].shape) == 1:
-                            shape = ('data',)
-                            chunksz = (self._chunksize,)
+                        try:
+                            dt = sc[var_name].dtype
+                        except KeyError:  # ignore arrays that aren't there
+                            pass
                         else:
-                            y_sz = d_dims[sc[var_name].shape[1]]
-                            shape = ('data', y_sz)
-                            chunksz = (self._chunksize, sc[var_name].shape[1])
+                            if len(sc[var_name].shape) == 1:
+                                shape = ('data',)
+                                chunksz = (self._chunksize,)
+                            else:
+                                y_sz = d_dims[sc[var_name].shape[1]]
+                                shape = ('data', y_sz)
+                                chunksz = (self._chunksize, sc[var_name].shape[1])
 
                     self._create_nc_var(rootgrp, var_name, dt, shape, chunksz)
 
