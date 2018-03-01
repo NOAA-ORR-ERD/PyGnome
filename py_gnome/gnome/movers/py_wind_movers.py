@@ -62,7 +62,6 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
     def __init__(self,
                  filename=None,
                  wind=None,
-                 name=None,
                  extrapolate=False,
                  time_offset=0,
                  uncertain_duration=3,
@@ -108,8 +107,8 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                 self.wind = GridWind.from_netCDF(filename=self.filename,
                                                  **kwargs)
 
-        if name is None:
-            name = self.__class__.__name__ + str(self.__class__._def_count)
+        if 'name' not in kwargs:
+            kwargs['name'] = self.__class__.__name__ + str(self.__class__._def_count)
             self.__class__._def_count += 1
 
         self.extrapolate = extrapolate
