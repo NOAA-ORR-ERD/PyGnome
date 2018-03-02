@@ -315,6 +315,10 @@ class PyGrid(gridded.grids.Grid):
         return gridded.grids.Grid.from_netCDF(*args, **kwargs)
 
     @staticmethod
+    def new_from_dict(dict_):
+        return PyGrid.from_netCDF(**dict_)
+
+    @staticmethod
     def _get_grid_type(*args, **kwargs):
         kwargs['_default_types'] = (('ugrid', Grid_U), ('sgrid', Grid_S), ('rgrid', Grid_R))
 
@@ -356,6 +360,15 @@ class Variable(gridded.Variable, serializable.Serializable):
     _default_component_types.update({'time': Time,
                                      'grid': PyGrid,
                                      'depth': Depth})
+
+    def __init__(self, extrapolate=False, *args, **kwargs):
+        self.extrapolate = extrapolate
+        super(Variable, self).__init__(*args, **kwargs)
+
+    def at(self, *args, **kwargs):
+        if ('extrapolate' not in kwargs):
+            kwargs['extrapolate'] = self.extrapolate
+        super(Variable, self).at(*args, **kwargs)
 
     @classmethod
     def new_from_dict(cls, dict_):
