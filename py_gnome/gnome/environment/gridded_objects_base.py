@@ -368,7 +368,7 @@ class Variable(gridded.Variable, serializable.Serializable):
     def at(self, *args, **kwargs):
         if ('extrapolate' not in kwargs):
             kwargs['extrapolate'] = self.extrapolate
-        super(Variable, self).at(*args, **kwargs)
+        return super(Variable, self).at(*args, **kwargs)
 
     @classmethod
     def new_from_dict(cls, dict_):
