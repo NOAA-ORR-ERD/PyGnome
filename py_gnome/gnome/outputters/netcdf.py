@@ -63,6 +63,18 @@ var_attributes = {
     'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',
            },
+    'density': {
+        'long_name': 'emulsion density at end of timestep',
+        'units': 'kg/m^3'},
+    'viscosity': {
+        'long_name': 'emulsion viscosity at end of timestep',
+        'units': 'm^2/sec'},
+    'oil_density': {
+        'long_name': 'oil density at end of timestep',
+        'units': 'kg/m^3'},
+    'oil_viscosity': {
+        'long_name': 'oil viscosity at end of timestep',
+        'units': 'm^2/sec'},
     'droplet_diameter': {'long_name': 'diameter of oil droplet class',
                          'units': 'meters'
                          },
@@ -75,21 +87,40 @@ var_attributes = {
     'floating': {
         'long_name': 'total mass floating in water after each time step',
         'units': 'kilograms'},
+    'beached': {
+        'long_name': 'total mass on the shoreline after each time step',
+        'units': 'kilograms'},
     'evaporated': {
         'long_name': 'total mass evaporated since beginning of model run',
         'units': 'kilograms'},
-    'dispersed': {
+    'natural_dispersion': {
         'long_name': 'total mass dispersed since beginning of model run',
+        'units': 'kilograms'},
+    'sedimentation': {
+        'long_name': 'total mass lost due to sedimentation since beginning of model run',
+        'units': 'kilograms'},
+    'dissolution': {
+        'long_name': 'total mass dissolved since beginning of model run',
         'units': 'kilograms'},
     'avg_density': {
         'long_name': 'average density at end of timestep',
         'units': 'kg/m^3'},
     'avg_viscosity': {
         'long_name': 'average viscosity at end of timestep',
-        'units': 'kg/m^3'},
+        'units': 'm^2/sec'},
     'amount_released': {
         'long_name': 'total mass of oil released thus far',
         'units': 'kg'},
+
+    'chem_dispersed': {
+        'long_name': 'total mass chemically dispersed since beginning of model run',
+        'units': 'kilograms'},
+    'skimmed': {
+        'long_name': 'total mass skimmed since beginning of model run',
+        'units': 'kilograms'},
+    'burned': {
+        'long_name': 'total mass burned since beginning of model run',
+        'units': 'kilograms'},
 }
 
 
@@ -209,7 +240,8 @@ class NetCDFOutput(Outputter, Serializable):
 
     def __init__(self,
                  netcdf_filename,
-                 which_data='standard',
+                 which_data='all',
+                 #which_data='standard',
                  compress=True,
                  **kwargs):
         """
