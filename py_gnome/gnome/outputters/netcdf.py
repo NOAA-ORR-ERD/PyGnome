@@ -80,8 +80,25 @@ var_attributes = {
                          },
     'rise_vel': {'long_name': 'rise velocity of oil droplet class',
                               'units': 'm s-1'},
+    'windages': {},
+    'windage_range': {},
+    'windage_persist': {},
     'next_positions': {},
     'last_water_positions': {},
+    'bulk_init_volume': {},
+    'interfacial_area': {},
+    'area': {},
+    'fay_area': {},
+    'frac_coverage': {},
+    'bulltime': {},
+    'evap_decay_constant': {},
+    'partition_coeff': {},
+    'droplet_avg_size': {},
+    'init_mass': {'long_name': 'initial mass',
+             'units': 'kilograms',
+             },
+    'mass_components': {},
+    'fate_status': {},
 
     # weathering data
     'floating': {
@@ -89,6 +106,9 @@ var_attributes = {
         'units': 'kilograms'},
     'beached': {
         'long_name': 'total mass on the shoreline after each time step',
+        'units': 'kilograms'},
+    'off_maps': {
+        'long_name': 'total mass that has left the map since the beginning of model run',
         'units': 'kilograms'},
     'evaporated': {
         'long_name': 'total mass evaporated since beginning of model run',
@@ -102,6 +122,12 @@ var_attributes = {
     'dissolution': {
         'long_name': 'total mass dissolved since beginning of model run',
         'units': 'kilograms'},
+    'water_content': {
+        'long_name': 'fraction of total mass that is water after each time step'},
+    'frac_water': {
+        'long_name': 'water fraction after each time step'},
+    'frac_lost': {
+        'long_name': 'fraction of total mass that is lost after each time step'},
     'avg_density': {
         'long_name': 'average density at end of timestep',
         'units': 'kg/m^3'},
@@ -110,6 +136,9 @@ var_attributes = {
         'units': 'm^2/sec'},
     'amount_released': {
         'long_name': 'total mass of oil released thus far',
+        'units': 'kg'},
+    'non_weathering': {
+        'long_name': 'total mass of oil that does not weather after each time step',
         'units': 'kg'},
 
     'chem_dispersed': {
