@@ -465,7 +465,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
         return tuple(data[0]['value'])
 
-    def at(self, points, time, format='r-theta', extrapolate=True, _auto_align=True):
+    def at(self, points, time,
+           format='r-theta', extrapolate=True, _auto_align=True):
         '''
         Returns the value of the wind at the specified points at the specified
         time. Valid format specifications include 'r-theta', 'r', 'theta',
@@ -480,27 +481,27 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         :param extrapolate: extrapolation on/off (ignored for now)
         '''
         if points is None:
-            points = np.array((0,0)).reshape(-1,2)
+            points = np.array((0, 0)).reshape(-1, 2)
         pts = gridded.utilities._reorganize_spatial_data(points)
 
         ret_data = np.zeros_like(pts, dtype='float64')
-        if format in ('r-theta','uv'):
+        if format in ('r-theta', 'uv'):
             data = self.get_wind_data(time, 'm/s', format)[0]['value']
-            ret_data[:,0] = data[0]
-            ret_data[:,1] = data[1]
-        elif format in ('u','v','r','theta'):
+            ret_data[:, 0] = data[0]
+            ret_data[:, 1] = data[1]
+        elif format in ('u', 'v', 'r', 'theta'):
             f = None
-            if format in ('u','v'):
+            if format in ('u', 'v'):
                 f = 'uv'
             else:
                 f = 'r-theta'
             data = self.get_wind_data(time, 'm/s', f)[0]['value']
-            if format in ('u','r'):
-                ret_data[:,0] = data[0]
-                ret_data = ret_data[:,0]
+            if format in ('u', 'r'):
+                ret_data[:, 0] = data[0]
+                ret_data = ret_data[:, 0]
             else:
-                ret_data[:,1] = data[1]
-                ret_data = ret_data[:,1]
+                ret_data[:, 1] = data[1]
+                ret_data = ret_data[:, 1]
         else:
             raise ValueError('invalid format {0}'.format(format))
 

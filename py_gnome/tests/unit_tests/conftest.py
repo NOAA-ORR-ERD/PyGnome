@@ -51,11 +51,11 @@ def dump():
 
     try:
         shutil.rmtree(dump_loc)
-    except:
+    except Exception:
         pass
     try:
         os.makedirs(dump_loc)
-    except:
+    except Exception:
         pass
     return dump_loc
 
@@ -327,6 +327,7 @@ def invalid_rq():
     return {'rq': bad_rq}
 
 # use this for wind and current deterministic (r,theta)
+
 
 rq = np.array([(1, 0),
                (1, 45),
