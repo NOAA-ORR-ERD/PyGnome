@@ -145,8 +145,10 @@ class S_Depth_T1(object):
             if ulev == 0:
                 und_alph[within_layer] = -2
             else:
-                a = ((pts[:, 2].take(within_layer) - blev_depths.take(within_layer)) /
-                     (ulev_depths.take(within_layer) - blev_depths.take(within_layer)))
+                a = ((pts[:, 2].take(within_layer) -
+                      blev_depths.take(within_layer)) /
+                     (ulev_depths.take(within_layer) -
+                      blev_depths.take(within_layer)))
                 und_alph[within_layer] = a
             blev_depths = ulev_depths
 
@@ -452,13 +454,13 @@ class IceConcentration(Variable, Environment):
     def __init__(self, *args, **kwargs):
         super(IceConcentration, self).__init__(*args, **kwargs)
 
-#     def __eq__(self, o):
-#         t1 = (self.name == o.name and
-#               self.units == o.units and
-#               self.time == o.time and
-#               self.varname == o.varname)
-#         t2 = self.data == o.data
-#         return t1 and t2
+    # def __eq__(self, o):
+    #     t1 = (self.name == o.name and
+    #           self.units == o.units and
+    #           self.time == o.time and
+    #           self.varname == o.varname)
+    #     t2 = self.data == o.data
+    #     return t1 and t2
 
 
 class Bathymetry(Variable):
