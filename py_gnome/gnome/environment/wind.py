@@ -92,7 +92,8 @@ class WindSchema(base_schema.ObjType):
     longitude = SchemaNode(Float(), missing=drop)
     source_id = SchemaNode(String(), missing=drop)
     source_type = SchemaNode(String(),
-                             validator=OneOf(basic_types.wind_datasource._attr),
+                             validator=OneOf(basic_types
+                                             .wind_datasource._attr),
                              default='undefined', missing='undefined')
     units = SchemaNode(String(), default='m/s')
     speed_uncertainty_scale = SchemaNode(Float(), missing=drop)
@@ -144,7 +145,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                  timeseries=None,
                  units=None,
                  filename=None,
-                 format='r-theta',
+                 coord_sys='r-theta',
                  latitude=None,
                  longitude=None,
                  speed_uncertainty_scale=0.0,
@@ -164,7 +165,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         if filename is not None:
             self.source_type = kwargs.pop('source_type', 'file')
 
-            super(Wind, self).__init__(filename=filename, format=format)
+            super(Wind, self).__init__(filename=filename, coord_sys=coord_sys)
 
             self.name = kwargs.pop('name', os.path.split(self.filename)[1])
             # set _user_units attribute to match user_units read from file.
@@ -180,7 +181,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
             # either timeseries is given or nothing is given
             # create an empty default object
-            super(Wind, self).__init__(format=format)
+            super(Wind, self).__init__(coord_sys=coord_sys)
 
             self.units = 'mps'  # units for default object
 
@@ -188,7 +189,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                 if units is None:
                     raise TypeError('Units must be provided with timeseries')
 
-                self.set_wind_data(timeseries, units, format)
+                self.set_wind_data(timeseries, units, coord_sys)
 
             self.name = kwargs.pop('name', self.__class__.__name__)
 
@@ -213,8 +214,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
     @property
     def timeseries(self):
         '''
-        returns entire timeseries in 'r-theta' format in the units in which
-        the data was entered or as specified by units attribute
+        returns entire timeseries in 'r-theta' coordinate system in the units
+        in which the data was entered or as specified by units attribute
         '''
         return self.get_wind_data(units=self.units)
 
@@ -282,7 +283,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         self._check_units(value)
         self._user_units = value
 
-    def _convert_units(self, data, ts_format, from_unit, to_unit):
+    def _convert_units(self, data, coord_sys, from_unit, to_unit):
         '''
         method to convert units for the 'value' stored in the
         date/time value pair
@@ -290,7 +291,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         if from_unit != to_unit:
             data[:, 0] = uc.convert('Velocity', from_unit, to_unit, data[:, 0])
 
-            if ts_format == basic_types.ts_format.uv:
+            if coord_sys == basic_types.ts_format.uv:
                 # TODO: avoid clobbering the 'ts_format' namespace
                 data[:, 1] = uc.convert('Velocity', from_unit, to_unit,
                                         data[:, 1])
@@ -376,26 +377,29 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         else:
             return updated
 
-    def get_wind_data(self, datetime=None, units=None, format='r-theta'):
+    def get_wind_data(self, datetime=None, units=None, coord_sys='r-theta'):
         """
-        Returns the timeseries in the requested format. If datetime=None,
-        then the original timeseries that was entered is returned.
+        Returns the timeseries in the requested coordinate system.
+        If datetime=None, then the original timeseries that was entered is
+        returned.
         If datetime is a list containing datetime objects, then the value
         for each of those date times is determined by the underlying
         C++ object and the timeseries is returned.
 
-        The output format is defined by the strings 'r-theta', 'uv'
+        The output coordinate system is defined by the strings 'r-theta', 'uv'
 
         :param datetime: [optional] datetime object or list of datetime
                          objects for which the value is desired
         :type datetime: datetime object
+
         :param units: [optional] outputs data in these units. Default is to
             output data without unit conversion
         :type units: string. Uses the unit_conversion module.
-        :param format: output format for the times series:
-                       either 'r-theta' or 'uv'
-        :type format: either string or integer value defined by
-                      basic_types.ts_format.* (see cy_basic_types.pyx)
+
+        :param coord_sys: output coordinate system for the times series:
+                          either 'r-theta' or 'uv'
+        :type coord_sys: either string or integer value defined by
+                         basic_types.ts_format.* (see cy_basic_types.pyx)
 
         :returns: numpy array containing dtype=basic_types.datetime_value_2d.
                   Contains user specified datetime and the corresponding
@@ -407,20 +411,20 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
         todo: return data in appropriate significant digits
         """
-        datetimeval = super(Wind, self).get_timeseries(datetime, format)
+        datetimeval = super(Wind, self).get_timeseries(datetime, coord_sys)
         units = (units, self._user_units)[units is None]
 
         datetimeval['value'] = self._convert_units(datetimeval['value'],
-                                                   format,
+                                                   coord_sys,
                                                    'meter per second',
                                                    units)
 
         return datetimeval
 
-    def set_wind_data(self, wind_data, units, format='r-theta'):
+    def set_wind_data(self, wind_data, units, coord_sys='r-theta'):
         """
         Sets the timeseries of the Wind object to the new value given by
-        a numpy array.  The format for the input data defaults to
+        a numpy array.  The coordinate system for the input data defaults to
         basic_types.format.magnitude_direction but can be changed by the user.
         Units are also required with the data.
 
@@ -428,12 +432,14 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                                   numpy array
         :type datetime_value_2d: numpy array of dtype
                                  basic_types.datetime_value_2d
+
         :param units: units associated with the data. Valid units defined in
                       Wind.valid_vel_units list
-        :param format: output format for the times series; as defined by
-                       basic_types.format.
-        :type format: either string or integer value defined by
-                      basic_types.format.* (see cy_basic_types.pyx)
+
+        :param coord_sys: output coordinate system for the times series,
+                          as defined by basic_types.format.
+        :type coord_sys: either string or integer value defined by
+                         basic_types.format.* (see cy_basic_types.pyx)
         """
         if self._check_timeseries(wind_data):
             self._check_units(units)
@@ -441,10 +447,10 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
             wind_data = self._xform_input_timeseries(wind_data)
             wind_data['value'] = self._convert_units(wind_data['value'],
-                                                     format, units,
+                                                     coord_sys, units,
                                                      'meter per second')
 
-            super(Wind, self).set_timeseries(wind_data, format)
+            super(Wind, self).set_timeseries(wind_data, coord_sys)
         else:
             raise ValueError('Bad timeseries as input')
 
@@ -454,7 +460,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         independent of location; however, a gridded datafile may require
         location so this interface may get refactored if it needs to support
         different types of wind data. It returns the data in SI units (m/s)
-        in 'r-theta' format (speed, direction)
+        in 'r-theta' coordinate system (speed, direction)
 
         :param time: the time(s) you want the data for
         :type time: datetime object or sequence of datetime objects.
@@ -465,11 +471,11 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
         return tuple(data[0]['value'])
 
-    def at(self, points, time,
-           format='r-theta', extrapolate=True, _auto_align=True):
+    def at(self, points, time, coord_sys='r-theta',
+           extrapolate=True, _auto_align=True):
         '''
         Returns the value of the wind at the specified points at the specified
-        time. Valid format specifications include 'r-theta', 'r', 'theta',
+        time. Valid coordinate systems include 'r-theta', 'r', 'theta',
         'uv', 'u' or 'v'. This function is for API compatibility with the new
         environment objects.
 
@@ -477,36 +483,42 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                        This may not be None. To get wind values
                        position-independently, use get_value(time)
         :param time: Datetime of the time to be queried
-        :param format: String describing the data and organization.
+
+        :param coord_sys: String describing the coordinate system.
+
         :param extrapolate: extrapolation on/off (ignored for now)
         '''
         if points is None:
             points = np.array((0, 0)).reshape(-1, 2)
+
         pts = gridded.utilities._reorganize_spatial_data(points)
 
         ret_data = np.zeros_like(pts, dtype='float64')
-        if format in ('r-theta', 'uv'):
-            data = self.get_wind_data(time, 'm/s', format)[0]['value']
+
+        if coord_sys in ('r-theta', 'uv'):
+            data = self.get_wind_data(time, 'm/s', coord_sys)[0]['value']
             ret_data[:, 0] = data[0]
             ret_data[:, 1] = data[1]
-        elif format in ('u', 'v', 'r', 'theta'):
-            f = None
-            if format in ('u', 'v'):
+        elif coord_sys in ('u', 'v', 'r', 'theta'):
+            if coord_sys in ('u', 'v'):
                 f = 'uv'
             else:
                 f = 'r-theta'
+
             data = self.get_wind_data(time, 'm/s', f)[0]['value']
-            if format in ('u', 'r'):
+            if coord_sys in ('u', 'r'):
                 ret_data[:, 0] = data[0]
                 ret_data = ret_data[:, 0]
             else:
                 ret_data[:, 1] = data[1]
                 ret_data = ret_data[:, 1]
         else:
-            raise ValueError('invalid format {0}'.format(format))
+            raise ValueError('invalid coordinate system {0}'.format(coord_sys))
 
         if _auto_align:
-            ret_data = gridded.utilities._align_results_to_spatial_data(ret_data, points)
+            ret_data = (gridded.utilities
+                        ._align_results_to_spatial_data(ret_data, points))
+
         return ret_data
 
     def set_speed_uncertainty(self, up_or_down=None):
@@ -606,7 +618,7 @@ def constant_wind(speed, direction, units='m/s'):
                                                           minute=0)
     wind_vel['value'][0] = (speed, direction)
 
-    return Wind(timeseries=wind_vel, format='r-theta', units=units)
+    return Wind(timeseries=wind_vel, coord_sys='r-theta', units=units)
 
 
 def wind_from_values(values, units='m/s'):
@@ -623,4 +635,4 @@ def wind_from_values(values, units='m/s'):
         wind_vel['time'][i] = record[0]
         wind_vel['value'][i] = tuple(record[1:3])
 
-    return Wind(timeseries=wind_vel, format='r-theta', units=units)
+    return Wind(timeseries=wind_vel, coord_sys='r-theta', units=units)

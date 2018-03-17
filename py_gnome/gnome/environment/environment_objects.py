@@ -13,9 +13,6 @@ from gnome.environment import Environment
 from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
 
 from gnome.environment.gridded_objects_base import (Time,
-                                                    Depth,
-                                                    Grid_U,
-                                                    Grid_S,
                                                     Variable,
                                                     VectorVariable,
                                                     VariableSchema,
@@ -37,6 +34,7 @@ class S_Depth_T1(object):
         if ds is None:
             if data_file is None:
                 data_file = bathymetry.data_file
+
                 if data_file is None:
                     raise ValueError('Need data_file or dataset '
                                      'containing sigma equation terms')
@@ -368,11 +366,8 @@ class CurrentTS(VelocityTS, Environment):
 
 class TemperatureTS(TimeSeriesProp, Environment):
 
-    def __init__(self,
-                 name=None,
-                 units='K',
-                 time=None,
-                 data=None,
+    def __init__(self, name=None, units='K',
+                 time=None, data=None,
                  **kwargs):
         if 'timeseries' in kwargs:
             ts = kwargs['timeseries']
@@ -559,24 +554,31 @@ class GridWind(VelocityGrid, Environment):
 
         self.wet_dry_mask = wet_dry_mask
         if self.units is None:
-            self.units='m/s'
+            self.units = 'm/s'
 
-    def at(self, points, time, units=None, extrapolate=False, format='uv', _auto_align=True, **kwargs):
+    def at(self, points, time, units=None, extrapolate=False,
+           coord_sys='uv', _auto_align=True, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
         :param points: Coordinates to be queried (P)
-        :param time: The time at which to query these points (T)
-        :param depth: Specifies the depth level of the variable
-        :param units: units the values will be returned in (or converted to)
-        :param extrapolate: if True, extrapolation will be supported
-        :param format: String describing the data and organization.
         :type points: Nx2 array of double
+
+        :param time: The time at which to query these points (T)
         :type time: datetime.datetime object
+
+        :param depth: Specifies the depth level of the variable
         :type depth: integer
+
+        :param units: units the values will be returned in (or converted to)
         :type units: string such as ('m/s', 'knots', etc)
+
+        :param extrapolate: if True, extrapolation will be supported
         :type extrapolate: boolean (True or False)
-        :type format: string, one of ('uv','u','v','r-theta','r','theta')
+
+        :param coord_sys: String describing the coordinate system to be used.
+        :type coord_sys: string, one of ('uv','u','v','r-theta','r','theta')
+
         :return: returns a Nx2 array of interpolated values
         :rtype: double
         '''
@@ -598,42 +600,57 @@ class GridWind(VelocityGrid, Environment):
             if res is not None:
                 value = res
                 if _auto_align:
-                    value = gridded.utilities._align_results_to_spatial_data(value, points)
+                    value = (gridded.utilities
+                             ._align_results_to_spatial_data(value, points))
                 return value
 
         if value is None:
-            value = super(GridWind, self).at(pts, time, units, extrapolate=extrapolate, _auto_align=False, **kwargs)
+            value = super(GridWind, self).at(pts, time, units,
+                                             extrapolate=extrapolate,
+                                             _auto_align=False, **kwargs)
             if has_depth:
                 value[pts[:, 2] > 0.0] = 0  # no wind underwater!
             if self.angle is not None:
-                angs = self.angle.at(pts, time, extrapolate=extrapolate, _auto_align=False, **kwargs).reshape(-1)
+                angs = (self.angle
+                        .at(pts, time,
+                            extrapolate=extrapolate, _auto_align=False,
+                            **kwargs)
+                        .reshape(-1))
+
                 x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
                 y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
+
                 value[:, 0] = x
                 value[:, 1] = y
 
-        if format == 'u':
-            value = value[:,0]
-        elif format == 'v':
-            value = value[:,1]
-        elif format in ('r-theta', 'r', 'theta'):
-            _mag = np.sqrt(value[:,0]**2 + value[:,1]**2)
-            _dir = np.arctan2(value[:,1], value[:,0]) * 180./np.pi
-            if format == 'r':
+        if coord_sys == 'u':
+            value = value[:, 0]
+        elif coord_sys == 'v':
+            value = value[:, 1]
+        elif coord_sys in ('r-theta', 'r', 'theta'):
+            _mag = np.sqrt(value[:, 0] ** 2 + value[:, 1] ** 2)
+            _dir = np.arctan2(value[:, 1], value[:, 0]) * 180. / np.pi
+
+            if coord_sys == 'r':
                 value = _mag
-            elif format == 'theta':
+            elif coord_sys == 'theta':
                 value = _dir
             else:
                 value = np.column_stack((_mag, _dir))
+
         if _auto_align:
-            value = gridded.utilities._align_results_to_spatial_data(value, points)
+            value = gridded.utilities._align_results_to_spatial_data(value,
+                                                                     points)
 
         if mem:
-            self._memoize_result(pts, time, value, self._result_memo, _hash=_hash)
+            self._memoize_result(pts, time, value, self._result_memo,
+                                 _hash=_hash)
+
         return value
 
     def get_start_time(self):
         return self.time.min_time
+
     def get_end_time(self):
         return self.time.max_time
 

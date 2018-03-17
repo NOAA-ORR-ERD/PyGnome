@@ -106,28 +106,36 @@ class Weatherer(Process, Serializable):
         mass_remain = M_0 * np.exp(lambda_ * time)
         return mass_remain
 
-    def get_wind_speed(self, points, model_time, format='r', fill_value=1.0):
+    def get_wind_speed(self, points, model_time,
+                       coord_sys='r', fill_value=1.0):
         '''
         Wrapper for the weatherers so they can extrapolate
         '''
-#         new_model_time = self.check_time(wind, model_time)
-        retval = self.wind.at(points, model_time, format=format)
-        return retval.filled(fill_value) if isinstance(retval, np.ma.MaskedArray) else retval
+        retval = self.wind.at(points, model_time, coord_sys=coord_sys)
+
+        if isinstance(retval, np.ma.MaskedArray):
+            return retval.filled(fill_value)
+        else:
+            return retval
 
     def check_time(self, wind, model_time):
         """
         Should have an option to extrapolate but for now we do by default
         """
         new_model_time = model_time
+
         if wind is not None:
             if model_time is not None:
                 timeval = date_to_sec(model_time)
                 start_time = wind.get_start_time()
                 end_time = wind.get_end_time()
+
                 if end_time == start_time:
                     return model_time
+
                 if timeval < start_time:
                     new_model_time = sec_to_datetime(start_time)
+
                 if timeval > end_time:
                     new_model_time = sec_to_datetime(end_time)
             else:
@@ -146,8 +154,10 @@ class Weatherer(Process, Serializable):
         if json_ == 'webapi':
             if hasattr(self, 'wind') and self.wind:
                 serial['wind'] = self.wind.serialize(json_)
+
             if hasattr(self, 'waves') and self.waves:
                 serial['waves'] = self.waves.serialize(json_)
+
             if hasattr(self, 'water') and self.water:
                 serial['water'] = self.water.serialize(json_)
 
@@ -161,11 +171,13 @@ class Weatherer(Process, Serializable):
         if not cls.is_sparse(json_):
             schema = cls._schema()
 
-            for w in ['wind','water','waves']:
+            for w in ['wind', 'water', 'waves']:
                 if w in json_:
                     obj = json_[w]['obj_type']
                     schema.add(eval(obj)._schema(name=w, missing=drop))
+
             dict_ = schema.deserialize(json_)
+
             return dict_
         else:
             return json_
@@ -217,6 +229,7 @@ class HalfLifeWeatherer(Weatherer):
         '''
         if not self.active:
             return
+
         if sc.num_released == 0:
             return
 
