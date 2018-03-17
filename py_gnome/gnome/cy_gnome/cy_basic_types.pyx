@@ -14,7 +14,6 @@ def enum(**enums):
            x.a = 1, x.b = 2, x.c = 3
            x._attr = ['a','b','c'], x._int = [ 1, 2, 3]
 
-    Just found a clever way to do enums in python
     - Returns a new type called Enum whose attributes are given by the input
       in 'enums'
     - also append two more attributes called:
@@ -28,6 +27,7 @@ def enum(**enums):
     enums.update({'_attr': enums.keys(), '_int': enums.values()})
 
     return type('Enum', (), enums)
+
 
 """
 LE Status as an enum type

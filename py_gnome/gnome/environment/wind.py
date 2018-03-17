@@ -16,15 +16,17 @@ from colander import (SchemaNode, drop, OneOf,
 
 import unit_conversion as uc
 
-from gnome import basic_types
+from gnome.basic_types import datetime_value_2d
+from gnome.basic_types import coord_systems
+from gnome.basic_types import wind_datasources
+
+from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 
 from gnome.utilities import serializable
 from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.timeseries import Timeseries
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.utilities.distributions import RayleighDistribution as rayleigh
-
-from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
@@ -92,8 +94,7 @@ class WindSchema(base_schema.ObjType):
     longitude = SchemaNode(Float(), missing=drop)
     source_id = SchemaNode(String(), missing=drop)
     source_type = SchemaNode(String(),
-                             validator=OneOf(basic_types
-                                             .wind_datasource._attr),
+                             validator=OneOf(wind_datasources._attr),
                              default='undefined', missing='undefined')
     units = SchemaNode(String(), default='m/s')
     speed_uncertainty_scale = SchemaNode(Float(), missing=drop)
@@ -174,7 +175,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
             if units is not None:
                 self.units = units
         else:
-            if kwargs.get('source_type') in basic_types.wind_datasource._attr:
+            if kwargs.get('source_type') in wind_datasources._attr:
                 self.source_type = kwargs.pop('source_type')
             else:
                 self.source_type = 'undefined'
@@ -266,7 +267,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
     @property
     def units(self):
         '''
-        define units in which wind data is input/output
+            define units in which wind data is input/output
         '''
         return self._user_units
 
@@ -291,8 +292,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         if from_unit != to_unit:
             data[:, 0] = uc.convert('Velocity', from_unit, to_unit, data[:, 0])
 
-            if coord_sys == basic_types.ts_format.uv:
-                # TODO: avoid clobbering the 'ts_format' namespace
+            if coord_sys == coord_systems.uv:
                 data[:, 1] = uc.convert('Velocity', from_unit, to_unit,
                                         data[:, 1])
 
@@ -610,7 +610,7 @@ def constant_wind(speed, direction, units='m/s'):
         The time for a constant wind timeseries is irrelevant. This
         function simply sets it to datetime.now() accurate to hours.
     """
-    wind_vel = np.zeros((1, ), dtype=basic_types.datetime_value_2d)
+    wind_vel = np.zeros((1, ), dtype=datetime_value_2d)
 
     # just to have a time accurate to minutes
     wind_vel['time'][0] = datetime.datetime.now().replace(microsecond=0,
@@ -629,7 +629,7 @@ def wind_from_values(values, units='m/s'):
 
     :returns: A Wind timeseries object that can be used for a wind mover, etc.
     """
-    wind_vel = np.zeros((len(values), ), dtype=basic_types.datetime_value_2d)
+    wind_vel = np.zeros((len(values), ), dtype=datetime_value_2d)
 
     for i, record in enumerate(values):
         wind_vel['time'][i] = record[0]
