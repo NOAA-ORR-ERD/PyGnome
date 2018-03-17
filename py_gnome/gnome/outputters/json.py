@@ -14,6 +14,8 @@ from gnome.movers import PyMover
 from gnome.persist import class_from_objtype
 
 from .outputter import Outputter, BaseSchema
+
+
 class SpillJsonSchema(BaseSchema):
     pass
 
@@ -54,8 +56,7 @@ class SpillJsonOutput(Outputter, Serializable):
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
-        super(SpillJsonOutput, self).write_output(step_num,
-                                                          islast_step)
+        super(SpillJsonOutput, self).write_output(step_num, islast_step)
 
         if not self._write_step:
             return None
@@ -68,9 +69,8 @@ class SpillJsonOutput(Outputter, Serializable):
 
         for sc in self.cache.load_timestep(step_num).items():
             position = sc['positions']
-            longitude = np.around(position[:,0], 4).tolist()
-            latitude = np.around(position[:,1], 4).tolist()
-            l = len(longitude)
+            longitude = np.around(position[:, 0], 4).tolist()
+            latitude = np.around(position[:, 1], 4).tolist()
             status = sc['status_codes'].tolist()
             mass = np.around(sc['mass'], 4).tolist()
             spill_num = sc['spill_num'].tolist()
@@ -85,11 +85,11 @@ class SpillJsonOutput(Outputter, Serializable):
             #   to_be_removed : 12
 
             out = {"longitude": longitude,
-                   "latitude":latitude,
+                   "latitude": latitude,
                    "status": status,
                    "mass": mass,
-                   "spill_num":spill_num,
-                   "length":l
+                   "spill_num": spill_num,
+                   "length": len(longitude)
                    }
 
             if sc.uncertain:
@@ -103,6 +103,7 @@ class SpillJsonOutput(Outputter, Serializable):
                        'step_num': step_num,
                        'certain': certain_scs,
                        'uncertain': uncertain_scs}
+
         if self.output_dir:
             output_info['output_filename'] = self.output_to_file(certain_scs,
                                                                  step_num)
@@ -347,8 +348,17 @@ class IceJsonOutput(Outputter):
 
             for i, cm in enumerate(json_['ice_movers']):
                 cm_cls = class_from_objtype(cm['obj_type'])
+
                 cm_dict = cm_cls.deserialize(json_['ice_movers'][i])
 
                 _to_dict['ice_movers'].append(cm_dict)
 
         return _to_dict
+
+
+
+
+
+
+
+

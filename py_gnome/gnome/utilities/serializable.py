@@ -577,28 +577,38 @@ class Serializable(GnomeId, Savable, SchemaType):
         NOTE: add the json_='webapi' key to be serialized so we know what the
         serialization is for
         """
-
+        data = {}
         list_ = self._state.get_names('all')
 
-        data = {}
         for key in list_:
             value = self.attr_to_dict(key)
+
             if hasattr(value, 'to_dict'):
                 value = value.to_dict()  # recursive call
-            elif (key in [f.name for f in self._state.get_field_by_attribute('iscollection')]):
-                #if self.key is a list, this needs special attention. It does
-                #not have a to_dict like OrderedCollection does!
+            elif (key in [f.name for f in
+                          self._state.get_field_by_attribute('iscollection')]):
+                # if self.key is a list, this needs special attention. It does
+                # not have a to_dict like OrderedCollection does!
                 vals = []
+
                 for obj in value:
-                    try:
-                        obj_type = '{0.__module__}.{0.__class__.__name__}'.format(obj)
-                    except AttributeError:
-                        obj_type = '{0.__class__.__name__}'.format(obj)
-                    _id=None
-                    if hasattr(obj, 'id'):
-                        _id= str(obj.id)
+                    if 'obj_type' in obj:
+                        obj_type = obj['obj_type']
                     else:
-                        _id= str(id(obj))
+                        try:
+                            obj_type = ('{0.__module__}.{0.__class__.__name__}'
+                                        .format(obj))
+                        except AttributeError:
+                            obj_type = '{0.__class__.__name__}'.format(obj)
+
+                    _id = None
+                    if hasattr(obj, 'id'):
+                        _id = str(obj.id)
+                    elif 'id' in obj:
+                        _id = obj['id']
+                    else:
+                        _id = str(id(obj))
+
                     val = {'obj_type': obj_type, 'id': _id}
                     vals.append(val)
 
@@ -850,6 +860,7 @@ class Serializable(GnomeId, Savable, SchemaType):
         If json_='webapi', it subselects Fields with (update=True, read=True)
         '''
         dict_ = self.to_dict()
+
         if json_ == 'webapi':
             attrlist = self._attrlist()
         elif json_ == 'save':
