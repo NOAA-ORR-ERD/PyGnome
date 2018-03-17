@@ -68,7 +68,7 @@ def test_uncertain_loop(uncertain_time_delay=0):
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
     curr = GridCurrentMover(curr_file, topology_file)
-    curr.uncertain_time_delay=uncertain_time_delay
+    curr.uncertain_time_delay = uncertain_time_delay
     u_delta = _uncertain_loop(pSpill, curr)
 
     _assert_move(u_delta)
@@ -94,7 +94,7 @@ def test_certain_uncertain():
     assert np.all(delta[:, :2] == u_delta[:, :2])
 
 
-c_grid = GridCurrentMover(curr_file,topology_file)
+c_grid = GridCurrentMover(curr_file, topology_file)
 
 
 def test_default_props():
@@ -107,7 +107,7 @@ def test_default_props():
     assert c_grid.uncertain_duration == 24
     assert c_grid.uncertain_cross == .25
     assert c_grid.uncertain_along == .5
-    assert c_grid.extrapolate == False
+    assert c_grid.extrapolate is False
     assert c_grid.time_offset == 0
 
 
@@ -137,7 +137,7 @@ def test_extrapolate():
 
     c_grid.extrapolate = True
     print c_grid.extrapolate
-    assert c_grid.extrapolate == True
+    assert c_grid.extrapolate is True
 
 
 def test_offset_time():

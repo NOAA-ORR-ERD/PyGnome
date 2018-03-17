@@ -1,6 +1,5 @@
 """
-__init__.py for the gnome package
-
+    __init__.py for the gnome package
 """
 from itertools import chain
 
@@ -43,61 +42,14 @@ def check_dependency_versions():
         try:
             module = importlib.import_module(name)
         except ImportError:
-            print ("ERROR: The {} package, version >= {} needs to be installed".
-                   format(name, version))
+            print ('ERROR: The {} package, version >= {} needs to be installed'
+                   .format(name, version))
             sys.exit(1)
         if module.__version__ < version:
-            w = ('Version {0} of {1} package is reported, but actual version in module is {2}'.
-                 format(version, name, module.__version__))
+            w = ('Version {0} of {1} package is reported, '
+                 'but actual version in module is {2}'
+                 .format(version, name, module.__version__))
             warnings.warn(w)
-
-
-# ## maybe too complex that required...
-# def check_dependency_versions():
-#     '''
-#     Checks the versions of the following libraries:
-#         gridded
-#         oillibrary
-#         unit_conversion
-#     If the version is not at least as current as what's in the conda_requirements file,
-#     a warning is displayed
-#     '''
-#     def get_version(package):
-#         package = package.lower()
-#         return next((p.version for p in pkg_resources.working_set
-#                      if p.project_name.lower() == package), "No match")
-
-#     libs = [('gridded', '>=', '0.0.9'),
-#             ('oil-library', '>=', '1.0.6'),
-#             ('unit-conversion', '>=', '2.5.5')]
-# #     condafiledir = os.path.relpath(__file__).split(__file__.split('\\')[-3])[0]
-# #     condafile = os.path.join(condafiledir, 'conda_requirements.txt')
-# #     with open(condafile, 'r') as conda_reqs:
-# #         for line in conda_reqs.readlines():
-#     for req in libs:
-#         criteria = None
-#         req_name, cmp_str, reqd_ver = req
-#         if '>' in cmp_str:
-#             criteria = (lambda a, b: a >= b) if '=' in cmp_str else (lambda a, b: a > b)
-#         elif '<' in cmp_str:
-#             criteria = (lambda a, b: a <= b) if '=' in cmp_str else (lambda a, b: a < b)
-#         else:
-#             criteria = (lambda a, b: a == b)
-#         inst_ver = get_version(req_name)
-
-#         try:
-#             module_ver = importlib.import_module(req_name.replace('-', '_')).__version__
-#         except ImportError:
-#             print "ERROR: The {} package, version {} {} needs to be installed".format(*req)
-#             sys.exit(1)
-
-#         if not criteria(inst_ver, reqd_ver):
-#             if criteria(module_ver, reqd_ver):
-#                 w = 'Version {0} of {1} package is reported, but actual version in module is {2}'.format(inst_ver, req_name, module_ver)
-#                 warnings.warn(w)
-#             else:
-#                 w = 'Version {0} of {1} package is installed in environment, {2}{3} required'.format(inst_ver, req_name, cmp_str, reqd_ver)
-#                 warnings.warn(w)
 
 
 def initialize_log(config, logfile=None):
@@ -106,7 +58,8 @@ def initialize_log(config, logfile=None):
     config can be a file containing json or it can be a Python dict
 
     :param config: logging configuration as a json file or config dict
-                   it needs to be in the dict config format used by ``logging.dictConfig``:
+                   it needs to be in the dict config format used by
+                   ``logging.dictConfig``:
                    https://docs.python.org/2/library/logging.config.html#logging-config-dictschema
 
     :param logfile=None: optional name of file to log to
@@ -159,12 +112,12 @@ def _valid_units(unit_name):
 # we have a sort of chicken-egg situation here.  The above functions need
 # to be defined before we can import these modules.
 check_dependency_versions()
+
 from . import (map,
-                environment,
-                model,
-#                 multi_model_broadcast,
-                spill_container,
-                spill,
-                movers,
-                outputters
-)
+               environment,
+               model,
+               # multi_model_broadcast,
+               spill_container,
+               spill,
+               movers,
+               outputters)

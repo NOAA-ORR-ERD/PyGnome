@@ -74,13 +74,17 @@ class Environment(object):
         """
         pass
 
-    def get_wind_speed(self, points, model_time, format='r', fill_value=1.0):
+    def get_wind_speed(self, points, model_time,
+                       coord_sys='r', fill_value=1.0):
         '''
         Wrapper for the weatherers so they can extrapolate
         '''
-#         new_model_time = self.check_time(wind, model_time)
-        retval = self.wind.at(points, model_time, format=format)
-        return retval.filled(fill_value) if isinstance(retval, np.ma.MaskedArray) else retval
+        retval = self.wind.at(points, model_time, coord_sys=coord_sys)
+
+        if isinstance(retval, np.ma.MaskedArray):
+            return retval.filled(fill_value)
+        else:
+            return retval
 
     def check_time(self, wind, model_time):
         """
@@ -218,13 +222,7 @@ class Water(Environment, serializable.Serializable):
                  sediment=.005,  # kg/m^3 oceanic default
                  wave_height=None,
                  fetch=None,
-                 units={'temperature': 'K',
-                        'salinity': 'psu',
-                        'sediment': 'kg/m^3',  # do we need SI here?
-                        'wave_height': 'm',
-                        'fetch': 'm',
-                        'density': 'kg/m^3',
-                        'kinematic_viscosity': 'm^2/s'},
+                 units=None,
                  name='Water'):
         '''
         Assume units are SI for all properties. 'units' attribute assumes SI
@@ -239,8 +237,11 @@ class Water(Environment, serializable.Serializable):
         self.fetch = fetch
         self.kinematic_viscosity = 0.000001
         self.name = name
-        self._units = dict(self._si_units)
-        self.units = units
+
+        self.units = self._si_units
+        if units is not None:
+            # self.units is a property, so this is non-destructive
+            self.units = units
 
     def __repr__(self):
         info = ("{0.__class__.__module__}.{0.__class__.__name__}"
@@ -327,10 +328,16 @@ class Water(Environment, serializable.Serializable):
 
     @property
     def units(self):
+        if not hasattr(self, '_units'):
+            self._units = {}
+
         return self._units
 
     @units.setter
     def units(self, u_dict):
+        if not hasattr(self, '_units'):
+            self._units = {}
+
         for prop, unit in u_dict.iteritems():
             if prop in self._units_type:
                 if unit not in self._units_type[prop][1]:
@@ -415,7 +422,10 @@ def env_from_netCDF(filename=None, dataset=None,
         grid = PyGrid.from_netCDF(filename=filename, dataset=dg, **kwargs)
         kwargs['grid'] = grid
 
-    scs = copy.copy(Environment._subclasses) if _cls_list is None else _cls_list
+    if _cls_list is None:
+        scs = copy.copy(Environment._subclasses)
+    else:
+        scs = _cls_list
 
     for c in scs:
         if (issubclass(c, (Variable, VectorVariable)) and
@@ -477,7 +487,7 @@ def ice_env_from_netCDF(filename=None, **kwargs):
 
 def get_file_analysis(filename):
     env = env_from_netCDF(filename=filename)
-    classes = copy.copy(Environment._subclasses)
+    # classes = copy.copy(Environment._subclasses)
 
     if len(env) > 0:
         report = ['Can create {0} types of environment objects'
