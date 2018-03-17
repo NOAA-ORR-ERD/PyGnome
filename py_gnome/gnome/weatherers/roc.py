@@ -1528,8 +1528,8 @@ class SkimSchema(ResponseSchema):
     skim_efficiency_type = SchemaNode(String())
     decant = SchemaNode(Float())
     decant_pump = SchemaNode(Float())
-    rig_time = SchemaNode(TimeDelta())
-    transit_time = SchemaNode(TimeDelta())
+    rig_time = SchemaNode(Float())
+    transit_time = SchemaNode(Float())
     offload_to = SchemaNode(String(), missing=drop)
     discharge_pump = SchemaNode(Float())
     recovery = SchemaNode(String())
@@ -1783,6 +1783,8 @@ class Skim(Response):
 
     def _transit(self, sc, time_step, model_time):
         # transiting back to shore to offload
+        print('time', self._time_remaining)
+        print('remaining', self._transit_remaining)
         if self._time_remaining >= self._transit_remaining:
 
             self._state_list.append(['transit', self._transit_remaining])
