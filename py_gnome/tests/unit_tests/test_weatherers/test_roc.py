@@ -560,10 +560,10 @@ class TestRocSkim(ROCTests):
                 decant=0.75,
                 decant_pump=150.0,
                 discharge_pump=1000.0,
-                rig_time=timedelta(minutes=30),
+                rig_time=timedelta(minutes=30).total_seconds(),
                 timeseries=[(datetime(2012, 9, 15, 12, 0),
                              datetime(2012, 9, 16, 1, 0))],
-                transit_time=timedelta(hours=2))
+                transit_time=timedelta(hours=2).total_seconds())
 
     def test_prepare_for_model_run(self, sample_model_fcn2):
         self.sc, self.model = ROCTests.mk_objs(sample_model_fcn2)
@@ -629,7 +629,6 @@ class TestRocSkim(ROCTests):
 
     def test_model_save(self, sample_model_fcn2):
         s = TestRocSkim.skim
-        print 's.rig_time: ', s.rig_time
 
         self.sc, self.model = ROCTests.mk_objs(sample_model_fcn2)
 
