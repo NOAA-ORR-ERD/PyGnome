@@ -72,14 +72,40 @@ be the same as those specified when we created the map object. The default is to
     renderer = Renderer(output_timestep=timedelta(hours=6),map_BB=((-145,48), (-145,49), (-143,49), (-143,48)))
                         
     model.outputters += renderer
+    
+Step through the model and view data
+------------------------------------
 
-Run the model
--------------
-The model can be run by stepping through individual timesteps (e.g. if we want to see results along the way) or we
-can do a full run::
+Once the model is all set up, we are ready to run the simulation. Sometimes we want to do this iteratively step-by-step to view data 
+along the way without outputting to a file. There are some helper utilities to extract data associated with the particles. This data 
+includes properties such as mass, age, and position; or weathering information such as the mass of oil evaporated (if the simulation has 
+specified an oil type rather than a conservative substance as in this example).
+
+For example, if we want to extract the particle positions as a function of time, we could do something like::
+    
+    x=[]
+    y=[]
+    for step in model:
+        positions = model.get_spill_property('positions')
+        x.append(positions[:,0])
+        y.append(positions[:,1])
+        
+To see a list of properties associated with particles use::
+
+    model.list_spill_properties()
+    
+Note, this list may increase after the first time step as arrays are initialized.
+
+Run the model to completion
+---------------------------
+Alternatively, to just run the model for the entire duration use::
 
     model.full_run()
+    
+Results will be written to files based on the outputters added to the model.
 
+
+    
 View the results
 ----------------
 The renderer that we added generated png images every 6 hours. Since we did not specify an output directory for these images, 
