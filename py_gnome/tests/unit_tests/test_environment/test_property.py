@@ -128,12 +128,8 @@ class TestTSprop:
         assert u.name == 'u'
         assert u.units == 'm/s'
 
-        v = None
-
         with pytest.raises(ValueError):
-            v = TimeSeriesProp('v', 'nm/hr', [dt.datetime.now()], [5, ])
-
-        assert v is None
+            _v = TimeSeriesProp('v', 'nm/hr', [dt.datetime.now()], [5, ])
 
         constant = TimeSeriesProp.constant('const', 'm/s', 5)
         assert constant.data[0] == 5
@@ -187,12 +183,14 @@ class TestTSprop:
 #
 #     def test_construction(self, u, v):
 #         vp = None
-#         vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data, v_data])
+#         vp = TSVectorProp(name='vp', units='m/s', time=dates2,
+#                           variables=[u_data, v_data])
 #         pytest.set_trace()
 #         assert vp.variables[0].data == u_data
 #
 #         # 3 components
-#         vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[u_data, v_data, u_data])
+#         vp = TSVectorProp(name='vp', units='m/s', time=dates2,
+#                           variables=[u_data, v_data, u_data])
 #
 #         # Using TimeSeriesProp
 #         vp = TSVectorProp(name='vp', variables=[u, v])
@@ -200,15 +198,18 @@ class TestTSprop:
 #
 #         # SHORT TIME
 #         with pytest.raises(ValueError):
-#             vp = TSVectorProp(name='vp', units='m/s', time=dates, variables=[u_data, v_data])
+#             vp = TSVectorProp(name='vp', units='m/s', time=dates,
+#                               variables=[u_data, v_data])
 #
 #         # DIFFERENT LENGTH VARS
 #         with pytest.raises(ValueError):
-#             vp = TSVectorProp(name='vp', units='m/s', time=dates2, variables=[s_data, v_data])
+#             vp = TSVectorProp(name='vp', units='m/s', time=dates2,
+#                               variables=[s_data, v_data])
 #
 #         # UNSUPPORTED UNITS
 #         with pytest.raises(ValueError):
-#             vp = TSVectorProp(name='vp', units='km/s', time=dates2, variables=[s_data, v_data, u_data])
+#             vp = TSVectorProp(name='vp', units='km/s', time=dates2,
+#                               variables=[s_data, v_data, u_data])
 #
 #     def test_unit_conversion(self, vp):
 #         nvp = vp.in_units('km/hr')
