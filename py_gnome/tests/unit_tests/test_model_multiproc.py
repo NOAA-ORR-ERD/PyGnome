@@ -1,5 +1,7 @@
 import os
+import sys
 import time
+import traceback
 
 from datetime import datetime, timedelta
 
@@ -122,9 +124,11 @@ def test_init():
     model = make_model()
 
     with pytest.raises(TypeError):
+        # no uncertainty arguments
         ModelBroadcaster(model)
 
     with pytest.raises(TypeError):
+        # no spill amount uncertainties
         ModelBroadcaster(model,
                          ('down', 'normal', 'up'))
 
@@ -179,7 +183,6 @@ def test_uncertainty_array_indexing():
                                          ('down', 'normal', 'up'))
 
     try:
-        print '\nGetting time & spill values for just the (down, down) model:'
         res = model_broadcaster.cmd('get_wind_timeseries', {},
                                     ('down', 'down'))
         assert np.allclose([r[0] for r in res], 17.449237)
@@ -187,9 +190,7 @@ def test_uncertainty_array_indexing():
         res = model_broadcaster.cmd('get_spill_amounts', {}, ('down', 'down'))
         assert np.isclose(res[0], 333.33333)
 
-        print '\nGetting time & spill values for just the (up, up) model:'
         res = model_broadcaster.cmd('get_wind_timeseries', {}, ('up', 'up'))
-        print 'get_wind_timeseries:'
         assert np.allclose([r[0] for r in res], 20.166224)
 
         res = model_broadcaster.cmd('get_spill_amounts', {}, ('up', 'up'))
@@ -412,6 +413,39 @@ def test_weathering_output_only():
                     'WeatheringOutput' in r)]
     finally:
         model_broadcaster.stop()
+
+
+@pytest.mark.timeout(10)
+def test_child_exception():
+    '''
+        This one is a bit tricky.  We would like to simulate an exception
+        by making the spill.amount a None value and then instantiating
+        our broadcaster.  This is expected to raise a TypeError based on
+        the current codebase, but could change.
+
+        We would like to get the exception raised in the child process and
+        re-raise it in the broadcaster parent process, complete with good
+        traceback information.
+    '''
+    model = make_model(geojson_output=True)
+
+    model.spills[0].amount = None
+    print 'amount:', model.spills[0].amount
+
+    try:
+        _model_broadcaster = ModelBroadcaster(model,
+                                              ('down', 'normal', 'up'),
+                                              ('down', 'normal', 'up'))
+    except Exception as e:
+        assert type(e) == TypeError
+
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        fmt = traceback.format_exception(exc_type, exc_value, exc_traceback)
+
+        last_file_entry = [l for l in fmt if l.startswith('  File ')][-1]
+        last_file = last_file_entry.split('"')[1]
+
+        assert os.path.basename(last_file) == 'spill.py'
 
 
 if __name__ == '__main__':

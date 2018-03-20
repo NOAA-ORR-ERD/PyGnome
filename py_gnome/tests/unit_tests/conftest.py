@@ -446,7 +446,8 @@ def wind_circ(wind_timeseries):
 
     from gnome import environment
     dtv_rq = wind_timeseries['rq']
-    wm = environment.Wind(timeseries=dtv_rq, format='r-theta',
+
+    wm = environment.Wind(timeseries=dtv_rq, coord_sys='r-theta',
                           units='meter per second')
 
     return {'wind': wm, 'rq': dtv_rq, 'uv': wind_timeseries['uv']}
