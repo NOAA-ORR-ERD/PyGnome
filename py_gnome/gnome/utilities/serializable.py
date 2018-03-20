@@ -592,14 +592,11 @@ class Serializable(GnomeId, Savable, SchemaType):
                 vals = []
 
                 for obj in value:
-                    if 'obj_type' in obj:
-                        obj_type = obj['obj_type']
-                    else:
-                        try:
-                            obj_type = ('{0.__module__}.{0.__class__.__name__}'
-                                        .format(obj))
-                        except AttributeError:
-                            obj_type = '{0.__class__.__name__}'.format(obj)
+                    try:
+                        obj_type = ('{0.__module__}.{0.__class__.__name__}'
+                                    .format(obj))
+                    except AttributeError:
+                        obj_type = '{0.__class__.__name__}'.format(obj)
 
                     _id = None
                     if hasattr(obj, 'id'):
