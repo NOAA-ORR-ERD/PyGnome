@@ -25,7 +25,7 @@ Need to hook this up to existing test data infrastructure
 base_dir = os.path.dirname(__file__)
 
 s_data = os.path.join(base_dir, 'sample_data')
-gen_all(path=s_data)
+gen_all(base_path=s_data)
 
 sinusoid = os.path.join(s_data, 'staggered_sine_channel.nc')
 sinusoid = nc.Dataset(sinusoid)

@@ -373,10 +373,15 @@ def gen_ring(filename=None):
     # plt.title('triplot of Delaunay triangulation')
 
 
-def gen_all(path=None):
+def gen_all(base_path=None):
     filenames = ['staggered_sine_channel.nc', '3D_circular.nc', 'tri_ring.nc']
-    if path is not None:
-        filenames = [os.path.join(path, fn) for fn in filenames]
+
+    if base_path is not None:
+        if not os.path.isdir(base_path):
+            os.mkdir(base_path)
+
+        filenames = [os.path.join(base_path, fn) for fn in filenames]
+
     for fn, func in zip(filenames, (gen_sinusoid, gen_vortex_3D, gen_ring)):
         func(fn)
 
