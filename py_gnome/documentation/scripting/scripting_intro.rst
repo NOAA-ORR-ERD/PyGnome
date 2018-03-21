@@ -81,7 +81,8 @@ along the way without outputting to a file. There are some helper utilities to e
 includes properties such as mass, age, and position; or weathering information such as the mass of oil evaporated (if the simulation has 
 specified an oil type rather than a conservative substance as in this example).
 
-For example, if we want to extract the particle positions as a function of time, we could do something like::
+For example, if we want to extract the particle positions as a function of time, we can use the :func:`gnome.model.get_spill_property`
+convenience function, as shown below::
     
     x=[]
     y=[]

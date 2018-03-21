@@ -74,4 +74,27 @@ explicitly required but is needed by the Waves object. Adding on to our example 
     waves = Waves(wind)
     water = Water(temperature=300.0, salinity=35.0) #temperature in Kelvin, salinity in psu
     model.weatherers += Evaporation(wind=wind,water=water)
-    model.weatherers += NaturalDispersion()
+    model.weatherers += NaturalDispersion
+    
+    
+Dissolution
+-----------
+
+Emulsification
+--------------
+
+Biodegradation
+--------------
+
+Viewing Bulk Weathering Data
+----------------------------
+
+Since the total oil volume spilled is divided among multiple particles, bulk oil budget properties
+(e.g. percent of oil volume evaporated) are computed and stored in addition to the individual particle 
+data. These data are available through a specialized Outputter named WeatheringOutput, 
+see :ref:`Weathering Data Output`
+
+
+
+
+
