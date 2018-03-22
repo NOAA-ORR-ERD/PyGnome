@@ -8,10 +8,10 @@ and
 Element_types -- what the types of the elements are.
 
 """
-
+from datetime import timedelta
 import copy
 from inspect import getmembers, ismethod
-from datetime import timedelta
+
 
 import unit_conversion as uc
 from colander import (SchemaNode, Bool, String, Float, drop)
@@ -21,7 +21,10 @@ from gnome.persist import class_from_objtype
 from gnome.persist.base_schema import ObjType
 
 from . import elements
-from .release import PointLineRelease, ContinuousRelease, GridRelease
+from .release import (PointLineRelease,
+                      ContinuousRelease,
+                      GridRelease,
+                      SpatialRelease)
 from .. import _valid_units
 
 
@@ -31,9 +34,7 @@ class BaseSpill(Serializable, object):
 
     and as a spec for the API.
     """
-    def __init__(self,
-                 release_time=None,
-                 name=""):
+    def __init__(self, release_time=None, name=""):
         """
         initialize -- sub-classes will probably have a lot more to do
         """
@@ -681,10 +682,11 @@ class Spill(BaseSpill):
         elif self.units in self.valid_vol_units:
             # need to convert to mass
                 # DO NOT change this back!
-                # for the UI to be consistent, the conversion needs to use standard
-                #  density -- not the current water temp.
+                # for the UI to be consistent, the conversion needs to use
+                # standard density -- not the current water temp.
                 # water_temp = self.water.get('temperature')
-                # ideally substance would have a "standard_density" attribute for this.
+                # ideally substance would have a "standard_density" attribute
+                # for this.
             std_rho = self.element_type.standard_density
 
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
@@ -851,7 +853,8 @@ class Spill(BaseSpill):
                 deserialized, created and added to this dict by load method
                 '''
                 etcls = class_from_objtype(json_['element_type']['obj_type'])
-                dict_['element_type'] = etcls.deserialize(json_['element_type'])
+                dict_['element_type'] = etcls.deserialize(json_['element_type']
+                                                          )
 
                 if 'water' in json_:
                     w_cls = class_from_objtype(json_['water']['obj_type'])
@@ -870,6 +873,7 @@ class Spill(BaseSpill):
             return dict_
         else:
             return json_
+
 
 """ Helper functions """
 
@@ -928,6 +932,7 @@ def surface_point_line_spill(num_elements,
                  units=units,
                  name=name)
 
+
 def grid_spill(bounds,
                resolution,
                release_time,
@@ -945,7 +950,8 @@ def grid_spill(bounds,
                     (max_lon, max_lat))
     :type bounds: 2x2 numpy array or equivalent
 
-    :param resolution: resolution of grid -- it will be a resoluiton X resolution grid
+    :param resolution: resolution of grid -- it will be a resoluiton X
+                       resolution grid
     :type resolution: integer
 
     :param release_time: time the LEs are released (datetime object)
@@ -986,7 +992,6 @@ def grid_spill(bounds,
                  amount=amount,
                  units=units,
                  name=name)
-
 
 
 def subsurface_plume_spill(num_elements,
@@ -1141,6 +1146,7 @@ def point_line_release_spill(num_elements,
                   amount=amount,
                   units=units,
                   name=name)
+
     return spill
 
 
@@ -1169,5 +1175,5 @@ def spatial_release_spill(start_positions,
                   amount=amount,
                   units=units,
                   name=name)
-    return spill
 
+    return spill

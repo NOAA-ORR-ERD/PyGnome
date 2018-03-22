@@ -7,10 +7,9 @@ from pytest import raises
 
 import numpy as np
 
-import unit_conversion
+import unit_conversion as uc
 
-from gnome.basic_types import (datetime_value_2d,
-                               ts_format)
+from gnome.basic_types import datetime_value_2d, ts_format
 
 
 from gnome.utilities.projections import FlatEarthProjection
@@ -19,7 +18,7 @@ from gnome.utilities.inf_datetime import InfDateTime
 from gnome.utilities.transforms import r_theta_to_uv_wind
 from gnome.utilities import convert
 
-from gnome.environment import Wind, constant_wind
+from gnome.environment import Wind
 
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
@@ -30,6 +29,7 @@ from gnome.movers import (WindMover,
                           wind_mover_from_file)
 from gnome.persist import References, load
 from gnome.exceptions import ReferencedObjectNotSet
+
 from ..conftest import sample_sc_release, testdata
 
 
@@ -72,7 +72,7 @@ def test_read_file_init():
 
     wind = Wind(filename=file_)
     wm = WindMover(wind)
-    wind_ts = wind.get_wind_data(format='uv', units='meter per second')
+    wind_ts = wind.get_wind_data(coord_sys='uv', units='meter per second')
     _defaults(wm)  # check defaults set correctly
     assert not wm.make_default_refs
     cpp_timeseries = _get_timeseries_from_cpp(wm)
@@ -82,11 +82,10 @@ def test_read_file_init():
     # NOTE: Following functionality is already tested in test_wind.py,
     #       but what the heck - do it here too.
 
-    wind_ts = wind.get_wind_data(format=ts_format.uv)
-    cpp_timeseries['value'] = unit_conversion.convert('Velocity',
-                                                      'meter per second',
-                                                      wind.units,
-                                                      cpp_timeseries['value'])
+    wind_ts = wind.get_wind_data(coord_sys=ts_format.uv)
+    cpp_timeseries['value'] = uc.convert('Velocity',
+                                         'meter per second', wind.units,
+                                         cpp_timeseries['value'])
 
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
 
@@ -111,6 +110,7 @@ def test_empty_init():
     '''
     wm = WindMover()
     assert wm.make_default_refs
+
     _defaults(wm)
     assert wm.name == 'WindMover'
     print wm.validate()
@@ -159,7 +159,7 @@ def test_update_wind(wind_circ):
                   for i in range(3)]
     t_dtv.value = np.random.uniform(1, 5, (3, 2))
 
-    o_wind.set_wind_data(t_dtv, units='meter per second', format='uv')
+    o_wind.set_wind_data(t_dtv, units='meter per second', coord_sys='uv')
 
     cpp_timeseries = _get_timeseries_from_cpp(wm)
 
@@ -353,8 +353,7 @@ def test_timespan():
 
     wm = WindMover(Wind(timeseries=time_val,
                         units='meter per second'),
-                   active_start=model_time + timedelta(seconds=time_step)
-                   )
+                   active_start=model_time + timedelta(seconds=time_step))
 
     wm.prepare_for_model_run()
     wm.prepare_for_model_step(sc, time_step, model_time)
@@ -412,7 +411,7 @@ def test_constant_wind_mover():
     with raises(Exception):
         # it should raise an InvalidUnitError, but I don't want to have to
         # import unit_conversion just for that...
-        wm = constant_wind_mover(10, 45, units='some_random_string')
+        _wm = constant_wind_mover(10, 45, units='some_random_string')
 
     wm = constant_wind_mover(10, 45, units='m/s')
 
@@ -431,13 +430,13 @@ def test_constant_wind_mover():
     # 45 degree wind at the equator -- u,v should be the same
     assert delta[0][0] == delta[0][1]
 
+
 def test_constant_wind_mover_bounds():
     wm = constant_wind_mover(10, 45, units='knots')
 
     assert wm.real_data_start == InfDateTime("-inf")
 
     assert wm.real_data_stop == InfDateTime("inf")
-
 
 
 def test_wind_mover_from_file():
@@ -517,7 +516,7 @@ def _defaults(wm):
     are as expected
     """
     # timespan is as big as possible
-    assert wm.active == True
+    assert wm.active is True
     assert wm.uncertain_duration == 3.0
     assert wm.uncertain_time_delay == 0
     assert wm.uncertain_speed_scale == 2
@@ -535,9 +534,10 @@ def _get_timeseries_from_cpp(windmover):
 
     This is simply used for testing.
     """
-    dtv = windmover.wind.get_wind_data(format=ts_format.uv)
+    dtv = windmover.wind.get_wind_data(coord_sys=ts_format.uv)
     tv = convert.to_time_value_pair(dtv, ts_format.uv)
     val = windmover.mover.get_time_value(tv['time'])
+
     tv['value']['u'] = val['u']
     tv['value']['v'] = val['v']
 

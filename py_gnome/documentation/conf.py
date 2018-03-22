@@ -32,7 +32,8 @@ extensions = ['nbsphinx',
               'sphinx.ext.coverage',
 #              'sphinx.ext.imgmath',
               'sphinx.ext.mathjax',
-              'sphinx.ext.viewcode'
+              'sphinx.ext.viewcode',
+              'sphinx.ext.autosectionlabel',
               ]
 
 # to make autodoc include __init__:
