@@ -180,8 +180,6 @@ cdef class CyOSSMTime(object):
 
         NOTE: this may fail with a unicode file name.
         """
-        filewithpath = <bytes>self.time_dep.filePath
-
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'filename=r"{0.path_filename}", '
                 'file_format={0._file_format})'
@@ -190,7 +188,7 @@ cdef class CyOSSMTime(object):
     def __str__(self):
         """Return string info about the object"""
         return ('{0.__class__.__name__}'
-                '(filename="{0.filename}"'
+                '(filename="{0.filename}")'
                 .format(self))
 
     def __eq(self, CyOSSMTime other):
@@ -401,14 +399,19 @@ cdef class CyTimeseries(CyOSSMTime):
         NOTE: this may fail with a unicode file name.
         """
         self_ts = self.timeseries.__repr__()
+
         parent = super(CyTimeseries, self).__repr__()
         child = '{0}, timeseries={1})'.format(parent[:-1], self_ts)
+
         return child
 
     def __str__(self):
         """Return string info about the object"""
         parent = super(CyTimeseries, self).__str__()
-        child = parent[:-1] + ' timeseries=<see timeseries attribute>)'
+        child = ('{}, timeseries={})'
+                 .format(parent[:-1], '<see timeseries attribute>'))
+
+        return child
 
     def __eq(self, CyTimeseries other):
         if not super(CyTimeseries, self).__eq(other):
