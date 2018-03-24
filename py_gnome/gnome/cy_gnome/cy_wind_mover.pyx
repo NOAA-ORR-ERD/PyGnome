@@ -5,8 +5,13 @@ from gnome import basic_types
 
 # following exist in gnome.cy_gnome
 from movers cimport WindMover_c, Mover_c
-from type_defs cimport WorldPoint3D, LEWindUncertainRec, LEStatus, LEType, \
-                       OSErr, Seconds, VelocityRec
+
+from type_defs cimport (WorldPoint3D,
+                        LEWindUncertainRec,
+                        VelocityRec,
+                        LEStatus, LEType,
+                        OSErr, Seconds)
+
 cimport cy_mover, cy_ossm_time
 from cy_mover cimport CyWindMoverBase
 
@@ -42,8 +47,11 @@ cdef class CyWindMover(CyWindMoverBase):
         self.mover = NULL
         self.wind = NULL
 
-    def __init__(self, uncertain_duration=10800, uncertain_time_delay=0,
-                 uncertain_speed_scale=2, uncertain_angle_scale=0.4):
+    def __init__(self,
+                 uncertain_duration=10800,
+                 uncertain_time_delay=0,
+                 uncertain_speed_scale=2,
+                 uncertain_angle_scale=0.4):
         """
         .. function:: __init__(self, uncertain_duration=10800,
                                uncertain_time_delay=0,
@@ -90,7 +98,8 @@ cdef class CyWindMover(CyWindMoverBase):
                 "  uncertain_duration: {0.uncertain_duration} \n"
                 "  uncertain_time_delay: {0.uncertain_time_delay} \n"
                 "  uncertain_speed_scale: {0.uncertain_speed_scale}\n"
-                "  uncertain_angle_scale: {0.uncertain_angle_scale}".format(self))
+                "  uncertain_angle_scale: {0.uncertain_angle_scale}"
+                .format(self))
 
         return info
 
@@ -156,12 +165,12 @@ cdef class CyWindMover(CyWindMoverBase):
 
         # modifies delta in place
         err = self.wind.get_move(N, model_time, step_len,
-                                  &ref_points[0],
-                                  &delta[0],
-                                  &windages[0],
-                                  &LE_status[0],
-                                  spill_type,
-                                  0)
+                                 &ref_points[0],
+                                 &delta[0],
+                                 &windages[0],
+                                 &LE_status[0],
+                                 spill_type,
+                                 0)
         if err == 1:
             raise ValueError('Make sure numpy arrays for ref_points, delta '
                              'and windages are defined')

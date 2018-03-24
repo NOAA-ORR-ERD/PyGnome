@@ -669,8 +669,6 @@ e2_var.setflags(write=False)
 e1_var.setflags(write=False)
 n_var.setflags(write=False)
 
-import pdb
-
 
 class TestGridWind(object):
     def test_init(self):

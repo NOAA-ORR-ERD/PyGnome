@@ -38,16 +38,6 @@ class WindMoversBaseSchema(ObjType, ProcessSchema):
     uncertain_angle_scale = SchemaNode(Float(), missing=drop)
 
 
-class WindMoverSchema(WindMoversBaseSchema):
-    """
-    Contains properties required by UpdateWindMover and CreateWindMover
-    """
-    # 'wind' schema node added dynamically
-    name = 'WindMover'
-    description = 'wind mover properties'
-    extrapolate = SchemaNode(Bool(), missing=drop)
-
-
 class WindMoversBase(CyMover):
     _state = copy.deepcopy(CyMover._state)
     _state.add(update=['uncertain_duration', 'uncertain_time_delay',
@@ -185,6 +175,16 @@ class WindMoversBase(CyMover):
                 '  active_stop time={0.active_stop}\n'
                 '  current on/off status={0.on}\n')
         return info.format(self)
+
+
+class WindMoverSchema(WindMoversBaseSchema):
+    """
+    Contains properties required by UpdateWindMover and CreateWindMover
+    """
+    # 'wind' schema node added dynamically
+    name = 'WindMover'
+    description = 'wind mover properties'
+    extrapolate = SchemaNode(Bool(), missing=drop)
 
 
 class WindMover(WindMoversBase, Serializable):

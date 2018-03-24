@@ -3,7 +3,6 @@ Created on Feb 15, 2013
 '''
 import copy
 import inspect
-import collections
 
 import numpy as np
 

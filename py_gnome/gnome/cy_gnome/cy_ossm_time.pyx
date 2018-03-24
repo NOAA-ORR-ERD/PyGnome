@@ -1,16 +1,16 @@
-import numpy as np
 import os
 
-cimport numpy as cnp
-from libc.string cimport memcpy
+import numpy as np
 
 from gnome import basic_types
 
+from libc.string cimport memcpy
 from type_defs cimport *
 from utils cimport _NewHandle, _GetHandleSize
 from utils cimport OSSMTimeValue_c
 from cy_helpers import filename_as_bytes
 
+cimport numpy as cnp
 
 ossm_wind_units = {-1: 'undefined',
                    1: 'knots',
@@ -45,7 +45,8 @@ cdef class CyOSSMTime(object):
             del self.time_dep
 
     def __init__(self, basestring filename, int file_format=0,
-                 scale_factor=1):
+                 scale_factor=1,
+                 extrapolation_is_allowed=False):
         """
         Initialize object - takes either file or time value pair to initialize
 
@@ -65,7 +66,9 @@ cdef class CyOSSMTime(object):
 
         self._file_format = file_format
         self._read_time_values(filename)
+
         self.time_dep.fScaleFactor = scale_factor
+        self.time_dep.extrapolationIsAllowed = extrapolation_is_allowed
 
     property user_units:
         def __get__(self):
@@ -161,6 +164,13 @@ cdef class CyOSSMTime(object):
 
             return sName
 
+    property extrapolation_is_allowed:
+        def __get__(self):
+            return self.time_dep.extrapolationIsAllowed
+
+        def __set__(self, value):
+            self.time_dep.extrapolationIsAllowed = value
+
     def __repr__(self):
         """
         Return an unambiguous representation of this object so it can be
@@ -171,19 +181,22 @@ cdef class CyOSSMTime(object):
         NOTE: this may fail with a unicode file name.
         """
         filewithpath = <bytes>self.time_dep.filePath
+
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'filename=r"{0.path_filename}", '
-                'file_format={0._file_format}'
-                ')').format(self)
+                'file_format={0._file_format})'
+                .format(self))
 
     def __str__(self):
         """Return string info about the object"""
         return ('{0.__class__.__name__}'
-                '(filename="{0.filename}"').format(self)
+                '(filename="{0.filename}"'
+                .format(self))
 
     def __eq(self, CyOSSMTime other):
         scalar_attrs = ('filename', '_file_format', 'scale_factor',
                         'station_location', 'user_units')
+
         if not all([getattr(self, a) == getattr(other, a)
                     for a in scalar_attrs]):
             return False
@@ -203,6 +216,7 @@ cdef class CyOSSMTime(object):
     def get_num_values(self):
         cdef long num_values
         num_values = self.time_dep.GetNumValues()
+
         return num_values
 
     def get_time_value(self, modelTime):
@@ -228,10 +242,11 @@ cdef class CyOSSMTime(object):
 
         for i in range(0, modelTimeArray.size):
             err = self.time_dep.GetTimeValue(modelTimeArray[i], &vel_rec[i])
-            #if err != 0:
-                #raise ValueError('Error invoking TimeValue_c.GetTimeValue '
-                                 #'method in CyOSSMTime: '
-                                 #'C++ OSERR = {0}'.format(err))
+
+            if err != 0:
+                raise IndexError('{}: OSSMTimeValue_c.GetTimeValue() '
+                                 'returned OSERR = {}'
+                                 .format(__name__, err))
 
         return vel_rec, err
 
@@ -282,8 +297,8 @@ cdef class CyOSSMTime(object):
             raise ValueError("Valid user units not found in file")
 
         if err != 0:
-            raise IOError('Error occurred in C++: '
-                    '{0}().ReadTimeValues()'.format(self.__class__.__name__))
+            raise IOError('Error occurred in C++: {0}().ReadTimeValues()'
+                          .format(self.__class__.__name__))
 
 
 cdef class CyTimeseries(CyOSSMTime):
@@ -308,7 +323,8 @@ cdef class CyTimeseries(CyOSSMTime):
 
     def __init__(self, basestring filename=None, int file_format=0,
                  cnp.ndarray[TimeValuePair, ndim=1] timeseries=None,
-                 scale_factor=1):
+                 scale_factor=1,
+                 extrapolation_is_allowed=False):
         """
         Initialize object - takes either file or time value pair to initialize
 
@@ -345,11 +361,14 @@ cdef class CyTimeseries(CyOSSMTime):
             self._set_time_value_handle(timeseries)
             self._file_format = 0
             self.scale_factor = scale_factor
+
             # UserUnits for velocity assumed to be meter per second.
             # Leave undefined because the timeseries could be something
             # other than velocity.
             # TODO: check if OSSMTimeValue_c is only used for velocity data?
             self.time_dep.SetUserUnits(-1)
+
+        self.time_dep.extrapolationIsAllowed = extrapolation_is_allowed
 
     property timeseries:
         def __get__(self):
@@ -469,7 +488,8 @@ cdef class CyTimeseries(CyOSSMTime):
             """
             For now just raise an OSError - this is for no time series
             """
-            raise OSError("PrepareForModelStep returned an error: {0}" .format(err))
+            raise OSError("PrepareForModelStep returned an error: {0}"
+                          .format(err))
 
         # data outside of time series range
         if err == -3:
@@ -480,8 +500,7 @@ cdef class CyTimeseries(CyOSSMTime):
 
         return True
 
-
-    def create_running_average(self, past_hours = 3, model_time = 0):
+    def create_running_average(self, past_hours=3, model_time=0):
         """
             Invokes the GetTimeValueHandle method of OSSMTimeValue_c object
             to read the time series data
@@ -491,11 +510,13 @@ cdef class CyTimeseries(CyOSSMTime):
         cdef cnp.ndarray[TimeValuePair, ndim = 1] tval
 
         # allocate memory and copy it over
-        time_val_hdlH = self.time_dep.CalculateRunningAverage(past_hours, model_time)
+        time_val_hdlH = self.time_dep.CalculateRunningAverage(past_hours,
+                                                              model_time)
         sz = _GetHandleSize(<Handle>time_val_hdlH)
 
         # will this always work?
         tval = np.empty((sz / tmp_size,), dtype=basic_types.time_value_pair)
 
         memcpy(&tval[0], time_val_hdlH[0], sz)
+
         return tval

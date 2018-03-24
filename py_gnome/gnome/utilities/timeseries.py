@@ -203,6 +203,14 @@ class Timeseries(GnomeId):
     def filename(self):
         return self._filename
 
+    @property
+    def extrapolation_is_allowed(self):
+        return self.ossm.extrapolation_is_allowed
+
+    @extrapolation_is_allowed.setter
+    def extrapolation_is_allowed(self, value):
+        self.ossm.extrapolation_is_allowed = value
+
     def get_timeseries(self, datetime=None, coord_sys='uv'):
         """
         Returns the timeseries in requested coordinate system.
