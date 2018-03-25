@@ -12,7 +12,7 @@ import gridded
 import numpy as np
 
 from colander import (SchemaNode, drop, OneOf,
-                      Float, String, Range)
+                      Float, String, Range, Boolean)
 
 import unit_conversion as uc
 
@@ -100,6 +100,7 @@ class WindSchema(base_schema.ObjType):
     speed_uncertainty_scale = SchemaNode(Float(), missing=drop)
 
     timeseries = WindTimeSeriesSchema(missing=drop)
+    extrapolation_is_allowed = SchemaNode(Boolean(), missing=drop)
     name = 'wind'
 
 
@@ -133,6 +134,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                                          test_for_eq=False),
                       serializable.Field('timeseries', save=False,
                                          update=True),
+                      serializable.Field('extrapolation_is_allowed', save=True,
+                                         update=True),
                       # test for equality of units a little differently
                       serializable.Field('units', save=True,
                                          update=True, test_for_eq=False),
@@ -150,6 +153,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                  latitude=None,
                  longitude=None,
                  speed_uncertainty_scale=0.0,
+                 extrapolation_is_allowed=False,
                  **kwargs):
         """
         todo: update docstrings!
@@ -163,6 +167,11 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         self.description = kwargs.pop('description', 'Wind Object')
         self.speed_uncertainty_scale = speed_uncertainty_scale
 
+        # TODO: the way we are doing this, super() is not being used
+        #       effectively.  We should tailor kwargs in a way that we can
+        #       just pass it into the base __init__() function.
+        #       As it is, we are losing arguments that we then need to
+        #       explicitly handle.
         if filename is not None:
             self.source_type = kwargs.pop('source_type', 'file')
 
@@ -193,6 +202,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                 self.set_wind_data(timeseries, units, coord_sys)
 
             self.name = kwargs.pop('name', self.__class__.__name__)
+
+        self.extrapolation_is_allowed = extrapolation_is_allowed
 
     def _check_units(self, units):
         '''
@@ -472,7 +483,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         return tuple(data[0]['value'])
 
     def at(self, points, time, coord_sys='r-theta',
-           extrapolate=True, _auto_align=True):
+           _auto_align=True):
         '''
         Returns the value of the wind at the specified points at the specified
         time. Valid coordinate systems include 'r-theta', 'r', 'theta',
@@ -485,8 +496,6 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         :param time: Datetime of the time to be queried
 
         :param coord_sys: String describing the coordinate system.
-
-        :param extrapolate: extrapolation on/off (ignored for now)
         '''
         if points is None:
             points = np.array((0, 0)).reshape(-1, 2)

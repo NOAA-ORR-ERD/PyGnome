@@ -21,7 +21,8 @@ class TimeseriesError(Exception):
 
 
 class Timeseries(GnomeId):
-    def __init__(self, timeseries=None, filename=None, coord_sys='uv'):
+    def __init__(self, timeseries=None, filename=None, coord_sys='uv',
+                 extrapolation_is_allowed=False):
         """
         Initializes a timeseries object from either a timeseries or datafile
         containing the timeseries. If both timeseries and file are given,
@@ -99,6 +100,8 @@ class Timeseries(GnomeId):
             ts_format = tsformat(coord_sys)
             self.ossm = CyTimeseries(filename=self._filename,
                                      file_format=ts_format)
+
+        self.extrapolation_is_allowed = extrapolation_is_allowed
 
     def _check_timeseries(self, timeseries):
         """
