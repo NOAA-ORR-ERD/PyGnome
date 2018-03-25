@@ -202,10 +202,10 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime,
     n = GetNumValues();
 
 	// only one element => values are constant
-	if (n == 1) {
-		*value = UorV(INDEXH(timeValues, 0).value, index); 
-		return 0; 
-	}
+    if (n == 1) {
+        *value = UorV(INDEXH(timeValues, 0).value, index); 
+        return 0; 
+    }
 
 	// only two elements => use linear interpolation
 	if (n == 2) {

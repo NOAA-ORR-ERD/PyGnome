@@ -368,19 +368,24 @@ class CyMover(Mover):
                 uncertain_spill_size = np.array((sc.num_released,),
                                                 dtype=np.int32)
 
-            err = self.mover.prepare_for_model_step(
-                        self.datetime_to_seconds(model_time_datetime),
-                        time_step, uncertain_spill_count, uncertain_spill_size)
+            seconds = self.datetime_to_seconds(model_time_datetime)
 
-            if err != 0:
+            try:
+                self.mover.prepare_for_model_step(seconds,
+                                                  time_step,
+                                                  uncertain_spill_count,
+                                                  uncertain_spill_size)
+            except OSError as e:
                 msg = ('No available data in the time interval '
                        'that is being modeled\n'
                        '\tModel time: {}\n'
-                       '\tMover: {} of type {}\n'
                        '\tData available from {} to {}'
+                       '\tMover: {} of type {}\n'
+                       '\tError: {}'
                        .format(model_time_datetime,
+                               self.real_data_start, self.real_data_stop,
                                self.name, self.__class__,
-                               self.real_data_start, self.real_data_stop))
+                               str(e)))
 
                 self.logger.error(msg)
                 raise RuntimeError(msg)

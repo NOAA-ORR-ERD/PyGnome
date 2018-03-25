@@ -417,15 +417,11 @@ def test_constant_wind_mover():
 
     sc = sample_sc_release(1)
 
-    print wm
-    print repr(wm.wind)
-    print wm.wind.get_wind_data()
-
     time_step = 1000
     model_time = datetime(2013, 3, 1, 0)
+
     wm.prepare_for_model_step(sc, time_step, model_time)
     delta = wm.get_move(sc, time_step, model_time)
-    print 'delta:', delta
 
     # 45 degree wind at the equator -- u,v should be the same
     assert delta[0][0] == delta[0][1]
