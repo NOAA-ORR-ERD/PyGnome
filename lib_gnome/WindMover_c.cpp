@@ -36,8 +36,6 @@ WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 	if (!name || !name[0]) this->SetClassName("Variable Wind"); // JLM , a default useful in the wizard
 
 	Init();	// initialize the local vars
-
-	fAllowExtrapolationInTime = true;
 }
 #endif
 
@@ -73,7 +71,6 @@ void WindMover_c::Init()
 	fConstantValue.u = fConstantValue.v = 0.0;
 
 	bShowWindBarb = true;
-	fAllowExtrapolationInTime = false;
 
 	memset(&fWindBarbRect, 0, sizeof(fWindBarbRect)); 
 }

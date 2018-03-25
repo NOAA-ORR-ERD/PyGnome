@@ -56,7 +56,6 @@ public:
 	VelocityRec fConstantValue;
 
 	Boolean bShowWindBarb;
-	Boolean fAllowExtrapolationInTime;
 
 	Rect fWindBarbRect;
 
@@ -98,9 +97,6 @@ public:
 	OSErr GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	OSErr CheckStartTime(Seconds time);
 	OSErr get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windage, short* LE_status, LEType spillType, long spillID);
-
-	void SetExtrapolationInTime(bool extrapolate) {fAllowExtrapolationInTime = extrapolate;}
-	bool GetExtrapolationInTime() {return fAllowExtrapolationInTime;}
 
 };
 
