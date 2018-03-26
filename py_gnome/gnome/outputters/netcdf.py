@@ -176,21 +176,16 @@ class NetCDFOutput(Outputter, Serializable):
     usually_skipped_arrays = ['next_positions',
                               'last_water_positions',
                               'windages',
-                              'windage_range',
-                              'windage_persist',
                               'mass_components',
                               'half_lives',
                               'init_mass',
                               'interfacial_area',
                               'fay_area',
                               'bulk_init_volume',
-                              'oil_viscosity',
                               'frac_coverage',
                               'bulltime',
                               'partition_coeff',
                               'evap_decay_constant',
-                              'frac_lost',
-                              'oil_density',
                               ]
 
     # define _state for serialization
