@@ -59,37 +59,97 @@ var_attributes = {
         'flag_meanings': " ".join(["%i: %s," % pair for pair in
                                    sorted(zip(oil_status._int,
                                               oil_status._attr))])
-                      },
+                     },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',
            },
+    'density': {
+        'long_name': 'emulsion density at end of timestep',
+        'units': 'kg/m^3'},
+    'viscosity': {
+        'long_name': 'emulsion viscosity at end of timestep',
+        'units': 'm^2/sec'},
+    'oil_density': {
+        'long_name': 'oil density at end of timestep',
+        'units': 'kg/m^3'},
+    'oil_viscosity': {
+        'long_name': 'oil viscosity at end of timestep',
+        'units': 'm^2/sec'},
     'droplet_diameter': {'long_name': 'diameter of oil droplet class',
                          'units': 'meters'
                          },
     'rise_vel': {'long_name': 'rise velocity of oil droplet class',
                               'units': 'm s-1'},
+    'windages': {},
+    'windage_range': {},
+    'windage_persist': {},
     'next_positions': {},
     'last_water_positions': {},
+    'bulk_init_volume': {},
+    'interfacial_area': {},
+    'area': {},
+    'fay_area': {},
+    'frac_coverage': {},
+    'bulltime': {},
+    'evap_decay_constant': {},
+    'partition_coeff': {},
+    'droplet_avg_size': {},
+    'init_mass': {'long_name': 'initial mass',
+             'units': 'kilograms',
+             },
+    'mass_components': {},
+    'fate_status': {},
 
     # weathering data
     'floating': {
         'long_name': 'total mass floating in water after each time step',
         'units': 'kilograms'},
+    'beached': {
+        'long_name': 'total mass on the shoreline after each time step',
+        'units': 'kilograms'},
+    'off_maps': {
+        'long_name': 'total mass that has left the map since the beginning of model run',
+        'units': 'kilograms'},
     'evaporated': {
         'long_name': 'total mass evaporated since beginning of model run',
         'units': 'kilograms'},
-    'dispersed': {
+    'natural_dispersion': {
         'long_name': 'total mass dispersed since beginning of model run',
         'units': 'kilograms'},
+    'sedimentation': {
+        'long_name': 'total mass lost due to sedimentation since beginning of model run',
+        'units': 'kilograms'},
+    'dissolution': {
+        'long_name': 'total mass dissolved since beginning of model run',
+        'units': 'kilograms'},
+    'water_content': {
+        'long_name': 'fraction of total mass that is water after each time step'},
+    'frac_water': {
+        'long_name': 'water fraction after each time step'},
+    'frac_lost': {
+        'long_name': 'fraction of total mass that is lost after each time step'},
     'avg_density': {
         'long_name': 'average density at end of timestep',
         'units': 'kg/m^3'},
     'avg_viscosity': {
         'long_name': 'average viscosity at end of timestep',
-        'units': 'kg/m^3'},
+        'units': 'm^2/sec'},
     'amount_released': {
         'long_name': 'total mass of oil released thus far',
         'units': 'kg'},
+    'non_weathering': {
+        'long_name': 'total mass of oil that does not weather after each time step',
+        'units': 'kg'},
+
+    'chem_dispersed': {
+        'long_name': 'total mass chemically dispersed since beginning of model run',
+        'units': 'kilograms'},
+    'skimmed': {
+        'long_name': 'total mass skimmed since beginning of model run',
+        'units': 'kilograms'},
+    'burned': {
+        'long_name': 'total mass burned since beginning of model run',
+        'units': 'kilograms'},
 }
 
 
@@ -157,7 +217,18 @@ class NetCDFOutput(Outputter, Serializable):
                        'id',
                        'mass',
                        'age',
+                       # if they are not there, they will be ignored
+                       # if they are there, the user probably wants them
+                       'density',
+                       'viscosity',
+                       'frac_water',
                        ]
+
+    # these are being handled specially -- i.e. pulled from the positions array
+    special_arrays = set(('latitude',
+                          'longitude',
+                          'depth',
+                          ))
 
     # the list of arrays that we usually don't want -- i.e. for internal use
     # these will get skipped if "most" is asked for
@@ -165,10 +236,16 @@ class NetCDFOutput(Outputter, Serializable):
     usually_skipped_arrays = ['next_positions',
                               'last_water_positions',
                               'windages',
-                              'windage_range',
-                              'windage_persist',
                               'mass_components',
                               'half_lives',
+                              'init_mass',
+                              'interfacial_area',
+                              'fay_area',
+                              'bulk_init_volume',
+                              'frac_coverage',
+                              'bulltime',
+                              'partition_coeff',
+                              'evap_decay_constant',
                               ]
 
     # define _state for serialization
@@ -187,7 +264,8 @@ class NetCDFOutput(Outputter, Serializable):
 
     def __init__(self,
                  netcdf_filename,
-                 which_data='standard',
+                 which_data='all',
+                 #which_data='standard',
                  compress=True,
                  **kwargs):
         """
@@ -412,6 +490,13 @@ class NetCDFOutput(Outputter, Serializable):
                 # remove the ones we don't want
                 for var_name in self.usually_skipped_arrays:
                     self.arrays_to_output.discard(var_name)
+        # make sure they are all there
+        to_remove = set()
+        for var_name in self.arrays_to_output:
+            # fixme: -- is there a way to get the keys as a set so we don't have to loop?
+            if var_name not in sc and var_name not in self.special_arrays:
+                to_remove.add(var_name)
+        self.arrays_to_output -= to_remove
 
     def prepare_for_model_run(self,
                               model_start_time,
@@ -507,15 +592,18 @@ class NetCDFOutput(Outputter, Serializable):
                         # the arrays to get shape and dtype instead of the
                         # array_types since array_type could contain None for
                         # shape
-                        dt = sc[var_name].dtype
-
-                        if len(sc[var_name].shape) == 1:
-                            shape = ('data',)
-                            chunksz = (self._chunksize,)
+                        try:
+                            dt = sc[var_name].dtype
+                        except KeyError:  # ignore arrays that aren't there
+                            pass
                         else:
-                            y_sz = d_dims[sc[var_name].shape[1]]
-                            shape = ('data', y_sz)
-                            chunksz = (self._chunksize, sc[var_name].shape[1])
+                            if len(sc[var_name].shape) == 1:
+                                shape = ('data',)
+                                chunksz = (self._chunksize,)
+                            else:
+                                y_sz = d_dims[sc[var_name].shape[1]]
+                                shape = ('data', y_sz)
+                                chunksz = (self._chunksize, sc[var_name].shape[1])
 
                     self._create_nc_var(rootgrp, var_name, dt, shape, chunksz)
 

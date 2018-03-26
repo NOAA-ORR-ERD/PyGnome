@@ -7,7 +7,7 @@ import copy
 
 import numpy as np
 
-from colander import (SchemaNode, Bool, String, Float, drop)
+from colander import (SchemaNode, Bool, String, Float, Int, drop)
 
 from gnome import basic_types
 
@@ -1051,6 +1051,15 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     filename1 = SchemaNode(String(), missing=drop)
     filename2 = SchemaNode(String(), missing=drop)
     scale_refpoint = WorldPoint(missing=drop)
+    pat1_angle = SchemaNode(Float(), missing=drop)
+    pat1_speed = SchemaNode(Float(), missing=drop)
+    pat1_speed_units = SchemaNode(Int(), missing=drop)
+    pat1_scale_to_value = SchemaNode(Float(), missing=drop)
+    pat2_angle = SchemaNode(Float(), missing=drop)
+    pat2_speed = SchemaNode(Float(), missing=drop)
+    pat2_speed_units = SchemaNode(Int(), missing=drop)
+    pat2_scale_to_value = SchemaNode(Float(), missing=drop)
+    scale_by = SchemaNode(Int(), missing=drop)
 
 
 class ComponentMover(CurrentMoversBase, Serializable):

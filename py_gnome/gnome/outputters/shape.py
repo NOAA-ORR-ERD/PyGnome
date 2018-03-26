@@ -5,7 +5,7 @@ import copy
 import os
 import zipfile
 
-from colander import SchemaNode, String, drop
+from colander import SchemaNode, String, Boolean, drop
 import shapefile as shp
 
 from gnome.utilities.serializable import Serializable, Field
@@ -14,11 +14,8 @@ from .outputter import Outputter, BaseSchema
 
 
 class ShapeSchema(BaseSchema):
-    '''
-    Nothing is required for initialization
-    '''
-
     filename = SchemaNode(String(), missing=drop)
+    zip_output = SchemaNode(Boolean(), missing=drop)
 
 
 class ShapeOutput(Outputter, Serializable):
@@ -31,11 +28,12 @@ class ShapeOutput(Outputter, Serializable):
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
     _state += [Field('filename', update=True, save=True), ]
+    _state += [Field('zip_output', update=True, save=True), ]
     _schema = ShapeSchema
 
     time_formatter = '%m/%d/%Y %H:%M'
 
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename, zip_output=True, **kwargs):
         '''
         :param str output_dir=None: output directory for shape files
         uses super to pass optional \*\*kwargs to base class __init__ method
@@ -47,6 +45,8 @@ class ShapeOutput(Outputter, Serializable):
 
         self.filename = filename
         self.filedir = os.path.dirname(filename)
+
+        self.zip_output = zip_output
 
         super(ShapeOutput, self).__init__(**kwargs)
 
@@ -108,10 +108,7 @@ class ShapeOutput(Outputter, Serializable):
             w = shp.Writer(shp.POINT)
             w.autobalance = 1
 
-            w.field('Year', 'C')
-            w.field('Month', 'C')
-            w.field('Day', 'C')
-            w.field('Hour', 'C')
+            w.field('Time', 'C')
             w.field('LE id', 'N')
             w.field('Depth', 'N')
             w.field('Mass', 'N')
@@ -141,10 +138,7 @@ class ShapeOutput(Outputter, Serializable):
 
                 for k, p in enumerate(sc['positions']):
                     self.w_u.point(p[0], p[1])
-                    self.w_u.record(curr_time.year,
-                                    curr_time.month,
-                                    curr_time.day,
-                                    curr_time.hour,
+                    self.w_u.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
                                     sc['id'][k],
                                     p[2],
                                     sc['mass'][k],
@@ -153,10 +147,7 @@ class ShapeOutput(Outputter, Serializable):
             else:
                 for k, p in enumerate(sc['positions']):
                     self.w.point(p[0], p[1])
-                    self.w.record(curr_time.year,
-                                  curr_time.month,
-                                  curr_time.day,
-                                  curr_time.hour,
+                    self.w.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
                                   sc['id'][k],
                                   p[2],
                                   sc['mass'][k],
@@ -175,23 +166,30 @@ class ShapeOutput(Outputter, Serializable):
                 else:
                     self.w.save(fn)
 
-                zfilename = fn + '.zip'
+                print 'ShapefileOutputter.zip_output: ', self.zip_output
+                if self.zip_output is True:
+                    zfilename = fn + '.zip'
 
-                prj_file = open("%s.prj" % fn, "w")
-                prj_file.write(self.epsg)
-                prj_file.close()
+                    prj_file = open("%s.prj" % fn, "w")
+                    prj_file.write(self.epsg)
+                    prj_file.close()
 
-                zipf = zipfile.ZipFile(zfilename, 'w')
+                    zipf = zipfile.ZipFile(zfilename, 'w')
 
-                for suf in ['shp', 'prj', 'dbf', 'shx']:
-                    f = os.path.split(fn)[-1] + '.' + suf
-                    zipf.write(os.path.join(self.filedir, f), arcname=f)
-                    os.remove(fn + '.' + suf)
+                    for suf in ['shp', 'prj', 'dbf', 'shx']:
+                        f = os.path.split(fn)[-1] + '.' + suf
+                        zipf.write(os.path.join(self.filedir, f), arcname=f)
+                        os.remove(fn + '.' + suf)
 
-                zipf.close()
+                    zipf.close()
+
+        if self.zip_output is True:
+            output_filename = self.filename + '.zip'
+        else:
+            output_filename = self.filename
 
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'output_filename': self.filename + '.zip'}
+                       'output_filename': output_filename}
 
         return output_info
 

@@ -1,6 +1,8 @@
 import movers
 import copy
 
+import numpy as np
+
 from colander import (SchemaNode,
                       Bool, Float, String, Sequence, DateTime,
                       drop)
@@ -21,7 +23,7 @@ class PyWindMoverSchema(base_schema.ObjType):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())],
                           missing=drop)
-    current_scale = SchemaNode(Float(), missing=drop)
+    wind_scale = SchemaNode(Float(), missing=drop)
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
     wind = GridWind._schema(missing=drop)
@@ -45,7 +47,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
     _state.add_field([serializable.Field('filename',
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
-                      serializable.Field('wind', save=True, read=True,
+                      serializable.Field('wind', read=True,
                                          save_reference=True),
                       serializable.Field('extrapolate', read=True, save=True)])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
@@ -60,7 +62,6 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
     def __init__(self,
                  filename=None,
                  wind=None,
-                 name=None,
                  extrapolate=False,
                  time_offset=0,
                  uncertain_duration=3,
@@ -80,13 +81,13 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                         will attempt to be instantiated from the file
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
-        :param current_scale: Value to scale current data
+        :param wind_scale: Value to scale wind data
         :param uncertain_duration: how often does a given uncertain element
                                    get reset
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
-        :param extrapolate: Allow current data to be extrapolated
+        :param extrapolate: Allow wind data to be extrapolated
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
         :param num_method: Numerical method for calculating movement delta.
@@ -106,8 +107,8 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                 self.wind = GridWind.from_netCDF(filename=self.filename,
                                                  **kwargs)
 
-        if name is None:
-            name = self.__class__.__name__ + str(self.__class__._def_count)
+        if 'name' not in kwargs:
+            kwargs['name'] = self.__class__.__name__ + str(self.__class__._def_count)
             self.__class__._def_count += 1
 
         self.extrapolate = extrapolate
@@ -130,7 +131,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                     filename=None,
                     extrapolate=False,
                     time_offset=0,
-                    current_scale=1,
+                    wind_scale=1,
                     uncertain_duration=24 * 3600,
                     uncertain_time_delay=0,
                     uncertain_along=.5,
@@ -145,7 +146,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                    filename=filename,
                    extrapolate=extrapolate,
                    time_offset=time_offset,
-                   current_scale=current_scale,
+                   wind_scale=wind_scale,
                    uncertain_along=uncertain_along,
                    uncertain_across=uncertain_across,
                    uncertain_cross=uncertain_cross,
@@ -169,7 +170,7 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
 
     @property
     def is_data_on_cells(self):
-        return self.wind.grid.infer_location(self.current.u.data) != 'node'
+        return self.wind.grid.infer_location(self.wind.u.data) != 'node'
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
@@ -188,11 +189,12 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
         if sc.num_released is None or sc.num_released == 0:
             return
 
-        rand.random_with_persistance(sc['windage_range'][:, 0],
-                                     sc['windage_range'][:, 1],
-                                     sc['windages'],
-                                     sc['windage_persist'],
-                                     time_step)
+        if self.active:
+            rand.random_with_persistance(sc['windage_range'][:, 0],
+                                         sc['windage_range'][:, 1],
+                                         sc['windages'],
+                                         sc['windage_persist'],
+                                         time_step)
 
     def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
@@ -212,21 +214,26 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
         All movers must implement get_move() since that's what the model calls
         """
         method = None
-
-        if num_method is None:
-            method = self.num_methods[self.default_num_method]
-        else:
-            method = self.num_method[num_method]
-
-        status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
-        pos = positions[:]
 
-        deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
-        deltas[:, 0] *= sc['windages']
-        deltas[:, 1] *= sc['windages']
+        if self.active and len(positions) > 0:
+            if num_method is None:
+                method = self.num_methods[self.default_num_method]
+            else:
+                method = self.num_method[num_method]
 
-        deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
-        deltas[status] = (0, 0, 0)
+            status = sc['status_codes'] != oil_status.in_water
+            #positions = sc['positions']
+            pos = positions[:]
+
+            deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
+            deltas[:, 0] *= sc['windages']
+            deltas[:, 1] *= sc['windages']
+
+            deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
+            deltas[status] = (0, 0, 0)
+
+        else:
+           deltas = np.zeros_like(positions)
 
         return deltas

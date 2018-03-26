@@ -2,20 +2,69 @@
 test object in environment module
 '''
 import pytest
-from datetime import datetime
-import numpy as np
 from unit_conversion import InvalidUnitError
 from gnome.environment import Water
-from gnome.environment import TemperatureTS
 
-# def test_Water_init():
-#     w = Water()
-#     t = TemperatureTS(name='test', units='K', time=[w.temperature.time], data=np.array([[300]]))
-#     assert w.temperature == t
-#     assert w.salinity == 35.0
-#     w = Water(temperature=273, salinity=0)
-#     assert w.temperature == 273.0
-#     assert w.salinity == 0.0
+
+# pytest.mark.parametrize() is really finicky about what you can use as a
+# string parameter.  You can't use a list or a tuple, for example.
+@pytest.mark.parametrize(('attr', 'sub_attr', 'value'),
+                         [('name', None, 'NewWater'),
+                          ('temperature', None, 400.0),
+                          ('salinity', None, 50.0),
+                          ('sediment', None, .01),
+                          ('wave_height', None, 2.0),
+                          ('fetch', None, 100.0),
+
+                          ('units', 'temperature', 'C'),
+                          ('units', 'salinity', 'psu'),
+                          ('units', 'sediment', 'kg/m^3'),
+                          ('units', 'wave_height', 'm'),
+                          ('units', 'fetch', 'm'),
+                          ('units', 'density', 'kg/m^3'),
+                          ('units', 'kinematic_viscosity', 'm^2/s'),
+                          ])
+def test_Water_init(attr, sub_attr, value):
+    '''
+        The initial default values that an object may have is a contract.
+        As such, we test this contract for a Water() object here.
+
+        Specifically, we test:
+        - that the default values are what we expect,
+        - that the default values are immutable.
+    '''
+    w = Water()
+
+    check_water_defaults(w)
+
+    if sub_attr is None:
+        setattr(w, attr, value)
+    else:
+        sub_value = getattr(w, attr)
+        print 'sub_value = ', sub_value
+        sub_value[sub_attr] = value
+        print 'sub_value = ', sub_value
+
+    w = Water()
+
+    check_water_defaults(w)
+
+
+def check_water_defaults(water_obj):
+    assert water_obj.name == 'Water'
+    assert water_obj.temperature == 300.0
+    assert water_obj.salinity == 35.0
+    assert water_obj.sediment == .005
+    assert water_obj.wave_height is None
+    assert water_obj.fetch is None
+
+    assert water_obj.units['temperature'] == 'K'
+    assert water_obj.units['salinity'] == 'psu'
+    assert water_obj.units['sediment'] == 'kg/m^3'
+    assert water_obj.units['wave_height'] == 'm'
+    assert water_obj.units['fetch'] == 'm'
+    assert water_obj.units['density'] == 'kg/m^3'
+    assert water_obj.units['kinematic_viscosity'] == 'm^2/s'
 
 
 # currently salinity only have psu in there since there is no conversion from

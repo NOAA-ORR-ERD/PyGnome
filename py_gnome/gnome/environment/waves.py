@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 The waves environment object.
 
@@ -8,7 +7,6 @@ Computes the wave height and percent wave breaking
 Uses the same approach as ADIOS 2
 
 (code ported from old MATLAB prototype code)
-
 """
 from __future__ import division
 
@@ -102,9 +100,11 @@ class Waves(Environment, serializable.Serializable):
         wave_height = self.water.wave_height
 
         if wave_height is None:
-            U = self.get_wind_speed(points, time, format='r')  # only need velocity
+            # only need velocity
+            U = self.get_wind_speed(points, time, coord_sys='r')
             H = self.compute_H(U)
-        else:  # user specified a wave height
+        else:
+            # user specified a wave height
             H = wave_height
             U = self.pseudo_wind(H)
 
@@ -114,7 +114,6 @@ class Waves(Environment, serializable.Serializable):
         De = self.dissipative_wave_energy(H)
 
         return H, T, Wf, De
-
 
     def get_emulsification_wind(self, points, time):
         """

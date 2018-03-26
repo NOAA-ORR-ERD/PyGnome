@@ -63,7 +63,7 @@ class WeatheringOutput(Outputter, Serializable):
                       'avg_density': 'kg/m^3',
                       'avg_viscosity': 'm^2/s'}
 
-        super(WeatheringOutput, self).__init__(**kwargs)
+        super(WeatheringOutput, self).__init__(output_dir=self.output_dir, **kwargs)
 
     def write_output(self, step_num, islast_step=False):
         '''

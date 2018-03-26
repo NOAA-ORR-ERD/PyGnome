@@ -99,7 +99,7 @@ class FateDataView(AddLogger):
             dict_to_update = getattr(self, fate)
             for at in array_types:
                 array = sc._array_name(at)
-                #dict_to_update[array] = sc[array][fate_mask]
+
                 if array not in dict_to_update:
                     dict_to_update[array] = sc[array][fate_mask]
 
@@ -488,8 +488,9 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         # 'data' will be updated when weatherers ask for arrays they need
         # define the substances list and the list of spills for each substance
-        self._substances_spills = \
-            substances_spills(substances=subs, s_id=s_id, spills=spills)
+        self._substances_spills = substances_spills(substances=subs,
+                                                    s_id=s_id,
+                                                    spills=spills)
 
         if len(self.get_substances()) > 1:
             # add an arraytype for substance if more than one substance
@@ -856,13 +857,13 @@ class SpillContainer(AddLogger, SpillContainerData):
         """
         for name, atype in self._array_types.iteritems():
             # Initialize data_arrays with 0 elements
-            # fixme: is every array type with None shape neccesarily oil components??
+            # fixme: is every array type with None shape neccesarily
+            #        oil components??
             #        but it is more than just mass_components
             #        maybe some other flag??
             if atype.shape is None:
-            # if name == "mass_components":
                 num_comp = self._oil_comp_array_len
-                self._data_arrays[name] = atype.initialize_null(shape=(num_comp, ))
+                self._data_arrays[name] = atype.initialize_null(shape=(num_comp,))
             else:
                 self._data_arrays[name] = atype.initialize_null()
 
@@ -1314,7 +1315,7 @@ class SpillContainerPair(SpillContainerPairData):
         '''
         try:
             return self._spill_container.spills.index(spill)
-        except:
+        except Exception:
             return self._u_spill_container.spills.index(spill)
 
     @property

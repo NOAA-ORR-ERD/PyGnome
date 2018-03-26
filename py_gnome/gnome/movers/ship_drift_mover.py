@@ -164,11 +164,12 @@ class ShipDriftMover(Mover, serializable.Serializable):
         self.grid.prepare_for_model_step(model_time_datetime)
         # here we might put in drift angle stuff ?
 
-        rand.random_with_persistance(sc['windage_range'][:, 0],
-                                     sc['windage_range'][:, 1],
-                                     sc['windages'],
-                                     sc['windage_persist'],
-                                     time_step)
+        if self.active:
+            rand.random_with_persistance(sc['windage_range'][:, 0],
+                                         sc['windage_range'][:, 1],
+                                         sc['windages'],
+                                         sc['windage_persist'],
+                                         time_step)
 
     def prepare_data_for_get_move(self, sc, model_time_datetime):
         """

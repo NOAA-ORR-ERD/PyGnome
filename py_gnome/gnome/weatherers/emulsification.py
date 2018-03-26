@@ -82,7 +82,7 @@ class Emulsification(Weatherer, Serializable):
             return
 
     # eventually switch this in
-    def new_weather_elements(self, sc, time_step, model_time):
+    def weather_elements_lehr(self, sc, time_step, model_time):
         '''
         weather elements over time_step
         - sets 'water_content' in sc.mass_balance
@@ -253,7 +253,7 @@ class Emulsification(Weatherer, Serializable):
         sc.update_from_fatedataview()
 
 
-    def weather_elements(self, sc, time_step, model_time):
+    def weather_elements_adios2(self, sc, time_step, model_time):
         '''
         weather elements over time_step
         - sets 'water_content' in sc.mass_balance
@@ -316,6 +316,35 @@ class Emulsification(Weatherer, Serializable):
                                      sc.mass_balance['water_content']))
 
         sc.update_from_fatedataview()
+
+    def weather_elements(self, sc, time_step, model_time):
+        '''
+        weather elements over time_step
+        - sets 'water_content' in sc.mass_balance
+        '''
+
+        if not self.active:
+            return
+        if sc.num_released == 0:
+            return
+
+        use_new_algorithm = False
+        # only use new algorithm if all substances have measured SARA totals
+        for substance in sc.get_substances():
+            if substance.record.imported is not None:
+                sat = substance.record.imported.saturates
+                arom = substance.record.imported.aromatics
+                if sat is not None and arom is not None:
+                    use_new_algorithm = True
+                else:
+                    use_new_algorithm = False
+                    break
+            else:
+                use_new_algorithm = False	#use old algorithm
+                break
+
+        #self.weather_elements_lehr(sc, time_step, model_time)
+        self.weather_elements_adios2(sc, time_step, model_time)
 
     def _H_log(self, k, x):
         '''

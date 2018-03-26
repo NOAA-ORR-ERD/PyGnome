@@ -89,11 +89,54 @@ KMZ Output
 
 To save particle information into a KMZ file that can be read by Google Earth (and other applications), we use the KMZ outputter::
 
+    from gnome.outputters import KMZOutput
     model.outputters += KMZOutput('gnome_results.kmz',
                                   output_timestep=timedelta(hours=6))
 
 The KMZ contains a kml file with layers for each output timestep, unceratain and certain elements, ans beached and floating elements, along with icons to render the elements.
 
 See :class:`gnome.outputters.KMZOutput` for the full documentation
+
+Shapefile Output
+----------------
+
+Weathering Data Output
+----------------------
+
+Bulk oil budget properties (e.g. percent of total oil volume evaporated) are computed and stored in addition to the individual particle 
+data. These data are available through a specialized Outputter named WeatheringOutput. To save this information to a file::
+
+    from gnome.outputters import WeatheringOutput
+    model.outputters += WeatheringOutput('MyOutputDir')
+    
+Alternatively, if you want to view specific weathering information during the model run::
+
+    from gnome.outputters import WeatheringOutput
+    model.outputters += WeatheringOutput()
+    
+    for step in model:
+        print "Percent evaporated is:"
+        print step['WeatheringOutput']['evaporated']/step['WeatheringOutput']['amount_released'] * 100
+
+
+Note: if you are running the model with a conservative or non-weathering substance, this will result in an 
+error as the WeatheringOutput will not contain any evaporation data. Depending on how you have set
+up your model (spill substance, weatherers), WeatheringOutput may contain any or all of:
+
+ * amount_released
+ * avg_density
+ * avg_viscosity
+ * beached
+ * dissolution
+ * evaporated
+ * floating
+ * natural_dispersion
+ * non_weathering
+ * off_maps
+ * sedimentation
+ * time_stamp
+ * water_content
+
+
 
 

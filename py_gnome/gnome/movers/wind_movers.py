@@ -4,18 +4,16 @@ Movers using wind as the forcing function
 
 import os
 import copy
-from datetime import datetime
 
 import numpy as np
 
 from colander import (SchemaNode, Bool, String, Float, drop)
 
-from gnome import basic_types
+from gnome.exceptions import ReferencedObjectNotSet
+
 from gnome.basic_types import (world_point,
                                world_point_type,
-                               velocity_rec,
-                               datetime_value_2d)
-from gnome.exceptions import ReferencedObjectNotSet
+                               velocity_rec)
 
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
@@ -492,7 +490,7 @@ class GridWindMover(WindMoversBase, Serializable):
             num_cells = num_tri / 2
 
         # will need to update this for regular grids
-        vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
+        vels = np.zeros(num_cells, dtype=velocity_rec)
         self.mover.get_scaled_velocities(time, vels)
 
         return vels

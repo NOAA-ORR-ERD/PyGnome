@@ -51,11 +51,11 @@ def dump():
 
     try:
         shutil.rmtree(dump_loc)
-    except:
+    except Exception:
         pass
     try:
         os.makedirs(dump_loc)
-    except:
+    except Exception:
         pass
     return dump_loc
 
@@ -328,6 +328,7 @@ def invalid_rq():
 
 # use this for wind and current deterministic (r,theta)
 
+
 rq = np.array([(1, 0),
                (1, 45),
                (1, 90),
@@ -445,7 +446,8 @@ def wind_circ(wind_timeseries):
 
     from gnome import environment
     dtv_rq = wind_timeseries['rq']
-    wm = environment.Wind(timeseries=dtv_rq, format='r-theta',
+
+    wm = environment.Wind(timeseries=dtv_rq, coord_sys='r-theta',
                           units='meter per second')
 
     return {'wind': wm, 'rq': dtv_rq, 'uv': wind_timeseries['uv']}
