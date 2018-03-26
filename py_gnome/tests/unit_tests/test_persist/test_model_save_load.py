@@ -166,8 +166,10 @@ def test_init_exception(saveloc_):
 
 @pytest.mark.slow
 @pytest.mark.parametrize(('uncertain', 'zipsave'),
-                         [(False, False), (True, False),
-                          (False, True), (True, True)])
+                         [(False, False),
+                          (True, False),
+                          (False, True),
+                          (True, True)])
 def test_save_load_model(uncertain, zipsave, saveloc_):
     '''
     create a model, save it, then load it back up and check it is equal to
@@ -181,10 +183,10 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
 
     model.zipsave = zipsave
 
-    print 'saving scenario ..'
+    print 'saving scenario to {}...'.format(saveloc_)
     model.save(saveloc_)
 
-    print 'loading scenario ..'
+    print 'loading scenario ...'
     model2 = load(zipname(saveloc_, model))
 
     assert model == model2
@@ -192,8 +194,10 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
 
 @pytest.mark.slow
 @pytest.mark.parametrize(('uncertain', 'zipsave'),
-                         [(False, False), (True, False),
-                          (False, True), (True, True)])
+                         [(False, False),
+                          (True, False),
+                          (False, True),
+                          (True, True)])
 def test_save_load_midrun_scenario(uncertain, zipsave, saveloc_):
     """
     create model, save it after 1step, then load and check equality of original

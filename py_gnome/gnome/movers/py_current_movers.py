@@ -67,7 +67,6 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
     def __init__(self,
                  filename=None,
                  current=None,
-                 name=None,
                  extrapolate=False,
                  time_offset=0,
                  current_scale=1,
@@ -114,8 +113,8 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                 self.current = GridCurrent.from_netCDF(filename=self.filename,
                                                        **kwargs)
 
-        if name is None:
-            name = self.__class__.__name__ + str(self.__class__._def_count)
+        if 'name' not in kwargs:
+            kwargs['name'] = self.__class__.__name__ + str(self.__class__._def_count)
             self.__class__._def_count += 1
 
         self.extrapolate = extrapolate
@@ -137,9 +136,9 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
 
         # either a 1, or 2 depending on whether spill is certain or not
         self.spill_type = 0
-
         (super(PyCurrentMover, self)
          .__init__(default_num_method=default_num_method, **kwargs))
+
 
     def _attach_default_refs(self, ref_dict):
         pass

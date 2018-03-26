@@ -3,13 +3,15 @@ import sys
 import os
 import psutil
 import time
-import traceback
 import logging
+import traceback
+from six import reraise
 
 from cPickle import loads, dumps
 import uuid
 
 import multiprocessing as mp
+import tblib.pickling_support
 
 
 import zmq
@@ -18,6 +20,10 @@ from zmq.eventloop import ioloop, zmqstream
 from gnome import GnomeId
 from gnome.environment import Wind
 from gnome.outputters import WeatheringOutput
+
+
+# allows us to pickle exception traceback info
+tblib.pickling_support.install()
 
 
 class ModelConsumer(mp.Process):
@@ -151,17 +157,18 @@ class ModelConsumer(mp.Process):
 
         return all(res)
 
+    def _set_spill_amount_uncertainty(self, up_or_down):
+        res = [s.set_amount_uncertainty(up_or_down) for s in self.model.spills]
+
+        return all(res)
+
     def _get_spill_container_uncertainty(self):
         return self.model.spills.uncertain
 
     def _set_spill_container_uncertainty(self, uncertain):
         self.model.spills.uncertain = uncertain
+
         return self.model.spills.uncertain
-
-    def _set_spill_amount_uncertainty(self, up_or_down):
-        res = [s.set_amount_uncertainty(up_or_down) for s in self.model.spills]
-
-        return all(res)
 
     def _get_cache_dir(self):
         return self.model._cache._cache_dir
@@ -266,11 +273,20 @@ class ModelBroadcaster(GnomeId):
 
         if idx is not None:
             self.tasks[idx].send(request)
-            return loads(self.tasks[idx].recv())
+            out = self.recv_from_task(self.tasks[idx])
+
+            self.handle_child_exception(out)
+
+            return out
         elif uncertainty_values is not None:
             idx = self.lookup[uncertainty_values]
+
             self.tasks[idx].send(request)
-            return loads(self.tasks[idx].recv())
+            out = self.recv_from_task(self.tasks[idx])
+
+            self.handle_child_exception(out)
+
+            return out
         else:
             out = []
 
@@ -283,21 +299,41 @@ class ModelBroadcaster(GnomeId):
                 [t.send(request) for t in self.tasks]
 
                 try:
-                    out = [loads(t.recv()) for t in self.tasks]
+                    out = [self.recv_from_task(t) for t in self.tasks]
                 except zmq.Again:
                     self.logger.warning('Broadcaster command has timed out!')
+                    self.stop()
+                    out = None
+                except Exception as e:
+                    self.logger.warning('Broadcaster caught exception {}'
+                                        .format(e))
                     self.stop()
                     out = None
             else:
                 for t in self.tasks:
                     t.send(request)
-                    out.append(loads(t.recv()))
+                    out.append(self.recv_from_task(t))
 
             if timeout is not None:
                 [t.setsockopt(zmq.RCVTIMEO, time)
                  for t, time in zip(self.tasks, old_timeouts)]
 
+            if out is not None:
+                for o in out:
+                    self.handle_child_exception(o)
+
             return out
+
+    def recv_from_task(self, task):
+        return loads(task.recv())
+
+    def handle_child_exception(self, response):
+        if (isinstance(response, tuple) and len(response) == 3 and
+                isinstance(response[0], type) and
+                isinstance(response[1], Exception) and
+                isinstance(response[2], traceback.types.TracebackType)):
+            self.stop()
+            reraise(*response)
 
     def stop(self):
         if len(self.tasks) > 0:
@@ -312,9 +348,10 @@ class ModelBroadcaster(GnomeId):
             for c in self.consumers:
                 c.terminate()
                 c.join()
+
             self.logger.info('joined all consumers!')
 
-            self.context.destroy()
+            self.context.term()
 
             self.consumers = []
             self.tasks = []
@@ -346,6 +383,7 @@ class ModelBroadcaster(GnomeId):
             task.connect('ipc://{0}/Task-{1}'.format(self.ipc_folder, p))
 
             task.setsockopt(zmq.RCVTIMEO, 10 * 1000)
+            task.setsockopt(zmq.LINGER, 5)
 
             self.tasks.append(task)
 

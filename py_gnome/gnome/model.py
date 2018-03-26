@@ -1615,6 +1615,15 @@ class Model(Serializable):
             for item in oc:
                 item.make_default_refs = value
 
+    def list_spill_properties(self):
+        '''
+        Convenience method to list properties of a spill that 
+        can be retrived using get_spill_property
+        
+        '''
+
+        return self.spills.items()[0].data_arrays.keys()
+    
     def get_spill_property(self, prop_name, ucert=0):
         '''
         Convenience method to allow user to look up properties of a spill.

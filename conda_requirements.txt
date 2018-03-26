@@ -24,6 +24,8 @@ geojson>=1.3
 repoze.lru>=0.6
 colander>=1.2
 
+tblib>=1.3.*  # needed for child process exception handling.
+
 gdal=2.*
 netCDF4 # it should find one compatible with gdal
 awesome-slugify>=1.6.5

@@ -102,7 +102,7 @@ class Outputter(Serializable):
 
         self.name = name
 
-        # make sure the output_dir exits:
+        # make sure the output_dir exists:
         if output_dir is not None:
             try:
                 os.mkdir(output_dir)
