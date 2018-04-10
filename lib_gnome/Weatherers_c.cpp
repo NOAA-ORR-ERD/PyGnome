@@ -156,10 +156,12 @@ OSErr adios2_disperse(int n, unsigned long step_len,
         // Net mass loss rate due to sedimentation (kg/s)
         // (Note: why not in m^3/s???)
         double Q_sed = 0.0;
+        double droplet = 0.613 * thickness;
+        droplet_avg_size[i] = droplet;
         if (C_sed > 0.0 && thickness >= 1.0e-4) {
             // average droplet size based on surface oil slick thickness
-            double droplet = 0.613 * thickness;
-            droplet_avg_size[i] = droplet;
+            //double droplet = 0.613 * thickness;
+            //droplet_avg_size[i] = droplet;
 
             // droplet average rise velocity
             double speed = (droplet * droplet * g *
