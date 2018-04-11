@@ -14,13 +14,13 @@ Contents
   installing
   structure
   scripting
-  env_obj
+  env_obj/index
   customizing
   logging
   serialization
   units
   reference
-  
+
 
 Indices and tables
 ==================
