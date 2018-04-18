@@ -2,27 +2,24 @@
 """
 Unit tests for CyOSSMTime class
 """
-import gnome
-from numpy import array
 import os
 
 from pytest import raises
 import pytest
 
-import numpy
-np = numpy
+import numpy as np
 
 # import basic_types and subsequently lib_gnome
 from gnome import basic_types
 from gnome.basic_types import ts_format, seconds, velocity_rec
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime, CyTimeseries
-from gnome.cy_gnome.cy_shio_time import CyShioTime
+
 from ..conftest import testdata
 
 
 @pytest.mark.parametrize('obj', [CyOSSMTime, CyTimeseries])
-def test_exceptions(obj):
+def test_init_exceptions(obj):
     with raises(IOError):
         # bad path
         obj(filename='WindDataFromGnome.WNDX',
@@ -43,18 +40,73 @@ def test_exceptions(obj):
             file_format=0)
 
 
-def test_properties():
+@pytest.mark.parametrize('obj', [CyOSSMTime, CyTimeseries])
+def test_initial_properties(obj):
     '''
-    todo: OSSM needs to read station + location info if foudn in file
+        todo: OSSM needs to read station + location info if found in file
     '''
-    cy = CyOSSMTime(testdata['timeseries']['wind_ts'],
-                    5)  # 5 is ts_format.magnitude_direction
-    #assert cy.station == 'Station Name'
-    #assert cy.station_location == None
+    # 5 is ts_format.magnitude_direction
+    cy = obj(testdata['timeseries']['wind_ts'], 5)
+
+    assert cy.station is None
+    assert cy.station_location is None
+    assert cy.extrapolation_is_allowed is False
+
     assert cy.user_units == 'knots'
-    assert (cy.filename ==
-            os.path.split(testdata['timeseries']['wind_ts'])[1])
+    assert (cy.filename == os.path.split(testdata['timeseries']['wind_ts'])[1])
     assert cy.scale_factor == 1.0
+
+
+@pytest.mark.parametrize('obj', [CyOSSMTime, CyTimeseries])
+def test_init_arguments(obj):
+    '''
+        TODO: I think the file_format is not exposed in the Cython object.
+              This is why we don't test the default value for file_format.
+              We need to make this better.
+    '''
+    # test the scale_factor argument and all permutations.
+    cy = obj(testdata['timeseries']['wind_ts'], 5,
+             scale_factor=2)
+
+    assert cy.scale_factor == 2.0
+
+    cy = obj(testdata['timeseries']['wind_ts'], 5,
+             scale_factor=2.0)
+
+    assert cy.scale_factor == 2.0
+
+    # test the extrapolation_is_allowed flag and all permutations.
+    cy = obj(testdata['timeseries']['wind_ts'], 5,
+             extrapolation_is_allowed=True)
+
+    assert cy.extrapolation_is_allowed is True
+
+    cy = obj(testdata['timeseries']['wind_ts'], 5,
+             extrapolation_is_allowed=False)
+
+    assert cy.extrapolation_is_allowed is False
+
+    # try it with an int.
+    cy = obj(testdata['timeseries']['wind_ts'], 5,
+             extrapolation_is_allowed=1)
+
+    assert cy.extrapolation_is_allowed is True
+
+    cy = obj(testdata['timeseries']['wind_ts'], 5,
+             extrapolation_is_allowed=0)
+
+    assert cy.extrapolation_is_allowed is False
+
+    # try it with a float.
+    cy = obj(testdata['timeseries']['wind_ts'], 5,
+             extrapolation_is_allowed=1.0)
+
+    assert cy.extrapolation_is_allowed is True
+
+    cy = obj(testdata['timeseries']['wind_ts'], 5,
+             extrapolation_is_allowed=0.0)
+
+    assert cy.extrapolation_is_allowed is False
 
 
 @pytest.mark.parametrize('obj', [CyOSSMTime, CyTimeseries])
@@ -80,6 +132,9 @@ class TestObjectSerialization:
             Test that the repr method produces a string capable of reproducing
             the object.
         '''
+        import gnome
+        from numpy import array
+
         ossmT = obj(filename=testdata['timeseries']['wind_ts'],
                     file_format=ts_format.magnitude_direction)
 
@@ -121,14 +176,45 @@ class TestCyTimeseries:
 
         actual = np.array(self.tval['value'], dtype=velocity_rec)
         time = np.array(self.tval['time'], dtype=seconds)
-        vel_rec, err = ossm.get_time_value(time)
+        vel_rec, _err = ossm.get_time_value(time)
         print vel_rec
 
         tol = 1e-6
         msg = ('{0} is not within a tolerance of '
                '{1}'.format('get_time_value', tol))
+
         np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol, msg, 0)
         np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, msg, 0)
+
+    def test_get_time_out_of_bounds(self):
+        time_values = np.array([(1, (1, 2)), (2, (2, 3))],
+                               dtype=basic_types.time_value_pair)
+
+        ossm = CyTimeseries(timeseries=time_values)
+
+        # testing before the start time
+        with pytest.raises(IndexError):
+            _vel_rec, _err = ossm.get_time_value(np.array([0], dtype=seconds))
+
+        # testing after the end time
+        with pytest.raises(IndexError):
+            _vel_rec, _err = ossm.get_time_value(np.array([3], dtype=seconds))
+
+        # now we allow extrapolation
+        ossm.extrapolation_is_allowed = True
+
+        begin_value, _err = ossm.get_time_value(np.array([1], dtype=seconds))
+        end_value, _err = ossm.get_time_value(np.array([2], dtype=seconds))
+
+        # before the start time should now return without an exception
+        # and it should return the value associated with the start time.
+        vel_rec, _err = ossm.get_time_value(np.array([0], dtype=seconds))
+        assert vel_rec == begin_value
+
+        # after the end time should now return without an exception
+        # and it should return the value associated with the end time.
+        vel_rec, _err = ossm.get_time_value(np.array([3], dtype=seconds))
+        assert vel_rec == end_value
 
     def test__set_time_value_handle_none(self):
         """Check TypeError exception for private method"""
@@ -183,11 +269,12 @@ class TestCyTimeseries:
         actual = np.array(t_val['value'], dtype=velocity_rec)
         time = np.array(t_val['time'] + (0, 100), dtype=seconds)
 
-        vel_rec, err = ossmT.get_time_value(time)
+        vel_rec, _err = ossmT.get_time_value(time)
 
         tol = 1e-6
         msg = ('{0} is not within a tolerance of '
                '{1}'.format('get_time_value', tol))
+
         for vel in vel_rec:
             np.testing.assert_allclose(vel['u'], actual['u'], tol, tol,
                                        msg, 0)

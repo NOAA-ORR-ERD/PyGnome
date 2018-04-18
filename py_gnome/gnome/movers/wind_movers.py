@@ -38,16 +38,6 @@ class WindMoversBaseSchema(ObjType, ProcessSchema):
     uncertain_angle_scale = SchemaNode(Float(), missing=drop)
 
 
-class WindMoverSchema(WindMoversBaseSchema):
-    """
-    Contains properties required by UpdateWindMover and CreateWindMover
-    """
-    # 'wind' schema node added dynamically
-    name = 'WindMover'
-    description = 'wind mover properties'
-    extrapolate = SchemaNode(Bool(), missing=drop)
-
-
 class WindMoversBase(CyMover):
     _state = copy.deepcopy(CyMover._state)
     _state.add(update=['uncertain_duration', 'uncertain_time_delay',
@@ -187,6 +177,15 @@ class WindMoversBase(CyMover):
         return info.format(self)
 
 
+class WindMoverSchema(WindMoversBaseSchema):
+    """
+    Contains properties required by UpdateWindMover and CreateWindMover
+    """
+    # 'wind' schema node added dynamically
+    name = 'WindMover'
+    description = 'wind mover properties'
+
+
 class WindMover(WindMoversBase, Serializable):
     """
     Python wrapper around the Cython wind_mover module.
@@ -196,14 +195,12 @@ class WindMover(WindMoversBase, Serializable):
     sets everything up that is common to all movers.
     """
     _state = copy.deepcopy(WindMoversBase._state)
-    _state.add(update=['extrapolate'],
-               save=['extrapolate'])
     _state.add_field(Field('wind', save=True, update=True,
                            save_reference=True))
 
     _schema = WindMoverSchema
 
-    def __init__(self, wind=None, extrapolate=False, **kwargs):
+    def __init__(self, wind=None, **kwargs):
         """
         Uses super to call CyMover base class __init__
 
@@ -227,7 +224,6 @@ class WindMover(WindMoversBase, Serializable):
                                                      False)
             kwargs['name'] = kwargs.pop('name', wind.name)
 
-        self.extrapolate = extrapolate
         # set optional attributes
         super(WindMover, self).__init__(**kwargs)
 
@@ -239,10 +235,6 @@ class WindMover(WindMoversBase, Serializable):
         return ('WindMover - current _state. '
                 'See "wind" object for wind conditions:\n{0}'
                 .format(self._state_as_str()))
-
-    extrapolate = property(lambda self: self.mover.extrapolate,
-                           lambda self, val: setattr(self.mover, 'extrapolate',
-                                                     val))
 
     @property
     def wind(self):
@@ -347,8 +339,7 @@ def constant_wind_mover(speed, direction, units='m/s'):
         The time for a constant wind timeseries is irrelevant.
         This function simply sets it to datetime.now() accurate to hours.
     """
-    return WindMover(constant_wind(speed, direction, units=units),
-                     extrapolate=True)
+    return WindMover(constant_wind(speed, direction, units=units))
 
 
 class GridWindMoverSchema(WindMoversBaseSchema):
