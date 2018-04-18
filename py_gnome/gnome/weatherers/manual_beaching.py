@@ -265,6 +265,7 @@ class Beaching(RemoveMass, Weatherer):
             rm_mass_frac = rm_mass / data['mass'].sum()
             if rm_mass_frac > 1.0:
                 rm_mass_frac = 1.0
+                rm_mass = data['mass'].sum()
                 msg = ("Beaching() removing more mass than available at {0}".
                        format(model_time))
                 self.logger.warning(msg)
