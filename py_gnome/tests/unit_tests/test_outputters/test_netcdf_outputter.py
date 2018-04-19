@@ -683,6 +683,54 @@ def test_var_attr_spill_num(output_filename):
 
             _del_nc_file(nc_name[ix])
 
+def test_surface_concentration_output(model):
+    """
+    make sure the surface concentration is being computed and output
+
+    Rewind model defined by model fixture.
+
+    invoke model.step() till model runs all 5 steps
+
+    For each step, make sure the surface_concentration data is there.
+    """
+    model.rewind()
+    _run_model(model)
+
+    # check contents of netcdf File at multiple time steps
+    # (there should only be 1!)
+    o_put = [model.outputters[outputter.id]
+             for outputter in model.outputters
+             if isinstance(outputter, NetCDFOutput)][0]
+
+    atol = 1e-5
+    rtol = 0
+
+    uncertain = False
+    file_ = o_put.netcdf_filename
+    with nc.Dataset(file_) as data:
+        dv = data.variables
+        time_ = nc.num2date(dv['time'][:], dv['time'].units,
+                            calendar=dv['time'].calendar)
+
+        idx = np.cumsum((dv['particle_count'])[:])
+        idx = np.insert(idx, 0, 0)  # add starting index of 0
+
+        for step in range(model.num_time_steps):
+            assert hasattr(dv, 'surface_concentration')
+
+            # assert np.allclose(scp.LE('positions', uncertain)[:, 0],
+            #                    (dv['longitude'])[idx[step]:idx[step + 1]],
+            #                    rtol, atol)
+            # assert np.allclose(scp.LE('positions', uncertain)[:, 1],
+            #                    (dv['latitude'])[idx[step]:idx[step + 1]],
+            #                    rtol, atol)
+            # assert np.allclose(scp.LE('positions', uncertain)[:, 2],
+            #                    (dv['depth'])[idx[step]:idx[step + 1]],
+            #                    rtol, atol)
+
+            # assert np.all(scp.LE('status_codes', uncertain)[:] ==
+            #               (dv['status_codes'])[idx[step]:idx[step + 1]])
+
 
 def _run_model(model):
     'helper function'
