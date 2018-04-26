@@ -6,6 +6,7 @@ import copy
 from collections import Iterable
 
 import numpy as np
+from colander import SchemaNode, SequenceSchema, String, drop
 
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.serializable import Serializable, Field
@@ -17,7 +18,7 @@ from .outputter import Outputter, BaseSchema
 
 
 class SpillJsonSchema(BaseSchema):
-    pass
+    _additional_data = SequenceSchema(SchemaNode(String()), missing=drop)
 
 
 class SpillJsonOutput(Outputter, Serializable):
@@ -49,10 +50,23 @@ class SpillJsonOutput(Outputter, Serializable):
         }
     '''
     _state = copy.deepcopy(Outputter._state)
+    _state.add_field(Field('_additional_data', update=True))
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
     _schema = SpillJsonSchema
+
+
+    def __init__(self, _additional_data=None, **kwargs):
+        '''
+        :param list current_movers: A list or collection of current grid mover
+                                    objects.
+
+        use super to pass optional \*\*kwargs to base class __init__ method
+        '''
+        self._additional_data =_additional_data if _additional_data else []
+
+        super(SpillJsonOutput, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
@@ -91,6 +105,13 @@ class SpillJsonOutput(Outputter, Serializable):
                    "spill_num": spill_num,
                    "length": len(longitude)
                    }
+
+            if self._additional_data and len(self._additional_data) > 0:
+                for d in self._additional_data:
+                    if d == 'viscosity':
+                        out[d] = np.around(sc[d], 8).tolist()
+                    else:
+                        out[d] = np.around(sc[d], 4).tolist()
 
             if sc.uncertain:
                 uncertain_scs.append(out)
