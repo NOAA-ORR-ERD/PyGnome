@@ -310,7 +310,8 @@ def test_write_output_all_data(model):
                     else:
                         nc_var = data.variables[var_name]
                         sc_arr = scp.LE(var_name, uncertain)
-
+                    if var_name == "surface_concentration":
+                        continue
                     if len(sc_arr.shape) == 1:
                         assert np.all(nc_var[idx[step]:idx[step + 1]] ==
                                       sc_arr)
@@ -483,10 +484,9 @@ def test_read_all_arrays(model):
                     elif key == 'mass_balance':
                         assert scp.LE(key, uncertain) == mb
                     else:
-                        # if key not in ['last_water_positions',
-                        #                'next_positions']:
-                        assert np.all(scp.LE(key, uncertain)[:] ==
-                                      nc_data[key])
+                        if key not in ['surface_concentration']:  # not always there
+                            assert np.all(scp.LE(key, uncertain)[:] ==
+                                          nc_data[key])
 
         if _found_a_matching_time:
             print ('\ndata in model matches for output in \n{0}'.format(file_))
@@ -682,6 +682,31 @@ def test_var_attr_spill_num(output_filename):
                         data.variables['spill_num'].spills_map)
 
             _del_nc_file(nc_name[ix])
+
+def test_surface_concentration_output(model):
+    """
+    make sure the surface concentration is being computed and output
+
+    Rewind model defined by model fixture.
+
+    invoke model.step() till model runs all 5 steps
+
+    For each step, make sure the surface_concentration data is there.
+    """
+    model.rewind()
+    o_put = model.outputters[0]
+
+    # FIXME:
+    # o_put.surface_conc = "kde" # it's now default -- that should change!
+    _run_model(model)
+
+    file_ = o_put.netcdf_filename
+    with nc.Dataset(file_) as data:
+        dv = data.variables
+        for step in range(model.num_time_steps):
+            surface_conc = dv['surface_concentration']
+            # FIXME -- maybe should test something more robust...
+            assert not np.all(surface_conc[:] == 0.0)
 
 
 def _run_model(model):
