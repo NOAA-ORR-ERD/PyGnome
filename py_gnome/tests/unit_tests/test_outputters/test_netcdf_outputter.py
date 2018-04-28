@@ -310,7 +310,8 @@ def test_write_output_all_data(model):
                     else:
                         nc_var = data.variables[var_name]
                         sc_arr = scp.LE(var_name, uncertain)
-
+                    if var_name == "surface_concentration":
+                        continue
                     if len(sc_arr.shape) == 1:
                         assert np.all(nc_var[idx[step]:idx[step + 1]] ==
                                       sc_arr)
@@ -483,10 +484,9 @@ def test_read_all_arrays(model):
                     elif key == 'mass_balance':
                         assert scp.LE(key, uncertain) == mb
                     else:
-                        # if key not in ['last_water_positions',
-                        #                'next_positions']:
-                        assert np.all(scp.LE(key, uncertain)[:] ==
-                                      nc_data[key])
+                        if key not in ['surface_concentration']:  # not always there
+                            assert np.all(scp.LE(key, uncertain)[:] ==
+                                          nc_data[key])
 
         if _found_a_matching_time:
             print ('\ndata in model matches for output in \n{0}'.format(file_))
@@ -694,42 +694,19 @@ def test_surface_concentration_output(model):
     For each step, make sure the surface_concentration data is there.
     """
     model.rewind()
+    o_put = model.outputters[0]
+
+    # FIXME:
+    # o_put.surface_conc = "kde" # it's now default -- that should change!
     _run_model(model)
 
-    # check contents of netcdf File at multiple time steps
-    # (there should only be 1!)
-    o_put = [model.outputters[outputter.id]
-             for outputter in model.outputters
-             if isinstance(outputter, NetCDFOutput)][0]
-
-    atol = 1e-5
-    rtol = 0
-
-    uncertain = False
     file_ = o_put.netcdf_filename
     with nc.Dataset(file_) as data:
         dv = data.variables
-        time_ = nc.num2date(dv['time'][:], dv['time'].units,
-                            calendar=dv['time'].calendar)
-
-        idx = np.cumsum((dv['particle_count'])[:])
-        idx = np.insert(idx, 0, 0)  # add starting index of 0
-
         for step in range(model.num_time_steps):
-            assert hasattr(dv, 'surface_concentration')
-
-            # assert np.allclose(scp.LE('positions', uncertain)[:, 0],
-            #                    (dv['longitude'])[idx[step]:idx[step + 1]],
-            #                    rtol, atol)
-            # assert np.allclose(scp.LE('positions', uncertain)[:, 1],
-            #                    (dv['latitude'])[idx[step]:idx[step + 1]],
-            #                    rtol, atol)
-            # assert np.allclose(scp.LE('positions', uncertain)[:, 2],
-            #                    (dv['depth'])[idx[step]:idx[step + 1]],
-            #                    rtol, atol)
-
-            # assert np.all(scp.LE('status_codes', uncertain)[:] ==
-            #               (dv['status_codes'])[idx[step]:idx[step + 1]])
+            surface_conc = dv['surface_concentration']
+            # FIXME -- maybe should test something more robust...
+            assert not np.all(surface_conc[:] == 0.0)
 
 
 def _run_model(model):

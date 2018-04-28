@@ -211,12 +211,16 @@ class Renderer(Outputter, MapCanvas):
         self.draw_ontop = draw_ontop
         self.draw_back_to_fore = draw_back_to_fore
 
-        Outputter.__init__(self, cache, on,
+        Outputter.__init__(self,
+                           cache,
+                           on,
                            output_timestep,
                            output_zero_step,
                            output_last_step,
                            output_start_time,
-                           name, output_dir)
+                           name,
+                           output_dir,
+                           **kwargs)
 
         if map_BB is None:
             if not self.land_polygons:

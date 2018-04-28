@@ -369,6 +369,8 @@ def test_serialize_deserialize(json_, output_dir):
                  )
 
     toserial = r.serialize(json_)
+    print "surface_conc:", toserial["surface_conc"]
+
     dict_ = r.deserialize(toserial)
 
     # check our Renderer attributes
