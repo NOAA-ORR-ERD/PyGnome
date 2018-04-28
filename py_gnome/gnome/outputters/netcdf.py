@@ -270,7 +270,8 @@ class NetCDFOutput(Outputter, Serializable):
                  netcdf_filename,
                  which_data='standard',
                  compress=True,
-                  #FIXME: this should not be default, but since we don't have a way for WebGNOME to set it yet..
+                 # FIXME: this should not be default, but since we don't have a way for
+                 #        WebGNOME to set it yet..
                  surface_conc="kde",
                  **kwargs):
         """
