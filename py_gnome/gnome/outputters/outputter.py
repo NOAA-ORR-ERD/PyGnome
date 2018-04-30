@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """
 outputters.py
 
@@ -12,11 +13,13 @@ import os
 import copy
 from datetime import timedelta
 
-from colander import SchemaNode, MappingSchema, Bool, drop
+from colander import SchemaNode, MappingSchema, Bool, drop, String
 
 
 from gnome.persist import base_schema, extend_colander, validators
 from gnome.utilities.serializable import Serializable, Field
+
+from gnome.utilities.surface_concentration import compute_surface_concentration
 
 
 class BaseSchema(base_schema.ObjType, MappingSchema):
@@ -28,6 +31,7 @@ class BaseSchema(base_schema.ObjType, MappingSchema):
     output_start_time = SchemaNode(extend_colander.LocalDateTime(),
                                    validator=validators.convertible_to_seconds,
                                    missing=None)
+    surface_conc = SchemaNode(String(allow_empty=True), missing=drop)
 
 
 class Outputter(Serializable):
@@ -41,7 +45,9 @@ class Outputter(Serializable):
                Field('output_zero_step', save=True, update=True),
                Field('output_last_step', save=True, update=True),
                Field('output_timestep', save=True, update=True),
-               Field('output_start_time', save=True, update=True))
+               Field('output_start_time', save=True, update=True),
+               Field('surface_conc', save=True, update=True),
+               )
     _schema = BaseSchema
 
     def __init__(self,
@@ -52,7 +58,9 @@ class Outputter(Serializable):
                  output_last_step=True,
                  output_start_time=None,
                  name='',
-                 output_dir=None):
+                 output_dir=None,
+                 surface_conc="",
+                 **kwargs):
         """
         sets attributes for all outputters, like output_timestep, cache
 
@@ -82,6 +90,14 @@ class Outputter(Serializable):
         :param output_dir=None: directory to dump ouput in, if it needs to
                                 do this.
         :type output_dir: string (path)
+
+        :param surface_conc = "": Compute surface concentration
+                                  Any non-zero string will compute (and output)
+                                  the surface concentration the contents of the
+                                  string determine the algorithm used. "kde" is
+                                  currently the only working option.
+        :type surface_conc" string
+
         """
         self.cache = cache
         self.on = on
@@ -110,6 +126,9 @@ class Outputter(Serializable):
                 pass
 
         self.output_dir = output_dir
+
+        self.surface_conc = surface_conc
+        self.array_types = set()
 
         # reset internally used variables
         self.rewind()
@@ -210,8 +229,10 @@ class Outputter(Serializable):
            update the _dt_since_lastoutput variable
 
         """
-        d = timedelta(seconds=time_step)
 
+        self._surf_conc_computed = False
+
+        d = timedelta(seconds=time_step)
         if self.output_start_time is not None:
             if self.output_start_time != self._model_start_time:
                 if model_time + d < self.output_start_time:
@@ -273,6 +294,20 @@ class Outputter(Serializable):
             raise ValueError('cache object is not defined. It is required'
                              ' prior to calling write_output')
 
+        # get the spill_containers from cache:
+        self.current_spill_pair = self.cache.load_timestep(step_num)
+
+        # compute the surface_concentration if need be
+        # doing this here so that it will only happen if there is an output step
+        if self._write_step and self.surface_conc and not self._surf_conc_computed:
+            if not self._surf_conc_computed:
+                # compute the surface concentration
+                for sc in self.current_spill_pair.items():
+                    if not sc.uncertain:  # don't do it for the uncertaintly runs
+                        compute_surface_concentration(sc, self.surface_conc)
+
+                self._surf_conc_computed = True
+
     def clean_output_files(self):
         '''
         cleans out the output dir
@@ -282,7 +317,7 @@ class Outputter(Serializable):
         but each outputter type dumps different types of files, and this should
         only clear out those. So it has to be custom implemented
         '''
-        raise NotImplementedError('This Outputter does not suport '
+        raise NotImplementedError('This Outputter does not support '
                                   'clearing out files')
 
     def rewind(self):
@@ -296,6 +331,11 @@ class Outputter(Serializable):
         self._dt_since_lastoutput = None
         self._write_step = True
         self._is_first_output = True
+        self._surf_conc_computed = True
+        if self.surface_conc:
+            self.array_types.add("surface_concentration")
+
+        self.current_spill_pair = None
 
     def write_output_post_run(self,
                               model_start_time,

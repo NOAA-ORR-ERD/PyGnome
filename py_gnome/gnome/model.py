@@ -700,6 +700,9 @@ class Model(Serializable):
                    self.outputters, self.environment]:
             oc.remake()
 
+        for op in self.outputters:
+            array_types.update(op.array_types)
+
         # order weatherers collection
         self._order_weatherers()
         transport = False
@@ -1617,13 +1620,13 @@ class Model(Serializable):
 
     def list_spill_properties(self):
         '''
-        Convenience method to list properties of a spill that 
+        Convenience method to list properties of a spill that
         can be retrived using get_spill_property
-        
+
         '''
 
         return self.spills.items()[0].data_arrays.keys()
-    
+
     def get_spill_property(self, prop_name, ucert=0):
         '''
         Convenience method to allow user to look up properties of a spill.
