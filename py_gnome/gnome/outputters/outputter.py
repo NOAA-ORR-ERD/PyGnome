@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """
 outputters.py
 
@@ -30,7 +31,7 @@ class BaseSchema(base_schema.ObjType, MappingSchema):
     output_start_time = SchemaNode(extend_colander.LocalDateTime(),
                                    validator=validators.convertible_to_seconds,
                                    missing=None)
-    surface_conc = SchemaNode(String(allow_empty=True))
+    surface_conc = SchemaNode(String(allow_empty=True), missing=drop)
 
 
 class Outputter(Serializable):
