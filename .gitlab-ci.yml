@@ -21,7 +21,7 @@ test:
 develop:
   script:
     - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome:develop
-    - docker push gitlab.orr.noaa.gov:5002:develop
+    - docker push gitlab.orr.noaa.gov:5002/pygnome:develop
   only:
     - develop
   tags:
@@ -30,7 +30,7 @@ develop:
 master:
   script:
     - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome
-    - docker push gitlab.orr.noaa.gov:5002
+    - docker push gitlab.orr.noaa.gov:5002/pygnome
   only:
      - master
   tags:
