@@ -17,6 +17,8 @@ test:
   - cd ./py_gnome
   - python ./setup.py install
   - py.test
+  tags:
+    - tests
 
 develop:
   script:
