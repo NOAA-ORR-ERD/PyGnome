@@ -17,15 +17,15 @@ def test_deserialize():
     kind of json we'd get from teh WebAPI
     '''
 
-    json_from_api = {'on': True,
+    json_from_api = {#'on': True,
                      'obj_type': u'gnome.outputters.json.SpillJsonOutput',
                      'name': u'',
+                     'output_zero_step': True,
                      'output_start_time': None,
                      'output_last_step': True,
                      # 'surface_conc': u'',
                      'json_': u'webapi',
-                     'output_zero_step': True,
-                     '_additional_data': [],
+                     #'_additional_data': [],
                      # 'id': u'4c64ca4f-4cbc-11e8-8899-acbc32795771',
                      }
 
