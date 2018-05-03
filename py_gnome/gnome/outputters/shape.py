@@ -168,14 +168,13 @@ class ShapeOutput(Outputter, Serializable):
                     self.w_u.save(fn)
                 else:
                     self.w.save(fn)
+                    
+                prj_file = open("%s.prj" % fn, "w")
+                prj_file.write(self.epsg)
+                prj_file.close()    
 
                 if self.zip_output is True:
-                    zfilename = fn + '.zip'
-
-                    prj_file = open("%s.prj" % fn, "w")
-                    prj_file.write(self.epsg)
-                    prj_file.close()
-
+                    zfilename = fn + '.zip'        
                     zipf = zipfile.ZipFile(zfilename, 'w')
 
                     for suf in ['shp', 'prj', 'dbf', 'shx']:
