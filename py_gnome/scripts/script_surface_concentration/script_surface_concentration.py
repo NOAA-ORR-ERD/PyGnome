@@ -46,7 +46,7 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 
 
-from gnome.outputters import Renderer, NetCDFOutput, KMZOutput
+from gnome.outputters import Renderer, NetCDFOutput, KMZOutput, ShapeOutput
 
 # let's get the console log working:
 gnome.initialize_console_log()
@@ -69,16 +69,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   uncertain=False)
 
     print 'adding outputters'
-    renderer = Renderer(output_dir=images_dir,
-                        size=(800, 800),
-                        viewport=((-70.5, 41.5),
-                                  (-69.5, 42.5)),
-                        projection_class=GeoProjection)
+    renderer = Renderer(output_dir=images_dir)
+                        # size=(800, 800),
+                        # viewport=((-70.5, 41.5),
+                                  # (-69.5, 42.5)),
+                        # projection_class=GeoProjection)
 
     model.outputters += renderer
-    netcdf_file = os.path.join(base_dir, 'surface_concentration.nc')
-    scripting.remove_netcdf(netcdf_file)
-    model.outputters += NetCDFOutput(netcdf_file, surface_conc='kde')
+    # netcdf_file = os.path.join(base_dir, 'surface_concentration.nc')
+    # scripting.remove_netcdf(netcdf_file)
+    # model.outputters += NetCDFOutput(netcdf_file, surface_conc='kde')
+    
+    shape_file = os.path.join(base_dir, 'surface_concentration')
+    model.outputters += ShapeOutput(shape_file, surface_conc='kde')
 
     print 'adding a RandomMover:'
     model.movers += RandomMover(diffusion_coef=100000)
@@ -99,7 +102,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     spill = point_line_release_spill(num_elements=100,
                                      start_position=(-70.0, 42, 0.0),
                                      release_time=start_time,
-                                     end_release_time=end_time)
+                                     end_release_time=end_time,
+                                     amount=10000,
+                                     units="barrels")
 
     model.spills += spill
 
@@ -111,4 +116,7 @@ if __name__ == "__main__":
     print "setting up the model"
     model = make_model()
     print "running the model"
-    model.full_run()
+    for step in model:
+        print step
+
+

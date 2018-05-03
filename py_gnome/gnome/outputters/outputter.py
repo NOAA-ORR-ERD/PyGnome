@@ -306,7 +306,7 @@ class Outputter(Serializable):
                     if not sc.uncertain:  # don't do it for the uncertaintly runs
                         compute_surface_concentration(sc, self.surface_conc)
 
-                self._surf_conc_computed = True
+                #self._surf_conc_computed = True
 
     def clean_output_files(self):
         '''
