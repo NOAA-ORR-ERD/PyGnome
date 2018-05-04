@@ -294,18 +294,17 @@ class Outputter(Serializable):
             raise ValueError('cache object is not defined. It is required'
                              ' prior to calling write_output')
 
-        # get the spill_containers from cache:
-        self.current_spill_pair = self.cache.load_timestep(step_num)
-
         # compute the surface_concentration if need be
         # doing this here so that it will only happen if there is an output step
+        # this updates the most recent one in the cache
         if self._write_step and self.surface_conc and not self._surf_conc_computed:
-            if not self._surf_conc_computed:
-                # compute the surface concentration
-                for sc in self.current_spill_pair.items():
-                    if not sc.uncertain:  # don't do it for the uncertaintly runs
-                        compute_surface_concentration(sc, self.surface_conc)
-
+            # compute the surface concentration -- put it in the cache
+            try:
+                sc = self.cache.recent[step_num][0]  # only the certain one
+            except KeyError:  # not using the most recent one from cache
+                pass          # so no need to compute
+            else:
+                compute_surface_concentration(sc, self.surface_conc)
                 self._surf_conc_computed = True
 
     def clean_output_files(self):
@@ -334,8 +333,6 @@ class Outputter(Serializable):
         self._surf_conc_computed = True
         if self.surface_conc:
             self.array_types.add("surface_concentration")
-
-        self.current_spill_pair = None
 
     def write_output_post_run(self,
                               model_start_time,
