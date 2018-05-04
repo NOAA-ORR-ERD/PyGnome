@@ -80,6 +80,9 @@ var_attributes = {
                          },
     'rise_vel': {'long_name': 'rise velocity of oil droplet class',
                               'units': 'm s-1'},
+    'surface_concentration': {'long_name': 'surface concentration of oil',
+                              'units': 'g m-2',
+                              },
     'windages': {},
     'windage_range': {},
     'windage_persist': {},
@@ -95,8 +98,8 @@ var_attributes = {
     'partition_coeff': {},
     'droplet_avg_size': {},
     'init_mass': {'long_name': 'initial mass',
-             'units': 'kilograms',
-             },
+                  'units': 'kilograms',
+                  },
     'mass_components': {},
     'fate_status': {},
 
@@ -222,6 +225,7 @@ class NetCDFOutput(Outputter, Serializable):
                        'density',
                        'viscosity',
                        'frac_water',
+                       'surface_concentration',
                        ]
 
     # these are being handled specially -- i.e. pulled from the positions array
@@ -264,9 +268,11 @@ class NetCDFOutput(Outputter, Serializable):
 
     def __init__(self,
                  netcdf_filename,
-                 which_data='all',
-                 #which_data='standard',
+                 which_data='standard',
                  compress=True,
+                 # FIXME: this should not be default, but since we don't have a way for
+                 #        WebGNOME to set it yet..
+                 surface_conc="kde",
                  **kwargs):
         """
         Constructor for Net_CDFOutput object. It reads data from cache and
@@ -357,7 +363,7 @@ class NetCDFOutput(Outputter, Serializable):
                                 'time': {'units': ''}
                                 }
 
-        super(NetCDFOutput, self).__init__(**kwargs)
+        super(NetCDFOutput, self).__init__(surface_conc=surface_conc, **kwargs)
 
     @property
     def middle_of_run(self):
@@ -767,6 +773,7 @@ class NetCDFOutput(Outputter, Serializable):
         self._middle_of_run = False
         self._start_idx = 0
 
+    ##fixme: we should use the code in nc_particles for this!!!
     @classmethod
     def read_data(klass,
                   netcdf_file,
@@ -901,8 +908,11 @@ class NetCDFOutput(Outputter, Serializable):
 
                     arrays_dict['positions'] = positions
                 else:
-                    arrays_dict[array_name] = \
-                        data.variables[array_name][_start_ix:_stop_ix]
+                    try:
+                        arrays_dict[array_name] = data.variables[array_name][_start_ix:_stop_ix]
+                    except KeyError:
+                        # it's OK if it's not there, not all standard_arrays will always be output
+                        pass
 
             # get mass_balance
             weathering_data = {}
