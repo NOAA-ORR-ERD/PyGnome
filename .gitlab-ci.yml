@@ -1,4 +1,5 @@
-before_script:
+test:
+  script:
   - yum update -y
   - yum install gcc gcc-c++ -y
   - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
@@ -15,15 +16,24 @@ before_script:
 
   - cd ./py_gnome
   - python ./setup.py install
-
-master:
-  script:
-    - py.test -runslow
-  only:
-    - master
+  - py.test
+  tags:
+    - tests
 
 develop:
   script:
-    - py.test
+    - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome:develop
+    - docker push gitlab.orr.noaa.gov:5002/pygnome:develop
   only:
     - develop
+  tags:
+    - docker
+
+master:
+  script:
+    - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome
+    - docker push gitlab.orr.noaa.gov:5002/pygnome
+  only:
+     - master
+  tags:
+     - docker

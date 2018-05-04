@@ -298,11 +298,12 @@ class Outputter(Serializable):
         # doing this here so that it will only happen if there is an output step
         # this updates the most recent one in the cache
         if self._write_step and self.surface_conc and not self._surf_conc_computed:
-            # compute the surface concentration -- put it in the cache
+            # compute the surface concentration and put it in the cache
             try:
                 sc = self.cache.recent[step_num][0]  # only the certain one
             except KeyError:  # not using the most recent one from cache
                 pass          # so no need to compute
+                              # fixme: it may not get into cache at all.
             else:
                 compute_surface_concentration(sc, self.surface_conc)
                 self._surf_conc_computed = True

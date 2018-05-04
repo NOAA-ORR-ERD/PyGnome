@@ -33,10 +33,11 @@ class ShapeOutput(Outputter, Serializable):
 
     time_formatter = '%m/%d/%Y %H:%M'
 
-    def __init__(self, filename, zip_output=True, **kwargs):
+    def __init__(self, filename, zip_output=True, surface_conc="kde", **kwargs):
         '''
         :param str output_dir=None: output directory for shape files
-        uses super to pass optional \*\*kwargs to base class __init__ method
+
+        :param zip_output=True: whether to zip up the ouput shape files
         '''
         # # a little check:
         self._check_filename(filename)
@@ -48,7 +49,7 @@ class ShapeOutput(Outputter, Serializable):
 
         self.zip_output = zip_output
 
-        super(ShapeOutput, self).__init__(**kwargs)
+        super(ShapeOutput, self).__init__(surface_conc=surface_conc,**kwargs)
 
     def prepare_for_model_run(self,
                               model_start_time,
@@ -113,6 +114,7 @@ class ShapeOutput(Outputter, Serializable):
             w.field('Depth', 'N')
             w.field('Mass', 'N')
             w.field('Age', 'N')
+            w.field('Surf_Conc','F',10,5)
             w.field('Status_Code', 'N')
 
             if sc.uncertain:
@@ -143,6 +145,7 @@ class ShapeOutput(Outputter, Serializable):
                                     p[2],
                                     sc['mass'][k],
                                     sc['age'][k],
+                                    0.0,
                                     sc['status_codes'][k])
             else:
                 for k, p in enumerate(sc['positions']):
@@ -152,6 +155,7 @@ class ShapeOutput(Outputter, Serializable):
                                   p[2],
                                   sc['mass'][k],
                                   sc['age'][k],
+                                  sc['surface_concentration'][k],
                                   sc['status_codes'][k])
 
         if islast_step:  # now we really write the files:
@@ -166,14 +170,12 @@ class ShapeOutput(Outputter, Serializable):
                 else:
                     self.w.save(fn)
 
-                print 'ShapefileOutputter.zip_output: ', self.zip_output
+                prj_file = open("%s.prj" % fn, "w")
+                prj_file.write(self.epsg)
+                prj_file.close()
+
                 if self.zip_output is True:
                     zfilename = fn + '.zip'
-
-                    prj_file = open("%s.prj" % fn, "w")
-                    prj_file.write(self.epsg)
-                    prj_file.close()
-
                     zipf = zipfile.ZipFile(zfilename, 'w')
 
                     for suf in ['shp', 'prj', 'dbf', 'shx']:
