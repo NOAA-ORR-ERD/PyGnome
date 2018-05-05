@@ -109,7 +109,7 @@ class Weatherer(Process, Serializable):
     def get_wind_speed(self, points, model_time,
                        coord_sys='r', fill_value=1.0):
         '''
-        Wrapper for the weatherers so they can extrapolate
+            Wrapper for the weatherers so they can get wind speeds
         '''
         retval = self.wind.at(points, model_time, coord_sys=coord_sys)
 
@@ -119,9 +119,13 @@ class Weatherer(Process, Serializable):
             return retval
 
     def check_time(self, wind, model_time):
-        """
-        Should have an option to extrapolate but for now we do by default
-        """
+        '''
+            Should have an option to extrapolate but for now we do by default
+
+            TODO, FIXME: This function does not appear to be used by anything.
+                         Removing it does not break any of the unit tests.
+                         If it is not used, it should probably go away.
+        '''
         new_model_time = model_time
 
         if wind is not None:

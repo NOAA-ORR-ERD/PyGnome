@@ -87,9 +87,13 @@ class Environment(object):
             return retval
 
     def check_time(self, wind, model_time):
-        """
-        Should have an option to extrapolate but for now we do by default
-        """
+        '''
+            Should have an option to extrapolate but for now we do by default
+
+            TODO, FIXME: This function does not appear to be used by anything.
+                         Removing it does not break any of the unit tests.
+                         If it is not used, it should probably go away.
+        '''
         new_model_time = model_time
 
         if wind is not None:

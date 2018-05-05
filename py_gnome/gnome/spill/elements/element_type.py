@@ -207,7 +207,7 @@ class ElementType(Serializable):
         '''
         try:
             self._substance = self.get_oil_props(val)
-        except:
+        except Exception:
             if isinstance(val, basestring):
                 raise
 
