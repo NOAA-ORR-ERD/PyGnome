@@ -20,6 +20,13 @@ wind_file = testdata['GridWindMover']['wind_curv']
 topology_file = testdata['GridWindMover']['top_curv']
 
 
+num_le = 4
+start_pos = (-123.57152, 37.369436, 0.0)
+rel_time = datetime.datetime(2006, 3, 31, 21, 0)
+time_step = 30 * 60  # seconds
+model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
+
+
 def test_exceptions():
     """
     Test correct exceptions are raised
@@ -47,30 +54,29 @@ def test_string_repr_no_errors():
     assert True
 
 
-num_le = 4
-start_pos = (-123.57152, 37.369436, 0.0)
-rel_time = datetime.datetime(2006, 3, 31, 21, 0)
-time_step = 30 * 60  # seconds
-model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
-
-
 def test_loop():
     """
     test one time step with no uncertainty on the spill
-    checks there is non-zero motion.
-    also checks the motion is same for all LEs
+    - checks there is non-zero motion.
+    - also checks the motion is same for all LEs
+
+    - Uncertainty needs to be off.
+    - Windage needs to be set to not vary or each particle will have a
+      different position,  This is done by setting the windage range to have
+      all the same values (min == max).
     """
+    pSpill = sample_sc_release(num_elements=num_le,
+                               start_pos=start_pos,
+                               release_time=rel_time,
+                               windage_range=(0.01, 0.01))
 
-    pSpill = sample_sc_release(num_le, start_pos, rel_time)
     wind = GridWindMover(wind_file, topology_file)
-    delta = _certain_loop(pSpill, wind)
 
+    delta = _certain_loop(pSpill, wind)
     _assert_move(delta)
 
-    # set windage to be constant or each particle has a different position,
-    # doesn't work with uncertainty on
-    # assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
-    # assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
+    assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
+    assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
 
     # returned delta is used in test_certain_uncertain test
     return delta
