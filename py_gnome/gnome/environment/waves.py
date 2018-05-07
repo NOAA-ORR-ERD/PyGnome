@@ -12,7 +12,6 @@ from __future__ import division
 
 import copy
 import numpy as np
-import gridded
 
 from gnome import constants
 from gnome.utilities import serializable
@@ -23,7 +22,7 @@ from gnome.persist import base_schema
 from gnome.exceptions import ReferencedObjectNotSet
 
 from .environment import Environment
-from .environment import WaterSchema
+from .water import WaterSchema
 
 from wind import WindSchema
 
@@ -101,7 +100,7 @@ class Waves(Environment, serializable.Serializable):
 
         if wave_height is None:
             # only need velocity
-            U = self.get_wind_speed(points, time, coord_sys='r')
+            U = self.get_wind_speed(points, time)
             H = self.compute_H(U)
         else:
             # user specified a wave height
@@ -114,6 +113,18 @@ class Waves(Environment, serializable.Serializable):
         De = self.dissipative_wave_energy(H)
 
         return H, T, Wf, De
+
+    def get_wind_speed(self, points, model_time,
+                       coord_sys='r', fill_value=1.0):
+        '''
+        Wrapper for the weatherers so they can extrapolate
+        '''
+        retval = self.wind.at(points, model_time, coord_sys=coord_sys)
+
+        if isinstance(retval, np.ma.MaskedArray):
+            return retval.filled(fill_value)
+        else:
+            return retval
 
     def get_emulsification_wind(self, points, time):
         """
@@ -236,7 +247,7 @@ class Waves(Environment, serializable.Serializable):
 
         return schema.deserialize(json_)
 
-    def prepare_for_model_run(self, model_time):
+    def prepare_for_model_run(self, _model_time):
         if self.wind is None:
             raise ReferencedObjectNotSet("wind object not defined for {}"
                                          .format(self.__class__.__name__))
