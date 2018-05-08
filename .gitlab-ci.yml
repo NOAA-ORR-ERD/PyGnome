@@ -22,6 +22,8 @@ test:
 
 develop:
   script:
+    - docker pull gitlab.orr.noaa.gov:5002/oillibrary
+    - docker tag gitlab.orr.noaa.gov:5002/oillibrary oillibrary
     - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome:develop
     - docker push gitlab.orr.noaa.gov:5002/pygnome:develop
   only:
@@ -31,9 +33,22 @@ develop:
 
 master:
   script:
+    - docker pull gitlab.orr.noaa.gov:5002/oillibrary
+    - docker tag gitlab.orr.noaa.gov:5002/oillibrary oillibrary
     - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome
     - docker push gitlab.orr.noaa.gov:5002/pygnome
   only:
      - master
+  tags:
+     - docker
+  
+production:
+  script:
+      - docker pull gitlab.orr.noaa.gov:5002/oillibrary:production
+      - docker tag gitlab.orr.noaa.gov:5002/oillibrary:production oillibrary
+      - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome:production
+      - docker push gitlab.orr.noaa.gov:5002/pygnome:production
+  only:
+     - production
   tags:
      - docker

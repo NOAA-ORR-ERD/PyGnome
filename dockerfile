@@ -1,4 +1,4 @@
-FROM gitlab.orr.noaa.gov:5002/oil_library:latest
+FROM oillibrary
 
 RUN yum install -y wget gcc make bzip2 gcc-c++ ca-certificates \
     libglib2.0-0 libxext6 libsm6 libxrender1 \
