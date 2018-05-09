@@ -1,15 +1,15 @@
 '''
 Test all operations for gridcurrent mover work
 '''
-
-import datetime
 import os
+import datetime
 
 import numpy as np
+
 import pytest
 
-from gnome.movers import GridWindMover
 from gnome.utilities import time_utils
+from gnome.movers import GridWindMover
 
 from ..conftest import sample_sc_release, testdata
 # default settings are the same for both objects
@@ -32,14 +32,28 @@ def test_exceptions():
     Test correct exceptions are raised
     """
     with pytest.raises(TypeError):
+        # we need to supply at least a filename
         GridWindMover()
 
     with pytest.raises(ValueError):
-        'file not found'
-        GridWindMover(os.path.join('./', 'WindSpeedDirSubset.CUR'))
+        # wind file not found
+        GridWindMover('bogus')
+
+    with pytest.raises(ValueError):
+        # topology file not found
+        GridWindMover(wind_file, topology_file='bogus')
 
     with pytest.raises(TypeError):
+        # topology file needs to be a string filename
         GridWindMover(wind_file, topology_file=10)
+
+
+def test_init_defaults():
+    gw = GridWindMover(wind_file)
+
+    assert gw.name == os.path.split(wind_file)[1]
+    assert gw.filename == wind_file
+    assert gw.topology_file is None
 
 
 def test_string_repr_no_errors():
@@ -51,6 +65,9 @@ def test_string_repr_no_errors():
     print
     print 'str(WindMover): '
     print str(gw)
+
+    # TODO, FIXME: We need a way of validating this if we really care what
+    #              the str() and repr() methods are doing.
     assert True
 
 

@@ -47,6 +47,7 @@ def test_exceptions():
     with raises(ReferencedObjectNotSet) as excinfo:
         wm = WindMover()
         wm.prepare_for_model_run()
+
     print excinfo.value.message
 
     with raises(TypeError):

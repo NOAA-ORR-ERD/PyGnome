@@ -5,6 +5,8 @@ import pytest
 from pytest import raises
 
 from unit_conversion import InvalidUnitError
+
+from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Environment, Water
 
 
@@ -79,6 +81,10 @@ def test_Water_init(attr, sub_attr, value):
 
 def check_water_defaults(water_obj):
     assert water_obj.name == 'Water'
+
+    assert water_obj.data_start == InfDateTime("-inf")
+    assert water_obj.data_stop == InfDateTime("inf")
+
     assert water_obj.temperature == 300.0
     assert water_obj.salinity == 35.0
     assert water_obj.sediment == .005
@@ -98,16 +104,10 @@ def test_not_implemented_in_water():
     sample_time = 60 * 60 * 24 * 365 * 30  # seconds
     w = Water()
 
-    with raises(NotImplementedError):
-        _dstart = w.data_start
-
-    with raises(NotImplementedError):
+    with raises(AttributeError):
         w.data_start = sample_time
 
-    with raises(NotImplementedError):
-        _dstop = w.data_stop
-
-    with raises(NotImplementedError):
+    with raises(AttributeError):
         w.data_stop = sample_time
 
 

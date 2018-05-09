@@ -389,15 +389,18 @@ class GridWindMover(WindMoversBase, Serializable):
                 raise ValueError('Path for Topology file does not exist: {0}'
                                  .format(topology_file))
 
+        self.mover = CyGridWindMover(wind_scale=kwargs.pop('wind_scale', 1))
+        self.mover.text_read(filename, topology_file)
+
+        # Ideally, we would be able to run the base class initialization first
+        # because we designed the Movers well.  As it is, we inherit from the
+        # CyMover, and the CyMover needs to have a self.mover attribute.
+        super(GridWindMover, self).__init__(**kwargs)
+
         # is wind_file and topology_file is stored with cy_gridwind_mover?
         self.name = os.path.split(filename)[1]
         self.filename = filename
         self.topology_file = topology_file
-
-        self.mover = CyGridWindMover(wind_scale=kwargs.pop('wind_scale', 1))
-        self.mover.text_read(filename, topology_file)
-
-        super(GridWindMover, self).__init__(**kwargs)
 
         self.real_data_start = sec_to_datetime(self.mover.get_start_time())
         self.real_data_stop = sec_to_datetime(self.mover.get_end_time())
