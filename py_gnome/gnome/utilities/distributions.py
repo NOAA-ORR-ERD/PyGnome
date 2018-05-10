@@ -8,12 +8,12 @@ import numpy
 np = numpy
 from colander import Float, SchemaNode, drop
 
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 from gnome.utilities.compute_fraction import fraction_below_d
 from gnome.utilities.serializable import Serializable, Field
 
 
-class UniformDistributionSchema(ObjType):
+class UniformDistributionSchema(ObjTypeSchema):
     low = SchemaNode(Float(), name='low', default=0.0,
         description='lower bound for uniform distribution')
     high = SchemaNode(Float(), name='high', default=0.1,
@@ -21,7 +21,7 @@ class UniformDistributionSchema(ObjType):
     name = 'uniform'
 
 
-class NormalDistributionSchema(ObjType):
+class NormalDistributionSchema(ObjTypeSchema):
     mean = SchemaNode(Float(), name='mean',
                       description='mean for normal distribution')
     sigma = SchemaNode(Float(), name='sigma',
@@ -40,7 +40,7 @@ class LogNormalDistributionSchema(NormalDistributionSchema):
     name = 'lognormal'
 
 
-class WeibullDistributionSchema(ObjType):
+class WeibullDistributionSchema(ObjTypeSchema):
     alpha = SchemaNode(Float(), name='alpha',
                        description='shape parameter for weibull distribution')
     lambda_ = SchemaNode(Float(), name='lambda_', default=1.0,

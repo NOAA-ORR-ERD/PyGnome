@@ -55,12 +55,26 @@ class AddLogger(object):
         return "{0} - ".format(os.getpid())
 
 
+class GnomeObjMeta(type):
+    def __new__(cls, name, parents, dct):
+        if '_instance_count' not in dct:
+            dct['_instance_count'] = 0
+        return super(GnomeObjMeta, cls).__new__(cls, name, parents, dct)
+
+
 class GnomeId(AddLogger):
     '''
     A class for assigning a unique ID for an object
     '''
+    __metaclass__ = GnomeObjMeta
     _id = None
     make_default_refs = True
+
+    def __init__(self, name=None, *args, **kwargs):
+        self.__class__._instance_count += 1
+        if name:
+            self.name = name
+        super(GnomeId, self).__init__(*args, **kwargs)
 
     @property
     def id(self):
@@ -81,6 +95,15 @@ class GnomeId(AddLogger):
         Used to make a new object which is a copy of the original.
         """
         self._id = str(uuid1())
+
+    @property
+    def obj_type(self):
+        try:
+            obj_type = ('{0.__module__}.{0.__class__.__name__}'
+                        .format(self))
+        except AttributeError:
+            obj_type = '{0.__class__.__name__}'.format(self)
+        return obj_type
 
     def __deepcopy__(self, memo):
         """
@@ -133,7 +156,7 @@ class GnomeId(AddLogger):
         try:
             return self._name
         except AttributeError:
-            self._name = self.__class__.__name__
+            self._name = self.__class__.__name__.split('.')[-1] + '_' + str(self.__class__._instance_count)
             return self._name
 
     @name.setter
@@ -144,7 +167,7 @@ class GnomeId(AddLogger):
         '''
         If provided a dictionary of references this function will validate it
         against the _req_refs specified by the class, and if a match is found
-        and the instance's reference is None, it will set it to the instance 
+        and the instance's reference is None, it will set it to the instance
         from ref_dict
         '''
         if not hasattr(self, '_req_refs'):

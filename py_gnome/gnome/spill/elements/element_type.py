@@ -32,7 +32,7 @@ class ElementType(Serializable):
     _state += [Field('substance', save=True, update=True, test_for_eq=False),
                Field('initializers', save=True, update=True),
                Field('standard_density', update=True, read=True)]
-    _schema = base_schema.ObjType
+    _schema = base_schema.ObjTypeSchema
 
     def __init__(self, initializers=[], substance=None):
         '''

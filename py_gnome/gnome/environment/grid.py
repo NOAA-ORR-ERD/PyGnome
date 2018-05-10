@@ -14,7 +14,7 @@ from gnome.cy_gnome.cy_grid_rect import CyTimeGridWindRect
 from .environment import Environment
 
 
-class GridSchema(base_schema.ObjType):
+class GridSchema(base_schema.ObjTypeSchema):
     name = 'grid'
     grid_type = SchemaNode(Float(), missing=drop)
 

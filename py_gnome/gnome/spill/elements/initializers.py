@@ -63,7 +63,7 @@ class WindageSchema(TupleSchema):
     name = 'windage_range'
 
 
-class InitWindagesSchema(base_schema.ObjType):
+class InitWindagesSchema(base_schema.ObjTypeSchema):
     """
     windages initializer values
     """
@@ -165,7 +165,7 @@ class InitMassFromPlume(InitBaseClass, Serializable):
     Initialize the 'mass' array based on mass flux from the plume spilled
     """
     _state = copy.deepcopy(InitBaseClass._state)
-    _schema = base_schema.ObjType
+    _schema = base_schema.ObjTypeSchema
 
     def __init__(self):
         """
@@ -184,7 +184,7 @@ class InitMassFromPlume(InitBaseClass, Serializable):
             spill.plume_gen.mass_of_an_le * 1000
 
 
-class DistributionBaseSchema(base_schema.ObjType):
+class DistributionBaseSchema(base_schema.ObjTypeSchema):
     'Add schema to base class since all derived classes use same schema'
     description = 'dynamically adds distribution schema to self'
 

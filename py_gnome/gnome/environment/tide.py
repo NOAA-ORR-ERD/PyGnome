@@ -27,7 +27,7 @@ from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_shio_time import CyShioTime
 
 
-class TideSchema(base_schema.ObjType):
+class TideSchema(base_schema.ObjTypeSchema):
     'Tide object schema'
     filename = SchemaNode(String(), missing=drop)
 

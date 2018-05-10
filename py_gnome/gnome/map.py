@@ -55,7 +55,7 @@ import gnome.map
 from gnome.persist import base_schema
 
 
-class GnomeMapSchema(base_schema.ObjType):
+class GnomeMapSchema(base_schema.ObjTypeSchema):
     map_bounds = base_schema.LongLatBounds(missing=drop)
     spillable_area = base_schema.PolygonSet(missing=drop)
     # land_polys = base_schema.PolygonSet(missing=drop)

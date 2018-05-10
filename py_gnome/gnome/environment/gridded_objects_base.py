@@ -13,7 +13,7 @@ from gnome.utilities import serializable
 from gnome.persist import base_schema
 
 
-class TimeSchema(base_schema.ObjType):
+class TimeSchema(base_schema.ObjTypeSchema):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())], missing=drop)
     varname = SchemaNode(String(), missing=drop)
@@ -21,17 +21,17 @@ class TimeSchema(base_schema.ObjType):
                       children=[SchemaNode(DateTime(None))], missing=drop)
 
 
-class GridSchema(base_schema.ObjType):
+class GridSchema(base_schema.ObjTypeSchema):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())])
 
 
-class DepthSchema(base_schema.ObjType):
+class DepthSchema(base_schema.ObjTypeSchema):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())])
 
 
-class VariableSchemaBase(base_schema.ObjType):
+class VariableSchemaBase(base_schema.ObjTypeSchema):
     name = SchemaNode(String(), missing=drop)
     units = SchemaNode(String(), missing=drop)
     time = TimeSchema(missing=drop)
@@ -67,6 +67,8 @@ class Time(gridded.time.Time, serializable.Serializable):
 
     @classmethod
     def from_file(cls, filename=None, **kwargs):
+        import pdb
+        pdb.set_trace()
         if isinstance(filename, list):
             filename = filename[0]
 

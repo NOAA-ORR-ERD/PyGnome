@@ -58,7 +58,7 @@ class TimeSeriesSchema(DatetimeValue2dArraySchema):
         validators.ascending_datetime(node, cstruct)
 
 
-class RunningAverageSchema(base_schema.ObjType):
+class RunningAverageSchema(base_schema.ObjTypeSchema):
     'Time series object schema'
     timeseries = TimeSeriesSchema(missing=drop)
     name = 'running average'

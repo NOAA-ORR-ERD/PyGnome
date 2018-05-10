@@ -449,7 +449,7 @@ class State(object):
         return names
 
 
-class Serializable(GnomeId, Savable, SchemaType):
+class Serializable(GnomeId, Savable):
 
     """
     contains the to_dict and update_from_dict method to output properties of
@@ -514,27 +514,9 @@ class Serializable(GnomeId, Savable, SchemaType):
         This is base implementation and can be over-ridden by classes using
         this mixin
         """
-        rqd = {}
-        for parent in cls.mro():
-            if inspect.ismethod(parent.__init__):
-                kwargs = inspect.getargspec(parent.__init__)[0][1:]
-
-                # pop kwargs for object creation into rqd dict
-                rqd.update({key: dict_.pop(key) for key in kwargs
-                            if key in dict_})
-
-        # create object with required input arguments
-        new_obj = cls(**rqd)
-
-        if dict_.pop('json_') == 'save':
-            cls._restore_attr_from_save(new_obj, dict_)
-        else:
-            # for webapi, ignore the readonly attributes and set only
-            # attributes that are updatable. At present, the 'webapi' uses
-            # new_from_dict to create a new object only. It does not restore
-            # the state of a previously persisted object
-            if dict_:
-                new_obj.update_from_dict(dict_)
+        read_only_attrs = cls._schema().get_names('read')
+        map(lambda n: dict_.pop(n), read_only_attrs)
+        new_obj = cls(**dict_)
 
         msg = "constructed object {0}".format(new_obj.__class__.__name__)
         new_obj.logger.debug(new_obj._pid + msg)
@@ -561,7 +543,7 @@ class Serializable(GnomeId, Savable, SchemaType):
 
         return list_
 
-    def to_dict(self):
+    def to_dict(self, json_='webapi'):
         """
         returns a dictionary containing the serialized representation of this
         object.
@@ -577,41 +559,13 @@ class Serializable(GnomeId, Savable, SchemaType):
         serialization is for
         """
         data = {}
-        list_ = self._state.get_names('all')
 
+        list_ = self._schema().get_nodes_by_attr('all')
+
+        value = None
         for key in list_:
-            value = self.attr_to_dict(key)
-
-            if hasattr(value, 'to_dict'):
-                value = value.to_dict()  # recursive call
-            elif (key in [f.name for f in
-                          self._state.get_field_by_attribute('iscollection')]):
-                # if self.key is a list, this needs special attention. It does
-                # not have a to_dict like OrderedCollection does!
-                vals = []
-
-                for obj in value:
-                    if isinstance(obj, dict) and 'obj_type' in obj:
-                        obj_type = obj['obj_type']
-                    else:
-                        try:
-                            obj_type = ('{0.__module__}.{0.__class__.__name__}'
-                                        .format(obj))
-                        except AttributeError:
-                            obj_type = '{0.__class__.__name__}'.format(obj)
-
-                    _id = None
-                    if hasattr(obj, 'id'):
-                        _id = str(obj.id)
-                    elif 'id' in obj:
-                        _id = obj['id']
-                    else:
-                        _id = str(id(obj))
-
-                    val = {'obj_type': obj_type, 'id': _id}
-                    vals.append(val)
-
-                value = vals
+            if getattr(self, key) is not None:
+                value = getattr(self, key)
 
             if value is not None:
                 # some issue in colander monkey patch and the Wind schema
@@ -884,36 +838,18 @@ class Serializable(GnomeId, Savable, SchemaType):
         toserial['json_'] = json_
         return toserial
 
+    def items(self):
+        return self.to_serialize().items()
+
     def serialize(self, json_='webapi'):
         """
-        Convert the dict returned by object's to_dict method to valid json
-        format via colander schema
-
-        It uses the modules_dict defined in gnome.persist to find the correct
-        schema module.
-
         :param json_: tells object whether serialization is for web content
             or for generating a save file.
         :returns: json format of serialized data
 
         """
-        toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
-        c_fields = self._state.get_field_by_attribute('iscollection')
-
-        if json_ == 'webapi':
-            serial = schema.serialize(toserial)
-            # check for collections
-            for field in c_fields:
-                serial[field.name] = \
-                    self.serialize_oc(getattr(self, field.name), json_)
-        elif json_ == 'save':
-            for field in c_fields:
-                # add a node for each collection, then serialize
-                schema.add(CollectionItemsList(name=field.name))
-
-            serial = schema.serialize(toserial)
-
+        serial = schema.serialize(self)
         return serial
 
     @classmethod
@@ -950,29 +886,7 @@ class Serializable(GnomeId, Savable, SchemaType):
             We also need to accept sparse json objects, in which case we will
             not treat them, but just send them back.
         """
-        if not cls.is_sparse(json_):
-            # if there are collections in object, dynamically update schema
-            schema = cls._schema()
-            c_fields = cls._state.get_field_by_attribute('iscollection')
-
-            if json_['json_'] == 'webapi':
-                _to_dict = schema.deserialize(json_)
-
-                for field in c_fields:
-                    if field.name in json_:
-                        _to_dict[field.name] = \
-                            cls.deserialize_oc(json_[field.name])
-            elif json_['json_'] == 'save':
-                for field in c_fields:
-                    if field.name in json_:
-                        # add a node for each collection, then deserialize
-                        schema.add(CollectionItemsList(name=field.name))
-
-                _to_dict = schema.deserialize(json_)
-
-            return _to_dict
-        else:
-            return json_
+        return cls._schema().deserialize(json_)
 
     @classmethod
     def deserialize_oc(cls, json_):

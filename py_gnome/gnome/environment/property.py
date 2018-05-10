@@ -14,7 +14,7 @@ from gnome.persist import base_schema
 from gnome.environment.gridded_objects_base import Time, TimeSchema
 
 
-class PropertySchema(base_schema.ObjType):
+class PropertySchema(base_schema.ObjTypeSchema):
     name = SchemaNode(String(), missing=drop)
     units = SchemaNode(String(), missing=drop)
     time = TimeSchema(missing=drop)
@@ -151,7 +151,7 @@ class EnvProp(serializable.Serializable):
         return cpy
 
 
-class VectorPropSchema(base_schema.ObjType):
+class VectorPropSchema(base_schema.ObjTypeSchema):
     units = SchemaNode(String(), missing=drop)
     time = TimeSchema(missing=drop)
 

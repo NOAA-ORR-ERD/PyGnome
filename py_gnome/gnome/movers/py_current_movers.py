@@ -23,7 +23,7 @@ from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
 
-class PyCurrentMoverSchema(base_schema.ObjType):
+class PyCurrentMoverSchema(base_schema.ObjTypeSchema):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())],
                           missing=drop)

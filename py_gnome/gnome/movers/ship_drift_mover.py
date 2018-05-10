@@ -19,10 +19,10 @@ from gnome.utilities import serializable, rand
 from gnome.environment import Grid
 from gnome.movers import Mover, ProcessSchema
 
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 
 
-class ShipDriftMoverSchema(ObjType, ProcessSchema):
+class ShipDriftMoverSchema(ObjTypeSchema, ProcessSchema):
     wind_file = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
     wind_scale = SchemaNode(Float(), missing=drop)

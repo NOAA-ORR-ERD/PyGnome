@@ -7,7 +7,7 @@ from colander import SchemaNode, drop
 
 import gnome
 from gnome.persist.extend_colander import NumpyArray
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 
 from gnome.array_types import mass_components
 from gnome.utilities.serializable import Serializable, Field
@@ -16,9 +16,9 @@ from gnome.exceptions import ReferencedObjectNotSet
 from gnome.movers.movers import Process, ProcessSchema
 
 
-class WeathererSchema(ObjType, ProcessSchema):
+class WeathererSchema(ObjTypeSchema, ProcessSchema):
     '''
-    used to serialize object so need ObjType schema and it only contains
+    used to serialize object so need ObjTypeSchema schema and it only contains
     attributes defined in base class (ProcessSchema)
     '''
     name = 'Weatherer'

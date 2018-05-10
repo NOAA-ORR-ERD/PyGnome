@@ -105,44 +105,45 @@ base_dir = os.path.dirname(__file__)
 
 
 # For WindMover test_save_load in test_wind_mover
-g_objects = (environment.Tide(testdata['CatsMover']['tide']),
-             environment.Wind(filename=testdata['ComponentMover']['wind']),
-             environment.Wind(timeseries=(sec_to_date(24 * 60 * 60),
-                                          (0, 0)), units='mps'),
-             environment.Water(temperature=273),
-             movers.random_movers.RandomMover(),
-             movers.CatsMover(testdata['CatsMover']['curr']),
-             movers.CatsMover(testdata['CatsMover']['curr'],
-                              tide=environment.Tide(testdata['CatsMover']['tide'])),
-             movers.ComponentMover(testdata['ComponentMover']['curr']),
-             movers.ComponentMover(testdata['ComponentMover']['curr'],
-                                   wind=environment.Wind(filename=testdata['ComponentMover']['wind'])),
-             movers.RandomVerticalMover(),
-             movers.SimpleMover(velocity=(10.0, 10.0, 0.0)),
-             map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
-             outputters.NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),
-             outputters.Renderer(testdata['Renderer']['bna_sample'],
-                                 os.path.join(base_dir, 'output_dir')),
-             outputters.WeatheringOutput(),
-             spill.PointLineRelease(release_time=datetime.now(),
-                                    num_elements=10,
-                                    start_position=(0, 0, 0)),
-             spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
-             spill.elements.ElementType(substance=test_oil),
-             weatherers.Skimmer(100, 'kg', 0.3, datetime(2014, 1, 1, 0, 0),
-                                datetime(2014, 1, 1, 4, 0)),
-             weatherers.Burn(100, 1, datetime(2014, 1, 1, 0, 0),
-                             efficiency=.9),
-             weatherers.ChemicalDispersion(.2, datetime(2014, 1, 1, 0, 0),
-                                           datetime(2014, 1, 1, 4, 0),
-                                           efficiency=.3),
-             # todo: ask Caitlin how to fix
-             # movers.RiseVelocityMover(),
-             # todo: This is incomplete - no _schema for
-             #       SpatialRelease, GeoJson
-             # spill.SpatialRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
-             outputters.TrajectoryGeoJsonOutput(),
-             )
+g_objects = (
+    environment.Tide(testdata['CatsMover']['tide']),
+    environment.Wind(filename=testdata['ComponentMover']['wind']),
+    environment.Wind(timeseries=(sec_to_date(24 * 60 * 60),
+                                 (0, 0)), units='mps'),
+    environment.Water(temperature=273),
+    movers.random_movers.RandomMover(),
+    movers.CatsMover(testdata['CatsMover']['curr']),
+    movers.CatsMover(testdata['CatsMover']['curr'],
+                     tide=environment.Tide(testdata['CatsMover']['tide'])),
+    movers.ComponentMover(testdata['ComponentMover']['curr']),
+    movers.ComponentMover(testdata['ComponentMover']['curr'],
+                          wind=environment.Wind(filename=testdata['ComponentMover']['wind'])),
+    movers.RandomVerticalMover(),
+    movers.SimpleMover(velocity=(10.0, 10.0, 0.0)),
+    map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
+    outputters.NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),
+    outputters.Renderer(testdata['Renderer']['bna_sample'],
+                        os.path.join(base_dir, 'output_dir')),
+    outputters.WeatheringOutput(),
+    spill.PointLineRelease(release_time=datetime.now(),
+                           num_elements=10,
+                           start_position=(0, 0, 0)),
+    spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
+    spill.elements.ElementType(substance=test_oil),
+    weatherers.Skimmer(100, 'kg', 0.3, datetime(2014, 1, 1, 0, 0),
+                       datetime(2014, 1, 1, 4, 0)),
+    weatherers.Burn(100, 1, datetime(2014, 1, 1, 0, 0),
+                    efficiency=.9),
+    weatherers.ChemicalDispersion(.2, datetime(2014, 1, 1, 0, 0),
+                                  datetime(2014, 1, 1, 4, 0),
+                                  efficiency=.3),
+    # todo: ask Caitlin how to fix
+    # movers.RiseVelocityMover(),
+    # todo: This is incomplete - no _schema for
+    #       SpatialRelease, GeoJson
+    # spill.SpatialRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
+    outputters.TrajectoryGeoJsonOutput(),
+)
 
 
 @pytest.mark.parametrize("obj", g_objects)

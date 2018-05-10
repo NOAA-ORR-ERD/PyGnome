@@ -19,7 +19,7 @@ from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
 
-class PyWindMoverSchema(base_schema.ObjType):
+class PyWindMoverSchema(base_schema.ObjTypeSchema):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())],
                           missing=drop)

@@ -35,7 +35,7 @@ from colander import (SchemaNode, SequenceSchema,
                       Float, String,
                       drop)
 
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 
 from gnome.utilities.serializable import Serializable
 
@@ -56,7 +56,7 @@ class Formats(SequenceSchema):
     format = SchemaNode(String(), missing='')
 
 
-class GraphSchema(ObjType):
+class GraphSchema(ObjTypeSchema):
     title = SchemaNode(String(), missing=drop)
     points = Points()
     labels = Labels()

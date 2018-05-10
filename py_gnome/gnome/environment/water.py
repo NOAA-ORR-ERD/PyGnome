@@ -61,7 +61,7 @@ class UnitsSchema(MappingSchema):
                          validator=OneOf(_valid_density_units))
 
 
-class WaterSchema(base_schema.ObjType):
+class WaterSchema(base_schema.ObjTypeSchema):
     'Colander Schema for Conditions object'
     units = UnitsSchema()
     temperature = SchemaNode(Float())

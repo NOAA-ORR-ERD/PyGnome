@@ -23,7 +23,7 @@ from gnome.utilities import serializable
 
 from gnome.movers import Mover, ProcessSchema
 
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.extend_colander import NumpyFixedLenSchema
 
 
@@ -37,7 +37,7 @@ class SimpleMoverVelocitySchema(NumpyFixedLenSchema):
     vel_z = SchemaNode(Float())
 
 
-class SimpleMoverSchema(ObjType, ProcessSchema):
+class SimpleMoverSchema(ObjTypeSchema, ProcessSchema):
     uncertainty_scale = SchemaNode(Float())
     velocity = SimpleMoverVelocitySchema()
 

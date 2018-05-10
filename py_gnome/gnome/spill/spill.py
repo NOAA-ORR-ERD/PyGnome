@@ -18,7 +18,7 @@ from colander import (SchemaNode, Bool, String, Float, drop)
 
 from gnome.utilities.serializable import Serializable, Field
 from gnome.persist import class_from_objtype
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 
 from . import elements
 from .release import (PointLineRelease,
@@ -163,7 +163,7 @@ class BaseSpill(Serializable, object):
         return False
 
 
-class SpillSchema(ObjType):
+class SpillSchema(ObjTypeSchema):
     'Spill class schema'
     on = SchemaNode(Bool(), default=True, missing=True,
                     description='on/off status of spill')

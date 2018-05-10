@@ -1,13 +1,13 @@
 import copy
 
 from gnome.utilities.serializable import Serializable, Field
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 
 
 class NonWeatheringSubstance(Serializable):
     _state = copy.deepcopy(Serializable._state)
     _state += [Field('standard_density', update=True, read=True)]
-    _schema = ObjType
+    _schema = ObjTypeSchema
 
     def __init__(self,
                  standard_density=1000.0,

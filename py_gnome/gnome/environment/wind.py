@@ -81,7 +81,7 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
         validators.ascending_datetime(node, cstruct)
 
 
-class WindSchema(base_schema.ObjType):
+class WindSchema(base_schema.ObjTypeSchema):
     '''
     validate data after deserialize, before it is given back to pyGnome's
     from_dict to set _state of object

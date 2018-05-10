@@ -7,10 +7,10 @@ from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome.utilities import serializable
 
 from gnome.movers import CyMover, ProcessSchema
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 
 
-class RiseVelocityMoverSchema(ObjType, ProcessSchema):
+class RiseVelocityMoverSchema(ObjTypeSchema, ProcessSchema):
     water_density = SchemaNode(Float())
     water_viscosity = SchemaNode(Float())
 

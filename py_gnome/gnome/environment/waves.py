@@ -29,7 +29,7 @@ from wind import WindSchema
 g = constants.gravity  # the gravitational constant.
 
 
-class WavesSchema(base_schema.ObjType):
+class WavesSchema(base_schema.ObjTypeSchema):
     'Colander Schema for Conditions object'
     name = 'Waves'
     description = 'waves schema base class'

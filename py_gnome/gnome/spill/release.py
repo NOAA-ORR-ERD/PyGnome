@@ -12,7 +12,7 @@ from colander import (iso8601,
                       SchemaNode, SequenceSchema,
                       drop, Bool, Int)
 
-from gnome.persist.base_schema import ObjType, WorldPoint, WorldPointNumpy
+from gnome.persist.base_schema import ObjTypeSchema, WorldPoint, WorldPointNumpy
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.persist.validators import convertible_to_seconds
 
@@ -23,7 +23,7 @@ from gnome.utilities.serializable import Serializable
 from gnome.outputters import NetCDFOutput
 
 
-class BaseReleaseSchema(ObjType):
+class BaseReleaseSchema(ObjTypeSchema):
     'Base Class for Release Schemas'
     release_time = SchemaNode(LocalDateTime(),
                               validator=convertible_to_seconds)

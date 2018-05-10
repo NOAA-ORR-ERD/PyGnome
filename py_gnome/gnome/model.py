@@ -33,12 +33,12 @@ from gnome.persist import (extend_colander,
                            validators,
                            References,
                            class_from_objtype)
-from gnome.persist.base_schema import (ObjType,
+from gnome.persist.base_schema import (ObjTypeSchema,
                                        CollectionItemsList)
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 
 
-class ModelSchema(ObjType):
+class ModelSchema(ObjTypeSchema):
     'Colander schema for Model object'
     time_step = SchemaNode(Float(), missing=drop)
     weathering_substeps = SchemaNode(Int(), missing=drop)

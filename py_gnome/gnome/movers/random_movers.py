@@ -17,10 +17,10 @@ from gnome.environment.gridded_objects_base import PyGrid
 from gnome.environment.gridded_objects_base import VariableSchema
 
 from gnome.movers import CyMover, ProcessSchema
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 
 
-class RandomMoverSchema(ObjType, ProcessSchema):
+class RandomMoverSchema(ObjTypeSchema, ProcessSchema):
     diffusion_coef = SchemaNode(Float(), missing=drop)
     uncertain_factor = SchemaNode(Float(), missing=drop)
 
@@ -159,7 +159,7 @@ class IceAwareRandomMover(RandomMover):
                     .get_move(sc, time_step, model_time_datetime))
 
 
-class RandomVerticalMoverSchema(ObjType, ProcessSchema):
+class RandomVerticalMoverSchema(ObjTypeSchema, ProcessSchema):
     vertical_diffusion_coef_above_ml = SchemaNode(Float(), missing=drop)
     vertical_diffusion_coef_below_ml = SchemaNode(Float(), missing=drop)
 

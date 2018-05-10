@@ -25,10 +25,10 @@ from gnome.utilities.time_utils import sec_to_datetime
 from gnome.environment import Tide, TideSchema, Wind, WindSchema
 from gnome.movers import CyMover, ProcessSchema
 
-from gnome.persist.base_schema import ObjType, WorldPoint
+from gnome.persist.base_schema import ObjTypeSchema, WorldPoint
 
 
-class CurrentMoversBaseSchema(ObjType, ProcessSchema):
+class CurrentMoversBaseSchema(ObjTypeSchema, ProcessSchema):
     uncertain_duration = SchemaNode(Float(), missing=drop)
     uncertain_time_delay = SchemaNode(Float(), missing=drop)
 
@@ -913,7 +913,7 @@ class IceMover(CurrentMoversBase, Serializable):
         return (self.mover.get_offset_time()) / 3600.
 
 
-class CurrentCycleMoverSchema(ObjType, ProcessSchema):
+class CurrentCycleMoverSchema(ObjTypeSchema, ProcessSchema):
     filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
     current_scale = SchemaNode(Float(), default=1, missing=drop)
@@ -1046,7 +1046,7 @@ class CurrentCycleMover(GridCurrentMover, Serializable):
         return schema.deserialize(json_)
 
 
-class ComponentMoverSchema(ObjType, ProcessSchema):
+class ComponentMoverSchema(ObjTypeSchema, ProcessSchema):
     '''static schema for ComponentMover'''
     filename1 = SchemaNode(String(), missing=drop)
     filename2 = SchemaNode(String(), missing=drop)

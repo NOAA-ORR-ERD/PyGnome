@@ -248,7 +248,7 @@ class PlatformUnitsSchema(MappingSchema):
         super(PlatformUnitsSchema, self).__init__()
 
 
-class PlatformSchema(base_schema.ObjType):
+class PlatformSchema(base_schema.ObjTypeSchema):
     def __init__(self, *args, **kwargs):
         for k in Platform._attr.keys():
             self.add(SchemaNode(Float(), missing=drop, name=k))
@@ -1733,6 +1733,9 @@ class Burn(Response):
         self._burn_rate = None
 
     def prepare_for_model_run(self, sc):
+
+        import pdb
+        pdb.set_trace()
         self._setup_report(sc)
 
         self._swath_width = 0.3 * self.get('boom_length')
@@ -1787,6 +1790,8 @@ class Burn(Response):
            be closer to each other in position.
         '''
 
+        import pdb
+        pdb.set_trace()
         self._ts_collected = 0.
         self._ts_burned = 0.
         self._ts_num_burns = 0

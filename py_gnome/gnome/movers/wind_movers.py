@@ -28,10 +28,10 @@ from gnome.environment import Wind, WindSchema
 from gnome.environment.wind import constant_wind
 from gnome.movers import CyMover, ProcessSchema
 
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 
 
-class WindMoversBaseSchema(ObjType, ProcessSchema):
+class WindMoversBaseSchema(ObjTypeSchema, ProcessSchema):
     uncertain_duration = SchemaNode(Float(), missing=drop)
     uncertain_time_delay = SchemaNode(Float(), missing=drop)
     uncertain_speed_scale = SchemaNode(Float(), missing=drop)

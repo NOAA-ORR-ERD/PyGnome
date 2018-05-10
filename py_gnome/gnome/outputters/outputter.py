@@ -22,7 +22,7 @@ from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.surface_concentration import compute_surface_concentration
 
 
-class BaseSchema(base_schema.ObjType, MappingSchema):
+class BaseSchema(base_schema.ObjTypeSchema, MappingSchema):
     'Base schema for all outputters - they all contain the following'
     on = SchemaNode(Bool(), missing=drop)
     output_zero_step = SchemaNode(Bool())
@@ -31,7 +31,7 @@ class BaseSchema(base_schema.ObjType, MappingSchema):
     output_start_time = SchemaNode(extend_colander.LocalDateTime(),
                                    validator=validators.convertible_to_seconds,
                                    missing=None)
-    surface_conc = SchemaNode(String(allow_empty=True), missing=drop)
+    surface_conc = SchemaNode(String(), missing=drop)
 
 
 class Outputter(Serializable):
