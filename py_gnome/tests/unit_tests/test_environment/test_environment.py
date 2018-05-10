@@ -121,8 +121,8 @@ def test_unit_errors(attr, unit):
         - currently salinity only has psu in there since there is
           no conversion from psu to ppt, though ppt is a valid unit.
           This needs to be fixed
-        - similarly, sediment only has mg/l as units - decide if we want more units
-        here
+        - similarly, sediment only has mg/l as units.  We need to decide
+          if we want more units here
     '''
     w = Water()
 

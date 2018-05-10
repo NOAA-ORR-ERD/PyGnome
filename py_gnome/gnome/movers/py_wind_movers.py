@@ -1,4 +1,3 @@
-import movers
 import copy
 
 import numpy as np
@@ -7,19 +6,23 @@ from colander import (SchemaNode,
                       Bool, Float, String, Sequence, DateTime,
                       drop)
 
-from gnome.basic_types import (oil_status,
-                               spill_type)
+from gnome.basic_types import oil_status
 
-from gnome.utilities import serializable, rand
+from gnome.utilities.rand import random_with_persistance
+from gnome.utilities.serializable import Serializable, Field
+
 from gnome.utilities.projections import FlatEarthProjection
 
 from gnome.environment import GridWind
-from gnome.persist import base_schema
+
+from gnome.movers import PyMover
+
+from gnome.persist.base_schema import ObjType
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
 
-class PyWindMoverSchema(base_schema.ObjType):
+class PyWindMoverSchema(ObjType):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())],
                           missing=drop)
@@ -40,16 +43,14 @@ class PyWindMoverSchema(base_schema.ObjType):
                                 validator=convertible_to_seconds)
 
 
-class PyWindMover(movers.PyMover, serializable.Serializable):
+class PyWindMover(PyMover, Serializable):
 
-    _state = copy.deepcopy(movers.PyMover._state)
+    _state = copy.deepcopy(PyMover._state)
 
-    _state.add_field([serializable.Field('filename',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('wind', read=True,
-                                         save_reference=True),
-                      serializable.Field('extrapolate', read=True, save=True)])
+    _state.add_field([Field('filename', save=True, read=True, isdatafile=True,
+                            test_for_eq=False),
+                      Field('wind', read=True, save_reference=True),
+                      Field('extrapolate', read=True, save=True)])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
     _schema = PyWindMoverSchema
@@ -108,7 +109,9 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                                                  **kwargs)
 
         if 'name' not in kwargs:
-            kwargs['name'] = self.__class__.__name__ + str(self.__class__._def_count)
+            kwargs['name'] = '{}{}'.format(self.__class__.__name__,
+                                           self.__class__._def_count)
+
             self.__class__._def_count += 1
 
         self.extrapolate = extrapolate
@@ -190,11 +193,11 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
             return
 
         if self.active:
-            rand.random_with_persistance(sc['windage_range'][:, 0],
-                                         sc['windage_range'][:, 1],
-                                         sc['windages'],
-                                         sc['windage_persist'],
-                                         time_step)
+            random_with_persistance(sc['windage_range'][:, 0],
+                                    sc['windage_range'][:, 1],
+                                    sc['windages'],
+                                    sc['windage_persist'],
+                                    time_step)
 
     def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
@@ -223,7 +226,6 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                 method = self.num_method[num_method]
 
             status = sc['status_codes'] != oil_status.in_water
-            #positions = sc['positions']
             pos = positions[:]
 
             deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
@@ -234,6 +236,6 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
             deltas[status] = (0, 0, 0)
 
         else:
-           deltas = np.zeros_like(positions)
+            deltas = np.zeros_like(positions)
 
         return deltas

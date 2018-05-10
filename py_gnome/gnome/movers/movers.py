@@ -192,6 +192,8 @@ class PyMover(Mover):
     def __init__(self,
                  default_num_method='RK2',
                  **kwargs):
+        super(PyMover, self).__init__(**kwargs)
+
         self.num_methods = {'RK4': self.get_delta_RK4,
                             'Euler': self.get_delta_Euler,
                             'RK2': self.get_delta_RK2}
@@ -203,23 +205,22 @@ class PyMover(Mover):
                     for o in kwargs['env']:
                         if k in o._ref_as:
                             setattr(self, k, o)
-        Mover.__init__(self, **kwargs)
 
     @property
     def real_data_start(self):
-        return self.data.time.min_time.replace(tzinfo=None)
-
-    @real_data_start.setter
-    def real_data_start(self, value):
-        self._r_d_s = value
+        '''
+            Typically, a mover will have a linked Environment object, and
+            if this object manages a time series of data points, it will have
+            a data_start and data_stop attribute which indicate the times
+            where the data points begin and end.
+            Since the Environment object should manage its own attributes,
+            this attribute will be read-only
+        '''
+        raise NotImplementedError
 
     @property
     def real_data_stop(self):
-        return self.data.time.max_time.replace(tzinfo=None)
-
-    @real_data_stop.setter
-    def real_data_stop(self, value):
-        self._r_d_e = value
+        raise NotImplementedError
 
     @property
     def is_data_on_cells(self):
