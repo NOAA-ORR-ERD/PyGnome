@@ -1259,7 +1259,7 @@ class TestMergeModels:
 
         # create save model
         sample_save_file = os.path.join(saveloc_, 'SampleSaveModel.zip')
-        model.save(saveloc_, name='SampleSaveModel.zip')
+        model.save(saveloc_, filename='SampleSaveModel.zip')
 
         if os.path.exists(sample_save_file):
             model = load(sample_save_file)

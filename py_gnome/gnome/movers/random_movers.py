@@ -10,8 +10,6 @@ from gnome.basic_types import oil_status
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
 
-from gnome.utilities.serializable import Serializable, Field
-
 from gnome.environment import IceConcentration
 from gnome.environment.gridded_objects_base import PyGrid
 from gnome.environment.gridded_objects_base import VariableSchema
@@ -20,21 +18,22 @@ from gnome.movers import CyMover, ProcessSchema
 from gnome.persist.base_schema import ObjTypeSchema
 
 
-class RandomMoverSchema(ObjTypeSchema, ProcessSchema):
-    diffusion_coef = SchemaNode(Float(), missing=drop)
-    uncertain_factor = SchemaNode(Float(), missing=drop)
+class RandomMoverSchema(ProcessSchema):
+    diffusion_coef = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    uncertain_factor = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
 
 
-class RandomMover(CyMover, Serializable):
+class RandomMover(CyMover):
     """
     This mover class inherits from CyMover and contains CyRandomMover
 
     The real work is done by CyRandomMover.
     CyMover sets everything up that is common to all movers.
     """
-    _state = copy.deepcopy(CyMover._state)
-    _state.add(update=['diffusion_coef', 'uncertain_factor'],
-               save=['diffusion_coef', 'uncertain_factor'])
     _schema = RandomMoverSchema
 
     def __init__(self, **kwargs):
@@ -82,14 +81,13 @@ class RandomMover(CyMover, Serializable):
 
 
 class IceAwareRandomMoverSchema(RandomMoverSchema):
-    ice_concentration = VariableSchema(missing=drop)
+    ice_concentration = VariableSchema(
+        missing=drop, save=True, update=True, save_reference=True
+    )
 
 
 class IceAwareRandomMover(RandomMover):
 
-    _state = copy.deepcopy(RandomMover._state)
-    _state.add_field([Field('ice_concentration',
-                            save=True, read=True, save_reference=True)])
     _schema = IceAwareRandomMoverSchema
 
     _req_refs = {'ice_concentration': IceConcentration}
@@ -114,7 +112,7 @@ class IceAwareRandomMover(RandomMover):
             grid_file = filename
 
         if grid is None:
-            grid = Grid.from_netCDF(grid_file,
+            grid = PyGrid.from_netCDF(grid_file,
                                     grid_topology=grid_topology)
 
         if ice_concentration is None:
@@ -160,33 +158,30 @@ class IceAwareRandomMover(RandomMover):
 
 
 class RandomVerticalMoverSchema(ObjTypeSchema, ProcessSchema):
-    vertical_diffusion_coef_above_ml = SchemaNode(Float(), missing=drop)
-    vertical_diffusion_coef_below_ml = SchemaNode(Float(), missing=drop)
+    vertical_diffusion_coef_above_ml = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    vertical_diffusion_coef_below_ml = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    mixed_layer_depth = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    horizontal_diffusion_coef_above_ml = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    horizontal_diffusion_coef_below_ml = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
 
-    mixed_layer_depth = SchemaNode(Float(), missing=drop)
 
-    horizontal_diffusion_coef_above_ml = SchemaNode(Float(), missing=drop)
-    horizontal_diffusion_coef_below_ml = SchemaNode(Float(), missing=drop)
-
-
-class RandomVerticalMover(CyMover, Serializable):
+class RandomVerticalMover(CyMover):
     """
     This mover class inherits from CyMover and contains CyRandomVerticalMover
 
     The real work is done by CyRandomVerticalMoraneomver.
     CyMover sets everything up that is common to all movers.
     """
-    _state = copy.deepcopy(CyMover._state)
-    _state.add(update=['vertical_diffusion_coef_above_ml',
-                       'vertical_diffusion_coef_below_ml',
-                       'horizontal_diffusion_coef_above_ml',
-                       'horizontal_diffusion_coef_below_ml',
-                       'mixed_layer_depth'],
-               save=['vertical_diffusion_coef_above_ml',
-                     'vertical_diffusion_coef_below_ml',
-                     'horizontal_diffusion_coef_above_ml',
-                     'horizontal_diffusion_coef_below_ml',
-                     'mixed_layer_depth'])
     _schema = RandomVerticalMoverSchema
 
     def __init__(self, **kwargs):

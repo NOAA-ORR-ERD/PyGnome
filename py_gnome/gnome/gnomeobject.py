@@ -3,8 +3,30 @@ import os
 from uuid import uuid1, UUID
 import copy
 import logging
+import numpy as np
+import zipfile
+import json
+import glob
+import tempfile
 
 from gnome.exceptions import ReferencedObjectNotSet
+log = logging.getLogger(__name__)
+
+
+def class_from_objtype(obj_type):
+    '''
+    object type must be a string in the gnome namespace:
+        gnome.xxx.xxx
+    '''
+    if len(obj_type.split('.')) == 1:
+        return
+
+    try:
+        # call getattr recursively
+        return reduce(getattr, obj_type.split('.')[1:], gnome)
+    except AttributeError:
+        log.warning("{0} is not part of gnome namespace".format(obj_type))
+        raise
 
 
 def init_obj_log(obj, setLevel=logging.INFO):
@@ -30,6 +52,12 @@ class AddLogger(object):
     '''
     _log = None
 
+
+    def __init__(self, *args, **kwargs):
+        print args
+        print kwargs
+        super(AddLogger, self).__init__(*args, **kwargs)
+
     @property
     def logger(self):
         '''
@@ -53,6 +81,26 @@ class AddLogger(object):
         want to keep typing this everywhere.
         '''
         return "{0} - ".format(os.getpid())
+
+
+class Refs(dict):
+    '''
+    Class to store and handle references during saving/loading.
+    Provides some convenience functions
+    '''
+    def __setitem__(self, i, y):
+        if i in self and self[i] is not y:
+            raise ValueError('You must not set the same id twice!!')
+        return dict.__setitem__(self, i, y)
+
+    def gen_default_name(self, obj):
+        '''
+        Goes through the dict, finds all objects of obj.obj_type stored, and
+        provides a unique name by appending length+1
+        '''
+        base_name = obj.obj_type.split('.')[-1]
+        num_of_same_type = filter(lambda v: v.obj_type == obj.obj_type, self.values())
+        return base_name + num_of_same_type+1
 
 
 class GnomeObjMeta(type):
@@ -140,12 +188,6 @@ class GnomeId(AddLogger):
         obj_copy.__create_new_id()
 
         return obj_copy
-
-    def __eq__(self, other):
-        return self.id == other.id
-
-    def __ne__(self, other):
-        return not self == other
 
     @property
     def name(self):
@@ -239,3 +281,304 @@ class GnomeId(AddLogger):
         of messages that were logged
         '''
         return 'warning: ' + self.__class__.__name__ + ': '
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """
+        creates a new object from dictionary
+
+        This is base implementation and can be over-ridden by classes using
+        this mixin
+        """
+        read_only_attrs = cls._schema().get_nodes_by_attr('read')
+        map(lambda n: dict_.pop(n, None), read_only_attrs)
+        new_obj = cls(**dict_)
+
+        msg = "constructed object {0}".format(new_obj.__class__.__name__)
+        new_obj.logger.debug(new_obj._pid + msg)
+
+        return new_obj
+
+    def to_dict(self, json_=None):
+        """
+        Returns a dictionary representation of this object. Uses the schema to
+        determine which attributes are put into the dictionary. No extra
+        processing is done to each attribute. They are presented as is.
+
+        The json_ parameter is ignored in this base class. 'save' is passed
+        in when the schema is saving the object. This allows an override of this
+        function to do any custom stuff necessary to prepare for saving.
+        """
+        data = {}
+
+        list_ = self._schema().get_nodes_by_attr('all')
+
+        value = None
+        for key in list_:
+            if getattr(self, key) is not None:
+                data[key] = getattr(self, key)
+
+        return data
+
+    def update_from_dict(self, data):
+        """
+        Update the attributes of this object using the dictionary ``data`` by
+        looking up the value of each key in ``data``.
+        The fields in self._state that have update=True are modified. The
+        remaining keys in 'data' are ignored. The object's _state attribute
+        defines what fields can be updated
+
+        If an attribute has changed, then call 'update_attr' to update its
+        value.
+
+        :param data: dict containing state of object per the client
+        :type data: dict
+        :returns: True if something changed, False otherwise
+        :rtype: bool
+
+        .. note::
+
+            Does not do updates on nested objects. If the attribute references
+            another Serializable object, then the value is not a dict but
+            rather the updated object. For instance, WindMover will receive:
+
+              {..., 'wind': <Wind object>}
+
+            as opposed to a nested dict of the 'wind' object. It is expected
+            that the 'wind' object was updated by calling its own
+            update_from_dict then added to this dict as the updated object.
+        """
+        list_ = self._state.get_names('update')
+        updated = False
+
+        if ('active_start' in data and
+                'active_stop' in data and
+                'active_stop' in list_):
+            # special case: these attributes employ range checking,
+            # so we would like to make sure that we evaluate
+            # active_stop before active_start if we are setting the active
+            # range outside and above the original range,
+            # and we would like to evaluate active_start before active_stop
+            # if we are setting the active range outside and below the
+            # original range.
+            try:
+                self._check_active_startstop(data['active_start'],
+                                             self.active_stop)
+            except ValueError:
+                list_.insert(0, list_.pop(list_.index('active_stop')))
+
+        for key in list_:
+            if key not in data:
+                continue
+
+            if self.update_attr(key, data[key]):
+                updated = True
+
+        return updated
+
+    def __eq__(self, other):
+        """
+        .. function:: __eq__(other)
+
+        Since this class is designed as a mixin with one objective being to
+        save _state of the object, then recreate a new object with the same
+        _state.
+
+        Define a base implementation of __eq__ so an object before persistence
+        can be compared with a new object created after it is persisted.
+        It can be overridden by the class with which it is mixed.
+
+        It looks at attributes defined in self._state and checks the plain
+        python types match.
+
+        It does an allclose() check for numpy arrays using default atol, rtol.
+
+        :param other: object of the same type as self that is used for
+                      comparison in obj1 == other
+
+        NOTE: super is not used.
+        """
+
+        if not self._check_type(other):
+            return False
+
+        for name in self._state.get_names('save'):
+            if not self._state[name].test_for_eq:
+                continue
+
+            if hasattr(self, name):
+                self_attr = getattr(self, name)
+                other_attr = getattr(other, name)
+            else:
+                # not an attribute, let attr_to_dict call appropriate function
+                # and check the dicts are equal
+                self_attr = self.attr_to_dict(name)
+                other_attr = other.attr_to_dict(name)
+
+            if not isinstance(self_attr, np.ndarray):
+                if isinstance(self_attr, float):
+                    if abs(self_attr - other_attr) > 1e-10:
+                        return False
+                elif self_attr != other_attr:
+                    return False
+            else:
+                if not isinstance(self_attr, type(other_attr)):
+                    return False
+
+                if not np.allclose(self_attr, other_attr,
+                                   rtol=1e-4, atol=1e-4):
+                    return False
+
+        return True
+
+    def __ne__(self, other):
+        return not self == other
+
+    def serialize(self):
+        """
+        Returns a json serialization of this object ("webapi" mode only)
+        """
+        schema = self.__class__._schema()
+        serial = schema.serialize(self)
+        return serial
+
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+            classmethod takes json structure as input, deserializes it using a
+            colander schema then invokes the new_from_dict method to create an
+            instance of the object described by the json schema.
+
+            We also need to accept sparse json objects, in which case we will
+            not treat them, but just send them back.
+        """
+        return cls._schema().deserialize(json_)
+
+    def save(self, saveloc='.', refs=None, overwrite=True):
+        """
+        save object state as json to user specified saveloc
+
+        :param saveloc: A directory, file path, open zipfile.ZipFile, or None
+        .
+        If a directory, it will place the zip file there, overwriting if specified.
+        If a file path, it will write the file there as follows: If the file
+        does not exist, it will create the zip archive there. If the
+        saveloc is a zip file or zipfile.Zipfile object and overwrite is False, it
+        will append there. Otherwise, it will overwrite the file if allowed.
+        If set to None, this function will instead return an open
+        zipfile.Zipfile object linked to a temporary file.
+
+        The zip file will be named [object.name].zip if a directory is specified
+        :param refs: dictionary of references to objects
+        :param overwrite: If True, overwrites the file at the saveloc
+        """
+
+        if os.path.isdir(saveloc):
+            filename = os.path.join(saveloc, self.name + '.zip')
+            if os.path.exists(filename):
+                if not overwrite:
+                    raise ValueError('{0} already exists and overwrite is False'.format(filename))
+            else:
+                zipfile_ = zipfile.ZipFile(saveloc, 'w',
+                                               compression=zipfile.ZIP_DEFLATED,
+                                               allowZip64=self._allowzip64)
+        elif saveloc is None:
+            #only provide an open zipfile object. When this is closed or the object
+            #loses context, the temporary file will automatically delete itself
+            #should be useful for testing without having to deal with cleanup.
+            zipfile_ = zipfile.ZipFile(tempfile.SpooledTemporaryFile('w+b'), 'a',
+                             compression=zipfile.ZIP_DEFLATED,
+                             allowZip64=self._allowzip64)
+        else:
+            #saveloc is file path
+            if not overwrite:
+                if zipfile.is_zipfile(saveloc):
+                    zipfile_ = zipfile.ZipFile(saveloc,'a',
+                                            compression=zipfile.ZIP_DEFLATED,
+                                            allowZip64=self._allowzip64)
+                else:
+                    raise ValueError('{0} already exists and overwrite is False'.format(filename))
+            else:
+                zipfile_ = zipfile.ZipFile(saveloc,'w',
+                                           compression=zipfile.ZIP_DEFLATED,
+                                           allowZip64=self._allowzip64)
+        if refs is None:
+            refs = Refs()
+        obj_json = self._schema()._save(self,
+                                        zipfile_=zipfile_,
+                                        refs=refs)
+        if saveloc is None:
+            log.info('Returning open zipfile in memory')
+            return (obj_json, zipfile_, refs)
+            zipfile_.close()
+        else:
+            zipfile_.close()
+            return (obj_json, saveloc, refs)
+
+
+    @classmethod
+    def load(cls, saveloc='.', filename=None, refs=None):
+        '''
+        Load an instance of this class from an archive or folder
+
+        :param saveloc: Can be an open zipfile.ZipFile archive, a folder, or a
+        filename. If it is an open zipfile or folder, it must contain a .json
+        file that describes an instance of this object type. If 'filename' is
+        not specified, it will load the first instance of this object discovered.
+        If a filename, it must be a zip archive or a json file describing an object
+        of this type.
+        :param filename: If saveloc is an open zipfile or folder, this indicates
+        the name of the file to be loaded. If saveloc is a filename, this
+        parameter is ignored.
+        :param refs: A dictionary of id -> object instances that will be used to
+        complete references, if available.
+        '''
+        saveloc = fp = json_ =None
+        if os.path.isdir(saveloc):
+            if filename:
+                fn = os.path.join(saveloc, filename)
+                json_ = json.load(fn, parse_float=True, parse_int=True)
+                return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+            else:
+                search = os.path.join(saveloc, '*.json')
+                for fn in glob.glob(search):
+                    json_ = json.load(fn, parse_float=True, parse_int=True)
+                    if 'obj_type' in json_:
+                        if class_from_objtype(json_['obj_type']) is cls:
+                            return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+                raise ValueError('No .json file containing a {0} found in folder {1}'.format(cls.__name__, saveloc))
+
+        elif zipfile.is_zipfile(saveloc):
+            #saveloc is a zip archive
+            #get json from the file to start the process
+            if not isinstance(saveloc, zipfile.ZipFile):
+                saveloc = zipfile.ZipFile(saveloc, 'r')
+            if filename:
+                fp = saveloc.open(filename, 'rU')
+                json_ = json.load(fp, parse_float=True, parse_int=True)
+                return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+            else:
+                #no filename, so search archive
+                for fn in saveloc.namelist():
+                    if fn.endswith('.json'):
+                        json_ = json.load(fn, parse_float=True, parse_int=True)
+                        if 'obj_type' in json_:
+                            if class_from_objtype(json_['obj_type']) is cls:
+                                return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+                raise ValueError('No .json file containing a {0} found in archive {1}'.format(cls.__name__, saveloc))
+
+
+        else:
+            #saveloc is .json file
+
+            json_ = json.load(saveloc, parse_float=True, parse_int=True)
+            if 'obj_type' in json:
+                if class_from_objtype(json_['obj_type']) is not cls:
+                    raise ValueError("{1} does not contain a {0}".format(cls.__name__, saveloc))
+                else:
+                    dir = os.path.dirname(saveloc)
+                    return cls._schema().load(json_, saveloc=dir, refs=refs)
+
+
+        pass

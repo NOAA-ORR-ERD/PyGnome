@@ -6,9 +6,11 @@ import shutil
 import json
 import zipfile
 import logging
+import tempfile
 
 import gnome
 import colander
+import contextlib
 
 # as long as loggers are configured before module is loaded, module scope
 # logger will work. If loggers are configured after this module is loaded and
@@ -16,6 +18,25 @@ import colander
 # longer work
 log = logging.getLogger(__name__)
 
+
+class Refs(dict):
+    '''
+    Class to store and handle references during saving/loading.
+    Provides some convenience functions
+    '''
+    def __setitem__(self, i, y):
+        if i in self and self[i] is not y:
+            raise ValueError('You must not set the same id twice!!')
+        dict.__setitem__(self, i, y)
+
+    def gen_default_name(self, obj):
+        '''
+        Goes through the dict, finds all objects of obj.obj_type stored, and
+        provides a unique name by appending length+1
+        '''
+        base_name = obj.obj_type.split('.')[-1]
+        num_of_same_type = filter(lambda v: v.obj_type == obj.obj_type, self.values())
+        return base_name + num_of_same_type+1
 
 class References(object):
     '''
@@ -95,22 +116,6 @@ class References(object):
             return self._refs[ref]
         except KeyError:
             return None
-
-
-def class_from_objtype(obj_type):
-    '''
-    object type must be a string in the gnome namespace:
-        gnome.xxx.xxx
-    '''
-    if len(obj_type.split('.')) == 1:
-        return
-
-    try:
-        # call getattr recursively
-        return reduce(getattr, obj_type.split('.')[1:], gnome)
-    except AttributeError:
-        log.warning("{0} is not part of gnome namespace".format(obj_type))
-        raise
 
 
 def load(saveloc, fname='Model.json', references=None):
@@ -225,7 +230,7 @@ class Savable(object):
                 json_[field.name] = ref
 
                 if not self._ref_in_saveloc(saveloc, ref):
-                    obj.save(saveloc, references, name=ref)
+                    obj.save(saveloc, references, filename=ref)
 
         return json_
 
@@ -298,38 +303,6 @@ class Savable(object):
                              allowZip64=self._allowzip64) as z:
             z.writestr(f_name, s_data)
 
-    def save(self, saveloc, references=None, name=None):
-        """
-        save object state as json to user specified saveloc
-
-        :param saveloc: zip archive or a valid directory. Model files are
-            either persisted here or a new model is re-created from the files
-            stored here. The files are clobbered when save() is called.
-        :type saveloc: A path as a string or unicode
-        :param name=None: filename to store json. If None, default name is:
-            "{0}.json".format(self.__class__.__name__). If saveloc is zipfile,
-            this is the name of archive in which json for self is stored.
-        :type name: str
-        :param references: dict of references mapping 'id' to a string used for
-            the reference. The value could be a unique integer or it could be
-            a filename. It is upto the creator of the reference list to decide
-            how to reference a nested object.
-        """
-        json_ = self.serialize('save')
-        c_fields = self._state.get_field_by_attribute('iscollection')
-
-        # JAH: Added this from the model save function. If any bugs pop up
-        # in the references system this may be the cause
-        references = (references, References())[references is None]
-
-        for field in c_fields:
-            self._save_collection(saveloc,
-                                  getattr(self, field.name),
-                                  references,
-                                  json_[field.name])
-
-        return self._json_to_saveloc(json_, saveloc, references=references,
-                                     name=name)
 
     def _move_data_file(self, saveloc, json_):
         """

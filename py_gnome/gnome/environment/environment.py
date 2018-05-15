@@ -14,22 +14,21 @@ import gsw
 import unit_conversion as uc
 
 from gnome import constants
-from gnome.utilities import serializable
 from gnome.persist import base_schema
-from gnome.gnomeobject import GnomeObjMeta
+from gnome.gnomeobject import GnomeObjMeta, GnomeId
 
 from .. import _valid_units
 
 class EnvironmentMeta(GnomeObjMeta):
-    def __init__(cls, _name, _bases, _dct):
-        cls._subclasses = []
-        for c in cls.__mro__:
+    def __init__(self, _name, _bases, _dct):
+        self._subclasses = []
+        for c in self.__mro__:
             if hasattr(c, '_subclasses') and c is not cls:
                 c._subclasses.append(cls)
         super(EnvironmentMeta, cls).__init__(_name, _bases, _dct)
 
 
-class Environment(object):
+class Environment(GnomeId):
     """
     A base class for all classes in environment module
 
@@ -283,15 +282,15 @@ class UnitsSchema(MappingSchema):
 
 class WaterSchema(base_schema.ObjTypeSchema):
     'Colander Schema for Conditions object'
-    units = UnitsSchema()
-    temperature = SchemaNode(Float())
-    salinity = SchemaNode(Float())
-    sediment = SchemaNode(Float(), missing=drop)
-    wave_height = SchemaNode(Float(), missing=drop)
-    fetch = SchemaNode(Float(), missing=drop)
+    units = UnitsSchema(save=True, update=True)
+    temperature = SchemaNode(Float(), save=True, update=True)
+    salinity = SchemaNode(Float(), save=True, update=True)
+    sediment = SchemaNode(Float(), missing=drop, save=True, update=True)
+    wave_height = SchemaNode(Float(), missing=drop, save=True, update=True)
+    fetch = SchemaNode(Float(), missing=drop, save=True, update=True)
 
 
-class Water(Environment, serializable.Serializable):
+class Water(Environment):
     '''
     Define the environmental conditions for a spill, like water_temperature,
     atmos_pressure (most likely a constant)
@@ -300,25 +299,6 @@ class Water(Environment, serializable.Serializable):
     these properties through the client
     '''
     _ref_as = 'water'
-    _state = copy.deepcopy(Environment._state)
-    _field_descr = {'units': ('update', 'save'),
-                    'temperature:': ('update', 'save'),
-                    'salinity': ('update', 'save'),
-                    'sediment': ('update', 'save'),
-                    'fetch': ('update', 'save'),
-                    'wave_height': ('update', 'save'),
-                    'density': ('update', 'save'),
-                    'kinematic_viscosity': ('update', 'save')}
-    _state += [serializable.Field('units', update=True, save=True),
-               serializable.Field('temperature', update=True, save=True),
-               serializable.Field('salinity', update=True, save=True),
-               serializable.Field('sediment', update=True, save=True),
-               serializable.Field('fetch', update=True, save=True),
-               serializable.Field('wave_height', update=True, save=True),
-               serializable.Field('density', update=True, save=True),
-               serializable.Field('kinematic_viscosity', update=True,
-                                  save=True)]
-
     _schema = WaterSchema
 
     _units_type = {'temperature': ('temperature', _valid_temp_units),

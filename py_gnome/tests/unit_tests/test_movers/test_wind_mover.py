@@ -695,7 +695,7 @@ def test_save_load(save_ref, saveloc_):
         refs.reference(wind, w_fname)
         wind.save(saveloc_, refs, w_fname)
 
-    wm.save(saveloc_, references=refs, name=wm_fname)
+    wm.save(saveloc_, references=refs, filename=wm_fname)
 
     l_refs = References()
     obj = load(os.path.join(saveloc_, wm_fname), l_refs)

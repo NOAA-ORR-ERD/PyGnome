@@ -8,9 +8,8 @@ from colander import drop
 
 import gridded
 
-from gnome.utilities import serializable
 from gnome.environment import Environment
-from gnome.environment.ts_property import TSVectorProp, TimeSeriesProp
+from gnome.environment.timeseries_objects_base import TimeseriesData, TimeseriesVector
 
 from gnome.environment.gridded_objects_base import (Time,
                                                     Variable,
@@ -158,35 +157,7 @@ class S_Depth_T1(object):
         return indices, alphas
 
 
-class VelocityTS(TSVectorProp):
-
-    def __init__(self,
-                 name=None,
-                 units=None,
-                 time=None,
-                 variables=None,
-                 **kwargs):
-        if len(variables) > 2:
-            raise ValueError('Only 2 dimensional velocities are supported')
-
-        TSVectorProp.__init__(self, name, units,
-                              time=time, variables=variables)
-
-    def __eq__(self, o):
-        if o is None:
-            return False
-
-        t1 = (self.name == o.name and
-              self.units == o.units and
-              self.time == o.time)
-        t2 = True
-
-        for i in range(0, len(self._variables)):
-            if self._variables[i] != o._variables[i]:
-                t2 = False
-                break
-
-        return t1 and t2
+class VelocityTS(TimeseriesVector):
 
     @classmethod
     def constant(cls,
@@ -212,8 +183,8 @@ class VelocityTS(TSVectorProp):
         u = speed * np.cos(direction * np.pi / 180)
         v = speed * np.sin(direction * np.pi / 180)
 
-        u = TimeSeriesProp.constant('u', units, u)
-        v = TimeSeriesProp.constant('v', units, v)
+        u = TimeseriesData.constant('u', units, u)
+        v = TimeseriesData.constant('v', units, v)
 
         return super(VelocityTS, cls).constant(name, units, variables=[u, v])
 
@@ -236,7 +207,7 @@ class VelocityGrid(VectorVariable):
         if 'variables' in kwargs:
             variables = kwargs['variables']
             if len(variables) == 2:
-                variables.append(TimeSeriesProp(name='constant w',
+                variables.append(TimeseriesData(name='constant w',
                                                 data=[0.0],
                                                 time=Time.constant_time(),
                                                 units='m/s'))
@@ -366,7 +337,7 @@ class CurrentTS(VelocityTS, Environment):
                             units=units)
 
 
-class TemperatureTS(TimeSeriesProp, Environment):
+class TemperatureTS(TimeseriesData, Environment):
 
     def __init__(self, name=None, units='K',
                  time=None, data=None,
@@ -377,7 +348,7 @@ class TemperatureTS(TimeSeriesProp, Environment):
             time = map(lambda e: e[0], ts)
             data = np.array(map(lambda e: e[1], ts))
 
-        TimeSeriesProp.__init__(self, name, units, time, data=data)
+        TimeseriesData.__init__(self, name, units, time, data=data)
 
     @classmethod
     def constant_temperature(cls,
@@ -393,7 +364,7 @@ class GridTemperature(Variable, Environment):
     cf_names = ['sea_water_temperature', 'sea_surface_temperature']
 
 
-class SalinityTS(TimeSeriesProp, Environment):
+class SalinityTS(TimeseriesData, Environment):
 
     @classmethod
     def constant_salinity(cls,
@@ -409,7 +380,7 @@ class GridSalinity(Variable, Environment):
     cf_names = ['sea_water_salinity', 'sea_surface_salinity']
 
 
-class WaterDensityTS(TimeSeriesProp, Environment):
+class WaterDensityTS(TimeseriesData, Environment):
 
     def __init__(self,
                  name=None,
@@ -438,7 +409,7 @@ class WaterDensityTS(TimeSeriesProp, Environment):
                         constants.atmos_pressure * 0.0001)
                 for t in density_times.time]
 
-        TimeSeriesProp.__init__(self, name, units, time=density_times,
+        TimeseriesData.__init__(self, name, units, time=density_times,
                                 data=data)
 
 
@@ -718,11 +689,21 @@ class IceVelocity(VelocityGrid, Environment):
 
 
 class IceAwarePropSchema(VectorVariableSchema):
-    ice_concentration = VariableSchema(missing=drop)
+    ice_concentration = VariableSchema(
+        missing=drop,
+        save=True,
+        update=True,
+        save_reference=True,
+    )
 
 
 class IceAwareCurrentSchema(IceAwarePropSchema):
-    ice_velocity = VectorVariableSchema(missing=drop)
+    ice_velocity = VectorVariableSchema(
+        missing=drop,
+        save=True,
+        update=True,
+        save_reference=True,
+    )
 
 
 class IceAwareCurrent(GridCurrent):
@@ -732,12 +713,6 @@ class IceAwareCurrent(GridCurrent):
                  'ice_velocity': IceVelocity}
 
     _schema = IceAwareCurrentSchema
-    _state = copy.deepcopy(GridCurrent._state)
-
-    _state.add_field([serializable.Field('ice_velocity', save=True,
-                                         update=True, save_reference=True),
-                      serializable.Field('ice_concentration', save=True,
-                                         update=True, save_reference=True)])
 
     def __init__(self,
                  ice_velocity=None,
@@ -815,10 +790,6 @@ class IceAwareWind(GridWind):
     _req_refs = {'ice_concentration': IceConcentration}
 
     _schema = IceAwarePropSchema
-    _state = copy.deepcopy(GridWind._state)
-
-    _state.add_field([serializable.Field('ice_concentration', save=True,
-                                         update=True, save_reference=True)])
 
     def __init__(self,
                  ice_concentration=None,

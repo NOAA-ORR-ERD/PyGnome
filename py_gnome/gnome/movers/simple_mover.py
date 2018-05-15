@@ -37,12 +37,16 @@ class SimpleMoverVelocitySchema(NumpyFixedLenSchema):
     vel_z = SchemaNode(Float())
 
 
-class SimpleMoverSchema(ObjTypeSchema, ProcessSchema):
-    uncertainty_scale = SchemaNode(Float())
-    velocity = SimpleMoverVelocitySchema()
+class SimpleMoverSchema(ProcessSchema):
+    uncertainty_scale = SchemaNode(
+        Float(), save=True, update=True
+    )
+    velocity = SimpleMoverVelocitySchema(
+        save=True, update=True
+    )
 
 
-class SimpleMover(Mover, serializable.Serializable):
+class SimpleMover(Mover):
 
     """
     simple_mover
@@ -53,9 +57,6 @@ class SimpleMover(Mover, serializable.Serializable):
      think about it)
     """
 
-    _state = copy.deepcopy(Mover._state)
-    _state.add(update=['uncertainty_scale', 'velocity'],
-               save=['uncertainty_scale', 'velocity'])
     _schema = SimpleMoverSchema
 
     def __init__(self,

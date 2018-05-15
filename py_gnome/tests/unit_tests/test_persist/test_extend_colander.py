@@ -10,12 +10,16 @@ import datetime as dt
 import pytest
 import numpy as np
 from gnome.persist import extend_colander
+import pdb
+import pprint as pp
 
 from datetime import datetime
 from gnome.utilities.time_utils import FixedOffset
 from gnome.environment.gridded_objects_base import Time
 from gnome.environment.timeseries_objects_base import (TimeseriesData,
                                                        TimeseriesVector)
+from gnome.utilities.serializable_demo_objects import DemoObj, DemoObjSchema
+from gnome.persist.base_schema import ObjType, ObjTypeSchema, GeneralGnomeObjectSchema
 
 @pytest.fixture('class')
 def dates():
@@ -65,6 +69,84 @@ class Test_LocalDateTime(object):
 
 
 class TestObjType(object):
+    '''
+    Tests for the colander schematype that represents gnome objects.
+    Tests for the schema are done concurrently since they are paired
+    objects
+    '''
+    def test_construction(self):
+        #__init__
+        class TestSchema(ObjTypeSchema):
+            pass
+        assert TestSchema().schema_type == ObjType
+
+    def test_cstruct_children(self):
+        #cstruct_children
+        pass
+
+    def test_impl(self):
+        #_impl
+        test_schema = ObjTypeSchema()
+
+    def test_serial_pre(self):
+        #_ser
+        pass
+
+    def test_serialize(self):
+        #serialize
+        pass
+
+    def test_deserial_post(self):
+        #_deser
+        pass
+
+    def test_deserialize(self):
+        #deserialize
+        pass
+
+    def test_save_pre(self):
+        #_prepare_save
+        pass
+
+    def test_save_post(self):
+        #_save
+        pass
+
+    def test_save(self):
+        #save
+        pass
+
+    def test_load_pre(self):
+        #_hydrate_json
+        pass
+
+    def test_load(self):
+        #load
+        pass
+
+
+
+class TestDemoObj(object):
+    def test_serialization(self):
+        _t = Time(dates())
+        tsv = TimeseriesVector(
+            variables=[TimeseriesData(name='u', time=_t, data=series_data()),
+                       TimeseriesData(name='v', time=_t, data=series_data2())],
+            units='m/s'
+        )
+
+        inst = DemoObj(variable=tsv, variables=[tsv, tsv.variables[0]])
+        serial = inst.serialize()
+        deser = DemoObj.deserialize(serial)
+        assert deser.variable == inst.variable
+        assert deser.variables == inst.variables
+        json_, zipfile_, refs = inst.save(saveloc=None)
+
+        loaded = inst.__class__._schema().load(json_, zipfile_, refs)
+        pdb.set_trace()
+
+
+class TestObjType(object):
     _t = Time(dates())
     test_class = TimeseriesVector
     test_class_instance = TimeseriesVector(
@@ -73,13 +155,13 @@ class TestObjType(object):
         units='m/s'
     )
     def test_serialization(self):
-        import pdb
-        import pprint as pp
-        direct_schema_serial = self.test_class_instance._schema().serialize(self.test_class_instance)
         serial = self.test_class_instance.serialize()
         pp.pprint(serial)
-        deser = self.test_class._schema().deserialize(serial)
+        deser = self.test_class.deserialize(serial)
         pp.pprint(deser)
-        assert direct_schema_serial == serial
-        assert False
+        assert deser == self.test_class_instance
+
+    def test_save_load(self):
+        #without context manager
+        json_, zipfile_, refs = self.test_class_instance.save('Test.zip')
         pdb.set_trace()

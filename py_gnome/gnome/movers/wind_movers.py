@@ -19,7 +19,6 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
 from gnome.cy_gnome.cy_ice_wind_mover import CyIceWindMover
 
-from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.rand import random_with_persistance
 
@@ -27,23 +26,28 @@ from gnome.utilities.rand import random_with_persistance
 from gnome.environment import Wind, WindSchema
 from gnome.environment.wind import constant_wind
 from gnome.movers import CyMover, ProcessSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
-from gnome.persist.base_schema import ObjTypeSchema
 
 
-class WindMoversBaseSchema(ObjTypeSchema, ProcessSchema):
-    uncertain_duration = SchemaNode(Float(), missing=drop)
-    uncertain_time_delay = SchemaNode(Float(), missing=drop)
-    uncertain_speed_scale = SchemaNode(Float(), missing=drop)
-    uncertain_angle_scale = SchemaNode(Float(), missing=drop)
+class WindMoversBaseSchema(ProcessSchema):
+    uncertain_duration = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    uncertain_time_delay = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    uncertain_speed_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    uncertain_angle_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
 
 
 class WindMoversBase(CyMover):
-    _state = copy.deepcopy(CyMover._state)
-    _state.add(update=['uncertain_duration', 'uncertain_time_delay',
-                       'uncertain_speed_scale', 'uncertain_angle_scale'],
-               save=['uncertain_duration', 'uncertain_time_delay',
-                     'uncertain_speed_scale', 'uncertain_angle_scale'])
+
+    _schema = WindMoversBaseSchema
 
     def __init__(self,
                  uncertain_duration=3,
@@ -184,9 +188,13 @@ class WindMoverSchema(WindMoversBaseSchema):
     # 'wind' schema node added dynamically
     name = 'WindMover'
     description = 'wind mover properties'
+    wind = GeneralGnomeObjectSchema(
+        acceptable_schemas=[WindSchema],
+        save=True, update=True, save_reference=True
+    )
 
 
-class WindMover(WindMoversBase, Serializable):
+class WindMover(WindMoversBase):
     """
     Python wrapper around the Cython wind_mover module.
     This class inherits from CyMover and contains CyWindMover
@@ -194,10 +202,6 @@ class WindMover(WindMoversBase, Serializable):
     The real work is done by the CyWindMover object.  CyMover
     sets everything up that is common to all movers.
     """
-    _state = copy.deepcopy(WindMoversBase._state)
-    _state.add_field(Field('wind', save=True, update=True,
-                           save_reference=True))
-
     _schema = WindMoverSchema
 
     def __init__(self, wind=None, **kwargs):
@@ -281,33 +285,6 @@ class WindMover(WindMoversBase, Serializable):
             msg = "wind object not defined for WindMover"
             raise ReferencedObjectNotSet(msg)
 
-    def serialize(self, json_='webapi'):
-        """
-        Since 'wind' property is saved as a reference when used in save file
-        and 'save' option, need to add appropriate node to WindMover schema
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-
-        if json_ == 'webapi':
-            # add wind schema
-            schema.add(WindSchema(name='wind'))
-
-        return schema.serialize(toserial)
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for wind object
-        """
-        schema = cls._schema()
-
-        if 'wind' in json_:
-            schema.add(WindSchema())
-
-        return schema.deserialize(json_)
-
-
 def wind_mover_from_file(filename, **kwargs):
     """
     Creates a wind mover from a wind time-series file (OSM long wind format)
@@ -346,21 +323,21 @@ class GridWindMoverSchema(WindMoversBaseSchema):
     """
         Similar to WindMover except it doesn't have wind_id
     """
-    filename = SchemaNode(String(), missing=drop)
-    topology_file = SchemaNode(String(), missing=drop)
-    wind_scale = SchemaNode(Float(), missing=drop)
-    extrapolate = SchemaNode(Bool(), missing=drop)
+    filename = SchemaNode(
+        String(), missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+    )
+    topology_file = SchemaNode(
+        String(), missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+    )
+    wind_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    extrapolate = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
 
 
-class GridWindMover(WindMoversBase, Serializable):
-    _state = copy.deepcopy(WindMoversBase._state)
-    _state.add(update=['wind_scale', 'extrapolate'],
-               save=['wind_scale', 'extrapolate'])
-
-    _state.add_field([Field('filename', save=True, read=True,
-                            isdatafile=True, test_for_eq=False),
-                      Field('topology_file', save=True, read=True,
-                            isdatafile=True, test_for_eq=False)])
+class GridWindMover(WindMoversBase):
 
     _schema = GridWindMoverSchema
 
@@ -525,17 +502,16 @@ class GridWindMover(WindMoversBase, Serializable):
 
 
 class IceWindMoverSchema(WindMoversBaseSchema):
-    filename = SchemaNode(String(), missing=drop)
-    topology_file = SchemaNode(String(), missing=drop)
+    filename = SchemaNode(
+        String(), missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+    )
+    topology_file = SchemaNode(
+        String(), missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+    )
 
 
-class IceWindMover(WindMoversBase, Serializable):
-    _state = copy.deepcopy(WindMoversBase._state)
+class IceWindMover(WindMoversBase):
 
-    _state.add_field([Field('filename', save=True, read=True,
-                            isdatafile=True, test_for_eq=False),
-                      Field('topology_file', save=True, read=True,
-                            isdatafile=True, test_for_eq=False)])
     _schema = IceWindMoverSchema
 
     def __init__(self, filename,

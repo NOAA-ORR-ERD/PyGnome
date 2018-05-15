@@ -14,7 +14,6 @@ from gnome import basic_types
 from gnome.utilities.time_utils import (zero_time,
                                         date_to_sec,
                                         sec_to_date)
-from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.convert import (to_time_value_pair,
                                      to_datetime_value_2d)
 from gnome.persist.extend_colander import (DefaultTupleSchema,
@@ -25,6 +24,7 @@ from gnome.persist import validators, base_schema
 from .environment import Environment
 from gnome.environment import Wind, WindSchema
 from gnome.exceptions import ReferencedObjectNotSet
+from gnome.gnomeobject import GnomeId
 
 
 class UVTuple(DefaultTupleSchema):
@@ -60,25 +60,18 @@ class TimeSeriesSchema(DatetimeValue2dArraySchema):
 
 class RunningAverageSchema(base_schema.ObjTypeSchema):
     'Time series object schema'
-    timeseries = TimeSeriesSchema(missing=drop)
     name = 'running average'
+    timeseries = TimeSeriesSchema(
+        missing=drop, save=True, update=True
+    )
     past_hours_to_average = SchemaNode(Float(), missing=drop)
 
 
-class RunningAverage(Environment, Serializable):
+class RunningAverage(Environment, GnomeId):
     '''
     Defines a running average time series for a wind or tide
     '''
 
-    _update = []
-
-    # used to create new obj or as readonly parameter
-    _create = []
-    _create.extend(_update)
-
-    _state = copy.deepcopy(Environment._state)
-    _state += [Field('wind', save=True, update=True, save_reference=True)]
-    _state.add(save=_create, update=_update)
     _schema = RunningAverageSchema
 
     def __init__(self, wind=None, timeseries=None, past_hours_to_average=3,

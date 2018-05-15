@@ -14,26 +14,35 @@ from gnome.basic_types import (world_point,
                                status_code_type)
 
 from gnome.utilities import inf_datetime
-from gnome.utilities import time_utils, serializable
+from gnome.utilities import time_utils
+from gnome.persis.base_schema import ObjTypeSchema
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
-from gnome import AddLogger
+from gnome import GnomeId
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 from gnome.utilities.projections import FlatEarthProjection
 
 
-class ProcessSchema(MappingSchema):
+class ProcessSchema(ObjTypeSchema):
     '''
     base Process schema - attributes common to all movers/weatherers
     defined at one place
     '''
-    on = SchemaNode(Bool(), missing=drop)
-    active_start = SchemaNode(LocalDateTime(), missing=drop,
-                              validator=convertible_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), missing=drop,
-                             validator=convertible_to_seconds)
+    on = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    active_start = SchemaNode(
+        LocalDateTime(),
+        missing=drop, validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    active_stop = SchemaNode(
+        LocalDateTime(),
+        missing=drop, validator=convertible_to_seconds,
+        save=True, update=True
+    )
 
 
-class Process(AddLogger):
+class Process(GnomeId):
     """
     Base class from which all Python movers/weatherers can inherit
 
@@ -42,10 +51,6 @@ class Process(AddLogger):
     NOTE: Since base class is not Serializable, it does not need
     a class level _schema attribute.
     """
-    _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add(update=['on', 'active_start', 'active_stop'],
-               save=['on', 'active_start', 'active_stop'],
-               read=['active'])
 
     def __init__(self, **kwargs):  # default min + max values for timespan
         """

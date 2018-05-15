@@ -1153,7 +1153,7 @@ class Model(Serializable):
 
         return saveloc
 
-    def save(self, saveloc, references=None, name=None):
+    def save(self, saveloc, references=None, filename=None):
         '''
         save the model state in saveloc. If self.zipsave is True, then a
         zip archive is created and model files are saved to the archive.
@@ -1167,11 +1167,11 @@ class Model(Serializable):
             stored here. The files are clobbered when save() is called.
         :type saveloc: A path as a string or unicode
 
-        :param name=None: If data is saved to zipfile (default behavior), then
-            this is name of zip file. For a zipfile, the model's state is
+        :param filename=None: If data is saved to zipfile (default behavior), then
+            this is filename of zip file. For a zipfile, the model's state is
             always contained in Model.json. If zipsave is False, then model's
-            json is stored in name.json
-        :type name: str
+            json is stored in filename.json
+        :type filename: str
 
         :param references: dict of references mapping 'id' to a string used for
             the reference. The value could be a unique integer or it could be
@@ -1181,7 +1181,7 @@ class Model(Serializable):
         :returns: references
         '''
         # if zipsave is on, the create zip and update saveloc
-        saveloc = self._create_zip(saveloc, name)
+        saveloc = self._create_zip(saveloc, filename)
 
         # Note: Defining references=References() in the function definition
         # keeps the references object in memory between tests - it changes the
@@ -1214,8 +1214,8 @@ class Model(Serializable):
             self._save_spill_data(saveloc, 'spills_data_arrays.nc')
 
         # if saved as zipfile, then store model's json in Model.json - this is
-        # default if name is None
-        mdl_name = 'Model.json' if self.zipsave or name is None else name
+        # default if filename is None
+        mdl_name = 'Model.json' if self.zipsave or filename is None else filename
         self._json_to_saveloc(json_, saveloc, references, mdl_name)
 
         return references

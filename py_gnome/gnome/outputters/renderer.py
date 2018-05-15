@@ -26,26 +26,38 @@ from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Field
 
 from gnome.utilities import projections
-from gnome.utilities.projections import FlatEarthProjection
+from gnome.utilities.projections import FlatEarthProjection, ProjectionSchema
 
 from gnome.persist import base_schema, class_from_objtype
 
-from . import Outputter, BaseSchema
+from . import Outputter, BaseOutputterSchema
 
 from gnome.environment.gridded_objects_base import Grid_S, Grid_U
 
-class RendererSchema(BaseSchema):
+class RendererSchema(BaseOutputterSchema):
 
     # not sure if bounding box needs defintion separate from LongLatBounds
-    viewport = base_schema.LongLatBounds()
+    viewport = base_schema.LongLatBounds(
+        save=True, update=True
+    )
 
     # following are only used when creating objects, not updating -
     # so missing=drop
-    map_filename = SchemaNode(String(), missing=drop)
-    projection = SchemaNode(String(), missing=drop)
-    image_size = base_schema.ImageSize(missing=drop)
-    output_dir = SchemaNode(String())
-    draw_ontop = SchemaNode(String())
+    map_filename = SchemaNode(
+        String(), missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+    )
+    projection = ProjectionSchema(
+        missing=drop, save=True, update=True
+    )
+    image_size = base_schema.ImageSize(
+        missing=drop, save=True, update=True
+    )
+    output_dir = SchemaNode(
+        String(), save=True, update=True, test_for_eq=False
+    )
+    draw_ontop = SchemaNode(
+        String(), save=True, update=True
+    )
 
 
 class Renderer(Outputter, MapCanvas):
@@ -75,41 +87,7 @@ class Renderer(Outputter, MapCanvas):
     foreground_filename_format = 'foreground_{0:05d}.png'
     foreground_filename_glob = 'foreground_?????.png'
 
-    # Serialization info:
-    _update = ['viewport', 'map_BB', 'image_size', 'draw_ontop']
-    _create = ['image_size', 'projection', 'draw_ontop']
-
-    _create.extend(_update)
-    _state = copy.deepcopy(Outputter._state)
-    _state.add(save=_create, update=_update)
-    _state.add_field(Field('map_filename',
-                           isdatafile=True,
-                           save=True,
-                           read=True,
-                           test_for_eq=False))
-    _state.add_field(Field('output_dir', save=True, update=True,
-                           test_for_eq=False))
     _schema = RendererSchema
-
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """
-        change projection_type from string to correct type for loading from
-        save file
-        """
-        if 'projection' in dict_:
-            # todo:
-            # The 'projection' isn't stored as a nested object - should
-            # revisit this and see if we can make it consistent with nested
-            # objects ... but this works!
-            # creates an instance of the projection class
-            proj_inst = class_from_objtype(dict_.pop('projection'))()
-            # then creates the object
-            obj = cls(projection=proj_inst, **dict_)
-        else:
-            obj = super(Renderer, cls).new_from_dict(dict_)
-
-        return obj
 
     def __init__(self,
                  map_filename=None,
@@ -686,52 +664,15 @@ class Renderer(Outputter, MapCanvas):
         return '{0}.{1}'.format(self.projection.__module__,
                                 self.projection.__class__.__name__)
 
-    def serialize(self, json_='webapi'):
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-
+    def to_dict(self, json_=None):
+        dict_ = Outputter.to_dict(self, json_=json_)
         if json_ == 'save':
-            toserial['map_filename'] = self._filename
-
-        return schema.serialize(toserial)
-
-    def save(self, saveloc, references=None, name=None):
-        '''
-        update the 'output_dir' key in the json to point to directory
-        inside saveloc, then save the json - do not copy image files or
-        image directory over
-        '''
-        json_ = self.serialize('save')
-        out_dir = os.path.split(json_['output_dir'])[1]
-
-        # store output_dir relative to saveloc
-        json_['output_dir'] = os.path.join('./', out_dir)
-
-        return self._json_to_saveloc(json_, saveloc, references, name)
-
-    @classmethod
-    def loads(cls, json_data, saveloc, references=None):
-        '''
-        loads object from json_data
-
-        prepend saveloc path to 'output_dir' and create output_dir in saveloc,
-        then call super to load object
-        '''
-        if zipfile.is_zipfile(saveloc):
-            saveloc = os.path.split(saveloc)[0]
-
-        path = os.path.join(saveloc, json_data['output_dir'])
-
-        if not os.path.exists(path):
-            os.mkdir(os.path.join(saveloc, json_data['output_dir']))
-
-        json_data['output_dir'] = os.path.join(saveloc,
-                                               json_data['output_dir'])
-
-        return super(Renderer, cls).loads(json_data, saveloc, references)
+            dict_['map_filename'] = self._filename
+            dict_['output_dir'] = os.path.join('./', dict_['output_dir'])
+        return dict_
 
 
-class GridVisLayer:
+class GridVisLayer(object):
     def __init__(self, grid, projection, on=True,
                  color='grid_1', width=1):
         self.grid = grid
@@ -777,7 +718,7 @@ class GridVisLayer:
                                   line_width=self.width)
 
 
-class GridPropVisLayer:
+class GridPropVisLayer(object):
 
     def __init__(self, prop, projection, on=True,
                  color='LE', mask_color='uncert_LE',

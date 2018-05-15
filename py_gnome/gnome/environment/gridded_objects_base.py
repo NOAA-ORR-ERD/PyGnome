@@ -9,61 +9,83 @@ from colander import (SchemaNode, SequenceSchema,
 
 import gridded
 
-from gnome.utilities import serializable
 from gnome.persist import base_schema
+from py_gnome.gnome.gnomeobject import GnomeId
 
 
 class TimeSchema(base_schema.ObjTypeSchema):
-    filename = SchemaNode(typ=Sequence(accept_scalar=True),
-                          children=[SchemaNode(String())], missing=drop)
-    varname = SchemaNode(String(), missing=drop)
-    data = SchemaNode(typ=Sequence(),
-                      children=[SchemaNode(DateTime(None))], missing=drop)
+    filename = SchemaNode(
+        typ=Sequence(accept_scalar=True),
+        children=[SchemaNode(String())],
+        default=[], missing=drop, save=True, update=True, isdatafile=True
+    )
+    varname = SchemaNode(
+        String(), missing=drop, read=True
+    )
+    data = SequenceSchema(
+        SchemaNode(
+            DateTime(default_tzinfo=None)
+        ),
+        missing=drop, save=True, update=True
+    )
 
 
 class GridSchema(base_schema.ObjTypeSchema):
-    filename = SchemaNode(typ=Sequence(accept_scalar=True),
-                          children=[SchemaNode(String())])
-
+    filename = SchemaNode(
+        typ=Sequence(accept_scalar=True),
+        children=[SchemaNode(String())],
+        save=True, update=True, isdatafile=True
+    )
 
 class DepthSchema(base_schema.ObjTypeSchema):
-    filename = SchemaNode(typ=Sequence(accept_scalar=True),
-                          children=[SchemaNode(String())])
+    filename = SchemaNode(
+        typ=Sequence(accept_scalar=True),
+        children=[SchemaNode(String())],
+        save=True, update=True, isdatafile=True
+    )
 
 
 class VariableSchemaBase(base_schema.ObjTypeSchema):
-    name = SchemaNode(String(), missing=drop)
-    units = SchemaNode(String(), missing=drop)
-    time = TimeSchema(missing=drop)
+    #filename
+    #data?
+    units = SchemaNode(
+        String(), missing=drop, save=True, update=True
+    )
+    time = TimeSchema(
+        missing=drop, save=True, update=True, save_reference=True
+    )
+    grid = GridSchema(
+        missing=drop, save=True, update=True, save_reference=True
+    )
+    data_file = SchemaNode(
+        typ=Sequence(accept_scalar=True),
+        children=[SchemaNode(String())],
+        save=True, update=True, isdatafile=True
+    )
+    grid_file = SchemaNode(
+        typ=Sequence(accept_scalar=True),
+        children=[SchemaNode(String())],
+        save=True, update=True, isdatafile=True
+    )
 
 
 class VariableSchema(VariableSchemaBase):
-    varname = SchemaNode(String(), missing=drop)
-    grid = GridSchema(missing=drop)
-    data_file = SchemaNode(typ=Sequence(accept_scalar=True),
-                           children=[SchemaNode(String())])
-    grid_file = SchemaNode(typ=Sequence(accept_scalar=True),
-                           children=[SchemaNode(String())])
+    varname = SchemaNode(
+        String(), missing=drop, read=True
+    )
 
 
 class VectorVariableSchema(VariableSchemaBase):
-    varnames = SequenceSchema(SchemaNode(String()), missing=drop)
-    grid = GridSchema(missing=drop)
-    data_file = SchemaNode(typ=Sequence(accept_scalar=True),
-                           children=[SchemaNode(String())])
-    grid_file = SchemaNode(typ=Sequence(accept_scalar=True),
-                           children=[SchemaNode(String())])
+    varnames = SequenceSchema(
+        SchemaNode(String()),
+        missing=drop,
+        read=True
+    )
 
 
-class Time(gridded.time.Time, serializable.Serializable):
+class Time(gridded.time.Time, GnomeId):
 
-    _state = copy.deepcopy(serializable.Serializable._state)
     _schema = TimeSchema
-
-    _state.add_field([serializable.Field('filename', save=True, update=True,
-                                         isdatafile=True),
-                      serializable.Field('varname', save=True, update=True),
-                      serializable.Field('data', save=True, update=True)])
 
     @classmethod
     def from_file(cls, filename=None, **kwargs):
@@ -82,38 +104,10 @@ class Time(gridded.time.Time, serializable.Serializable):
 
         return Time(t)
 
-    def save(self, saveloc, references=None, name=None):
-        '''
-        Write Wind timeseries to file or to zip,
-        then call save method using super
-        '''
-        super(Time, self).save(saveloc, references, name)
 
-    def _write_time_to_zip(self, saveloc, ts_name):
-        '''
-        use a StringIO type of file descriptor and write directly to zipfile
-        '''
-        fd = StringIO.StringIO()
+class Grid_U(gridded.grids.Grid_U, GnomeId):
 
-        self._write_time_to_fd(fd)
-        self._write_to_zip(saveloc, ts_name, fd.getvalue())
-
-    def _write_time_to_file(self, datafile):
-        '''write timeseries data to file '''
-        with open(datafile, 'w') as fd:
-            self._write_time_to_fd(fd)
-
-    def _write_time_to_fd(self, fd):
-        for t in self.time:
-            fd.write(t.strftime('%c') + '\n')
-
-
-class Grid_U(gridded.grids.Grid_U, serializable.Serializable):
-
-    _state = copy.deepcopy(serializable.Serializable._state)
     _schema = GridSchema
-    _state.add_field([serializable.Field('filename', save=True, update=True,
-                                         isdatafile=True)])
 
     def draw_to_plot(self, ax, features=None, style=None):
         import matplotlib
@@ -175,12 +169,9 @@ class Grid_U(gridded.grids.Grid_U, serializable.Serializable):
         return json_
 
 
-class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
+class Grid_S(gridded.grids.Grid_S, GnomeId):
 
-    _state = copy.deepcopy(serializable.Serializable._state)
     _schema = GridSchema
-    _state.add_field([serializable.Field('filename', save=True, update=True,
-                                         isdatafile=True)])
 
     '''hack to avoid problems when registering object in webgnome'''
     @property
@@ -271,12 +262,9 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
         return (lens, [hor_lines, ver_lines])
 
 
-class Grid_R(gridded.grids.Grid_R, serializable.Serializable):
+class Grid_R(gridded.grids.Grid_R, GnomeId):
 
-    _state = copy.deepcopy(serializable.Serializable._state)
     _schema = GridSchema
-    _state.add_field([serializable.Field('filename', save=True, update=True,
-                                         isdatafile=True)])
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -340,19 +328,8 @@ class Depth(gridded.depth.Depth):
         return gridded.depth.Depth._get_depth_type(*args, **kwargs)
 
 
-class Variable(gridded.Variable, serializable.Serializable):
-    _state = copy.deepcopy(serializable.Serializable._state)
+class Variable(gridded.Variable, GnomeId):
     _schema = VariableSchema
-    _state.add_field([serializable.Field('units', save=True, update=True),
-                      serializable.Field('time', save=True, update=True,
-                                         save_reference=True),
-                      serializable.Field('grid', update=True, read=True,
-                                         save_reference=True),
-                      serializable.Field('varname', save=True, update=True),
-                      serializable.Field('data_file', save=True, update=True,
-                                         isdatafile=True),
-                      serializable.Field('grid_file', save=True, update=True,
-                                         isdatafile=True)])
 
     default_names = []
     cf_names = []
@@ -380,11 +357,10 @@ class Variable(gridded.Variable, serializable.Serializable):
         return super(Variable, cls).new_from_dict(dict_)
 
 
-class DepthBase(gridded.depth.DepthBase):
-    _state = copy.deepcopy(serializable.Serializable._state)
+class DepthBase(gridded.depth.DepthBase, GnomeId):
+
     _schema = DepthSchema
-    _state.add_field([serializable.Field('filename', save=True, update=True,
-                                         isdatafile=True)])
+
     _default_component_types = copy.deepcopy(gridded.depth.DepthBase
                                              ._default_component_types)
     _default_component_types.update({'time': Time,
@@ -402,11 +378,9 @@ class DepthBase(gridded.depth.DepthBase):
         return rv
 
 
-class L_Depth(gridded.depth.L_Depth):
-    _state = copy.deepcopy(serializable.Serializable._state)
+class L_Depth(gridded.depth.L_Depth, GnomeId):
     _schema = DepthSchema
-    _state.add_field([serializable.Field('filename', save=True, update=True,
-                                         isdatafile=True)])
+
     _default_component_types = copy.deepcopy(gridded.depth.L_Depth
                                              ._default_component_types)
     _default_component_types.update({'time': Time,
@@ -424,11 +398,10 @@ class L_Depth(gridded.depth.L_Depth):
         return rv
 
 
-class S_Depth(gridded.depth.S_Depth):
-    _state = copy.deepcopy(serializable.Serializable._state)
+class S_Depth(gridded.depth.S_Depth, GnomeId):
+
     _schema = DepthSchema
-    _state.add_field([serializable.Field('filename', save=True, update=True,
-                                         isdatafile=True)])
+
     _default_component_types = copy.deepcopy(gridded.depth.S_Depth
                                              ._default_component_types)
     _default_component_types.update({'time': Time,
@@ -446,22 +419,9 @@ class S_Depth(gridded.depth.S_Depth):
         return rv
 
 
-class VectorVariable(gridded.VectorVariable, serializable.Serializable):
+class VectorVariable(gridded.VectorVariable, GnomeId):
 
-    _state = copy.deepcopy(serializable.Serializable._state)
     _schema = VectorVariableSchema
-    _state.add_field([serializable.Field('units', save=True, update=True),
-                      serializable.Field('time', save=True, update=True,
-                                         save_reference=True),
-                      serializable.Field('grid', update=True, read=True,
-                                         save_reference=True),
-                      serializable.Field('variables', save=True, update=True,
-                                         read=True, iscollection=True),
-                      serializable.Field('varnames', save=True, update=True),
-                      serializable.Field('data_file', save=True, update=True,
-                                         isdatafile=True),
-                      serializable.Field('grid_file', save=True, update=True,
-                                         isdatafile=True)])
 
     _default_component_types = copy.deepcopy(gridded.VectorVariable
                                              ._default_component_types)

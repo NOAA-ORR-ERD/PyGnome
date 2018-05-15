@@ -18,6 +18,10 @@ NOTE: all coordinates are takes as (lon, lat, depth)
 from __future__ import division
 
 import numpy as np
+from gnome.gnomeobject import GnomeId
+from gnome.persist.base_schema import ObjType
+from gnome.persist.extend_colander import DefaultTupleSchema
+from colander import drop, TupleSchema, Float, SchemaNode, Int
 
 
 def to_2d_coords(coords):
@@ -48,9 +52,27 @@ def to_2d_coords(coords):
                          "a Nx3 array-like object of (lon, lat, depth) triples\n"
                          )
 
+class ProjectionSchema(ObjType):
+    bounding_box = TupleSchema(
+        children=[
+            TupleSchema(
+                children=[SchemaNode(Float()), SchemaNode(Float())]
+            ),
+            TupleSchema(
+                children=[SchemaNode(Float()), SchemaNode(Float())]
+            )
+        ],
+        missing=drop, save=True, update=True
+    )
+    image_size = TupleSchema(
+        children=[
+            SchemaNode(Int()),
+            SchemaNode(Int())
+        ],
+        missing=drop, save=True, update=True
+    )
 
-
-class NoProjection(object):
+class NoProjection(GnomeId):
     """
     This is do-nothing projection class -- returns what it gets.
 
@@ -58,6 +80,8 @@ class NoProjection(object):
 
     used for testing, primarily, and as a definition of the interface
     """
+
+    _schema=ProjectionSchema
 
     def __init__(self, bounding_box=None, image_size=None):
         """
@@ -114,13 +138,15 @@ class NoProjection(object):
         return np.asarray(coords, dtype=np.float64, order='C')
 
 
-class GeoProjection(object):
+class GeoProjection(GnomeId):
     """
     This acts as the base class for other projections
 
     This one doesn't really project, but does convert to pixel coords
     i.e. "geo-coordinates"
     """
+
+    _schema=ProjectionSchema
 
     def __init__(self, bounding_box=None, image_size=None):
         """

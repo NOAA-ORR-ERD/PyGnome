@@ -21,7 +21,6 @@ from gnome.persist import base_schema
 
 from gnome.utilities.convert import tsformat
 
-from gnome.utilities.serializable import Serializable, Field
 
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_shio_time import CyShioTime
@@ -29,14 +28,18 @@ from gnome.cy_gnome.cy_shio_time import CyShioTime
 
 class TideSchema(base_schema.ObjTypeSchema):
     'Tide object schema'
-    filename = SchemaNode(String(), missing=drop)
+    filename = SchemaNode(
+        String(), missing=drop, save=True, update=True, isdatafile=True,
+    )
 
-    scale_factor = SchemaNode(Float(), missing=drop)
+    scale_factor = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
 
     name = 'tide'
 
 
-class Tide(Environment, Serializable):
+class Tide(Environment):
 
     """
     todo: baseclass called ScaleTimeseries (or something like that)
@@ -47,16 +50,7 @@ class Tide(Environment, Serializable):
     a cython wrapper around the C++ Shio object
     """
     _ref_as = 'tide'
-    _state = copy.deepcopy(Environment._state)
     _schema = TideSchema
-
-    # add 'filename' as a Field object
-    _update = ['scale_factor']
-    _create = []
-    _create.extend(_update)
-    _state.add(update=_update, save=_create)
-    _state.add_field(Field('filename', save=True, read=True, isdatafile=True,
-                           test_for_eq=False))
 
     def __init__(self,
                  filename,

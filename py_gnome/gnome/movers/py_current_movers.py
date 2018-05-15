@@ -1,12 +1,9 @@
 import movers
 import numpy as np
-import copy
 
 from colander import (SchemaNode,
-                      Bool, Float, String, Sequence, DateTime,
-                      drop)
+                      Bool, Float, String, Sequence, drop)
 
-from gnome import basic_types
 from gnome.basic_types import oil_status
 from gnome.basic_types import (world_point,
                                world_point_type,
@@ -16,53 +13,65 @@ from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 
 from gnome.environment import GridCurrent
-from gnome.environment.gridded_objects_base import Grid_U
+from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
 
 from gnome.persist import base_schema
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 
 class PyCurrentMoverSchema(base_schema.ObjTypeSchema):
-    filename = SchemaNode(typ=Sequence(accept_scalar=True),
-                          children=[SchemaNode(String())],
-                          missing=drop)
-    current_scale = SchemaNode(Float(), missing=drop)
-    extrapolate = SchemaNode(Bool(), missing=drop)
-    time_offset = SchemaNode(Float(), missing=drop)
-    current = GridCurrent._schema(missing=drop)
-    real_data_start = SchemaNode(DateTime(), missing=drop)
-    real_data_stop = SchemaNode(DateTime(), missing=drop)
-    on = SchemaNode(Bool(), missing=drop)
-    active_start = SchemaNode(LocalDateTime(), missing=drop,
-                              validator=convertible_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), missing=drop,
-                             validator=convertible_to_seconds)
-    real_data_start = SchemaNode(LocalDateTime(), missing=drop,
-                                 validator=convertible_to_seconds)
-    real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
-                                validator=convertible_to_seconds)
+    current = GeneralGnomeObjectSchema(
+        acceptable_schemas=[VectorVariableSchema, GridCurrent._schema],
+        save=True, update=True, save_reference=True
+    )
+    filename = SchemaNode(
+        typ=Sequence(accept_scalar=True),
+        children=[SchemaNode(String())],
+        missing=drop, save=True, read=True, isdatafile=True
+    )
+    current_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    extrapolate = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    time_offset = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    on = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    active_start = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    active_stop = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    real_data_start = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        read=True
+    )
+    real_data_stop = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        read=True
+    )
 
 
-class PyCurrentMover(movers.PyMover, serializable.Serializable):
+class PyCurrentMover(movers.PyMover):
 
-    _state = copy.deepcopy(movers.PyMover._state)
-
-    _state.add_field([serializable.Field('filename',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('current', read=True,
-                                         save_reference=True),
-                      serializable.Field('extrapolate', read=True, save=True)
-                      ])
-    _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
-               save=['uncertain_duration', 'uncertain_time_delay'])
     _schema = PyCurrentMoverSchema
 
     _ref_as = 'py_current_movers'
 
     _req_refs = {'current': GridCurrent}
-    _def_count = 0
 
     def __init__(self,
                  filename=None,
@@ -112,10 +121,6 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
             else:
                 self.current = GridCurrent.from_netCDF(filename=self.filename,
                                                        **kwargs)
-
-        if 'name' not in kwargs:
-            kwargs['name'] = self.__class__.__name__ + str(self.__class__._def_count)
-            self.__class__._def_count += 1
 
         self.extrapolate = extrapolate
         self.current_scale = current_scale

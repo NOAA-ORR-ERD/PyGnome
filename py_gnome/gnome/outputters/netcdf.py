@@ -14,9 +14,8 @@ from colander import SchemaNode, String, drop, Int, Bool
 from gnome import __version__
 from gnome.basic_types import oil_status, world_point_type
 
-from gnome.utilities.serializable import Serializable, Field
 
-from . import Outputter, BaseSchema
+from . import Outputter, BaseOutputterSchema
 
 
 # Big dict that stores the attributes for the standard data arrays
@@ -156,16 +155,26 @@ var_attributes = {
 }
 
 
-class NetCDFOutputSchema(BaseSchema):
+class NetCDFOutputSchema(BaseOutputterSchema):
     'colander schema for serialize/deserialize object'
-    netcdf_filename = SchemaNode(String(), missing=drop)
-    all_data = SchemaNode(Bool(), missing=drop)
-    compress = SchemaNode(Bool(), missing=drop)
-    _start_idx = SchemaNode(Int(), missing=drop)
-    _middle_of_run = SchemaNode(Bool(), missing=drop)
+    netcdf_filename = SchemaNode(
+        String(), missing=drop, save=True, update=True, test_for_eq=False
+    )
+    which_data = SchemaNode(
+        String(), default='standard', missing=drop, save=True, update=True
+    )
+    compress = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    _start_idx = SchemaNode(
+        Int(), missing=drop, save=True, update=True
+    )
+    _middle_of_run = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
 
 
-class NetCDFOutput(Outputter, Serializable):
+class NetCDFOutput(Outputter):
     """
     A NetCDFOutput object is used to write the model's data to a NetCDF file.
     It inherits from Outputter class and implements the same interface.
@@ -252,18 +261,6 @@ class NetCDFOutput(Outputter, Serializable):
                               'evap_decay_constant',
                               ]
 
-    # define _state for serialization
-    _state = copy.deepcopy(Outputter._state)
-
-    # data file should not be moved to save file location!
-    _state.add_field([Field('netcdf_filename', save=True, update=True,
-                            test_for_eq=False),
-                      Field('which_data', save=True, update=True),
-                      # Field('netcdf_format', save=True, update=True),
-                      Field('compress', save=True, update=True),
-                      Field('_start_idx', save=True),
-                      Field('_middle_of_run', save=True),
-                      ])
     _schema = NetCDFOutputSchema
 
     def __init__(self,
@@ -925,37 +922,8 @@ class NetCDFOutput(Outputter, Serializable):
 
         return (arrays_dict, weathering_data)
 
-    def save(self, saveloc, references=None, name=None):
-        '''
-        See baseclass :meth:`~gnome.persist.Savable.save`
-
-        update netcdf_filename to point to saveloc, then call base class save
-        using super
-        '''
-        json_ = self.serialize('save')
-        fname = os.path.split(json_['netcdf_filename'])[1]
-
-        json_['netcdf_filename'] = os.path.join('./', fname)
-
-        return self._json_to_saveloc(json_, saveloc, references, name)
-
-    @classmethod
-    def loads(cls, json_data, saveloc, references=None):
-        '''
-        loads object from json_data
-
-        update path to 'netcdf_filename' in json_data, then finish loading
-        by calling super class' load method
-
-        :param saveloc: location of data files. Setup path of netcdf_filename
-            to this location
-
-        Optional parameter
-
-        :param references: references object - if this is called by the Model,
-            it will pass a references object. It is not required.
-        '''
-        new_filename = os.path.join(saveloc, json_data['netcdf_filename'])
-        json_data['netcdf_filename'] = new_filename
-
-        return super(NetCDFOutput, cls).loads(json_data, saveloc, references)
+    def to_dict(self, json_=None):
+        dict_ = super(NetCDFOutput, self).to_dict(json_)
+        if json_ == 'save':
+            dict_['netcdf_filename'] = os.path.join('./', dict_['netcdf_filename'])
+        return dict_

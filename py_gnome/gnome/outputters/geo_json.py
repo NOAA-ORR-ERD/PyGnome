@@ -12,26 +12,32 @@ import numpy as np
 from geojson import (Feature, FeatureCollection, dump,
                      Point, MultiPolygon)
 
-from colander import SchemaNode, String, drop, Int, Bool
+from colander import SchemaNode, String, drop, Int, Bool, SequenceSchema
 
 from gnome.utilities.time_utils import date_to_sec
-from gnome.utilities.serializable import Serializable, Field
 
-from gnome.persist import class_from_objtype
+from gnome.persist.base_schema import class_from_objtype, GeneralGnomeObjectSchema
 
-from .outputter import Outputter, BaseSchema
+from .outputter import Outputter, BaseOutputterSchema
+from gnome.movers.current_movers import IceMoverSchema
 
 
-class TrajectoryGeoJsonSchema(BaseSchema):
+class TrajectoryGeoJsonSchema(BaseOutputterSchema):
     '''
     Nothing is required for initialization
     '''
-    round_data = SchemaNode(Bool(), missing=drop)
-    round_to = SchemaNode(Int(), missing=drop)
-    output_dir = SchemaNode(String(), missing=drop)
+    round_data = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    round_to = SchemaNode(
+        Int(), missing=drop, save=True, update=True
+    )
+    output_dir = SchemaNode(
+        String(), missing=drop, save=True, update=True
+    )
 
 
-class TrajectoryGeoJsonOutput(Outputter, Serializable):
+class TrajectoryGeoJsonOutput(Outputter):
     '''
     class that outputs GNOME results in a geojson format. The output is a
     collection of Features. Each Feature contains a Point object with
@@ -65,13 +71,6 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
         }
 
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state += [Field('round_data', update=True, save=True),
-               Field('round_to', update=True, save=True),
-               Field('output_dir', update=True, save=True)]
     _schema = TrajectoryGeoJsonSchema
 
     def __init__(self,
@@ -219,10 +218,13 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                 os.remove(f)
 
 
-class IceGeoJsonSchema(BaseSchema):
-    '''
-    Nothing is required for initialization
-    '''
+class IceGeoJsonSchema(BaseOutputterSchema):
+    ice_movers =  SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=[IceMoverSchema]
+        ),
+        save=True, update=True, save_reference=True
+    )
 
 
 class IceGeoJsonOutput(Outputter):
@@ -255,13 +257,6 @@ class IceGeoJsonOutput(Outputter):
                                  }
         }
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('ice_movers', save=True, update=True,
-                           iscollection=True))
-
     _schema = IceGeoJsonSchema
 
     def __init__(self, ice_movers, **kwargs):
@@ -373,29 +368,3 @@ class IceGeoJsonOutput(Outputter):
     def rewind(self):
         'remove previously written files'
         super(IceGeoJsonOutput, self).rewind()
-
-    def ice_movers_to_dict(self):
-        '''
-        a dict containing 'obj_type' and 'id' for each object in
-        list/collection
-        '''
-        return self._collection_to_dict(self.ice_movers)
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for current mover
-        """
-        schema = cls._schema()
-        _to_dict = schema.deserialize(json_)
-
-        if 'ice_movers' in json_:
-            _to_dict['ice_movers'] = []
-
-            for i, cm in enumerate(json_['ice_movers']):
-                cm_cls = class_from_objtype(cm['obj_type'])
-                cm_dict = cm_cls.deserialize(json_['ice_movers'][i])
-
-                _to_dict['ice_movers'].append(cm_dict)
-
-        return _to_dict

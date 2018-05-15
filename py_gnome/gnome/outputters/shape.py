@@ -10,12 +10,16 @@ import shapefile as shp
 
 from gnome.utilities.serializable import Serializable, Field
 
-from .outputter import Outputter, BaseSchema
+from .outputter import Outputter, BaseOutputterSchema
 
 
-class ShapeSchema(BaseSchema):
-    filename = SchemaNode(String(), missing=drop)
-    zip_output = SchemaNode(Boolean(), missing=drop)
+class ShapeSchema(BaseOutputterSchema):
+    filename = SchemaNode(
+        String(), missing=drop, save=True, update=True, test_for_eq=False
+    )
+    zip_output = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
 
 
 class ShapeOutput(Outputter, Serializable):
@@ -23,12 +27,6 @@ class ShapeOutput(Outputter, Serializable):
     class that outputs GNOME results (particles) in a shapefile format.
 
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state += [Field('filename', update=True, save=True), ]
-    _state += [Field('zip_output', update=True, save=True), ]
     _schema = ShapeSchema
 
     time_formatter = '%m/%d/%Y %H:%M'

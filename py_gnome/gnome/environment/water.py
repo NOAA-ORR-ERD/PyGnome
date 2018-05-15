@@ -12,7 +12,6 @@ import gsw
 import unit_conversion as uc
 
 from gnome import constants
-from gnome.utilities import serializable
 from gnome.persist import base_schema
 from .environment import Environment
 
@@ -71,7 +70,7 @@ class WaterSchema(base_schema.ObjTypeSchema):
     fetch = SchemaNode(Float(), missing=drop)
 
 
-class Water(Environment, serializable.Serializable):
+class Water(Environment):
     '''
     Define the environmental conditions for a spill, like water_temperature,
     atmos_pressure (most likely a constant)
@@ -80,7 +79,6 @@ class Water(Environment, serializable.Serializable):
     these properties through the client
     '''
     _ref_as = 'water'
-    _state = copy.deepcopy(Environment._state)
     _field_descr = {'units': ('update', 'save'),
                     'temperature:': ('update', 'save'),
                     'salinity': ('update', 'save'),
@@ -89,15 +87,6 @@ class Water(Environment, serializable.Serializable):
                     'wave_height': ('update', 'save'),
                     'density': ('update', 'save'),
                     'kinematic_viscosity': ('update', 'save')}
-    _state += [serializable.Field('units', update=True, save=True),
-               serializable.Field('temperature', update=True, save=True),
-               serializable.Field('salinity', update=True, save=True),
-               serializable.Field('sediment', update=True, save=True),
-               serializable.Field('fetch', update=True, save=True),
-               serializable.Field('wave_height', update=True, save=True),
-               serializable.Field('density', update=True, save=True),
-               serializable.Field('kinematic_viscosity', update=True,
-                                  save=True)]
 
     _schema = WaterSchema
 

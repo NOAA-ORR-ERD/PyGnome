@@ -17,38 +17,42 @@ from colander import SchemaNode, MappingSchema, Bool, drop, String
 
 
 from gnome.persist import base_schema, extend_colander, validators
-from gnome.utilities.serializable import Serializable, Field
 
 from gnome.utilities.surface_concentration import compute_surface_concentration
+from gnome.gnomeobject import GnomeId
 
 
-class BaseSchema(base_schema.ObjTypeSchema, MappingSchema):
+class BaseOutputterSchema(base_schema.ObjTypeSchema):
     'Base schema for all outputters - they all contain the following'
-    on = SchemaNode(Bool(), missing=drop)
-    output_zero_step = SchemaNode(Bool())
-    output_last_step = SchemaNode(Bool())
-    output_timestep = SchemaNode(extend_colander.TimeDelta(), missing=drop)
-    output_start_time = SchemaNode(extend_colander.LocalDateTime(),
-                                   validator=validators.convertible_to_seconds,
-                                   missing=None)
-    surface_conc = SchemaNode(String(), missing=drop)
+    on = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    output_zero_step = SchemaNode(
+        Bool(), save=True, update=True
+    )
+    output_last_step = SchemaNode(
+        Bool(), save=True, update=True
+    )
+    output_timestep = SchemaNode(
+        extend_colander.TimeDelta(), missing=drop, save=True, update=True
+    )
+    output_start_time = SchemaNode(
+        extend_colander.LocalDateTime(),
+        validator=validators.convertible_to_seconds,
+        missing=drop , save=True, update=True
+    )
+    surface_conc = SchemaNode(
+        String(), missing=drop, save=True, update=True
+    )
 
 
-class Outputter(Serializable):
+class Outputter(GnomeId):
     '''
     base class for all outputters
     Since this outputter doesn't do anything, it'll never be used as part
     of a gnome model. As such, it should never need to be serialized
     '''
-    _state = copy.deepcopy(Serializable._state)
-    _state += (Field('on', save=True, update=True),
-               Field('output_zero_step', save=True, update=True),
-               Field('output_last_step', save=True, update=True),
-               Field('output_timestep', save=True, update=True),
-               Field('output_start_time', save=True, update=True),
-               Field('surface_conc', save=True, update=True),
-               )
-    _schema = BaseSchema
+    _schema = BaseOutputterSchema
 
     def __init__(self,
                  cache=None,

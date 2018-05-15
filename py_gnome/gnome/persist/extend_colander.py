@@ -5,12 +5,14 @@ of gnome specific types
 import datetime
 
 import numpy as np
+import six
 
 from colander import (Float, DateTime, Sequence, Tuple, List,
-                      TupleSchema, SequenceSchema, null)
+                      TupleSchema, SequenceSchema, null, SchemaNode, String)
 
 import gnome.basic_types
 from gnome.utilities import inf_datetime
+from fileinput import filename
 
 
 class LocalDateTime(DateTime):
@@ -172,6 +174,25 @@ class TimeDelta(Float):
             return datetime.timedelta(seconds=sec)
         else:
             return sec
+
+#
+# class Filename(Sequence):
+#     def __init__(self, *args, **kwargs):
+#         if 'accept_scalar' not in kwargs:
+#             kwargs['accept_scalar'] = True
+#         super(Filename, self).__init__(*args, **kwargs)
+#
+#     def serialize(self, node, appstruct):
+#         rv = super(Filename, self).serialize(node, appstruct)
+#         if rv and len(rv) == 1:
+#             rv = rv[0]
+#         return rv
+#
+#     def deserialize(self, node, cstruct):
+#         if isinstance(cstruct, six.string_types):
+#             return cstruct
+#         else:
+#             return super(Filename, self).deserialize(node, cstruct)
 
 
 """

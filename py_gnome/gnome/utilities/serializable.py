@@ -3,6 +3,7 @@ Created on Feb 15, 2013
 '''
 import copy
 import inspect
+import logging
 
 import numpy as np
 
@@ -506,23 +507,6 @@ class Serializable(GnomeId, Savable):
                 print 'failed to set attribute {0}'.format(key)
                 raise
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """
-        creates a new object from dictionary
-
-        This is base implementation and can be over-ridden by classes using
-        this mixin
-        """
-        read_only_attrs = cls._schema().get_names('read')
-        map(lambda n: dict_.pop(n), read_only_attrs)
-        new_obj = cls(**dict_)
-
-        msg = "constructed object {0}".format(new_obj.__class__.__name__)
-        new_obj.logger.debug(new_obj._pid + msg)
-
-        return new_obj
-
     def _attrlist(self, do=('update', 'read')):
         '''
         returns list of object attributes that need to be serialized. By
@@ -543,40 +527,6 @@ class Serializable(GnomeId, Savable):
 
         return list_
 
-    def to_dict(self, json_='webapi'):
-        """
-        returns a dictionary containing the serialized representation of this
-        object.
-
-        For every field, if there is a method defined on the object such that
-        the method name is `{field_name}_to_dict`, use the return value of that
-        method as the field value.
-
-        Note: any field in `list` that does not exist on the
-        object and does not have a to_dict method will raise an AttributeError.
-
-        NOTE: add the json_='webapi' key to be serialized so we know what the
-        serialization is for
-        """
-        data = {}
-
-        list_ = self._schema().get_nodes_by_attr('all')
-
-        value = None
-        for key in list_:
-            if getattr(self, key) is not None:
-                value = getattr(self, key)
-
-            if value is not None:
-                # some issue in colander monkey patch and the Wind schema
-                # if None values are not pruned - take them out for now
-                # this also means the default values will not be applied
-                # on serialized -- that's ok though since we don't define
-                # defaults in colander
-                data[key] = value
-
-        return data
-
     def attr_to_dict(self, name):
         """
         refactor to_dict's functionality so child classes can convert a
@@ -591,61 +541,7 @@ class Serializable(GnomeId, Savable):
 
         return value
 
-    def update_from_dict(self, data):
-        """
-        Update the attributes of this object using the dictionary ``data`` by
-        looking up the value of each key in ``data``.
-        The fields in self._state that have update=True are modified. The
-        remaining keys in 'data' are ignored. The object's _state attribute
-        defines what fields can be updated
 
-        If an attribute has changed, then call 'update_attr' to update its
-        value.
-
-        :param data: dict containing state of object per the client
-        :type data: dict
-        :returns: True if something changed, False otherwise
-        :rtype: bool
-
-        .. note::
-
-            Does not do updates on nested objects. If the attribute references
-            another Serializable object, then the value is not a dict but
-            rather the updated object. For instance, WindMover will receive:
-
-              {..., 'wind': <Wind object>}
-
-            as opposed to a nested dict of the 'wind' object. It is expected
-            that the 'wind' object was updated by calling its own
-            update_from_dict then added to this dict as the updated object.
-        """
-        list_ = self._state.get_names('update')
-        updated = False
-
-        if ('active_start' in data and
-                'active_stop' in data and
-                'active_stop' in list_):
-            # special case: these attributes employ range checking,
-            # so we would like to make sure that we evaluate
-            # active_stop before active_start if we are setting the active
-            # range outside and above the original range,
-            # and we would like to evaluate active_start before active_stop
-            # if we are setting the active range outside and below the
-            # original range.
-            try:
-                self._check_active_startstop(data['active_start'],
-                                             self.active_stop)
-            except ValueError:
-                list_.insert(0, list_.pop(list_.index('active_stop')))
-
-        for key in list_:
-            if key not in data:
-                continue
-
-            if self.update_attr(key, data[key]):
-                updated = True
-
-        return updated
 
     def _attr_changed(self, current_value, received_value):
         '''
@@ -747,63 +643,8 @@ class Serializable(GnomeId, Savable):
 
         return False
 
-    def __eq__(self, other):
-        """
-        .. function:: __eq__(other)
 
-        Since this class is designed as a mixin with one objective being to
-        save _state of the object, then recreate a new object with the same
-        _state.
 
-        Define a base implementation of __eq__ so an object before persistence
-        can be compared with a new object created after it is persisted.
-        It can be overridden by the class with which it is mixed.
-
-        It looks at attributes defined in self._state and checks the plain
-        python types match.
-
-        It does an allclose() check for numpy arrays using default atol, rtol.
-
-        :param other: object of the same type as self that is used for
-                      comparison in obj1 == other
-
-        NOTE: super is not used.
-        """
-
-        if not self._check_type(other):
-            return False
-
-        for name in self._state.get_names('save'):
-            if not self._state[name].test_for_eq:
-                continue
-
-            if hasattr(self, name):
-                self_attr = getattr(self, name)
-                other_attr = getattr(other, name)
-            else:
-                # not an attribute, let attr_to_dict call appropriate function
-                # and check the dicts are equal
-                self_attr = self.attr_to_dict(name)
-                other_attr = other.attr_to_dict(name)
-
-            if not isinstance(self_attr, np.ndarray):
-                if isinstance(self_attr, float):
-                    if abs(self_attr - other_attr) > 1e-10:
-                        return False
-                elif self_attr != other_attr:
-                    return False
-            else:
-                if not isinstance(self_attr, type(other_attr)):
-                    return False
-
-                if not np.allclose(self_attr, other_attr,
-                                   rtol=1e-4, atol=1e-4):
-                    return False
-
-        return True
-
-    def __ne__(self, other):
-        return not self == other
 
     def to_serialize(self, json_='webapi'):
         '''
@@ -841,16 +682,6 @@ class Serializable(GnomeId, Savable):
     def items(self):
         return self.to_serialize().items()
 
-    def serialize(self, json_='webapi'):
-        """
-        :param json_: tells object whether serialization is for web content
-            or for generating a save file.
-        :returns: json format of serialized data
-
-        """
-        schema = self.__class__._schema()
-        serial = schema.serialize(self)
-        return serial
 
     @classmethod
     def is_sparse(cls, json_):
@@ -875,18 +706,6 @@ class Serializable(GnomeId, Savable):
         for item in coll:
             json_out.append(item.serialize(json_))
         return json_out
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-            classmethod takes json structure as input, deserializes it using a
-            colander schema then invokes the new_from_dict method to create an
-            instance of the object described by the json schema.
-
-            We also need to accept sparse json objects, in which case we will
-            not treat them, but just send them back.
-        """
-        return cls._schema().deserialize(json_)
 
     @classmethod
     def deserialize_oc(cls, json_):

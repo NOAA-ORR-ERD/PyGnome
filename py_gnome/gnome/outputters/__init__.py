@@ -1,5 +1,5 @@
 
-from outputter import Outputter, BaseSchema
+from outputter import Outputter, BaseOutputterSchema
 from netcdf import NetCDFOutput, NetCDFOutputSchema
 from renderer import Renderer, RendererSchema
 from weathering import WeatheringOutput
