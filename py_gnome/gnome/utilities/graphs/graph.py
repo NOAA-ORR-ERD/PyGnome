@@ -23,6 +23,7 @@ But it is also intended to be easily customizable through sub-classing.
 import copy
 
 import numpy
+from gnome.gnomeobject import GnomeId
 np = numpy
 
 import matplotlib
@@ -36,8 +37,6 @@ from colander import (SchemaNode, SequenceSchema,
                       drop)
 
 from gnome.persist.base_schema import ObjTypeSchema
-
-from gnome.utilities.serializable import Serializable
 
 
 class PointSeries(SequenceSchema):
@@ -57,23 +56,22 @@ class Formats(SequenceSchema):
 
 
 class GraphSchema(ObjTypeSchema):
-    title = SchemaNode(String(), missing=drop)
-    points = Points()
-    labels = Labels()
-    formats = Formats()
+    title = SchemaNode(
+        String(), missing=drop, save=True, update=True
+    )
+    points = Points(
+        save=True, update=True
+    )
+    labels = Labels(
+        save=True, update=True
+    )
+    formats = Formats(
+        save=True, update=True
+    )
 
 
-class Graph(Serializable):
+class Graph(GnomeId):
     # default units for input/output data
-    _update = ['points',
-               'labels',
-               'formats',
-               'title']
-    _create = []  # used to create new obj or as readonly parameter
-    _create.extend(_update)
-
-    _state = copy.deepcopy(Serializable._state)
-    _state.add(save=_create, update=_update)
     _schema = GraphSchema
 
     default_labels = 'XYZABCDEFGHJKLMNPQRSTUVW'

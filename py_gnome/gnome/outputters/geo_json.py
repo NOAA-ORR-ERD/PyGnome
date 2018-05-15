@@ -16,7 +16,7 @@ from colander import SchemaNode, String, drop, Int, Bool, SequenceSchema
 
 from gnome.utilities.time_utils import date_to_sec
 
-from gnome.persist.base_schema import class_from_objtype, GeneralGnomeObjectSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 from .outputter import Outputter, BaseOutputterSchema
 from gnome.movers.current_movers import IceMoverSchema

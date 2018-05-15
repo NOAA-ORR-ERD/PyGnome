@@ -9,26 +9,24 @@ import numpy as np
 from colander import SchemaNode, SequenceSchema, String, drop
 
 from gnome.utilities.time_utils import date_to_sec
-from gnome.utilities.serializable import Serializable, Field
 
 from gnome.movers import PyMover
-from gnome.persist import class_from_objtype
 
 from .outputter import Outputter, BaseOutputterSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from py_gnome.gnome.movers.current_movers import CatsMoverSchema,\
+from gnome.movers.current_movers import CatsMoverSchema,\
     ComponentMoverSchema, GridCurrentMoverSchema, CurrentCycleMoverSchema,\
     IceMoverSchema
-from py_gnome.gnome.movers.wind_movers import WindMoverSchema
+from gnome.movers.wind_movers import WindMoverSchema
 
 
 class SpillJsonSchema(BaseOutputterSchema):
     _additional_data = SequenceSchema(
-        SchemaNode(String()), missing=drop, update=True
+        SchemaNode(String()), missing=drop, save=True, update=True
     )
 
 
-class SpillJsonOutput(Outputter, Serializable):
+class SpillJsonOutput(Outputter):
     '''
     Class that outputs data on GNOME particles.
     Following is the format for a particle - the

@@ -19,31 +19,23 @@ from gnome.persist.validators import convertible_to_seconds
 from gnome.basic_types import world_point_type
 from gnome.utilities.plume import Plume, PlumeGenerator
 
-from gnome.utilities.serializable import Serializable
 from gnome.outputters import NetCDFOutput
 
 
 class BaseReleaseSchema(ObjTypeSchema):
-    'Base Class for Release Schemas'
-    release_time = SchemaNode(LocalDateTime(),
-                              validator=convertible_to_seconds)
-    name = 'release'
-    start_time_invalid = SchemaNode(Bool(), missing=drop)
+    release_time = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    start_time_invalid = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
 
-    def __init__(self, json_='webapi', **kwargs):
-        if json_ == 'save':
-            # used to create a new Release object if model is persisted mid-run
-            self.add(SchemaNode(Int(), name='num_released'))
+    num_released = SchemaNode(
+        Int(), missing=drop, save=True, read=True
+    )
 
-        super(BaseReleaseSchema, self).__init__(**kwargs)
-
-
-class ReleaseSchema(BaseReleaseSchema):
-    'Base Class for Release Schemas'
-    num_elements = SchemaNode(Int(), missing=drop)
-
-
-class PointLineReleaseSchema(ReleaseSchema):
+class PointLineReleaseSchema(BaseReleaseSchema):
     '''
     Contains properties required for persistence
     '''
@@ -52,23 +44,47 @@ class PointLineReleaseSchema(ReleaseSchema):
     # _next_release_pos is set when loading from 'save' file and this does have
     # a setter that automatically converts it to Numpy array so use
     # WorldPointNumpy schema for it.
-    start_position = WorldPoint()
-    end_position = WorldPoint(missing=drop)
-    _next_release_pos = WorldPointNumpy(missing=drop)
-    end_release_time = SchemaNode(LocalDateTime(), missing=drop,
-                                  validator=convertible_to_seconds)
-    num_per_timestep = SchemaNode(Int(), missing=drop)
+    start_position = WorldPoint(
+        save=True, update=True
+    )
+    end_position = WorldPoint(
+        missing=drop, save=True, update=True
+    )
+    _next_release_pos = WorldPointNumpy(
+        missing=drop, save=True,
+    )
+    end_release_time = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    num_per_timestep = SchemaNode(
+        Int(), missing=drop, save=True, update=True
+    )
     description = 'PointLineRelease object schema'
 
 
-class ContinuousReleaseSchema(ReleaseSchema):
-    initial_elements = SchemaNode(Int(), missing=drop)
-    start_position = WorldPoint()
-    end_position = WorldPoint(missing=drop)
-    _next_release_pos = WorldPointNumpy(missing=drop)
-    end_release_time = SchemaNode(LocalDateTime(), missing=drop,
-                                  validator=convertible_to_seconds)
-    num_per_timestep = SchemaNode(Int(), missing=drop)
+class ContinuousReleaseSchema(BaseReleaseSchema):
+    initial_elements = SchemaNode(
+        Int(), missing=drop, save=True, update=True
+    )
+    start_position = WorldPoint(
+        save=True, update=True
+    )
+    end_position = WorldPoint(
+        missing=drop, save=True, update=True
+    )
+    _next_release_pos = WorldPointNumpy(
+        missing=drop, save=True,
+    )
+    end_release_time = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    num_per_timestep = SchemaNode(
+        Int(), missing=drop, save=True, update=True
+    )
     description = 'ContinuousRelease object schema'
 
 
@@ -82,7 +98,9 @@ class SpatialReleaseSchema(BaseReleaseSchema):
     TODO: also need a way to persist list of element_types
     '''
     description = 'SpatialRelease object schema'
-    start_position = StartPositions()
+    start_position = StartPositions(
+        save=True, update=True
+    )
 
 
 class Release(object):
@@ -91,14 +109,7 @@ class Release(object):
 
     It contains interface for Release objects
     """
-    _update = ['num_elements', 'release_time']
-
-    _create = ['num_released', 'start_time_invalid']
-    _create.extend(_update)
-
-    _state = copy.deepcopy(Serializable._state)
-    _state.add(save=_create, update=_update,
-               read=('num_released', 'start_time_invalid'))
+    _schema = BaseReleaseSchema
 
     def __init__(self, release_time, num_elements=0, name=None):
         self._num_elements = num_elements
@@ -219,21 +230,12 @@ class Release(object):
         return schema.deserialize(json_)
 
 
-class PointLineRelease(Release, Serializable):
+class PointLineRelease(Release):
     """
     The primary spill source class  --  a release of floating
     non-weathering particles, can be instantaneous or continuous, and be
     released at a single point, or over a line.
     """
-    _update = ['start_position', 'end_position', 'end_release_time',
-               'num_per_timestep']
-
-    _create = ['_next_release_pos']
-    _create.extend(_update)
-
-    _state = copy.deepcopy(Release._state)
-    _state.add(update=_update, save=_create)
-
     _schema = PointLineReleaseSchema
 
     def __init__(self,
@@ -649,17 +651,7 @@ class PointLineRelease(Release, Serializable):
         self._delta_pos = None
 
 
-class ContinuousRelease(Release, Serializable):
-
-    _update = ['start_position', 'end_position',
-               'end_release_time', 'num_per_timestep', 'initial_elements']
-
-    _create = ['_next_release_pos']
-    _create.extend(_update)
-
-    _state = copy.deepcopy(Release._state)
-    _state.add(update=_update, save=_create)
-
+class ContinuousRelease(Release):
     _schema = ContinuousReleaseSchema
 
     def __init__(self, release_time,
@@ -837,19 +829,11 @@ class ContinuousRelease(Release, Serializable):
         self.continuous.start_time_invalid = val
 
 
-class SpatialRelease(Release, Serializable):
+class SpatialRelease(Release):
     """
     A simple release class  --  a release of floating non-weathering particles,
     with their initial positions pre-specified
     """
-    _update = ['start_position']
-
-    _create = []
-    _create.extend(_update)
-
-    _state = copy.deepcopy(Release._state)
-    _state.add(update=_update, save=_create)
-
     _schema = SpatialReleaseSchema
 
     def __init__(self, release_time, start_position, name=None):
@@ -965,16 +949,16 @@ class ContinuousSpatialRelease(SpatialRelease):
                          num_elements,
                          name)
 
-        self._start_positions = (np.asarray(start_position,
+        self._start_positions = (np.asarray(start_positions,
                                            dtype=world_point_type).reshape((-1, 3)))
 
 
-    def num_elements_to_release(self, current_time, time_step):
-        '''
-        Return number of particles released in current_time + time_step
-        '''
-        return len([e for e in self._plume_elem_coords(current_time,
-                                                       time_step)])
+#     def num_elements_to_release(self, current_time, time_step):
+#         '''
+#         Return number of particles released in current_time + time_step
+#         '''
+#         return len([e for e in self._plume_elem_coords(current_time,
+#                                                        time_step)])
 
     def num_elements_to_release(self, current_time, time_step):
         num = 0
@@ -1007,17 +991,13 @@ class ContinuousSpatialRelease(SpatialRelease):
 
 
 
-class VerticalPlumeRelease(Release, Serializable):
+class VerticalPlumeRelease(Release):
     '''
     An Underwater Plume spill class -- a continuous release of particles,
     controlled by a contained spill generator object.
     - plume model generator will have an iteration method.  This will provide
     flexible looping and list comprehension behavior.
     '''
-    _state = copy.deepcopy(Release._state)
-
-    # what kinds of customized state attributes would we like to add here?
-    # _state.add(update=['start_position'], save=['start_position'])
 
     def __init__(self, release_time, num_elements, start_position,
                  plume_data, end_release_time, name=None):

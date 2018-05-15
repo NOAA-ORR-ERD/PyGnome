@@ -9,7 +9,6 @@ from gnome.basic_types import (world_point,
                                world_point_type,
                                spill_type,
                                status_code_type)
-from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 
 from gnome.environment import GridCurrent
@@ -144,10 +143,6 @@ class PyCurrentMover(movers.PyMover):
         (super(PyCurrentMover, self)
          .__init__(default_num_method=default_num_method, **kwargs))
 
-
-    def _attach_default_refs(self, ref_dict):
-        pass
-        return serializable.Serializable._attach_default_refs(self, ref_dict)
 
     @classmethod
     def from_netCDF(cls,

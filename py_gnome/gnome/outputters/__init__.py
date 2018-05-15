@@ -14,3 +14,21 @@ from image import IceImageOutput
 from shape import ShapeOutput
 
 # NOTE: no need for __all__ if you want export everything!
+outputters = [Outputter,
+              NetCDFOutput,
+              Renderer,
+              WeatheringOutput,
+              TrajectoryGeoJsonOutput,
+              IceGeoJsonOutput,
+              IceJsonOutput,
+              CurrentJsonOutput,
+              SpillJsonOutput,
+              KMZOutput,
+              IceImageOutput,
+              ShapeOutput]
+
+schemas = set()
+for cls in outputters:
+    if hasattr(cls, '_schema'):
+        schemas.add(cls._schema)
+schemas = list(schemas)

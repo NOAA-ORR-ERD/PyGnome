@@ -13,15 +13,12 @@ from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 import numpy as np
 
-from gnome.utilities.serializable import Field
 from gnome.utilities.time_utils import date_to_sec
 
 from gnome.utilities.map_canvas import MapCanvas
 
-from gnome.persist import class_from_objtype
-
 from . import Outputter, BaseOutputterSchema
-from py_gnome.gnome.movers.current_movers import IceMoverSchema
+from gnome.movers.current_movers import IceMoverSchema
 
 
 class IceImageSchema(BaseOutputterSchema):

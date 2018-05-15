@@ -8,9 +8,13 @@ import zipfile
 import json
 import glob
 import tempfile
+import gnome
+import six
 
 from gnome.exceptions import ReferencedObjectNotSet
 log = logging.getLogger(__name__)
+
+allowzip64=False
 
 
 def class_from_objtype(obj_type):
@@ -376,6 +380,16 @@ class GnomeId(AddLogger):
 
         return updated
 
+    def _check_type(self, other):
+        'check basic type equality'
+        if self is other:
+            return True
+
+        if type(self) == type(other):
+            return True
+
+        return False
+
     def __eq__(self, other):
         """
         .. function:: __eq__(other)
@@ -398,22 +412,22 @@ class GnomeId(AddLogger):
 
         NOTE: super is not used.
         """
+        print('comparing {0} and {1}'.format(self, other))
 
         if not self._check_type(other):
             return False
 
-        for name in self._state.get_names('save'):
-            if not self._state[name].test_for_eq:
+        schema = self._schema()
+
+        for name in schema.get_nodes_by_attr('all'):
+            subnode = schema.get(name)
+            if ((hasattr(subnode, 'test_for_eq') and
+                not subnode.test_for_eq) or
+                subnode.name == 'id'):
                 continue
 
-            if hasattr(self, name):
-                self_attr = getattr(self, name)
-                other_attr = getattr(other, name)
-            else:
-                # not an attribute, let attr_to_dict call appropriate function
-                # and check the dicts are equal
-                self_attr = self.attr_to_dict(name)
-                other_attr = other.attr_to_dict(name)
+            self_attr = getattr(self, name)
+            other_attr = getattr(other, name)
 
             if not isinstance(self_attr, np.ndarray):
                 if isinstance(self_attr, float):
@@ -474,7 +488,14 @@ class GnomeId(AddLogger):
         :param overwrite: If True, overwrites the file at the saveloc
         """
 
-        if os.path.isdir(saveloc):
+        if saveloc is None:
+            #only provide an open zipfile object. When this is closed or the object
+            #loses context, the temporary file will automatically delete itself
+            #should be useful for testing without having to deal with cleanup.
+            zipfile_ = zipfile.ZipFile(tempfile.SpooledTemporaryFile('w+b'), 'a',
+                             compression=zipfile.ZIP_DEFLATED,
+                             allowZip64=allowzip64)
+        elif os.path.isdir(saveloc):
             filename = os.path.join(saveloc, self.name + '.zip')
             if os.path.exists(filename):
                 if not overwrite:
@@ -482,27 +503,20 @@ class GnomeId(AddLogger):
             else:
                 zipfile_ = zipfile.ZipFile(saveloc, 'w',
                                                compression=zipfile.ZIP_DEFLATED,
-                                               allowZip64=self._allowzip64)
-        elif saveloc is None:
-            #only provide an open zipfile object. When this is closed or the object
-            #loses context, the temporary file will automatically delete itself
-            #should be useful for testing without having to deal with cleanup.
-            zipfile_ = zipfile.ZipFile(tempfile.SpooledTemporaryFile('w+b'), 'a',
-                             compression=zipfile.ZIP_DEFLATED,
-                             allowZip64=self._allowzip64)
+                                               allowZip64=allowzip64)
         else:
             #saveloc is file path
             if not overwrite:
                 if zipfile.is_zipfile(saveloc):
                     zipfile_ = zipfile.ZipFile(saveloc,'a',
                                             compression=zipfile.ZIP_DEFLATED,
-                                            allowZip64=self._allowzip64)
+                                            allowZip64=allowzip64)
                 else:
                     raise ValueError('{0} already exists and overwrite is False'.format(filename))
             else:
                 zipfile_ = zipfile.ZipFile(saveloc,'w',
                                            compression=zipfile.ZIP_DEFLATED,
-                                           allowZip64=self._allowzip64)
+                                           allowZip64=allowzip64)
         if refs is None:
             refs = Refs()
         obj_json = self._schema()._save(self,
@@ -534,26 +548,52 @@ class GnomeId(AddLogger):
         :param refs: A dictionary of id -> object instances that will be used to
         complete references, if available.
         '''
-        saveloc = fp = json_ =None
-        if os.path.isdir(saveloc):
-            if filename:
-                fn = os.path.join(saveloc, filename)
-                json_ = json.load(fn, parse_float=True, parse_int=True)
-                return cls._schema().load(json_, saveloc=saveloc, refs=refs)
-            else:
-                search = os.path.join(saveloc, '*.json')
-                for fn in glob.glob(search):
+        fp = json_ =None
+        if not refs:
+            refs = Refs()
+        if isinstance(saveloc, six.string_types):
+            if os.path.isdir(saveloc):
+                if filename:
+                    fn = os.path.join(saveloc, filename)
                     json_ = json.load(fn, parse_float=True, parse_int=True)
-                    if 'obj_type' in json_:
-                        if class_from_objtype(json_['obj_type']) is cls:
-                            return cls._schema().load(json_, saveloc=saveloc, refs=refs)
-                raise ValueError('No .json file containing a {0} found in folder {1}'.format(cls.__name__, saveloc))
-
-        elif zipfile.is_zipfile(saveloc):
-            #saveloc is a zip archive
-            #get json from the file to start the process
-            if not isinstance(saveloc, zipfile.ZipFile):
+                    return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+                else:
+                    search = os.path.join(saveloc, '*.json')
+                    for fn in glob.glob(search):
+                        json_ = json.load(fn, parse_float=True, parse_int=True)
+                        if 'obj_type' in json_:
+                            if class_from_objtype(json_['obj_type']) is cls:
+                                return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+                    raise ValueError('No .json file containing a {0} found in folder {1}'.format(cls.__name__, saveloc))
+            elif zipfile.is_zipfile(saveloc):
+                #saveloc is a zip archive
+                #get json from the file to start the process
                 saveloc = zipfile.ZipFile(saveloc, 'r')
+                if filename:
+                    fp = saveloc.open(filename, 'rU')
+                    json_ = json.load(fp, parse_float=True, parse_int=True)
+                    return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+                else:
+                    #no filename, so search archive
+                    for fn in saveloc.namelist():
+                        if fn.endswith('.json'):
+                            fp = saveloc.open(fn, 'rU')
+                            json_ = json.load(fp, parse_float=True, parse_int=True)
+                            if 'obj_type' in json_:
+                                if class_from_objtype(json_['obj_type']) is cls:
+                                    return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+                    raise ValueError('No .json file containing a {0} found in archive {1}'.format(cls.__name__, saveloc))
+            else:
+                #saveloc is .json file
+
+                json_ = json.load(saveloc, parse_float=True, parse_int=True)
+                if 'obj_type' in json:
+                    if class_from_objtype(json_['obj_type']) is not cls:
+                        raise ValueError("{1} does not contain a {0}".format(cls.__name__, saveloc))
+                    else:
+                        dir = os.path.dirname(saveloc)
+                        return cls._schema().load(json_, saveloc=dir, refs=refs)
+        elif isinstance(saveloc, zipfile.ZipFile):
             if filename:
                 fp = saveloc.open(filename, 'rU')
                 json_ = json.load(fp, parse_float=True, parse_int=True)
@@ -562,23 +602,12 @@ class GnomeId(AddLogger):
                 #no filename, so search archive
                 for fn in saveloc.namelist():
                     if fn.endswith('.json'):
-                        json_ = json.load(fn, parse_float=True, parse_int=True)
+                        fp = saveloc.open(fn, 'rU')
+                        json_ = json.load(fp, parse_float=True, parse_int=True)
                         if 'obj_type' in json_:
                             if class_from_objtype(json_['obj_type']) is cls:
                                 return cls._schema().load(json_, saveloc=saveloc, refs=refs)
                 raise ValueError('No .json file containing a {0} found in archive {1}'.format(cls.__name__, saveloc))
-
-
         else:
-            #saveloc is .json file
-
-            json_ = json.load(saveloc, parse_float=True, parse_int=True)
-            if 'obj_type' in json:
-                if class_from_objtype(json_['obj_type']) is not cls:
-                    raise ValueError("{1} does not contain a {0}".format(cls.__name__, saveloc))
-                else:
-                    dir = os.path.dirname(saveloc)
-                    return cls._schema().load(json_, saveloc=dir, refs=refs)
-
-
+            raise ValueError('saveloc was not a string path or an open zipfile.ZipFile object')
         pass

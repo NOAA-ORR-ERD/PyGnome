@@ -10,14 +10,13 @@ import numpy as np
 
 from colander import (SchemaNode,
                       String, Float, Int, Bool, List,
-                      drop, OneOf)
+                      drop, OneOf, SequenceSchema)
 
 from gnome.environment import Environment
 
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.utilities.serializable import Serializable, Field
 
 from gnome.basic_types import oil_status, fate
 from gnome.spill_container import SpillContainerPair
@@ -27,90 +26,100 @@ from gnome.weatherers import (weatherer_sort,
                               Weatherer,
                               WeatheringData,
                               FayGravityViscous,
-                              Langmuir)
+                              Langmuir,
+                              weatherer_schemas)
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.persist import (extend_colander,
                            validators,
-                           References,
-                           class_from_objtype)
+                           References)
 from gnome.persist.base_schema import (ObjTypeSchema,
-                                       CollectionItemsList)
+                                       CollectionItemsList,
+    GeneralGnomeObjectSchema)
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
+from gnome.spill.spill import SpillSchema
+from gnome.gnomeobject import GnomeId
 
 
 class ModelSchema(ObjTypeSchema):
     'Colander schema for Model object'
-    time_step = SchemaNode(Float(), missing=drop)
-    weathering_substeps = SchemaNode(Int(), missing=drop)
-    start_time = SchemaNode(extend_colander.LocalDateTime(),
-                            validator=validators.convertible_to_seconds,
-                            missing=drop)
-    duration = SchemaNode(extend_colander.TimeDelta(), missing=drop)
-    uncertain = SchemaNode(Bool(), missing=drop)
-    cache_enabled = SchemaNode(Bool(), missing=drop)
-    num_time_steps = SchemaNode(Int(), missing=drop)
-    make_default_refs = SchemaNode(Bool(), missing=drop)
-    mode = SchemaNode(String(),
-                      validator=OneOf(['gnome', 'adios', 'roc']),
-                      missing=drop)
-    location = SchemaNode(List(), missing=drop)
+    time_step = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    weathering_substeps = SchemaNode(
+        Int(), missing=drop, save=True, update=True
+    )
+    start_time = SchemaNode(
+        extend_colander.LocalDateTime(),
+        validator=validators.convertible_to_seconds, missing=drop,
+        save=True, update=True
+    )
+    duration = SchemaNode(
+        extend_colander.TimeDelta(), missing=drop,
+        save=True, update=True
+    )
+    uncertain = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    cache_enabled = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    num_time_steps = SchemaNode(
+        Int(), missing=drop, save=True, update=True
+    )
+    make_default_refs = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    mode = SchemaNode(
+        String(), validator=OneOf(['gnome', 'adios', 'roc']), missing=drop,
+        save=True, update=True
+    )
+    location = SchemaNode(
+        List(), missing=drop,
+        save=True, update=True
+    )
+    spills = SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=[SpillSchema]
+        ),
+        missing=drop, save=True, update=True, save_reference=True, test_for_eq=False
+    )
+    uncertain_spills = SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=[SpillSchema]
+        ),
+        missing=drop, save=True, update=True, save_reference=True, test_for_eq=False
+    )
+    movers = SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=gnome.movers.mover_schemas
+        ),
+        missing=drop, save=True, update=True, save_reference=True
+    )
+    weatherers = SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=weatherer_schemas
+        ),
+        missing=drop, save=True, update=True, save_reference=True
+    )
+    environment = SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=gnome.environment.schemas
+        ),
+        missing=drop, save=True, update=True, save_reference=True
+    )
+    outputters = SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=gnome.outputters.schemas
+        ),
+        missing=drop, save=True, update=True, save_reference=True
+    )
 
-    def __init__(self, json_='webapi', *args, **kwargs):
-        '''
-        Add default schema for orderedcollections if oc_schema=True
-        The default schema works for 'save' files since it only keeps the same
-        info {'obj_type' and 'id'} for all elements in OC. For 'webapi', we
-        cannot do this and must deserialize each element of the collection
-        using the deserialize method of each object; so these are not added to
-        schema for 'webapi'
-        '''
-        if json_ == 'save':
-            self.add(CollectionItemsList(missing=drop, name='spills'))
-            self.add(CollectionItemsList(missing=drop,
-                     name='uncertain_spills'))
-            self.add(CollectionItemsList(missing=drop, name='movers'))
-            self.add(CollectionItemsList(missing=drop,
-                     name='weatherers'))
-            self.add(CollectionItemsList(missing=drop,
-                     name='environment'))
-            self.add(CollectionItemsList(missing=drop,
-                     name='outputters'))
-        super(ModelSchema, self).__init__(*args, **kwargs)
 
-
-class Model(Serializable):
+class Model(GnomeId):
     '''
     PyGnome Model Class
     '''
-    _update = ['time_step',
-               'weathering_substeps',
-               'start_time',
-               'duration',
-               'uncertain',
-               'cache_enabled',
-               'mode',
-               'map',
-               'movers',
-               'weatherers',
-               'environment',
-               'outputters',
-               'location']
-
-    _create = []
-    _create.extend(_update)
-    _state = copy.deepcopy(Serializable._state)
     _schema = ModelSchema
-
-    # no need to copy parent's _state in this case
-    _state.add(save=_create, update=_update)
-
-    # override __eq__ since 'spills' and 'uncertain_spills' need to be checked
-    # They both have _to_dict() methods to return underlying ordered
-    # collections and that would not be the correct way to check equality
-    _state += [Field('spills', save=True, update=True, test_for_eq=False),
-               Field('uncertain_spills', save=True, test_for_eq=False),
-               Field('num_time_steps', read=True),
-               Field('make_default_refs', save=True, update=True)]
 
     # list of OrderedCollections
     _oc_list = ['movers', 'weatherers', 'environment', 'outputters']

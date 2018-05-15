@@ -19,7 +19,7 @@ from __future__ import division
 
 import numpy as np
 from gnome.gnomeobject import GnomeId
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.extend_colander import DefaultTupleSchema
 from colander import drop, TupleSchema, Float, SchemaNode, Int
 
@@ -52,7 +52,7 @@ def to_2d_coords(coords):
                          "a Nx3 array-like object of (lon, lat, depth) triples\n"
                          )
 
-class ProjectionSchema(ObjType):
+class ProjectionSchema(ObjTypeSchema):
     bounding_box = TupleSchema(
         children=[
             TupleSchema(

@@ -1,6 +1,8 @@
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
+from gnome.gnomeobject import GnomeId
+from gnome.environment.gridded_objects_base import PyGrid
 
 """
 An implementation of the GNOME land-water map.
@@ -38,7 +40,6 @@ from gnome.utilities.projections import (FlatEarthProjection,
                                          RectangularGridProjection,
                                          RegularGridProjection)
 from gnome.utilities.map_canvas import MapCanvas
-from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
 from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
@@ -56,29 +57,49 @@ from gnome.persist import base_schema
 
 
 class GnomeMapSchema(base_schema.ObjTypeSchema):
-    map_bounds = base_schema.LongLatBounds(missing=drop)
-    spillable_area = base_schema.PolygonSet(missing=drop)
+    map_bounds = base_schema.LongLatBounds(
+        missing=drop, save=True, update=True
+    )
+    spillable_area = base_schema.PolygonSet(
+        missing=drop, save=True, update=True
+    )
     # land_polys = base_schema.PolygonSet(missing=drop)
 
 
 class ParamMapSchema(GnomeMapSchema):
-    center = base_schema.WorldPoint()
-    distance = SchemaNode(Integer())
-    bearing = SchemaNode(Integer())
-    units = SchemaNode(String())
+    center = base_schema.WorldPoint(
+        save=True, update=True
+    )
+    distance = SchemaNode(
+        Integer(), save=True, update=True
+    )
+    bearing = SchemaNode(
+        Integer(), save=True, update=True
+    )
+    units = SchemaNode(
+        String(), save=True, update=True
+    )
 
 
 class MapFromBNASchema(GnomeMapSchema):
-    filename = SchemaNode(String())
-    refloat_halflife = SchemaNode(Float(), missing=drop)
+    filename = SchemaNode(
+        String(), save=True, read=True, isdatafile=True, test_for_eq=False
+    )
+    refloat_halflife = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
 
 
 class MapFromUGridSchema(GnomeMapSchema):
-    filename = SchemaNode(String())
-    refloat_halflife = SchemaNode(Float(), missing=drop)
+    filename = SchemaNode(
+        String(), save=True, read=True, isdatafile=True, test_for_eq=False
+    )
+    refloat_halflife = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
 
 
-class GnomeMap(Serializable):
+class GnomeMap(GnomeId):
     """
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.
@@ -86,11 +107,6 @@ class GnomeMap(Serializable):
     This also serves as a description of the interface and
     base class for more complex maps
     """
-    _update = ['map_bounds', 'spillable_area']
-    _create = []
-    _create.extend(_update)
-    _state = copy.deepcopy(Serializable._state)
-    _state.add(save=_create, update=_update)
     _schema = GnomeMapSchema
 
     refloat_halflife = None  # note -- no land, so never used
@@ -344,31 +360,8 @@ class GnomeMap(Serializable):
         return FeatureCollection([])
 
 
+
 class ParamMap(GnomeMap):
-    _state = copy.deepcopy(GnomeMap._state)
-    _state.update(['map_bounds', 'spillable_area'], save=False)
-#     _state.add(save=['center', 'distance', 'bearing', 'units'],
-#                update=['center', 'distance', 'bearing', 'units'])
-    _state.add_field([Field('center',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
-    _state.add_field([Field('distance',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
-    _state.add_field([Field('bearing',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
-    _state.add_field([Field('units',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
 
     _schema = ParamMapSchema
 
@@ -1022,11 +1015,6 @@ class MapFromBNA(RasterMap):
 
     Currently only support BNA, but could be shapefile, or ???
     """
-    _state = copy.deepcopy(RasterMap._state)
-    _state.update(['map_bounds', 'spillable_area'], save=False)
-    _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
-    _state.add_field(Field('filename', isdatafile=True, save=True, read=True,
-                           test_for_eq=False))
     _schema = MapFromBNASchema
 
     def __init__(self, filename, raster_size=4096 * 4096, **kwargs):
@@ -1219,11 +1207,6 @@ class MapFromUGrid(RasterMap):
     """
     A raster land-water map, created from netcdf File of a UGrid
     """
-    _state = copy.deepcopy(RasterMap._state)
-    _state.update(['map_bounds', 'spillable_area'], save=False)
-    _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
-    _state.add_field(Field('filename', isdatafile=True, save=True, read=True,
-                           test_for_eq=False))
     _schema = MapFromUGridSchema
 
     def __init__(self, filename, raster_size=1024 * 1024, **kwargs):
@@ -1257,7 +1240,7 @@ class MapFromUGrid(RasterMap):
         """
         self.filename = filename
 
-        grid = pyugrid.UGrid.from_ncfile(filename)
+        grid = PyGrid.from_netCDF(filename)
 
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None

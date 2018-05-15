@@ -1023,7 +1023,7 @@ class CurrentCycleMover(GridCurrentMover):
         return None
 
 
-class ComponentMoverSchema(ObjTypeSchema, ProcessSchema):
+class ComponentMoverSchema(ProcessSchema):
     '''static schema for ComponentMover'''
     filename1 = SchemaNode(
         String(), missing=drop,
@@ -1069,8 +1069,6 @@ class ComponentMoverSchema(ObjTypeSchema, ProcessSchema):
 
 
 class ComponentMover(CurrentMoversBase):
-    _state = copy.deepcopy(CurrentMoversBase._state)
-
     _schema = ComponentMoverSchema
 
     def __init__(self, filename1, filename2=None, wind=None,

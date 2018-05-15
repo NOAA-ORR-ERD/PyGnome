@@ -68,61 +68,61 @@ class Test_LocalDateTime(object):
         assert result == datetime(2016, 2, 12, 13, 32)
 
 
-class TestObjType(object):
-    '''
-    Tests for the colander schematype that represents gnome objects.
-    Tests for the schema are done concurrently since they are paired
-    objects
-    '''
-    def test_construction(self):
-        #__init__
-        class TestSchema(ObjTypeSchema):
-            pass
-        assert TestSchema().schema_type == ObjType
-
-    def test_cstruct_children(self):
-        #cstruct_children
-        pass
-
-    def test_impl(self):
-        #_impl
-        test_schema = ObjTypeSchema()
-
-    def test_serial_pre(self):
-        #_ser
-        pass
-
-    def test_serialize(self):
-        #serialize
-        pass
-
-    def test_deserial_post(self):
-        #_deser
-        pass
-
-    def test_deserialize(self):
-        #deserialize
-        pass
-
-    def test_save_pre(self):
-        #_prepare_save
-        pass
-
-    def test_save_post(self):
-        #_save
-        pass
-
-    def test_save(self):
-        #save
-        pass
-
-    def test_load_pre(self):
-        #_hydrate_json
-        pass
-
-    def test_load(self):
-        #load
-        pass
+# class TestObjType(object):
+#     '''
+#     Tests for the colander schematype that represents gnome objects.
+#     Tests for the schema are done concurrently since they are paired
+#     objects
+#     '''
+#     def test_construction(self):
+#         #__init__
+#         class TestSchema(ObjTypeSchema):
+#             pass
+#         assert TestSchema().schema_type == ObjType
+#
+#     def test_cstruct_children(self):
+#         #cstruct_children
+#         pass
+#
+#     def test_impl(self):
+#         #_impl
+#         test_schema = ObjTypeSchema()
+#
+#     def test_serial_pre(self):
+#         #_ser
+#         pass
+#
+#     def test_serialize(self):
+#         #serialize
+#         pass
+#
+#     def test_deserial_post(self):
+#         #_deser
+#         pass
+#
+#     def test_deserialize(self):
+#         #deserialize
+#         pass
+#
+#     def test_save_pre(self):
+#         #_prepare_save
+#         pass
+#
+#     def test_save_post(self):
+#         #_save
+#         pass
+#
+#     def test_save(self):
+#         #save
+#         pass
+#
+#     def test_load_pre(self):
+#         #_hydrate_json
+#         pass
+#
+#     def test_load(self):
+#         #load
+#         pass
 
 
 
@@ -141,8 +141,9 @@ class TestDemoObj(object):
         assert deser.variable == inst.variable
         assert deser.variables == inst.variables
         json_, zipfile_, refs = inst.save(saveloc=None)
-
-        loaded = inst.__class__._schema().load(json_, zipfile_, refs)
+        loaded = DemoObj.load(zipfile_)
+        pdb.set_trace()
+        assert inst == loaded
         pdb.set_trace()
 
 

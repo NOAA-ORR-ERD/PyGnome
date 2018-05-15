@@ -19,7 +19,6 @@ from colander import (SchemaNode, Float)
 
 from gnome.basic_types import oil_status, mover_type
 from gnome.utilities.projections import FlatEarthProjection as proj
-from gnome.utilities import serializable
 
 from gnome.movers import Mover, ProcessSchema
 

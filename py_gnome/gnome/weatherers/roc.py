@@ -22,7 +22,6 @@ from gnome import _valid_units
 from gnome.basic_types import oil_status, fate as bt_fate
 from gnome.array_types import mass, density, fay_area, frac_water
 
-from gnome.utilities.serializable import Serializable, Field
 
 from gnome.weatherers import Weatherer
 from gnome.weatherers.core import WeathererSchema
@@ -32,6 +31,10 @@ from gnome.persist.extend_colander import (LocalDateTime,
                                            DefaultTupleSchema,
                                            NumpyArray,
                                            TimeDelta)
+from gnome.gnomeobject import GnomeId
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.environment.wind import WindSchema
+from gnome.environment.gridded_objects_base import VectorVariableSchema
 
 
 # define valid units at module scope because the Schema and Object both use it
@@ -61,12 +64,12 @@ class OnSceneTimeSeriesSchema(SequenceSchema):
 
 
 class ResponseSchema(WeathererSchema):
-    timeseries = OnSceneTimeSeriesSchema()
+    timeseries = OnSceneTimeSeriesSchema(
+        save=True, update=True
+    )
 
 
-class Response(Weatherer, Serializable):
-    _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('timeseries', save=True, update=True)]
+class Response(Weatherer):
     _oc_list = ['timeseries']
 
     _schema = ResponseSchema
@@ -251,19 +254,19 @@ class PlatformUnitsSchema(MappingSchema):
 class PlatformSchema(base_schema.ObjTypeSchema):
     def __init__(self, *args, **kwargs):
         for k in Platform._attr.keys():
-            self.add(SchemaNode(Float(), missing=drop, name=k))
+            self.add(SchemaNode(Float(), missing=drop, name=k, save=True, update=True))
 
-        units = PlatformUnitsSchema()
+        units = PlatformUnitsSchema(save=True, update=True)
         units.missing = drop
         units.name = 'units'
 
         self.add(units)
-        self.add(SchemaNode(String(), name="type", missing=drop))
+        self.add(SchemaNode(String(), name="type", missing=drop, save=True, update=True))
 
         super(PlatformSchema, self).__init__()
 
 
-class Platform(Serializable):
+class Platform(GnomeId):
 
     _attr = {"swath_width_max": ('ft', 'length', _valid_dist_units),
              "swath_width": ('ft', 'length', _valid_dist_units),
@@ -311,12 +314,6 @@ class Platform(Serializable):
                                    js['aircraft'])))
 
     _schema = PlatformSchema
-
-    _state = copy.deepcopy(Serializable._state)
-
-    _state += [Field(k, save=True, update=True) for k in _attr.keys()]
-    _state += [Field('units', save=True, update=True)]
-    _state += [Field('type', save=True, update=True)]
 
     def __init__(self, units=None, type='Platform',
                  **kwargs):
@@ -378,13 +375,6 @@ class Platform(Serializable):
         s_w = self.get('swadth_width', 'ft')
 
         return uc.convert('area', 'ft^2', 'acre', (dosage * a_s * s_w))
-
-    @classmethod
-    def new_from_dict(cls, dict_):
-        '''
-        Need to override this, because what the default one does is insane
-        '''
-        return cls(**dict_)
 
     def one_way_transit_time(self, dist, unit='nm', payload=False):
         '''return unit = sec'''
@@ -604,24 +594,41 @@ class DisperseUnitsSchema(MappingSchema):
 
 
 class DisperseSchema(ResponseSchema):
-    loading_type = SchemaNode(String(),
-                              validator=OneOf(['simultaneous', 'separate']))
-    dosage_type = SchemaNode(String(), missing=drop,
-                             validator=OneOf(['auto', 'custom']))
-    disp_oil_ratio = SchemaNode(Float(), missing=drop)
-    disp_eff = SchemaNode(Float(), missing=drop)
-    platform = PlatformSchema()
+    loading_type = SchemaNode(
+        String(), validator=OneOf(['simultaneous', 'separate']),
+        save=True, update=True
+    )
+    dosage_type = SchemaNode(
+        String(), missing=drop, validator=OneOf(['auto', 'custom']),
+        save=True, update=True
+    )
+    disp_oil_ratio = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    disp_eff = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    platform = PlatformSchema(
+        save=True, update=True
+    )
+#     units = DisperseUnitsSchema(
+#         missing=drop, save=True, update=True
+#     )
+    report = SequenceSchema(
+        SchemaNode(String()),
+        read=True
+    )
+    wind = GeneralGnomeObjectSchema(
+        acceptable_schemas=[WindSchema, VectorVariableSchema],
+        save=True, update=True, save_reference=True
+    )
 
     def __init__(self, *args, **kwargs):
         for k, _v in Disperse._attr.items():
-            self.add(SchemaNode(Float(), missing=drop, name=k))
+            self.add(SchemaNode(Float(), missing=drop, name=k), save=True, update=True)\
 
-        units = DisperseUnitsSchema()
-        units.missing = drop
-        units.name = 'units'
-
-        self.add(units)
-
+        #need to do this because of order of class definitions
+        self.add(DisperseUnitsSchema(name='units', missing=drop, save=True, update=True))
         super(DisperseSchema, self).__init__()
 
 
@@ -635,17 +642,6 @@ class Disperse(Response):
 
     _si_units = dict([(k, v[0]) for k, v in _attr.items()])
     _units_type = dict([(k, (v[1], v[2])) for k, v in _attr.items()])
-
-    _state = copy.deepcopy(Response._state)
-    _state += [Field(k, save=True, update=True) for k in _attr.keys()]
-    _state += [Field('units', save=True, update=True),
-               Field('disp_oil_ratio', save=True, update=True),
-               Field('disp_eff', save=True, update=True),
-               Field('platform', save=True, update=True),
-               Field('dosage_type', save=True, update=True),
-               Field('loading_type', save=True, update=True),
-               Field('report', save=False, update=False),
-               Field('wind', save=True, update=True, save_reference=True)]
 
     _schema = DisperseSchema
 
@@ -1653,13 +1649,27 @@ class BurnUnitsSchema(MappingSchema):
 
 
 class BurnSchema(ResponseSchema):
-    offset = SchemaNode(Integer())
-    boom_length = SchemaNode(Integer())
-    boom_draft = SchemaNode(Integer())
-    speed = SchemaNode(Float())
-    throughput = SchemaNode(Float())
-    burn_efficiency_type = SchemaNode(String())
-    units = BurnUnitsSchema()
+    offset = SchemaNode(
+        Integer(), save=True, update=True
+    )
+    boom_length = SchemaNode(
+        Integer(), save=True, update=True
+    )
+    boom_draft = SchemaNode(
+        Integer(), save=True, update=True
+    )
+    speed = SchemaNode(
+        Float(), save=True, update=True
+    )
+    throughput = SchemaNode(
+        Float(), save=True, update=True
+    )
+    burn_efficiency_type = SchemaNode(
+        String(), save=True, update=True
+    )
+    units = BurnUnitsSchema(
+        save=True, update=True
+    )
 
 
 class Burn(Response):
@@ -1675,14 +1685,6 @@ class Burn(Response):
                    'speed': ('velocity', _valid_vel_units),
                    '_boom_capacity_max': ('volume', _valid_vol_units)}
 
-    _state = copy.deepcopy(Response._state)
-    _state += [Field('offset', save=True, update=True),
-               Field('boom_length', save=True, update=True),
-               Field('boom_draft', save=True, update=True),
-               Field('speed', save=True, update=True),
-               Field('throughput', save=True, update=True),
-               Field('burn_efficiency_type', save=True, update=True),
-               Field('units', save=True, update=True)]
 
     _schema = BurnSchema
 
@@ -2073,25 +2075,57 @@ class SkimUnitsSchema(MappingSchema):
 
 
 class SkimSchema(ResponseSchema):
-    units = SkimUnitsSchema()
-    speed = SchemaNode(Float())
-    storage = SchemaNode(Float())
-    swath_width = SchemaNode(Float())
-    group = SchemaNode(String())
-    throughput = SchemaNode(Float())
-    nameplate_pump = SchemaNode(Float())
-    skim_efficiency_type = SchemaNode(String())
-    decant = SchemaNode(Float())
-    decant_pump = SchemaNode(Float())
-    rig_time = SchemaNode(Float())
-    transit_time = SchemaNode(Float())
-    offload_to = SchemaNode(String(), missing=drop)
-    discharge_pump = SchemaNode(Float())
-    recovery = SchemaNode(String())
-    recovery_ef = SchemaNode(Float())
+    units = SkimUnitsSchema(
+        save=True, update=True
+    )
+    speed = SchemaNode(
+        Float(), save=True, update=True
+    )
+    storage = SchemaNode(
+        Float(), save=True, update=True
+    )
+    swath_width = SchemaNode(
+        Float(), save=True, update=True
+    )
+    group = SchemaNode(
+        String(), save=True, update=True
+    )
+    throughput = SchemaNode(
+        Float(), save=True, update=True
+    )
+    nameplate_pump = SchemaNode(
+        Float(), save=True, update=True
+    )
+    skim_efficiency_type = SchemaNode(
+        String(), save=True, update=True
+    )
+    decant = SchemaNode(
+        Float(), save=True, update=True
+    )
+    decant_pump = SchemaNode(
+        Float(), save=True, update=True
+    )
+    rig_time = SchemaNode(
+        Float(), save=True, update=True
+    )
+    transit_time = SchemaNode(
+        Float(), save=True, update=True
+    )
+    offload_to = SchemaNode(
+        String(), save=True, update=True
+    )
+    discharge_pump = SchemaNode(
+        Float(), save=True, update=True
+    )
+    recovery = SchemaNode(
+        String(), save=True, update=True
+    )
+    recovery_ef = SchemaNode(
+        Float(), save=True, update=True
+    )
     barge_arrival = SchemaNode(LocalDateTime(),
                                validator=validators.convertible_to_seconds,
-                               missing=drop)
+                               missing=drop, save=True, update=True)
 
 
 class Skim(Response):
@@ -2108,23 +2142,6 @@ class Skim(Response):
                    'speed': ('velocity', _valid_vel_units),
                    'swath_width': ('length', _valid_dist_units),
                    'discharge_pump': ('discharge', _valid_dis_units)}
-
-    _state = copy.deepcopy(Response._state)
-    _state += [Field('units', save=True, update=True),
-               Field('speed', save=True, update=True),
-               Field('storage', save=True, update=True),
-               Field('swath_width', save=True, update=True),
-               Field('group', save=True, update=True),
-               Field('throughput', save=True, update=True),
-               Field('nameplate_pump', save=True, update=True),
-               Field('discharge_pump', save=True, update=True),
-               Field('skim_efficiency_type', save=True, update=True),
-               Field('decant', save=True, update=True),
-               Field('decant_pump', save=True, update=True),
-               Field('rig_time', save=True, update=True),
-               Field('transit_time', save=True, update=True),
-               Field('recovery', save=True, update=True),
-               Field('recovery_ef', save=True, update=True)]
 
     _schema = SkimSchema
 

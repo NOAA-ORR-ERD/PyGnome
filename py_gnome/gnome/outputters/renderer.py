@@ -23,12 +23,11 @@ from gnome.basic_types import oil_status
 
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities.map_canvas import MapCanvas
-from gnome.utilities.serializable import Field
 
 from gnome.utilities import projections
 from gnome.utilities.projections import FlatEarthProjection, ProjectionSchema
 
-from gnome.persist import base_schema, class_from_objtype
+from gnome.persist import base_schema
 
 from . import Outputter, BaseOutputterSchema
 

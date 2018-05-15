@@ -10,7 +10,7 @@ from colander import (SchemaNode, SequenceSchema,
 import gridded
 
 from gnome.persist import base_schema
-from py_gnome.gnome.gnomeobject import GnomeId
+from gnome.gnomeobject import GnomeId
 
 
 class TimeSchema(base_schema.ObjTypeSchema):

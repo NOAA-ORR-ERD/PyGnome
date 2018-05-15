@@ -4,7 +4,6 @@ the Wind object defines the Wind conditions for the spill
 """
 import copy
 
-from gnome.utilities import serializable
 
 from repoze.lru import lru_cache
 from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
@@ -23,9 +22,9 @@ class EnvironmentMeta(GnomeObjMeta):
     def __init__(self, _name, _bases, _dct):
         self._subclasses = []
         for c in self.__mro__:
-            if hasattr(c, '_subclasses') and c is not cls:
-                c._subclasses.append(cls)
-        super(EnvironmentMeta, cls).__init__(_name, _bases, _dct)
+            if hasattr(c, '_subclasses') and c is not self:
+                c._subclasses.append(self)
+        super(EnvironmentMeta, self).__init__(_name, _bases, _dct)
 
 
 class Environment(GnomeId):
@@ -36,7 +35,6 @@ class Environment(GnomeId):
     defined in the Model object requires it.
     """
     _subclasses = []
-    _state = copy.deepcopy(serializable.Serializable._state)
 
     # env objects referenced by others using this attribute name
     # eg: For Wind objects, set to 'wind', for Water object set to 'water'

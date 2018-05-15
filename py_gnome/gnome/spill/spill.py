@@ -16,9 +16,8 @@ from inspect import getmembers, ismethod
 import unit_conversion as uc
 from colander import (SchemaNode, Bool, String, Float, drop)
 
-from gnome.utilities.serializable import Serializable, Field
-from gnome.persist import class_from_objtype
-from gnome.persist.base_schema import ObjTypeSchema
+from gnome.gnomeobject import GnomeId
+from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
 
 from . import elements
 from .release import (PointLineRelease,
@@ -26,9 +25,13 @@ from .release import (PointLineRelease,
                       GridRelease,
                       SpatialRelease)
 from .. import _valid_units
+from gnome.spill.release import BaseReleaseSchema, PointLineReleaseSchema,\
+    ContinuousReleaseSchema, SpatialReleaseSchema
+from gnome.spill.elements.element_type import ElementTypeSchema
+from gnome.environment.water import WaterSchema
 
 
-class BaseSpill(Serializable, object):
+class BaseSpill(GnomeId):
     """
     A base class for spills -- so we can check for them, etc.
 
@@ -165,27 +168,42 @@ class BaseSpill(Serializable, object):
 
 class SpillSchema(ObjTypeSchema):
     'Spill class schema'
-    on = SchemaNode(Bool(), default=True, missing=True,
-                    description='on/off status of spill')
-    amount = SchemaNode(Float(), missing=drop)
-    units = SchemaNode(String(), missing=drop)
-    amount_uncertainty_scale = SchemaNode(Float(), missing=drop)
+    on = SchemaNode(
+        Bool(), default=True, missing=True,
+        description='on/off status of spill',
+        save=True, update=True
+    )
+    release = GeneralGnomeObjectSchema(
+        acceptable_schemas=[BaseReleaseSchema,
+                            PointLineReleaseSchema,
+                            ContinuousReleaseSchema,
+                            SpatialReleaseSchema],
+        save=True, update=True
+    )
+    amount = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    units = SchemaNode(
+        String(), missing=drop, save=True, update=True
+    )
+    amount_uncertainty_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    frac_coverage = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    element_type = ElementTypeSchema(
+        save=True, update=True, save_reference=True
+    )
+    water = WaterSchema(
+        save=True, update=True, save_reference=True
+    )
 
 
 class Spill(BaseSpill):
     """
     Models a spill by combining Release and ElementType objects
     """
-    _update = ['on', 'release', 'amount', 'units', 'amount_uncertainty_scale']
-
-    _create = ['frac_coverage']
-    _create.extend(_update)
-
-    _state = copy.deepcopy(Serializable._state)
-    _state.add(save=_create, update=_update)
-    _state += [Field('element_type', save=True, update=True,
-                     save_reference=True),
-               Field('water', save=True, update=True, save_reference=True)]
     _schema = SpillSchema
 
     valid_vol_units = _valid_units('Volume')
@@ -374,7 +392,7 @@ class Spill(BaseSpill):
 
     def __eq__(self, other):
         """
-        over ride base == operator defined in Serializable class.
+        over ride base == operator defined in GnomeId class.
         Spill object contains nested objects like ElementType and Release
         objects. Check all properties here so nested objects properties
         can be checked in the __eq__ implementation within the nested objects
@@ -813,66 +831,6 @@ class Spill(BaseSpill):
         if 'frac_coverage' in data_arrays:
             data_arrays['frac_coverage'][-num_new_particles:] = \
                 self.frac_coverage
-
-    def serialize(self, json_='webapi'):
-        """
-        override base serialize implementation
-        Need to add node for release object and element_type object
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-
-        o_json_ = schema.serialize(toserial)
-        o_json_['element_type'] = self.element_type.serialize(json_)
-        o_json_['release'] = self.release.serialize(json_)
-
-        if self.water is not None:
-            o_json_['water'] = self.water.serialize(json_)
-
-        return o_json_
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        Instead of creating schema dynamically for Spill() before
-        deserialization, call nested object's serialize/deserialize methods
-
-        We also need to accept sparse json objects, in which case we will
-        not treat them, but just send them back.
-        """
-        if not cls.is_sparse(json_):
-            schema = cls._schema()
-
-            dict_ = schema.deserialize(json_)
-            relcls = class_from_objtype(json_['release']['obj_type'])
-            dict_['release'] = relcls.deserialize(json_['release'])
-
-            if json_['json_'] == 'webapi':
-                '''
-                save files store a reference to element_type so it will get
-                deserialized, created and added to this dict by load method
-                '''
-                etcls = class_from_objtype(json_['element_type']['obj_type'])
-                dict_['element_type'] = etcls.deserialize(json_['element_type']
-                                                          )
-
-                if 'water' in json_:
-                    w_cls = class_from_objtype(json_['water']['obj_type'])
-                    dict_['water'] = w_cls.deserialize(json_['water'])
-            else:
-                '''
-                Convert nested dict (release object) back into object. The
-                ElementType is now saved as a reference so it is taken care of
-                by load method
-                For the 'webapi', we're not always creating a new object
-                so do this only for 'save' files
-                '''
-                obj = relcls.new_from_dict(dict_.pop('release'))
-                dict_['release'] = obj
-
-            return dict_
-        else:
-            return json_
 
 
 """ Helper functions """

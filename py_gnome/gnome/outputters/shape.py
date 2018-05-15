@@ -8,7 +8,6 @@ import zipfile
 from colander import SchemaNode, String, Boolean, drop
 import shapefile as shp
 
-from gnome.utilities.serializable import Serializable, Field
 
 from .outputter import Outputter, BaseOutputterSchema
 
@@ -22,7 +21,7 @@ class ShapeSchema(BaseOutputterSchema):
     )
 
 
-class ShapeOutput(Outputter, Serializable):
+class ShapeOutput(Outputter):
     '''
     class that outputs GNOME results (particles) in a shapefile format.
 

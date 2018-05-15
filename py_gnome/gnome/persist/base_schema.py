@@ -13,8 +13,7 @@ from colander import (SchemaNode, deferred, drop, required, Invalid, Unsupported
 
 from extend_colander import NumpyFixedLenSchema
 
-from gnome.persist.save_load import class_from_objtype
-from gnome.gnomeobject import GnomeId
+from gnome.gnomeobject import GnomeId, Refs, class_from_objtype
 
 
 @deferred
@@ -336,7 +335,7 @@ class ObjType(SchemaType):
         saveloc can be a folder or open zipfile.ZipFile object
         '''
         fp = None
-        if zipfile.is_zipfile(saveloc):
+        if isinstance(saveloc, zipfile.ZipFile):
             fp = saveloc.open(fname, 'rU')
         else:
             fname = os.path.join(saveloc, fname)
@@ -468,11 +467,11 @@ class GeneralGnomeObjectSchema(ObjTypeSchema):
 
     def _save(self, obj, zipfile_=None, refs=None):
         substitute_schema = self.validate_input_schema(obj)
-        return substitute_schema.typ.save(substitute_schema, obj, zipfile_, refs)
+        return substitute_schema.typ.save(substitute_schema, obj, zipfile_=zipfile_, refs=refs)
 
-    def load(self, obj_json, zipfile_=None, refs=None):
+    def load(self, obj_json, saveloc=None, refs=None):
         substitute_schema = self.validate_input_schema(obj_json)
-        return substitute_schema.typ.load(substitute_schema, obj_json, zipfile_, refs)
+        return substitute_schema.typ.load(substitute_schema, obj_json, saveloc=saveloc, refs=refs)
 
 
 class CollectionItemMap(MappingSchema):

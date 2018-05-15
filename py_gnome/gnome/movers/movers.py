@@ -15,7 +15,7 @@ from gnome.basic_types import (world_point,
 
 from gnome.utilities import inf_datetime
 from gnome.utilities import time_utils
-from gnome.persis.base_schema import ObjTypeSchema
+from gnome.persist.base_schema import ObjTypeSchema
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome import GnomeId
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime

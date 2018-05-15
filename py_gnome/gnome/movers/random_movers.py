@@ -157,7 +157,7 @@ class IceAwareRandomMover(RandomMover):
                     .get_move(sc, time_step, model_time_datetime))
 
 
-class RandomVerticalMoverSchema(ObjTypeSchema, ProcessSchema):
+class RandomVerticalMoverSchema(ProcessSchema):
     vertical_diffusion_coef_above_ml = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )

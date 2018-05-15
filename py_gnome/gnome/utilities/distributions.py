@@ -5,29 +5,40 @@ Classes that generate various types of probability distributions
 
 import copy
 import numpy
+from gnome.gnomeobject import GnomeId
 np = numpy
 from colander import Float, SchemaNode, drop
 
 from gnome.persist.base_schema import ObjTypeSchema
 from gnome.utilities.compute_fraction import fraction_below_d
-from gnome.utilities.serializable import Serializable, Field
 
 
 class UniformDistributionSchema(ObjTypeSchema):
-    low = SchemaNode(Float(), name='low', default=0.0,
-        description='lower bound for uniform distribution')
-    high = SchemaNode(Float(), name='high', default=0.1,
-        description='lower bound for uniform distribution')
     name = 'uniform'
+    low = SchemaNode(
+        Float(), name='low', default=0.0,
+        description='lower bound for uniform distribution',
+        save=True, update=True
+    )
+    high = SchemaNode(
+        Float(), name='high', default=0.1,
+        description='lower bound for uniform distribution',
+        save=True, update=True
+    )
 
 
 class NormalDistributionSchema(ObjTypeSchema):
-    mean = SchemaNode(Float(), name='mean',
-                      description='mean for normal distribution')
-    sigma = SchemaNode(Float(), name='sigma',
-                       description='standard deviation for normal distribution'
-                       )
     name = 'normal'
+    mean = SchemaNode(
+        Float(), name='mean',
+        description='mean for normal distribution',
+        save=True, update=True
+    )
+    sigma = SchemaNode(
+        Float(), name='sigma',
+        description='standard deviation for normal distribution',
+        save=True, update=True
+    )
 
 
 class LogNormalDistributionSchema(NormalDistributionSchema):
@@ -41,24 +52,30 @@ class LogNormalDistributionSchema(NormalDistributionSchema):
 
 
 class WeibullDistributionSchema(ObjTypeSchema):
-    alpha = SchemaNode(Float(), name='alpha',
-                       description='shape parameter for weibull distribution')
-    lambda_ = SchemaNode(Float(), name='lambda_', default=1.0,
-                         description='scale parameter for weibull distribution'
-                         )
-    min_ = SchemaNode(Float(), name='min_',
-                      description='lower bound? for weibull distribution',
-                      missing=drop)
-    max_ = SchemaNode(Float(), name='max_',
-                      description='upper bound? for weibull distribution',
-                      missing=drop)
     name = 'weibull'
+    alpha = SchemaNode(
+        Float(), name='alpha',
+        description='shape parameter for weibull distribution',
+        save=True, update=True
+    )
+    lambda_ = SchemaNode(
+        Float(), name='lambda_', default=1.0,
+        description='scale parameter for weibull distribution',
+        save=True, update=True
+    )
+    min_ = SchemaNode(
+        Float(), name='min_',
+        description='lower bound? for weibull distribution',
+        missing=drop, save=True, update=True
+    )
+    max_ = SchemaNode(
+        Float(), name='max_',
+        description='upper bound? for weibull distribution',
+        missing=drop, save=True, update=True
+    )
 
 
-class UniformDistribution(Serializable):
-    _state = copy.deepcopy(Serializable._state)
-    _state += [Field('low', save=True, update=True),
-               Field('high', save=True, update=True)]
+class UniformDistribution(GnomeId):
     _schema = UniformDistributionSchema
 
     'Uniform Probability Distribution'
@@ -83,10 +100,7 @@ class UniformDistribution(Serializable):
         self._uniform(np_array)
 
 
-class NormalDistribution(Serializable):
-    _state = copy.deepcopy(Serializable._state)
-    _state += [Field('mean', save=True, update=True),
-               Field('sigma', save=True, update=True)]
+class NormalDistribution(GnomeId):
     _schema = NormalDistributionSchema
 
     'Normal Probability Distribution'
@@ -111,10 +125,7 @@ class NormalDistribution(Serializable):
         self._normal(np_array)
 
 
-class LogNormalDistribution(Serializable):
-    _state = copy.deepcopy(Serializable._state)
-    _state += [Field('mean', save=True, update=True),
-               Field('sigma', save=True, update=True)]
+class LogNormalDistribution(GnomeId):
     _schema = LogNormalDistributionSchema
 
     'Log Normal Probability Distribution'
@@ -139,12 +150,7 @@ class LogNormalDistribution(Serializable):
         self._lognormal(np_array)
 
 
-class WeibullDistribution(Serializable):
-    _state = copy.deepcopy(Serializable._state)
-    _state += [Field('alpha', save=True, update=True),
-               Field('lambda_', save=True, update=True),
-               Field('min_', save=True, update=True),
-               Field('max_', save=True, update=True)]
+class WeibullDistribution(GnomeId):
     _schema = WeibullDistributionSchema
 
     'Log Normal Probability Distribution'
