@@ -8,7 +8,7 @@ import numpy as np
 import six
 
 from colander import (Float, DateTime, Sequence, Tuple, List,
-                      TupleSchema, SequenceSchema, null, SchemaNode, String)
+                      TupleSchema, SequenceSchema, null, SchemaNode, String, Invalid)
 
 import gnome.basic_types
 from gnome.utilities import inf_datetime
@@ -195,6 +195,18 @@ class TimeDelta(Float):
 #             return super(Filename, self).deserialize(node, cstruct)
 
 
+class OrderedCollectionType(Sequence):
+    #identical to SequenceSchema except it can tolerate a 'get'
+    def _validate(self, node, value, accept_scalar):
+        if (hasattr(value, '__iter__') and
+            not isinstance(value, six.string_types)):
+            return list(value)
+        if accept_scalar:
+            return [value]
+        else:
+            raise Invalid(node, '{0} is not iterable'.format(value))
+
+
 """
 Following define new schemas for above custom types. This is so
 serialize/deserialize is called correctly.
@@ -202,6 +214,8 @@ serialize/deserialize is called correctly.
 Specifically a new DefaultTypeSchema and a DatetimeValue2dArraySchema
 """
 
+class OrderedCollectionSchema(SequenceSchema):
+    schema_type = OrderedCollectionType
 
 class DefaultTupleSchema(TupleSchema):
     schema_type = DefaultTuple

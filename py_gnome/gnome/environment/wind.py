@@ -123,7 +123,7 @@ class WindSchema(base_schema.ObjTypeSchema):
     name = 'wind'
 
 
-class Wind(Environment, Timeseries):
+class Wind(Timeseries, Environment):
     '''
     Defines the Wind conditions for a single point
     '''

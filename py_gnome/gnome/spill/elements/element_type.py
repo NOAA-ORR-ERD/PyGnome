@@ -175,23 +175,6 @@ class ElementType(GnomeId):
 
         return False
 
-    def substance_to_dict(self):
-        '''
-        Call the tojson() method on substance
-
-        An Oil object that has been queried from the database
-        contains a lot of unnecessary relationships that we do not
-        want to represent in our JSON output,
-
-        So we prune them by first constructing an Oil object from the
-        JSON payload of the queried Oil object.
-
-        This creates an Oil object in memory that does not have any
-        database links. Then output the JSON from the unlinked object.
-        '''
-        if self._substance is not None:
-            return self._prune_substance(self._substance.tojson())
-
     def _prune_substance(self, substance_json):
         '''
             Whether saving to a savefile or outputting to the web client,
@@ -256,23 +239,6 @@ class ElementType(GnomeId):
                 if i.array_types.issubset(data_arrays):
                     i.initialize(num_new_particles, spill, data_arrays,
                                  self.substance)
-
-    def to_dict(self):
-        """
-        call the to_dict method on each object in the initializers dict. Store
-        results in dict and return.
-
-        todo: the standard to_dict doesn't seem to fit well in this case. It
-        works but perhaps can/should be revisited to make it simpler
-        """
-        dict_ = super(ElementType, self).to_dict()
-
-        init = []
-        for val in dict_['initializers']:
-            init.append(val.to_dict())
-
-        dict_['initializers'] = init
-        return dict_
 
 
 def floating(windage_range=(.01, .04),

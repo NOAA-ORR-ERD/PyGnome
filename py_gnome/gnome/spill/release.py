@@ -20,6 +20,7 @@ from gnome.basic_types import world_point_type
 from gnome.utilities.plume import Plume, PlumeGenerator
 
 from gnome.outputters import NetCDFOutput
+from gnome.gnomeobject import GnomeId
 
 
 class BaseReleaseSchema(ObjTypeSchema):
@@ -103,7 +104,7 @@ class SpatialReleaseSchema(BaseReleaseSchema):
     )
 
 
-class Release(object):
+class Release(GnomeId):
     """
     base class for Release classes.
 

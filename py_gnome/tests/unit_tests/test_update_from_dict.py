@@ -40,8 +40,7 @@ def define_mdl(test=0):
     via json
     '''
     def get_json(mdl):
-        json_ = Model.deserialize(mdl.serialize('webapi'))
-        json_['map'] = mdl.map
+        json_ = mdl.serialize()
         return json_
 
     mdl = Model()

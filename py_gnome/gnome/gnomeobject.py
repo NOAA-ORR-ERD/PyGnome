@@ -486,6 +486,20 @@ class GnomeId(AddLogger):
         The zip file will be named [object.name].zip if a directory is specified
         :param refs: dictionary of references to objects
         :param overwrite: If True, overwrites the file at the saveloc
+
+        :returns: obj_json, saveloc, and refs
+        obj_json is the json that is written to this object's file in the zipfile
+        For example if saving a Model named Model1, obj_json will contain the contents
+        of the Model1.json in the save file
+
+        saveloc will be the string path passed in EXCEPT if None was passed in. In
+        this case, it will be an open zipfile.ZipFile based on a temporary
+        file.
+
+        refs will be a dict containing all the objects that were saved in the
+        save file, keyed by object id. It will also contain the reference to
+        the object that called .save itself.
+
         """
 
         if saveloc is None:
@@ -496,10 +510,10 @@ class GnomeId(AddLogger):
                              compression=zipfile.ZIP_DEFLATED,
                              allowZip64=allowzip64)
         elif os.path.isdir(saveloc):
-            filename = os.path.join(saveloc, self.name + '.zip')
-            if os.path.exists(filename):
+            saveloc = os.path.join(saveloc, self.name + '.zip')
+            if os.path.exists(saveloc):
                 if not overwrite:
-                    raise ValueError('{0} already exists and overwrite is False'.format(filename))
+                    raise ValueError('{0} already exists and overwrite is False'.format(saveloc))
             else:
                 zipfile_ = zipfile.ZipFile(saveloc, 'w',
                                                compression=zipfile.ZIP_DEFLATED,

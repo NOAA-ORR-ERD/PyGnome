@@ -196,7 +196,7 @@ class SpillSchema(ObjTypeSchema):
         save=True, update=True, save_reference=True
     )
     water = WaterSchema(
-        save=True, update=True, save_reference=True
+        missing=drop, save=True, update=True, save_reference=True
     )
 
 
