@@ -113,7 +113,7 @@ class ShapeOutput(Outputter, Serializable):
             w.field('Depth', 'N')
             w.field('Mass', 'N')
             w.field('Age', 'N')
-            w.field('Surf_Conc','F',10,5)
+            w.field('Surf_Conc','F')
             w.field('Status_Code', 'N')
 
             if sc.uncertain:
