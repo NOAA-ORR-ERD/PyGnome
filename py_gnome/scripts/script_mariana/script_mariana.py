@@ -21,7 +21,6 @@ from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 from gnome.outputters import (Renderer,
                               # NetCDFOutput
                               )
-from gnome.basic_types import numerical_methods
 
 NUM_ELEMENTS = 1e5
 
@@ -73,7 +72,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # # this is HYCOM currents
     curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
     model.movers += GridCurrentMover(curr_file,
-                                     num_method=numerical_methods.euler);
+                                     num_method='Euler');
 
     # #
     # # Add some spills (sources of elements)

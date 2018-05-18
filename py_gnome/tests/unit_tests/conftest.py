@@ -174,6 +174,7 @@ def sample_sc_release(num_elements=10,
     # used for testing so just assume there is a Windage array
     sc.prepare_for_model_run(arr_types)
     sc.release_elements(time_step, current_time)
+
     return sc
 
 

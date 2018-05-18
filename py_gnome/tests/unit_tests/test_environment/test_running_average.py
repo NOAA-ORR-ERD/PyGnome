@@ -37,10 +37,10 @@ def test_av_from_variable_wind():
 
     # wm = Wind(filename=wind_file)
     av = RunningAverage(wm)
-#     print "wm.ossm.timeseries"
-#     print wm.ossm.timeseries[:]
-#     print "av.ossm.timeseries"
-#     print av.ossm.timeseries[:]
+    # print "wm.ossm.timeseries"
+    # print wm.ossm.timeseries[:]
+    # print "av.ossm.timeseries"
+    # print av.ossm.timeseries[:]
 
     assert av.ossm.timeseries['time'][0] == wm.ossm.timeseries['time'][0]
     assert av.ossm.timeseries['value']['u'][0] == wm.ossm.timeseries['value']['u'][0]

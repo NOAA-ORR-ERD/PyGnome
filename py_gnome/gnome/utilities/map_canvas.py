@@ -671,7 +671,7 @@ class GridLines(object):
             else:
                 value = line[0][1]
                 hemi = 'N' if value > 0 else 'S'
-            tag = (str(value)
+            tag = ("{0:.2f}".format(value)
                    if not self.DMS
                    else uc.LatLongConverter.ToDegMinSec(value, ustring=False))
 

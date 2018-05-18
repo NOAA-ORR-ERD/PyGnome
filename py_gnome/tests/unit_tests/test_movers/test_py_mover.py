@@ -11,19 +11,19 @@ from pytest import raises
 from ..conftest import sample_sc_release
 
 from gnome.utilities.inf_datetime import InfDateTime
-from gnome.movers import Mover
+from gnome.movers import PyMover
 
 
 def test_exceptions():
     with raises(ValueError):
         now = datetime.now()
-        _mover = Mover(active_start=now, active_stop=now)
+        _mover = PyMover(active_start=now, active_stop=now)
 
 
 def test_default_properties():
-    mover = Mover()
+    mover = PyMover()
 
-    assert mover.name == 'Mover'
+    assert mover.name == 'PyMover'
     assert mover.on is True
 
     assert mover.active_start == InfDateTime('-inf')
@@ -32,21 +32,33 @@ def test_default_properties():
     assert mover.array_types == set()
     assert mover.make_default_refs is True
 
+    assert mover.default_num_method == 'RK2'
+
+
+def test_real_data_start_stop():
+    mover = PyMover()
+
+    with raises(NotImplementedError):
+        _data_start = mover.real_data_start
+
+    with raises(NotImplementedError):
+        _data_stop = mover.real_data_stop
+
 
 class TestActive:
     time_step = 15 * 60  # seconds
     model_time = datetime(2012, 8, 20, 13)
     sc = sample_sc_release(1, (0, 0, 0))  # no used for anything
-    mv = Mover()
+    mv = PyMover()
 
     def test_active_default(self):
-        mv = Mover()
+        mv = PyMover()
         mv.prepare_for_model_step(self.sc, self.time_step, self.model_time)
 
         assert mv.active is True  # model_time = active_start
 
     def test_active_start_modeltime(self):
-        mv = Mover(active_start=self.model_time)
+        mv = PyMover(active_start=self.model_time)
         mv.prepare_for_model_step(self.sc, self.time_step, self.model_time)
 
         assert mv.active is True  # model_time = active_start
@@ -54,7 +66,7 @@ class TestActive:
     def test_active_start_after_one_timestep(self):
         start_time = self.model_time + timedelta(seconds=self.time_step)
 
-        mv = Mover(active_start=start_time)
+        mv = PyMover(active_start=start_time)
         mv.prepare_for_model_step(self.sc, self.time_step, self.model_time)
 
         assert mv.active is False  # model_time + time_step = active_start
@@ -108,7 +120,7 @@ def test_get_move():
     model_time = datetime(2012, 8, 20, 13)
     sc = sample_sc_release(10, (0, 0, 0))  # no used for anything
 
-    mv = Mover()
+    mv = PyMover()
     delta = mv.get_move(sc, time_step, model_time)
 
     assert np.all(np.isnan(delta))

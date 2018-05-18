@@ -1,29 +1,29 @@
-import movers
-import numpy as np
 import copy
+
+import numpy as np
 
 from colander import (SchemaNode,
                       Bool, Float, String, Sequence, DateTime,
                       drop)
 
-from gnome import basic_types
 from gnome.basic_types import oil_status
-from gnome.basic_types import (world_point,
-                               world_point_type,
-                               spill_type,
+from gnome.basic_types import (world_point_type,
                                status_code_type)
-from gnome.utilities import serializable
+
+from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.projections import FlatEarthProjection
 
 from gnome.environment import GridCurrent
 from gnome.environment.gridded_objects_base import Grid_U
 
-from gnome.persist import base_schema
+from gnome.persist.base_schema import ObjType
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
+from .movers import PyMover
 
-class PyCurrentMoverSchema(base_schema.ObjType):
+
+class PyCurrentMoverSchema(ObjType):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())],
                           missing=drop)
@@ -44,16 +44,14 @@ class PyCurrentMoverSchema(base_schema.ObjType):
                                 validator=convertible_to_seconds)
 
 
-class PyCurrentMover(movers.PyMover, serializable.Serializable):
+class PyCurrentMover(PyMover, Serializable):
 
-    _state = copy.deepcopy(movers.PyMover._state)
+    _state = copy.deepcopy(PyMover._state)
 
-    _state.add_field([serializable.Field('filename',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('current', read=True,
-                                         save_reference=True),
-                      serializable.Field('extrapolate', read=True, save=True)
+    _state.add_field([Field('filename', save=True, read=True, isdatafile=True,
+                            test_for_eq=False),
+                      Field('current', read=True, save_reference=True),
+                      Field('extrapolate', read=True, save=True)
                       ])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
@@ -101,7 +99,6 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         :param num_method: Numerical method for calculating movement delta.
                            Choices:('Euler', 'RK2', 'RK4')
                            Default: RK2
-
         """
         self.filename = filename
         self.current = current
@@ -114,7 +111,8 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
                                                        **kwargs)
 
         if 'name' not in kwargs:
-            kwargs['name'] = self.__class__.__name__ + str(self.__class__._def_count)
+            kwargs['name'] = '{}{}'.format(self.__class__.__name__,
+                                           self.__class__._def_count)
             self.__class__._def_count += 1
 
         self.extrapolate = extrapolate
@@ -139,10 +137,8 @@ class PyCurrentMover(movers.PyMover, serializable.Serializable):
         (super(PyCurrentMover, self)
          .__init__(default_num_method=default_num_method, **kwargs))
 
-
     def _attach_default_refs(self, ref_dict):
-        pass
-        return serializable.Serializable._attach_default_refs(self, ref_dict)
+        return Serializable._attach_default_refs(self, ref_dict)
 
     @classmethod
     def from_netCDF(cls,

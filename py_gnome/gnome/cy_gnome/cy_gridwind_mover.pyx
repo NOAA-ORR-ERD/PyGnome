@@ -93,11 +93,10 @@ cdef class CyGridWindMover(CyWindMoverBase):
     def __init__(self, wind_scale=1):
         """
         .. function:: __init__(self, wind_scale=1)
-        
+
         initialize a grid wind mover
-        
+
         :param wind_scale: scale factor applied to wind values
-        
         """
         self.grid_wind.fWindScale = wind_scale
         self.grid_wind.fIsOptimizedForStep = 0
@@ -105,17 +104,17 @@ cdef class CyGridWindMover(CyWindMoverBase):
     property extrapolate:
         def __get__(self):
             return self.grid_wind.GetExtrapolationInTime()
-        
+
         def __set__(self, value):
             self.grid_wind.SetExtrapolationInTime(value)
-        
+
     property time_offset:
         def __get__(self):
             return self.grid_wind.GetTimeShift()
-        
+
         def __set__(self, value):
             self.grid_wind.SetTimeShift(value)
-        
+
     def extrapolate_in_time(self, extrapolate):
         self.grid_wind.SetExtrapolationInTime(extrapolate)
 
@@ -125,13 +124,17 @@ cdef class CyGridWindMover(CyWindMoverBase):
     def get_start_time(self):
         cdef OSErr err
         cdef Seconds start_time
+
         err = self.grid_wind.GetDataStartTime(&start_time)
+
         return start_time
 
     def get_end_time(self):
         cdef OSErr err
         cdef Seconds end_time
+
         err = self.grid_wind.GetDataEndTime(&end_time)
+
         return end_time
 
     def get_move(self,
@@ -171,9 +174,9 @@ cdef class CyGridWindMover(CyWindMoverBase):
         cdef OSErr err
         N = len(ref_points)
 
-        err = self.grid_wind.get_move(N, model_time, step_len, &ref_points[0],
-                            &delta[0], &windages[0], <short *>&LE_status[0],
-                            spill_type, 0)
+        err = self.grid_wind.get_move(N, model_time, step_len,
+                                      &ref_points[0], &delta[0], &windages[0],
+                                      <short *>&LE_status[0], spill_type, 0)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points and"
                              " delta are defined")
@@ -183,9 +186,10 @@ cdef class CyGridWindMover(CyWindMoverBase):
         C++ also throwing this error
         """
         if err == 2:
-            raise ValueError("The value for spill type can only be"
-                             " 'forecast' or 'uncertainty' - you've chosen: "
-                             + str(spill_type))
+            raise ValueError("The value for spill type can only be "
+                             "'forecast' or 'uncertainty' - "
+                             "you've chosen: {}"
+                             .format(spill_type))
 
     def _is_regular_grid(self):
         """

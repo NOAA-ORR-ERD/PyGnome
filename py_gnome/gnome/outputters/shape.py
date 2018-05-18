@@ -36,7 +36,8 @@ class ShapeOutput(Outputter, Serializable):
     def __init__(self, filename, zip_output=True, surface_conc="kde", **kwargs):
         '''
         :param str output_dir=None: output directory for shape files
-        uses super to pass optional \*\*kwargs to base class __init__ method
+
+        :param zip_output=True: whether to zip up the ouput shape files
         '''
         # # a little check:
         self._check_filename(filename)
@@ -131,9 +132,9 @@ class ShapeOutput(Outputter, Serializable):
 
         uncertain = False
 
-        for sc in self.current_spill_pair.items():
+        for sc in self.cache.load_timestep(step_num).items():
             curr_time = sc.current_time_stamp
-            
+
             if sc.uncertain:
                 uncertain = True
 
@@ -142,7 +143,7 @@ class ShapeOutput(Outputter, Serializable):
                     self.w_u.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
                                     sc['id'][k],
                                     p[2],
-                                    sc['mass'][k],                                    
+                                    sc['mass'][k],
                                     sc['age'][k],
                                     0.0,
                                     sc['status_codes'][k])
@@ -152,7 +153,7 @@ class ShapeOutput(Outputter, Serializable):
                     self.w.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
                                   sc['id'][k],
                                   p[2],
-                                  sc['mass'][k],                                 
+                                  sc['mass'][k],
                                   sc['age'][k],
                                   sc['surface_concentration'][k],
                                   sc['status_codes'][k])
@@ -168,13 +169,13 @@ class ShapeOutput(Outputter, Serializable):
                     self.w_u.save(fn)
                 else:
                     self.w.save(fn)
-                    
+
                 prj_file = open("%s.prj" % fn, "w")
                 prj_file.write(self.epsg)
-                prj_file.close()    
+                prj_file.close()
 
                 if self.zip_output is True:
-                    zfilename = fn + '.zip'        
+                    zfilename = fn + '.zip'
                     zipf = zipfile.ZipFile(zfilename, 'w')
 
                     for suf in ['shp', 'prj', 'dbf', 'shx']:

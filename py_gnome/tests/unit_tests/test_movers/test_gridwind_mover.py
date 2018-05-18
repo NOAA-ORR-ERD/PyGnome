@@ -1,15 +1,15 @@
 '''
 Test all operations for gridcurrent mover work
 '''
-
-import datetime
 import os
+import datetime
 
 import numpy as np
+
 import pytest
 
-from gnome.movers import GridWindMover
 from gnome.utilities import time_utils
+from gnome.movers import GridWindMover
 
 from ..conftest import sample_sc_release, testdata
 # default settings are the same for both objects
@@ -20,19 +20,40 @@ wind_file = testdata['GridWindMover']['wind_curv']
 topology_file = testdata['GridWindMover']['top_curv']
 
 
+num_le = 4
+start_pos = (-123.57152, 37.369436, 0.0)
+rel_time = datetime.datetime(2006, 3, 31, 21, 0)
+time_step = 30 * 60  # seconds
+model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
+
+
 def test_exceptions():
     """
     Test correct exceptions are raised
     """
     with pytest.raises(TypeError):
+        # we need to supply at least a filename
         GridWindMover()
 
     with pytest.raises(ValueError):
-        'file not found'
-        GridWindMover(os.path.join('./', 'WindSpeedDirSubset.CUR'))
+        # wind file not found
+        GridWindMover('bogus')
+
+    with pytest.raises(ValueError):
+        # topology file not found
+        GridWindMover(wind_file, topology_file='bogus')
 
     with pytest.raises(TypeError):
+        # topology file needs to be a string filename
         GridWindMover(wind_file, topology_file=10)
+
+
+def test_init_defaults():
+    gw = GridWindMover(wind_file)
+
+    assert gw.name == os.path.split(wind_file)[1]
+    assert gw.filename == wind_file
+    assert gw.topology_file is None
 
 
 def test_string_repr_no_errors():
@@ -44,33 +65,35 @@ def test_string_repr_no_errors():
     print
     print 'str(WindMover): '
     print str(gw)
+
+    # TODO, FIXME: We need a way of validating this if we really care what
+    #              the str() and repr() methods are doing.
     assert True
-
-
-num_le = 4
-start_pos = (-123.57152, 37.369436, 0.0)
-rel_time = datetime.datetime(2006, 3, 31, 21, 0)
-time_step = 30 * 60  # seconds
-model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
 
 
 def test_loop():
     """
     test one time step with no uncertainty on the spill
-    checks there is non-zero motion.
-    also checks the motion is same for all LEs
+    - checks there is non-zero motion.
+    - also checks the motion is same for all LEs
+
+    - Uncertainty needs to be off.
+    - Windage needs to be set to not vary or each particle will have a
+      different position,  This is done by setting the windage range to have
+      all the same values (min == max).
     """
+    pSpill = sample_sc_release(num_elements=num_le,
+                               start_pos=start_pos,
+                               release_time=rel_time,
+                               windage_range=(0.01, 0.01))
 
-    pSpill = sample_sc_release(num_le, start_pos, rel_time)
     wind = GridWindMover(wind_file, topology_file)
-    delta = _certain_loop(pSpill, wind)
 
+    delta = _certain_loop(pSpill, wind)
     _assert_move(delta)
 
-    # set windage to be constant or each particle has a different position,
-    # doesn't work with uncertainty on
-    # assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
-    # assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
+    assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
+    assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
 
     # returned delta is used in test_certain_uncertain test
     return delta

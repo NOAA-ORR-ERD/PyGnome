@@ -696,8 +696,7 @@ class NetCDFOutput(Outputter, Serializable):
         if self.on is False or not self._write_step:
             return None
 
-        # for sc in self.cache.load_timestep(step_num).items():
-        for sc in self.current_spill_pair.items():
+        for sc in self.cache.load_timestep(step_num).items():
             if sc.uncertain and self._u_netcdf_filename is not None:
                 file_ = self._u_netcdf_filename
             else:

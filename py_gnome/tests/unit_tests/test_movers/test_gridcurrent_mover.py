@@ -17,6 +17,13 @@ curr_file = testdata['GridCurrentMover']['curr_tri']
 topology_file = testdata['GridCurrentMover']['top_tri']
 
 
+num_le = 4
+start_pos = (-76.149368, 37.74496, 0)
+rel_time = datetime.datetime(2004, 12, 31, 13)
+time_step = 15 * 60  # seconds
+model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
+
+
 def test_exceptions():
     """
     Test correct exceptions are raised
@@ -32,20 +39,12 @@ def test_exceptions():
         GridCurrentMover(curr_file, topology_file=10)
 
 
-num_le = 4
-start_pos = (-76.149368, 37.74496, 0)
-rel_time = datetime.datetime(2004, 12, 31, 13)
-time_step = 15 * 60  # seconds
-model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
-
-
 def test_loop():
     """
     test one time step with no uncertainty on the spill
     checks there is non-zero motion.
     also checks the motion is same for all LEs
     """
-
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
     curr = GridCurrentMover(curr_file, topology_file)
     delta = _certain_loop(pSpill, curr)

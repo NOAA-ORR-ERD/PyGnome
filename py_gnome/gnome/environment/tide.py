@@ -9,6 +9,9 @@ import copy
 from colander import SchemaNode, String, Float, drop
 
 import gnome
+from gnome.utilities.convert import tsformat
+from gnome.utilities.inf_datetime import InfDateTime
+from gnome.utilities.serializable import Serializable, Field
 
 from .environment import Environment
 from gnome.persist import base_schema
@@ -18,10 +21,6 @@ from gnome.persist import base_schema
 #       gnome.utilities.convert
 #       This will inevitably cause namespace collisions.
 #       CHB-- I don't think that's a problem -- that's what namespaces are for!
-
-from gnome.utilities.convert import tsformat
-
-from gnome.utilities.serializable import Serializable, Field
 
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_shio_time import CyShioTime
@@ -99,6 +98,14 @@ class Tide(Environment, Serializable):
 
         kwargs.pop('scale_factor', None)
         super(Tide, self).__init__(**kwargs)
+
+    @property
+    def data_start(self):
+        return InfDateTime("-inf")
+
+    @property
+    def data_stop(self):
+        return InfDateTime("inf")
 
     @property
     def yeardata(self):
