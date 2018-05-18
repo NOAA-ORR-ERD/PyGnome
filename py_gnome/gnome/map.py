@@ -61,7 +61,7 @@ class GnomeMapSchema(base_schema.ObjTypeSchema):
         missing=drop, save=True, update=True
     )
     spillable_area = base_schema.PolygonSet(
-        missing=drop, save=True, update=True
+        missing=drop, save=True, update=True, test_for_eq=False #.MetaDataList is not serialized at all
     )
     # land_polys = base_schema.PolygonSet(missing=drop)
 
@@ -83,7 +83,7 @@ class ParamMapSchema(GnomeMapSchema):
 
 class MapFromBNASchema(GnomeMapSchema):
     filename = SchemaNode(
-        String(), save=True, read=True, isdatafile=True, test_for_eq=False
+        String(), save=True, update=True, isdatafile=True, test_for_eq=False
     )
     refloat_halflife = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -167,6 +167,11 @@ class GnomeMap(GnomeId):
         polys['map_bounds'] = self.map_bounds
         polys['land_polys'] = self.land_polys
         return polys
+
+    def to_dict(self, json_=None):
+        dict_ = super(GnomeMap, self).to_dict(json_=json_)
+        dict_['spillable_area'] = [poly.points.tolist() for poly in self.spillable_area]
+        return dict_
 
     def _polygon_set_from_points(self, poly):
         '''
@@ -1017,7 +1022,7 @@ class MapFromBNA(RasterMap):
     """
     _schema = MapFromBNASchema
 
-    def __init__(self, filename, raster_size=4096 * 4096, **kwargs):
+    def __init__(self, filename=None, raster_size=4096 * 4096, **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a data file.
         It is expected that you will get the spillable area and map bounds

@@ -83,19 +83,16 @@ class NoProjection(GnomeId):
 
     _schema=ProjectionSchema
 
-    def __init__(self, bounding_box=None, image_size=None):
-        """
-        create a new do-nothing projection
-        """
-
-        pass
-
     def set_scale(self, bounding_box, image_size=None):
         """
         Does nothing
         """
 
         pass
+
+    @property
+    def bounding_box(self):
+        return self.image_box
 
     def to_pixel(self, coords, asint=False):
         """
@@ -148,7 +145,7 @@ class GeoProjection(GnomeId):
 
     _schema=ProjectionSchema
 
-    def __init__(self, bounding_box=None, image_size=None):
+    def __init__(self, bounding_box=None, image_size=None, *args, **kwargs):
         """
         Create a new projection
 
@@ -166,7 +163,7 @@ class GeoProjection(GnomeId):
         :type image_size: Struct of the form (width, height)
 
         """
-
+        super(GeoProjection, self).__init__(*args, **kwargs)
         self.center = None
         self.offset = None
         self.scale = None
@@ -179,6 +176,10 @@ class GeoProjection(GnomeId):
 
         self.image_box = bounding_box
         self.set_scale(bounding_box, image_size)
+
+    @property
+    def bounding_box(self):
+        return self.image_box
 
     def __eq__(self, other):
         """

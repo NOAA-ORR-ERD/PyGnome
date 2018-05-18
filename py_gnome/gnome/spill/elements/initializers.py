@@ -36,7 +36,7 @@ class InitBaseClass(GnomeId):
 
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         # Contains the array_types that are set by an initializer but defined
         # anywhere else. For example, InitRiseVelFromDropletSizeFromDist()
         # computes droplet_diameter in the data_arrays even though it isn't
@@ -45,6 +45,7 @@ class InitBaseClass(GnomeId):
         # Make it a set since ElementType does a membership check in
         # set_newparticle_values()
         self.array_types = set()
+        super(InitBaseClass, self).__init__(*args,**kwargs)
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         """
@@ -59,7 +60,6 @@ class WindageSchema(TupleSchema):
                              default=0.01)
     max_windage = SchemaNode(Float(), validator=Range(0, 1.0),
                              default=0.04)
-    name = 'windage_range'
 
 
 class InitWindagesSchema(base_schema.ObjTypeSchema):
@@ -72,13 +72,12 @@ class InitWindagesSchema(base_schema.ObjTypeSchema):
     windage_persist = SchemaNode(
         Int(), default=900, save=True, update=True,
     )
-    name = 'windages'
 
 
 class InitWindages(InitBaseClass):
     _schema = InitWindagesSchema
 
-    def __init__(self, windage_range=(0.01, 0.04), windage_persist=900):
+    def __init__(self, windage_range=(0.01, 0.04), windage_persist=900, name='windages', *args, **kwargs):
         """
         Initializes the windages, windage_range, windage_persist data arrays.
         Initial values for windages use infinite persistence. These are updated
@@ -95,13 +94,13 @@ class InitWindages(InitBaseClass):
             the beginning of the run.
         :type windage_persist: integer seconds
         """
-        super(InitWindages, self).__init__()
+        super(InitWindages, self).__init__(*args, **kwargs)
         self.windage_persist = windage_persist
         self.windage_range = windage_range
         self.array_types.update(('windages',
                                  'windage_range',
                                  'windage_persist'))
-        self.name = 'windages'
+        self.name = name
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

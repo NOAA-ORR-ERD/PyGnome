@@ -244,7 +244,7 @@ class CatsMover(CurrentMoversBase):
         return 'CatsMover(filename={0})'.format(self.filename)
 
     # Properties
-    filename = property(lambda self: basename(self._filename),
+    filename = property(lambda self: self._filename,
                         lambda self, val: setattr(self, '_filename', val))
 
     scale = property(lambda self: bool(self.mover.scale_type),
@@ -1027,11 +1027,11 @@ class ComponentMoverSchema(ProcessSchema):
     '''static schema for ComponentMover'''
     filename1 = SchemaNode(
         String(), missing=drop,
-        save=True, read=True, isdatafile=True, test_for_eq=False
+        save=True, update=True, isdatafile=True, test_for_eq=False
     )
     filename2 = SchemaNode(
         String(), missing=drop,
-        save=True, read=True, isdatafile=True, test_for_eq=False
+        save=True, update=True, isdatafile=True, test_for_eq=False
     )
     scale_refpoint = WorldPoint(
         missing=drop, save=True, update=True
@@ -1064,14 +1064,17 @@ class ComponentMoverSchema(ProcessSchema):
         Int(), missing=drop, save=True, update=True
     )
     wind = WindSchema(
-        save=True, update=True, save_reference=True
+        missing=drop, save=True, update=True, save_reference=True
     )
 
 
 class ComponentMover(CurrentMoversBase):
     _schema = ComponentMoverSchema
 
-    def __init__(self, filename1, filename2=None, wind=None,
+    def __init__(self,
+                 filename1=None,
+                 filename2=None,
+                 wind=None,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method.
@@ -1097,7 +1100,7 @@ class ComponentMover(CurrentMoversBase):
         See Mover documentation for remaining valid kwargs.
         """
 
-        if not os.path.exists(filename1):
+        if filename1 and not os.path.exists(filename1):
             raise ValueError('Path for Cats filename1 does not exist: {0}'
                              .format(filename1))
 

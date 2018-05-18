@@ -6,8 +6,8 @@ from datetime import datetime
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from gnome.utilities.time_utils import sec_to_date
-from gnome.persist import (References, load,
-                           class_from_objtype, is_savezip_valid)
+from gnome.persist import (References, load, is_savezip_valid)
+from gnome.gnomeobject import class_from_objtype
 
 from gnome.movers import constant_wind_mover
 from gnome import movers, outputters, environment, map, spill, weatherers
@@ -29,7 +29,7 @@ def test_warning_logged():
         with pytest.raises(AttributeError):
             class_from_objtype('os.path')
 
-        lc.check(('gnome.persist.save_load',
+        lc.check(('gnome.gnomeobject',
                   'WARNING',
                   'os.path is not part of gnome namespace'))
 
@@ -149,8 +149,8 @@ g_objects = (
 @pytest.mark.parametrize("obj", g_objects)
 def test_save_load(saveloc_, obj):
     'test save/load functionality'
-    refs = obj.save(saveloc_)
-    obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
+    json_, zipfile_, refs = obj.save(None)
+    obj2 = obj.__class__.load(zipfile_)
 
     assert obj == obj2
 

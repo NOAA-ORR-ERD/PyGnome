@@ -167,10 +167,10 @@ class NetCDFOutputSchema(BaseOutputterSchema):
         Bool(), missing=drop, save=True, update=True
     )
     _start_idx = SchemaNode(
-        Int(), missing=drop, save=True, update=True
+        Int(), missing=drop, save=True, read=True
     )
     _middle_of_run = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
+        Bool(), missing=drop, save=True, read=True
     )
 
 

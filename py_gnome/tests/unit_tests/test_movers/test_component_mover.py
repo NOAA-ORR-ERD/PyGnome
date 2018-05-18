@@ -197,12 +197,21 @@ def test_serialize_deserialize(wind):
     """
 
     c_component = ComponentMover(curr1_file, wind=wind)
-    serial = c_component.serialize('webapi')
-    dict_ = c_component.deserialize(serial)
-    if wind:
-        #assert serial['wind'] == wnd.serialize(json_)
-        assert 'wind' in serial
-        dict_['wind'] = wnd  # no longer updating properties of nested objects
-        assert c_component.wind is wnd
-    else:
-        c_component.update_from_dict(dict_)
+    serial = c_component.serialize()
+    deser =  ComponentMover.deserialize(serial)
+
+    assert deser == c_component
+
+@pytest.mark.parametrize("wind", (None, wnd))
+def test_save_load(wind):
+    """
+    test to_dict function for Component mover with wind object
+    create a new Component mover and make sure it has same properties
+    """
+
+    c_component = ComponentMover(curr1_file, wind=wind)
+    json_, saveloc, refs = c_component.save(None)
+    loaded =  ComponentMover.load(saveloc)
+
+    assert loaded == c_component
+

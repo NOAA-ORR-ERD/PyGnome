@@ -11,6 +11,7 @@ import tempfile
 import gnome
 import colander
 import contextlib
+from gnome.gnomeobject import class_from_objtype
 
 # as long as loggers are configured before module is loaded, module scope
 # logger will work. If loggers are configured after this module is loaded and
@@ -173,7 +174,7 @@ def load(saveloc, fname='Model.json', references=None):
 
     # create a reference to the object being loaded
     cls = class_from_objtype(json_data.pop('obj_type'))
-    obj = cls.loads(json_data, saveloc, references)
+    obj = cls.load(saveloc, fname, references)
 
     if obj is None:
         # object failed to load - look in log messages for clues

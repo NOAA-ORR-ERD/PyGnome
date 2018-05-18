@@ -246,7 +246,8 @@ class PointLineRelease(Release):
                  num_per_timestep=None,
                  end_release_time=None,
                  end_position=None,
-                 name=None):
+                 _next_release_pos=None,
+                 **kwargs):
         """
         Required Arguments:
 
@@ -290,7 +291,7 @@ class PointLineRelease(Release):
 
         super(PointLineRelease, self).__init__(release_time,
                                                num_elements,
-                                               name)
+                                               **kwargs)
         self._num_per_timestep = num_per_timestep
 
         # initializes internal variables: _end_release_time, _start_position,
@@ -300,7 +301,7 @@ class PointLineRelease(Release):
         self.end_position = end_position
 
         # need this for a line release
-        self._next_release_pos = self.start_position
+        self._next_release_pos = self.start_position if _next_release_pos is None else _next_release_pos
 
         # set this the first time it is used
         self._delta_pos = None

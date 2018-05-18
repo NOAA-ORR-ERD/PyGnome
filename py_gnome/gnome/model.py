@@ -124,7 +124,7 @@ class Model(GnomeId):
     _schema = ModelSchema
 
     # list of OrderedCollections
-    _oc_list = ['movers', 'weatherers', 'environment', 'outputters', 'spills']
+    _oc_list = ['movers', 'weatherers', 'environment', 'outputters']
 
     modes = {'gnome', 'adios', 'roc'}
 
@@ -212,6 +212,7 @@ class Model(GnomeId):
             return model
 
     def __init__(self,
+                 name='Model',
                  time_step=None,
                  start_time=round_time(datetime.now(), 3600),
                  duration=timedelta(days=1),
@@ -281,6 +282,8 @@ class Model(GnomeId):
         self._start_time = start_time
         self._duration = duration
         self.weathering_substeps = weathering_substeps
+
+        self._name = name
 
         if not map:
             map = gnome.map.GnomeMap()
@@ -1261,8 +1264,9 @@ class Model(GnomeId):
                 spill_data_fname, ext = os.path.splitext(nc_file)
                 ufname = '{0}_uncertain{1}'.format(spill_data_fname, ext)
                 u_spill_data = saveloc.extract(ufname)
-        elif os.path.isdir(saveloc):
-            saveloc = os.path.join(saveloc, filename)
+        else:
+            if os.path.isdir(saveloc):
+                saveloc = os.path.join(saveloc, filename)
             with zipfile.ZipFile(saveloc, 'r') as z:
                 if nc_file not in z.namelist():
                     return

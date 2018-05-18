@@ -52,7 +52,7 @@ class ElementType(GnomeId):
 
     _schema = ElementTypeSchema
 
-    def __init__(self, initializers=[], substance=None):
+    def __init__(self, initializers=[], substance=None, *args, **kwargs):
         '''
         Define initializers for the type of elements.
         The default element_type has a substance with density of water
@@ -73,6 +73,7 @@ class ElementType(GnomeId):
         :type substance: str or OilProps
 
         '''
+        super(ElementType, self).__init__(*args, **kwargs)
         from oil_library import get_oil_props
         self.get_oil_props = get_oil_props
 

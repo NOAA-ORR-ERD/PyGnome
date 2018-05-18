@@ -6,6 +6,7 @@ import io
 import collections
 import os
 import json
+import tempfile
 
 from colander import (SchemaNode, deferred, drop, required, Invalid, UnsupportedFields,
                       SequenceSchema, TupleSchema, MappingSchema,
@@ -14,6 +15,7 @@ from colander import (SchemaNode, deferred, drop, required, Invalid, Unsupported
 from extend_colander import NumpyFixedLenSchema
 
 from gnome.gnomeobject import GnomeId, Refs, class_from_objtype
+from gnome.persist.extend_colander import OrderedCollectionType
 
 
 @deferred
@@ -134,7 +136,8 @@ class ObjType(SchemaType):
             if subnode.typ.__class__ is self.__class__:
                 return subnode.deserialize(subcstruct, refs)
             else:
-                if (subnode.schema_type is Sequence):
+                #This needs to become more flexible! It needs to detect subclasses of Sequence!
+                if (subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType):
                     #To deal with iterable schemas that do not have a deserialize with refs function
                     scalar = hasattr(subnode, 'accept_scalar') and subnode.accept_scalar
                     return subnode.typ._impl(subnode, subcstruct, callback, scalar)
@@ -210,29 +213,31 @@ class ObjType(SchemaType):
             t1 = not isinstance(subnode, SequenceSchema) and not isinstance(subnode, TupleSchema)
             t2 = hasattr(subnode, 'save') and subnode.save == False
             t3 = k not in savable_attrs
-            if (t1 and t2 and t3):
+            if (t1 and t2 and t3 and k in json_):
                 json_.pop(k)
 
         #replace all save_reference json with just the json filename containing said object
         refd_names = node.get_nodes_by_attr('save_reference')
         for n in refd_names:
-            if isinstance(json_[n], list):
-                #this is a SequenceSchema or TupleSchema tagged with save_reference
-                for i, subjson in enumerate(json_[n]):
-                    json_[n][i] = subjson['name'] + '.json'
-            else:
-                #single reference
-                json_[n] = json_[n]['name'] + '.json'
+            if n in json_: #if a 'save_reference' attr is None, it will hit this
+                if isinstance(json_[n], list):
+                    #this is a SequenceSchema or TupleSchema tagged with save_reference
+                    for i, subjson in enumerate(json_[n]):
+                        json_[n][i] = subjson['name'] + '.json'
+                else:
+                    #single reference
+                    json_[n] = json_[n]['name'] + '.json'
 
         #Put supporting files into the zipfile and edit their paths in the json
-        datafiles = node.get_nodes_by_attr('is_datafile')
+        datafiles = node.get_nodes_by_attr('isdatafile')
         for d in datafiles:
-            if isinstance(d, six.string_types):
-                json_[d] = self._process_supporting_file(d, zipfile_)
-            elif isinstance(d, collections.Iterable):
-                #List, tuple, etc
-                for i, filename in enumerate(d):
-                    json_[d][i] = self._process_supporting_file(filename, zipfile_)
+            if d in json_:
+                if isinstance(json_[d], six.string_types):
+                    json_[d] = self._process_supporting_file(json_[d], zipfile_)
+                elif isinstance(json_[d], collections.Iterable):
+                    #List, tuple, etc
+                    for i, filename in enumerate(json_[d]):
+                        json_[d][i] = self._process_supporting_file(filename, zipfile_)
 
         #Finally, write the json itself to the zipfile, and return the json
         if json_['name'] + '.json' not in zipfile_.namelist():
@@ -243,7 +248,7 @@ class ObjType(SchemaType):
         def callback(subnode, subappstruct):
             if not hasattr(subnode, '_save'):
                 #This happens when it goes into non-gnome object attributes (Strings, Numbers, etc)
-                if (subnode.schema_type is Sequence):# and \
+                if (subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType):
 #                     issubclass(subnode.children[0].__class__, ObjTypeSchema):
                     #To be able to continue saving inside iterables, whose schema does not contain a
                     #save function, call the subnode typ _impl with this function as callback
@@ -289,7 +294,7 @@ class ObjType(SchemaType):
         def callback(subnode, subcstruct):
             if not hasattr(subnode, 'load'):
                 #This is the path for non-gnome attributes
-                if (subnode.schema_type is Sequence):
+                if (subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType):
                     #To deal with iterable schemas that do not have a load function
                     scalar = hasattr(subnode, 'accept_scalar') and subnode.accept_scalar
                     return subnode.typ._impl(subnode, subcstruct, callback, scalar)
@@ -314,20 +319,54 @@ class ObjType(SchemaType):
         #Get all the save_reference attributes and load the files
         refd_attrs = node.get_nodes_by_attr('save_reference')
         for r in refd_attrs:
-            if isinstance(cstruct[r], list):
-                #Need to turn this into a list of unhydrated object json
-                for i, fn in enumerate(cstruct[r]):
-                    cstruct[r][i] = self._load_json_from_file(fn, saveloc)
-                    cstruct[r][i]['id'] = fn
-            else:
-                fn = cstruct[r]
-                cstruct[r] = self._load_json_from_file(fn, saveloc)
-                cstruct[r]['id'] = fn
-            #since object id is not saved, but we need a means to ID this object
-            #during deserialization, append filename as object id. It's removed
-            #later
-            print cstruct[r]
+            if r in cstruct:
+                if isinstance(cstruct[r], list):
+                    #Need to turn this into a list of unhydrated object json
+                    for i, fn in enumerate(cstruct[r]):
+                        cstruct[r][i] = self._load_json_from_file(fn, saveloc)
+                        cstruct[r][i]['id'] = fn
+                else:
+                    fn = cstruct[r]
+                    cstruct[r] = self._load_json_from_file(fn, saveloc)
+                    cstruct[r]['id'] = fn
+                #since object id is not saved, but we need a means to ID this object
+                #during deserialization, append filename as object id. It's removed
+                #later
+        #extract any isdatafile attributes to a temporary directory and amend the
+        #entry in json with this path.
+        tmpdir = None
+        datafiles = node.get_nodes_by_attr('isdatafile')
+        if len(datafiles) > 0:
+            tmpdir = tempfile.mkdtemp()
+        for d in datafiles:
+            if d in cstruct:
+                if isinstance(d, six.string_types):
+                    cstruct[d] = self._load_supporting_file(cstruct[d], saveloc, tmpdir)
+                elif isinstance(d, collections.Iterable):
+                    #List, tuple, etc
+                    for i, filename in enumerate(d):
+                        cstruct[d][i] = self._load_supporting_file(filename, saveloc, tmpdir)
         return cstruct
+
+    def _load_supporting_file(self, filename, saveloc, tmpdir):
+        '''
+        filename is the name of the file in the zip
+        saveloc can be a folder or open zipfile.ZipFile object
+        if saveloc is a folder and the filename exists inside,
+        this does not return an altered name, nor does it extract to the temporary directory.
+        An altered filename is returned if it cannot find the filename directly
+        or if saveloc is an open zipfile
+        in a temporary directory
+        '''
+        if isinstance(saveloc, zipfile.ZipFile):
+            return saveloc.extract(filename, tmpdir)
+        elif os.path.exists(os.path.join(saveloc, filename)):
+            return os.path.join(saveloc, filename)
+        elif os.path.exists(filename):
+            return filename
+        else:
+            return filename
+
 
     def _load_json_from_file(self, fname, saveloc):
         '''

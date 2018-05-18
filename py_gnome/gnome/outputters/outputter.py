@@ -61,9 +61,9 @@ class Outputter(GnomeId):
                  output_zero_step=True,
                  output_last_step=True,
                  output_start_time=None,
-                 name='',
                  output_dir=None,
-                 surface_conc="",
+                 surface_conc=None,
+                 *args,
                  **kwargs):
         """
         sets attributes for all outputters, like output_timestep, cache
@@ -89,8 +89,6 @@ class Outputter(GnomeId):
             the model time
         :type output_start_time: datetime object
 
-        :param name='': name for outputter
-
         :param output_dir=None: directory to dump ouput in, if it needs to
                                 do this.
         :type output_dir: string (path)
@@ -103,6 +101,7 @@ class Outputter(GnomeId):
         :type surface_conc" string
 
         """
+        super(Outputter, self).__init__(*args, **kwargs)
         self.cache = cache
         self.on = on
         self.output_zero_step = output_zero_step
@@ -119,8 +118,6 @@ class Outputter(GnomeId):
             self.output_start_time = None
 
         self.sc_pair = None     # set in prepare_for_model_run
-
-        self.name = name
 
         # make sure the output_dir exists:
         if output_dir is not None:

@@ -89,7 +89,7 @@ class WindSchema(base_schema.ObjTypeSchema):
         String(), missing=drop, save=True, update=True
     )
     filename = SchemaNode(
-        String(), missing=drop, save=True, update=True, isdatafile=True
+        String(), missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
     )
     updated_at = SchemaNode(
         LocalDateTime(), missing=drop, save=True, update=True
@@ -115,7 +115,7 @@ class WindSchema(base_schema.ObjTypeSchema):
         Float(), missing=drop, save=True, update=True
     )
     timeseries = WindTimeSeriesSchema(
-        missing=drop, save=True, update=True
+        missing=drop, save=True, update=True, test_for_eq=False #Because comparing datetimevalue2d arrays does not play nice
     )
     extrapolation_is_allowed = SchemaNode(
         Boolean(), missing=drop, save=True, update=True
@@ -301,23 +301,25 @@ class Wind(Timeseries, Environment):
 
         return data
 
-    def save(self, saveloc, references=None, filename=None, overwrite=True):
-        '''
-        Write Wind timeseries to file or to zip,
-        then call save method using super
-        '''
-        filename = (filename, self.name + '.json')[filename is None]
-        ts_name = os.path.splitext(filename)[0] + '_data.WND'
+#     def save(self, saveloc, references=None, filename=None, overwrite=True):
+#         '''
+#         Write Wind timeseries to file or to zip,
+#         then call save method using super
+#         '''
+#         json_, zipfile_, refs = super(Wind, self).save(saveloc, references, overwrite=overwrite)
+#         import pdb
+#         pdb.set_trace()
+#         filename = (filename, self.name + '.json')[filename is None]
+#         ts_name = os.path.splitext(filename)[0] + '_data.WND'
+#
+#         if zipfile.is_zipfile(saveloc):
+#             self._write_timeseries_to_zip(saveloc, ts_name)
+#             self._filename = ts_name
+#         else:
+#             datafile = os.path.join(saveloc, ts_name)
+#             self._write_timeseries_to_file(datafile)
+#             self._filename = datafile
 
-        if zipfile.is_zipfile(saveloc):
-            self._write_timeseries_to_zip(saveloc, ts_name)
-            self._filename = ts_name
-        else:
-            datafile = os.path.join(saveloc, ts_name)
-            self._write_timeseries_to_file(datafile)
-            self._filename = datafile
-
-        return super(Wind, self).save(saveloc, references, overwrite=overwrite)
 
     def _write_timeseries_to_zip(self, saveloc, ts_name):
         '''

@@ -58,8 +58,6 @@ class AddLogger(object):
 
 
     def __init__(self, *args, **kwargs):
-        print args
-        print kwargs
         super(AddLogger, self).__init__(*args, **kwargs)
 
     @property
@@ -123,10 +121,10 @@ class GnomeId(AddLogger):
     make_default_refs = True
 
     def __init__(self, name=None, *args, **kwargs):
+        super(GnomeId, self).__init__(*args, **kwargs)
         self.__class__._instance_count += 1
         if name:
             self.name = name
-        super(GnomeId, self).__init__(*args, **kwargs)
 
     @property
     def id(self):
@@ -412,7 +410,7 @@ class GnomeId(AddLogger):
 
         NOTE: super is not used.
         """
-        print('comparing {0} and {1}'.format(self, other))
+        #print('comparing {0} and {1}'.format(self, other))
 
         if not self._check_type(other):
             return False
@@ -444,6 +442,40 @@ class GnomeId(AddLogger):
                     return False
 
         return True
+
+    def _diff(self, other):
+        'returns the differences between this object and another of the same type'
+        diffs = []
+        if not self._check_type(other):
+            diffs.append('Different type: self={0}, other={1}'.format(self.__class__, other.__class__))
+
+        schema = self._schema()
+
+        for name in schema.get_nodes_by_attr('all'):
+            subnode = schema.get(name)
+            if ((hasattr(subnode, 'test_for_eq') and
+                not subnode.test_for_eq) or
+                subnode.name == 'id'):
+                continue
+
+            self_attr = getattr(self, name)
+            other_attr = getattr(other, name)
+
+            if not isinstance(self_attr, np.ndarray):
+                if isinstance(self_attr, float):
+                    if abs(self_attr - other_attr) > 1e-10:
+                        diffs.append('Different {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
+                elif self_attr != other_attr:
+                    diffs.append('Different {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
+            else:
+                if not isinstance(self_attr, type(other_attr)):
+                    return False
+
+                if not np.allclose(self_attr, other_attr,
+                                   rtol=1e-4, atol=1e-4):
+                    diffs.append('Different {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
+
+        return diffs
 
     def __ne__(self, other):
         return not self == other
@@ -526,7 +558,7 @@ class GnomeId(AddLogger):
                                             compression=zipfile.ZIP_DEFLATED,
                                             allowZip64=allowzip64)
                 else:
-                    raise ValueError('{0} already exists and overwrite is False'.format(filename))
+                    raise ValueError('{0} already exists and overwrite is False'.format(saveloc))
             else:
                 zipfile_ = zipfile.ZipFile(saveloc,'w',
                                            compression=zipfile.ZIP_DEFLATED,

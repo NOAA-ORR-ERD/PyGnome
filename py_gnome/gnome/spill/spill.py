@@ -189,9 +189,9 @@ class SpillSchema(ObjTypeSchema):
     amount_uncertainty_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
-    frac_coverage = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
+#     frac_coverage = SchemaNode(
+#         Float(), missing=drop, save=True, update=True
+#     )
     element_type = ElementTypeSchema(
         save=True, update=True, save_reference=True
     )
@@ -389,35 +389,6 @@ class Spill(BaseSpill):
                 'amount={0.amount}, '
                 'units="{0.units}", '
                 ')'.format(self))
-
-    def __eq__(self, other):
-        """
-        over ride base == operator defined in GnomeId class.
-        Spill object contains nested objects like ElementType and Release
-        objects. Check all properties here so nested objects properties
-        can be checked in the __eq__ implementation within the nested objects
-        """
-        if not self._check_type(other):
-            return False
-
-        if (self._state.get_field_by_attribute('save') !=
-                other._state.get_field_by_attribute('save')):
-            return False
-
-        for name in self._state.get_names('save'):
-            if not hasattr(self, name):
-                """
-                for an attribute like obj_type, base class has
-                obj_type_to_dict method so let base class convert the attribute
-                to dict, then compare
-                """
-                if (self.attr_to_dict(name) != other.attr_to_dict(name)):
-                    return False
-
-            elif getattr(self, name) != getattr(other, name):
-                return False
-
-        return True
 
     def _check_units(self, units):
         """
