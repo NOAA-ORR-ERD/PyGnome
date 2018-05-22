@@ -29,7 +29,6 @@ g = constants.gravity  # the gravitational constant.
 
 class WavesSchema(base_schema.ObjTypeSchema):
     'Colander Schema for Conditions object'
-    name = 'Waves'
     description = 'waves schema base class'
     water = WaterSchema(
         save=True, update=True, save_reference=True

@@ -12,6 +12,7 @@ import gnome
 import six
 
 from gnome.exceptions import ReferencedObjectNotSet
+from gnome.utilities.orderedcollection import OrderedCollection
 log = logging.getLogger(__name__)
 
 allowzip64=False
@@ -322,61 +323,55 @@ class GnomeId(AddLogger):
 
         return data
 
-    def update_from_dict(self, data):
+    def update_from_dict(self, dict_):
         """
-        Update the attributes of this object using the dictionary ``data`` by
-        looking up the value of each key in ``data``.
-        The fields in self._state that have update=True are modified. The
-        remaining keys in 'data' are ignored. The object's _state attribute
-        defines what fields can be updated
-
-        If an attribute has changed, then call 'update_attr' to update its
-        value.
-
-        :param data: dict containing state of object per the client
-        :type data: dict
-        :returns: True if something changed, False otherwise
-        :rtype: bool
-
-        .. note::
-
-            Does not do updates on nested objects. If the attribute references
-            another Serializable object, then the value is not a dict but
-            rather the updated object. For instance, WindMover will receive:
-
-              {..., 'wind': <Wind object>}
-
-            as opposed to a nested dict of the 'wind' object. It is expected
-            that the 'wind' object was updated by calling its own
-            update_from_dict then added to this dict as the updated object.
+        Updates this object's attributes from dict_. It does direct assignment
+        for each attribute. Override this function if any special processing
+        needs to happen AFTER
         """
-        list_ = self._state.get_names('update')
-        updated = False
-
-        if ('active_start' in data and
-                'active_stop' in data and
-                'active_stop' in list_):
-            # special case: these attributes employ range checking,
-            # so we would like to make sure that we evaluate
-            # active_stop before active_start if we are setting the active
-            # range outside and above the original range,
-            # and we would like to evaluate active_start before active_stop
-            # if we are setting the active range outside and below the
-            # original range.
-            try:
-                self._check_active_startstop(data['active_start'],
-                                             self.active_stop)
-            except ValueError:
-                list_.insert(0, list_.pop(list_.index('active_stop')))
-
-        for key in list_:
-            if key not in data:
-                continue
-
-            if self.update_attr(key, data[key]):
-                updated = True
-
-        return updated
+        dict_ = copy.copy(dict_)
+        #incomplete implementation!
+        for k, v in dict_.items()
+            if hasattr(self, k):
+                setattr(self, k, v)
+#         list_ = self._schema.get_nodes_by_attr('update')
+#         for k, v in data:
+#             if k not in list_:
+#                 data.pop(k)
+#         updated = False
+#
+#         for attr in list_:
+#             if hasattr(self, attr):
+#                 if isinstance(getattr(self, attr), GnomeId):
+#                     #gnome object, so recurse inside and process it
+#                     getattr(self, attr).update_from_dict(data[attr])
+#                 elif isinstance(getattr(self, attr), (list, OrderedCollection, tuple)):
+#                     #attribute is a collection.
+#
+#         if ('active_start' in data and
+#                 'active_stop' in data and
+#                 'active_stop' in list_):
+#             # special case: these attributes employ range checking,
+#             # so we would like to make sure that we evaluate
+#             # active_stop before active_start if we are setting the active
+#             # range outside and above the original range,
+#             # and we would like to evaluate active_start before active_stop
+#             # if we are setting the active range outside and below the
+#             # original range.
+#             try:
+#                 self._check_active_startstop(data['active_start'],
+#                                              self.active_stop)
+#             except ValueError:
+#                 list_.insert(0, list_.pop(list_.index('active_stop')))
+#
+#         for key in list_:
+#             if key not in data:
+#                 continue
+#
+#             if self.update_attr(key, data[key]):
+#                 updated = True
+#
+#         return updated
 
     def _check_type(self, other):
         'check basic type equality'
@@ -533,7 +528,7 @@ class GnomeId(AddLogger):
         the object that called .save itself.
 
         """
-
+        zipfile_=None
         if saveloc is None:
             #only provide an open zipfile object. When this is closed or the object
             #loses context, the temporary file will automatically delete itself
@@ -648,7 +643,7 @@ class GnomeId(AddLogger):
                 #no filename, so search archive
                 for fn in saveloc.namelist():
                     if fn.endswith('.json'):
-                        fp = saveloc.open(fn, 'rU')
+                        fp = saveloc.open(fn, 'r')
                         json_ = json.load(fp, parse_float=True, parse_int=True)
                         if 'obj_type' in json_:
                             if class_from_objtype(json_['obj_type']) is cls:

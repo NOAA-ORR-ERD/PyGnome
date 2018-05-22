@@ -108,6 +108,9 @@ class InitWindages(InitBaseClass):
                 'windage_persist={0.windage_persist}'
                 ')'.format(self))
 
+    def to_dict(self, json_=None):
+        return InitBaseClass.to_dict(self, json_=json_)
+
     @property
     def windage_persist(self):
         return self._windage_persist

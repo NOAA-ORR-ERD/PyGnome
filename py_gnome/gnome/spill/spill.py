@@ -1028,7 +1028,7 @@ def continuous_release_spill(initial_elements,
                              on=True,
                              amount=None,
                              units=None,
-                             name='Point/Line Release'):
+                             name='Point or Line Release'):
     '''
     Helper function returns a Spill object containing a point or line release
     '''
@@ -1058,7 +1058,7 @@ def point_line_release_spill(num_elements,
                              on=True,
                              amount=None,
                              units=None,
-                             name='Point/Line Release'):
+                             name='Point or Line Release'):
     '''
     Helper function returns a Spill object containing a point or line release
     '''

@@ -196,14 +196,6 @@ class Release(GnomeId):
         self.num_released = 0
         self.start_time_invalid = None
 
-    def serialize(self, json_='webapi'):
-        'define schema based on type of desired output'
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema(json_)
-        serial = schema.serialize(toserial)
-
-        return serial
-
     @property
     def num_elements(self):
         return self._num_elements
@@ -224,11 +216,6 @@ class Release(GnomeId):
         must over-ride
         '''
         return 0
-
-    @classmethod
-    def deserialize(cls, json_):
-        schema = cls._schema(json_['json_'])
-        return schema.deserialize(json_)
 
 
 class PointLineRelease(Release):

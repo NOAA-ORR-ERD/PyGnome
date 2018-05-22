@@ -141,13 +141,11 @@ class Test_GnomeMap:
     def test_update_from_dict(self):
         gmap = GnomeMap()
 
-        json_ = gmap.serialize('save')
+        json_ = gmap.serialize()
         json_['map_bounds'] = [(-10, 10), (10, 10),
                                (10, -10), (-10, -10)]
 
-        dict_ = gnome.map.GnomeMap.deserialize(json_)
-
-        gmap.update_from_dict(dict_)
+        gmap.update_from_dict(json_)
         u_json_ = gmap.serialize('save')
 
         for key in json_:

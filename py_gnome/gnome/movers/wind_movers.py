@@ -324,10 +324,10 @@ class GridWindMoverSchema(WindMoversBaseSchema):
         Similar to WindMover except it doesn't have wind_id
     """
     filename = SchemaNode(
-        String(), missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+        String(), missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
     )
     topology_file = SchemaNode(
-        String(), missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+        String(), missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
     )
     wind_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -341,7 +341,7 @@ class GridWindMover(WindMoversBase):
 
     _schema = GridWindMoverSchema
 
-    def __init__(self, filename, topology_file=None,
+    def __init__(self, filename=None, topology_file=None,
                  extrapolate=False, time_offset=0,
                  **kwargs):
         """

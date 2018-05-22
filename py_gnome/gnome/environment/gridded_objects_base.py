@@ -11,6 +11,7 @@ import gridded
 
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 
 class TimeSchema(base_schema.ObjTypeSchema):
@@ -80,6 +81,12 @@ class VectorVariableSchema(VariableSchemaBase):
         SchemaNode(String()),
         missing=drop,
         read=True
+    )
+    variables = SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=[VariableSchema]
+        ),
+        save=True, update=True, save_reference=True
     )
 
 

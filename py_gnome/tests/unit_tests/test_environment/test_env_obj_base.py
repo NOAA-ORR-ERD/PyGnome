@@ -2,6 +2,223 @@ import os
 import datetime as dt
 
 import pytest
+import tempfile
+
+import numpy as np
+import netCDF4 as nc
+
+import unit_conversion
+
+from gnome.environment.gridded_objects_base import (Variable,
+                                                    VectorVariable,
+                                                    Grid_S,
+                                                    PyGrid,
+                                                    Time)
+from gnome.environment.timeseries_objects_base import (TimeseriesData,
+                                                       TimeseriesVector)
+from gnome.environment.environment_objects import (Bathymetry,
+                                                   S_Depth_T1)
+from gnome.persist.save_load import load
+
+from ..conftest import sample_sc_release, testdata
+
+
+@pytest.fixture('class')
+def dates():
+    return np.array([dt.datetime(2000, 1, 1, 0),
+                     dt.datetime(2000, 1, 1, 2),
+                     dt.datetime(2000, 1, 1, 4),
+                     dt.datetime(2000, 1, 1, 6),
+                     dt.datetime(2000, 1, 1, 8), ])
+
+@pytest.fixture('class')
+def series_data():
+    return np.array([1,3,6,10,15])
+
+@pytest.fixture('class')
+def series_data2():
+    return np.array([2,6,12,20,30])
+
+class TestTime:
+    test_class = Time
+    test_class_instance = Time(dates())
+
+    def test_construction(self):
+        t = self.test_class_instance
+        assert t.min_time == t.data[0] == dt.datetime(2000,1,1,0)
+        assert t.max_time == t.data[-1] == dt.datetime(2000,1,1,8)
+
+        dates = [
+            dt.datetime(2000, 1, 1, 0),
+            dt.datetime(2000, 1, 1, 2),
+            dt.datetime(2000, 1, 1, 4),
+            dt.datetime(2000, 1, 1, 6),
+            dt.datetime(2000, 1, 1, 8)
+        ]
+        t2 = self.test_class(dates)
+
+        assert t == t2
+
+    def test_constant_time(self):
+        t1 = self.test_class.constant_time()
+        t2 = self.test_class.constant_time()
+        t3 = self.test_class.constant_time()
+        assert t1 == t2 == t3
+        assert t1 is t2 is t3
+
+    def test_index_of(self):
+        t = self.test_class_instance
+        before = t.min_time - dt.timedelta(hours=1)
+        after = t.max_time + dt.timedelta(hours=1)
+        assert t.index_of(before, True) == 0
+        assert t.index_of(after, True) == 5
+        assert t.index_of(t.data[-1], True) == 4
+        assert t.index_of(t.data[0], True) == 0
+        with pytest.raises(ValueError):
+            t.index_of(before, False)
+        with pytest.raises(ValueError):
+            t.index_of(after, False)
+        assert t.index_of(t.max_time, True) == 4
+        assert t.index_of(t.min_time, True) == 0
+
+    def test_interp_alpha(self):
+        t = self.test_class_instance
+        test_time = dt.datetime(2000,1,1,1)
+        assert np.isclose(t.interp_alpha(test_time), 0.5)
+
+    def test_serialize(self):
+        t = self.test_class_instance
+        web_ser = t.serialize('webapi')
+        web_deser = self.test_class.deserialize(web_ser)
+        t2 = self.test_class.new_from_dict(web_deser)
+        assert t == t2
+
+    def test_save_load(self):
+        saveloc = tempfile.mkdtemp()
+        references = self.test_class_instance.save(saveloc, None, 'test.json')
+        new_instance = load(os.path.join(saveloc, 'test.json'), references)
+        assert self.test_class_instance == new_instance
+
+
+class TestTimeseriesData:
+    test_class = TimeseriesData
+    test_class_instance = TimeseriesData(
+        time=Time(dates()),
+        data=series_data(),
+        units='m'
+    )
+
+    def test_construction(self):
+        t = self.test_class_instance
+        t2 = self.test_class(time=dates(), data=series_data(), units='m')
+        assert t.time == t2.time
+        assert t == t2
+
+    def test_at(self):
+        t = self.test_class_instance
+        assert np.allclose(
+            t.at(np.array([0,0,0]), dt.datetime(2000,1,1,1)),
+            np.array([2,2,2])
+        )
+        assert np.allclose(
+            t.at(np.array([0,0]), dt.datetime(1999,1,1,0)),
+            np.array([1,1])
+        )
+        assert np.allclose(
+            t.at(np.array([0]), dt.datetime(2000,2,1,0)),
+            np.array([15])
+        )
+        assert np.allclose(
+            t.at(np.array([0]), dt.datetime(2000,1,1,0), extrapolate=False),
+            np.array([1])
+        )
+
+        with pytest.raises(ValueError):
+            t.at(np.array([0,0,0,0]), dt.datetime(2000,2,1,1), extrapolate=False)
+
+    def test_serialize(self):
+        t = self.test_class_instance
+        web_ser = t.serialize('webapi')
+        web_deser = self.test_class.deserialize(web_ser)
+        t2 = self.test_class.new_from_dict(web_deser)
+        assert t == t2
+
+    def test_save_load(self):
+        saveloc = tempfile.mkdtemp()
+        references = self.test_class_instance.save(saveloc, None, 'test.json')
+        new_instance = load(os.path.join(saveloc, 'test.json'), references)
+        assert self.test_class_instance == new_instance
+
+
+class TestTimeseriesVector:
+    _t = Time(dates())
+    test_class = TimeseriesData
+    test_class_instance = TimeseriesVector(
+        variables=[TimeseriesData(name='u', time=_t, data=series_data()),
+                   TimeseriesData(name='v', time=_t, data=series_data2())],
+        units='m/s'
+    )
+
+    def test_construction(self):
+        t = self.test_class_instance
+#        assert len(t.variables) == 2
+#        assert t.time == t.variables[0].time == t.variables[1].time
+#        assert t.units == t.variables[0].units == t.variables[1].units
+
+    def test_at(self):
+        t = self.test_class_instance
+        assert np.allclose(
+            t.at(np.array([0,0,0]), dt.datetime(2000,1,1,1)),
+            np.array([(2,4),(2,4),(2,4)])
+        )
+        assert np.allclose(
+            t.at(np.array([0,0]), dt.datetime(1999,1,1,0)),
+            np.array([(1,2),(1,2)])
+        )
+        assert np.allclose(
+            t.at(np.array([0]), dt.datetime(2000,2,1,0)),
+            np.array([(15,30)])
+        )
+        assert np.allclose(
+            t.at(np.array([0]), dt.datetime(2000,1,1,0), extrapolate=False),
+            np.array([(1,2)])
+        )
+
+        with pytest.raises(ValueError):
+            t.at(np.array([0, 0,0,0]), dt.datetime(2000,2,1,1), extrapolate=False)
+
+    def test_serialize(self):
+        t = self.test_class_instance
+        web_ser = t.serialize('webapi')
+        web_deser = self.test_class.deserialize(web_ser)
+        t2 = self.test_class.new_from_dict(web_deser)
+        assert t == t2
+
+    def test_save_load(self):
+        saveloc = tempfile.mkdtemp()
+        references = self.test_class_instance.save(saveloc, None, 'test.json')
+        new_instance = load(os.path.join(saveloc, 'test.json'), references)
+        assert self.test_class_instance == new_instance
+#
+# class TestGrid(TestBase):
+#     pass
+#
+#
+# class TestDepth(TestBase):
+#     pass
+#
+#
+# class TestVariable(TestBase):
+#     pass
+#
+#
+# class TestVectorVariable(TestBase):
+#     pass
+
+import os
+import datetime as dt
+
+import pytest
 
 import numpy as np
 import netCDF4 as nc
@@ -12,7 +229,6 @@ from gnome.environment.gridded_objects_base import (Variable,
                                                     VectorVariable,
                                                     Grid_S,
                                                     PyGrid)
-from gnome.environment.ts_property import TimeSeriesProp
 from gnome.environment.environment_objects import (Bathymetry,
                                                    S_Depth_T1)
 
@@ -112,177 +328,6 @@ class TestS_Depth_T1:
         print alph
         assert all(res == [3, 2, 1])
         assert np.allclose(alph, np.array([0.397539, 0.5, 0]))
-
-
-class TestTSprop:
-    def test_construction(self):
-        with pytest.raises(ValueError):
-            # mismatched data and dates length
-            _u = TimeSeriesProp('u', 'm/s',
-                                [dt.datetime.now(), dt.datetime.now()],
-                                [5, ])
-
-        u = TimeSeriesProp('u', 'm/s', [dt.datetime.now()], [5, ])
-
-        assert u is not None
-        assert u.name == 'u'
-        assert u.units == 'm/s'
-
-        with pytest.raises(ValueError):
-            _v = TimeSeriesProp('v', 'nm/hr', [dt.datetime.now()], [5, ])
-
-        constant = TimeSeriesProp.constant('const', 'm/s', 5)
-        assert constant.data[0] == 5
-        assert all(constant.at(np.array((0, 0)), dt.datetime.now()) == 5)
-
-    def test_unit_conversion(self):
-        u = TimeSeriesProp('u', 'm/s', [dt.datetime.now()], [5, ])
-
-        t = u.in_units('km/hr')
-
-        assert t.data is not u.data
-        assert round(t.data[0], 2) == 18.0
-
-        with pytest.raises(unit_conversion.NotSupportedUnitError):
-            # mismatched data and dates length
-            t = u.in_units('nm/hr')
-
-    def test_at(self):
-
-        dates2 = np.array([dt.datetime(2000, 1, 1, 0),
-                           dt.datetime(2000, 1, 1, 2),
-                           dt.datetime(2000, 1, 1, 4),
-                           dt.datetime(2000, 1, 1, 6),
-                           dt.datetime(2000, 1, 1, 8), ])
-        u_data = np.array([2., 4., 6., 8., 10.])
-        u = TimeSeriesProp(name='u', units='m/s', time=dates2, data=u_data)
-
-        corners = np.array(((1, 1), (2, 2)))
-        t1 = dt.datetime(1999, 12, 31, 23)
-        t2 = dt.datetime(2000, 1, 1, 0)
-        t3 = dt.datetime(2000, 1, 1, 1)
-        t4 = dt.datetime(2000, 1, 1, 8)
-        t5 = dt.datetime(2000, 1, 1, 9)
-
-        # No extrapolation. out of bounds time should fail
-        with pytest.raises(ValueError):
-            u.at(corners, t1)
-
-        assert (u.at(corners, t2) == np.array([2])).all()
-        assert (u.at(corners, t3) == np.array([3])).all()
-        assert (u.at(corners, t4) == np.array([10])).all()
-
-        with pytest.raises(ValueError):
-            u.at(corners, t5)
-
-        # turn extrapolation on
-        assert (u.at(corners, t1, extrapolate=True) == np.array([2])).all()
-        assert (u.at(corners, t5, extrapolate=True) == np.array([10])).all()
-
-# class TestTSVectorProp:
-#
-#     def test_construction(self, u, v):
-#         vp = None
-#         vp = TSVectorProp(name='vp', units='m/s', time=dates2,
-#                           variables=[u_data, v_data])
-#         pytest.set_trace()
-#         assert vp.variables[0].data == u_data
-#
-#         # 3 components
-#         vp = TSVectorProp(name='vp', units='m/s', time=dates2,
-#                           variables=[u_data, v_data, u_data])
-#
-#         # Using TimeSeriesProp
-#         vp = TSVectorProp(name='vp', variables=[u, v])
-#         assert vp.time == vp.variables[0].time == vp.variables[1].time
-#
-#         # SHORT TIME
-#         with pytest.raises(ValueError):
-#             vp = TSVectorProp(name='vp', units='m/s', time=dates,
-#                               variables=[u_data, v_data])
-#
-#         # DIFFERENT LENGTH VARS
-#         with pytest.raises(ValueError):
-#             vp = TSVectorProp(name='vp', units='m/s', time=dates2,
-#                               variables=[s_data, v_data])
-#
-#         # UNSUPPORTED UNITS
-#         with pytest.raises(ValueError):
-#             vp = TSVectorProp(name='vp', units='km/s', time=dates2,
-#                               variables=[s_data, v_data, u_data])
-#
-#     def test_unit_conversion(self, vp):
-#         nvp = vp.in_units('km/hr')
-#         assert round(nvp.variables[0].data[0], 2) == 7.2
-#
-#         with pytest.raises(unit_conversion.NotSupportedUnitError):
-#             # mismatched data and dates length
-#             nvp = vp.in_units('nm/hr')
-#
-#         assert nvp != vp
-#         assert all(nvp.variables[0].data != vp.variables[0].data)
-
-#     def test_set_variables(self, vp):
-#         print u_data
-#         vp.variables = [u_data, v_data, u_data]
-#         assert (vp._variables[0].data == u_data).all()
-#
-#         with pytest.raises(ValueError):
-#             # mismatched data and time length
-#             vp.variables = [[5], [6], [7]]
-#
-#     def test_set_attr(self, vp):
-#
-#         # mismatched data and time length
-#         with pytest.raises(ValueError):
-#             vp.set_attr(time=dates2, variables=[s_data, s_data])
-#
-#         vp.set_attr(name='vp1')
-#         assert vp.name == 'vp1'
-#
-#         with pytest.raises(ValueError):
-#             vp.set_attr(time=dates, variables=[u_data, v_data])
-#
-#         vp.set_attr(time=dates, variables=[s_data, s_data])
-#         assert vp.variables[0].data[0] == 20
-#
-#         vp.set_attr(variables=[[50, 60, 70], s_data])
-#         assert vp.variables[0].data[0] == 50
-#
-#         vp.set_attr(time=[datetime.datetime(2000, 1, 3, 1),
-#                          datetime.datetime(2000, 1, 3, 2),
-#                          datetime.datetime(2000, 1, 3, 3)])
-#
-#         vp.set_attr(units='km/hr')
-#
-#         assert vp.units == 'km/hr'
-#
-#         with pytest.raises(ValueError):
-#             vp.set_attr(units='nm/hr')
-#
-#     def test_at(self, vp):
-#         corners = np.array(((1, 1, 0), (2, 2, 0)))
-#         t1 = dt.datetime(1999, 12, 31, 23)
-#         t2 = dt.datetime(2000, 1, 1, 0)
-#         t3 = dt.datetime(2000, 1, 1, 1)
-#         t4 = dt.datetime(2000, 1, 1, 8)
-#         t5 = dt.datetime(2000, 1, 1, 9)
-#
-#         # No extrapolation. out of bounds time should fail
-#         with pytest.raises(ValueError):
-#             vp.at(corners, t1)
-#
-#         print vp.name
-#         assert (vp.at(corners, t2) == np.array([2, 5])).all()
-#         assert (vp.at(corners, t3) == np.array([3, 6])).all()
-#         assert (vp.at(corners, t4) == np.array([10, 13])).all()
-#         with pytest.raises(ValueError):
-#             vp.at(corners, t5)
-#
-#         # turn extrapolation on
-#         assert (vp.at(corners, t1, extrapolate=True) == np.array([2, 5])).all()
-#         assert (vp.at(corners, t5, extrapolate=True) == np.array([10, 13])).all()
-
 
 '''
 Analytical cases:

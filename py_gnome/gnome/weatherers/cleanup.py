@@ -241,7 +241,7 @@ class SkimmerSchema(WeathererSchema):
         Float(), save=True, update=True
     )
     water = WaterSchema(
-        save=True, update=True, save_reference=True
+        missing=drop, save=True, update=True, save_reference=True
     )
 
 
@@ -420,10 +420,10 @@ class BurnSchema(WeathererSchema):
     )
     wind = GeneralGnomeObjectSchema(
         acceptable_schemas=[WindSchema, VectorVariableSchema],
-        save=True, update=True, save_reference=True
+        missing=drop, save=True, update=True, save_reference=True
     )
     water = WaterSchema(
-        save=True, update=True, save_reference=True
+        missing=drop, save=True, update=True, save_reference=True
     )
     active_stop = SchemaNode(
         LocalDateTime(),
@@ -767,7 +767,7 @@ class ChemicalDispersionSchema(WeathererSchema):
         Float(), missing=drop, save=True, update=True
     )
     waves = WavesSchema(
-        save=True, update=True, save_reference=True
+        missing=drop, save=True, update=True, save_reference=True
     )
 
 

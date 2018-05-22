@@ -31,20 +31,20 @@ from gnome.spill.elements.initializers import (InitWindagesSchema,
 
 
 class ElementTypeSchema(base_schema.ObjTypeSchema):
-#     substance = SubstanceSchema(
-#         save=True, update=True, test_for_eq=False
-#     )
+    def __init__(self, unknown='preserve', *args, **kwargs):
+        super(ElementTypeSchema, self).__init__(*args, **kwargs)
+        self.typ = base_schema.ObjType('preserve')
+
     initializers = SequenceSchema(
         GeneralGnomeObjectSchema(
-            acceptable_schemas=[base_schema.ObjTypeSchema,
-                                InitWindagesSchema,
+            acceptable_schemas=[InitWindagesSchema,
                                 DistributionBaseSchema
                                 ]
         ),
-        save=True, update=True
+        save=True, update=True, save_reference=True
     )
     standard_density = SchemaNode(
-        Float(), update=True, read=True
+        Float(), read=True
     )
 
 
@@ -52,7 +52,7 @@ class ElementType(GnomeId):
 
     _schema = ElementTypeSchema
 
-    def __init__(self, initializers=[], substance=None, *args, **kwargs):
+    def __init__(self, initializers=[], substance=None, standard_density=1000, *args, **kwargs):
         '''
         Define initializers for the type of elements.
         The default element_type has a substance with density of water
@@ -84,6 +84,7 @@ class ElementType(GnomeId):
             # initializers is not an iterable so assume its an object and just
             # append it to list
             self.initializers.append(initializers)
+
 
         self._substance = None
         if substance is not None:
@@ -175,6 +176,55 @@ class ElementType(GnomeId):
                 return True
 
         return False
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        return super(ElementType, cls).new_from_dict(dict_)
+
+    def to_dict(self, json_=None):
+        dict_ = super(ElementType, self).to_dict(json_=json_)
+        #append substance because no good schema exists for it
+        if json_ != 'save':
+            dict_['substance'] = self.substance_to_dict()
+        else:
+            if self.substance is not None:
+                dict_['substance'] = self.substance_to_dict()['name']
+        return dict_
+
+    def serialize(self):
+        ser = GnomeId.serialize(self)
+        ser['substance'] = self.to_dict()['substance']
+        return ser
+
+    @classmethod
+    def deserialize(cls, json_):
+        if 'substance' in json_:
+            sub = json_['substance']
+        obj = super(ElementType, cls).deserialize(json_)
+        obj.substance = sub['name']
+        return obj
+
+    @classmethod
+    def load(cls, saveloc='.', filename=None, refs=None):
+        return super(ElementType, cls).load(saveloc=saveloc, filename=filename, refs=refs)
+
+    def substance_to_dict(self):
+        '''
+        Call the tojson() method on substance
+
+        An Oil object that has been queried from the database
+        contains a lot of unnecessary relationships that we do not
+        want to represent in our JSON output,
+
+        So we prune them by first constructing an Oil object from the
+        JSON payload of the queried Oil object.
+
+        This creates an Oil object in memory that does not have any
+        database links. Then output the JSON from the unlinked object.
+        '''
+        if self._substance is not None:
+            return self._prune_substance(self._substance.tojson())
+
 
     def _prune_substance(self, substance_json):
         '''

@@ -663,8 +663,8 @@ class Renderer(Outputter, MapCanvas):
 
     def to_dict(self, json_=None):
         dict_ = Outputter.to_dict(self, json_=json_)
+        dict_['map_filename'] = self._filename
         if json_ == 'save':
-            dict_['map_filename'] = self._filename
             dict_['output_dir'] = os.path.join('./', dict_['output_dir'])
         return dict_
 

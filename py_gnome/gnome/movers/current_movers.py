@@ -901,11 +901,11 @@ class IceMover(CurrentMoversBase):
 class CurrentCycleMoverSchema(CurrentMoversBaseSchema):
     filename = SchemaNode(
         String(), missing=drop,
-        save=True, read=True, isdatafile=True, test_for_eq=False
+        save=True, update=True, isdatafile=True, test_for_eq=False
     )
     topology_file = SchemaNode(
         String(), missing=drop,
-        save=True, read=True, isdatafile=True, test_for_eq=False
+        save=True, update=True, isdatafile=True, test_for_eq=False
     )
     current_scale = SchemaNode(
         Float(), default=1, missing=drop, save=True, update=True
@@ -926,7 +926,7 @@ class CurrentCycleMoverSchema(CurrentMoversBaseSchema):
         Float(), default=.25, missing=drop, save=True, update=True
     )
     tide = TideSchema(
-        save=True, update=True, save_reference=True
+        missing=drop, save=True, update=True, save_reference=True
     )
 
 
@@ -934,7 +934,7 @@ class CurrentCycleMover(GridCurrentMover):
     _schema = CurrentCycleMoverSchema
 
     def __init__(self,
-                 filename,
+                 filename = None,
                  topology_file=None,
                  **kwargs):
         """
@@ -978,7 +978,7 @@ class CurrentCycleMover(GridCurrentMover):
                                                 **kwargs)
 
     def __repr__(self):
-        return ('GridCurrentMover(uncertain_duration={0.uncertain_duration}, '
+        return ('CurrentCycletMover(uncertain_duration={0.uncertain_duration}, '
                 'uncertain_time_delay={0.uncertain_time_delay}, '
                 'uncertain_cross={0.uncertain_cross}, '
                 'uncertain_along={0.uncertain_along}, '
@@ -988,7 +988,7 @@ class CurrentCycleMover(GridCurrentMover):
                 .format(self.mover, self))
 
     def __str__(self):
-        return ('GridCurrentMover - current _state.\n'
+        return ('CurrentCycleMover - current _state.\n'
                 '  uncertain_duration={0.uncertain_duration}\n'
                 '  uncertain_time_delay={0.uncertain_time_delay}\n'
                 '  uncertain_cross={0.uncertain_cross}\n'

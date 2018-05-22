@@ -65,7 +65,11 @@ class ObjType(SchemaType):
 
         for num, subnode in enumerate(node.children):
             name = subnode.name
-            subval = value.get(name, None)
+            subval = None
+            if self.unknown == 'ignore':
+                subval = value.get(name, None)
+            else:
+                subval = value.pop(name, None)
             if subval is None and subnode.missing is drop:
                 continue
             try:
@@ -123,7 +127,7 @@ class ObjType(SchemaType):
                     refs[id_] = obj_type.new_from_dict(value)
                 return refs[id_]
             else:
-                raise TypeError('Object is not dictionary, or does not have an obj_type')
+                raise TypeError('{0} is not dictionary, or does not have an obj_type'.format(value))
 #         except Exception as e:
 #             raise e
 #             raise Invalid(node, '{0}" does not implement GnomeObj functionality: {1}'.format(value, e))
@@ -148,6 +152,74 @@ class ObjType(SchemaType):
 
         result = self._impl(node, cstruct, callback)
         return self._deser(node, result, refs)
+
+    def _upd(self, node, obj, dict_):
+        assert obj._schema is node.__class__
+        if hasattr(obj, 'update_from_dict'):
+            obj.update_from_dict(dict_)
+        else:
+            raise TypeError('{0} does not have an update_from_dict'.format(obj))
+
+    def update(self, node, appstruct=None, cstruct=None):
+
+        def callback(subnode, subcstruct):
+            apps = appstruct
+            if subnode.typ.__class__ is self.__class__:
+                #subnode is a gnome object
+                return subnode.update(subnode, apps[subnode.name], subcstruct)
+            elif (subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType):
+                #subnode is List or OrderedCollection
+                scalar = hasattr(subnode, 'accept_scalar') and subnode.accept_scalar
+                return subnode.typ._impl(subnode, subcstruct, callback, scalar)
+            elif (subnode.schema_type is Tuple):
+                return subnode.typ._impl(subnode, subcstruct, callback)
+            else:
+                #Float, String, etc
+                return subnode.deserialize(subcstruct)
+
+        result = self._upd_impl(node, cstruct, callback)
+        return self._upd(node, appstruct, result)
+
+    def _upd_impl(self, node, value, callback):
+        #because update needs to handle 'sparse' dictionaries, it cannot raise
+        #errors on nodes that aren't present in the data and do not have
+        #missing=drop set
+        error = None
+        result = {}
+
+        for num, subnode in enumerate(node.children):
+            name = subnode.name
+            subval = None
+            subval = value.pop(name, None) #update is where a destructive approach makes most sense
+            if subval is None: #and subnode.missing is drop:
+                continue
+            try:
+                sub_result = callback(subnode,subval)
+            except Invalid as e:
+                if error is None:
+                    error = Invalid(node)
+                error.add(e, num)
+            else:
+                if sub_result is None:
+                    continue
+                result[name] = sub_result
+
+        if self.unknown == 'raise':
+            if value:
+                raise UnsupportedFields(
+                    node, value,
+                    msg=_('Unrecognized keys in mapping: "${val}"',
+                          mapping={'val': value}))
+
+        elif self.unknown == 'preserve' or self.unknown == 'ignore':
+            result.update(value) #pass through entries even if not in schema
+            #to allow special effects if necessary. They will be ignored by
+            #final processing anyway unless dealt with specifically.
+
+        if error is not None:
+            raise error
+
+        return result
 
     def flatten(self, node, appstruct, prefix='', listitem=False):
         result = {}
@@ -392,6 +464,10 @@ class ObjTypeSchema(MappingSchema):
     obj_type = SchemaNode(String(), missing=drop, save=True, read=True)
     name = SchemaNode(String(), missing=drop, save=True, update=True)
 
+    def update(self, appstruct=None, cstruct=None):
+        return self.typ.update(self,
+                               appstruct=appstruct,
+                               cstruct=cstruct)
 
     def deserialize(self, cstruct=None, refs=None):
         if refs is None:

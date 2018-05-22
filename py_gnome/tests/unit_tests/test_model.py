@@ -1259,8 +1259,6 @@ class TestMergeModels:
 
         # create save model
         sample_save_file = os.path.join(saveloc_, 'SampleSaveModel.zip')
-        import pdb
-        pdb.set_trace()
         model.save(sample_save_file)
 
         if os.path.exists(sample_save_file):
