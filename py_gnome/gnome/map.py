@@ -71,7 +71,7 @@ class ParamMapSchema(GnomeMapSchema):
         save=True, update=True
     )
     distance = SchemaNode(
-        Integer(), save=True, update=True
+        Integer(), save=True, update=True,
     )
     bearing = SchemaNode(
         Integer(), save=True, update=True
@@ -617,11 +617,11 @@ class ParamMap(GnomeMap):
                 'bearing' in data.keys() or
                 'units' in data.keys()):
             self.build(
-                data['center'] if 'center' in data.keys() else self.center,
-                data[
-                    'distance'] if 'distance' in data.keys() else self.distance,
-                data['bearing'] if 'bearing' in data.keys() else self.bearing,
-                data['units'] if 'units' in data.keys() else self.units)
+                data.pop('center', self.center),
+                data.pop('distance', self.distance),
+                data.pop('bearing', self.bearing),
+                data.pop('units', self.units)
+            )
         else:
             # for the case when instantiating a param map using new_from_dict,
             # since new_from_dict will call update_from_dict

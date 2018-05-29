@@ -13,6 +13,7 @@ from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome import __version__
 from gnome.basic_types import oil_status, world_point_type
+from gnome.persist.extend_colander import FilenameSchema
 
 
 from . import Outputter, BaseOutputterSchema
