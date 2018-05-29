@@ -12,6 +12,7 @@ from colander import SchemaNode, String, drop
 from gnome.basic_types import oil_status
 
 from .outputter import Outputter, BaseOutputterSchema
+from gnome.persist.extend_colander import FilenameSchema
 
 from . import kmz_templates
 
@@ -22,8 +23,8 @@ class KMZSchema(BaseOutputterSchema):
     '''
 #    round_data = SchemaNode(Bool(), missing=drop)
 #    round_to = SchemaNode(Int(), missing=drop)
-    filename = SchemaNode(
-        String(), missing=drop, save=True, update=True, test_for_eq=False
+    filename = FilenameSchema(
+        missing=drop, save=True, update=True, test_for_eq=False
     )
 
 

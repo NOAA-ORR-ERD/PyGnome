@@ -29,7 +29,9 @@ from gnome.cy_gnome.cy_shio_time import CyShioTime
 
 class TideSchema(base_schema.ObjTypeSchema):
     'Tide object schema'
-    filename = FilenameSchema
+    filename = FilenameSchema(
+        save=True, update=True, isdatafile=True, test_for_eq=False
+    )
 
     scale_factor = SchemaNode(
         Float(), missing=drop, save=True, update=True

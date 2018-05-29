@@ -157,8 +157,8 @@ var_attributes = {
 
 class NetCDFOutputSchema(BaseOutputterSchema):
     'colander schema for serialize/deserialize object'
-    netcdf_filename = SchemaNode(
-        String(), missing=drop, save=True, update=True, test_for_eq=False
+    netcdf_filename = FilenameSchema(
+        missing=drop, save=True, update=True, test_for_eq=False
     )
     which_data = SchemaNode(
         String(), default='standard', missing=drop, save=True, update=True

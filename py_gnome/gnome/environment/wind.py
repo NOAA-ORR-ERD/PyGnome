@@ -29,7 +29,8 @@ from gnome.utilities.distributions import RayleighDistribution as rayleigh
 
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
-                                           DatetimeValue2dArraySchema)
+                                           DatetimeValue2dArraySchema,
+                                           FilenameSchema)
 from gnome.persist import validators, base_schema
 
 from .environment import Environment
@@ -88,8 +89,8 @@ class WindSchema(base_schema.ObjTypeSchema):
     description = SchemaNode(
         String(), missing=drop, save=True, update=True
     )
-    filename = SchemaNode(
-        String(), missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+    filename = FilenameSchema(
+        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
     )
     updated_at = SchemaNode(
         LocalDateTime(), missing=drop, save=True, update=True

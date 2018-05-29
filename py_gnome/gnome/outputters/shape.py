@@ -7,14 +7,15 @@ import zipfile
 
 from colander import SchemaNode, String, Boolean, drop
 import shapefile as shp
+from gnome.persist.extend_colander import FilenameSchema
 
 
 from .outputter import Outputter, BaseOutputterSchema
 
 
 class ShapeSchema(BaseOutputterSchema):
-    filename = SchemaNode(
-        String(), missing=drop, save=True, update=True, test_for_eq=False
+    filename = FilenameSchema(
+        missing=drop, save=True, update=True, test_for_eq=False
     )
     zip_output = SchemaNode(
         Boolean(), missing=drop, save=True, update=True

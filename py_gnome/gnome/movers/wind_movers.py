@@ -27,6 +27,7 @@ from gnome.environment import Wind, WindSchema
 from gnome.environment.wind import constant_wind
 from gnome.movers import CyMover, ProcessSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.persist.extend_colander import FilenameSchema
 
 
 
@@ -323,11 +324,11 @@ class GridWindMoverSchema(WindMoversBaseSchema):
     """
         Similar to WindMover except it doesn't have wind_id
     """
-    filename = SchemaNode(
-        String(), missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+    filename = FilenameSchema(
+        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
     )
-    topology_file = SchemaNode(
-        String(), missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+    topology_file = FilenameSchema(
+        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
     )
     wind_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -502,11 +503,11 @@ class GridWindMover(WindMoversBase):
 
 
 class IceWindMoverSchema(WindMoversBaseSchema):
-    filename = SchemaNode(
-        String(), missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+    filename = FilenameSchema(
+        missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
     )
-    topology_file = SchemaNode(
-        String(), missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+    topology_file = FilenameSchema(
+        missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
     )
 
 

@@ -25,6 +25,7 @@ from gnome.environment import Tide, TideSchema, Wind, WindSchema
 from gnome.movers import CyMover, ProcessSchema
 
 from gnome.persist.base_schema import ObjTypeSchema, WorldPoint
+from gnome.persist.extend_colander import FilenameSchema
 
 
 class CurrentMoversBaseSchema(ProcessSchema):
@@ -124,8 +125,7 @@ class CurrentMoversBase(CyMover):
 
 class CatsMoverSchema(CurrentMoversBaseSchema):
     '''static schema for CatsMover'''
-    filename = SchemaNode(
-        String(), missing=drop,
+    filename = FilenameSchema(
         save=True, update=True, isdatafile=True, test_for_eq=False
     )
     scale = SchemaNode(
@@ -360,13 +360,11 @@ class CatsMover(CurrentMoversBase):
 
 
 class GridCurrentMoverSchema(CurrentMoversBaseSchema):
-    filename = SchemaNode(
-        String(), missing=drop,
-        save=True, update=True, isdatafile=True, test_for_eq=False
+    filename = FilenameSchema(
+        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
     )
-    topology_file = SchemaNode(
-        String(), missing=drop,
-        save=True, read=True, isdatafile=True, test_for_eq=False
+    topology_file = FilenameSchema(
+        missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
     )
     current_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -618,13 +616,11 @@ class GridCurrentMover(CurrentMoversBase):
 
 
 class IceMoverSchema(CurrentMoversBaseSchema):
-    filename = SchemaNode(
-        String(), missing=drop,
-        save=True, read=True, isdatafile=True, test_for_eq=False
+    filename = FilenameSchema(
+        missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
     )
-    topology_file = SchemaNode(
-        String(), missing=drop,
-        save=True, read=True, isdatafile=True, test_for_eq=False
+    topology_file = FilenameSchema(
+        missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
     )
     current_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -899,13 +895,11 @@ class IceMover(CurrentMoversBase):
 
 
 class CurrentCycleMoverSchema(CurrentMoversBaseSchema):
-    filename = SchemaNode(
-        String(), missing=drop,
-        save=True, update=True, isdatafile=True, test_for_eq=False
+    filename = FilenameSchema(
+        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
     )
-    topology_file = SchemaNode(
-        String(), missing=drop,
-        save=True, update=True, isdatafile=True, test_for_eq=False
+    topology_file = FilenameSchema(
+        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
     )
     current_scale = SchemaNode(
         Float(), default=1, missing=drop, save=True, update=True

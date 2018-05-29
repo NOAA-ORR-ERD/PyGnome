@@ -14,7 +14,7 @@ from gnome.utilities.projections import FlatEarthProjection
 from gnome.environment import GridWind
 from gnome.persist import base_schema
 from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.environment.gridded_objects_base import VectorVariableSchema
 
@@ -24,9 +24,7 @@ class PyWindMoverSchema(base_schema.ObjTypeSchema):
         acceptable_schemas=[VectorVariableSchema, GridWind._schema],
         save=True, update=True, save_reference=True
     )
-    filename = SchemaNode(
-        typ=Sequence(accept_scalar=True),
-        children=[SchemaNode(String())],
+    filename = FilenameSchema(
         missing=drop, save=True, read=True, isdatafile=True
     )
     wind_scale = SchemaNode(

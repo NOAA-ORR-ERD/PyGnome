@@ -28,6 +28,7 @@ from gnome.utilities import projections
 from gnome.utilities.projections import FlatEarthProjection, ProjectionSchema
 
 from gnome.persist import base_schema
+from gnome.persist.extend_colander import FilenameSchema
 
 from . import Outputter, BaseOutputterSchema
 
@@ -42,8 +43,8 @@ class RendererSchema(BaseOutputterSchema):
 
     # following are only used when creating objects, not updating -
     # so missing=drop
-    map_filename = SchemaNode(
-        String(), missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+    map_filename = FilenameSchema(
+        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
     )
     projection = ProjectionSchema(
         missing=drop, save=True, update=True
