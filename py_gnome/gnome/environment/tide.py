@@ -12,6 +12,7 @@ import gnome
 
 from .environment import Environment
 from gnome.persist import base_schema
+from gnome.persist.extend_colander import FilenameSchema
 
 # TODO: The name 'convert' is doubly defined as
 #       unit_conversion.convert and...
@@ -28,9 +29,7 @@ from gnome.cy_gnome.cy_shio_time import CyShioTime
 
 class TideSchema(base_schema.ObjTypeSchema):
     'Tide object schema'
-    filename = SchemaNode(
-        String(), missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
-    )
+    filename = FilenameSchema
 
     scale_factor = SchemaNode(
         Float(), missing=drop, save=True, update=True

@@ -236,22 +236,6 @@ class VelocityGrid(VectorVariable):
 
         super(VelocityGrid, self).__init__(**kwargs)
 
-    def __eq__(self, o):
-        if o is None:
-            return False
-
-        t1 = (self.name == o.name and
-              self.units == o.units and
-              self.time == o.time)
-        t2 = True
-
-        for i in range(0, len(self._variables)):
-            if self._variables[i] != o._variables[i]:
-                t2 = False
-                break
-
-        return t1 and t2
-
 
 class WindTS(VelocityTS, Environment):
 
@@ -424,14 +408,6 @@ class IceConcentration(Variable, Environment):
 
     def __init__(self, *args, **kwargs):
         super(IceConcentration, self).__init__(*args, **kwargs)
-
-    # def __eq__(self, o):
-    #     t1 = (self.name == o.name and
-    #           self.units == o.units and
-    #           self.time == o.time and
-    #           self.varname == o.varname)
-    #     t2 = self.data == o.data
-    #     return t1 and t2
 
 
 class Bathymetry(Variable):

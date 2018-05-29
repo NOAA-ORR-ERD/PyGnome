@@ -151,34 +151,6 @@ class Test_GnomeMap:
         for key in json_:
             assert u_json_[key] == json_[key]
 
-    @pytest.mark.parametrize("json_", ({'name': u'GnomeMap',
-                                        'obj_type': u'gnome.map.GnomeMap',
-                                        'json_': u'save',
-                                        'map_bounds': [(-10.0, 10.0),
-                                                       (10.0, 10.0),
-                                                       (10.0, -10.0),
-                                                       (-10.0, -10.0)],
-                                        'spillable_area': [[(-360.0, -90.0),
-                                                            (-360.0, 90.0),
-                                                            (360.0, 90.0),
-                                                            (360.0, -90.0)]]
-                                        },
-                                       {'obj_type': u'gnome.map.GnomeMap',
-                                        'json_': u'webapi',
-                                        },
-                                       )
-                             )
-    def test_new_from_dict(self, json_):
-        context = json_['json_']
-
-        dict_ = GnomeMap.deserialize(json_)
-        gmap = GnomeMap.new_from_dict(dict_)
-
-        u_json_ = gmap.serialize(context)
-
-        for key in json_:
-            assert u_json_[key] == json_[key]
-
 
 class Test_ParamMap:
     '''
@@ -226,7 +198,6 @@ class Test_ParamMap:
                     assert len(c) == 2
 
 
-@pytest.mark.parametrize("json_", ('save', 'webapi'))
 def test_serialize_deserialize_param(json_):
     """
     test create new ParamMap from deserialized dict
@@ -234,7 +205,7 @@ def test_serialize_deserialize_param(json_):
     gmap = gnome.map.ParamMap((5, 5), 12000, 40)
     print gmap.land_polys._PointsArray
 
-    serial = gmap.serialize(json_)
+    serial = gmap.serialize()
     serial['distance'] = 20000
     print serial
     dict_ = gnome.map.ParamMap.deserialize(serial)

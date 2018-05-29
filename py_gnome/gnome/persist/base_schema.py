@@ -72,16 +72,17 @@ class ObjType(SchemaType):
                 subval = value.pop(name, None)
             if subval is None and subnode.missing is drop:
                 continue
-            try:
-                sub_result = callback(subnode,subval)
-            except Invalid as e:
-                if error is None:
-                    error = Invalid(node)
-                error.add(e, num)
-            else:
-                if sub_result is None:
-                    continue
-                result[name] = sub_result
+#             try:
+            sub_result = callback(subnode,subval)
+#             except Invalid as e:
+#                 raise e
+#                 if error is None:
+#                     error = Invalid(node)
+#                 error.add(e, num)
+#             else:
+            if sub_result is None:
+                continue
+            result[name] = sub_result
 
         if self.unknown == 'raise':
             if value:
@@ -137,13 +138,14 @@ class ObjType(SchemaType):
             return None
 
         def callback(subnode, subcstruct):
-            if subnode.typ.__class__ is self.__class__:
+            if subnode.typ.__class__ is ObjType:
                 return subnode.deserialize(subcstruct, refs)
             else:
                 #This needs to become more flexible! It needs to detect subclasses of Sequence!
-                if (subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType):
+                if ((subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType) and
+                    isinstance(subnode.children[0], ObjTypeSchema)):
                     #To deal with iterable schemas that do not have a deserialize with refs function
-                    scalar = hasattr(subnode, 'accept_scalar') and subnode.accept_scalar
+                    scalar = hasattr(subnode.typ, 'accept_scalar') and subnode.typ.accept_scalar
                     return subnode.typ._impl(subnode, subcstruct, callback, scalar)
                 elif (subnode.schema_type is Tuple):
                     return subnode.typ._impl(subnode, subcstruct, callback)
@@ -154,30 +156,31 @@ class ObjType(SchemaType):
         return self._deser(node, result, refs)
 
     def _upd(self, node, obj, dict_):
-        assert obj._schema is node.__class__
         if hasattr(obj, 'update_from_dict'):
             obj.update_from_dict(dict_)
         else:
             raise TypeError('{0} does not have an update_from_dict'.format(obj))
 
-    def update(self, node, appstruct=None, cstruct=None):
+    def _update(self, node, appstruct=None, cstruct=None):
 
-        def callback(subnode, subcstruct):
-            apps = appstruct
+        def callback(subnode, sub_app_c_pair):
+            subappstruct = sub_app_c_pair[0]
+            subcstruct = sub_app_c_pair[1]
             if subnode.typ.__class__ is self.__class__:
                 #subnode is a gnome object
-                return subnode.update(subnode, apps[subnode.name], subcstruct)
-            elif (subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType):
+                return subnode._update(subappstruct, subcstruct)
+            elif ((subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType) and
+                    isinstance(subnode.children[0], ObjTypeSchema)):
                 #subnode is List or OrderedCollection
-                scalar = hasattr(subnode, 'accept_scalar') and subnode.accept_scalar
-                return subnode.typ._impl(subnode, subcstruct, callback, scalar)
+                scalar = hasattr(subnode.typ, 'accept_scalar') and subnode.typ.accept_scalar
+                subnode.typ._impl(subnode, zip(subappstruct, subcstruct), callback, scalar)
             elif (subnode.schema_type is Tuple):
-                return subnode.typ._impl(subnode, subcstruct, callback)
+                subnode.typ._impl(subnode, zip(subappstruct, subcstruct), callback)
             else:
                 #Float, String, etc
                 return subnode.deserialize(subcstruct)
 
-        result = self._upd_impl(node, cstruct, callback)
+        result = self._upd_impl(node, (appstruct, cstruct), callback)
         return self._upd(node, appstruct, result)
 
     def _upd_impl(self, node, value, callback):
@@ -190,11 +193,14 @@ class ObjType(SchemaType):
         for num, subnode in enumerate(node.children):
             name = subnode.name
             subval = None
-            subval = value.pop(name, None) #update is where a destructive approach makes most sense
-            if subval is None: #and subnode.missing is drop:
+            apps = value[0]
+            cstr = value[1]
+            subapp = getattr(apps, name)
+            subcstr = cstr.pop(name, {}) #update is where a destructive approach makes most sense
+            if subcstr == {}: #and subnode.missing is drop:
                 continue
             try:
-                sub_result = callback(subnode,subval)
+                sub_result = callback(subnode, (subapp, subcstr))
             except Invalid as e:
                 if error is None:
                     error = Invalid(node)
@@ -212,7 +218,7 @@ class ObjType(SchemaType):
                           mapping={'val': value}))
 
         elif self.unknown == 'preserve' or self.unknown == 'ignore':
-            result.update(value) #pass through entries even if not in schema
+            result.update(cstr) #pass through entries even if not in schema
             #to allow special effects if necessary. They will be ignored by
             #final processing anyway unless dealt with specifically.
 
@@ -326,7 +332,7 @@ class ObjType(SchemaType):
                     #save function, call the subnode typ _impl with this function as callback
                     #Doing that will execute this function against each item in the iterable,
                     #and should continue the chain if it contains further iterables.
-                    scalar = hasattr(subnode, 'accept_scalar') and subnode.accept_scalar
+                    scalar = hasattr(subnode.typ, 'accept_scalar') and subnode.typ.accept_scalar
                     return subnode.typ._impl(subnode, subappstruct, callback, scalar)
                 elif (subnode.schema_type is Tuple):
                     return subnode.typ._impl(subnode, subappstruct, callback)
@@ -366,9 +372,10 @@ class ObjType(SchemaType):
         def callback(subnode, subcstruct):
             if not hasattr(subnode, 'load'):
                 #This is the path for non-gnome attributes
-                if (subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType):
+                if ((subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType) and
+                    isinstance(subnode.children[0], ObjTypeSchema)):
                     #To deal with iterable schemas that do not have a load function
-                    scalar = hasattr(subnode, 'accept_scalar') and subnode.accept_scalar
+                    scalar = hasattr(subnode.typ, 'accept_scalar') and subnode.typ.accept_scalar
                     return subnode.typ._impl(subnode, subcstruct, callback, scalar)
                 elif (subnode.schema_type is Tuple):
                     return subnode.typ._impl(subnode, subcstruct, callback)
@@ -412,11 +419,11 @@ class ObjType(SchemaType):
             tmpdir = tempfile.mkdtemp()
         for d in datafiles:
             if d in cstruct:
-                if isinstance(d, six.string_types):
+                if isinstance(cstruct[d], six.string_types):
                     cstruct[d] = self._load_supporting_file(cstruct[d], saveloc, tmpdir)
-                elif isinstance(d, collections.Iterable):
+                elif isinstance(cstruct[d], collections.Iterable):
                     #List, tuple, etc
-                    for i, filename in enumerate(d):
+                    for i, filename in enumerate(cstruct[d]):
                         cstruct[d][i] = self._load_supporting_file(filename, saveloc, tmpdir)
         return cstruct
 
@@ -464,8 +471,8 @@ class ObjTypeSchema(MappingSchema):
     obj_type = SchemaNode(String(), missing=drop, save=True, read=True)
     name = SchemaNode(String(), missing=drop, save=True, update=True)
 
-    def update(self, appstruct=None, cstruct=None):
-        return self.typ.update(self,
+    def _update(self, appstruct=None, cstruct=None):
+        return self.typ._update(self,
                                appstruct=appstruct,
                                cstruct=cstruct)
 
@@ -571,6 +578,10 @@ class GeneralGnomeObjectSchema(ObjTypeSchema):
                 return schema()
             else:
                 raise TypeError('This type of object is not supported')
+
+    def _update(self, appstruct=None, cstruct=None):
+        substitute_schema = self.validate_input_schema(appstruct)
+        return substitute_schema.typ._update(substitute_schema, appstruct, cstruct)
 
     def serialize(self, appstruct=None):
         substitute_schema = self.validate_input_schema(appstruct)

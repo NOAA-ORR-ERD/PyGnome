@@ -323,55 +323,28 @@ class GnomeId(AddLogger):
 
         return data
 
+    def update(self, dict_):
+        """
+        Calls the schema_.update to update the object
+        Override this to add any special processing before the dict is applied
+        """
+        return self._schema()._update(self, copy.copy(dict_))
+
     def update_from_dict(self, dict_):
         """
         Updates this object's attributes from dict_. It does direct assignment
         for each attribute. Override this function if any special processing
-        needs to happen AFTER
+        needs to happen AFTER the dict is prepared by the schema
         """
-        dict_ = copy.copy(dict_)
+        updatable = self._schema().get_nodes_by_attr('update')
+        attrs = copy.copy(dict_)
+        for k in attrs.keys():
+            if k not in updatable:
+                attrs.pop(k)
         #incomplete implementation!
-        for k, v in dict_.items()
+        for k, v in attrs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
-#         list_ = self._schema.get_nodes_by_attr('update')
-#         for k, v in data:
-#             if k not in list_:
-#                 data.pop(k)
-#         updated = False
-#
-#         for attr in list_:
-#             if hasattr(self, attr):
-#                 if isinstance(getattr(self, attr), GnomeId):
-#                     #gnome object, so recurse inside and process it
-#                     getattr(self, attr).update_from_dict(data[attr])
-#                 elif isinstance(getattr(self, attr), (list, OrderedCollection, tuple)):
-#                     #attribute is a collection.
-#
-#         if ('active_start' in data and
-#                 'active_stop' in data and
-#                 'active_stop' in list_):
-#             # special case: these attributes employ range checking,
-#             # so we would like to make sure that we evaluate
-#             # active_stop before active_start if we are setting the active
-#             # range outside and above the original range,
-#             # and we would like to evaluate active_start before active_stop
-#             # if we are setting the active range outside and below the
-#             # original range.
-#             try:
-#                 self._check_active_startstop(data['active_start'],
-#                                              self.active_stop)
-#             except ValueError:
-#                 list_.insert(0, list_.pop(list_.index('active_stop')))
-#
-#         for key in list_:
-#             if key not in data:
-#                 continue
-#
-#             if self.update_attr(key, data[key]):
-#                 updated = True
-#
-#         return updated
 
     def _check_type(self, other):
         'check basic type equality'

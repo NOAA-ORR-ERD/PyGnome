@@ -11,14 +11,13 @@ import gridded
 
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
+from gnome.persist.extend_colander import FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 
 class TimeSchema(base_schema.ObjTypeSchema):
-    filename = SchemaNode(
-        typ=Sequence(accept_scalar=True),
-        children=[SchemaNode(String())],
-        default=[], missing=drop, save=True, update=True, isdatafile=True
+    filename = FilenameSchema(
+        default=[], missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
     )
     varname = SchemaNode(
         String(), missing=drop, read=True
@@ -32,17 +31,13 @@ class TimeSchema(base_schema.ObjTypeSchema):
 
 
 class GridSchema(base_schema.ObjTypeSchema):
-    filename = SchemaNode(
-        typ=Sequence(accept_scalar=True),
-        children=[SchemaNode(String())],
-        save=True, update=True, isdatafile=True
+    filename = FilenameSchema(
+        save=True, update=True, isdatafile=True, test_for_eq=False
     )
 
 class DepthSchema(base_schema.ObjTypeSchema):
-    filename = SchemaNode(
-        typ=Sequence(accept_scalar=True),
-        children=[SchemaNode(String())],
-        save=True, update=True, isdatafile=True
+    filename = FilenameSchema(
+        save=True, update=True, isdatafile=True, test_for_eq=False
     )
 
 
@@ -58,15 +53,11 @@ class VariableSchemaBase(base_schema.ObjTypeSchema):
     grid = GridSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
-    data_file = SchemaNode(
-        typ=Sequence(accept_scalar=True),
-        children=[SchemaNode(String())],
-        save=True, update=True, isdatafile=True
+    data_file = FilenameSchema(
+        save=True, update=True, isdatafile=True, test_for_eq=False
     )
-    grid_file = SchemaNode(
-        typ=Sequence(accept_scalar=True),
-        children=[SchemaNode(String())],
-        save=True, update=True, isdatafile=True
+    grid_file = FilenameSchema(
+        save=True, update=True, isdatafile=True, test_for_eq=False
     )
 
 
@@ -96,8 +87,6 @@ class Time(gridded.time.Time, GnomeId):
 
     @classmethod
     def from_file(cls, filename=None, **kwargs):
-        import pdb
-        pdb.set_trace()
         if isinstance(filename, list):
             filename = filename[0]
 
@@ -132,13 +121,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
-        dict_.pop('json_')
-        filename = dict_['filename']
-
-        rv = cls.from_netCDF(filename)
-        rv.__class__._restore_attr_from_save(rv, dict_)
-        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
-        rv.__class__._def_count -= 1
+        rv = cls.from_netCDF(**dict_)
 
         return rv
 
@@ -211,14 +194,7 @@ class Grid_S(gridded.grids.Grid_S, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
-        dict_.pop('json_')
-        filename = dict_['filename']
-
-        rv = cls.from_netCDF(filename)
-        rv.__class__._restore_attr_from_save(rv, dict_)
-        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
-        rv.__class__._def_count -= 1
-
+        rv = cls.from_netCDF(**dict_)
         return rv
 
     def get_cells(self):
@@ -275,14 +251,7 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
-        dict_.pop('json_')
-        filename = dict_['filename']
-
-        rv = cls.from_netCDF(filename)
-        rv.__class__._restore_attr_from_save(rv, dict_)
-        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
-        rv.__class__._def_count -= 1
-
+        rv = cls.from_netCDF(**dict_)
         return rv
 
     def get_nodes(self):
@@ -375,13 +344,7 @@ class DepthBase(gridded.depth.DepthBase, GnomeId):
                                      'variable': Variable})
     @classmethod
     def new_from_dict(cls, dict_):
-        dict_.pop('json_')
-        filename = dict_['filename']
-
-        rv = cls.from_netCDF(filename)
-        rv.__class__._restore_attr_from_save(rv, dict_)
-        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
-        rv.__class__._def_count -= 1
+        rv = cls.from_netCDF(**dict_)
         return rv
 
 
@@ -395,13 +358,7 @@ class L_Depth(gridded.depth.L_Depth, GnomeId):
                                      'variable': Variable})
     @classmethod
     def new_from_dict(cls, dict_):
-        dict_.pop('json_')
-        filename = dict_['filename']
-
-        rv = cls.from_netCDF(filename)
-        rv.__class__._restore_attr_from_save(rv, dict_)
-        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
-        rv.__class__._def_count -= 1
+        rv = cls.from_netCDF(**dict_)
         return rv
 
 
@@ -416,15 +373,8 @@ class S_Depth(gridded.depth.S_Depth, GnomeId):
                                      'variable': Variable})
     @classmethod
     def new_from_dict(cls, dict_):
-        dict_.pop('json_')
-        filename = dict_['filename']
-
-        rv = cls.from_netCDF(filename)
-        rv.__class__._restore_attr_from_save(rv, dict_)
-        rv._id = dict_.pop('id') if 'id' in dict_ else rv.id
-        rv.__class__._def_count -= 1
+        rv = cls.from_netCDF(**dict_)
         return rv
-
 
 class VectorVariable(gridded.VectorVariable, GnomeId):
 
@@ -436,18 +386,6 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                                      'grid': PyGrid,
                                      'depth': Depth,
                                      'variable': Variable})
-
-    @classmethod
-    def new_from_dict(cls, dict_):
-        if 'variables' not in dict_:
-            if 'varnames' in dict_:
-                vn = dict_.get('varnames')
-                if 'constant' in vn[-1]:
-                    dict_['varnames'] = dict_['varnames'][0:2]
-
-            return cls.from_netCDF(**dict_)
-
-        return super(VectorVariable, cls).new_from_dict(dict_)
 
     def get_data_vectors(self):
         '''

@@ -106,6 +106,7 @@ base_dir = os.path.dirname(__file__)
 
 # For WindMover test_save_load in test_wind_mover
 g_objects = (
+    environment.environment_objects.GridCurrent.from_netCDF(testdata['GridCurrentMover']['curr_tri']),
     environment.Tide(testdata['CatsMover']['tide']),
     environment.Wind(filename=testdata['ComponentMover']['wind']),
     environment.Wind(timeseries=(sec_to_date(24 * 60 * 60),

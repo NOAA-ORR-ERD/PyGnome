@@ -12,7 +12,6 @@ from colander import (Float, DateTime, Sequence, Tuple, List,
 
 import gnome.basic_types
 from gnome.utilities import inf_datetime
-from fileinput import filename
 
 
 class LocalDateTime(DateTime):
@@ -213,6 +212,18 @@ serialize/deserialize is called correctly.
 
 Specifically a new DefaultTypeSchema and a DatetimeValue2dArraySchema
 """
+
+class FilenameSchema(SequenceSchema):
+    def __init__(self, *args, **kwargs):
+        kwargs['typ'] = Sequence(accept_scalar=True)
+        super(FilenameSchema, self).__init__(SchemaNode(String()), *args, **kwargs)
+
+    def deserialize(self, cstruct):
+        rv = super(FilenameSchema, self).deserialize(cstruct)
+        if len(rv) == 1:
+            return rv[0]
+        else:
+            return rv
 
 class OrderedCollectionSchema(SequenceSchema):
     schema_type = OrderedCollectionType
