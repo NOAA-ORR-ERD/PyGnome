@@ -37,10 +37,6 @@ class PyWindMoverSchema(ObjType):
                               validator=convertible_to_seconds)
     active_stop = SchemaNode(LocalDateTime(), missing=drop,
                              validator=convertible_to_seconds)
-    real_data_start = SchemaNode(LocalDateTime(), missing=drop,
-                                 validator=convertible_to_seconds)
-    real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
-                                validator=convertible_to_seconds)
 
 
 class PyWindMover(PyMover, Serializable):
@@ -157,19 +153,11 @@ class PyWindMover(PyMover, Serializable):
 
     @property
     def real_data_start(self):
-        return self.wind.time.min_time.replace(tzinfo=None)
-
-    @real_data_start.setter
-    def real_data_start(self, value):
-        self._r_d_s = value
+        return self.wind.data_start
 
     @property
     def real_data_stop(self):
-        return self.wind.time.max_time.replace(tzinfo=None)
-
-    @real_data_stop.setter
-    def real_data_stop(self, value):
-        self._r_d_e = value
+        return self.wind.data_stop
 
     @property
     def is_data_on_cells(self):

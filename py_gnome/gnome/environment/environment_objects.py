@@ -281,6 +281,14 @@ class VelocityGrid(VectorVariable):
 
         return t1 and t2
 
+    @property
+    def data_start(self):
+        return self.time.min_time.replace(tzinfo=None)
+
+    @property
+    def data_stop(self):
+        return self.time.max_time.replace(tzinfo=None)
+
 
 class WindTS(VelocityTS, Environment):
 

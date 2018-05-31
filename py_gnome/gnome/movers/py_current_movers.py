@@ -175,19 +175,11 @@ class PyCurrentMover(PyMover, Serializable):
 
     @property
     def real_data_start(self):
-        return self.current.time.min_time.replace(tzinfo=None)
-
-    @real_data_start.setter
-    def real_data_start(self, value):
-        self._r_d_s = value
+        return self.current.data_start
 
     @property
     def real_data_stop(self):
-        return self.current.time.max_time.replace(tzinfo=None)
-
-    @real_data_stop.setter
-    def real_data_stop(self, value):
-        self._r_d_e = value
+        return self.current.data_stop
 
     @property
     def is_data_on_cells(self):
