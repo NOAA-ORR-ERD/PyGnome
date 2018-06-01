@@ -15,6 +15,13 @@ def run_all_with_script_runner(to_skip=[]):
     scripts = glob.glob(os.path.join(os.path.dirname(__file__),
                         'script_*/script_*.py'))
     print scripts
+    default_skip = ['script_ny_plume/script_ny_plume.py', 'script_ny_roms/script_ny_roms.py',
+                    'script_tamoc/script_tamoc.py', 'script_tamoc/script_arctic_tamoc.py',
+                    'script_tamoc/script_gulf_tamoc.py', 'script_TAP/script_old_TAP.py']
+
+    for script in to_skip:
+        default_skip = [s for s in default_skip if script not in s]
+    to_skip.extend(default_skip)
     for script in to_skip:
         scripts = [s for s in scripts if script not in s]
     print scripts

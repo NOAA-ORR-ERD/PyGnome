@@ -22,11 +22,11 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.movers.py_wind_movers import PyWindMover
-from gnome.environment.property_classes import WindTS, IceAwareCurrent, IceAwareWind
+#from gnome.environment.property_classes import WindTS, IceAwareCurrent, IceAwareWind
 from gnome.movers.py_current_movers import PyCurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
-from gnome.environment.vector_field import ice_field
+#from gnome.environment.vector_field import ice_field
 from gnome.movers import IceWindMover, IceMover
 import gnome.utilities.profiledeco as pd
 
@@ -116,7 +116,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #                                                  grid_topology=gt)
 #     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
 #                                               grid = ice_aware_curr.grid,)
-#     method = 'Trapezoid'
+#     method = 'RK2'
 #
 # #     i_c_mover = PyCurrentMover(current=ice_aware_curr)
 # #     i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method='Euler')
